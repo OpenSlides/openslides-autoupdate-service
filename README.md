@@ -1,3 +1,3 @@
-# OpenSlides ... service
+# OpenSlides autoupdate service
 
 Service for OpenSlides which ...
