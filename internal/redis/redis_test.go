@@ -5,7 +5,6 @@ import (
 	"sort"
 	"testing"
 
-	redigo "github.com/garyburd/redigo/redis"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
 )
 
@@ -73,7 +72,7 @@ var testData = map[string]string{
 
 func (c mockConn) XREAD(count, block, stream, lastID string) (interface{}, error) {
 	if _, ok := testData[lastID]; !ok {
-		return nil, redigo.ErrNil
+		return nil, nil
 	}
 	var data interface{}
 	err := json.Unmarshal([]byte(testData[lastID]), &data)
