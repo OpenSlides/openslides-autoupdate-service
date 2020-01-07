@@ -15,13 +15,13 @@ import (
 // Service holds the state of the autoupdate service
 type Service struct {
 	restricter keysbuilder.Restricter
-	keyChanged KeyChangedReceiver
+	keyChanged KeysChangedReceiver
 	closed     chan struct{}
 	topic      topic.Topic
 }
 
 // New creates a new autoupdate service
-func New(restricter keysbuilder.Restricter, keyChanges KeyChangedReceiver) *Service {
+func New(restricter keysbuilder.Restricter, keyChanges KeysChangedReceiver) *Service {
 	s := &Service{
 		restricter: restricter,
 		keyChanged: keyChanges,
@@ -59,7 +59,7 @@ func (s *Service) receiveKeyChanges() {
 		default:
 		}
 
-		kc, err := s.keyChanged.KeyChanged()
+		kc, err := s.keyChanged.KeysChanged()
 		if err != nil {
 			log.Printf("TODO: %v", err)
 		}

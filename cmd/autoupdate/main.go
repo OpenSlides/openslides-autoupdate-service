@@ -12,6 +12,8 @@ import (
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
+	"github.com/openslides/openslides-autoupdate-service/internal/redis"
+	"github.com/openslides/openslides-autoupdate-service/internal/redis/conn"
 )
 
 func main() {
@@ -19,9 +21,17 @@ func main() {
 
 	f := faker{bufio.NewReader(os.Stdin), make(map[string][]byte)}
 
-	// Choose the streaming service
-	var receiver autoupdate.KeyChangedReceiver
+	// Choose the topic service
+	var receiver autoupdate.KeysChangedReceiver
 	switch getEnv("MESSAGIN_SERVICE", "fake") {
+	case "redis":
+		conn := conn.New(getEnv("REDIS_ADDR", "localhost:6379"))
+		if getEnv("REDIS_TEST_CONN", "true") == "true" {
+			if err := conn.TestConn(); err != nil {
+				log.Fatalf("Can not connect to redis: %v", err)
+			}
+		}
+		receiver = &redis.Service{Conn: conn}
 	default:
 		receiver = f
 	}
