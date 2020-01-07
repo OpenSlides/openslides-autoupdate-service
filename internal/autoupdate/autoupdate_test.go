@@ -143,7 +143,7 @@ func newMockKeyChanged() mockKeyChanged {
 	return m
 }
 
-func (m mockKeyChanged) KeyChanged() (KeyChanges, error) {
+func (m mockKeyChanged) KeysChanged() (KeyChanges, error) {
 	select {
 	case v := <-m.c:
 		return v, nil

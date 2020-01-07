@@ -18,7 +18,7 @@ type faker struct {
 	data map[string][]byte
 }
 
-func (r faker) KeyChanged() (autoupdate.KeyChanges, error) {
+func (r faker) KeysChanged() (autoupdate.KeyChanges, error) {
 	kc := autoupdate.KeyChanges{}
 	msg, err := r.buf.ReadString('\n')
 	if err == io.EOF {

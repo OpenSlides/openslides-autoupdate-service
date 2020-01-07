@@ -11,12 +11,12 @@ type Authenticator interface {
 	Authenticate(context.Context, *http.Request) (int, error)
 }
 
-// KeyChangedReceiver returns keys that have changes.
+// KeysChangedReceiver returns keys that have changes.
 // Blocks for some time until there are changed data.
 // An implementation should not block forever but return
 // empty data after some time to be called again.
-type KeyChangedReceiver interface {
-	KeyChanged() (KeyChanges, error)
+type KeysChangedReceiver interface {
+	KeysChanged() (KeyChanges, error)
 }
 
 // KeyChanges holds the information about changed keys
