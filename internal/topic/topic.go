@@ -129,8 +129,12 @@ func (t *Topic) Prune(until time.Time) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
+	if t.first == nil || t.first.next == nil {
+		return
+	}
+
 	t.index = make(map[uint64]*node)
-	for n := t.first; n != nil; n = n.next {
+	for n := t.first; n.next != nil; n = n.next {
 		if n.t.After(until) {
 			t.index[n.id] = n
 			continue

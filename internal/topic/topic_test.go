@@ -199,6 +199,37 @@ func TestTopicEmptyLastID(t *testing.T) {
 	}
 }
 
+func TestTopicDontPruneLastNode(t *testing.T) {
+	t.Parallel()
+	top := topic.Topic{}
+	expect := []string{"first", "key1"}
+	top.Save(expect)
+	top.Save(expect)
+	top.Prune(time.Now())
+	_, id, err := top.Get(0)
+	if err != nil {
+		t.Fatalf("Did not expect an error, got: %v", err)
+	}
+	if id != 2 {
+		t.Fatalf("Did expect id to be 2, got: %v", id)
+	}
+}
+
+func TestTopicPruneExitSoon(t *testing.T) {
+	t.Parallel()
+	top := topic.Topic{}
+	expect := []string{"first", "key1"}
+	top.Save(expect)
+	top.Prune(time.Now())
+	_, id, err := top.Get(0)
+	if err != nil {
+		t.Fatalf("Did not expect an error, got: %v", err)
+	}
+	if id != 1 {
+		t.Fatalf("Expect id to be 1, got: %v", id)
+	}
+}
+
 func cmpSlice(one, two []string) bool {
 	if len(one) != len(two) {
 		return false
