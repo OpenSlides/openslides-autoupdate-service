@@ -56,8 +56,9 @@ func (h *Handler) autoupdate(w http.ResponseWriter, r *http.Request) error {
 	for {
 		tid, data, err = h.s.echo(r.Context(), uid, tid, keys)
 		if err != nil {
-			// TODO: This will return an 200 status code
-			return fmt.Errorf("can not get echo data: %w", err)
+			// It is not possible to return the error after content was sent to the client
+			log.Printf("Error: %v", err)
+			return nil
 		}
 		pushData(w, data)
 		select {

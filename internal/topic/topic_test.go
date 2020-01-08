@@ -52,7 +52,7 @@ func TestTopicReadSecond(t *testing.T) {
 		t.Errorf("Did not expect an error, got: %v", err)
 	}
 	if !cmpSlice(got, expect[1:]) {
-		t.Errorf("Expected to get %v, got: %v", expect[1:], got)
+		t.Errorf("Expected Get(%d) to return %v, got: %v", id, expect[1:], got)
 	}
 }
 
@@ -184,7 +184,7 @@ func TestTopicDontPruneLastNode(t *testing.T) {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
 	if id != 2 {
-		t.Fatalf("Did expect id to be 2, got: %v", id)
+		t.Fatalf("Expect id to be 2, got: %v", id)
 	}
 }
 
@@ -200,6 +200,19 @@ func TestTopicPruneExitSoon(t *testing.T) {
 	}
 	if id != 1 {
 		t.Fatalf("Expect id to be 1, got: %v", id)
+	}
+}
+
+func TestTopicIndexAfterPrune(t *testing.T) {
+	t.Parallel()
+	top := topic.Topic{}
+	expect := []string{"first", "key1"}
+	top.Save(expect)
+	top.Save(expect)
+	top.Prune(time.Now())
+	_, _, err := top.Get(2)
+	if err != nil {
+		t.Fatalf("Did not expect an error, got: %v", err)
 	}
 }
 

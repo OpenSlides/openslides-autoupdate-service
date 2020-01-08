@@ -23,7 +23,6 @@ type Topic struct {
 	mu    sync.RWMutex
 	first *node
 	last  *node
-	index map[uint64]*node
 
 	waitingMu sync.Mutex
 	waiting   []chan struct{}
@@ -45,7 +44,6 @@ func (t *Topic) Save(keys []string) uint64 {
 	id := uint64(0)
 	if t.first == nil {
 		t.first = newNode
-		t.index = make(map[uint64]*node)
 	} else {
 		id = t.last.id
 		t.last.next = newNode
@@ -54,7 +52,6 @@ func (t *Topic) Save(keys []string) uint64 {
 	newNode.id = id + 1
 	newNode.t = time.Now()
 	newNode.value = keys
-	t.index[newNode.id] = newNode
 
 	for _, c := range t.waiting {
 		close(c)
@@ -87,23 +84,17 @@ func (t *Topic) Get(ctx context.Context, id uint64) ([]string, uint64, error) {
 	}
 	defer t.mu.RUnlock()
 
-	maxID := uint64(0)
-	if t.last != nil {
-		maxID = t.last.id
+	maxID := t.LastID()
+
+	if id == 0 {
+		return runNode(t.first), maxID, nil
 	}
 
-	if id == uint64(0) {
-		out := runNode(t.first)
-		return out, maxID, nil
-	}
-
-	n, ok := t.index[id]
-	if !ok {
+	n := t.index(id)
+	if n == nil {
 		return nil, 0, ErrUnknownID{ID: id, First: t.first.id}
 	}
-
-	out := runNode(n.next)
-	return out, maxID, nil
+	return runNode(n.next), maxID, nil
 }
 
 // LastID returns the last if of topic
@@ -125,11 +116,9 @@ func (t *Topic) Prune(until time.Time) {
 		return
 	}
 
-	t.index = make(map[uint64]*node)
 	for n := t.first; n.next != nil; n = n.next {
 		if n.t.After(until) {
-			t.index[n.id] = n
-			continue
+			return
 		}
 		t.first = n.next
 	}
@@ -153,4 +142,13 @@ func (t *Topic) wait(c chan struct{}) {
 	t.waitingMu.Lock()
 	defer t.waitingMu.Unlock()
 	t.waiting = append(t.waiting, c)
+}
+
+func (t *Topic) index(id uint64) *node {
+	for n := t.first; n != nil; n = n.next {
+		if n.id == id {
+			return n
+		}
+	}
+	return nil
 }
