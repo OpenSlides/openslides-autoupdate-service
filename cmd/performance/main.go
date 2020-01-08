@@ -15,16 +15,16 @@ const (
 )
 
 func main() {
-	//p := newPool(redisAddr)
+	p := newPool(redisAddr)
 	// Create clients
 	clients := make([]*client, connections)
 	for i := 0; i < connections; i++ {
 		clients[i] = &client{}
 	}
-
-	// Connect clients
 	keys := make(chan string, connections)
 	errs := []error{}
+
+	// Connect test
 	start := time.Now()
 	for _, c := range clients {
 		go func(c *client) {
@@ -36,10 +36,11 @@ func main() {
 	readClients(connections, keys)
 	log.Printf("Connect %d clients took %d milliseconds", connections, time.Since(start)/time.Millisecond)
 
-	// start = time.Now()
-	// p.sendKey("user/5/name")
-	// readClients(connections, keys)
-	// log.Printf("Send and Receive one key took %d milliseconds", time.Since(start)/time.Millisecond)
+	// Update one test
+	start = time.Now()
+	p.sendKey("user/5/name")
+	readClients(connections, keys)
+	log.Printf("Send and Receive one key took %d milliseconds", time.Since(start)/time.Millisecond)
 
 	for len(errs) == 0 {
 		readClients(connections, keys)

@@ -70,7 +70,7 @@ func (t *Topic) Save(keys []string) uint64 {
 func (t *Topic) Get(ctx context.Context, id uint64) ([]string, uint64, error) {
 	t.mu.RLock()
 
-	if t.last == nil || id > t.last.id {
+	if t.last == nil || id >= t.last.id {
 		c := make(chan struct{})
 		t.wait(c)
 		t.mu.RUnlock()

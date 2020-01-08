@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"time"
 
 	"github.com/garyburd/redigo/redis"
@@ -25,7 +26,10 @@ func newPool(addr string) *redisPool {
 
 func (p *redisPool) sendKey(key string) {
 	conn := p.pool.Get()
-	defer p.pool.Close()
+	defer conn.Close()
 
-	conn.Do("XADD", redisTopic, "*", "updated", key)
+	_, err := conn.Do("XADD", redisTopic, "*", "updated", key)
+	if err != nil {
+		log.Fatalf("Can not send data to redis: %v", err)
+	}
 }
