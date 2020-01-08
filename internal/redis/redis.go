@@ -2,7 +2,6 @@ package redis
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 )
@@ -36,6 +35,5 @@ func (s *Service) KeysChanged() (autoupdate.KeyChanges, error) {
 	if id != "" {
 		s.lastID = id
 	}
-	log.Printf("Got update for keys: %v", kc.Updated)
 	return kc, nil
 }

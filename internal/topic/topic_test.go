@@ -52,7 +52,7 @@ func TestTopicReadSecond(t *testing.T) {
 		t.Errorf("Did not expect an error, got: %v", err)
 	}
 	if !cmpSlice(got, expect[1:]) {
-		t.Errorf("Expected to get %v, got: %v", expect[1:], got)
+		t.Errorf("Expected Get(%d) to return %v, got: %v", id, expect[1:], got)
 	}
 }
 
@@ -184,7 +184,7 @@ func TestTopicDontPruneLastNode(t *testing.T) {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
 	if id != 2 {
-		t.Fatalf("Did expect id to be 2, got: %v", id)
+		t.Fatalf("Expect id to be 2, got: %v", id)
 	}
 }
 
@@ -243,6 +243,39 @@ func TestTopicBlockUntilCtxDone(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		if _, _, err := top.Get(ctx, 1); err != nil {
+			t.Fatalf("Did not expect an error, got: %v", err)
+		}
+		close(done)
+	}()
+
+	timer := time.NewTimer(time.Millisecond)
+	defer timer.Stop()
+
+	select {
+	case <-done:
+		t.Errorf("Expect Get() not to return becore Close() is called")
+	case <-timer.C:
+		closeCtx()
+	}
+
+	timer.Reset(100 * time.Millisecond)
+	select {
+	case <-done:
+	case <-timer.C:
+		t.Errorf("Expect Get() to return after Close() is called")
+	}
+}
+
+func TestTopicBlockOnHighestID(t *testing.T) {
+	t.Parallel()
+	top := topic.Topic{}
+	id := top.Save([]string{"data"})
+	ctx, closeCtx := context.WithCancel(context.Background())
+	defer closeCtx()
+
+	done := make(chan struct{})
+	go func() {
+		if _, _, err := top.Get(ctx, id); err != nil {
 			t.Fatalf("Did not expect an error, got: %v", err)
 		}
 		close(done)
