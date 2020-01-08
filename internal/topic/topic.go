@@ -4,6 +4,7 @@
 package topic
 
 import (
+	"context"
 	"sync"
 	"time"
 )
@@ -13,9 +14,11 @@ import (
 // to get all strings or the strings greater than a given
 // id.
 // A Topic is save for concourent use.
+// If a topic is initialized with a Closed-channel, it can be closed
+// by closing this channel. It is not expected that the Closed channel is added
+// or removed afterwards
 type Topic struct {
-	// WaitDuration defines how long a get call waits for new data. Default is 1 second.
-	WaitDuration time.Duration
+	Closed chan struct{}
 
 	mu    sync.RWMutex
 	first *node
@@ -65,33 +68,22 @@ func (t *Topic) Save(keys []string) uint64 {
 // the id are returned.
 // If the id is lower then the lowest id, an error of type
 // ErrUnknownTopicID is returned.
-// If there is no new data, Get blocks for WaitDuration and returns
-// keys if there are inserted in the meantime. If there are no
-// inserted keys, it returns an empty list and the given id.
-// If an id is given that is higher then the highest id Get could
-// block much longer then WaitDuration, in theory it could block for
-// ever. Therefore only the id returned by save() or get() should
-// be used as input value.
-func (t *Topic) Get(id uint64) ([]string, uint64, error) {
+// If there is no new data, Get blocks until threre is new data
+// or the topic is closed or the given context is done.
+func (t *Topic) Get(ctx context.Context, id uint64) ([]string, uint64, error) {
 	t.mu.RLock()
 
-	if t.first == nil || id > t.last.id {
+	if t.last == nil || id > t.last.id {
 		c := make(chan struct{})
 		t.wait(c)
 		t.mu.RUnlock()
-		// Wait for c to get closed by a writer or for one second.
-		d := t.WaitDuration
-		if d == 0 {
-			d = time.Second
-		}
-		timer := time.NewTimer(d)
-		defer timer.Stop()
 		select {
 		case <-c:
-			return t.Get(id)
-		case <-timer.C:
-			return []string{}, id, nil
+			return t.Get(ctx, id)
+		case <-t.Closed:
+		case <-ctx.Done():
 		}
+		return []string{}, id, nil
 	}
 	defer t.mu.RUnlock()
 
