@@ -1,6 +1,7 @@
 package topic_test
 
 import (
+	"context"
 	"sort"
 	"testing"
 	"time"
@@ -14,7 +15,7 @@ func TestTopicSave(t *testing.T) {
 	expect := []string{"key1", "key2"}
 	top.Save(expect)
 
-	got, _, err := top.Get(0)
+	got, _, err := top.Get(context.Background(), 0)
 	if err != nil {
 		t.Errorf("Did not expect an error, got: %v", err)
 	}
@@ -30,7 +31,7 @@ func TestTopicSaveTwice(t *testing.T) {
 	top.Save(expect[:1])
 	top.Save(expect[1:])
 
-	got, _, err := top.Get(0)
+	got, _, err := top.Get(context.Background(), 0)
 	if err != nil {
 		t.Errorf("Did not expect an error, got: %v", err)
 	}
@@ -46,7 +47,7 @@ func TestTopicReadSecond(t *testing.T) {
 	id := top.Save(expect[:1])
 	top.Save(expect[1:])
 
-	got, _, err := top.Get(id)
+	got, _, err := top.Get(context.Background(), id)
 	if err != nil {
 		t.Errorf("Did not expect an error, got: %v", err)
 	}
@@ -62,7 +63,7 @@ func TestTopicSaveTwiceSameValue(t *testing.T) {
 	top.Save(expect[:1])
 	top.Save(expect[1:])
 
-	got, _, err := top.Get(0)
+	got, _, err := top.Get(context.Background(), 0)
 	if err != nil {
 		t.Errorf("Did not expect an error, got: %v", err)
 	}
@@ -83,7 +84,7 @@ func TestTopicPrune(t *testing.T) {
 
 	top.Prune(ti)
 
-	got, _, err := top.Get(0)
+	got, _, err := top.Get(context.Background(), 0)
 	if err != nil {
 		t.Errorf("Did not expect an error, got: %v", err)
 	}
@@ -104,7 +105,7 @@ func TestTopicReadPrunedID(t *testing.T) {
 
 	top.Prune(ti)
 
-	_, _, err := top.Get(1)
+	_, _, err := top.Get(context.Background(), 1)
 	topicErr, ok := err.(topic.ErrUnknownID)
 	if !ok {
 		t.Errorf("Expected topic.ErrUnknownID, got: %v", err)
@@ -131,7 +132,7 @@ func TestTopicReadBlocking(t *testing.T) {
 	}()
 	go func() {
 		var err error
-		got, _, err := top.Get(0)
+		got, _, err := top.Get(context.Background(), 0)
 		if err != nil {
 			t.Errorf("Did not expect an error, got: %v", err)
 		}
@@ -145,34 +146,6 @@ func TestTopicReadBlocking(t *testing.T) {
 		if len(got) != 1 || got[0] != "value" {
 			t.Errorf("Expected to get [value] got: %v", got)
 		}
-	case <-tick.C:
-		t.Errorf("Expected to get the data in time, wait for 100 Milliseconds")
-	}
-}
-
-func TestTopicReadBlockingNoWrite(t *testing.T) {
-	t.Parallel()
-	top := topic.Topic{WaitDuration: 10 * time.Millisecond}
-	done := make(chan struct{})
-	go func() {
-		var err error
-		got, id, err := top.Get(1)
-		if err != nil {
-			t.Errorf("Did not expect an error, got: %v", err)
-		}
-		if len(got) != 0 {
-			t.Errorf("did not expect data, got: %v", got)
-		}
-		if id != 1 {
-			t.Errorf("Expect id to be 1, got: %d", id)
-		}
-		close(done)
-	}()
-
-	tick := time.NewTimer(time.Second)
-	defer tick.Stop()
-	select {
-	case <-done:
 	case <-tick.C:
 		t.Errorf("Expected to get the data in time, wait for 100 Milliseconds")
 	}
@@ -206,7 +179,7 @@ func TestTopicDontPruneLastNode(t *testing.T) {
 	top.Save(expect)
 	top.Save(expect)
 	top.Prune(time.Now())
-	_, id, err := top.Get(0)
+	_, id, err := top.Get(context.Background(), 0)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
@@ -221,13 +194,124 @@ func TestTopicPruneExitSoon(t *testing.T) {
 	expect := []string{"first", "key1"}
 	top.Save(expect)
 	top.Prune(time.Now())
-	_, id, err := top.Get(0)
+	_, id, err := top.Get(context.Background(), 0)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
 	if id != 1 {
 		t.Fatalf("Expect id to be 1, got: %v", id)
 	}
+}
+
+func TestTopicBlockUntilClose(t *testing.T) {
+	t.Parallel()
+	closed := make(chan struct{})
+	top := topic.Topic{Closed: closed}
+
+	done := make(chan struct{})
+	go func() {
+		if _, _, err := top.Get(context.Background(), 1); err != nil {
+			t.Fatalf("Did not expect an error, got: %v", err)
+		}
+		close(done)
+	}()
+
+	timer := time.NewTimer(time.Millisecond)
+	defer timer.Stop()
+
+	select {
+	case <-done:
+		t.Errorf("Expect Get() not to return becore Close() is called")
+	case <-timer.C:
+		close(closed)
+	}
+
+	timer.Reset(100 * time.Millisecond)
+	select {
+	case <-done:
+	case <-timer.C:
+		t.Errorf("Expect Get() to return after Close() is called")
+	}
+}
+
+func TestTopicBlockUntilCtxDone(t *testing.T) {
+	t.Parallel()
+	top := topic.Topic{}
+	ctx, closeCtx := context.WithCancel(context.Background())
+	defer closeCtx()
+
+	done := make(chan struct{})
+	go func() {
+		if _, _, err := top.Get(ctx, 1); err != nil {
+			t.Fatalf("Did not expect an error, got: %v", err)
+		}
+		close(done)
+	}()
+
+	timer := time.NewTimer(time.Millisecond)
+	defer timer.Stop()
+
+	select {
+	case <-done:
+		t.Errorf("Expect Get() not to return becore Close() is called")
+	case <-timer.C:
+		closeCtx()
+	}
+
+	timer.Reset(100 * time.Millisecond)
+	select {
+	case <-done:
+	case <-timer.C:
+		t.Errorf("Expect Get() to return after Close() is called")
+	}
+}
+
+func TestTopicGet0AfterClosed(t *testing.T) {
+	t.Parallel()
+	closed := make(chan struct{})
+	top := topic.Topic{Closed: closed}
+	top.Save([]string{"foo"})
+	close(closed)
+
+	keys, _, err := top.Get(context.Background(), 0)
+	if err != nil {
+		t.Errorf("Expect no error, got: %v", err)
+	}
+	if len(keys) == 0 {
+		t.Errorf("Expected %d keys in the topic, got none", 1)
+	}
+}
+
+func TestTopicGetFutureAfterClosed(t *testing.T) {
+	t.Parallel()
+	closed := make(chan struct{})
+	top := topic.Topic{Closed: closed}
+	top.Save([]string{"foo"})
+	close(closed)
+
+	done := make(chan struct{})
+
+	go func() {
+		defer close(done)
+		keys, _, err := top.Get(context.Background(), 2)
+		if err != nil {
+			t.Errorf("Expect no error, got: %v", err)
+		}
+
+		if len(keys) != 0 {
+			t.Errorf("Expected empty data. got %d keys", len(keys))
+		}
+	}()
+
+	timer := time.NewTimer(time.Millisecond)
+	defer timer.Stop()
+
+	select {
+	case <-done:
+	case <-timer.C:
+		t.Errorf("Expect Get() not return immediatly")
+	}
+
 }
 
 func cmpSlice(one, two []string) bool {

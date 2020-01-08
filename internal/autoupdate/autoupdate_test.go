@@ -46,6 +46,11 @@ func TestEchoNoNewData(t *testing.T) {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
 
+	go func() {
+		// Simulate, that the client closes the connection
+		cancel()
+	}()
+
 	ntid, data, err := s.echo(ctx, 1, tid, keys)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)

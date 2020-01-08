@@ -27,6 +27,7 @@ func New(restricter keysbuilder.Restricter, keyChanges KeysChangedReceiver) *Ser
 		keyChanged: keyChanges,
 		closed:     make(chan struct{}),
 	}
+	s.topic = topic.Topic{Closed: s.closed}
 	go s.receiveKeyChanges()
 	go s.pruneTopic()
 	return s
@@ -34,7 +35,11 @@ func New(restricter keysbuilder.Restricter, keyChanges KeysChangedReceiver) *Ser
 
 // Close calls the shutdown logic of the service
 func (s *Service) Close() {
-	close(s.closed)
+	select {
+	case <-s.closed:
+	default:
+		close(s.closed)
+	}
 }
 
 func (s *Service) pruneTopic() {
@@ -101,7 +106,7 @@ func (s *Service) echo(ctx context.Context, uid int, tid uint64, keys []string) 
 		keysSlice[key] = true
 	}
 
-	newKeys, tid, err := s.topic.Get(tid)
+	newKeys, tid, err := s.topic.Get(ctx, tid)
 	if err != nil {
 		return 0, nil, fmt.Errorf("can not get new data: %w", err)
 	}
