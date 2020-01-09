@@ -76,43 +76,40 @@ func (s *Service) receiveKeyChanges() {
 	}
 }
 
-func (s *Service) prepare(ctx context.Context, uid int, kr keysrequest.KeysRequest) (uint64, []string, map[string][]byte, error) {
-	b := keysbuilder.Builder{
-		User:    uid,
-		Restr:   s.restricter,
-		Request: kr,
-	}
-	keys, err := b.Keys()
+func (s *Service) prepare(ctx context.Context, uid int, kr keysrequest.KeysRequest) (uint64, *keysbuilder.Builder, map[string][]byte, error) {
+	b, err := keysbuilder.New(uid, s.restricter, kr)
 	if err != nil {
 		if errors.Is(err, keysrequest.ErrInvalid{}) {
-			err = new400(err)
+			err = raise400(err)
 		}
 		return 0, nil, nil, fmt.Errorf("can not build keys: %w", err)
 	}
-	if len(keys) == 0 {
-		return 0, nil, nil, new400(fmt.Errorf("No keys requested"))
-	}
-	tid := s.topic.LastID()
-	data, err := s.restricter.Restrict(ctx, uid, keys)
+
+	data, err := s.restricter.Restrict(ctx, uid, b.Keys())
 	if err != nil {
 		return 0, nil, nil, fmt.Errorf("can not restrict data: %v", err)
 	}
-	return tid, keys, data, nil
+	return s.topic.LastID(), b, data, nil
 }
 
-func (s *Service) echo(ctx context.Context, uid int, tid uint64, keys []string) (uint64, map[string][]byte, error) {
-	keysSlice := make(map[string]bool, len(keys))
-	for _, key := range keys {
-		keysSlice[key] = true
-	}
-
-	newKeys, tid, err := s.topic.Get(ctx, tid)
+func (s *Service) echo(ctx context.Context, uid int, tid uint64, b *keysbuilder.Builder) (uint64, map[string][]byte, error) {
+	changedKeys, tid, err := s.topic.Get(ctx, tid)
 	if err != nil {
 		return 0, nil, fmt.Errorf("can not get new data: %w", err)
 	}
-	keys = []string{}
-	for _, key := range newKeys {
-		if !keysSlice[key] {
+	oldKeys := b.Keys()
+	if err := b.Update(changedKeys); err != nil {
+		return 0, nil, fmt.Errorf("can not update keybuilder: %w", err)
+	}
+	keys := keysDiff(oldKeys, b.Keys())
+
+	changedSlice := make(map[string]bool, len(changedKeys))
+	for _, key := range changedKeys {
+		changedSlice[key] = true
+	}
+
+	for _, key := range b.Keys() {
+		if !changedSlice[key] {
 			continue
 		}
 		keys = append(keys, key)
@@ -123,4 +120,19 @@ func (s *Service) echo(ctx context.Context, uid int, tid uint64, keys []string) 
 		return 0, nil, fmt.Errorf("can not restrict data: %v", err)
 	}
 	return tid, data, nil
+}
+
+func keysDiff(old []string, new []string) []string {
+	slice := make(map[string]bool, len(old))
+	for _, key := range old {
+		slice[key] = true
+	}
+	added := []string{}
+	for _, key := range new {
+		if slice[key] {
+			continue
+		}
+		added = append(added, key)
+	}
+	return added
 }

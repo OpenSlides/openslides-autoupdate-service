@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -47,23 +48,36 @@ func (r faker) KeysChanged() (autoupdate.KeyChanges, error) {
 func (r faker) Restrict(ctx context.Context, uid int, keys []string) (map[string][]byte, error) {
 	out := make(map[string][]byte, len(keys))
 	for _, key := range keys {
+		o := r.data[key]
+		if len(o) != 0 {
+			out[key] = o
+			continue
+		}
 		switch {
 		case strings.HasSuffix(key, "_id"):
 			out[key] = []byte("1")
 		case strings.HasSuffix(key, "_ids"):
 			out[key] = []byte("[1,2]")
 		default:
-			o := r.data[key]
-			if len(o) == 0 {
-				o = []byte("some data")
-			}
-			out[key] = o
+			out[key] = []byte("some data")
 		}
 	}
 	return out, nil
 }
 
 func (r faker) IDsFromKey(ctx context.Context, uid int, mid int, key string) ([]int, error) {
+	o := r.data[key]
+	if len(o) != 0 {
+		var id int
+		if err := json.Unmarshal(o, &id); err != nil {
+			var ids []int
+			if err := json.Unmarshal(o, &ids); err != nil {
+				return nil, fmt.Errorf("Invalid value %s for field %s", o, key)
+			}
+			return ids, nil
+		}
+		return []int{id}, nil
+	}
 	if strings.HasPrefix(key, "not_exist") {
 		return nil, nil
 	}
