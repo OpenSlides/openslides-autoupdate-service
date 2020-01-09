@@ -43,18 +43,27 @@ func (h *Handler) autoupdate(w http.ResponseWriter, r *http.Request) error {
 		if errors.Is(err, io.EOF) {
 			return write400(w, "Empty body, expected key request.\n")
 		}
+		var keysrequestErr keysrequest.ErrInvalid
+		if errors.As(err, &keysrequestErr) {
+			return write400(w, fmt.Sprintf("Can not parse key request: %v\n", keysrequestErr.Error()))
+		}
+		var jsonErr keysrequest.ErrJSON
+		if errors.As(err, &jsonErr) {
+			return write400(w, "Request body has to be valid json.\n")
+		}
+
 		return fmt.Errorf("can not parse request body: %w", err)
 	}
 	defer r.Body.Close()
 
-	tid, keys, data, err := h.s.prepare(r.Context(), uid, keysReq)
+	tid, b, data, err := h.s.prepare(r.Context(), uid, keysReq)
 	if err != nil {
 		return fmt.Errorf("can not get first data: %w", err)
 	}
 	pushData(w, data)
 
 	for {
-		tid, data, err = h.s.echo(r.Context(), uid, tid, keys)
+		tid, data, err = h.s.echo(r.Context(), uid, tid, b)
 		if err != nil {
 			// It is not possible to return the error after content was sent to the client
 			log.Printf("Error: %v", err)
@@ -101,7 +110,7 @@ type err400 struct {
 	err error
 }
 
-func new400(e error) err400 {
+func raise400(e error) err400 {
 	return err400{err: e}
 }
 

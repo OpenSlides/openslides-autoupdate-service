@@ -10,4 +10,3 @@
 # Internal
 * Find a place for mocks and interfaces
 * Run code checks in tests/Dockerfile
-* .travis (by calling the tests/Dockerfile?)
