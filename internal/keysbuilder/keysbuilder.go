@@ -15,10 +15,10 @@ const keySep = "/"
 // Builder ...
 type Builder struct {
 	user        int
-	ids         []int
 	restricter  Restricter
 	keysRequest keysrequest.KeysRequest
-	n           *node
+	cache       map[string][]int
+	keys        map[string]bool
 }
 
 // New creates a new Builder instance
@@ -27,17 +27,21 @@ func New(user int, restricter Restricter, keysRequest keysrequest.KeysRequest) (
 		user:        user,
 		restricter:  restricter,
 		keysRequest: keysRequest,
+		cache:       make(map[string][]int),
 	}
-	b.ids = b.keysRequest.IDs
-	if b.ids == nil {
+	// Get ids from the request or all ids of the collection
+	ids := b.keysRequest.IDs
+	if ids == nil {
 		var err error
-		b.ids, err = b.restricter.IDsFromCollection(context.TODO(), b.user, b.keysRequest.MeetingID, b.keysRequest.Collection)
+		ids, err = b.restricter.IDsFromCollection(context.TODO(), b.user, b.keysRequest.MeetingID, b.keysRequest.Collection)
 		if err != nil {
 			return nil, fmt.Errorf("can not get all ids for collection \"%s\": %w", b.keysRequest.Collection, err)
 		}
 	}
-	b.n = &node{fd: b.keysRequest.FieldDescription}
-	if err := b.run(b.n); err != nil {
+
+	// Save the ids in the cache
+	b.cache[b.keysRequest.Collection] = ids
+	if err := b.genKeys(); err != nil {
 		return nil, err
 	}
 	return b, nil
@@ -49,58 +53,45 @@ func (b *Builder) Update(keys []string) error {
 		if !(strings.HasSuffix(key, "_id") || strings.HasSuffix(key, "_ids")) {
 			continue
 		}
-		if err := b.reset(b.n, key); err != nil {
-			return err
-		}
+		delete(b.cache, key)
 	}
-	return nil
+	return b.genKeys()
 }
 
 // Keys returns the keys
 func (b *Builder) Keys() []string {
-	return b.n.run()
+	out := make([]string, 0, len(b.keys))
+	for key := range b.keys {
+		out = append(out, key)
+	}
+	return out
 }
 
-func (b *Builder) reset(n *node, key string) error {
-	for _, field := range n.fields {
-		if field.fd.Null() {
-			// No need to reset non relation fields
-			continue
-		}
-		var err error
-		// Either test sub fields or reset node
-		if key != field.name {
-			err = b.reset(field, key)
-		} else {
-			err = b.run(field)
-		}
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func (b *Builder) genKeys() error {
+	b.keys = make(map[string]bool)
+	return b.run(b.keysRequest.Collection, b.keysRequest.FieldDescription)
 }
-func (b *Builder) run(n *node) error {
-	n.fields = []*node{}
-	ids := b.ids
-	if n.name != "" {
+
+func (b *Builder) run(name string, fd keysrequest.FieldDescription) error {
+	ids, ok := b.cache[name]
+	if !ok {
 		var err error
-		ids, err = b.restricter.IDsFromKey(context.TODO(), b.user, b.keysRequest.MeetingID, n.name)
+		ids, err = b.restricter.IDsFromKey(context.TODO(), b.user, b.keysRequest.MeetingID, name)
 		if err != nil {
 			return err
 		}
+		b.cache[name] = ids
 	}
 	for _, id := range ids {
-		for field, fd := range n.fd.Fields {
-			key := buildKey(n.fd.Collection, id, field)
-			node := &node{name: key, fd: fd}
-			n.fields = append(n.fields, node)
-			if fd.Null() {
+		for field, ifd := range fd.Fields {
+			key := buildKey(fd.Collection, id, field)
+			b.keys[key] = true
+			if ifd.Null() {
 				// field is not a reference
 				continue
 			}
 
-			if err := b.run(node); err != nil {
+			if err := b.run(key, ifd); err != nil {
 				return err
 			}
 		}

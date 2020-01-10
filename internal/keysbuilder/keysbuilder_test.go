@@ -42,8 +42,8 @@ func TestKeys(t *testing.T) {
 			}
 
 			keys := b.Keys()
-			if !cmpSlice(tt.keys, keys) {
-				t.Errorf("Expected %v, got: %v", tt.keys, keys)
+			if diff := cmpSet(set(tt.keys...), set(keys...)); diff != nil {
+				t.Errorf("Expected %v, got: %v", tt.keys, diff)
 			}
 		})
 	}
@@ -55,27 +55,97 @@ func TestUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Did not expect an error, got :%v", err)
 	}
-	restr := mockRestricter{nextIDs: []int{1}}
+	restr := mockRestricter{}
 	b, err := keysbuilder.New(1, &restr, kr)
 	if err != nil {
 		t.Errorf("Expect Keys() not to return an error, got: %v", err)
 	}
 
 	keys := b.Keys()
-	expect := []string{"user/1/note_id", "note/1/important"}
-	if !cmpSlice(expect, keys) {
+	expect := set("user/1/note_id", "note/1/important")
+	if cmpSet(expect, set(keys...)) != nil {
 		t.Errorf("Expected %v, got: %v", expect, keys)
 	}
+	if len(restr.reqLog) != 1 {
+		t.Errorf("Expected %d requests to the restricter, got: %d: %v", 1, len(restr.reqLog), restr.reqLog)
+	}
 
-	restr.nextIDs = []int{2}
+	restr.reqLog = make([]string, 0)
+	restr.data = map[string][]int{"user/1/note_id": []int{2}}
 	if err := b.Update([]string{"user/1/note_id"}); err != nil {
 		t.Errorf("Expect Update() not to return an error, got: %v", err)
 	}
 
 	keys = b.Keys()
-	expect = []string{"user/1/note_id", "note/2/important"}
-	if !cmpSlice(expect, keys) {
+	expect = set("user/1/note_id", "note/2/important")
+	if diff := cmpSet(expect, set(keys...)); diff != nil {
+		t.Errorf("Expected %v, got: %v", mapKeys(expect), keys)
+	}
+	if len(restr.reqLog) != 1 {
+		t.Errorf("Expected %d requests to the restricter, got: %d: %v", 1, len(restr.reqLog), restr.reqLog)
+	}
+}
+
+func TestUpdateKomplex(t *testing.T) {
+	req := `{
+		"ids": [1],
+		"collection": "user",
+		"fields": {
+			"group_ids": {
+				"collection": "group",
+				"fields": {
+					"perm_ids": {
+						"collection": "perm",
+						"fields": {"name": null}
+					}
+				}
+			}
+		}
+	}`
+	dbInit := map[string][]int{
+		"user/1/group_ids": []int{1, 2},
+		"group/1/perm_ids": []int{1, 2},
+		"group/2/perm_ids": []int{2, 3},
+		"group/3/perm_ids": []int{3, 4},
+	}
+	dbChanged := map[string][]int{
+		"user/1/group_ids": []int{2, 3},
+		"group/1/perm_ids": []int{1, 2},
+		"group/2/perm_ids": []int{2, 3},
+		"group/3/perm_ids": []int{3, 4},
+	}
+	kr, err := keysrequest.FromJSON((strings.NewReader(req)))
+	if err != nil {
+		t.Fatalf("Did not expect an error, got :%v", err)
+	}
+	restr := mockRestricter{data: dbInit}
+	b, err := keysbuilder.New(1, &restr, kr)
+	if err != nil {
+		t.Errorf("Expect Keys() not to return an error, got: %v", err)
+	}
+
+	keys := b.Keys()
+	expect := set("user/1/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name", "perm/3/name")
+	if cmpSet(expect, set(keys...)) != nil {
 		t.Errorf("Expected %v, got: %v", expect, keys)
+	}
+	if len(restr.reqLog) != 3 {
+		t.Errorf("Expected %d requests to the restricter, got: %d: %v", 3, len(restr.reqLog), restr.reqLog)
+	}
+
+	restr.data = dbChanged
+	restr.reqLog = make([]string, 0)
+	if err := b.Update([]string{"user/1/group_ids"}); err != nil {
+		t.Errorf("Expect Update() not to return an error, got: %v", err)
+	}
+
+	keys = b.Keys()
+	expect = set("user/1/group_ids", "group/2/perm_ids", "group/3/perm_ids", "perm/2/name", "perm/3/name", "perm/4/name")
+	if diff := cmpSet(expect, set(keys...)); diff != nil {
+		t.Errorf("Expected %v, got: %v", mapKeys(expect), diff)
+	}
+	if len(restr.reqLog) != 2 {
+		t.Errorf("Expected %d requests to the restricter, got: %d: %v", 2, len(restr.reqLog), restr.reqLog)
 	}
 }
 
@@ -122,26 +192,29 @@ func TestUpdateRequestCount(t *testing.T) {
 				"collection": "group",
 				"fields": {
 					"perm_ids": {
-						"collection": "permission",
-						"fields": {"can_test": null}
+						"collection": "perm",
+						"fields": {"name": null}
 					}
 				}
 			}
 		}
 	}`
+	db1 := map[string][]int{"user/1/note_id": []int{2}, "user/1/group_ids": []int{2}}
 
 	tc := []struct {
 		name    string
 		request string
+		initDB  map[string][]int
+		newDB   map[string][]int
 		change  []string
 		count   int
 	}{
-		{"One relation", j1, []string{"user/1/note_id"}, 1},
-		{"One relation no change", j1, []string{"user/1/name"}, 0},
-		{"Two ids one change", j2, []string{"user/1/note_id"}, 1},
-		{"Two relation one change", j3, []string{"user/1/note_id"}, 1},
-		{"Two relation two changes", j3, []string{"user/1/note_id", "user/1/group_ids"}, 2},
-		{"Tree levels out changes", j4, []string{"user/1/group_ids"}, 2},
+		{"One relation", j1, nil, db1, []string{"user/1/note_id"}, 1},
+		{"One relation no change", j1, nil, db1, []string{"user/1/name"}, 0},
+		{"Two ids one change", j2, nil, db1, []string{"user/1/note_id"}, 1},
+		{"Two relation one change", j3, nil, db1, []string{"user/1/note_id"}, 1},
+		{"Two relation two changes", j3, nil, db1, []string{"user/1/note_id", "user/1/group_ids"}, 2},
+		{"Tree levels out changes", j4, nil, db1, []string{"user/1/group_ids"}, 1},
 	}
 
 	for _, tt := range tc {
@@ -150,18 +223,18 @@ func TestUpdateRequestCount(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Expect FromJSON not to return an error, got: %v", err)
 			}
-			restr := mockRestricter{}
+			restr := mockRestricter{data: tt.initDB}
 			b, err := keysbuilder.New(1, &restr, kr)
 			if err != nil {
 				t.Errorf("Expect Keys() not to return an error, got: %v", err)
 			}
-			restr.nextIDs = []int{2}
-			restr.reqCount = 0
+			restr.data = tt.newDB
+			restr.reqLog = make([]string, 0)
 			if err := b.Update(tt.change); err != nil {
 				t.Errorf("Expect Update() not to return an error, got: %v", err)
 			}
-			if tt.count != restr.reqCount {
-				t.Errorf("Expected %d requests to the restricter, got: %d", tt.count, restr.reqCount)
+			if tt.count != len(restr.reqLog) {
+				t.Errorf("Expected %d requests to the restricter, got: %d: %v", tt.count, len(restr.reqLog), restr.reqLog)
 			}
 		})
 	}
@@ -169,12 +242,12 @@ func TestUpdateRequestCount(t *testing.T) {
 }
 
 type mockRestricter struct {
-	nextIDs  []int
-	reqCount int
+	data   map[string][]int
+	reqLog []string
 }
 
 func (r *mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (map[string][]byte, error) {
-	r.reqCount++
+	r.reqLog = append(r.reqLog, strings.Join(keys, ", "))
 	out := make(map[string][]byte, len(keys))
 	for _, key := range keys {
 		switch {
@@ -190,9 +263,9 @@ func (r *mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (
 }
 
 func (r *mockRestricter) IDsFromKey(ctx context.Context, uid int, mid int, key string) ([]int, error) {
-	r.reqCount++
-	if len(r.nextIDs) > 0 {
-		return r.nextIDs, nil
+	r.reqLog = append(r.reqLog, key)
+	if ids, ok := r.data[key]; ok {
+		return ids, nil
 	}
 	if strings.HasPrefix(key, "not_exist") {
 		return nil, nil
@@ -210,9 +283,9 @@ func (r *mockRestricter) IDsFromKey(ctx context.Context, uid int, mid int, key s
 }
 
 func (r *mockRestricter) IDsFromCollection(ctx context.Context, uid int, mid int, collection string) ([]int, error) {
-	r.reqCount++
-	if len(r.nextIDs) > 0 {
-		return r.nextIDs, nil
+	r.reqLog = append(r.reqLog, collection)
+	if ids, ok := r.data[collection]; ok {
+		return ids, nil
 	}
 	if mid == 1 {
 		return []int{1}, nil
@@ -220,17 +293,39 @@ func (r *mockRestricter) IDsFromCollection(ctx context.Context, uid int, mid int
 	return []int{1, 2}, nil
 }
 
-func cmpSlice(one, two []string) bool {
-	if len(one) != len(two) {
-		return false
-	}
+func cmpSet(one, two map[string]bool) []string {
+	out := make([]string, 0)
 
-	sort.Strings(one)
-	sort.Strings(two)
-	for i := range one {
-		if one[i] != two[i] {
-			return false
+	for key := range one {
+		if !two[key] {
+			out = append(out, "-"+key)
 		}
 	}
-	return true
+	for key := range two {
+		if !one[key] {
+			out = append(out, "+"+key)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	sort.Sort(sort.StringSlice(out))
+	return out
+}
+
+func set(keys ...string) map[string]bool {
+	out := make(map[string]bool)
+	for _, key := range keys {
+		out[key] = true
+	}
+	return out
+}
+
+func mapKeys(m map[string]bool) []string {
+	out := make([]string, 0, len(m))
+	for key := range m {
+		out = append(out, key)
+	}
+	sort.Sort(sort.StringSlice(out))
+	return out
 }
