@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/openslides/openslides-autoupdate-service/internal/keysrequest"
@@ -238,16 +240,67 @@ func TestUpdateRequestCount(t *testing.T) {
 			}
 		})
 	}
+}
 
+func TestConcurency(t *testing.T) {
+	t.Parallel()
+	req := `{
+		"ids": [1, 2, 3],
+		"collection": "user",
+		"fields": {
+			"group_ids": {
+				"collection": "group",
+				"fields": {
+					"perm_ids": {
+						"collection": "perm",
+						"fields": {"name": null}
+					}
+				}
+			}
+		}
+	}`
+	kr, err := keysrequest.FromJSON((strings.NewReader(req)))
+	if err != nil {
+		t.Fatalf("Did not expect an error, got :%v", err)
+	}
+	restr := mockRestricter{sleep: 10 * time.Millisecond}
+
+	start := time.Now()
+	b, err := keysbuilder.New(1, &restr, kr)
+	if err != nil {
+		t.Errorf("Expect Keys() not to return an error, got: %v", err)
+	}
+
+	keys := b.Keys()
+	finished := time.Since(start)
+	if finished > 30*time.Millisecond {
+		t.Errorf("Expect keysbuilder to run in less then 30 Milliseconds, got: %v", finished)
+
+	}
+	expect := []string{"user/1/group_ids", "user/2/group_ids", "user/3/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name"}
+	if diff := cmpSet(set(expect...), set(keys...)); diff != nil {
+		t.Errorf("Expected %v, got: %v", expect, diff)
+	}
+	if len(restr.reqLog) != 5 {
+		t.Errorf("Expected %d requests to the restricter.IDsFromKey, got: %d: %v", 3, len(restr.reqLog), restr.reqLog)
+	}
 }
 
 type mockRestricter struct {
-	data   map[string][]int
-	reqLog []string
+	data  map[string][]int
+	sleep time.Duration
+
+	reqLogMu sync.Mutex
+	reqLog   []string
 }
 
 func (r *mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (map[string][]byte, error) {
+	time.Sleep(r.sleep)
+
+	r.reqLogMu.Lock()
 	r.reqLog = append(r.reqLog, strings.Join(keys, ", "))
+	r.reqLogMu.Unlock()
+
 	out := make(map[string][]byte, len(keys))
 	for _, key := range keys {
 		switch {
@@ -263,7 +316,12 @@ func (r *mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (
 }
 
 func (r *mockRestricter) IDsFromKey(ctx context.Context, uid int, mid int, key string) ([]int, error) {
+	time.Sleep(r.sleep)
+
+	r.reqLogMu.Lock()
 	r.reqLog = append(r.reqLog, key)
+	r.reqLogMu.Unlock()
+
 	if ids, ok := r.data[key]; ok {
 		return ids, nil
 	}
@@ -283,6 +341,7 @@ func (r *mockRestricter) IDsFromKey(ctx context.Context, uid int, mid int, key s
 }
 
 func (r *mockRestricter) IDsFromCollection(ctx context.Context, uid int, mid int, collection string) ([]int, error) {
+	time.Sleep(r.sleep)
 	r.reqLog = append(r.reqLog, collection)
 	if ids, ok := r.data[collection]; ok {
 		return ids, nil
@@ -309,7 +368,7 @@ func cmpSet(one, two map[string]bool) []string {
 	if len(out) == 0 {
 		return nil
 	}
-	sort.Sort(sort.StringSlice(out))
+	sort.Strings(out)
 	return out
 }
 
@@ -326,6 +385,6 @@ func mapKeys(m map[string]bool) []string {
 	for key := range m {
 		out = append(out, key)
 	}
-	sort.Sort(sort.StringSlice(out))
+	sort.Strings(out)
 	return out
 }
