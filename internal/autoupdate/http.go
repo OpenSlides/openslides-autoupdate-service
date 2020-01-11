@@ -102,7 +102,7 @@ func (f errHandleFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func write400(w http.ResponseWriter, msg string) error {
 	w.WriteHeader(http.StatusBadRequest)
-	fmt.Fprintf(w, msg)
+	fmt.Fprint(w, msg)
 	return nil
 }
 
