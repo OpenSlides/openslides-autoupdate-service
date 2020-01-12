@@ -38,17 +38,17 @@ func (h *Handler) autoupdate(w http.ResponseWriter, r *http.Request) error {
 		return fmt.Errorf("can not authenticate request: %w", err)
 	}
 
-	keysReq, err := keysrequest.FromJSON(r.Body)
+	keysReqs, err := keysrequest.ManyFromJSON(r.Body)
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			return write400(w, "Empty body, expected key request.\n")
 		}
-		var keysrequestErr keysrequest.ErrInvalid
-		if errors.As(err, &keysrequestErr) {
-			return write400(w, fmt.Sprintf("Can not parse key request: %v\n", keysrequestErr.Error()))
+		var errInvalid keysrequest.ErrInvalid
+		if errors.As(err, &errInvalid) {
+			return write400(w, fmt.Sprintf("Can not parse key request: %v\n", errInvalid.Error()))
 		}
-		var jsonErr keysrequest.ErrJSON
-		if errors.As(err, &jsonErr) {
+		var errJSON keysrequest.ErrJSON
+		if errors.As(err, &errJSON) {
 			return write400(w, "Request body has to be valid json.\n")
 		}
 
@@ -56,7 +56,7 @@ func (h *Handler) autoupdate(w http.ResponseWriter, r *http.Request) error {
 	}
 	defer r.Body.Close()
 
-	tid, b, data, err := h.s.prepare(r.Context(), uid, keysReq)
+	tid, b, data, err := h.s.prepare(r.Context(), uid, keysReqs)
 	if err != nil {
 		return fmt.Errorf("can not get first data: %w", err)
 	}

@@ -9,7 +9,21 @@ import (
 func FromJSON(r io.Reader) (KeysRequest, error) {
 	var kr KeysRequest
 	if err := json.NewDecoder(r).Decode(&kr); err != nil {
-		return kr, ErrJSON{msg: "can not decode key request from json", err: err}
+		return kr, ErrJSON{msg: "can not decode keysrequest from json", err: err}
 	}
 	return kr, kr.Validate()
+}
+
+// ManyFromJSON creates a list of KeysRequest from json
+func ManyFromJSON(r io.Reader) ([]KeysRequest, error) {
+	var krs []KeysRequest
+	if err := json.NewDecoder(r).Decode(&krs); err != nil {
+		return nil, ErrJSON{msg: "can not decode many keysrequest from json", err: err}
+	}
+	for _, kr := range krs {
+		if err := kr.Validate(); err != nil {
+			return nil, err
+		}
+	}
+	return krs, nil
 }

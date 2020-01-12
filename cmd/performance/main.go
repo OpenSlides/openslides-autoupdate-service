@@ -42,9 +42,11 @@ func main() {
 	readClients(connections, keys)
 	log.Printf("Send and Receive one key took %d milliseconds", time.Since(start)/time.Millisecond)
 
+	fmt.Println("Connections are kept open...")
+
 	for len(errs) == 0 {
 		readClients(connections, keys)
-		log.Println("All data received")
+		log.Println("Connections received data")
 	}
 	fmt.Printf("Errors: %d, first: %v\n", len(errs), errs[0])
 }

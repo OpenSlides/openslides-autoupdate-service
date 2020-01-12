@@ -51,5 +51,5 @@ func (c *client) connect(ctx context.Context, keys chan<- string) error {
 }
 
 func requestBody() *strings.Reader {
-	return strings.NewReader(`{"ids": [5], "collection": "user", "fields": {"name": null}}`)
+	return strings.NewReader(`[{"ids": [5], "collection": "user", "fields": {"name": null}}]`)
 }
