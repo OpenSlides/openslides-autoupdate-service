@@ -41,9 +41,9 @@ docker run autoupdate-test
 ### Without redis
 
 When the server is started, clients can listen for keys to do so, they have to send a keyrequest in the body
-of the request. Currently, all method-types are supported. An example request
+of the request. Currently, all method-types (POST, GET, etc) are supported. An example request
 
-`curl localhost:8002/autoupdate/ -d '{"ids": [5], "collection": "user", "fields": {"name": null}}'`
+`curl localhost:8002/autoupdate/ -d '[{"ids": [5], "collection": "user", "fields": {"name": null}}]'`
 
 To see a list of possible json-strings see the file internal/keysbuilder/keysbuilder_test.go
 
@@ -77,7 +77,7 @@ The Service uses the following environment variables:
 * `LISTEN_HTTP_ADDR=:8080`: Lets the service listen on port 8080 on any device. The default is `:8002`.
 * `MESSAGIN_SERVICE=fake`: Tells the service what kind of messagin service is used. `fake`(default) or `redis`
 * `AUTH_SERVICE=fake`: The same for the auth service.
-* `RESTRICTER_SERVICE=fakse`: The same for the restricter service.
+* `RESTRICTER_SERVICE=fake`: The same for the restricter service.
 * `REDIS_ADDR=localhost:6379`: The address to redis.
 * `REDIS_TEST_CONN=true`: Test the redis connection on startup. Disable on the cloud if redis needs more time to start then this service.
 

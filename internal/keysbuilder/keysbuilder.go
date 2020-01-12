@@ -15,37 +15,40 @@ const keySep = "/"
 
 // Builder ...
 type Builder struct {
-	user        int
-	restricter  Restricter
-	keysRequest keysrequest.KeysRequest
-	cache       *cache
-	keys        []string
+	user         int
+	restricter   Restricter
+	keysRequests []keysrequest.KeysRequest
+	cache        *cache
+	keys         []string
 }
 
 // New creates a new Builder instance
-func New(user int, restricter Restricter, keysRequest keysrequest.KeysRequest) (*Builder, error) {
+func New(user int, restricter Restricter, keysRequests ...keysrequest.KeysRequest) (*Builder, error) {
 	b := &Builder{
-		user:        user,
-		restricter:  restricter,
-		keysRequest: keysRequest,
-		cache:       newCache(),
+		user:         user,
+		restricter:   restricter,
+		keysRequests: keysRequests,
+		cache:        newCache(),
 	}
 
-	// Save the ids in the cache
-	_, err := b.cache.get(b.keysRequest.Collection, func() ([]int, error) {
-		// Get ids from the request or all ids of the collection
-		ids := b.keysRequest.IDs
-		if ids == nil {
-			var err error
-			ids, err = b.restricter.IDsFromCollection(context.TODO(), b.user, b.keysRequest.MeetingID, b.keysRequest.Collection)
-			if err != nil {
-				return nil, fmt.Errorf("can not get all ids for collection \"%s\": %w", b.keysRequest.Collection, err)
+	// TODO: Run in parallel
+	for idx, kr := range keysRequests {
+		// Save the ids in the cache
+		_, err := b.cache.get(string(idx), func() ([]int, error) {
+			// Get ids from the request or all ids of the collection
+			ids := kr.IDs
+			if ids == nil {
+				var err error
+				ids, err = b.restricter.IDsFromCollection(context.TODO(), b.user, kr.MeetingID, kr.Collection)
+				if err != nil {
+					return nil, fmt.Errorf("can not get all ids for collection \"%s\": %w", kr.Collection, err)
+				}
 			}
+			return ids, nil
+		})
+		if err != nil {
+			return nil, err
 		}
-		return ids, nil
-	})
-	if err != nil {
-		return nil, err
 	}
 	if err := b.genKeys(); err != nil {
 		return nil, err
@@ -72,17 +75,20 @@ func (b *Builder) Keys() []string {
 }
 
 func (b *Builder) genKeys() error {
-	keys, err := b.run(b.keysRequest.Collection, b.keysRequest.FieldDescription)
-	if err != nil {
-		return err
+	b.keys = make([]string, 0)
+	for idx, kr := range b.keysRequests {
+		keys, err := b.run(string(idx), kr.FieldDescription, kr.MeetingID)
+		if err != nil {
+			return err
+		}
+		b.keys = append(b.keys, keys...)
 	}
-	b.keys = keys
 	return nil
 }
 
-func (b *Builder) run(name string, fd keysrequest.FieldDescription) ([]string, error) {
+func (b *Builder) run(name string, fd keysrequest.FieldDescription, meeting int) ([]string, error) {
 	ids, err := b.cache.get(name, func() ([]int, error) {
-		return b.restricter.IDsFromKey(context.TODO(), b.user, b.keysRequest.MeetingID, name)
+		return b.restricter.IDsFromKey(context.TODO(), b.user, meeting, name)
 	})
 	if err != nil {
 		return nil, err
@@ -104,7 +110,7 @@ func (b *Builder) run(name string, fd keysrequest.FieldDescription) ([]string, e
 				// TODO handle error
 				wg.Add(1)
 				go func(name string, ifd keysrequest.FieldDescription) {
-					keys, _ := b.run(name, ifd)
+					keys, _ := b.run(name, ifd, meeting)
 					for _, key := range keys {
 						kc <- key
 					}

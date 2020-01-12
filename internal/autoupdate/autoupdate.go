@@ -76,8 +76,8 @@ func (s *Service) receiveKeyChanges() {
 	}
 }
 
-func (s *Service) prepare(ctx context.Context, uid int, kr keysrequest.KeysRequest) (uint64, *keysbuilder.Builder, map[string][]byte, error) {
-	b, err := keysbuilder.New(uid, s.restricter, kr)
+func (s *Service) prepare(ctx context.Context, uid int, krs []keysrequest.KeysRequest) (uint64, *keysbuilder.Builder, map[string][]byte, error) {
+	b, err := keysbuilder.New(uid, s.restricter, krs...)
 	if err != nil {
 		if errors.Is(err, keysrequest.ErrInvalid{}) {
 			err = raise400(err)

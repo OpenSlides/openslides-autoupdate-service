@@ -16,11 +16,11 @@ func TestPrepare(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	kr, err := keysrequest.FromJSON(strings.NewReader(`{"ids":[1],"collection":"user","fields":{"name":null}}`))
+	krs, err := keysrequest.ManyFromJSON(strings.NewReader(`[{"ids":[1],"collection":"user","fields":{"name":null}}]`))
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
-	_, _, data, err := s.prepare(ctx, 1, kr)
+	_, _, data, err := s.prepare(ctx, 1, krs)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
@@ -37,11 +37,11 @@ func TestEchoNoNewData(t *testing.T) {
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	kr, err := keysrequest.FromJSON(strings.NewReader(`{"ids":[1],"collection":"user","fields":{"name":null}}`))
+	krs, err := keysrequest.ManyFromJSON(strings.NewReader(`[{"ids":[1],"collection":"user","fields":{"name":null}}]`))
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
-	tid, keys, _, err := s.prepare(ctx, 1, kr)
+	tid, keys, _, err := s.prepare(ctx, 1, krs)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
@@ -71,11 +71,11 @@ func TestEchoNewData(t *testing.T) {
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	kr, err := keysrequest.FromJSON(strings.NewReader(`{"ids":[1],"collection":"user","fields":{"name":null}}`))
+	krs, err := keysrequest.ManyFromJSON(strings.NewReader(`[{"ids":[1],"collection":"user","fields":{"name":null}}]`))
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
-	tid, keys, _, err := s.prepare(ctx, 1, kr)
+	tid, keys, _, err := s.prepare(ctx, 1, krs)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}

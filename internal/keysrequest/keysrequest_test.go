@@ -33,7 +33,8 @@ func TestJSONInvalid(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected an error, got none")
 	}
-	if errors.Is(err, keysrequest.ErrJSON{}) {
+	var errJSON keysrequest.ErrJSON
+	if !errors.As(err, &errJSON) {
 		t.Errorf("Expected error to be of type ErrJSON, got: %v", err)
 	}
 }
@@ -50,7 +51,8 @@ func TestJSONSingleID(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected an error, got none")
 	}
-	if errors.Is(err, keysrequest.ErrJSON{}) {
+	var errJSON keysrequest.ErrJSON
+	if !errors.As(err, &errJSON) {
 		t.Errorf("Expected error to be of type ErrJSON, got: %v", err)
 	}
 }
@@ -217,8 +219,7 @@ func TestJSONInnerTwiceNoFields(t *testing.T) {
 				}
 			}
 		}
-	}
-	`)
+	}`)
 	_, err := keysrequest.FromJSON(json)
 	if err == nil {
 		t.Errorf("Expected an error, got none")
@@ -233,5 +234,96 @@ func TestJSONInnerTwiceNoFields(t *testing.T) {
 	}
 	if fields := kErr.Fields(); len(fields) != 2 || fields[0] != "group_ids" || fields[1] != "perm_ids" {
 		t.Errorf("Expected error to be on field \"group_ids.perm_ids\", got: %v", fields)
+	}
+}
+
+func TestManyFromJSON(t *testing.T) {
+	json := strings.NewReader(`[
+	{
+		"ids": [5],
+		"collection": "user",
+		"fields": {
+			"group_ids": {
+				"collection": "group",
+				"fields": {
+					"name": null
+				}
+			}
+		}
+	},
+	{
+		"ids": [5],
+		"collection": "user",
+		"fields": {
+			"name": null
+		}
+	}]`)
+	_, err := keysrequest.ManyFromJSON(json)
+	if err != nil {
+		t.Errorf("Expected no error, got: %v", err)
+	}
+}
+
+func TestManyFromJSONInvalidJSON(t *testing.T) {
+	json := strings.NewReader(`[
+	{
+		"ids": [5],
+		"collection": "user",
+		"fields": {
+			"group_ids": {
+				"collection": "group",
+				"fields": {
+					"name": null
+				}
+			}
+		}
+	},
+	{
+		"ids": [5],
+		"collection": "user",
+		"fi
+	}]`)
+	_, err := keysrequest.ManyFromJSON(json)
+	if err == nil {
+		t.Error("Expected ManyFromJSON() to return an error, got not")
+	}
+	var errJSON keysrequest.ErrJSON
+	if !errors.As(err, &errJSON) {
+		t.Errorf("Expected error to be of type ErrJSON, got: %v", err)
+	}
+}
+
+func TestManyFromJSONInvalidKeysRequest(t *testing.T) {
+	json := strings.NewReader(`[
+	{
+		"ids": [5],
+		"collection": "user",
+		"fields": {
+			"group_ids": {
+				"collection": "group",
+				"fields": {
+					"name": null
+				}
+			}
+		}
+	},
+	{
+		"ids": [5],
+		"collection": "user",
+		"fields": {
+			"group_ids": {
+				"fields": {
+					"name": null
+				}
+			}
+		}
+	}]`)
+	_, err := keysrequest.ManyFromJSON(json)
+	if err == nil {
+		t.Error("Expected ManyFromJSON() to return an error, got not")
+	}
+	var kErr keysrequest.ErrInvalid
+	if !errors.As(err, &kErr) {
+		t.Errorf("Expected error to be of type ErrInvalid, got: %v", err)
 	}
 }

@@ -282,7 +282,59 @@ func TestConcurency(t *testing.T) {
 		t.Errorf("Expected %v, got: %v", expect, diff)
 	}
 	if len(restr.reqLog) != 5 {
-		t.Errorf("Expected %d requests to the restricter.IDsFromKey, got: %d: %v", 3, len(restr.reqLog), restr.reqLog)
+		t.Errorf("Expected %d requests to the restricter.IDsFromKey, got: %d: %v", 5, len(restr.reqLog), restr.reqLog)
+	}
+}
+
+func TestManyRequests(t *testing.T) {
+	t.Parallel()
+	reqs := []string{`{
+		"ids": [1],
+		"collection": "user",
+		"fields": {
+			"note_id": {
+				"collection": "note",
+				"fields": {"important": null}
+			}
+		}
+	}`, `{
+		"ids": [1],
+		"collection": "motion",
+		"fields": {
+			"name": null
+		}
+	}`, `{
+		"ids": [2],
+		"collection": "user",
+		"fields": {
+			"note_id": {
+				"collection": "note",
+				"fields": {"important": null}
+			}
+		}
+	}`}
+	var krs []keysrequest.KeysRequest
+	for _, req := range reqs {
+		kr, err := keysrequest.FromJSON(strings.NewReader(req))
+		if err != nil {
+			t.Fatalf("Did not expect an error, got :%v", err)
+		}
+		krs = append(krs, kr)
+	}
+	restr := mockRestricter{}
+
+	b, err := keysbuilder.New(1, &restr, krs...)
+	if err != nil {
+		t.Errorf("Expect Keys() not to return an error, got: %v", err)
+	}
+
+	keys := b.Keys()
+	expect := []string{"user/1/note_id", "user/2/note_id", "motion/1/name", "note/1/important"}
+	if diff := cmpSet(set(expect...), set(keys...)); diff != nil {
+		t.Errorf("Expected %v, got: %v", expect, diff)
+	}
+	if len(restr.reqLog) != 2 {
+		t.Errorf("Expected %d requests to the restricter.IDsFromKey, got: %d: %v", 2, len(restr.reqLog), restr.reqLog)
 	}
 }
 
