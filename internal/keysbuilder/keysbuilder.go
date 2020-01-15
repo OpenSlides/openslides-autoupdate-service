@@ -29,16 +29,6 @@ func New(user int, restricter Restricter, keysRequests ...keysrequest.KeysReques
 		keysRequests: keysRequests,
 		cache:        newCache(),
 	}
-
-	for idx, kr := range keysRequests {
-		// Save the ids in the cache
-		_, err := b.cache.get(string(idx), func() ([]int, error) {
-			return kr.IDs, nil
-		})
-		if err != nil {
-			return nil, err
-		}
-	}
 	if err := b.genKeys(); err != nil {
 		return nil, err
 	}
@@ -64,61 +54,68 @@ func (b *Builder) Keys() []string {
 }
 
 func (b *Builder) genKeys() error {
-	b.keys = make([]string, 0)
-	for idx, kr := range b.keysRequests {
-		keys, err := b.run(string(idx), kr.FieldDescription)
-		if err != nil {
-			return err
-		}
-		b.keys = append(b.keys, keys...)
-	}
-	return nil
-}
+	var wg sync.WaitGroup
+	kc := make(chan string, 1)
+	ec := make(chan error, 1)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-func (b *Builder) run(name string, fd keysrequest.FieldDescription) ([]string, error) {
-	ids, err := b.cache.get(name, func() ([]int, error) {
-		return b.restricter.IDsFromKey(context.TODO(), b.user, name)
-	})
-	if err != nil {
-		return nil, err
+	for _, kr := range b.keysRequests {
+		wg.Add(1)
+		go func(kr keysrequest.KeysRequest) {
+			b.run(ctx, kr.IDs, kr.FieldDescription, kc, ec)
+			wg.Done()
+		}(kr)
 	}
 
-	done := make(chan struct{})
-	kc := make(chan string)
 	go func() {
-		var wg sync.WaitGroup
-		for _, id := range ids {
-			for field, ifd := range fd.Fields {
-				key := buildKey(fd.Collection, id, field)
-				kc <- key
-				if ifd.Null() {
-					// field is not a reference
-					continue
-				}
-
-				// TODO handle error
-				wg.Add(1)
-				go func(name string, ifd keysrequest.FieldDescription) {
-					keys, _ := b.run(name, ifd)
-					for _, key := range keys {
-						kc <- key
-					}
-					wg.Done()
-				}(key, ifd)
-			}
-		}
 		wg.Wait()
-		close(done)
+		close(kc)
 	}()
-	keys := make([]string, 0)
+
+	b.keys = make([]string, 0)
+	var err error
 	for {
 		select {
-		case key := <-kc:
-			keys = append(keys, key)
-		case <-done:
-			return keys, nil
+		case key, ok := <-kc:
+			if !ok {
+				return err
+			}
+			b.keys = append(b.keys, key)
+		case err = <-ec:
+			cancel()
 		}
 	}
+}
+
+func (b *Builder) run(ctx context.Context, ids []int, fd keysrequest.FieldDescription, kc chan<- string, ec chan<- error) {
+	var wg sync.WaitGroup
+	for _, id := range ids {
+		for field, ifd := range fd.Fields {
+			key := buildKey(fd.Collection, id, field)
+			kc <- key
+			if ifd.Null() {
+				// field is not a reference
+				continue
+			}
+
+			wg.Add(1)
+			go func(name string, ifd keysrequest.FieldDescription) {
+				defer wg.Done()
+				ids := b.cache.getOrSet(name, func() []int {
+					ids, err := b.restricter.IDsFromKey(ctx, b.user, name)
+					if err != nil {
+						ec <- err
+						return nil
+					}
+					return ids
+				})
+
+				b.run(ctx, ids, ifd, kc, ec)
+			}(key, ifd)
+		}
+	}
+	wg.Wait()
 }
 
 func buildKey(collection string, id int, field string) string {

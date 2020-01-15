@@ -20,10 +20,12 @@ func newCache() *cache {
 	return c
 }
 
-// get returns the ids for a key.
-// if it returns nil, the ids have to be generated
-// by the caller and set via cache.set()
-func (c *cache) get(key string, set func() ([]int, error)) ([]int, error) {
+// getOrSet returns the ids for a key.
+// If the key does not exist, it is created be the return value
+// of the second argument. If this method is called more then once
+// at the same time, only the first calculates the result, the other
+// calles get blocked until it is calculated.
+func (c *cache) getOrSet(key string, set func() []int) []int {
 	c.mu.Lock()
 	entry, ok := c.data[key]
 
@@ -32,12 +34,11 @@ func (c *cache) get(key string, set func() ([]int, error)) ([]int, error) {
 		c.data[key] = entry
 		c.data[key].done = make(chan struct{})
 		c.mu.Unlock()
-		var err error
-		entry.ids, err = set()
+		entry.ids = set()
 		close(entry.done)
-		return entry.ids, err
+		return entry.ids
 	}
 	c.mu.Unlock()
 	<-entry.done
-	return entry.ids, nil
+	return entry.ids
 }
