@@ -12,7 +12,6 @@ func TestJSONValid(t *testing.T) {
 	json := strings.NewReader(`
 	{
 		"ids": [5],
-		"meeting_id": 1,
 		"collection": "user",
 		"fields": {
 			"motion_ids": {
@@ -94,6 +93,27 @@ func TestJSONNoCollection(t *testing.T) {
 		t.Errorf("Expected err to be %T, got: %v", kErr, err)
 	}
 	expect := "no collection"
+	if got := kErr.Error(); got != expect {
+		t.Errorf("Expected error message \"%s\", got: \"%s\"", expect, got)
+	}
+}
+
+func TestJSONNoIDs(t *testing.T) {
+	json := strings.NewReader(`
+	{
+		"fields": {"name": null},
+		"collection": "user"
+	}
+	`)
+	_, err := keysrequest.FromJSON(json)
+	if err == nil {
+		t.Errorf("Expected an error, got none")
+	}
+	var kErr keysrequest.ErrInvalid
+	if !errors.As(err, &kErr) {
+		t.Errorf("Expected err to be %T, got: %v", kErr, err)
+	}
+	expect := "no ids"
 	if got := kErr.Error(); got != expect {
 		t.Errorf("Expected error message \"%s\", got: \"%s\"", expect, got)
 	}

@@ -42,14 +42,15 @@ func (fd *FieldDescription) validate() error {
 }
 
 // KeysRequest holds the information what keys are requested by the client
-// meetingID is ignored, if ids != nil
 type KeysRequest struct {
-	IDs       []int `json:"ids"`
-	MeetingID int   `json:"meeting_id"`
+	IDs []int `json:"ids"`
 	FieldDescription
 }
 
 // Validate maks sure the KeysRequest is valid. Returns an ErrInvalid if not.
 func (kr *KeysRequest) Validate() error {
+	if len(kr.IDs) == 0 {
+		return ErrInvalid{msg: "no ids"}
+	}
 	return kr.FieldDescription.validate()
 }

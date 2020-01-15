@@ -3,7 +3,6 @@ package keysbuilder
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -31,20 +30,10 @@ func New(user int, restricter Restricter, keysRequests ...keysrequest.KeysReques
 		cache:        newCache(),
 	}
 
-	// TODO: Run in parallel
 	for idx, kr := range keysRequests {
 		// Save the ids in the cache
 		_, err := b.cache.get(string(idx), func() ([]int, error) {
-			// Get ids from the request or all ids of the collection
-			ids := kr.IDs
-			if ids == nil {
-				var err error
-				ids, err = b.restricter.IDsFromCollection(context.TODO(), b.user, kr.MeetingID, kr.Collection)
-				if err != nil {
-					return nil, fmt.Errorf("can not get all ids for collection \"%s\": %w", kr.Collection, err)
-				}
-			}
-			return ids, nil
+			return kr.IDs, nil
 		})
 		if err != nil {
 			return nil, err
@@ -77,7 +66,7 @@ func (b *Builder) Keys() []string {
 func (b *Builder) genKeys() error {
 	b.keys = make([]string, 0)
 	for idx, kr := range b.keysRequests {
-		keys, err := b.run(string(idx), kr.FieldDescription, kr.MeetingID)
+		keys, err := b.run(string(idx), kr.FieldDescription)
 		if err != nil {
 			return err
 		}
@@ -86,9 +75,9 @@ func (b *Builder) genKeys() error {
 	return nil
 }
 
-func (b *Builder) run(name string, fd keysrequest.FieldDescription, meeting int) ([]string, error) {
+func (b *Builder) run(name string, fd keysrequest.FieldDescription) ([]string, error) {
 	ids, err := b.cache.get(name, func() ([]int, error) {
-		return b.restricter.IDsFromKey(context.TODO(), b.user, meeting, name)
+		return b.restricter.IDsFromKey(context.TODO(), b.user, name)
 	})
 	if err != nil {
 		return nil, err
@@ -110,7 +99,7 @@ func (b *Builder) run(name string, fd keysrequest.FieldDescription, meeting int)
 				// TODO handle error
 				wg.Add(1)
 				go func(name string, ifd keysrequest.FieldDescription) {
-					keys, _ := b.run(name, ifd, meeting)
+					keys, _ := b.run(name, ifd)
 					for _, key := range keys {
 						kc <- key
 					}

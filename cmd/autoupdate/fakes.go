@@ -65,7 +65,7 @@ func (r faker) Restrict(ctx context.Context, uid int, keys []string) (map[string
 	return out, nil
 }
 
-func (r faker) IDsFromKey(ctx context.Context, uid int, mid int, key string) ([]int, error) {
+func (r faker) IDsFromKey(ctx context.Context, uid int, key string) ([]int, error) {
 	o := r.data[key]
 	if len(o) != 0 {
 		var id int
@@ -86,16 +86,6 @@ func (r faker) IDsFromKey(ctx context.Context, uid int, mid int, key string) ([]
 	}
 	if !strings.HasSuffix(key, "_ids") {
 		return nil, fmt.Errorf("Key %s can not be a reference; expected suffex _id or _ids", key)
-	}
-	if mid == 1 {
-		return []int{1}, nil
-	}
-	return []int{1, 2}, nil
-}
-
-func (r faker) IDsFromCollection(ctx context.Context, uid int, mid int, collection string) ([]int, error) {
-	if mid == 1 {
-		return []int{1}, nil
 	}
 	return []int{1, 2}, nil
 }

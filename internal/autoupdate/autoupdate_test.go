@@ -113,7 +113,7 @@ func (r mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (m
 	return out, nil
 }
 
-func (r mockRestricter) IDsFromKey(ctx context.Context, uid int, mid int, key string) ([]int, error) {
+func (r mockRestricter) IDsFromKey(ctx context.Context, uid int, key string) ([]int, error) {
 	if strings.HasPrefix(key, "not_exist") {
 		return nil, nil
 	}
@@ -122,16 +122,6 @@ func (r mockRestricter) IDsFromKey(ctx context.Context, uid int, mid int, key st
 	}
 	if !strings.HasSuffix(key, "_ids") {
 		return nil, fmt.Errorf("Key %s can not be a reference; expected suffex _id or _ids", key)
-	}
-	if mid == 1 {
-		return []int{1}, nil
-	}
-	return []int{1, 2}, nil
-}
-
-func (r mockRestricter) IDsFromCollection(ctx context.Context, uid int, mid int, collection string) ([]int, error) {
-	if mid == 1 {
-		return []int{1}, nil
 	}
 	return []int{1, 2}, nil
 }

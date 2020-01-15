@@ -22,11 +22,8 @@ func TestKeys(t *testing.T) {
 		{"One Field", `{"ids":[1],"collection":"user","fields":{"name":null}}`, []string{"user/1/name"}},
 		{"Many Fields", `{"ids":[1],"collection":"user","fields":{"first":null,"last":null}}`, []string{"user/1/first", "user/1/last"}},
 		{"Many IDs Many Fields", `{"ids":[1,2],"collection":"user","fields":{"first":null,"last":null}}`, []string{"user/1/first", "user/1/last", "user/2/first", "user/2/last"}},
-		{"All IDs", `{"collection":"user","fields":{"name":null}}`, []string{"user/1/name", "user/2/name"}},
-		{"All IDs one meeting", `{"meeting_id": 1,"collection":"user","fields":{"name":null}}`, []string{"user/1/name"}},
 		{"Redirect Once id", `{"ids":[1],"collection":"user","fields":{"note_id":{"collection":"note","fields":{"important":null}}}}`, []string{"user/1/note_id", "note/1/important"}},
 		{"Redirect Once ids", `{"ids":[1],"collection":"user","fields":{"group_ids":{"collection":"group","fields":{"admin":null}}}}`, []string{"user/1/group_ids", "group/1/admin", "group/2/admin"}},
-		{"Redirect Once ids one meeting", `{"ids":[1], "meeting_id": 1, "collection":"user","fields":{"group_ids":{"collection":"group","fields":{"admin":null}}}}`, []string{"user/1/group_ids", "group/1/admin"}},
 		{"Redirect twice id", `{"ids":[1],"collection":"user","fields":{"note_id":{"collection":"note","fields":{"motion_id":{"collection":"motion","fields":{"name":null}}}}}}`, []string{"user/1/note_id", "note/1/motion_id", "motion/1/name"}},
 		{"Request _id without redirect", `{"ids":[1],"collection":"user","fields":{"note_id":null}}`, []string{"user/1/note_id"}},
 		{"Redirect id not exist", `{"ids":[1],"collection":"not_exist","fields":{"note_id":{"collection":"note","fields":{"important":null}}}}`, []string{"not_exist/1/note_id"}},
@@ -367,7 +364,7 @@ func (r *mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (
 	return out, nil
 }
 
-func (r *mockRestricter) IDsFromKey(ctx context.Context, uid int, mid int, key string) ([]int, error) {
+func (r *mockRestricter) IDsFromKey(ctx context.Context, uid int, key string) ([]int, error) {
 	time.Sleep(r.sleep)
 
 	r.reqLogMu.Lock()
@@ -385,21 +382,6 @@ func (r *mockRestricter) IDsFromKey(ctx context.Context, uid int, mid int, key s
 	}
 	if !strings.HasSuffix(key, "_ids") {
 		return nil, fmt.Errorf("Key %s can not be a reference; expected suffex _id or _ids", key)
-	}
-	if mid == 1 {
-		return []int{1}, nil
-	}
-	return []int{1, 2}, nil
-}
-
-func (r *mockRestricter) IDsFromCollection(ctx context.Context, uid int, mid int, collection string) ([]int, error) {
-	time.Sleep(r.sleep)
-	r.reqLog = append(r.reqLog, collection)
-	if ids, ok := r.data[collection]; ok {
-		return ids, nil
-	}
-	if mid == 1 {
-		return []int{1}, nil
 	}
 	return []int{1, 2}, nil
 }
