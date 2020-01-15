@@ -2,6 +2,7 @@ package keysbuilder_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -318,14 +319,20 @@ func TestManyRequests(t *testing.T) {
 		}
 		krs = append(krs, kr)
 	}
-	restr := mockRestricter{}
+	restr := mockRestricter{sleep: 10 * time.Millisecond}
 
+	start := time.Now()
 	b, err := keysbuilder.New(1, &restr, krs...)
 	if err != nil {
 		t.Errorf("Expect Keys() not to return an error, got: %v", err)
 	}
 
 	keys := b.Keys()
+	finished := time.Since(start)
+	if finished > 20*time.Millisecond {
+		t.Errorf("Expect keysbuilder to run in less then 20 Milliseconds, got: %v", finished)
+	}
+
 	expect := []string{"user/1/note_id", "user/2/note_id", "motion/1/name", "note/1/important"}
 	if diff := cmpSet(set(expect...), set(keys...)); diff != nil {
 		t.Errorf("Expected %v, got: %v", expect, diff)
@@ -335,7 +342,56 @@ func TestManyRequests(t *testing.T) {
 	}
 }
 
+func TestError(t *testing.T) {
+	t.Parallel()
+	reqs := []string{`{
+		"ids": [1],
+		"collection": "user",
+		"fields": {
+			"note_id": {
+				"collection": "note",
+				"fields": {"important": null}
+			}
+		}
+	}`, `{
+		"ids": [2],
+		"collection": "user",
+		"fields": {
+			"group_ids": {
+				"collection": "group",
+				"fields": {
+					"perm_ids": {
+						"collection": "perm",
+						"fields": {"name": null}
+					}
+				}
+			}
+		}
+	}`}
+	var krs []keysrequest.KeysRequest
+	for _, req := range reqs {
+		kr, err := keysrequest.FromJSON(strings.NewReader(req))
+		if err != nil {
+			t.Fatalf("Did not expect an error, got :%v", err)
+		}
+		krs = append(krs, kr)
+	}
+
+	restr := mockRestricter{err: errors.New("Some Error"), sleep: 10 * time.Millisecond}
+
+	start := time.Now()
+	_, err := keysbuilder.New(1, &restr, krs...)
+	if err == nil {
+		t.Errorf("Expect Keys() to return an error, got none")
+	}
+	finished := time.Since(start)
+	if finished > 20*time.Millisecond {
+		t.Errorf("Expect keysbuilder to run in less then 20 Milliseconds, got: %v", finished)
+	}
+}
+
 type mockRestricter struct {
+	err   error
 	data  map[string][]int
 	sleep time.Duration
 
@@ -345,6 +401,9 @@ type mockRestricter struct {
 
 func (r *mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (map[string][]byte, error) {
 	time.Sleep(r.sleep)
+	if r.err != nil {
+		return nil, r.err
+	}
 
 	r.reqLogMu.Lock()
 	r.reqLog = append(r.reqLog, strings.Join(keys, ", "))
@@ -366,6 +425,9 @@ func (r *mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (
 
 func (r *mockRestricter) IDsFromKey(ctx context.Context, uid int, key string) ([]int, error) {
 	time.Sleep(r.sleep)
+	if r.err != nil {
+		return nil, r.err
+	}
 
 	r.reqLogMu.Lock()
 	r.reqLog = append(r.reqLog, key)
