@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/topic"
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/topic"
 )
 
 func TestTopicSave(t *testing.T) {

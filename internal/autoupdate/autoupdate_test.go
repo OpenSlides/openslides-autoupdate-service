@@ -3,10 +3,11 @@ package autoupdate
 import (
 	"context"
 	"fmt"
-	"github.com/openslides/openslides-autoupdate-service/internal/keysrequest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysrequest"
 )
 
 func TestPrepare(t *testing.T) {
@@ -20,7 +21,7 @@ func TestPrepare(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
-	_, _, data, err := s.prepare(ctx, 1, krs)
+	_, _, data, err := s.Prepare(ctx, 1, krs)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
@@ -41,7 +42,7 @@ func TestEchoNoNewData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
-	tid, keys, _, err := s.prepare(ctx, 1, krs)
+	tid, keys, _, err := s.Prepare(ctx, 1, krs)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
@@ -51,7 +52,7 @@ func TestEchoNoNewData(t *testing.T) {
 		cancel()
 	}()
 
-	ntid, data, err := s.echo(ctx, 1, tid, keys)
+	ntid, data, err := s.Echo(ctx, 1, tid, keys)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
@@ -75,14 +76,14 @@ func TestEchoNewData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
-	tid, keys, _, err := s.prepare(ctx, 1, krs)
+	tid, keys, _, err := s.Prepare(ctx, 1, krs)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
 
-	keychanges.send(KeyChanges{Updated: []string{"user/1/name"}})
+	keychanges.send([]string{"user/1/name"})
 
-	ntid, data, err := s.echo(ctx, 1, tid, keys)
+	ntid, data, err := s.Echo(ctx, 1, tid, keys)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
@@ -96,12 +97,22 @@ func TestEchoNewData(t *testing.T) {
 	}
 }
 
-type mockRestricter struct{}
+type mockRestricter struct {
+	data map[string]string
+}
 
 func (r mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (map[string][]byte, error) {
 	out := make(map[string][]byte, len(keys))
 	for _, key := range keys {
+		v, ok := r.data[key]
+		if ok {
+			out[key] = []byte(v)
+			continue
+		}
+
 		switch {
+		case strings.HasPrefix(key, "error"):
+			return nil, fmt.Errorf("Restricter got an error")
 		case strings.HasSuffix(key, "_id"):
 			out[key] = []byte("1")
 		case strings.HasSuffix(key, "_ids"):
@@ -113,42 +124,29 @@ func (r mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (m
 	return out, nil
 }
 
-func (r mockRestricter) IDsFromKey(ctx context.Context, uid int, key string) ([]int, error) {
-	if strings.HasPrefix(key, "not_exist") {
-		return nil, nil
-	}
-	if strings.HasSuffix(key, "_id") {
-		return []int{1}, nil
-	}
-	if !strings.HasSuffix(key, "_ids") {
-		return nil, fmt.Errorf("Key %s can not be a reference; expected suffex _id or _ids", key)
-	}
-	return []int{1, 2}, nil
-}
-
 type mockKeyChanged struct {
-	c chan KeyChanges
+	c chan []string
 	t *time.Ticker
 }
 
 func newMockKeyChanged() mockKeyChanged {
 	m := mockKeyChanged{}
-	m.c = make(chan KeyChanges, 1)
+	m.c = make(chan []string, 1)
 	m.t = time.NewTicker(time.Second)
 	return m
 }
 
-func (m mockKeyChanged) KeysChanged() (KeyChanges, error) {
+func (m mockKeyChanged) KeysChanged() ([]string, error) {
 	select {
 	case v := <-m.c:
 		return v, nil
 	case <-m.t.C:
-		return KeyChanges{}, nil
+		return nil, nil
 	}
 }
 
-func (m mockKeyChanged) send(kc KeyChanges) {
-	m.c <- kc
+func (m mockKeyChanged) send(keys []string) {
+	m.c <- keys
 }
 
 func (m mockKeyChanged) close() {

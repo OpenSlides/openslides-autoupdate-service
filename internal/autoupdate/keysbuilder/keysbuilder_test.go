@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
-	"github.com/openslides/openslides-autoupdate-service/internal/keysrequest"
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysbuilder"
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysrequest"
 )
 
 func TestKeys(t *testing.T) {
@@ -36,7 +36,7 @@ func TestKeys(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Did not expect an error, got: %v", err)
 			}
-			b, err := keysbuilder.New(1, &mockRestricter{}, kr)
+			b, err := keysbuilder.New(&mockIDer{}, kr)
 			if err != nil {
 				t.Fatalf("Expected New() not to return an error, got: %v", err)
 			}
@@ -55,8 +55,8 @@ func TestUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Did not expect an error, got :%v", err)
 	}
-	restr := mockRestricter{}
-	b, err := keysbuilder.New(1, &restr, kr)
+	restr := mockIDer{}
+	b, err := keysbuilder.New(&restr, kr)
 	if err != nil {
 		t.Errorf("Expect Keys() not to return an error, got: %v", err)
 	}
@@ -118,8 +118,8 @@ func TestUpdateKomplex(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Did not expect an error, got :%v", err)
 	}
-	restr := mockRestricter{data: dbInit}
-	b, err := keysbuilder.New(1, &restr, kr)
+	restr := mockIDer{data: dbInit}
+	b, err := keysbuilder.New(&restr, kr)
 	if err != nil {
 		t.Errorf("Expect Keys() not to return an error, got: %v", err)
 	}
@@ -223,8 +223,8 @@ func TestUpdateRequestCount(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Expect FromJSON not to return an error, got: %v", err)
 			}
-			restr := mockRestricter{data: tt.initDB}
-			b, err := keysbuilder.New(1, &restr, kr)
+			restr := mockIDer{data: tt.initDB}
+			b, err := keysbuilder.New(&restr, kr)
 			if err != nil {
 				t.Errorf("Expect Keys() not to return an error, got: %v", err)
 			}
@@ -261,10 +261,10 @@ func TestConcurency(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Did not expect an error, got :%v", err)
 	}
-	restr := mockRestricter{sleep: 10 * time.Millisecond}
+	restr := mockIDer{sleep: 10 * time.Millisecond}
 
 	start := time.Now()
-	b, err := keysbuilder.New(1, &restr, kr)
+	b, err := keysbuilder.New(&restr, kr)
 	if err != nil {
 		t.Errorf("Expect Keys() not to return an error, got: %v", err)
 	}
@@ -319,10 +319,10 @@ func TestManyRequests(t *testing.T) {
 		}
 		krs = append(krs, kr)
 	}
-	restr := mockRestricter{sleep: 10 * time.Millisecond}
+	restr := mockIDer{sleep: 10 * time.Millisecond}
 
 	start := time.Now()
-	b, err := keysbuilder.New(1, &restr, krs...)
+	b, err := keysbuilder.New(&restr, krs...)
 	if err != nil {
 		t.Errorf("Expect Keys() not to return an error, got: %v", err)
 	}
@@ -377,10 +377,10 @@ func TestError(t *testing.T) {
 		krs = append(krs, kr)
 	}
 
-	restr := mockRestricter{err: errors.New("Some Error"), sleep: 10 * time.Millisecond}
+	restr := mockIDer{err: errors.New("Some Error"), sleep: 10 * time.Millisecond}
 
 	start := time.Now()
-	_, err := keysbuilder.New(1, &restr, krs...)
+	_, err := keysbuilder.New(&restr, krs...)
 	if err == nil {
 		t.Errorf("Expect Keys() to return an error, got none")
 	}
@@ -390,7 +390,7 @@ func TestError(t *testing.T) {
 	}
 }
 
-type mockRestricter struct {
+type mockIDer struct {
 	err   error
 	data  map[string][]int
 	sleep time.Duration
@@ -399,31 +399,7 @@ type mockRestricter struct {
 	reqLog   []string
 }
 
-func (r *mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (map[string][]byte, error) {
-	time.Sleep(r.sleep)
-	if r.err != nil {
-		return nil, r.err
-	}
-
-	r.reqLogMu.Lock()
-	r.reqLog = append(r.reqLog, strings.Join(keys, ", "))
-	r.reqLogMu.Unlock()
-
-	out := make(map[string][]byte, len(keys))
-	for _, key := range keys {
-		switch {
-		case strings.HasSuffix(key, "_id"):
-			out[key] = []byte("1")
-		case strings.HasSuffix(key, "_ids"):
-			out[key] = []byte("[1,2]")
-		default:
-			out[key] = []byte("some value")
-		}
-	}
-	return out, nil
-}
-
-func (r *mockRestricter) IDsFromKey(ctx context.Context, uid int, key string) ([]int, error) {
+func (r *mockIDer) IDs(ctx context.Context, key string) ([]int, error) {
 	time.Sleep(r.sleep)
 	if r.err != nil {
 		return nil, r.err

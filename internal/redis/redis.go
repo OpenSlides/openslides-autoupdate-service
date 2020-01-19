@@ -2,8 +2,6 @@ package redis
 
 import (
 	"fmt"
-
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 )
 
 const (
@@ -19,7 +17,7 @@ type Service struct {
 }
 
 // KeysChanged is a blocking function that returns, when there is new data
-func (s *Service) KeysChanged() (autoupdate.KeyChanges, error) {
+func (s *Service) KeysChanged() ([]string, error) {
 	id := s.lastID
 	if id == "" {
 		id = "$"

@@ -1,4 +1,4 @@
-package autoupdate_test
+package http_test
 
 import (
 	"context"
@@ -7,11 +7,12 @@ import (
 	"testing"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
+	ahttp "github.com/openslides/openslides-autoupdate-service/internal/http"
 )
 
 func TestHandlerTestURLs(t *testing.T) {
 	s := &autoupdate.Service{}
-	srv := httptest.NewServer(autoupdate.NewHandler(s, mockAuth{1}))
+	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}))
 	defer srv.Close()
 
 	tc := []struct {
