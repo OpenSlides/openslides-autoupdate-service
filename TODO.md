@@ -4,7 +4,6 @@
 * Speak with the other services instead of fake services
   * auth
   * message bus (redis) for perm changes
-* Hash values so only new values are send to the client
 * Logging, metrics and traces
 
 # Internal

@@ -82,60 +82,74 @@ func (s *Service) receiveKeyChanges() {
 	}
 }
 
-// Prepare gives the first data for a list of keysrequests and returns the keysbuilder objekt
+// Prepare gives the first data for a list of keysrequests and returns a connection objekt
 // to pass to Echo
-func (s *Service) Prepare(ctx context.Context, uid int, krs []keysrequest.KeysRequest) (uint64, *keysbuilder.Builder, map[string][]byte, error) {
+func (s *Service) Prepare(ctx context.Context, uid int, krs []keysrequest.KeysRequest) (*Connection, map[string][]byte, error) {
+	c := &Connection{
+		user: uid,
+		tid:  s.topic.LastID(),
+	}
+
 	b, err := keysbuilder.New(restrictedIDs{uid, s.restricter}, krs...)
 	if err != nil {
 		if errors.Is(err, keysrequest.ErrInvalid{}) {
 			err = raiseErrInput(err)
 		}
-		return 0, nil, nil, fmt.Errorf("can not build keys: %w", err)
+		return c, nil, fmt.Errorf("can not build keys: %w", err)
 	}
+	c.b = b
 
 	data, err := s.restricter.Restrict(ctx, uid, b.Keys())
 	if err != nil {
-		return 0, nil, nil, fmt.Errorf("can not restrict data: %v", err)
+		return c, nil, fmt.Errorf("can not restrict data: %v", err)
 	}
-	return s.topic.LastID(), b, data, nil
+	return c, data, nil
 }
 
 // Echo listens for data changes and blocks until then. When data has changed,
 // it returns with the new data.
 // When the given context is done, it returns immediately with nil data
-func (s *Service) Echo(ctx context.Context, uid int, tid uint64, b *keysbuilder.Builder) (uint64, map[string][]byte, error) {
-	changedKeys, tid, err := s.topic.Get(ctx, tid)
+func (s *Service) Echo(ctx context.Context, c *Connection) (map[string][]byte, error) {
+	changedKeys, tid, err := s.topic.Get(ctx, c.tid)
 	if err != nil {
-		return 0, nil, fmt.Errorf("can not get new data: %w", err)
+		return nil, fmt.Errorf("can not get new data: %w", err)
 	}
+	c.tid = tid
+
 	if len(changedKeys) == 0 {
 		// Exit early
-		return tid, nil, nil
+		return nil, nil
 	}
 
-	oldKeys := b.Keys()
-	if err := b.Update(changedKeys); err != nil {
-		return 0, nil, fmt.Errorf("can not update keysbuilder: %w", err)
+	oldKeys := c.b.Keys()
+
+	// Update keysbuilder go get new list of keys
+	if err := c.b.Update(changedKeys); err != nil {
+		return nil, fmt.Errorf("can not update keysbuilder: %w", err)
 	}
-	keys := keysDiff(oldKeys, b.Keys())
+
+	// Start with keys hat are new for the user
+	keys := keysDiff(oldKeys, c.b.Keys())
 
 	changedSlice := make(map[string]bool, len(changedKeys))
 	for _, key := range changedKeys {
 		changedSlice[key] = true
 	}
 
-	for _, key := range b.Keys() {
+	// Append keys that are old but have been changed.
+	for _, key := range c.b.Keys() {
 		if !changedSlice[key] {
 			continue
 		}
 		keys = append(keys, key)
 	}
 
-	data, err := s.restricter.Restrict(ctx, uid, keys)
+	data, err := s.restricter.Restrict(ctx, c.user, keys)
 	if err != nil {
-		return 0, nil, fmt.Errorf("can not restrict data: %v", err)
+		return nil, fmt.Errorf("can not restrict data: %v", err)
 	}
-	return tid, data, nil
+	c.filter(data)
+	return data, nil
 }
 
 func keysDiff(old []string, new []string) []string {

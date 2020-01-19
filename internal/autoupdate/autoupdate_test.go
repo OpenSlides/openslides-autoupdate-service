@@ -21,7 +21,7 @@ func TestPrepare(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
-	_, _, data, err := s.Prepare(ctx, 1, krs)
+	_, data, err := s.Prepare(ctx, 1, krs)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
@@ -42,7 +42,7 @@ func TestEchoNoNewData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
-	tid, keys, _, err := s.Prepare(ctx, 1, krs)
+	c, _, err := s.Prepare(ctx, 1, krs)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
@@ -52,13 +52,14 @@ func TestEchoNoNewData(t *testing.T) {
 		cancel()
 	}()
 
-	ntid, data, err := s.Echo(ctx, 1, tid, keys)
+	oldTid := c.tid
+	data, err := s.Echo(ctx, c)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
 
-	if tid != ntid {
-		t.Errorf("Expect no new tid, got: %d", ntid)
+	if oldTid != c.tid {
+		t.Errorf("Expect no new tid, got: %d", c.tid)
 	}
 
 	if len(data) != 0 {
@@ -76,20 +77,21 @@ func TestEchoNewData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
-	tid, keys, _, err := s.Prepare(ctx, 1, krs)
+	c, _, err := s.Prepare(ctx, 1, krs)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
 
 	keychanges.send([]string{"user/1/name"})
 
-	ntid, data, err := s.Echo(ctx, 1, tid, keys)
+	oldTid := c.tid
+	data, err := s.Echo(ctx, c)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
 
-	if ntid < tid {
-		t.Errorf("Expect a bigger tid as %d, got: %d", tid, ntid)
+	if c.tid < oldTid {
+		t.Errorf("Expect a bigger tid as %d, got: %d", oldTid, c.tid)
 	}
 
 	if len(data) != 1 || string(data["user/1/name"]) != "some value" {

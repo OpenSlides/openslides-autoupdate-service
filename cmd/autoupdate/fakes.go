@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // fakeReceiver implements the Receiver interface. It reads on a Reader, for example stdin and
@@ -31,7 +32,7 @@ func (r faker) KeysChanged() ([]string, error) {
 	for _, d := range data {
 		keyValue := strings.SplitN(d, "=", 2)
 		if len(keyValue) == 1 {
-			keyValue = append(keyValue, "some new value")
+			keyValue = append(keyValue, fmt.Sprintf("The time is: %s", time.Now()))
 		}
 		keys = append(keys, keyValue[0])
 		r.data[keyValue[0]] = []byte(keyValue[1])
