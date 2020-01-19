@@ -12,6 +12,7 @@ import (
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysbuilder"
+	ahttp "github.com/openslides/openslides-autoupdate-service/internal/http"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis/conn"
 )
@@ -37,7 +38,7 @@ func main() {
 	}
 
 	// Chose the auth service
-	var authService autoupdate.Authenticator
+	var authService ahttp.Authenticator
 	switch getEnv("AUTH_SERVICE", "fake") {
 	default:
 		authService = fakeAuth{}
@@ -52,7 +53,7 @@ func main() {
 
 	aService := autoupdate.New(restricter, receiver)
 
-	handler := autoupdate.NewHandler(aService, authService)
+	handler := ahttp.NewHandler(aService, authService)
 	srv := &http.Server{Addr: listenAddr, Handler: handler}
 	srv.RegisterOnShutdown(aService.Close)
 

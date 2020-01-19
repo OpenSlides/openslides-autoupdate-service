@@ -1,4 +1,4 @@
-package autoupdate
+package http
 
 import (
 	"errors"
@@ -7,18 +7,19 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysrequest"
 )
 
 // Handler is an http handler for the autoupdate service
 type Handler struct {
-	s    *Service
+	s    *autoupdate.Service
 	mux  *http.ServeMux
 	auth Authenticator
 }
 
 // NewHandler create a new Handler with the correct urls
-func NewHandler(s *Service, auth Authenticator) *Handler {
+func NewHandler(s *autoupdate.Service, auth Authenticator) *Handler {
 	h := &Handler{
 		s:    s,
 		mux:  http.NewServeMux(),
@@ -56,14 +57,14 @@ func (h *Handler) autoupdate(w http.ResponseWriter, r *http.Request) error {
 	}
 	defer r.Body.Close()
 
-	tid, b, data, err := h.s.prepare(r.Context(), uid, keysReqs)
+	tid, b, data, err := h.s.Prepare(r.Context(), uid, keysReqs)
 	if err != nil {
 		return fmt.Errorf("can not get first data: %w", err)
 	}
 	pushData(w, data)
 
 	for {
-		tid, data, err = h.s.echo(r.Context(), uid, tid, b)
+		tid, data, err = h.s.Echo(r.Context(), uid, tid, b)
 		if err != nil {
 			// It is not possible to return the error after content was sent to the client
 			log.Printf("Error: %v", err)
@@ -73,7 +74,7 @@ func (h *Handler) autoupdate(w http.ResponseWriter, r *http.Request) error {
 		select {
 		case <-r.Context().Done():
 			return nil
-		case <-h.s.closed:
+		case <-h.s.IsClosed():
 			return nil
 		default:
 		}
@@ -91,7 +92,8 @@ type errHandleFunc func(w http.ResponseWriter, r *http.Request) error
 
 func (f errHandleFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := f(w, r); err != nil {
-		if errors.Is(err, err400{}) {
+		var inputErr autoupdate.ErrInput
+		if errors.As(err, &inputErr) {
 			write400(w, err.Error())
 			return
 		}
@@ -104,20 +106,4 @@ func write400(w http.ResponseWriter, msg string) error {
 	w.WriteHeader(http.StatusBadRequest)
 	fmt.Fprint(w, msg)
 	return nil
-}
-
-type err400 struct {
-	err error
-}
-
-func raise400(e error) err400 {
-	return err400{err: e}
-}
-
-func (e err400) Error() string {
-	return e.err.Error()
-}
-
-func (e err400) Unwrap() error {
-	return e.err
 }

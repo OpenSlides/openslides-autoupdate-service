@@ -1,16 +1,5 @@
 package autoupdate
 
-import (
-	"context"
-	"net/http"
-)
-
-// Authenticator gives an user id for an request.
-// returns 0 for anonymous.
-type Authenticator interface {
-	Authenticate(context.Context, *http.Request) (int, error)
-}
-
 // KeysChangedReceiver returns keys that have changes.
 // Blocks for some time until there are changed data.
 // An implementation should not block forever but return

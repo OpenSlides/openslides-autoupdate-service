@@ -42,6 +42,12 @@ func (s *Service) Close() {
 	}
 }
 
+// IsClosed returns a channel that is closed when the autoupdate service is
+// closed
+func (s *Service) IsClosed() <-chan struct{} {
+	return s.closed
+}
+
 func (s *Service) pruneTopic() {
 	tick := time.NewTicker(time.Second)
 	defer tick.Stop()
@@ -76,11 +82,13 @@ func (s *Service) receiveKeyChanges() {
 	}
 }
 
-func (s *Service) prepare(ctx context.Context, uid int, krs []keysrequest.KeysRequest) (uint64, *keysbuilder.Builder, map[string][]byte, error) {
+// Prepare gives the first data for a list of keysrequests and returns the keysbuilder objekt
+// to pass to Echo
+func (s *Service) Prepare(ctx context.Context, uid int, krs []keysrequest.KeysRequest) (uint64, *keysbuilder.Builder, map[string][]byte, error) {
 	b, err := keysbuilder.New(uid, s.restricter, krs...)
 	if err != nil {
 		if errors.Is(err, keysrequest.ErrInvalid{}) {
-			err = raise400(err)
+			err = raiseErrInput(err)
 		}
 		return 0, nil, nil, fmt.Errorf("can not build keys: %w", err)
 	}
@@ -92,11 +100,19 @@ func (s *Service) prepare(ctx context.Context, uid int, krs []keysrequest.KeysRe
 	return s.topic.LastID(), b, data, nil
 }
 
-func (s *Service) echo(ctx context.Context, uid int, tid uint64, b *keysbuilder.Builder) (uint64, map[string][]byte, error) {
+// Echo listens for data changes and blocks until then. When data has changed,
+// it returns with the new data.
+// When the given context is done, it returns immediately with nil data
+func (s *Service) Echo(ctx context.Context, uid int, tid uint64, b *keysbuilder.Builder) (uint64, map[string][]byte, error) {
 	changedKeys, tid, err := s.topic.Get(ctx, tid)
 	if err != nil {
 		return 0, nil, fmt.Errorf("can not get new data: %w", err)
 	}
+	if len(changedKeys) == 0 {
+		// Exit early
+		return tid, nil, nil
+	}
+
 	oldKeys := b.Keys()
 	if err := b.Update(changedKeys); err != nil {
 		return 0, nil, fmt.Errorf("can not update keybuilder: %w", err)

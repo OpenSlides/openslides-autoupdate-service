@@ -20,7 +20,7 @@ func TestPrepare(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
-	_, _, data, err := s.prepare(ctx, 1, krs)
+	_, _, data, err := s.Prepare(ctx, 1, krs)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
@@ -41,7 +41,7 @@ func TestEchoNoNewData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
-	tid, keys, _, err := s.prepare(ctx, 1, krs)
+	tid, keys, _, err := s.Prepare(ctx, 1, krs)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
@@ -51,7 +51,7 @@ func TestEchoNoNewData(t *testing.T) {
 		cancel()
 	}()
 
-	ntid, data, err := s.echo(ctx, 1, tid, keys)
+	ntid, data, err := s.Echo(ctx, 1, tid, keys)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
@@ -75,14 +75,14 @@ func TestEchoNewData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
-	tid, keys, _, err := s.prepare(ctx, 1, krs)
+	tid, keys, _, err := s.Prepare(ctx, 1, krs)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
 
 	keychanges.send(KeyChanges{Updated: []string{"user/1/name"}})
 
-	ntid, data, err := s.echo(ctx, 1, tid, keys)
+	ntid, data, err := s.Echo(ctx, 1, tid, keys)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
