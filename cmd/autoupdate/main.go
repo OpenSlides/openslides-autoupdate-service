@@ -52,7 +52,7 @@ func main() {
 
 	aService := autoupdate.New(restricter, receiver)
 
-	handler := ahttp.NewHandler(aService, authService)
+	handler := ahttp.New(aService, authService)
 	srv := &http.Server{Addr: listenAddr, Handler: handler}
 	srv.RegisterOnShutdown(aService.Close)
 

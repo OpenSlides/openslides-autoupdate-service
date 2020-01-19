@@ -18,8 +18,8 @@ type Handler struct {
 	auth Authenticator
 }
 
-// NewHandler create a new Handler with the correct urls
-func NewHandler(s *autoupdate.Service, auth Authenticator) *Handler {
+// New create a new Handler with the correct urls
+func New(s *autoupdate.Service, auth Authenticator) *Handler {
 	h := &Handler{
 		s:    s,
 		mux:  http.NewServeMux(),

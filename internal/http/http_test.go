@@ -12,7 +12,7 @@ import (
 
 func TestHandlerTestURLs(t *testing.T) {
 	s := &autoupdate.Service{}
-	srv := httptest.NewServer(ahttp.NewHandler(s, mockAuth{1}))
+	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}))
 	defer srv.Close()
 
 	tc := []struct {
