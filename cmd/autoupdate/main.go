@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysbuilder"
 	ahttp "github.com/openslides/openslides-autoupdate-service/internal/http"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis/conn"
@@ -45,7 +44,7 @@ func main() {
 	}
 
 	// Chose the restricter service
-	var restricter keysbuilder.Restricter
+	var restricter autoupdate.Restricter
 	switch getEnv("RESTRICTER_SERVICE", "fake") {
 	default:
 		restricter = f

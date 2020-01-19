@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -63,31 +62,6 @@ func (r faker) Restrict(ctx context.Context, uid int, keys []string) (map[string
 		}
 	}
 	return out, nil
-}
-
-func (r faker) IDsFromKey(ctx context.Context, uid int, key string) ([]int, error) {
-	o := r.data[key]
-	if len(o) != 0 {
-		var id int
-		if err := json.Unmarshal(o, &id); err != nil {
-			var ids []int
-			if err := json.Unmarshal(o, &ids); err != nil {
-				return nil, fmt.Errorf("Invalid value %s for field %s", o, key)
-			}
-			return ids, nil
-		}
-		return []int{id}, nil
-	}
-	if strings.HasPrefix(key, "not_exist") {
-		return nil, nil
-	}
-	if strings.HasSuffix(key, "_id") {
-		return []int{1}, nil
-	}
-	if !strings.HasSuffix(key, "_ids") {
-		return nil, fmt.Errorf("Key %s can not be a reference; expected suffex _id or _ids", key)
-	}
-	return []int{1, 2}, nil
 }
 
 // fake Auth implements the Authenticater interface. It always returns 1.

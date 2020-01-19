@@ -14,18 +14,16 @@ const keySep = "/"
 
 // Builder ...
 type Builder struct {
-	user         int
-	restricter   Restricter
+	ider         IDer
 	keysRequests []keysrequest.KeysRequest
 	cache        *cache
 	keys         []string
 }
 
 // New creates a new Builder instance
-func New(user int, restricter Restricter, keysRequests ...keysrequest.KeysRequest) (*Builder, error) {
+func New(ider IDer, keysRequests ...keysrequest.KeysRequest) (*Builder, error) {
 	b := &Builder{
-		user:         user,
-		restricter:   restricter,
+		ider:         ider,
 		keysRequests: keysRequests,
 		cache:        newCache(),
 	}
@@ -103,7 +101,7 @@ func (b *Builder) run(ctx context.Context, ids []int, fd keysrequest.FieldDescri
 			go func(name string, ifd keysrequest.FieldDescription) {
 				defer wg.Done()
 				ids := b.cache.getOrSet(name, func() []int {
-					ids, err := b.restricter.IDsFromKey(ctx, b.user, name)
+					ids, err := b.ider.IDs(ctx, name)
 					if err != nil {
 						ec <- err
 						return nil

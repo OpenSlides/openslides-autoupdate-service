@@ -67,7 +67,7 @@ func (h *Handler) autoupdate(w http.ResponseWriter, r *http.Request) error {
 		tid, data, err = h.s.Echo(r.Context(), uid, tid, b)
 		if err != nil {
 			// It is not possible to return the error after content was sent to the client
-			log.Printf("Error: %v", err)
+			fmt.Fprintf(w, "Error: Ups, something went wrong!")
 			return nil
 		}
 		pushData(w, data)

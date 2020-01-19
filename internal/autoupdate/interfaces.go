@@ -1,5 +1,7 @@
 package autoupdate
 
+import "context"
+
 // KeysChangedReceiver returns keys that have changes.
 // Blocks for some time until there are changed data.
 // An implementation should not block forever but return
@@ -27,4 +29,9 @@ type PermChanges struct {
 	FullQualifiedKeys []string
 	CollectionKeys    []string
 	UserIds           []int
+}
+
+// Restricter restricts keys. See autoupdate.Restricter
+type Restricter interface {
+	Restrict(ctx context.Context, uid int, keys []string) (map[string][]byte, error)
 }

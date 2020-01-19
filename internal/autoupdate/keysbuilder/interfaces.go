@@ -2,8 +2,7 @@ package keysbuilder
 
 import "context"
 
-// Restricter restricts keys. See autoupdate.Restricter
-type Restricter interface {
-	Restrict(ctx context.Context, uid int, keys []string) (map[string][]byte, error)
-	IDsFromKey(ctx context.Context, uid int, key string) ([]int, error)
+// IDer restricts keys. See autoupdate.IDer
+type IDer interface {
+	IDs(ctx context.Context, key string) ([]int, error)
 }

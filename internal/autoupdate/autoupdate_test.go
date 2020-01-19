@@ -3,10 +3,11 @@ package autoupdate
 import (
 	"context"
 	"fmt"
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysrequest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysrequest"
 )
 
 func TestPrepare(t *testing.T) {
@@ -96,12 +97,22 @@ func TestEchoNewData(t *testing.T) {
 	}
 }
 
-type mockRestricter struct{}
+type mockRestricter struct {
+	data map[string]string
+}
 
 func (r mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (map[string][]byte, error) {
 	out := make(map[string][]byte, len(keys))
 	for _, key := range keys {
+		v, ok := r.data[key]
+		if ok {
+			out[key] = []byte(v)
+			continue
+		}
+
 		switch {
+		case strings.HasPrefix(key, "error"):
+			return nil, fmt.Errorf("Restricter got an error")
 		case strings.HasSuffix(key, "_id"):
 			out[key] = []byte("1")
 		case strings.HasSuffix(key, "_ids"):
@@ -111,19 +122,6 @@ func (r mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (m
 		}
 	}
 	return out, nil
-}
-
-func (r mockRestricter) IDsFromKey(ctx context.Context, uid int, key string) ([]int, error) {
-	if strings.HasPrefix(key, "not_exist") {
-		return nil, nil
-	}
-	if strings.HasSuffix(key, "_id") {
-		return []int{1}, nil
-	}
-	if !strings.HasSuffix(key, "_ids") {
-		return nil, fmt.Errorf("Key %s can not be a reference; expected suffex _id or _ids", key)
-	}
-	return []int{1, 2}, nil
 }
 
 type mockKeyChanged struct {

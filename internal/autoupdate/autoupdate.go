@@ -14,14 +14,14 @@ import (
 
 // Service holds the state of the autoupdate service
 type Service struct {
-	restricter keysbuilder.Restricter
+	restricter Restricter
 	keyChanged KeysChangedReceiver
 	closed     chan struct{}
 	topic      topic.Topic
 }
 
 // New creates a new autoupdate service
-func New(restricter keysbuilder.Restricter, keyChanges KeysChangedReceiver) *Service {
+func New(restricter Restricter, keyChanges KeysChangedReceiver) *Service {
 	s := &Service{
 		restricter: restricter,
 		keyChanged: keyChanges,
@@ -85,7 +85,7 @@ func (s *Service) receiveKeyChanges() {
 // Prepare gives the first data for a list of keysrequests and returns the keysbuilder objekt
 // to pass to Echo
 func (s *Service) Prepare(ctx context.Context, uid int, krs []keysrequest.KeysRequest) (uint64, *keysbuilder.Builder, map[string][]byte, error) {
-	b, err := keysbuilder.New(uid, s.restricter, krs...)
+	b, err := keysbuilder.New(restrictedIDs{uid, s.restricter}, krs...)
 	if err != nil {
 		if errors.Is(err, keysrequest.ErrInvalid{}) {
 			err = raiseErrInput(err)
@@ -115,7 +115,7 @@ func (s *Service) Echo(ctx context.Context, uid int, tid uint64, b *keysbuilder.
 
 	oldKeys := b.Keys()
 	if err := b.Update(changedKeys); err != nil {
-		return 0, nil, fmt.Errorf("can not update keybuilder: %w", err)
+		return 0, nil, fmt.Errorf("can not update keysbuilder: %w", err)
 	}
 	keys := keysDiff(oldKeys, b.Keys())
 

@@ -11,3 +11,6 @@
 # Internal
 * Find a place for mocks and interfaces
 * Run code checks in tests/Dockerfile
+
+# Discuss
+* What should Restricter return when an error happens in an open connection (after http 200 was send)
