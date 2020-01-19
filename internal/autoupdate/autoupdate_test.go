@@ -81,7 +81,7 @@ func TestEchoNewData(t *testing.T) {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
 
-	keychanges.send(KeyChanges{Updated: []string{"user/1/name"}})
+	keychanges.send([]string{"user/1/name"})
 
 	ntid, data, err := s.Echo(ctx, 1, tid, keys)
 	if err != nil {
@@ -125,28 +125,28 @@ func (r mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (m
 }
 
 type mockKeyChanged struct {
-	c chan KeyChanges
+	c chan []string
 	t *time.Ticker
 }
 
 func newMockKeyChanged() mockKeyChanged {
 	m := mockKeyChanged{}
-	m.c = make(chan KeyChanges, 1)
+	m.c = make(chan []string, 1)
 	m.t = time.NewTicker(time.Second)
 	return m
 }
 
-func (m mockKeyChanged) KeysChanged() (KeyChanges, error) {
+func (m mockKeyChanged) KeysChanged() ([]string, error) {
 	select {
 	case v := <-m.c:
 		return v, nil
 	case <-m.t.C:
-		return KeyChanges{}, nil
+		return nil, nil
 	}
 }
 
-func (m mockKeyChanged) send(kc KeyChanges) {
-	m.c <- kc
+func (m mockKeyChanged) send(keys []string) {
+	m.c <- keys
 }
 
 func (m mockKeyChanged) close() {

@@ -70,15 +70,15 @@ func (s *Service) receiveKeyChanges() {
 		default:
 		}
 
-		kc, err := s.keyChanged.KeysChanged()
+		keys, err := s.keyChanged.KeysChanged()
 		if err != nil {
 			log.Printf("TODO: %v", err)
 		}
-		if len(kc.Updated) == 0 {
+		if len(keys) == 0 {
 			continue
 		}
 
-		s.topic.Save(kc.Updated)
+		s.topic.Save(keys)
 	}
 }
 

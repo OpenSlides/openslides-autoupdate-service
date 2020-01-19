@@ -13,13 +13,13 @@ var r = redis.Service{Conn: mockConn{}}
 //var r = redis.Service{Conn: conn.New("localhost:6379")}
 
 func TestKeysChangedOnce(t *testing.T) {
-	kc, err := r.KeysChanged()
+	keys, err := r.KeysChanged()
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
 	expect := []string{"key1", "key2", "key3"}
-	if !cmpSlice(kc.Updated, expect) {
-		t.Errorf("Expected %v, got %v", expect, kc.Updated)
+	if !cmpSlice(keys, expect) {
+		t.Errorf("Expected %v, got %v", expect, keys)
 	}
 }
 
@@ -28,13 +28,13 @@ func TestKeysChangedTwice(t *testing.T) {
 		t.Errorf("Expected no error, got: %v", err)
 	}
 
-	kc, err := r.KeysChanged()
+	keys, err := r.KeysChanged()
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
 	expect := []string{}
-	if !cmpSlice(kc.Updated, expect) {
-		t.Errorf("Expected %v, got %v", expect, kc.Updated)
+	if !cmpSlice(keys, expect) {
+		t.Errorf("Expected %v, got %v", expect, keys)
 	}
 
 }

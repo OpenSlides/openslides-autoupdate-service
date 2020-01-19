@@ -29,13 +29,13 @@ func TestStream(t *testing.T) {
 		t.Fatalf("Data is invalid json: %v", err)
 	}
 
-	id, kc, err := stream(data, nil)
+	id, keys, err := stream(data, nil)
 	if err != nil {
 		t.Errorf("Did not expect an error, got: %v", err)
 	}
 	expect := []string{"key1", "key2", "key3"}
-	if !cmpSlice(kc.Updated, expect) {
-		t.Errorf("Expected %v, got %v", expect, kc.Updated)
+	if !cmpSlice(keys, expect) {
+		t.Errorf("Expected %v, got %v", expect, keys)
 	}
 	if id != "12346-0" {
 		t.Errorf("Expected id to be 12346-0, got: %v", id)

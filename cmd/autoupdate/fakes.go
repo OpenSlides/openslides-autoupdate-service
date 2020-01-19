@@ -7,8 +7,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 )
 
 // fakeReceiver implements the Receiver interface. It reads on a Reader, for example stdin and
@@ -18,15 +16,14 @@ type faker struct {
 	data map[string][]byte
 }
 
-func (r faker) KeysChanged() (autoupdate.KeyChanges, error) {
-	kc := autoupdate.KeyChanges{}
+func (r faker) KeysChanged() ([]string, error) {
 	msg, err := r.buf.ReadString('\n')
 	if err == io.EOF {
 		// Don't return anything (block forever) if the reader is empty.
 		select {}
 	}
 	if err != nil {
-		return kc, fmt.Errorf("can not read from buffer: %v", err) //TODO: in %w ändern
+		return nil, fmt.Errorf("can not read from buffer: %v", err) //TODO: in %w ändern
 	}
 
 	data := strings.Split(strings.TrimSpace(msg), " ")
@@ -39,9 +36,7 @@ func (r faker) KeysChanged() (autoupdate.KeyChanges, error) {
 		keys = append(keys, keyValue[0])
 		r.data[keyValue[0]] = []byte(keyValue[1])
 	}
-	kc.Updated = keys
-
-	return kc, nil
+	return keys, nil
 }
 
 func (r faker) Restrict(ctx context.Context, uid int, keys []string) (map[string][]byte, error) {
