@@ -7,9 +7,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
-	"github.com/openslides/openslides-autoupdate-service/internal/keysrequest"
-	"github.com/openslides/openslides-autoupdate-service/internal/topic"
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysbuilder"
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysrequest"
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/topic"
 )
 
 // Service holds the state of the autoupdate service

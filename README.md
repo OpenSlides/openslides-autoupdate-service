@@ -45,7 +45,7 @@ of the request. Currently, all method-types (POST, GET, etc) are supported. An e
 
 `curl localhost:8002/autoupdate/ -d '[{"ids": [5], "collection": "user", "fields": {"name": null}}]'`
 
-To see a list of possible json-strings see the file internal/keysbuilder/keysbuilder_test.go
+To see a list of possible json-strings see the file internal/autoupdate/keysbuilder/keysbuilder_test.go
 
 After the request is send, the values to the keys are returned in the form
 ```

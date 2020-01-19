@@ -3,7 +3,7 @@ package autoupdate
 import (
 	"context"
 	"fmt"
-	"github.com/openslides/openslides-autoupdate-service/internal/keysrequest"
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysrequest"
 	"strings"
 	"testing"
 	"time"

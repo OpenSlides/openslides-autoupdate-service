@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/keysrequest"
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysrequest"
 )
 
 // Handler is an http handler for the autoupdate service

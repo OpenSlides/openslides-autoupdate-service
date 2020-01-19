@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/keysrequest"
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysrequest"
 )
 
 const keySep = "/"
