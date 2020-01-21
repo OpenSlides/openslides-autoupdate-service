@@ -1,6 +1,7 @@
 package keysbuilder
 
 import (
+	"strings"
 	"sync"
 )
 
@@ -41,4 +42,15 @@ func (c *cache) getOrSet(key string, set func() []int) []int {
 	c.mu.Unlock()
 	<-entry.done
 	return entry.ids
+}
+
+func (c *cache) delete(keys []string) {
+	c.mu.Lock()
+	for _, key := range keys {
+		if !(strings.HasSuffix(key, "_id") || strings.HasSuffix(key, "_ids")) {
+			continue
+		}
+		delete(c.data, key)
+	}
+	c.mu.Unlock()
 }

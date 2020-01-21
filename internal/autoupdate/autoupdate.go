@@ -1,3 +1,5 @@
+// Package autoupdate holds the logik to register the keysrequests of clients and inform them
+// about updates.
 package autoupdate
 
 import (
@@ -12,7 +14,11 @@ import (
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/topic"
 )
 
-// Service holds the state of the autoupdate service
+// pruneTime defines how long a topic id will be valid. If a client needs more time to process
+// the data, it will get an error and has to reconnect.
+const pruneTime = 10 * time.Second
+
+// Service holds the state of the autoupdate service.
 type Service struct {
 	restricter Restricter
 	keyChanged KeysChangedReceiver
@@ -20,7 +26,7 @@ type Service struct {
 	topic      topic.Topic
 }
 
-// New creates a new autoupdate service
+// New creates a new autoupdate service.
 func New(restricter Restricter, keyChanges KeysChangedReceiver) *Service {
 	s := &Service{
 		restricter: restricter,
@@ -33,7 +39,7 @@ func New(restricter Restricter, keyChanges KeysChangedReceiver) *Service {
 	return s
 }
 
-// Close calls the shutdown logic of the service
+// Close calls the shutdown logic of the service.
 func (s *Service) Close() {
 	select {
 	case <-s.closed:
@@ -43,11 +49,13 @@ func (s *Service) Close() {
 }
 
 // IsClosed returns a channel that is closed when the autoupdate service is
-// closed
+// closed.
 func (s *Service) IsClosed() <-chan struct{} {
 	return s.closed
 }
 
+// pruneTopic removes old data from the topic.
+// Blocks until the service is closed.
 func (s *Service) pruneTopic() {
 	tick := time.NewTicker(time.Second)
 	defer tick.Stop()
@@ -56,14 +64,15 @@ func (s *Service) pruneTopic() {
 		case <-s.closed:
 			return
 		case <-tick.C:
-			s.topic.Prune(time.Now().Add(-10 * time.Second))
+			s.topic.Prune(time.Now().Add(-pruneTime))
 		}
 	}
 }
 
+// receiveKeyChanges listens for updates and saves then into the topic.
+// Blocks until the service is closed.
 func (s *Service) receiveKeyChanges() {
 	for {
-		// Test if the service has been closed
 		select {
 		case <-s.closed:
 			return
@@ -72,8 +81,10 @@ func (s *Service) receiveKeyChanges() {
 
 		keys, err := s.keyChanged.KeysChanged()
 		if err != nil {
-			log.Printf("TODO: %v", err)
+			log.Printf("Could not update keys: %v", err)
+			continue
 		}
+
 		if len(keys) == 0 {
 			continue
 		}
@@ -83,7 +94,7 @@ func (s *Service) receiveKeyChanges() {
 }
 
 // Prepare gives the first data for a list of keysrequests and returns a connection objekt
-// to pass to Echo
+// to pass to Echo.
 func (s *Service) Prepare(ctx context.Context, uid int, krs []keysrequest.KeysRequest) (*Connection, map[string][]byte, error) {
 	c := &Connection{
 		user: uid,
@@ -123,7 +134,7 @@ func (s *Service) Echo(ctx context.Context, c *Connection) (map[string][]byte, e
 
 	oldKeys := c.b.Keys()
 
-	// Update keysbuilder go get new list of keys
+	// Update keysbuilder get new list of keys
 	if err := c.b.Update(changedKeys); err != nil {
 		return nil, fmt.Errorf("can not update keysbuilder: %w", err)
 	}

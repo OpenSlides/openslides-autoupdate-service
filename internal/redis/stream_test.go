@@ -48,23 +48,23 @@ func TestStreamInvalidData(t *testing.T) {
 		json string
 		err  string
 	}{
-		{"Outer list", `"data"`, "Invalid input. Data has to be a list"},
-		{"One stream", `[]`, "Invalid input. No stream in data"},
-		{"Stream no list", `["data"]`, "Invalid input. Stream has to be a two-tuple"},
-		{"Stream no elements", `[[]]`, "Invalid input. Stream has to be a two-tuple"},
-		{"Stream one element", `[["one"]]`, "Invalid input. Stream has to be a two-tuple"},
-		{"Stream tree elements", `[["one", "two", "tree"]]`, "Invalid input. Stream has to be a two-tuple"},
-		{"Stream data no list", `[["one", "two"]]`, "Invalid input. Stream data has to be a list"},
-		{"Stream element no list", `[["one", ["data"]]]`, "Invalid input. Stream element has to be a two-tuple"},
-		{"Stream element no elements", `[["one", [[]]]]`, "Invalid input. Stream element has to be a two-tuple"},
-		{"Stream element one element", `[["one", [["one"]]]]`, "Invalid input. Stream element has to be a two-tuple"},
-		{"Stream element tree elements", `[["one", [["one", "two", "tree"]]]]`, "Invalid input. Stream element has to be a two-tuple"},
-		{"id no string", `[["one", [[123, ["data"]]]]]`, "Invalid input. Stream ID has to be a string"},
-		{"key-value no string list", `[["one", [["123", "data"]]]]`, "Invalid input. Key values has to be a list of strings"},
-		{"Odd key value", `[["one", [["123", ["1"]]]]]`, "Invalid input. Odd number of key value pairs"},
-		{"Key no string", `[["one", [["123", [1, "2"]]]]]`, "Invalid input. Key has to be a string"},
-		{"Value no string", `[["one", [["123", ["1", 2]]]]]`, "Invalid input. Values has to be a string"},
-		{"unknown key", `[["one", [["123", ["data", "value"]]]]]`, "Invalid input. Unknown key \"data\""},
+		{"Outer list", `"data"`, "invalid input. Data has to be a list"},
+		{"One stream", `[]`, "invalid input. No stream in data"},
+		{"Stream no list", `["data"]`, "invalid input. Stream has to be a two-tuple"},
+		{"Stream no elements", `[[]]`, "invalid input. Stream has to be a two-tuple"},
+		{"Stream one element", `[["one"]]`, "invalid input. Stream has to be a two-tuple"},
+		{"Stream tree elements", `[["one", "two", "tree"]]`, "invalid input. Stream has to be a two-tuple"},
+		{"Stream data no list", `[["one", "two"]]`, "invalid input. Stream data has to be a list"},
+		{"Stream element no list", `[["one", ["data"]]]`, "invalid input. Stream element has to be a two-tuple"},
+		{"Stream element no elements", `[["one", [[]]]]`, "invalid input. Stream element has to be a two-tuple"},
+		{"Stream element one element", `[["one", [["one"]]]]`, "invalid input. Stream element has to be a two-tuple"},
+		{"Stream element tree elements", `[["one", [["one", "two", "tree"]]]]`, "invalid input. Stream element has to be a two-tuple"},
+		{"id no string", `[["one", [[123, ["data"]]]]]`, "invalid input. Stream ID has to be a string"},
+		{"key-value no string list", `[["one", [["123", "data"]]]]`, "invalid input. Key values has to be a list of strings"},
+		{"Odd key value", `[["one", [["123", ["1"]]]]]`, "invalid input. Odd number of key value pairs"},
+		{"Key no string", `[["one", [["123", [1, "2"]]]]]`, "invalid input. Key has to be a string"},
+		{"Value no string", `[["one", [["123", ["1", 2]]]]]`, "invalid input. Values has to be a string"},
+		{"unknown key", `[["one", [["123", ["data", "value"]]]]]`, "invalid input. Unknown key \"data\""},
 	}
 	for _, tt := range td {
 		t.Run(tt.name, func(t *testing.T) {
@@ -83,7 +83,6 @@ func TestStreamInvalidData(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func cmpSlice(one, two []string) bool {

@@ -6,6 +6,20 @@ import (
 	"strings"
 )
 
+// KeysRequest holds the information what keys are requested by the client
+type KeysRequest struct {
+	IDs []int `json:"ids"`
+	FieldDescription
+}
+
+// validate maks sure the KeysRequest is valid. Returns an ErrInvalid if not.
+func (kr *KeysRequest) validate() error {
+	if len(kr.IDs) == 0 {
+		return ErrInvalid{msg: "no ids"}
+	}
+	return kr.FieldDescription.validate()
+}
+
 // FieldDescription describes in a abstract way fields of a collection.
 // It can also map to related keys.
 type FieldDescription struct {
@@ -36,21 +50,6 @@ func (fd *FieldDescription) validate() error {
 			sub := err.(ErrInvalid)
 			return ErrInvalid{sub: &sub, field: name, msg: "Error on field"}
 		}
-
 	}
 	return nil
-}
-
-// KeysRequest holds the information what keys are requested by the client
-type KeysRequest struct {
-	IDs []int `json:"ids"`
-	FieldDescription
-}
-
-// Validate maks sure the KeysRequest is valid. Returns an ErrInvalid if not.
-func (kr *KeysRequest) Validate() error {
-	if len(kr.IDs) == 0 {
-		return ErrInvalid{msg: "no ids"}
-	}
-	return kr.FieldDescription.validate()
 }

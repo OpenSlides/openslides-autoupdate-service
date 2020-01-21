@@ -6,14 +6,21 @@ import (
 	"testing"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
+	"github.com/openslides/openslides-autoupdate-service/internal/redis/conn"
 )
 
-var r = redis.Service{Conn: mockConn{}}
+const useRealRedis = false
 
-//var r = redis.Service{Conn: conn.New("localhost:6379")}
+func getRedis() *redis.Service {
+	var c redis.Connection = mockConn{}
+	if useRealRedis {
+		c = conn.New("localhost:6379")
+	}
+	return &redis.Service{Conn: c}
+}
 
 func TestKeysChangedOnce(t *testing.T) {
-	keys, err := r.KeysChanged()
+	keys, err := getRedis().KeysChanged()
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -24,6 +31,7 @@ func TestKeysChangedOnce(t *testing.T) {
 }
 
 func TestKeysChangedTwice(t *testing.T) {
+	r := getRedis()
 	if _, err := r.KeysChanged(); err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -36,7 +44,6 @@ func TestKeysChangedTwice(t *testing.T) {
 	if !cmpSlice(keys, expect) {
 		t.Errorf("Expected %v, got %v", expect, keys)
 	}
-
 }
 
 type mockConn struct{}

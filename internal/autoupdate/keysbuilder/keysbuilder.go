@@ -1,10 +1,9 @@
-// Package keysbuilder ...
+// Package keysbuilder holds a datastructure to get all requested keys from  keysrequests.
 package keysbuilder
 
 import (
 	"context"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysrequest"
@@ -12,7 +11,7 @@ import (
 
 const keySep = "/"
 
-// Builder ...
+// Builder builds the keys from a list of keysrequest.
 type Builder struct {
 	ider         IDer
 	keysRequests []keysrequest.KeysRequest
@@ -35,14 +34,7 @@ func New(ider IDer, keysRequests ...keysrequest.KeysRequest) (*Builder, error) {
 
 // Update triggers a keyupdate
 func (b *Builder) Update(keys []string) error {
-	b.cache.mu.Lock()
-	for _, key := range keys {
-		if !(strings.HasSuffix(key, "_id") || strings.HasSuffix(key, "_ids")) {
-			continue
-		}
-		delete(b.cache.data, key)
-	}
-	b.cache.mu.Unlock()
+	b.cache.delete(keys)
 	return b.genKeys()
 }
 
