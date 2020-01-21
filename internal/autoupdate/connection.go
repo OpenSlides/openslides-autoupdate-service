@@ -1,8 +1,9 @@
 package autoupdate
 
-import "github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysbuilder"
-
-import "github.com/cespare/xxhash/v2"
+import (
+	"github.com/cespare/xxhash/v2"
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysbuilder"
+)
 
 // Connection holds the state of an open connection to the autoupdate system
 type Connection struct {

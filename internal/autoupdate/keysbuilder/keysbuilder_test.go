@@ -273,8 +273,8 @@ func TestConcurency(t *testing.T) {
 	finished := time.Since(start)
 	if finished > 30*time.Millisecond {
 		t.Errorf("Expect keysbuilder to run in less then 30 Milliseconds, got: %v", finished)
-
 	}
+
 	expect := []string{"user/1/group_ids", "user/2/group_ids", "user/3/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name"}
 	if diff := cmpSet(set(expect...), set(keys...)); diff != nil {
 		t.Errorf("Expected %v, got: %v", expect, diff)
@@ -311,7 +311,7 @@ func TestManyRequests(t *testing.T) {
 			}
 		}
 	}`}
-	var krs []keysrequest.KeysRequest
+	krs := make([]keysrequest.KeysRequest, 0, len(reqs))
 	for _, req := range reqs {
 		kr, err := keysrequest.FromJSON(strings.NewReader(req))
 		if err != nil {
@@ -368,7 +368,7 @@ func TestError(t *testing.T) {
 			}
 		}
 	}`}
-	var krs []keysrequest.KeysRequest
+	krs := make([]keysrequest.KeysRequest, 0, len(reqs))
 	for _, req := range reqs {
 		kr, err := keysrequest.FromJSON(strings.NewReader(req))
 		if err != nil {

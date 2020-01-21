@@ -1,3 +1,4 @@
+// Package http helps to handel http requests for the autoupate service.
 package http
 
 import (
@@ -11,14 +12,14 @@ import (
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysrequest"
 )
 
-// Handler is an http handler for the autoupdate service
+// Handler is an http handler for the autoupdate service.
 type Handler struct {
 	s    *autoupdate.Service
 	mux  *http.ServeMux
 	auth Authenticator
 }
 
-// New create a new Handler with the correct urls
+// New create a new Handler with the correct urls.
 func New(s *autoupdate.Service, auth Authenticator) *Handler {
 	h := &Handler{
 		s:    s,
@@ -42,15 +43,19 @@ func (h *Handler) autoupdate(w http.ResponseWriter, r *http.Request) error {
 	keysReqs, err := keysrequest.ManyFromJSON(r.Body)
 	if err != nil {
 		if errors.Is(err, io.EOF) {
-			return write400(w, "Empty body, expected key request.\n")
+			write400(w, "Empty body, expected key request.\n")
+			return nil
 		}
 		var errInvalid keysrequest.ErrInvalid
 		if errors.As(err, &errInvalid) {
-			return write400(w, fmt.Sprintf("Can not parse key request: %v\n", errInvalid.Error()))
+			write400(w, fmt.Sprintf("Can not parse key request: %v\n", errInvalid.Error()))
+			return nil
 		}
+
 		var errJSON keysrequest.ErrJSON
 		if errors.As(err, &errJSON) {
-			return write400(w, "Request body has to be valid json.\n")
+			write400(w, "Request body has to be valid json.\n")
+			return nil
 		}
 
 		return fmt.Errorf("can not parse request body: %w", err)
@@ -102,8 +107,7 @@ func (f errHandleFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func write400(w http.ResponseWriter, msg string) error {
+func write400(w http.ResponseWriter, msg string) {
 	w.WriteHeader(http.StatusBadRequest)
 	fmt.Fprint(w, msg)
-	return nil
 }

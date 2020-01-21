@@ -21,7 +21,7 @@ func (i restrictedIDs) IDs(ctx context.Context, key string) ([]int, error) {
 	case strings.HasSuffix(key, "_ids"):
 		multi = true
 	default:
-		return nil, fmt.Errorf("Key %s can not be a reference; expected suffix _id or _ids", key)
+		return nil, fmt.Errorf("key %s can not be a reference; expected suffix _id or _ids", key)
 	}
 
 	data, err := i.r.Restrict(ctx, i.user, []string{key})

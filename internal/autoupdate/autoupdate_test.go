@@ -11,7 +11,11 @@ import (
 )
 
 func TestPrepare(t *testing.T) {
+	t.Parallel()
+
 	keychanges := newMockKeyChanged()
+	defer keychanges.close()
+
 	s := New(mockRestricter{}, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -33,7 +37,11 @@ func TestPrepare(t *testing.T) {
 }
 
 func TestEchoNoNewData(t *testing.T) {
+	t.Parallel()
+
 	keychanges := newMockKeyChanged()
+	defer keychanges.close()
+
 	s := New(mockRestricter{}, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -68,7 +76,11 @@ func TestEchoNoNewData(t *testing.T) {
 }
 
 func TestEchoNewData(t *testing.T) {
+	t.Parallel()
+
 	keychanges := newMockKeyChanged()
+	defer keychanges.close()
+
 	s := New(mockRestricter{}, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())

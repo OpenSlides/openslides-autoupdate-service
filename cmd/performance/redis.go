@@ -24,12 +24,12 @@ func newPool(addr string) *redisPool {
 	}
 }
 
+// sendKey updates the key in redis so an autoupdate is tiggert.
 func (p *redisPool) sendKey(key string) {
 	conn := p.pool.Get()
 	defer conn.Close()
 
-	_, err := conn.Do("XADD", redisTopic, "*", "updated", key)
-	if err != nil {
+	if _, err := conn.Do("XADD", redisTopic, "*", "updated", key); err != nil {
 		log.Fatalf("Can not send data to redis: %v", err)
 	}
 }

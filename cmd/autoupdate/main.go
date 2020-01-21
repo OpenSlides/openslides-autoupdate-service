@@ -40,7 +40,7 @@ func main() {
 	var authService ahttp.Authenticator
 	switch getEnv("AUTH_SERVICE", "fake") {
 	default:
-		authService = fakeAuth{}
+		authService = fakeAuth(1)
 	}
 
 	// Chose the restricter service

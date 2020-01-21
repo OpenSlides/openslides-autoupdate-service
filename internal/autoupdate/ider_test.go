@@ -16,7 +16,7 @@ func TestRestrictedIDs(t *testing.T) {
 		idCount int
 		err     string
 	}{
-		{"No Reference", "motion/1/name", 0, "Key motion/1/name can not be a reference; expected suffix _id or _ids"},
+		{"No Reference", "motion/1/name", 0, "key motion/1/name can not be a reference; expected suffix _id or _ids"},
 		{"Restricter error", "error_id", 0, "can not restrict key error_id:"},
 		{"ID field", "motion/1/category_id", 1, ""},
 		{"IDs field", "motion/1/category_ids", 2, ""},
@@ -47,7 +47,7 @@ func TestRestrictedIDsList(t *testing.T) {
 		ids   []int
 		err   string
 	}{
-		{"Emtpy", "", nil, "invalid value, expect list of ints"},
+		{"Empty", "", nil, "invalid value, expect list of ints"},
 		{"Single number", "123", nil, "expected first and last byte to be [ and ]"},
 		{"Letters", "abc", nil, "expected first and last byte to be [ and ]"},
 		{"Not closing", "[1,2,3", nil, "expected first and last byte to be [ and ]"},

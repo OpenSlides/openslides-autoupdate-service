@@ -24,7 +24,7 @@ func (r faker) KeysChanged() ([]string, error) {
 		select {}
 	}
 	if err != nil {
-		return nil, fmt.Errorf("can not read from buffer: %v", err) //TODO: in %w ändern
+		return nil, fmt.Errorf("can not read from buffer: %w", err)
 	}
 
 	data := strings.Split(strings.TrimSpace(msg), " ")
@@ -60,15 +60,9 @@ func (r faker) Restrict(ctx context.Context, uid int, keys []string) (map[string
 	return out, nil
 }
 
-// fake Auth implements the Authenticater interface. It always returns 1.
-type fakeAuth struct {
-	noConnection bool
-}
+// fake Auth implements the Authenticater interface. It always returns the given number.
+type fakeAuth int
 
 func (a fakeAuth) Authenticate(ctx context.Context, _ *http.Request) (int, error) {
-	if a.noConnection {
-		<-ctx.Done()
-		return 0, fmt.Errorf("can not connect to auth service")
-	}
-	return 1, nil
+	return int(a), nil
 }

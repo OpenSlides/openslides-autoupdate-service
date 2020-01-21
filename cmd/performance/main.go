@@ -1,3 +1,7 @@
+// Package performance implments a test tool that opens a lot of connections to an
+// autoupdate server and measures how long it takes to connect and receive some data
+//
+// The autoupdate service has to be started with the redis backend.
 package main
 
 import (
@@ -16,6 +20,7 @@ const (
 
 func main() {
 	p := newPool(redisAddr)
+
 	// Create clients
 	clients := make([]*client, connections)
 	for i := 0; i < connections; i++ {
@@ -36,7 +41,7 @@ func main() {
 	readClients(connections, keys)
 	log.Printf("Connect %d clients took %d milliseconds", connections, time.Since(start)/time.Millisecond)
 
-	// Update one test
+	// Update one key
 	start = time.Now()
 	p.sendKey("user/5/name")
 	readClients(connections, keys)

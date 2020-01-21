@@ -1,9 +1,7 @@
 # Features
 * Listen on permission changes
 * Listen on logout messages
-* Speak with the other services instead of fake services
-  * auth
-  * message bus (redis) for perm changes
+* Speak with the auth service
 * Logging, metrics and traces
 
 # Internal

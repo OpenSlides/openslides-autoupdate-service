@@ -211,7 +211,7 @@ func TestTopicBlockUntilClose(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		if _, _, err := top.Get(context.Background(), 1); err != nil {
-			t.Fatalf("Did not expect an error, got: %v", err)
+			t.Errorf("Did not expect an error, got: %v", err)
 		}
 		close(done)
 	}()
@@ -243,7 +243,7 @@ func TestTopicBlockUntilCtxDone(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		if _, _, err := top.Get(ctx, 1); err != nil {
-			t.Fatalf("Did not expect an error, got: %v", err)
+			t.Errorf("Did not expect an error, got: %v", err)
 		}
 		close(done)
 	}()
@@ -276,7 +276,7 @@ func TestTopicBlockOnHighestID(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		if _, _, err := top.Get(ctx, id); err != nil {
-			t.Fatalf("Did not expect an error, got: %v", err)
+			t.Errorf("Did not expect an error, got: %v", err)
 		}
 		close(done)
 	}()
@@ -342,9 +342,8 @@ func TestTopicGetFutureAfterClosed(t *testing.T) {
 	select {
 	case <-done:
 	case <-timer.C:
-		t.Errorf("Expect Get() not return immediatly")
+		t.Errorf("Expect Get() not return immediately")
 	}
-
 }
 
 func cmpSlice(one, two []string) bool {
