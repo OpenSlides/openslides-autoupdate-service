@@ -16,11 +16,11 @@ func TestStream(t *testing.T) {
 			[
 				[
 					"12345-0",
-					["updated", "key1", "updated", "key2"]
+					["modified", "key1", "modified", "key2"]
 				],
 				[
 					"12346-0",
-					["updated", "key1", "updated", "key3"]
+					["modified", "key1", "modified", "key3"]
 				]
 			]
 		]
