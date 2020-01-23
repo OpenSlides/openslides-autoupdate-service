@@ -15,7 +15,7 @@ const (
 	connections = 5000
 	url         = "http://localhost:8002/autoupdate/"
 	redisAddr   = "localhost:6379"
-	redisTopic  = "field_changed"
+	redisTopic  = "ModifiedFields"
 )
 
 func main() {

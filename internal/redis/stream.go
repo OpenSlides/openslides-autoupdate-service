@@ -65,7 +65,7 @@ func stream(reply interface{}, err error) (string, []string, error) {
 				return "", keys, fmt.Errorf("invalid input. Values has to be a string, got %T", kv[i+1])
 			}
 			switch key {
-			case "updated":
+			case "modified":
 				if !updatedSet[value] {
 					keys = append(keys, value)
 					updatedSet[value] = true

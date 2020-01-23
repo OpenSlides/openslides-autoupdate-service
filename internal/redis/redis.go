@@ -15,7 +15,7 @@ const (
 	blockTimeout = "1000"
 
 	// fieldChangedTopic is the redis key name of the stream.
-	fieldChangedTopic = "field_changed"
+	fieldChangedTopic = "ModifiedFields"
 )
 
 // Service holds the state of the redis receiver
