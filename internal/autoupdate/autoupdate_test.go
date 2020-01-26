@@ -81,7 +81,8 @@ func TestEchoNewData(t *testing.T) {
 	keychanges := newMockKeyChanged()
 	defer keychanges.close()
 
-	s := New(mockRestricter{}, keychanges)
+	restricter := &mockRestricter{}
+	s := New(restricter, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -97,6 +98,7 @@ func TestEchoNewData(t *testing.T) {
 	keychanges.send([]string{"user/1/name"})
 
 	oldTid := c.tid
+	restricter.data = map[string]string{"user/1/name": "new value"}
 	data, err := s.Echo(ctx, c)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
@@ -106,8 +108,8 @@ func TestEchoNewData(t *testing.T) {
 		t.Errorf("Expect a bigger tid as %d, got: %d", oldTid, c.tid)
 	}
 
-	if len(data) != 1 || string(data["user/1/name"]) != "some value" {
-		t.Errorf("Expect data[\"user/1/name\"] to be \"some value\", got: %v", data["user/1/name"])
+	if len(data) != 1 || string(data["user/1/name"]) != "new value" {
+		t.Errorf("Expect data[\"user/1/name\"] to be \"new value\", got: \"%v\"", data["user/1/name"])
 	}
 }
 
@@ -115,12 +117,12 @@ type mockRestricter struct {
 	data map[string]string
 }
 
-func (r mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (map[string][]byte, error) {
-	out := make(map[string][]byte, len(keys))
+func (r mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (map[string]string, error) {
+	out := make(map[string]string, len(keys))
 	for _, key := range keys {
 		v, ok := r.data[key]
 		if ok {
-			out[key] = []byte(v)
+			out[key] = v
 			continue
 		}
 
@@ -128,11 +130,11 @@ func (r mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (m
 		case strings.HasPrefix(key, "error"):
 			return nil, fmt.Errorf("Restricter got an error")
 		case strings.HasSuffix(key, "_id"):
-			out[key] = []byte("1")
+			out[key] = "1"
 		case strings.HasSuffix(key, "_ids"):
-			out[key] = []byte("[1,2]")
+			out[key] = "[1,2]"
 		default:
-			out[key] = []byte("some value")
+			out[key] = "some value"
 		}
 	}
 	return out, nil

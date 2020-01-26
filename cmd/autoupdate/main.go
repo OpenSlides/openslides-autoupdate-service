@@ -14,12 +14,13 @@ import (
 	ahttp "github.com/openslides/openslides-autoupdate-service/internal/http"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis/conn"
+	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
 )
 
 func main() {
 	listenAddr := getEnv("LISTEN_HTTP_ADDR", ":8002")
 
-	f := faker{bufio.NewReader(os.Stdin), make(map[string][]byte)}
+	f := faker{bufio.NewReader(os.Stdin), make(map[string]string)}
 
 	// Choose the topic service
 	var receiver autoupdate.KeysChangedReceiver
@@ -46,6 +47,8 @@ func main() {
 	// Chose the restricter service
 	var restricter autoupdate.Restricter
 	switch getEnv("RESTRICTER_SERVICE", "fake") {
+	case "backend":
+		restricter = &restrict.Service{Addr: getEnv("BACKEND_ADDR", "http://localhost:8000")}
 	default:
 		restricter = f
 	}

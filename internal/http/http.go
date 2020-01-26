@@ -86,7 +86,7 @@ func (h *Handler) autoupdate(w http.ResponseWriter, r *http.Request) error {
 	}
 }
 
-func pushData(w http.ResponseWriter, data map[string][]byte) {
+func pushData(w http.ResponseWriter, data map[string]string) {
 	for key, value := range data {
 		fmt.Fprintf(w, "%s: %s\n", key, value)
 		w.(http.Flusher).Flush()

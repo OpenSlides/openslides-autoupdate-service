@@ -95,7 +95,7 @@ func (s *Service) receiveKeyChanges() {
 
 // Prepare gives the first data for a list of keysrequests and returns a connection objekt
 // to pass to Echo.
-func (s *Service) Prepare(ctx context.Context, uid int, krs []keysrequest.KeysRequest) (*Connection, map[string][]byte, error) {
+func (s *Service) Prepare(ctx context.Context, uid int, krs []keysrequest.KeysRequest) (*Connection, map[string]string, error) {
 	c := &Connection{
 		user: uid,
 		tid:  s.topic.LastID(),
@@ -114,13 +114,14 @@ func (s *Service) Prepare(ctx context.Context, uid int, krs []keysrequest.KeysRe
 	if err != nil {
 		return c, nil, fmt.Errorf("can not restrict data: %v", err)
 	}
+	c.filter(data)
 	return c, data, nil
 }
 
 // Echo listens for data changes and blocks until then. When data has changed,
 // it returns with the new data.
 // When the given context is done, it returns immediately with nil data
-func (s *Service) Echo(ctx context.Context, c *Connection) (map[string][]byte, error) {
+func (s *Service) Echo(ctx context.Context, c *Connection) (map[string]string, error) {
 	changedKeys, tid, err := s.topic.Get(ctx, c.tid)
 	if err != nil {
 		return nil, fmt.Errorf("can not get new data: %w", err)

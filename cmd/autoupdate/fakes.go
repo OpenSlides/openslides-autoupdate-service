@@ -14,7 +14,7 @@ import (
 // takes each word on each line as changed key.
 type faker struct {
 	buf  *bufio.Reader
-	data map[string][]byte
+	data map[string]string
 }
 
 func (r faker) KeysChanged() ([]string, error) {
@@ -35,13 +35,13 @@ func (r faker) KeysChanged() ([]string, error) {
 			keyValue = append(keyValue, fmt.Sprintf("The time is: %s", time.Now()))
 		}
 		keys = append(keys, keyValue[0])
-		r.data[keyValue[0]] = []byte(keyValue[1])
+		r.data[keyValue[0]] = keyValue[1]
 	}
 	return keys, nil
 }
 
-func (r faker) Restrict(ctx context.Context, uid int, keys []string) (map[string][]byte, error) {
-	out := make(map[string][]byte, len(keys))
+func (r faker) Restrict(ctx context.Context, uid int, keys []string) (map[string]string, error) {
+	out := make(map[string]string, len(keys))
 	for _, key := range keys {
 		o := r.data[key]
 		if len(o) != 0 {
@@ -50,11 +50,11 @@ func (r faker) Restrict(ctx context.Context, uid int, keys []string) (map[string
 		}
 		switch {
 		case strings.HasSuffix(key, "_id"):
-			out[key] = []byte("1")
+			out[key] = "1"
 		case strings.HasSuffix(key, "_ids"):
-			out[key] = []byte("[1,2]")
+			out[key] = "[1,2]"
 		default:
-			out[key] = []byte("some data")
+			out[key] = "some data"
 		}
 	}
 	return out, nil

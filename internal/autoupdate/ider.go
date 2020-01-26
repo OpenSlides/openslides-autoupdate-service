@@ -1,7 +1,6 @@
 package autoupdate
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"strconv"
@@ -38,36 +37,37 @@ func (i restrictedIDs) IDs(ctx context.Context, key string) ([]int, error) {
 		return decodeNumberList(rawIDs)
 	}
 
-	id, err := strconv.Atoi(string(rawIDs))
+	id, err := strconv.Atoi(rawIDs)
 	if err != nil {
 		return nil, fmt.Errorf("value in key %s is not an int, got: %s", key, rawIDs)
 	}
 	return []int{id}, nil
 }
 
-func decodeNumberList(buf []byte) ([]int, error) {
-	if len(buf) < 3 {
+func decodeNumberList(value string) ([]int, error) {
+	if len(value) < 3 {
 		return nil, fmt.Errorf("invalid value, expect list of ints")
 	}
-	if buf[0] != '[' || buf[len(buf)-1] != ']' {
+	if value[0] != '[' || value[len(value)-1] != ']' {
 		return nil, fmt.Errorf("expected first and last byte to be [ and ]")
 	}
 	var out []int
-	buf = buf[1:]
+	value = value[1:]
 	var idx int
 	for {
-		idx = bytes.IndexByte(buf, ',')
+		idx = strings.IndexByte(value, ',')
 		if idx == -1 {
 			break
 		}
-		id, err := strconv.Atoi(string(buf[:idx]))
+		id, err := strconv.Atoi(value[:idx])
 		if err != nil {
-			return nil, fmt.Errorf("can not convert value `%s` to int", buf[:idx])
+			return nil, fmt.Errorf("can not convert value `%s` to int", value[:idx])
 		}
 		out = append(out, id)
-		buf = buf[idx+1:]
+		// TODO: Check if this allocates memory. If yes, convert value to []byte outside of the loop
+		value = value[idx+1:]
 	}
-	id, err := strconv.Atoi(string(buf[:len(buf)-1]))
+	id, err := strconv.Atoi(value[:len(value)-1])
 	out = append(out, id)
 	return out, err
 }
