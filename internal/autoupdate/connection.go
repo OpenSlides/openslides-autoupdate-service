@@ -14,12 +14,12 @@ type Connection struct {
 }
 
 // filter removes values from data, that are the same as before
-func (c *Connection) filter(data map[string][]byte) {
+func (c *Connection) filter(data map[string]string) {
 	if c.data == nil {
 		c.data = make(map[string]uint64)
 	}
 	for key, value := range data {
-		new := xxhash.Sum64(value)
+		new := xxhash.Sum64String(value)
 		old, ok := c.data[key]
 		if ok && old == new {
 			delete(data, key)
