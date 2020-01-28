@@ -62,14 +62,14 @@ func (h *Handler) autoupdate(w http.ResponseWriter, r *http.Request) error {
 	}
 	defer r.Body.Close()
 
-	c, data, err := h.s.Prepare(r.Context(), uid, keysReqs)
+	connection, data, err := h.s.Connect(r.Context(), uid, keysReqs)
 	if err != nil {
 		return fmt.Errorf("can not get first data: %w", err)
 	}
 	pushData(w, data)
 
 	for {
-		data, err = h.s.Echo(r.Context(), c)
+		data, err = connection.Read()
 		if err != nil {
 			// It is not possible to return the error after content was sent to the client
 			fmt.Fprintf(w, "Error: Ups, something went wrong!")
@@ -79,7 +79,7 @@ func (h *Handler) autoupdate(w http.ResponseWriter, r *http.Request) error {
 		select {
 		case <-r.Context().Done():
 			return nil
-		case <-h.s.IsClosed():
+		case <-h.s.Done():
 			return nil
 		default:
 		}
