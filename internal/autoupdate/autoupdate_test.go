@@ -25,7 +25,7 @@ func TestPrepare(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
-	_, data, err := s.Prepare(ctx, 1, krs)
+	_, data, err := s.Connect(ctx, 1, krs)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
@@ -50,7 +50,7 @@ func TestEchoNoNewData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
-	c, _, err := s.Prepare(ctx, 1, krs)
+	c, _, err := s.Connect(ctx, 1, krs)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
@@ -61,7 +61,7 @@ func TestEchoNoNewData(t *testing.T) {
 	}()
 
 	oldTid := c.tid
-	data, err := s.Echo(ctx, c)
+	data, err := c.Read()
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestEchoNewData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
-	c, _, err := s.Prepare(ctx, 1, krs)
+	c, _, err := s.Connect(ctx, 1, krs)
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
@@ -99,7 +99,7 @@ func TestEchoNewData(t *testing.T) {
 
 	oldTid := c.tid
 	restricter.data = map[string]string{"user/1/name": "new value"}
-	data, err := s.Echo(ctx, c)
+	data, err := c.Read()
 	if err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}

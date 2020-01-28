@@ -40,18 +40,45 @@ func New(restricter Restricter, keyChanges KeysChangedReceiver) *Service {
 }
 
 // Close calls the shutdown logic of the service.
+// This method is not save for concourent use. It not allowed to call
+// it more then once. Onle the caller of New() should call Close().
 func (s *Service) Close() {
-	select {
-	case <-s.closed:
-	default:
-		close(s.closed)
-	}
+	close(s.closed)
 }
 
-// IsClosed returns a channel that is closed when the autoupdate service is
+// Done returns a channel that is closed when the autoupdate service is
 // closed.
-func (s *Service) IsClosed() <-chan struct{} {
+func (s *Service) Done() <-chan struct{} {
 	return s.closed
+}
+
+// Connect gives the first data for a list of keysrequests and returns a connection objekt
+// to pass to Echo.
+func (s *Service) Connect(ctx context.Context, uid int, krs []keysrequest.KeysRequest) (*Connection, map[string]string, error) {
+	b, err := keysbuilder.New(restrictedIDs{uid, s.restricter}, krs...)
+	if err != nil {
+		if errors.Is(err, keysrequest.ErrInvalid{}) {
+			err = raiseErrInput(err)
+		}
+		return nil, nil, fmt.Errorf("can not build keys: %w", err)
+	}
+
+	lastID := s.topic.LastID()
+
+	data, err := s.restricter.Restrict(ctx, uid, b.Keys())
+	if err != nil {
+		return nil, nil, fmt.Errorf("can not restrict data: %v", err)
+	}
+
+	c := &Connection{
+		s:    s,
+		ctx:  ctx,
+		user: uid,
+		tid:  lastID,
+		b:    b,
+	}
+	c.filter(data)
+	return c, data, nil
 }
 
 // pruneTopic removes old data from the topic.
@@ -91,77 +118,6 @@ func (s *Service) receiveKeyChanges() {
 
 		s.topic.Save(keys)
 	}
-}
-
-// Prepare gives the first data for a list of keysrequests and returns a connection objekt
-// to pass to Echo.
-func (s *Service) Prepare(ctx context.Context, uid int, krs []keysrequest.KeysRequest) (*Connection, map[string]string, error) {
-	c := &Connection{
-		user: uid,
-		tid:  s.topic.LastID(),
-	}
-
-	b, err := keysbuilder.New(restrictedIDs{uid, s.restricter}, krs...)
-	if err != nil {
-		if errors.Is(err, keysrequest.ErrInvalid{}) {
-			err = raiseErrInput(err)
-		}
-		return c, nil, fmt.Errorf("can not build keys: %w", err)
-	}
-	c.b = b
-
-	data, err := s.restricter.Restrict(ctx, uid, b.Keys())
-	if err != nil {
-		return c, nil, fmt.Errorf("can not restrict data: %v", err)
-	}
-	c.filter(data)
-	return c, data, nil
-}
-
-// Echo listens for data changes and blocks until then. When data has changed,
-// it returns with the new data.
-// When the given context is done, it returns immediately with nil data
-func (s *Service) Echo(ctx context.Context, c *Connection) (map[string]string, error) {
-	changedKeys, tid, err := s.topic.Get(ctx, c.tid)
-	if err != nil {
-		return nil, fmt.Errorf("can not get new data: %w", err)
-	}
-	c.tid = tid
-
-	if len(changedKeys) == 0 {
-		// Exit early
-		return nil, nil
-	}
-
-	oldKeys := c.b.Keys()
-
-	// Update keysbuilder get new list of keys
-	if err := c.b.Update(changedKeys); err != nil {
-		return nil, fmt.Errorf("can not update keysbuilder: %w", err)
-	}
-
-	// Start with keys hat are new for the user
-	keys := keysDiff(oldKeys, c.b.Keys())
-
-	changedSlice := make(map[string]bool, len(changedKeys))
-	for _, key := range changedKeys {
-		changedSlice[key] = true
-	}
-
-	// Append keys that are old but have been changed.
-	for _, key := range c.b.Keys() {
-		if !changedSlice[key] {
-			continue
-		}
-		keys = append(keys, key)
-	}
-
-	data, err := s.restricter.Restrict(ctx, c.user, keys)
-	if err != nil {
-		return nil, fmt.Errorf("can not restrict data: %v", err)
-	}
-	c.filter(data)
-	return data, nil
 }
 
 func keysDiff(old []string, new []string) []string {
