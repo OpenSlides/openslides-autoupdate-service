@@ -2,7 +2,6 @@ package autoupdate_test
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -14,7 +13,7 @@ import (
 func TestConnect(t *testing.T) {
 	keychanges := newMockKeyChanged()
 	defer keychanges.close()
-	s := autoupdate.New(mockRestricter{}, keychanges)
+	s := autoupdate.New(autoupdate.MockRestricter{}, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -37,7 +36,7 @@ func TestConnect(t *testing.T) {
 func TestConnectionReadNoNewData(t *testing.T) {
 	keychanges := newMockKeyChanged()
 	defer keychanges.close()
-	s := autoupdate.New(mockRestricter{}, keychanges)
+	s := autoupdate.New(autoupdate.MockRestricter{}, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -67,7 +66,7 @@ func TestConnectionReadNoNewData(t *testing.T) {
 func TestConntectionReadNewData(t *testing.T) {
 	keychanges := newMockKeyChanged()
 	defer keychanges.close()
-	restricter := &mockRestricter{}
+	restricter := &autoupdate.MockRestricter{}
 	s := autoupdate.New(restricter, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -81,7 +80,7 @@ func TestConntectionReadNewData(t *testing.T) {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
 	keychanges.send([]string{"user/1/name"})
-	restricter.data = map[string]string{"user/1/name": "new value"}
+	restricter.Data = map[string]string{"user/1/name": "new value"}
 
 	data, err := c.Read()
 	if err != nil {
@@ -91,33 +90,6 @@ func TestConntectionReadNewData(t *testing.T) {
 	if len(data) != 1 || data["user/1/name"] != "new value" {
 		t.Errorf("Expect data[\"user/1/name\"] to be \"new value\", got: \"%v\"", data["user/1/name"])
 	}
-}
-
-type mockRestricter struct {
-	data map[string]string
-}
-
-func (r mockRestricter) Restrict(ctx context.Context, uid int, keys []string) (map[string]string, error) {
-	out := make(map[string]string, len(keys))
-	for _, key := range keys {
-		v, ok := r.data[key]
-		if ok {
-			out[key] = v
-			continue
-		}
-
-		switch {
-		case strings.HasPrefix(key, "error"):
-			return nil, fmt.Errorf("Restricter got an error")
-		case strings.HasSuffix(key, "_id"):
-			out[key] = "1"
-		case strings.HasSuffix(key, "_ids"):
-			out[key] = "[1,2]"
-		default:
-			out[key] = "some value"
-		}
-	}
-	return out, nil
 }
 
 type mockKeyChanged struct {
