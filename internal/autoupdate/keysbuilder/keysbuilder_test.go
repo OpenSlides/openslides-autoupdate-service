@@ -15,224 +15,161 @@ import (
 )
 
 func TestKeys(t *testing.T) {
-	keys := func(ks ...string) []string { return ks }
 	tc := []struct {
-		name    string
-		request string
-		keys    []string
+		name     string
+		request  keysrequest.Body
+		keys     []string
+		reqCount int
 	}{
-		{"One Field", `{"ids":[1],"collection":"user","fields":{"name":null}}`, keys("user/1/name")},
-		{"Many Fields", `{"ids":[1],"collection":"user","fields":{"first":null,"last":null}}`, keys("user/1/first", "user/1/last")},
-		{"Many IDs Many Fields", `{"ids":[1,2],"collection":"user","fields":{"first":null,"last":null}}`, keys("user/1/first", "user/1/last", "user/2/first", "user/2/last")},
-		{"Redirect Once id", `{"ids":[1],"collection":"user","fields":{"note_id":{"collection":"note","fields":{"important":null}}}}`, keys("user/1/note_id", "note/1/important")},
-		{"Redirect Once ids", `{"ids":[1],"collection":"user","fields":{"group_ids":{"collection":"group","fields":{"admin":null}}}}`, keys("user/1/group_ids", "group/1/admin", "group/2/admin")},
-		{"Redirect twice id", `{"ids":[1],"collection":"user","fields":{"note_id":{"collection":"note","fields":{"motion_id":{"collection":"motion","fields":{"name":null}}}}}}`, keys("user/1/note_id", "note/1/motion_id", "motion/1/name")},
-		{"Request _id without redirect", `{"ids":[1],"collection":"user","fields":{"note_id":null}}`, keys("user/1/note_id")},
-		{"Redirect id not exist", `{"ids":[1],"collection":"not_exist","fields":{"note_id":{"collection":"note","fields":{"important":null}}}}`, keys("not_exist/1/note_id")},
-		{"Redirect ids not exist", `{"ids":[1],"collection":"not_exist","fields":{"group_ids":{"collection":"group","fields":{"name":null}}}}`, keys("not_exist/1/group_ids")},
+		{
+			"One Field",
+			keysrequest.Body{IDs: ids(1), Fields: simple("user", "name")},
+			keys("user/1/name"),
+			0,
+		},
+		{
+			"Many Fields",
+			keysrequest.Body{IDs: ids(1), Fields: simple("user", "first", "last")},
+			keys("user/1/first", "user/1/last"),
+			0,
+		},
+		{
+			"Many IDs Many Fields",
+			keysrequest.Body{IDs: ids(1, 2), Fields: simple("user", "first", "last")},
+			keys("user/1/first", "user/1/last", "user/2/first", "user/2/last"),
+			0,
+		},
+		{
+			"Redirect Once id",
+			keysrequest.Body{IDs: ids(1), Fields: komplex("user", entry{"note_id", simple("note", "important")})},
+			keys("user/1/note_id", "note/1/important"),
+			1,
+		},
+		{
+			"Redirect Once ids",
+			keysrequest.Body{IDs: ids(1), Fields: komplex("user", entry{"group_ids", simple("group", "admin")})},
+			keys("user/1/group_ids", "group/1/admin", "group/2/admin"),
+			1,
+		},
+		{
+			"Redirect twice id",
+			keysrequest.Body{IDs: ids(1), Fields: komplex("user", entry{"note_id", komplex("note", entry{"motion_id", simple("motion", "name")})})},
+			keys("user/1/note_id", "note/1/motion_id", "motion/1/name"),
+			2,
+		},
+		{
+			"Redirect twice ids",
+			keysrequest.Body{IDs: ids(1), Fields: komplex("user", entry{"group_ids", komplex("group", entry{"perm_ids", simple("perm", "name")})})},
+			keys("user/1/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name"),
+			3,
+		},
+		{
+			"Request _id without redirect",
+			keysrequest.Body{IDs: ids(1), Fields: simple("user", "note_id")},
+			keys("user/1/note_id"),
+			0,
+		},
+		{
+			"Redirect id not exist",
+			keysrequest.Body{IDs: ids(1), Fields: komplex("not_exist", entry{"note_id", simple("note", "important")})},
+			keys("not_exist/1/note_id"),
+			1,
+		},
+		{
+			"Redirect ids not exist",
+			keysrequest.Body{IDs: ids(1), Fields: komplex("not_exist", entry{"group_ids", simple("note", "important")})},
+			keys("not_exist/1/group_ids"),
+			1,
+		},
 	}
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
-			kr, err := keysrequest.FromJSON(strings.NewReader(tt.request))
-			if err != nil {
-				t.Fatalf("Did not expect an error, got: %v", err)
-			}
-			b, err := keysbuilder.New(&mockIDer{}, kr)
+			ider := &mockIDer{}
+			b, err := keysbuilder.New(ider, tt.request)
 			if err != nil {
 				t.Fatalf("Expected New() not to return an error, got: %v", err)
 			}
 
 			keys := b.Keys()
+
 			if diff := cmpSet(set(tt.keys...), set(keys...)); diff != nil {
 				t.Errorf("Expected %v, got: %v", tt.keys, diff)
+			}
+			if len(ider.reqLog) != tt.reqCount {
+				t.Errorf("Expected %d requests to the restricter, got: %d: %v", tt.reqCount, len(ider.reqLog), ider.reqLog)
 			}
 		})
 	}
 }
 
 func TestUpdate(t *testing.T) {
-	req := `{"ids":[1],"collection":"user","fields":{"note_id":{"collection":"note","fields":{"important":null}}}}`
-	kr, err := keysrequest.FromJSON((strings.NewReader(req)))
-	if err != nil {
-		t.Fatalf("Did not expect an error, got :%v", err)
-	}
-	restr := mockIDer{}
-	b, err := keysbuilder.New(&restr, kr)
-	if err != nil {
-		t.Errorf("Expect Keys() not to return an error, got: %v", err)
-	}
-
-	keys := b.Keys()
-	expect := set("user/1/note_id", "note/1/important")
-	if cmpSet(expect, set(keys...)) != nil {
-		t.Errorf("Expected %v, got: %v", expect, keys)
-	}
-	if len(restr.reqLog) != 1 {
-		t.Errorf("Expected %d requests to the restricter, got: %d: %v", 1, len(restr.reqLog), restr.reqLog)
-	}
-
-	restr.reqLog = make([]string, 0)
-	restr.data = map[string][]int{"user/1/note_id": []int{2}}
-	if err := b.Update([]string{"user/1/note_id"}); err != nil {
-		t.Errorf("Expect Update() not to return an error, got: %v", err)
-	}
-
-	keys = b.Keys()
-	expect = set("user/1/note_id", "note/2/important")
-	if diff := cmpSet(expect, set(keys...)); diff != nil {
-		t.Errorf("Expected %v, got: %v", mapKeys(expect), keys)
-	}
-	if len(restr.reqLog) != 1 {
-		t.Errorf("Expected %d requests to the restricter, got: %d: %v", 1, len(restr.reqLog), restr.reqLog)
-	}
-}
-
-func TestUpdateKomplex(t *testing.T) {
-	req := `{
-		"ids": [1],
-		"collection": "user",
-		"fields": {
-			"group_ids": {
-				"collection": "group",
-				"fields": {
-					"perm_ids": {
-						"collection": "perm",
-						"fields": {"name": null}
-					}
-				}
-			}
-		}
-	}`
-	dbInit := map[string][]int{
-		"user/1/group_ids": []int{1, 2},
-		"group/1/perm_ids": []int{1, 2},
-		"group/2/perm_ids": []int{2, 3},
-		"group/3/perm_ids": []int{3, 4},
-	}
-	dbChanged := map[string][]int{
-		"user/1/group_ids": []int{2, 3},
-		"group/1/perm_ids": []int{1, 2},
-		"group/2/perm_ids": []int{2, 3},
-		"group/3/perm_ids": []int{3, 4},
-	}
-	kr, err := keysrequest.FromJSON((strings.NewReader(req)))
-	if err != nil {
-		t.Fatalf("Did not expect an error, got :%v", err)
-	}
-	restr := mockIDer{data: dbInit}
-	b, err := keysbuilder.New(&restr, kr)
-	if err != nil {
-		t.Errorf("Expect Keys() not to return an error, got: %v", err)
-	}
-
-	keys := b.Keys()
-	expect := set("user/1/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name", "perm/3/name")
-	if cmpSet(expect, set(keys...)) != nil {
-		t.Errorf("Expected %v, got: %v", expect, keys)
-	}
-	if len(restr.reqLog) != 3 {
-		t.Errorf("Expected %d requests to the restricter, got: %d: %v", 3, len(restr.reqLog), restr.reqLog)
-	}
-
-	restr.data = dbChanged
-	restr.reqLog = make([]string, 0)
-	if err := b.Update([]string{"user/1/group_ids"}); err != nil {
-		t.Errorf("Expect Update() not to return an error, got: %v", err)
-	}
-
-	keys = b.Keys()
-	expect = set("user/1/group_ids", "group/2/perm_ids", "group/3/perm_ids", "perm/2/name", "perm/3/name", "perm/4/name")
-	if diff := cmpSet(expect, set(keys...)); diff != nil {
-		t.Errorf("Expected %v, got: %v", mapKeys(expect), diff)
-	}
-	if len(restr.reqLog) != 2 {
-		t.Errorf("Expected %d requests to the restricter, got: %d: %v", 2, len(restr.reqLog), restr.reqLog)
-	}
-}
-
-func TestUpdateRequestCount(t *testing.T) {
-	j1 := `{
-		"ids": [1],
-		"collection": "user",
-		"fields": {
-			"note_id": {
-				"collection": "note",
-				"fields": {"important": null}
-			}
-		}
-	}`
-	j2 := `{
-		"ids": [1, 2],
-		"collection": "user",
-		"fields": {
-			"note_id": {
-				"collection": "note",
-				"fields": {"important": null}
-			}
-		}
-	}`
-	j3 := `{
-		"ids": [1],
-		"collection": "user",
-		"fields": {
-			"note_id": {
-				"collection": "note",
-				"fields": {"important": null}
-			},
-			"group_ids": {
-				"collection": "group",
-				"fields": {"admin": null}
-			}
-		}
-	}`
-	j4 := `{
-		"ids": [1],
-		"collection": "user",
-		"fields": {
-			"group_ids": {
-				"collection": "group",
-				"fields": {
-					"perm_ids": {
-						"collection": "perm",
-						"fields": {"name": null}
-					}
-				}
-			}
-		}
-	}`
-	db1 := map[string][]int{"user/1/note_id": []int{2}, "user/1/group_ids": []int{2}}
-
 	tc := []struct {
 		name    string
-		request string
-		initDB  map[string][]int
+		request keysrequest.Body
 		newDB   map[string][]int
-		change  []string
+		got     []string
 		count   int
 	}{
-		{"One relation", j1, nil, db1, []string{"user/1/note_id"}, 1},
-		{"One relation no change", j1, nil, db1, []string{"user/1/name"}, 0},
-		{"Two ids one change", j2, nil, db1, []string{"user/1/note_id"}, 1},
-		{"Two relation one change", j3, nil, db1, []string{"user/1/note_id"}, 1},
-		{"Two relation two changes", j3, nil, db1, []string{"user/1/note_id", "user/1/group_ids"}, 2},
-		{"Tree levels out changes", j4, nil, db1, []string{"user/1/group_ids"}, 1},
+		{
+			"One relation",
+			keysrequest.Body{IDs: ids(1), Fields: komplex("user", entry{"note_id", simple("note", "important")})},
+			map[string][]int{"user/1/note_id": ids(2)},
+			keys("user/1/note_id", "note/2/important"),
+			1,
+		},
+		{
+			"One relation no change",
+			keysrequest.Body{IDs: ids(1), Fields: komplex("user", entry{"note_id", simple("note", "important")})},
+			map[string][]int{},
+			keys("user/1/note_id", "note/1/important"),
+			0,
+		},
+		{
+			"Two ids one change",
+			keysrequest.Body{IDs: ids(1, 2), Fields: komplex("user", entry{"note_id", simple("note", "important")})},
+			map[string][]int{"user/1/note_id": ids(2)},
+			keys("user/1/note_id", "user/2/note_id", "note/1/important", "note/2/important"),
+			1,
+		},
+		{
+			"Two relation one change",
+			keysrequest.Body{IDs: ids(1), Fields: komplex("user", entry{"note_id", simple("note", "important")}, entry{"group_ids", simple("group", "admin")})},
+			map[string][]int{"user/1/note_id": ids(2)},
+			keys("user/1/note_id", "user/1/group_ids", "note/2/important", "group/1/admin", "group/2/admin"),
+			1,
+		},
+		{
+			"Two relation two changes",
+			keysrequest.Body{IDs: ids(1), Fields: komplex("user", entry{"note_id", simple("note", "important")}, entry{"group_ids", simple("group", "admin")})},
+			map[string][]int{"user/1/note_id": ids(2), "user/1/group_ids": ids(2)},
+			keys("user/1/note_id", "note/2/important", "user/1/group_ids", "group/2/admin"),
+			2,
+		},
+		{
+			"Tree levels out changes",
+			keysrequest.Body{IDs: ids(1), Fields: komplex("user", entry{"group_ids", komplex("group", entry{"perm_ids", simple("perm", "name")})})},
+			map[string][]int{"user/1/group_ids": ids(2)},
+			keys("user/1/group_ids", "group/2/perm_ids", "perm/2/name", "perm/1/name"),
+			1,
+		},
 	}
 
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
-			kr, err := keysrequest.FromJSON((strings.NewReader(tt.request)))
+			restr := mockIDer{}
+			b, err := keysbuilder.New(&restr, tt.request)
 			if err != nil {
-				t.Fatalf("Expect FromJSON not to return an error, got: %v", err)
-			}
-			restr := mockIDer{data: tt.initDB}
-			b, err := keysbuilder.New(&restr, kr)
-			if err != nil {
-				t.Errorf("Expect Keys() not to return an error, got: %v", err)
+				t.Fatalf("Expect Keys() not to return an error, got: %v", err)
 			}
 			restr.data = tt.newDB
 			restr.reqLog = make([]string, 0)
-			if err := b.Update(tt.change); err != nil {
+
+			if err := b.Update(mapKeys(tt.newDB)); err != nil {
 				t.Errorf("Expect Update() not to return an error, got: %v", err)
+			}
+
+			if diff := cmpSet(set(tt.got...), set(b.Keys()...)); diff != nil {
+				t.Errorf("Expected %v, got: %v", b.Keys(), diff)
 			}
 			if tt.count != len(restr.reqLog) {
 				t.Errorf("Expected %d requests to the restricter, got: %d: %v", tt.count, len(restr.reqLog), restr.reqLog)
@@ -242,26 +179,7 @@ func TestUpdateRequestCount(t *testing.T) {
 }
 
 func TestConcurency(t *testing.T) {
-	t.Parallel()
-	req := `{
-		"ids": [1, 2, 3],
-		"collection": "user",
-		"fields": {
-			"group_ids": {
-				"collection": "group",
-				"fields": {
-					"perm_ids": {
-						"collection": "perm",
-						"fields": {"name": null}
-					}
-				}
-			}
-		}
-	}`
-	kr, err := keysrequest.FromJSON((strings.NewReader(req)))
-	if err != nil {
-		t.Fatalf("Did not expect an error, got :%v", err)
-	}
+	kr := keysrequest.Body{IDs: ids(1, 2, 3), Fields: komplex("user", entry{"group_ids", komplex("group", entry{"perm_ids", simple("perm", "name")})})}
 	restr := mockIDer{sleep: 10 * time.Millisecond}
 
 	start := time.Now()
@@ -269,15 +187,13 @@ func TestConcurency(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expect Keys() not to return an error, got: %v", err)
 	}
-
-	keys := b.Keys()
 	finished := time.Since(start)
+
 	if finished > 30*time.Millisecond {
 		t.Errorf("Expect keysbuilder to run in less then 30 Milliseconds, got: %v", finished)
 	}
-
-	expect := []string{"user/1/group_ids", "user/2/group_ids", "user/3/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name"}
-	if diff := cmpSet(set(expect...), set(keys...)); diff != nil {
+	expect := keys("user/1/group_ids", "user/2/group_ids", "user/3/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name")
+	if diff := cmpSet(set(expect...), set(b.Keys()...)); diff != nil {
 		t.Errorf("Expected %v, got: %v", expect, diff)
 	}
 	if len(restr.reqLog) != 5 {
@@ -286,39 +202,10 @@ func TestConcurency(t *testing.T) {
 }
 
 func TestManyRequests(t *testing.T) {
-	t.Parallel()
-	reqs := []string{`{
-		"ids": [1],
-		"collection": "user",
-		"fields": {
-			"note_id": {
-				"collection": "note",
-				"fields": {"important": null}
-			}
-		}
-	}`, `{
-		"ids": [1],
-		"collection": "motion",
-		"fields": {
-			"name": null
-		}
-	}`, `{
-		"ids": [2],
-		"collection": "user",
-		"fields": {
-			"note_id": {
-				"collection": "note",
-				"fields": {"important": null}
-			}
-		}
-	}`}
-	krs := make([]keysrequest.KeysRequest, 0, len(reqs))
-	for _, req := range reqs {
-		kr, err := keysrequest.FromJSON(strings.NewReader(req))
-		if err != nil {
-			t.Fatalf("Did not expect an error, got :%v", err)
-		}
-		krs = append(krs, kr)
+	krs := []keysrequest.Body{
+		keysrequest.Body{IDs: ids(1), Fields: komplex("user", entry{"note_id", simple("note", "important")})},
+		keysrequest.Body{IDs: ids(1), Fields: simple("motion", "name")},
+		keysrequest.Body{IDs: ids(2), Fields: komplex("user", entry{"note_id", simple("note", "important")})},
 	}
 	restr := mockIDer{sleep: 10 * time.Millisecond}
 
@@ -328,14 +215,13 @@ func TestManyRequests(t *testing.T) {
 		t.Errorf("Expect Keys() not to return an error, got: %v", err)
 	}
 
-	keys := b.Keys()
 	finished := time.Since(start)
 	if finished > 20*time.Millisecond {
 		t.Errorf("Expect keysbuilder to run in less then 20 Milliseconds, got: %v", finished)
 	}
 
-	expect := []string{"user/1/note_id", "user/2/note_id", "motion/1/name", "note/1/important"}
-	if diff := cmpSet(set(expect...), set(keys...)); diff != nil {
+	expect := keys("user/1/note_id", "user/2/note_id", "motion/1/name", "note/1/important")
+	if diff := cmpSet(set(expect...), set(b.Keys()...)); diff != nil {
 		t.Errorf("Expected %v, got: %v", expect, diff)
 	}
 	if len(restr.reqLog) != 2 {
@@ -344,48 +230,15 @@ func TestManyRequests(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
-	t.Parallel()
-	reqs := []string{`{
-		"ids": [1],
-		"collection": "user",
-		"fields": {
-			"note_id": {
-				"collection": "note",
-				"fields": {"important": null}
-			}
-		}
-	}`, `{
-		"ids": [2],
-		"collection": "user",
-		"fields": {
-			"group_ids": {
-				"collection": "group",
-				"fields": {
-					"perm_ids": {
-						"collection": "perm",
-						"fields": {"name": null}
-					}
-				}
-			}
-		}
-	}`}
-	krs := make([]keysrequest.KeysRequest, 0, len(reqs))
-	for _, req := range reqs {
-		kr, err := keysrequest.FromJSON(strings.NewReader(req))
-		if err != nil {
-			t.Fatalf("Did not expect an error, got :%v", err)
-		}
-		krs = append(krs, kr)
-	}
-
+	kr := keysrequest.Body{IDs: ids(1), Fields: komplex("user", entry{"note_id", simple("note", "important")})}
 	restr := mockIDer{err: errors.New("Some Error"), sleep: 10 * time.Millisecond}
 
 	start := time.Now()
-	_, err := keysbuilder.New(&restr, krs...)
-	if err == nil {
+	if _, err := keysbuilder.New(&restr, kr); err == nil {
 		t.Errorf("Expect Keys() to return an error, got none")
 	}
 	finished := time.Since(start)
+
 	if finished > 20*time.Millisecond {
 		t.Errorf("Expect keysbuilder to run in less then 20 Milliseconds, got: %v", finished)
 	}
@@ -453,11 +306,35 @@ func set(keys ...string) map[string]bool {
 	return out
 }
 
-func mapKeys(m map[string]bool) []string {
+func mapKeys(m map[string][]int) []string {
 	out := make([]string, 0, len(m))
 	for key := range m {
 		out = append(out, key)
 	}
 	sort.Strings(out)
 	return out
+}
+
+func keys(keys ...string) []string { return keys }
+func ids(ids ...int) []int         { return ids }
+
+func simple(collection string, fields ...string) keysrequest.Fields {
+	names := make(map[string]keysrequest.Fields, len(fields))
+	for _, f := range fields {
+		names[f] = keysrequest.Fields{}
+	}
+	return keysrequest.Fields{Collection: collection, Names: names}
+}
+
+type entry struct {
+	property string
+	fields   keysrequest.Fields
+}
+
+func komplex(collection string, fe ...entry) keysrequest.Fields {
+	names := make(map[string]keysrequest.Fields)
+	for _, f := range fe {
+		names[f.property] = f.fields
+	}
+	return keysrequest.Fields{Collection: collection, Names: names}
 }
