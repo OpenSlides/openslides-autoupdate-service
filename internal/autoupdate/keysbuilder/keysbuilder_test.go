@@ -15,20 +15,21 @@ import (
 )
 
 func TestKeys(t *testing.T) {
+	keys := func(ks ...string) []string { return ks }
 	tc := []struct {
 		name    string
 		request string
 		keys    []string
 	}{
-		{"One Field", `{"ids":[1],"collection":"user","fields":{"name":null}}`, []string{"user/1/name"}},
-		{"Many Fields", `{"ids":[1],"collection":"user","fields":{"first":null,"last":null}}`, []string{"user/1/first", "user/1/last"}},
-		{"Many IDs Many Fields", `{"ids":[1,2],"collection":"user","fields":{"first":null,"last":null}}`, []string{"user/1/first", "user/1/last", "user/2/first", "user/2/last"}},
-		{"Redirect Once id", `{"ids":[1],"collection":"user","fields":{"note_id":{"collection":"note","fields":{"important":null}}}}`, []string{"user/1/note_id", "note/1/important"}},
-		{"Redirect Once ids", `{"ids":[1],"collection":"user","fields":{"group_ids":{"collection":"group","fields":{"admin":null}}}}`, []string{"user/1/group_ids", "group/1/admin", "group/2/admin"}},
-		{"Redirect twice id", `{"ids":[1],"collection":"user","fields":{"note_id":{"collection":"note","fields":{"motion_id":{"collection":"motion","fields":{"name":null}}}}}}`, []string{"user/1/note_id", "note/1/motion_id", "motion/1/name"}},
-		{"Request _id without redirect", `{"ids":[1],"collection":"user","fields":{"note_id":null}}`, []string{"user/1/note_id"}},
-		{"Redirect id not exist", `{"ids":[1],"collection":"not_exist","fields":{"note_id":{"collection":"note","fields":{"important":null}}}}`, []string{"not_exist/1/note_id"}},
-		{"Redirect ids not exist", `{"ids":[1],"collection":"not_exist","fields":{"group_ids":{"collection":"group","fields":{"name":null}}}}`, []string{"not_exist/1/group_ids"}},
+		{"One Field", `{"ids":[1],"collection":"user","fields":{"name":null}}`, keys("user/1/name")},
+		{"Many Fields", `{"ids":[1],"collection":"user","fields":{"first":null,"last":null}}`, keys("user/1/first", "user/1/last")},
+		{"Many IDs Many Fields", `{"ids":[1,2],"collection":"user","fields":{"first":null,"last":null}}`, keys("user/1/first", "user/1/last", "user/2/first", "user/2/last")},
+		{"Redirect Once id", `{"ids":[1],"collection":"user","fields":{"note_id":{"collection":"note","fields":{"important":null}}}}`, keys("user/1/note_id", "note/1/important")},
+		{"Redirect Once ids", `{"ids":[1],"collection":"user","fields":{"group_ids":{"collection":"group","fields":{"admin":null}}}}`, keys("user/1/group_ids", "group/1/admin", "group/2/admin")},
+		{"Redirect twice id", `{"ids":[1],"collection":"user","fields":{"note_id":{"collection":"note","fields":{"motion_id":{"collection":"motion","fields":{"name":null}}}}}}`, keys("user/1/note_id", "note/1/motion_id", "motion/1/name")},
+		{"Request _id without redirect", `{"ids":[1],"collection":"user","fields":{"note_id":null}}`, keys("user/1/note_id")},
+		{"Redirect id not exist", `{"ids":[1],"collection":"not_exist","fields":{"note_id":{"collection":"note","fields":{"important":null}}}}`, keys("not_exist/1/note_id")},
+		{"Redirect ids not exist", `{"ids":[1],"collection":"not_exist","fields":{"group_ids":{"collection":"group","fields":{"name":null}}}}`, keys("not_exist/1/group_ids")},
 	}
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
