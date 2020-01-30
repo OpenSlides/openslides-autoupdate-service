@@ -15,7 +15,7 @@ import (
 )
 
 func TestKeys(t *testing.T) {
-	tc := []struct {
+	for _, tt := range []struct {
 		name     string
 		request  keysrequest.Body
 		keys     []string
@@ -81,8 +81,7 @@ func TestKeys(t *testing.T) {
 			keys("not_exist/1/group_ids"),
 			1,
 		},
-	}
-	for _, tt := range tc {
+	} {
 		t.Run(tt.name, func(t *testing.T) {
 			ider := &mockIDer{}
 			b, err := keysbuilder.New(ider, tt.request)
@@ -103,7 +102,7 @@ func TestKeys(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	tc := []struct {
+	for _, tt := range []struct {
 		name    string
 		request keysrequest.Body
 		newDB   map[string][]int
@@ -152,9 +151,7 @@ func TestUpdate(t *testing.T) {
 			keys("user/1/group_ids", "group/2/perm_ids", "perm/2/name", "perm/1/name"),
 			1,
 		},
-	}
-
-	for _, tt := range tc {
+	} {
 		t.Run(tt.name, func(t *testing.T) {
 			restr := mockIDer{}
 			b, err := keysbuilder.New(&restr, tt.request)
