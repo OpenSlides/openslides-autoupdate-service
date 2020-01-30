@@ -54,7 +54,7 @@ func (s *Service) Done() <-chan struct{} {
 
 // Connect gives the first data for a list of keysrequests and returns a connection objekt
 // to pass to Echo.
-func (s *Service) Connect(ctx context.Context, uid int, krs []keysrequest.KeysRequest) (*Connection, map[string]string, error) {
+func (s *Service) Connect(ctx context.Context, uid int, krs []keysrequest.Body) (*Connection, map[string]string, error) {
 	b, err := keysbuilder.New(restrictedIDs{uid, s.restricter}, krs...)
 	if err != nil {
 		if errors.Is(err, keysrequest.ErrInvalid{}) {

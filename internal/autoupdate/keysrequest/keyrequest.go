@@ -6,40 +6,40 @@ import (
 	"strings"
 )
 
-// KeysRequest holds the information what keys are requested by the client
-type KeysRequest struct {
+// Body holds the information what keys are requested by the client
+type Body struct {
 	IDs []int `json:"ids"`
-	FieldDescription
+	Fields
 }
 
 // validate maks sure the KeysRequest is valid. Returns an ErrInvalid if not.
-func (kr *KeysRequest) validate() error {
+func (kr *Body) validate() error {
 	if len(kr.IDs) == 0 {
 		return ErrInvalid{msg: "no ids"}
 	}
-	return kr.FieldDescription.validate()
+	return kr.Fields.validate()
 }
 
-// FieldDescription describes in a abstract way fields of a collection.
-// It can also map to related keys.
-type FieldDescription struct {
-	Collection string                      `json:"collection"`
-	Fields     map[string]FieldDescription `json:"fields"`
+// Fields describes in a abstract way fields of a collection.
+// It can map to related keys.
+type Fields struct {
+	Collection string            `json:"collection"`
+	Names      map[string]Fields `json:"fields"`
 }
 
 // Null returns true if fieldDescription is empty (null in json)
-func (fd *FieldDescription) Null() bool {
-	return fd.Collection == "" && len(fd.Fields) == 0
+func (fd *Fields) Null() bool {
+	return fd.Collection == "" && len(fd.Names) == 0
 }
 
-func (fd *FieldDescription) validate() error {
-	if len(fd.Fields) == 0 {
+func (fd *Fields) validate() error {
+	if len(fd.Names) == 0 {
 		return ErrInvalid{msg: "no fields"}
 	}
 	if fd.Collection == "" {
 		return ErrInvalid{msg: "no collection"}
 	}
-	for name, description := range fd.Fields {
+	for name, description := range fd.Names {
 		if description.Null() {
 			continue
 		}

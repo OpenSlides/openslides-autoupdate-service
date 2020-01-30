@@ -14,13 +14,13 @@ const keySep = "/"
 // Builder builds the keys from a list of keysrequest.
 type Builder struct {
 	ider         IDer
-	keysRequests []keysrequest.KeysRequest
+	keysRequests []keysrequest.Body
 	cache        *cache
 	keys         []string
 }
 
 // New creates a new Builder instance
-func New(ider IDer, keysRequests ...keysrequest.KeysRequest) (*Builder, error) {
+func New(ider IDer, keysRequests ...keysrequest.Body) (*Builder, error) {
 	b := &Builder{
 		ider:         ider,
 		keysRequests: keysRequests,
@@ -52,8 +52,8 @@ func (b *Builder) genKeys() error {
 
 	for _, kr := range b.keysRequests {
 		wg.Add(1)
-		go func(kr keysrequest.KeysRequest) {
-			b.run(ctx, kr.IDs, kr.FieldDescription, kc, ec)
+		go func(kr keysrequest.Body) {
+			b.run(ctx, kr.IDs, kr.Fields, kc, ec)
 			wg.Done()
 		}(kr)
 	}
@@ -78,10 +78,10 @@ func (b *Builder) genKeys() error {
 	}
 }
 
-func (b *Builder) run(ctx context.Context, ids []int, fd keysrequest.FieldDescription, kc chan<- string, ec chan<- error) {
+func (b *Builder) run(ctx context.Context, ids []int, fd keysrequest.Fields, kc chan<- string, ec chan<- error) {
 	var wg sync.WaitGroup
 	for _, id := range ids {
-		for field, ifd := range fd.Fields {
+		for field, ifd := range fd.Names {
 			key := buildKey(fd.Collection, id, field)
 			kc <- key
 			if ifd.Null() {
@@ -90,7 +90,7 @@ func (b *Builder) run(ctx context.Context, ids []int, fd keysrequest.FieldDescri
 			}
 
 			wg.Add(1)
-			go func(name string, ifd keysrequest.FieldDescription) {
+			go func(name string, ifd keysrequest.Fields) {
 				defer wg.Done()
 				ids := b.cache.getOrSet(name, func() []int {
 					ids, err := b.ider.IDs(ctx, name)
