@@ -40,7 +40,7 @@ type node struct {
 }
 
 // Add adds a list of strings to a topic. It creates a new id and returns it.
-func (t *Topic) Add(value []string) uint64 {
+func (t *Topic) Add(value ...string) uint64 {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -80,7 +80,7 @@ func (t *Topic) Add(value []string) uint64 {
 //
 // If there is no new data, Get blocks until threre is new data or the topic is closed or the
 // given context is done.
-func (t *Topic) Get(ctx context.Context, id uint64) ([]string, uint64, error) {
+func (t *Topic) Get(ctx context.Context, id uint64) (uint64, []string, error) {
 	t.mu.RLock()
 
 	// No new data
@@ -95,21 +95,20 @@ func (t *Topic) Get(ctx context.Context, id uint64) ([]string, uint64, error) {
 		case <-t.Closed:
 		case <-ctx.Done():
 		}
-		return []string{}, id, nil
+		return id, []string{}, nil
 	}
 
 	defer t.mu.RUnlock()
-	maxID := t.tail.id
 
 	if id == 0 {
-		return runNode(t.head), maxID, nil
+		return t.tail.id, runNode(t.head), nil
 	}
 
 	n := t.index[id]
 	if n == nil {
-		return nil, 0, ErrUnknownID{ID: id, First: t.head.id}
+		return 0, nil, ErrUnknownID{ID: id, First: t.head.id}
 	}
-	return runNode(n.next), maxID, nil
+	return t.tail.id, runNode(n.next), nil
 }
 
 // LastID returns the last if of topic. Returns 0 for an empty topic.
