@@ -23,7 +23,7 @@ type Connection struct {
 // it returns with the new data.
 // When the given context is done, it returns immediately with nil data
 func (c *Connection) Read() (map[string]string, error) {
-	changedKeys, tid, err := c.s.topic.Get(c.ctx, c.tid)
+	tid, changedKeys, err := c.s.topic.Get(c.ctx, c.tid)
 	if err != nil {
 		return nil, fmt.Errorf("can not get new data: %w", err)
 	}
