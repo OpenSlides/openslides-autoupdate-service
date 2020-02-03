@@ -28,7 +28,7 @@ type Topic struct {
 	head    *node
 	tail    *node
 	waiting []chan struct{}
-	//index map[uint64]*node
+	index   map[uint64]*node
 }
 
 // node implements a linked list.
@@ -56,6 +56,11 @@ func (t *Topic) Add(value []string) uint64 {
 	newNode.id = id + 1
 	newNode.t = time.Now()
 	newNode.value = value
+
+	if t.index == nil {
+		t.index = make(map[uint64]*node)
+	}
+	t.index[newNode.id] = newNode
 
 	for _, c := range t.waiting {
 		close(c)
@@ -100,7 +105,7 @@ func (t *Topic) Get(ctx context.Context, id uint64) ([]string, uint64, error) {
 		return runNode(t.head), maxID, nil
 	}
 
-	n := t.index(id)
+	n := t.index[id]
 	if n == nil {
 		return nil, 0, ErrUnknownID{ID: id, First: t.head.id}
 	}
@@ -131,6 +136,7 @@ func (t *Topic) Prune(until time.Time) {
 		if n.t.After(until) {
 			return
 		}
+		delete(t.index, n.id)
 		t.head = n.next
 	}
 }
@@ -149,14 +155,4 @@ func runNode(n *node) []string {
 		out = append(out, v)
 	}
 	return out
-}
-
-// index returns the node with the given id.
-func (t *Topic) index(id uint64) *node {
-	for n := t.head; n != nil; n = n.next {
-		if n.id == id {
-			return n
-		}
-	}
-	return nil
 }
