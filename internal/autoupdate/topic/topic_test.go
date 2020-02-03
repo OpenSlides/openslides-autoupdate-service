@@ -13,7 +13,7 @@ func TestTopicSave(t *testing.T) {
 	t.Parallel()
 	top := topic.Topic{}
 	expect := []string{"key1", "key2"}
-	top.Save(expect)
+	top.Add(expect)
 
 	got, _, err := top.Get(context.Background(), 0)
 	if err != nil {
@@ -28,8 +28,8 @@ func TestTopicSaveTwice(t *testing.T) {
 	t.Parallel()
 	top := topic.Topic{}
 	expect := []string{"key1", "key2"}
-	top.Save(expect[:1])
-	top.Save(expect[1:])
+	top.Add(expect[:1])
+	top.Add(expect[1:])
 
 	got, _, err := top.Get(context.Background(), 0)
 	if err != nil {
@@ -44,8 +44,8 @@ func TestTopicReadSecond(t *testing.T) {
 	t.Parallel()
 	top := topic.Topic{}
 	expect := []string{"key1", "key2"}
-	id := top.Save(expect[:1])
-	top.Save(expect[1:])
+	id := top.Add(expect[:1])
+	top.Add(expect[1:])
 
 	got, _, err := top.Get(context.Background(), id)
 	if err != nil {
@@ -60,8 +60,8 @@ func TestTopicSaveTwiceSameValue(t *testing.T) {
 	t.Parallel()
 	top := topic.Topic{}
 	expect := []string{"key1", "key1"}
-	top.Save(expect[:1])
-	top.Save(expect[1:])
+	top.Add(expect[:1])
+	top.Add(expect[1:])
 
 	got, _, err := top.Get(context.Background(), 0)
 	if err != nil {
@@ -76,11 +76,11 @@ func TestTopicPrune(t *testing.T) {
 	t.Parallel()
 	top := topic.Topic{}
 	expect := []string{"first", "key1"}
-	top.Save(expect)
-	top.Save(expect)
+	top.Add(expect)
+	top.Add(expect)
 	ti := time.Now()
-	top.Save(expect[1:])
-	top.Save(expect[1:])
+	top.Add(expect[1:])
+	top.Add(expect[1:])
 
 	top.Prune(ti)
 
@@ -97,11 +97,11 @@ func TestTopicReadPrunedID(t *testing.T) {
 	t.Parallel()
 	top := topic.Topic{}
 	expect := []string{"first", "key1"}
-	top.Save(expect)
-	top.Save(expect)
+	top.Add(expect)
+	top.Add(expect)
 	ti := time.Now()
-	top.Save(expect[1:])
-	top.Save(expect[1:])
+	top.Add(expect[1:])
+	top.Add(expect[1:])
 
 	top.Prune(ti)
 
@@ -128,7 +128,7 @@ func TestTopicReadBlocking(t *testing.T) {
 	done := make(chan []string)
 	go func() {
 		time.Sleep(time.Millisecond)
-		top.Save([]string{"value"})
+		top.Add([]string{"value"})
 	}()
 	go func() {
 		var err error
@@ -154,9 +154,9 @@ func TestTopicReadBlocking(t *testing.T) {
 func TestTopicLastID(t *testing.T) {
 	t.Parallel()
 	top := topic.Topic{}
-	top.Save([]string{"data"})
-	top.Save([]string{"data"})
-	top.Save([]string{"data"})
+	top.Add([]string{"data"})
+	top.Add([]string{"data"})
+	top.Add([]string{"data"})
 
 	if got := top.LastID(); got != uint64(3) {
 		t.Errorf("Expected LastID to return 3, got: %d", got)
@@ -176,8 +176,8 @@ func TestTopicDontPruneLastNode(t *testing.T) {
 	t.Parallel()
 	top := topic.Topic{}
 	expect := []string{"first", "key1"}
-	top.Save(expect)
-	top.Save(expect)
+	top.Add(expect)
+	top.Add(expect)
 	top.Prune(time.Now())
 	_, id, err := top.Get(context.Background(), 0)
 	if err != nil {
@@ -192,7 +192,7 @@ func TestTopicPruneExitSoon(t *testing.T) {
 	t.Parallel()
 	top := topic.Topic{}
 	expect := []string{"first", "key1"}
-	top.Save(expect)
+	top.Add(expect)
 	top.Prune(time.Now())
 	_, id, err := top.Get(context.Background(), 0)
 	if err != nil {
@@ -269,7 +269,7 @@ func TestTopicBlockUntilCtxDone(t *testing.T) {
 func TestTopicBlockOnHighestID(t *testing.T) {
 	t.Parallel()
 	top := topic.Topic{}
-	id := top.Save([]string{"data"})
+	id := top.Add([]string{"data"})
 	ctx, closeCtx := context.WithCancel(context.Background())
 	defer closeCtx()
 
@@ -303,7 +303,7 @@ func TestTopicGet0AfterClosed(t *testing.T) {
 	t.Parallel()
 	closed := make(chan struct{})
 	top := topic.Topic{Closed: closed}
-	top.Save([]string{"foo"})
+	top.Add([]string{"foo"})
 	close(closed)
 
 	keys, _, err := top.Get(context.Background(), 0)
@@ -319,7 +319,7 @@ func TestTopicGetFutureAfterClosed(t *testing.T) {
 	t.Parallel()
 	closed := make(chan struct{})
 	top := topic.Topic{Closed: closed}
-	top.Save([]string{"foo"})
+	top.Add([]string{"foo"})
 	close(closed)
 
 	done := make(chan struct{})

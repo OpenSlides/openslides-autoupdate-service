@@ -116,7 +116,7 @@ func (s *Service) receiveKeyChanges() {
 			continue
 		}
 
-		s.topic.Save(keys)
+		s.topic.Add(keys)
 	}
 }
 

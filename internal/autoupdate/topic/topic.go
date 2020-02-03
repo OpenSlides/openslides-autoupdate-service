@@ -1,6 +1,9 @@
-// Package topic holds the datastructure Topic to store
-// a list of strings where changes of the strings
-// can be requested.
+// Package topic is a in process pubsub system where new values have to
+// be pulled instead of beeing pushed.
+//
+// The idea of pulling updates is inspired by Kafka or Redis-Streams. A subscriber
+// does not have to register to a topic and can take as long as it needs to
+// process the messages. Therefore, the system is less error-prone.
 package topic
 
 import (
@@ -9,15 +12,15 @@ import (
 	"time"
 )
 
-// Topic is a datastructure that holds list of strings.
-// Each save to a topic creates a new id. It is possible
-// to get all strings or the strings greater than a given
-// id.
+// Topic is a datastructure that holds a set of strings.
+// Each time a list of streams are added to the topic, a new id is
+// created. It is possible to get all strings at once or the strings that added after
+// a specivic id.
 //
 // A Topic is save for concourent use.
 // If a topic is initialized with a Closed-channel, it can be closed
 // by closing this channel. It is not expected that the Closed channel is added
-// or removed afterwards
+// or removed afterwards.
 type Topic struct {
 	Closed chan struct{}
 
@@ -25,6 +28,7 @@ type Topic struct {
 	head    *node
 	tail    *node
 	waiting []chan struct{}
+	//index map[uint64]*node
 }
 
 // node implements a linked list.
@@ -35,13 +39,13 @@ type node struct {
 	value []string
 }
 
-// Save saves a list of keys in a topic. Returns the current id.
-func (t *Topic) Save(keys []string) uint64 {
+// Add adds a list of strings to a topic. It creates a new id and returns it.
+func (t *Topic) Add(value []string) uint64 {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	newNode := &node{}
-	id := uint64(0)
+	var id uint64
 	if t.head == nil {
 		t.head = newNode
 	} else {
@@ -51,24 +55,26 @@ func (t *Topic) Save(keys []string) uint64 {
 	t.tail = newNode
 	newNode.id = id + 1
 	newNode.t = time.Now()
-	newNode.value = keys
+	newNode.value = value
 
 	for _, c := range t.waiting {
 		close(c)
 	}
-	t.waiting = make([]chan struct{}, 0)
+	// This clears the waiting slice by keeping the underlieing array. The idea is, that it
+	// is very likely, that the same subscribers will subsribe again, the same size of array
+	// will be needed again.
+	t.waiting = t.waiting[:0]
 	return newNode.id
 }
 
-// Get returns strings from a topic. If id is 0, all strings
-// are returned, else, all strings that where inserted after
-// the id are returned.
+// Get returns a slice of uniq strings from the topic. If id is 0, all strings
+// are returned, else, all strings that where inserted after the id are returned.
 //
-// If the id is lower then the lowest id, an error of type
+// If the id is lower then the lowest id in the topic, an error of type
 // ErrUnknownTopicID is returned.
 //
-// If there is no new data, Get blocks until threre is new data
-// or the topic is closed or the given context is done.
+// If there is no new data, Get blocks until threre is new data or the topic is closed or the
+// given context is done.
 func (t *Topic) Get(ctx context.Context, id uint64) ([]string, uint64, error) {
 	t.mu.RLock()
 
@@ -88,7 +94,7 @@ func (t *Topic) Get(ctx context.Context, id uint64) ([]string, uint64, error) {
 	}
 
 	defer t.mu.RUnlock()
-	maxID := t.LastID()
+	maxID := t.tail.id
 
 	if id == 0 {
 		return runNode(t.head), maxID, nil
@@ -101,7 +107,7 @@ func (t *Topic) Get(ctx context.Context, id uint64) ([]string, uint64, error) {
 	return runNode(n.next), maxID, nil
 }
 
-// LastID returns the last if of topic
+// LastID returns the last if of topic. Returns 0 for an empty topic.
 func (t *Topic) LastID() uint64 {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
@@ -129,7 +135,7 @@ func (t *Topic) Prune(until time.Time) {
 	}
 }
 
-// runNode returns all keys from a node and the following nodes.
+// runNode returns all strings from a node and the following nodes.
 func runNode(n *node) []string {
 	set := make(map[string]bool)
 	for ; n != nil; n = n.next {
