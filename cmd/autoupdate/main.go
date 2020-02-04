@@ -24,6 +24,7 @@ func main() {
 
 	// Choose the topic service
 	var receiver autoupdate.KeysChangedReceiver
+	fmt.Print("Messagin Service: ")
 	switch getEnv("MESSAGIN_SERVICE", "fake") {
 	case "redis":
 		conn := conn.New(getEnv("REDIS_ADDR", "localhost:6379"))
@@ -33,8 +34,10 @@ func main() {
 			}
 		}
 		receiver = &redis.Service{Conn: conn}
+		fmt.Println("redis")
 	default:
 		receiver = f
+		fmt.Println("fake")
 	}
 
 	// Chose the auth service

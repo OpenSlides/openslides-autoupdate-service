@@ -54,7 +54,7 @@ func (r faker) Restrict(ctx context.Context, uid int, keys []string) (map[string
 		case strings.HasSuffix(key, "_ids"):
 			out[key] = "[1,2]"
 		default:
-			out[key] = "some data"
+			out[key] = fmt.Sprintf("The time is: %s", time.Now())
 		}
 	}
 	return out, nil
