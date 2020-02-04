@@ -20,7 +20,7 @@ func TestHandlerTestURLs(t *testing.T) {
 		status int
 	}{
 		{"", http.StatusNotFound},
-		{"/autoupdate/", http.StatusBadRequest},
+		{"/system/autoupdate", http.StatusBadRequest},
 	}
 
 	for _, tt := range tc {

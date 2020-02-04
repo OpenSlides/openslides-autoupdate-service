@@ -26,7 +26,7 @@ func New(s *autoupdate.Service, auth Authenticator) *Handler {
 		mux:  http.NewServeMux(),
 		auth: auth,
 	}
-	h.mux.Handle("/autoupdate/", errHandleFunc(h.autoupdate))
+	h.mux.Handle("/system/autoupdate", errHandleFunc(h.autoupdate))
 	return h
 }
 
