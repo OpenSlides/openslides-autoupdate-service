@@ -43,7 +43,7 @@ docker run autoupdate-test
 When the server is started, clients can listen for keys to do so, they have to send a keyrequest in the body
 of the request. Currently, all method-types (POST, GET, etc) are supported. An example request
 
-`curl localhost:8002/autoupdate/ -d '[{"ids": [5], "collection": "user", "fields": {"name": null}}]'`
+`curl localhost:8002/system/autoupdate -d '[{"ids": [5], "collection": "user", "fields": {"name": null}}]'`
 
 To see a list of possible json-strings see the file internal/autoupdate/keysbuilder/keysbuilder_test.go
 

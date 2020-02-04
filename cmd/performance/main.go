@@ -13,7 +13,7 @@ import (
 
 const (
 	connections = 5000
-	url         = "http://localhost:8002/autoupdate/"
+	url         = "http://localhost:8002/system/autoupdate"
 	redisAddr   = "localhost:6379"
 	redisTopic  = "ModifiedFields"
 )

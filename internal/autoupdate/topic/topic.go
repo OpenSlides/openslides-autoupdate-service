@@ -24,11 +24,13 @@ import (
 type Topic struct {
 	Closed chan struct{}
 
-	mu      sync.RWMutex
-	head    *node
-	tail    *node
-	waiting []chan struct{}
-	index   map[uint64]*node
+	mu    sync.RWMutex
+	head  *node
+	tail  *node
+	index map[uint64]*node
+
+	waitingMu sync.Mutex
+	waiting   []chan struct{}
 }
 
 // node implements a linked list.
@@ -86,7 +88,7 @@ func (t *Topic) Get(ctx context.Context, id uint64) (uint64, []string, error) {
 	// No new data
 	if t.tail == nil || id >= t.tail.id {
 		c := make(chan struct{})
-		t.waiting = append(t.waiting, c)
+		t.wait(c)
 		t.mu.RUnlock()
 
 		select {
@@ -138,6 +140,12 @@ func (t *Topic) Prune(until time.Time) {
 		delete(t.index, n.id)
 		t.head = n.next
 	}
+}
+
+func (t *Topic) wait(c chan struct{}) {
+	t.waitingMu.Lock()
+	t.waiting = append(t.waiting, c)
+	t.waitingMu.Unlock()
 }
 
 // runNode returns all strings from a node and the following nodes.

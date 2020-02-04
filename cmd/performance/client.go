@@ -26,7 +26,6 @@ func (c *client) connect(ctx context.Context, keys chan<- string) error {
 	if err != nil {
 		return fmt.Errorf("can not send request: %w", err)
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
@@ -44,7 +43,7 @@ func (c *client) connect(ctx context.Context, keys chan<- string) error {
 			for {
 				n, err := resp.Body.Read(buf)
 				if err != nil {
-					log.Fatalf("Read error: %v", err)
+					log.Fatalf("Can not read from response body: %v", err)
 				}
 				out = append(out, buf[:n]...)
 
