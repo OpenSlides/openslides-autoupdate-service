@@ -2,7 +2,7 @@
 // be pulled instead of beeing pushed.
 //
 // The idea of pulling updates is inspired by Kafka or Redis-Streams. A subscriber
-// does not have to register to a topic and can take as long as it needs to
+// does not have to register or unsubscribe to a topic and can take as long as it needs to
 // process the messages. Therefore, the system is less error-prone.
 package topic
 
