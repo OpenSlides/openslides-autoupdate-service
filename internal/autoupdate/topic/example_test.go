@@ -9,7 +9,7 @@ import (
 )
 
 func ExampleTopic() {
-	top := topic.Topic{}
+	top := topic.New()
 	var wg sync.WaitGroup
 
 	// Start two consumers

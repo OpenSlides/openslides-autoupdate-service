@@ -11,7 +11,7 @@ import (
 
 func TestAdd(t *testing.T) {
 	t.Parallel()
-	top := topic.Topic{}
+	top := topic.New()
 
 	top.Add("v1", "v2")
 
@@ -27,7 +27,7 @@ func TestAdd(t *testing.T) {
 
 func TestAddTwice(t *testing.T) {
 	t.Parallel()
-	top := topic.Topic{}
+	top := topic.New()
 
 	top.Add("v1")
 	top.Add("v2")
@@ -44,7 +44,7 @@ func TestAddTwice(t *testing.T) {
 
 func TestAddTwiceSameValue(t *testing.T) {
 	t.Parallel()
-	top := topic.Topic{}
+	top := topic.New()
 
 	top.Add("value")
 	top.Add("value")
@@ -61,7 +61,7 @@ func TestAddTwiceSameValue(t *testing.T) {
 
 func TestGetSecond(t *testing.T) {
 	t.Parallel()
-	top := topic.Topic{}
+	top := topic.New()
 	id := top.Add("v1")
 	top.Add("v2")
 
@@ -78,7 +78,7 @@ func TestGetSecond(t *testing.T) {
 
 func TestPrune(t *testing.T) {
 	t.Parallel()
-	top := topic.Topic{}
+	top := topic.New()
 	top.Add("first")
 	top.Add("second")
 	ti := time.Now()
@@ -99,7 +99,7 @@ func TestPrune(t *testing.T) {
 
 func TestGetPrunedID(t *testing.T) {
 	t.Parallel()
-	top := topic.Topic{}
+	top := topic.New()
 	top.Add("first")
 	top.Add("second")
 	ti := time.Now()
@@ -127,7 +127,7 @@ func TestGetPrunedID(t *testing.T) {
 
 func TestDontPruneLastNode(t *testing.T) {
 	t.Parallel()
-	top := topic.Topic{}
+	top := topic.New()
 	top.Add("value")
 	top.Add("value")
 
@@ -144,7 +144,7 @@ func TestDontPruneLastNode(t *testing.T) {
 
 func TestPruneOneValue(t *testing.T) {
 	t.Parallel()
-	top := topic.Topic{}
+	top := topic.New()
 	top.Add("value")
 
 	top.Prune(time.Now())
@@ -160,7 +160,7 @@ func TestPruneOneValue(t *testing.T) {
 
 func TestLastID(t *testing.T) {
 	t.Parallel()
-	top := topic.Topic{}
+	top := topic.New()
 	top.Add("value")
 	top.Add("value")
 	top.Add("value")
@@ -174,7 +174,7 @@ func TestLastID(t *testing.T) {
 
 func TestEmptyLastID(t *testing.T) {
 	t.Parallel()
-	top := topic.Topic{}
+	top := topic.New()
 
 	got := top.LastID()
 
@@ -185,7 +185,7 @@ func TestEmptyLastID(t *testing.T) {
 
 func TestGetBlocking(t *testing.T) {
 	t.Parallel()
-	top := topic.Topic{}
+	top := topic.New()
 	done := make(chan []string)
 	go func() {
 		time.Sleep(time.Millisecond)
@@ -215,7 +215,7 @@ func TestGetBlocking(t *testing.T) {
 func TestBlockUntilClose(t *testing.T) {
 	t.Parallel()
 	closed := make(chan struct{})
-	top := topic.Topic{Closed: closed}
+	top := topic.New(topic.WithClosed(closed))
 	done := make(chan struct{})
 	go func() {
 		if _, _, err := top.Get(context.Background(), 1); err != nil {
@@ -243,7 +243,7 @@ func TestBlockUntilClose(t *testing.T) {
 
 func TestBlockUntilContexDone(t *testing.T) {
 	t.Parallel()
-	top := topic.Topic{}
+	top := topic.New()
 	ctx, closeCtx := context.WithCancel(context.Background())
 	defer closeCtx()
 	done := make(chan struct{})
@@ -273,7 +273,7 @@ func TestBlockUntilContexDone(t *testing.T) {
 
 func TestBlockOnHighestID(t *testing.T) {
 	t.Parallel()
-	top := topic.Topic{}
+	top := topic.New()
 	id := top.Add("value")
 	ctx, closeCtx := context.WithCancel(context.Background())
 	defer closeCtx()
@@ -305,7 +305,7 @@ func TestBlockOnHighestID(t *testing.T) {
 func TestGetZeroAfterClosed(t *testing.T) {
 	t.Parallel()
 	closed := make(chan struct{})
-	top := topic.Topic{Closed: closed}
+	top := topic.New(topic.WithClosed(closed))
 	top.Add("value")
 	close(closed)
 
@@ -321,7 +321,7 @@ func TestGetZeroAfterClosed(t *testing.T) {
 func TestGetFutureAfterClosed(t *testing.T) {
 	t.Parallel()
 	closed := make(chan struct{})
-	top := topic.Topic{Closed: closed}
+	top := topic.New(topic.WithClosed(closed))
 	top.Add("value")
 	close(closed)
 	done := make(chan struct{})
