@@ -33,6 +33,16 @@ type Topic struct {
 	waiting   []chan struct{}
 }
 
+// New creates a new topic.
+func New(options ...Option) *Topic {
+	top := &Topic{}
+
+	for _, o := range options {
+		o(top)
+	}
+	return top
+}
+
 // node implements a linked list.
 type node struct {
 	id    uint64
