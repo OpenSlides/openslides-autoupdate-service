@@ -9,7 +9,7 @@ import (
 
 func TestRestrictedIDs(t *testing.T) {
 	rest := MockRestricter{}
-	ider := restrictedIDs{user: 1, r: rest}
+	ider := RestrictedIDs{user: 1, r: rest}
 
 	tc := []struct {
 		name    string
@@ -57,7 +57,7 @@ func TestRestrictedIDsListErrors(t *testing.T) {
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
 			rest := MockRestricter{Data: map[string]string{"motion/1/field_ids": tt.value}}
-			ider := restrictedIDs{user: 1, r: rest}
+			ider := RestrictedIDs{user: 1, r: rest}
 
 			_, err := ider.IDs(context.Background(), "motion/1/field_ids")
 

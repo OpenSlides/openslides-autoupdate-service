@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysbuilder"
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysrequest"
 )
 
@@ -62,20 +63,19 @@ func (h *Handler) autoupdate(w http.ResponseWriter, r *http.Request) error {
 	}
 	defer r.Body.Close()
 
-	connection, data, err := h.s.Connect(r.Context(), uid, keysReqs)
+	kb, err := keysbuilder.New(h.s.IDer(uid), keysReqs...)
 	if err != nil {
-		return fmt.Errorf("can not get first data: %w", err)
-	}
-	pushData(w, data)
-
-	for {
-		data, err = connection.Read()
-		if err != nil {
-			// It is not possible to return the error after content was sent to the client
-			fmt.Fprintf(w, "Error: Ups, something went wrong!")
+		if errors.Is(err, keysrequest.ErrInvalid{}) {
+			write400(w, err.Error())
 			return nil
 		}
-		pushData(w, data)
+		return fmt.Errorf("can not build keys: %w", err)
+	}
+
+	connection := h.s.Connect(r.Context(), uid, kb)
+
+	for connection.Next() {
+		pushData(w, connection.Data())
 		select {
 		case <-r.Context().Done():
 			return nil
@@ -84,6 +84,12 @@ func (h *Handler) autoupdate(w http.ResponseWriter, r *http.Request) error {
 		default:
 		}
 	}
+	if connection.Err() != nil {
+		// It is not possible to return the error after content was sent to the client
+		fmt.Fprintf(w, "Error: Ups, something went wrong!")
+		log.Printf("Error: %v", err)
+	}
+	return nil
 }
 
 func pushData(w http.ResponseWriter, data map[string]string) {

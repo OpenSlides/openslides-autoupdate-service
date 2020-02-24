@@ -5,24 +5,56 @@ import (
 	"fmt"
 
 	"github.com/cespare/xxhash/v2"
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysbuilder"
 )
 
-// Connection holds the state of an open connection to the autoupdate system.
+// Connection is a generator-like object that holds the state of an
+// open connection to the autoupdate system.
 // It has to be created by colling Connect() on a autoupdate.Service instance.
 type Connection struct {
-	s    *Service
-	ctx  context.Context
-	user int
-	tid  uint64
-	b    *keysbuilder.Builder
-	data map[string]uint64
+	s           *Service
+	ctx         context.Context
+	user        int
+	tid         uint64
+	initialized bool
+	kb          KeysBuilder
+	histroy     map[string]uint64
+	data        map[string]string
+	err         error
 }
 
-// Read listens for data changes and blocks until then. When data has changed,
+// Next listens for data changes and blocks until then. When data has changed,
 // it returns with the new data.
-// When the given context is done, it returns immediately with nil data
-func (c *Connection) Read() (map[string]string, error) {
+// When the given context is done, it returns immediately with nil data.
+// If an error happens, Next returns with nil. You have to check if an error happend
+// with the Err() method.
+func (c *Connection) Next() bool {
+	var keys []string
+	if !c.initialized {
+		c.tid = c.s.topic.LastID()
+		keys = c.kb.Keys()
+		c.initialized = true
+	} else {
+		var err error
+		keys, err = c.update()
+		if err != nil {
+			c.err = err
+			return false
+		}
+	}
+
+	data, err := c.s.restricter.Restrict(c.ctx, c.user, keys)
+	if err != nil {
+		c.err = fmt.Errorf("can not restrict data: %v", err)
+		return false
+	}
+	c.filter(data)
+	c.data = data
+	return true
+}
+
+func (c *Connection) update() ([]string, error) {
+	c.data = nil
+
 	tid, changedKeys, err := c.s.topic.Get(c.ctx, c.tid)
 	if err != nil {
 		return nil, fmt.Errorf("can not get new data: %w", err)
@@ -34,15 +66,15 @@ func (c *Connection) Read() (map[string]string, error) {
 		return nil, nil
 	}
 
-	oldKeys := c.b.Keys()
+	oldKeys := c.kb.Keys()
 
 	// Update keysbuilder get new list of keys
-	if err := c.b.Update(changedKeys); err != nil {
+	if err := c.kb.Update(changedKeys); err != nil {
 		return nil, fmt.Errorf("can not update keysbuilder: %w", err)
 	}
 
 	// Start with keys hat are new for the user
-	keys := keysDiff(oldKeys, c.b.Keys())
+	keys := keysDiff(oldKeys, c.kb.Keys())
 
 	changedSlice := make(map[string]bool, len(changedKeys))
 	for _, key := range changedKeys {
@@ -50,34 +82,38 @@ func (c *Connection) Read() (map[string]string, error) {
 	}
 
 	// Append keys that are old but have been changed.
-	for _, key := range c.b.Keys() {
+	for _, key := range c.kb.Keys() {
 		if !changedSlice[key] {
 			continue
 		}
 		keys = append(keys, key)
 	}
-
-	data, err := c.s.restricter.Restrict(c.ctx, c.user, keys)
-	if err != nil {
-		return nil, fmt.Errorf("can not restrict data: %v", err)
-	}
-	c.filter(data)
-	return data, nil
+	return keys, nil
 }
 
-// filter removes values from data, that are the same as before
+// Data returns the data gathered by Next().
+func (c *Connection) Data() map[string]string {
+	return c.data
+}
+
+// Err returns an error if some happen when calling Next().
+func (c *Connection) Err() error {
+	return c.err
+}
+
+// filter removes values from data, that are the same as before.
 func (c *Connection) filter(data map[string]string) {
-	if c.data == nil {
-		c.data = make(map[string]uint64)
+	if c.histroy == nil {
+		c.histroy = make(map[string]uint64)
 	}
 	for key, value := range data {
 		new := xxhash.Sum64String(value)
-		old, ok := c.data[key]
+		old, ok := c.histroy[key]
 		if ok && old == new {
 			delete(data, key)
 			continue
 		}
 
-		c.data[key] = new
+		c.histroy[key] = new
 	}
 }

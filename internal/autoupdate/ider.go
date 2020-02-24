@@ -7,13 +7,14 @@ import (
 	"strings"
 )
 
-// restrictedIDs returns the ids of a field by using a restricter
-type restrictedIDs struct {
+// RestrictedIDs returns the ids of a field by using a restricter
+type RestrictedIDs struct {
 	user int
 	r    Restricter
 }
 
-func (i restrictedIDs) IDs(ctx context.Context, key string) ([]int, error) {
+// IDs returns ids for a key
+func (i RestrictedIDs) IDs(ctx context.Context, key string) ([]int, error) {
 	var multi bool
 	switch {
 	case strings.HasSuffix(key, "_id"):

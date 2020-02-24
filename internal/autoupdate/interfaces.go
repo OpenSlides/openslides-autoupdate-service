@@ -14,3 +14,9 @@ type KeysChangedReceiver interface {
 type Restricter interface {
 	Restrict(ctx context.Context, uid int, keys []string) (map[string]string, error)
 }
+
+// KeysBuilder holds the keys that are requested by a user.
+type KeysBuilder interface {
+	Update([]string) error
+	Keys() []string
+}

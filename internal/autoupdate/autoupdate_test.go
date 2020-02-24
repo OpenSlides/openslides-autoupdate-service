@@ -2,12 +2,10 @@ package autoupdate_test
 
 import (
 	"context"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysrequest"
 )
 
 func TestConnect(t *testing.T) {
@@ -17,18 +15,18 @@ func TestConnect(t *testing.T) {
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	krs, err := keysrequest.ManyFromJSON(strings.NewReader(`[{"ids":[1],"collection":"user","fields":{"name":null}}]`))
-	if err != nil {
-		t.Fatalf("Did not expect an error, got: %v", err)
-	}
+	kb := mockKeysBuilder{keys: []string{"user/1/name"}}
 
-	_, data, err := s.Connect(ctx, 1, krs)
-	if err != nil {
+	c := s.Connect(ctx, 1, kb)
+	if !c.Next() {
+		t.Errorf("Next returned false, expected true")
+	}
+	if err := c.Err(); err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
 
 	key := "user/1/name"
-	if value, ok := data[key]; !ok || value != "some value" {
+	if value, ok := c.Data()[key]; !ok || value != "some value" {
 		t.Errorf("Expected data to have key \"%s\" = \"%s\", got value \"%s\"", key, "some value", value)
 	}
 }
@@ -40,12 +38,12 @@ func TestConnectionReadNoNewData(t *testing.T) {
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	krs, err := keysrequest.ManyFromJSON(strings.NewReader(`[{"ids":[1],"collection":"user","fields":{"name":null}}]`))
-	if err != nil {
-		t.Fatalf("Did not expect an error, got: %v", err)
+	kb := mockKeysBuilder{keys: []string{"user/1/name"}}
+	c := s.Connect(ctx, 1, kb)
+	if !c.Next() {
+		t.Errorf("Next returned false, expected true")
 	}
-	c, _, err := s.Connect(ctx, 1, krs)
-	if err != nil {
+	if err := c.Err(); err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
 
@@ -54,12 +52,14 @@ func TestConnectionReadNoNewData(t *testing.T) {
 		cancel()
 	}()
 
-	data, err := c.Read()
-	if err != nil {
-		t.Fatalf("Did not expect an error, got: %v", err)
+	if c.Next() {
+		t.Errorf("Did not expect data")
 	}
-	if len(data) != 0 {
-		t.Errorf("Expect no new data, got: %v", data)
+	if c.Err() != nil {
+		t.Fatalf("Did not expect an error, got: %v", c.Err())
+	}
+	if len(c.Data()) != 0 {
+		t.Errorf("Expect no new data, got: %v", c.Data())
 	}
 }
 
@@ -71,23 +71,22 @@ func TestConntectionReadNewData(t *testing.T) {
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	krs, err := keysrequest.ManyFromJSON(strings.NewReader(`[{"ids":[1],"collection":"user","fields":{"name":null}}]`))
-	if err != nil {
-		t.Fatalf("Did not expect an error, got: %v", err)
-	}
-	c, _, err := s.Connect(ctx, 1, krs)
-	if err != nil {
+	kb := mockKeysBuilder{keys: []string{"user/1/name"}}
+	c := s.Connect(ctx, 1, kb)
+	if err := c.Err(); err != nil {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
 	keychanges.send([]string{"user/1/name"})
 	restricter.Data = map[string]string{"user/1/name": "new value"}
 
-	data, err := c.Read()
-	if err != nil {
-		t.Fatalf("Did not expect an error, got: %v", err)
+	if !c.Next() {
+		t.Errorf("Next returned false, expected true")
+	}
+	if c.Err() != nil {
+		t.Fatalf("Did not expect an error, got: %v", c.Err())
 	}
 
-	if len(data) != 1 || data["user/1/name"] != "new value" {
+	if data := c.Data(); len(data) != 1 || data["user/1/name"] != "new value" {
 		t.Errorf("Expect data[\"user/1/name\"] to be \"new value\", got: \"%v\"", data["user/1/name"])
 	}
 }
@@ -119,4 +118,16 @@ func (m mockKeyChanged) send(keys []string) {
 
 func (m mockKeyChanged) close() {
 	m.t.Stop()
+}
+
+type mockKeysBuilder struct {
+	keys []string
+}
+
+func (m mockKeysBuilder) Update([]string) error {
+	return nil
+}
+
+func (m mockKeysBuilder) Keys() []string {
+	return m.keys
 }
