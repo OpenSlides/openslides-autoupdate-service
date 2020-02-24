@@ -28,6 +28,10 @@ type Connection struct {
 // If an error happens, Next returns with nil. You have to check if an error happend
 // with the Err() method.
 func (c *Connection) Next() bool {
+	if c.err != nil {
+		return false
+	}
+
 	var keys []string
 	if !c.initialized {
 		c.tid = c.s.topic.LastID()
@@ -35,9 +39,13 @@ func (c *Connection) Next() bool {
 		c.initialized = true
 	} else {
 		var err error
+		c.data = nil
 		keys, err = c.update()
 		if err != nil {
 			c.err = err
+			return false
+		}
+		if keys == nil {
 			return false
 		}
 	}
@@ -53,8 +61,6 @@ func (c *Connection) Next() bool {
 }
 
 func (c *Connection) update() ([]string, error) {
-	c.data = nil
-
 	tid, changedKeys, err := c.s.topic.Get(c.ctx, c.tid)
 	if err != nil {
 		return nil, fmt.Errorf("can not get new data: %w", err)
