@@ -76,7 +76,35 @@ func TestConntectionReadNewData(t *testing.T) {
 		t.Fatalf("Did not expect an error, got: %v", err)
 	}
 	keychanges.send([]string{"user/1/name"})
-	restricter.Data = map[string]string{"user/1/name": "new value"}
+	restricter.data = map[string]string{"user/1/name": "new value"}
+
+	if !c.Next() {
+		t.Errorf("Next returned false, expected true")
+	}
+	if c.Err() != nil {
+		t.Fatalf("Did not expect an error, got: %v", c.Err())
+	}
+
+	if data := c.Data(); len(data) != 1 || data["user/1/name"] != "new value" {
+		t.Errorf("Expect data[\"user/1/name\"] to be \"new value\", got: \"%v\"", data["user/1/name"])
+	}
+}
+
+func TestConntectionOnlyDifferentData(t *testing.T) {
+	keychanges := newMockKeyChanged()
+	defer keychanges.close()
+	restricter := &MockRestricter{}
+	s := autoupdate.New(restricter, keychanges)
+	defer s.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	kb := mockKeysBuilder{keys: []string{"user/1/name"}}
+	c := s.Connect(ctx, 1, kb)
+	if err := c.Err(); err != nil {
+		t.Fatalf("Did not expect an error, got: %v", err)
+	}
+	keychanges.send([]string{"user/1/name"})
+	restricter.data = map[string]string{"user/1/name": "new value"}
 
 	if !c.Next() {
 		t.Errorf("Next returned false, expected true")

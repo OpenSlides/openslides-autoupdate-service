@@ -8,13 +8,13 @@ import (
 )
 
 type MockRestricter struct {
-	Data map[string]string
+	data map[string]string
 }
 
 func (r MockRestricter) Restrict(ctx context.Context, uid int, keys []string) (map[string]string, error) {
 	out := make(map[string]string, len(keys))
 	for _, key := range keys {
-		v, ok := r.Data[key]
+		v, ok := r.data[key]
 		if ok {
 			out[key] = v
 			continue
