@@ -11,15 +11,14 @@ import (
 // open connection to the autoupdate system.
 // It has to be created by colling Connect() on a autoupdate.Service instance.
 type Connection struct {
-	s           *Service
-	ctx         context.Context
-	user        int
-	tid         uint64
-	initialized bool
-	kb          KeysBuilder
-	histroy     map[string]uint64
-	data        map[string]string
-	err         error
+	s       *Service
+	ctx     context.Context
+	user    int
+	tid     uint64
+	kb      KeysBuilder
+	histroy map[string]uint64
+	data    map[string]string
+	err     error
 }
 
 // Next listens for data changes and blocks until then. When data has changed,
@@ -33,10 +32,10 @@ func (c *Connection) Next() bool {
 	}
 
 	var keys []string
-	if !c.initialized {
+	if c.histroy == nil {
+		// First time Next() is called.
 		c.tid = c.s.topic.LastID()
 		keys = c.kb.Keys()
-		c.initialized = true
 	} else {
 		var err error
 		c.data = nil
