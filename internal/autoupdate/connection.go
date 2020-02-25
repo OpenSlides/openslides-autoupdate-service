@@ -11,14 +11,14 @@ import (
 // open connection to the autoupdate system.
 // It has to be created by colling Connect() on a autoupdate.Service instance.
 type Connection struct {
-	s       *Service
-	ctx     context.Context
-	user    int
-	tid     uint64
-	kb      KeysBuilder
-	histroy map[string]uint64
-	data    map[string]string
-	err     error
+	autoupdate *Service
+	ctx        context.Context
+	user       int
+	tid        uint64
+	kb         KeysBuilder
+	histroy    map[string]uint64
+	data       map[string]string
+	err        error
 }
 
 // Next listens for data changes and blocks until then. When data has changed,
@@ -34,7 +34,7 @@ func (c *Connection) Next() bool {
 	var keys []string
 	if c.histroy == nil {
 		// First time Next() is called.
-		c.tid = c.s.topic.LastID()
+		c.tid = c.autoupdate.topic.LastID()
 		keys = c.kb.Keys()
 	} else {
 		var err error
@@ -49,7 +49,7 @@ func (c *Connection) Next() bool {
 		}
 	}
 
-	data, err := c.s.restricter.Restrict(c.ctx, c.user, keys)
+	data, err := c.autoupdate.restricter.Restrict(c.ctx, c.user, keys)
 	if err != nil {
 		c.err = fmt.Errorf("can not restrict data: %v", err)
 		return false
@@ -60,7 +60,7 @@ func (c *Connection) Next() bool {
 }
 
 func (c *Connection) update() ([]string, error) {
-	tid, changedKeys, err := c.s.topic.Get(c.ctx, c.tid)
+	tid, changedKeys, err := c.autoupdate.topic.Get(c.ctx, c.tid)
 	if err != nil {
 		return nil, fmt.Errorf("can not get new data: %w", err)
 	}

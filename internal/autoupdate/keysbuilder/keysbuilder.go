@@ -13,6 +13,7 @@ const keySep = "/"
 
 // Builder builds the keys from a list of keysrequest.
 type Builder struct {
+	ctx          context.Context
 	ider         IDer
 	keysRequests []keysrequest.Body
 	cache        *cache
@@ -20,8 +21,9 @@ type Builder struct {
 }
 
 // New creates a new Builder instance
-func New(ider IDer, keysRequests ...keysrequest.Body) (*Builder, error) {
+func New(ctx context.Context, ider IDer, keysRequests ...keysrequest.Body) (*Builder, error) {
 	b := &Builder{
+		ctx:          ctx,
 		ider:         ider,
 		keysRequests: keysRequests,
 		cache:        newCache(),
@@ -47,7 +49,7 @@ func (b *Builder) genKeys() error {
 	var wg sync.WaitGroup
 	kc := make(chan string, 1)
 	ec := make(chan error, 1)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(b.ctx)
 	defer cancel()
 
 	for _, kr := range b.keysRequests {

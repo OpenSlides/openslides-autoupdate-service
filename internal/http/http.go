@@ -63,7 +63,7 @@ func (h *Handler) autoupdate(w http.ResponseWriter, r *http.Request) error {
 	}
 	defer r.Body.Close()
 
-	kb, err := keysbuilder.New(h.s.IDer(uid), keysReqs...)
+	kb, err := keysbuilder.New(r.Context(), h.s.IDer(uid), keysReqs...)
 	if err != nil {
 		if errors.Is(err, keysrequest.ErrInvalid{}) {
 			write400(w, err.Error())

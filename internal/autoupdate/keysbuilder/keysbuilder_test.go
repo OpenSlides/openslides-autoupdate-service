@@ -84,7 +84,7 @@ func TestKeys(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			ider := &mockIDer{}
-			b, err := keysbuilder.New(ider, tt.request)
+			b, err := keysbuilder.New(context.Background(), ider, tt.request)
 			if err != nil {
 				t.Fatalf("Expected New() not to return an error, got: %v", err)
 			}
@@ -154,7 +154,7 @@ func TestUpdate(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			restr := mockIDer{}
-			b, err := keysbuilder.New(&restr, tt.request)
+			b, err := keysbuilder.New(context.Background(), &restr, tt.request)
 			if err != nil {
 				t.Fatalf("Expect Keys() not to return an error, got: %v", err)
 			}
@@ -180,7 +180,7 @@ func TestConcurency(t *testing.T) {
 	restr := mockIDer{sleep: 10 * time.Millisecond}
 
 	start := time.Now()
-	b, err := keysbuilder.New(&restr, kr)
+	b, err := keysbuilder.New(context.Background(), &restr, kr)
 	if err != nil {
 		t.Errorf("Expect Keys() not to return an error, got: %v", err)
 	}
@@ -207,7 +207,7 @@ func TestManyRequests(t *testing.T) {
 	restr := mockIDer{sleep: 10 * time.Millisecond}
 
 	start := time.Now()
-	b, err := keysbuilder.New(&restr, krs...)
+	b, err := keysbuilder.New(context.Background(), &restr, krs...)
 	if err != nil {
 		t.Errorf("Expect Keys() not to return an error, got: %v", err)
 	}
@@ -231,7 +231,7 @@ func TestError(t *testing.T) {
 	restr := mockIDer{err: errors.New("Some Error"), sleep: 10 * time.Millisecond}
 
 	start := time.Now()
-	if _, err := keysbuilder.New(&restr, kr); err == nil {
+	if _, err := keysbuilder.New(context.Background(), &restr, kr); err == nil {
 		t.Errorf("Expect Keys() to return an error, got none")
 	}
 	finished := time.Since(start)
