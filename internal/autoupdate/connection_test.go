@@ -14,7 +14,7 @@ func TestConnect(t *testing.T) {
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	kb := mockKeysBuilder{keys: []string{"user/1/name"}}
+	kb := mockKeysBuilder{keys: keys("user/1/name")}
 
 	c := s.Connect(ctx, 1, kb)
 	if !c.Next() {
@@ -37,7 +37,7 @@ func TestConnectionReadNoNewData(t *testing.T) {
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	kb := mockKeysBuilder{keys: []string{"user/1/name"}}
+	kb := mockKeysBuilder{keys: keys("user/1/name")}
 	c := s.Connect(ctx, 1, kb)
 	if !c.Next() {
 		t.Errorf("Next returned false, expected true")
@@ -70,12 +70,12 @@ func TestConntectionReadNewData(t *testing.T) {
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	kb := mockKeysBuilder{keys: []string{"user/1/name"}}
+	kb := mockKeysBuilder{keys: keys("user/1/name")}
 	c := s.Connect(ctx, 1, kb)
-	if err := c.Err(); err != nil {
-		t.Fatalf("Did not expect an error, got: %v", err)
+	if !c.Next() {
+		t.Fatalf("Next returned false, expected true, err: %v", c.Err())
 	}
-	keychanges.send([]string{"user/1/name"})
+	keychanges.send(keys("user/1/name"))
 	restricter.data = map[string]string{"user/1/name": "new value"}
 
 	if !c.Next() {
@@ -93,18 +93,17 @@ func TestConntectionReadNewData(t *testing.T) {
 func TestConntectionOnlyDifferentData(t *testing.T) {
 	keychanges := newMockKeyChanged()
 	defer keychanges.close()
-	restricter := &MockRestricter{}
+	restricter := &MockRestricter{data: keyValue{"user/1/name": "name1"}.m()}
 	s := autoupdate.New(restricter, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	kb := mockKeysBuilder{keys: []string{"user/1/name"}}
+	kb := mockKeysBuilder{keys: keys("user/1/name")}
 	c := s.Connect(ctx, 1, kb)
-	if err := c.Err(); err != nil {
-		t.Fatalf("Did not expect an error, got: %v", err)
+	if !c.Next() {
+		t.Fatalf("Next returned false, expected true, err: %v", c.Err())
 	}
-	keychanges.send([]string{"user/1/name"})
-	restricter.data = map[string]string{"user/1/name": "new value"}
+	keychanges.send(keys("user/1/name")) // send again, value did not change in restricter
 
 	if !c.Next() {
 		t.Errorf("Next returned false, expected true")
@@ -113,7 +112,7 @@ func TestConntectionOnlyDifferentData(t *testing.T) {
 		t.Fatalf("Did not expect an error, got: %v", c.Err())
 	}
 
-	if data := c.Data(); len(data) != 1 || data["user/1/name"] != "new value" {
-		t.Errorf("Expect data[\"user/1/name\"] to be \"new value\", got: \"%v\"", data["user/1/name"])
+	if data := c.Data(); len(data) != 0 {
+		t.Errorf("Expect emty data; got \"%v\"", data)
 	}
 }
