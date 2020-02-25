@@ -1,32 +1,32 @@
-// Package keysbuilder holds a datastructure to get all requested keys from  keysrequests.
+// Package keysbuilder holds a datastructure to get and update requested keys.
 package keysbuilder
 
 import (
 	"context"
 	"strconv"
 	"sync"
-
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysrequest"
 )
 
 const keySep = "/"
 
-// Builder builds the keys from a list of keysrequest.
+// Builder builds the keys.
+//
+// Has to be created with keysbuilder.FromJSON or keysbuilder.ManyFromJSON.
 type Builder struct {
-	ctx          context.Context
-	ider         IDer
-	keysRequests []keysrequest.Body
-	cache        *cache
-	keys         []string
+	ctx   context.Context
+	ider  IDer
+	bodys []body
+	cache *cache
+	keys  []string
 }
 
-// New creates a new Builder instance
-func New(ctx context.Context, ider IDer, keysRequests ...keysrequest.Body) (*Builder, error) {
+// newBuilder creates a new Builder instance
+func newBuilder(ctx context.Context, ider IDer, bodys ...body) (*Builder, error) {
 	b := &Builder{
-		ctx:          ctx,
-		ider:         ider,
-		keysRequests: keysRequests,
-		cache:        newCache(),
+		ctx:   ctx,
+		ider:  ider,
+		bodys: bodys,
+		cache: newCache(),
 	}
 	if err := b.genKeys(); err != nil {
 		return nil, err
@@ -52,10 +52,10 @@ func (b *Builder) genKeys() error {
 	ctx, cancel := context.WithCancel(b.ctx)
 	defer cancel()
 
-	for _, kr := range b.keysRequests {
+	for _, kr := range b.bodys {
 		wg.Add(1)
-		go func(kr keysrequest.Body) {
-			b.run(ctx, kr.IDs, kr.Fields, kc, ec)
+		go func(kr body) {
+			b.run(ctx, kr.IDs, kr.fields, kc, ec)
 			wg.Done()
 		}(kr)
 	}
@@ -80,19 +80,19 @@ func (b *Builder) genKeys() error {
 	}
 }
 
-func (b *Builder) run(ctx context.Context, ids []int, fd keysrequest.Fields, kc chan<- string, ec chan<- error) {
+func (b *Builder) run(ctx context.Context, ids []int, fd fields, kc chan<- string, ec chan<- error) {
 	var wg sync.WaitGroup
 	for _, id := range ids {
 		for field, ifd := range fd.Names {
 			key := buildKey(fd.Collection, id, field)
 			kc <- key
-			if ifd.Null() {
+			if ifd.null() {
 				// field is not a reference
 				continue
 			}
 
 			wg.Add(1)
-			go func(name string, ifd keysrequest.Fields) {
+			go func(name string, ifd fields) {
 				defer wg.Done()
 				ids := b.cache.getOrSet(name, func() []int {
 					ids, err := b.ider.IDs(ctx, name)

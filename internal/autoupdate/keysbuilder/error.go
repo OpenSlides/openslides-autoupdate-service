@@ -1,12 +1,11 @@
-package keysrequest
+package keysbuilder
 
 import (
 	"fmt"
 	"strings"
 )
 
-// ErrInvalid is an error that happens when an invalid
-// keysrequest is build
+// ErrInvalid is an error that happens on an invalid request.
 type ErrInvalid struct {
 	msg   string
 	field string
@@ -44,7 +43,7 @@ func (e ErrInvalid) fields() ([]string, *ErrInvalid) {
 }
 
 // ErrJSON is returned when invalid json is parsed or the json can not
-// be decoded to the KeysRequest
+// be decoded to a keysbuilder.
 type ErrJSON struct {
 	msg string
 	err error
