@@ -7,13 +7,14 @@ import (
 	"strings"
 )
 
-// restrictedIDs returns the ids of a field by using a restricter
-type restrictedIDs struct {
+// RestrictedIDs implements the IDer interface by using a restricer.
+type RestrictedIDs struct {
 	user int
 	r    Restricter
 }
 
-func (i restrictedIDs) IDs(ctx context.Context, key string) ([]int, error) {
+// IDs returns ids for a key.
+func (i RestrictedIDs) IDs(ctx context.Context, key string) ([]int, error) {
 	var multi bool
 	switch {
 	case strings.HasSuffix(key, "_id"):
@@ -64,7 +65,6 @@ func decodeNumberList(value string) ([]int, error) {
 			return nil, fmt.Errorf("can not convert value `%s` to int", value[:idx])
 		}
 		out = append(out, id)
-		// TODO: Check if this allocates memory. If yes, convert value to []byte outside of the loop
 		value = value[idx+1:]
 	}
 	id, err := strconv.Atoi(value[:len(value)-1])

@@ -4,13 +4,9 @@ package autoupdate
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"log"
 	"time"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysbuilder"
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysrequest"
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/topic"
 )
 
@@ -54,31 +50,18 @@ func (s *Service) Done() <-chan struct{} {
 
 // Connect gives the first data for a list of keysrequests and returns a connection objekt
 // to pass to Echo.
-func (s *Service) Connect(ctx context.Context, uid int, krs []keysrequest.Body) (*Connection, map[string]string, error) {
-	b, err := keysbuilder.New(restrictedIDs{uid, s.restricter}, krs...)
-	if err != nil {
-		if errors.Is(err, keysrequest.ErrInvalid{}) {
-			err = raiseErrInput(err)
-		}
-		return nil, nil, fmt.Errorf("can not build keys: %w", err)
-	}
-
-	lastID := s.topic.LastID()
-
-	data, err := s.restricter.Restrict(ctx, uid, b.Keys())
-	if err != nil {
-		return nil, nil, fmt.Errorf("can not restrict data: %v", err)
-	}
-
-	c := &Connection{
+func (s *Service) Connect(ctx context.Context, uid int, kb KeysBuilder) *Connection {
+	return &Connection{
 		s:    s,
 		ctx:  ctx,
 		user: uid,
-		tid:  lastID,
-		b:    b,
+		kb:   kb,
 	}
-	c.filter(data)
-	return c, data, nil
+}
+
+// IDer returns an object, that can be used to return ids for an related key.
+func (s *Service) IDer(uid int) RestrictedIDs {
+	return RestrictedIDs{uid, s.restricter}
 }
 
 // pruneTopic removes old data from the topic.
@@ -118,19 +101,4 @@ func (s *Service) receiveKeyChanges() {
 
 		s.topic.Add(keys...)
 	}
-}
-
-func keysDiff(old []string, new []string) []string {
-	slice := make(map[string]bool, len(old))
-	for _, key := range old {
-		slice[key] = true
-	}
-	added := []string{}
-	for _, key := range new {
-		if slice[key] {
-			continue
-		}
-		added = append(added, key)
-	}
-	return added
 }
