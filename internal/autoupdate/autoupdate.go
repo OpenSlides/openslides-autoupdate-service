@@ -102,18 +102,3 @@ func (s *Service) receiveKeyChanges() {
 		s.topic.Add(keys...)
 	}
 }
-
-func keysDiff(old []string, new []string) []string {
-	slice := make(map[string]bool, len(old))
-	for _, key := range old {
-		slice[key] = true
-	}
-	added := []string{}
-	for _, key := range new {
-		if slice[key] {
-			continue
-		}
-		added = append(added, key)
-	}
-	return added
-}

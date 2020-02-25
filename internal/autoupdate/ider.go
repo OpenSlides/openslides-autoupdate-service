@@ -65,7 +65,6 @@ func decodeNumberList(value string) ([]int, error) {
 			return nil, fmt.Errorf("can not convert value `%s` to int", value[:idx])
 		}
 		out = append(out, id)
-		// TODO: Check if this allocates memory. If yes, convert value to []byte outside of the loop
 		value = value[idx+1:]
 	}
 	id, err := strconv.Atoi(value[:len(value)-1])

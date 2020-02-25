@@ -1,15 +1,16 @@
-package autoupdate
+package autoupdate_test
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 )
 
 func TestRestrictedIDs(t *testing.T) {
-	rest := MockRestricter{}
-	ider := RestrictedIDs{user: 1, r: rest}
+	s := autoupdate.New(MockRestricter{}, newMockKeyChanged())
+	ider := s.IDer(1)
 
 	tc := []struct {
 		name    string
@@ -57,7 +58,8 @@ func TestRestrictedIDsListErrors(t *testing.T) {
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
 			rest := MockRestricter{Data: map[string]string{"motion/1/field_ids": tt.value}}
-			ider := RestrictedIDs{user: 1, r: rest}
+			s := autoupdate.New(rest, newMockKeyChanged())
+			ider := s.IDer(1)
 
 			_, err := ider.IDs(context.Background(), "motion/1/field_ids")
 
@@ -70,31 +72,4 @@ func TestRestrictedIDsListErrors(t *testing.T) {
 			return
 		})
 	}
-}
-
-type MockRestricter struct {
-	Data map[string]string
-}
-
-func (r MockRestricter) Restrict(ctx context.Context, uid int, keys []string) (map[string]string, error) {
-	out := make(map[string]string, len(keys))
-	for _, key := range keys {
-		v, ok := r.Data[key]
-		if ok {
-			out[key] = v
-			continue
-		}
-
-		switch {
-		case strings.HasPrefix(key, "error"):
-			return nil, fmt.Errorf("Restricter got an error")
-		case strings.HasSuffix(key, "_id"):
-			out[key] = "1"
-		case strings.HasSuffix(key, "_ids"):
-			out[key] = "[1,2]"
-		default:
-			out[key] = "some value"
-		}
-	}
-	return out, nil
 }

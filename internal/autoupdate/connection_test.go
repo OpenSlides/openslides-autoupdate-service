@@ -3,7 +3,6 @@ package autoupdate_test
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 )
@@ -11,7 +10,7 @@ import (
 func TestConnect(t *testing.T) {
 	keychanges := newMockKeyChanged()
 	defer keychanges.close()
-	s := autoupdate.New(autoupdate.MockRestricter{}, keychanges)
+	s := autoupdate.New(MockRestricter{}, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -34,7 +33,7 @@ func TestConnect(t *testing.T) {
 func TestConnectionReadNoNewData(t *testing.T) {
 	keychanges := newMockKeyChanged()
 	defer keychanges.close()
-	s := autoupdate.New(autoupdate.MockRestricter{}, keychanges)
+	s := autoupdate.New(MockRestricter{}, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -66,7 +65,7 @@ func TestConnectionReadNoNewData(t *testing.T) {
 func TestConntectionReadNewData(t *testing.T) {
 	keychanges := newMockKeyChanged()
 	defer keychanges.close()
-	restricter := &autoupdate.MockRestricter{}
+	restricter := &MockRestricter{}
 	s := autoupdate.New(restricter, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -89,45 +88,4 @@ func TestConntectionReadNewData(t *testing.T) {
 	if data := c.Data(); len(data) != 1 || data["user/1/name"] != "new value" {
 		t.Errorf("Expect data[\"user/1/name\"] to be \"new value\", got: \"%v\"", data["user/1/name"])
 	}
-}
-
-type mockKeyChanged struct {
-	c chan []string
-	t *time.Ticker
-}
-
-func newMockKeyChanged() mockKeyChanged {
-	m := mockKeyChanged{}
-	m.c = make(chan []string, 1)
-	m.t = time.NewTicker(time.Second)
-	return m
-}
-
-func (m mockKeyChanged) KeysChanged() ([]string, error) {
-	select {
-	case v := <-m.c:
-		return v, nil
-	case <-m.t.C:
-		return nil, nil
-	}
-}
-
-func (m mockKeyChanged) send(keys []string) {
-	m.c <- keys
-}
-
-func (m mockKeyChanged) close() {
-	m.t.Stop()
-}
-
-type mockKeysBuilder struct {
-	keys []string
-}
-
-func (m mockKeysBuilder) Update([]string) error {
-	return nil
-}
-
-func (m mockKeysBuilder) Keys() []string {
-	return m.keys
 }
