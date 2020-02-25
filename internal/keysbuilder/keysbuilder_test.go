@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysbuilder"
+	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
 )
 
 func TestKeys(t *testing.T) {
