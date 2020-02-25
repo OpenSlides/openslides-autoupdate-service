@@ -5,6 +5,9 @@ import (
 	"sync"
 )
 
+// cache caches the requests to the ider. If many requests to the same key
+// are send at the same time, only one request is send and the other request
+// block until the first one gets an answer.
 type cache struct {
 	mu   sync.Mutex
 	data map[string]*cacheEntry

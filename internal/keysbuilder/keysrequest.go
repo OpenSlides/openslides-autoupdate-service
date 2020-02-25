@@ -1,38 +1,37 @@
-// Package keysrequest holds the keyrequest object and functions
-// to generate it. Currently, it can only be generated from json.
-package keysrequest
+package keysbuilder
 
 import (
 	"strings"
 )
 
-// Body holds the information what keys are requested by the client
-type Body struct {
+// body holds the information what keys are requested by the client.
+type body struct {
 	IDs []int `json:"ids"`
-	Fields
+	fields
 }
 
-// validate maks sure the KeysRequest is valid. Returns an ErrInvalid if not.
-func (kr *Body) validate() error {
+// validate maks sure the body is valid. Returns an ErrInvalid if not.
+func (kr *body) validate() error {
 	if len(kr.IDs) == 0 {
 		return ErrInvalid{msg: "no ids"}
 	}
-	return kr.Fields.validate()
+	return kr.fields.validate()
 }
 
-// Fields describes in a abstract way fields of a collection.
+// fields describes in a abstract way fields of a collection.
 // It can map to related keys.
-type Fields struct {
+type fields struct {
 	Collection string            `json:"collection"`
-	Names      map[string]Fields `json:"fields"`
+	Names      map[string]fields `json:"fields"`
 }
 
 // Null returns true if fieldDescription is empty (null in json)
-func (fd *Fields) Null() bool {
+func (fd *fields) null() bool {
 	return fd.Collection == "" && len(fd.Names) == 0
 }
 
-func (fd *Fields) validate() error {
+// validate maks sure the fields are valid. Returns an ErrInvalid if not.
+func (fd *fields) validate() error {
 	if len(fd.Names) == 0 {
 		return ErrInvalid{msg: "no fields"}
 	}
@@ -40,7 +39,7 @@ func (fd *Fields) validate() error {
 		return ErrInvalid{msg: "no collection"}
 	}
 	for name, description := range fd.Names {
-		if description.Null() {
+		if description.null() {
 			continue
 		}
 		if !(strings.HasSuffix(name, "_id") || strings.HasSuffix(name, "_ids")) {

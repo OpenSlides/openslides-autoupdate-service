@@ -1,11 +1,12 @@
-package keysrequest_test
+package keysbuilder_test
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysrequest"
+	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
 )
 
 func TestJSONValid(t *testing.T) {
@@ -21,18 +22,18 @@ func TestJSONValid(t *testing.T) {
 		}
 	}
 	`)
-	if _, err := keysrequest.FromJSON(json); err != nil {
+	if _, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{}); err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
 }
 
 func TestJSONInvalid(t *testing.T) {
 	json := strings.NewReader(`{5`)
-	_, err := keysrequest.FromJSON(json)
+	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
 	if err == nil {
 		t.Errorf("Expected an error, got none")
 	}
-	var errJSON keysrequest.ErrJSON
+	var errJSON keysbuilder.ErrJSON
 	if !errors.As(err, &errJSON) {
 		t.Errorf("Expected error to be of type ErrJSON, got: %v", err)
 	}
@@ -46,11 +47,11 @@ func TestJSONSingleID(t *testing.T) {
 		"fields": {"name": null}
 	}
 	`)
-	_, err := keysrequest.FromJSON(json)
+	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
 	if err == nil {
 		t.Errorf("Expected an error, got none")
 	}
-	var errJSON keysrequest.ErrJSON
+	var errJSON keysbuilder.ErrJSON
 	if !errors.As(err, &errJSON) {
 		t.Errorf("Expected error to be of type ErrJSON, got: %v", err)
 	}
@@ -63,11 +64,11 @@ func TestJSONNoField(t *testing.T) {
 		"collection": "user"
 	}
 	`)
-	_, err := keysrequest.FromJSON(json)
+	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
 	if err == nil {
 		t.Errorf("Expected an error, got none")
 	}
-	var kErr keysrequest.ErrInvalid
+	var kErr keysbuilder.ErrInvalid
 	if !errors.As(err, &kErr) {
 		t.Errorf("Expected err to be %T, got: %v", kErr, err)
 	}
@@ -84,11 +85,11 @@ func TestJSONNoCollection(t *testing.T) {
 		"fields": {"name": null}
 	}
 	`)
-	_, err := keysrequest.FromJSON(json)
+	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
 	if err == nil {
 		t.Errorf("Expected an error, got none")
 	}
-	var kErr keysrequest.ErrInvalid
+	var kErr keysbuilder.ErrInvalid
 	if !errors.As(err, &kErr) {
 		t.Errorf("Expected err to be %T, got: %v", kErr, err)
 	}
@@ -105,11 +106,11 @@ func TestJSONNoIDs(t *testing.T) {
 		"collection": "user"
 	}
 	`)
-	_, err := keysrequest.FromJSON(json)
+	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
 	if err == nil {
 		t.Errorf("Expected an error, got none")
 	}
-	var kErr keysrequest.ErrInvalid
+	var kErr keysbuilder.ErrInvalid
 	if !errors.As(err, &kErr) {
 		t.Errorf("Expected err to be %T, got: %v", kErr, err)
 	}
@@ -132,11 +133,11 @@ func TestJSONNoSuffix(t *testing.T) {
 		}
 	}
 	`)
-	_, err := keysrequest.FromJSON(json)
+	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
 	if err == nil {
 		t.Errorf("Expected an error, got none")
 	}
-	var kErr keysrequest.ErrInvalid
+	var kErr keysbuilder.ErrInvalid
 	if !errors.As(err, &kErr) {
 		t.Errorf("Expected err to be %T, got: %v", kErr, err)
 	}
@@ -160,7 +161,7 @@ func TestJSONSuffixNoFields(t *testing.T) {
 		}
 	}
 	`)
-	_, err := keysrequest.FromJSON(json)
+	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -178,11 +179,11 @@ func TestJSONInnerNoCollection(t *testing.T) {
 		}
 	}
 	`)
-	_, err := keysrequest.FromJSON(json)
+	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
 	if err == nil {
 		t.Errorf("Expected an error, got none")
 	}
-	var kErr keysrequest.ErrInvalid
+	var kErr keysbuilder.ErrInvalid
 	if !errors.As(err, &kErr) {
 		t.Errorf("Expected err to be %T, got: %v", kErr, err)
 	}
@@ -207,11 +208,11 @@ func TestJSONInnerNoFields(t *testing.T) {
 		}
 	}
 	`)
-	_, err := keysrequest.FromJSON(json)
+	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
 	if err == nil {
 		t.Errorf("Expected an error, got none")
 	}
-	var kErr keysrequest.ErrInvalid
+	var kErr keysbuilder.ErrInvalid
 	if !errors.As(err, &kErr) {
 		t.Errorf("Expected err to be %T, got: %v", kErr, err)
 	}
@@ -240,11 +241,11 @@ func TestJSONInnerTwiceNoFields(t *testing.T) {
 			}
 		}
 	}`)
-	_, err := keysrequest.FromJSON(json)
+	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
 	if err == nil {
 		t.Errorf("Expected an error, got none")
 	}
-	var kErr keysrequest.ErrInvalid
+	var kErr keysbuilder.ErrInvalid
 	if !errors.As(err, &kErr) {
 		t.Errorf("Expected err to be %T, got: %v", kErr, err)
 	}
@@ -278,7 +279,7 @@ func TestManyFromJSON(t *testing.T) {
 			"name": null
 		}
 	}]`)
-	_, err := keysrequest.ManyFromJSON(json)
+	_, err := keysbuilder.ManyFromJSON(context.Background(), json, &mockIDer{})
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -303,17 +304,17 @@ func TestManyFromJSONInvalidJSON(t *testing.T) {
 		"collection": "user",
 		"fi
 	}]`)
-	_, err := keysrequest.ManyFromJSON(json)
+	_, err := keysbuilder.ManyFromJSON(context.Background(), json, &mockIDer{})
 	if err == nil {
 		t.Error("Expected ManyFromJSON() to return an error, got not")
 	}
-	var errJSON keysrequest.ErrJSON
+	var errJSON keysbuilder.ErrJSON
 	if !errors.As(err, &errJSON) {
 		t.Errorf("Expected error to be of type ErrJSON, got: %v", err)
 	}
 }
 
-func TestManyFromJSONInvalidKeysRequest(t *testing.T) {
+func TestManyFromJSONInvalidInput(t *testing.T) {
 	json := strings.NewReader(`[
 	{
 		"ids": [5],
@@ -338,11 +339,11 @@ func TestManyFromJSONInvalidKeysRequest(t *testing.T) {
 			}
 		}
 	}]`)
-	_, err := keysrequest.ManyFromJSON(json)
+	_, err := keysbuilder.ManyFromJSON(context.Background(), json, &mockIDer{})
 	if err == nil {
 		t.Error("Expected ManyFromJSON() to return an error, got not")
 	}
-	var kErr keysrequest.ErrInvalid
+	var kErr keysbuilder.ErrInvalid
 	if !errors.As(err, &kErr) {
 		t.Errorf("Expected error to be of type ErrInvalid, got: %v", err)
 	}

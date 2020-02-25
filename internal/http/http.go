@@ -9,8 +9,7 @@ import (
 	"net/http"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysbuilder"
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/keysrequest"
+	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
 )
 
 // Handler is an http handler for the autoupdate service.
@@ -41,35 +40,26 @@ func (h *Handler) autoupdate(w http.ResponseWriter, r *http.Request) error {
 		return fmt.Errorf("can not authenticate request: %w", err)
 	}
 
-	keysReqs, err := keysrequest.ManyFromJSON(r.Body)
+	kb, err := keysbuilder.ManyFromJSON(r.Context(), r.Body, h.s.IDer(uid))
+	defer r.Body.Close()
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			write400(w, "Empty body, expected key request.\n")
 			return nil
 		}
-		var errInvalid keysrequest.ErrInvalid
+		var errInvalid keysbuilder.ErrInvalid
 		if errors.As(err, &errInvalid) {
 			write400(w, fmt.Sprintf("Can not parse key request: %v\n", errInvalid.Error()))
 			return nil
 		}
 
-		var errJSON keysrequest.ErrJSON
+		var errJSON keysbuilder.ErrJSON
 		if errors.As(err, &errJSON) {
 			write400(w, "Request body has to be valid json.\n")
 			return nil
 		}
 
 		return fmt.Errorf("can not parse request body: %w", err)
-	}
-	defer r.Body.Close()
-
-	kb, err := keysbuilder.New(r.Context(), h.s.IDer(uid), keysReqs...)
-	if err != nil {
-		if errors.Is(err, keysrequest.ErrInvalid{}) {
-			write400(w, err.Error())
-			return nil
-		}
-		return fmt.Errorf("can not build keys: %w", err)
 	}
 
 	connection := h.s.Connect(r.Context(), uid, kb)
