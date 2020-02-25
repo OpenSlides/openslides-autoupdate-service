@@ -7,13 +7,13 @@ import (
 	"strings"
 )
 
-// RestrictedIDs returns the ids of a field by using a restricter
+// RestrictedIDs implements the IDer interface by using a restricer.
 type RestrictedIDs struct {
 	user int
 	r    Restricter
 }
 
-// IDs returns ids for a key
+// IDs returns ids for a key.
 func (i RestrictedIDs) IDs(ctx context.Context, key string) ([]int, error) {
 	var multi bool
 	switch {
