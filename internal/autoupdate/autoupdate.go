@@ -1,5 +1,4 @@
-// Package autoupdate holds the logik to register the keysrequests of clients and inform them
-// about updates.
+// Package autoupdate allows clients to request keys and get updates when the keys changes.
 package autoupdate
 
 import (
@@ -48,14 +47,13 @@ func (s *Service) Done() <-chan struct{} {
 	return s.closed
 }
 
-// Connect gives the first data for a list of keysrequests and returns a connection objekt
-// to pass to Echo.
+// Connect returns a Connection object
 func (s *Service) Connect(ctx context.Context, uid int, kb KeysBuilder) *Connection {
 	return &Connection{
-		s:    s,
-		ctx:  ctx,
-		user: uid,
-		kb:   kb,
+		autoupdate: s,
+		ctx:        ctx,
+		user:       uid,
+		kb:         kb,
 	}
 }
 
