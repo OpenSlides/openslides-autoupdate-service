@@ -9,7 +9,9 @@ import (
 )
 
 func TestRestrictedIDs(t *testing.T) {
-	s := autoupdate.New(MockRestricter{}, newMockKeyChanged())
+	keychanges := newMockKeyChanged()
+	defer keychanges.close()
+	s := autoupdate.New(MockRestricter{}, keychanges)
 	ider := s.IDer(1)
 
 	tc := []struct {
@@ -58,7 +60,9 @@ func TestRestrictedIDsListErrors(t *testing.T) {
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
 			rest := MockRestricter{Data: map[string]string{"motion/1/field_ids": tt.value}}
-			s := autoupdate.New(rest, newMockKeyChanged())
+			keychanges := newMockKeyChanged()
+			defer keychanges.close()
+			s := autoupdate.New(rest, keychanges)
 			ider := s.IDer(1)
 
 			_, err := ider.IDs(context.Background(), "motion/1/field_ids")
