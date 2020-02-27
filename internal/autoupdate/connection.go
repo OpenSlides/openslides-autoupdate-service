@@ -3,8 +3,7 @@ package autoupdate
 import (
 	"context"
 	"fmt"
-
-	"github.com/cespare/xxhash/v2"
+	"hash/maphash"
 )
 
 // Connection is a generator-like object that holds the state of an
@@ -19,6 +18,7 @@ type Connection struct {
 	histroy    map[string]uint64
 	data       map[string]string
 	err        error
+	hash       maphash.Hash
 }
 
 // Next listens for data changes and blocks until then. When data has changed,
@@ -111,8 +111,12 @@ func (c *Connection) filter(data map[string]string) {
 	if c.histroy == nil {
 		c.histroy = make(map[string]uint64)
 	}
+	//h.SetSeed(maphash.MakeSeed())
 	for key, value := range data {
-		new := xxhash.Sum64String(value)
+		c.hash.Reset()
+		c.hash.WriteString(value)
+		new := c.hash.Sum64()
+		fmt.Println(new)
 		old, ok := c.histroy[key]
 		if ok && old == new {
 			delete(data, key)

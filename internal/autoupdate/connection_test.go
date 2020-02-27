@@ -91,7 +91,7 @@ func TestConntectionReadNewData(t *testing.T) {
 	}
 }
 
-func TestConntectionOnlyDifferentData(t *testing.T) {
+func TestConntectionFilterData(t *testing.T) {
 	keychanges := newMockKeyChanged()
 	defer keychanges.close()
 	restricter := &MockRestricter{data: keyValue{"user/1/name": "name1"}.m()}
@@ -117,6 +117,22 @@ func TestConntectionOnlyDifferentData(t *testing.T) {
 		t.Errorf("Expect emty data; got \"%v\"", data)
 	}
 }
+
+func TestConntectionOnlyDifferentData(t *testing.T) {
+	keychanges := newMockKeyChanged()
+	defer keychanges.close()
+	restricter := &MockRestricter{data: keyValue{"user/1/name": "name1", "user/2/name": "name2"}.m()}
+	s := autoupdate.New(restricter, keychanges)
+	defer s.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	kb := mockKeysBuilder{keys: keys("user/1/name", "user/2/name")}
+	c := s.Connect(ctx, 1, kb)
+	if !c.Next() {
+		t.Fatalf("Next returned false, expected true, err: %v", c.Err())
+	}
+	restricter.data["user/1/name"] = "newname" // Only change user/1 not user/2
+	keychanges.send(keys("user/1/name", "user/2/name"))
 
 func BenchmarkFilterChanging(b *testing.B) {
 	const keyCount = 100
@@ -169,5 +185,16 @@ func BenchmarkFilterNotChanging(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		c.Next()
 		keychanges.send(keys)
+	}
+}
+	if !c.Next() {
+		t.Errorf("Next returned false, expected true")
+	}
+	if c.Err() != nil {
+		t.Fatalf("Did not expect an error, got: %v", c.Err())
+	}
+
+	if data := c.Data(); len(data) != 1 || data["user/1/name"] != "newname" {
+		t.Errorf("Expect data[\"user/1/name\"] to be \"newname\", got: \"%v\"", data)
 	}
 }
