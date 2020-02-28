@@ -2,6 +2,7 @@ package autoupdate_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
@@ -114,5 +115,59 @@ func TestConntectionOnlyDifferentData(t *testing.T) {
 
 	if data := c.Data(); len(data) != 0 {
 		t.Errorf("Expect emty data; got \"%v\"", data)
+	}
+}
+
+func BenchmarkFilterChanging(b *testing.B) {
+	const keyCount = 100
+	keychanges := newMockKeyChanged()
+	defer keychanges.close()
+	restricter := &MockRestricter{data: make(map[string]string)}
+	s := autoupdate.New(restricter, keychanges)
+	defer s.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	keys := make([]string, keyCount)
+	for i := 0; i < keyCount; i++ {
+		keys = append(keys, fmt.Sprintf("user/%d/name", i))
+	}
+	kb := mockKeysBuilder{keys: keys}
+	c := s.Connect(ctx, 1, kb)
+
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		c.Next()
+
+		for i := 0; i < keyCount; i++ {
+			restricter.data[fmt.Sprintf("user/%d/name", i)] = fmt.Sprintf("value %d", n)
+		}
+		keychanges.send(keys)
+	}
+}
+
+func BenchmarkFilterNotChanging(b *testing.B) {
+	const keyCount = 100
+	keychanges := newMockKeyChanged()
+	defer keychanges.close()
+	restricter := &MockRestricter{data: make(map[string]string)}
+	s := autoupdate.New(restricter, keychanges)
+	defer s.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	keys := make([]string, keyCount)
+	for i := 0; i < keyCount; i++ {
+		keys = append(keys, fmt.Sprintf("user/%d/name", i))
+	}
+	kb := mockKeysBuilder{keys: keys}
+	c := s.Connect(ctx, 1, kb)
+
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		c.Next()
+		keychanges.send(keys)
 	}
 }
