@@ -134,6 +134,18 @@ func TestConntectionOnlyDifferentData(t *testing.T) {
 	restricter.data["user/1/name"] = "newname" // Only change user/1 not user/2
 	keychanges.send(keys("user/1/name", "user/2/name"))
 
+	if !c.Next() {
+		t.Errorf("Next returned false, expected true")
+	}
+	if c.Err() != nil {
+		t.Fatalf("Did not expect an error, got: %v", c.Err())
+	}
+
+	if data := c.Data(); len(data) != 1 || data["user/1/name"] != "newname" {
+		t.Errorf("Expect data[\"user/1/name\"] to be \"newname\", got: \"%v\"", data)
+	}
+}
+
 func BenchmarkFilterChanging(b *testing.B) {
 	const keyCount = 100
 	keychanges := newMockKeyChanged()
@@ -185,16 +197,5 @@ func BenchmarkFilterNotChanging(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		c.Next()
 		keychanges.send(keys)
-	}
-}
-	if !c.Next() {
-		t.Errorf("Next returned false, expected true")
-	}
-	if c.Err() != nil {
-		t.Fatalf("Did not expect an error, got: %v", c.Err())
-	}
-
-	if data := c.Data(); len(data) != 1 || data["user/1/name"] != "newname" {
-		t.Errorf("Expect data[\"user/1/name\"] to be \"newname\", got: \"%v\"", data)
 	}
 }

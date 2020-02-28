@@ -111,12 +111,10 @@ func (c *Connection) filter(data map[string]string) {
 	if c.histroy == nil {
 		c.histroy = make(map[string]uint64)
 	}
-	//h.SetSeed(maphash.MakeSeed())
 	for key, value := range data {
 		c.hash.Reset()
 		c.hash.WriteString(value)
 		new := c.hash.Sum64()
-		fmt.Println(new)
 		old, ok := c.histroy[key]
 		if ok && old == new {
 			delete(data, key)
