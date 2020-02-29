@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
+	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
 func TestRestrictedIDs(t *testing.T) {
-	keychanges := newMockKeyChanged()
-	defer keychanges.close()
-	s := autoupdate.New(MockRestricter{}, keychanges)
+	keychanges := test.NewMockKeysChanged()
+	defer keychanges.Close()
+	s := autoupdate.New(test.MockRestricter{}, keychanges)
 	ider := s.IDer(1)
 
 	tc := []struct {
@@ -59,9 +60,9 @@ func TestRestrictedIDsListErrors(t *testing.T) {
 	}
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
-			rest := MockRestricter{data: map[string]string{"motion/1/field_ids": tt.value}}
-			keychanges := newMockKeyChanged()
-			defer keychanges.close()
+			rest := test.MockRestricter{Data: keyValue{"motion/1/field_ids": tt.value}.m()}
+			keychanges := test.NewMockKeysChanged()
+			defer keychanges.Close()
 			s := autoupdate.New(rest, keychanges)
 			ider := s.IDer(1)
 

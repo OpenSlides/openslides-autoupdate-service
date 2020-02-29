@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
@@ -26,7 +27,8 @@ func New(s *autoupdate.Service, auth Authenticator) *Handler {
 		mux:  http.NewServeMux(),
 		auth: auth,
 	}
-	h.mux.Handle("/system/autoupdate", errHandleFunc(h.autoupdate))
+	h.mux.Handle("/system/autoupdate", errHandleFunc(h.autoupdate(h.komplex())))
+	h.mux.Handle("/system/autoupdate/keys", errHandleFunc(h.autoupdate(h.simple())))
 	return h
 }
 
@@ -34,52 +36,75 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.mux.ServeHTTP(w, r)
 }
 
-func (h *Handler) autoupdate(w http.ResponseWriter, r *http.Request) error {
-	uid, err := h.auth.Authenticate(r.Context(), r)
-	if err != nil {
-		return fmt.Errorf("can not authenticate request: %w", err)
-	}
-
-	kb, err := keysbuilder.ManyFromJSON(r.Context(), r.Body, h.s.IDer(uid))
-	defer r.Body.Close()
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			write400(w, "Empty body, expected key request.\n")
-			return nil
-		}
-		var errInvalid keysbuilder.ErrInvalid
-		if errors.As(err, &errInvalid) {
-			write400(w, fmt.Sprintf("Can not parse key request: %v\n", errInvalid.Error()))
-			return nil
+func (h *Handler) autoupdate(kbg keysBuilderGetter) errHandleFunc {
+	return errHandleFunc(func(w http.ResponseWriter, r *http.Request) error {
+		uid, err := h.auth.Authenticate(r.Context(), r)
+		if err != nil {
+			return fmt.Errorf("can not authenticate request: %w", err)
 		}
 
-		var errJSON keysbuilder.ErrJSON
-		if errors.As(err, &errJSON) {
-			write400(w, "Request body has to be valid json.\n")
-			return nil
+		kb, err := kbg(r, uid)
+		if err != nil {
+			return err
 		}
 
-		return fmt.Errorf("can not parse request body: %w", err)
-	}
+		connection := h.s.Connect(r.Context(), uid, kb)
 
-	connection := h.s.Connect(r.Context(), uid, kb)
-
-	for connection.Next() {
-		pushData(w, connection.Data())
-		select {
-		case <-r.Context().Done():
-			return nil
-		case <-h.s.Done():
-			return nil
-		default:
+		for connection.Next() {
+			pushData(w, connection.Data())
+			select {
+			case <-r.Context().Done():
+				return nil
+			case <-h.s.Done():
+				return nil
+			default:
+			}
 		}
-	}
-	if connection.Err() != nil {
-		// It is not possible to return the error after content was sent to the client
-		fmt.Fprintf(w, "Error: Ups, something went wrong!")
-		log.Printf("Error: %v", err)
-	}
-	return nil
+		if connection.Err() != nil {
+			// It is not possible to return the error after content was sent to the client
+			fmt.Fprintf(w, "Error: Ups, something went wrong!")
+			log.Printf("Error: %v", err)
+		}
+		return nil
+	})
+}
+
+type keysBuilderGetter func(r *http.Request, uid int) (autoupdate.KeysBuilder, error)
+
+// komplex builds a keysbuilder from the body of a request. The body has to be
+// in the format specified in the keysbuilder package. It returns an err400 if
+// the input is wrong.
+func (h *Handler) komplex() keysBuilderGetter {
+	return keysBuilderGetter(func(r *http.Request, uid int) (autoupdate.KeysBuilder, error) {
+		kb, err := keysbuilder.ManyFromJSON(r.Context(), r.Body, h.s.IDer(uid))
+		defer r.Body.Close()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil, raiseErr400(fmt.Errorf("empty body, expected key request"))
+			}
+			var errInvalid keysbuilder.ErrInvalid
+			if errors.As(err, &errInvalid) {
+				return nil, raiseErr400(err)
+			}
+
+			var errJSON keysbuilder.ErrJSON
+			if errors.As(err, &errJSON) {
+				return nil, raiseErr400(fmt.Errorf("request body is not valid json: %w", err))
+			}
+
+			return nil, fmt.Errorf("can not parse request body: %w", err)
+		}
+		return kb, nil
+	})
+}
+
+// simple builds a keysbuilder from the url query. It expects a
+// comma seperated list of keysname.
+func (h *Handler) simple() keysBuilderGetter {
+	return keysBuilderGetter(func(r *http.Request, uid int) (autoupdate.KeysBuilder, error) {
+		keys := strings.Split(r.URL.RawQuery, ",")
+		return &keysbuilder.Simple{K: keys}, nil
+	})
 }
 
 func pushData(w http.ResponseWriter, data map[string]string) {
@@ -93,9 +118,9 @@ type errHandleFunc func(w http.ResponseWriter, r *http.Request) error
 
 func (f errHandleFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := f(w, r); err != nil {
-		var inputErr autoupdate.ErrInput
+		var inputErr err400
 		if errors.As(err, &inputErr) {
-			write400(w, err.Error())
+			write400(w, fmt.Sprintf("Wrong input: %v", inputErr.Error()))
 			return
 		}
 		log.Printf("Error: %v", err)

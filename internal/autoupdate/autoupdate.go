@@ -13,7 +13,7 @@ import (
 // the data, it will get an error and has to reconnect.
 const pruneTime = 10 * time.Second
 
-// Service holds the state of the autoupdate service.
+// Service holds the state of the autoupdate service. It has to be initialized with autoupdate.New().
 type Service struct {
 	restricter Restricter
 	keyChanged KeysChangedReceiver
@@ -22,10 +22,10 @@ type Service struct {
 }
 
 // New creates a new autoupdate service.
-func New(restricter Restricter, keyChanges KeysChangedReceiver) *Service {
+func New(restricter Restricter, keysChanges KeysChangedReceiver) *Service {
 	s := &Service{
 		restricter: restricter,
-		keyChanged: keyChanges,
+		keyChanged: keysChanges,
 		closed:     make(chan struct{}),
 	}
 	s.topic = topic.Topic{Closed: s.closed}

@@ -44,7 +44,7 @@ func (r *mockIDer) IDs(ctx context.Context, key string) ([]int, error) {
 }
 
 func cmpSet(one, two map[string]bool) []string {
-	out := make([]string, 0)
+	var out []string
 
 	for key := range one {
 		if !two[key] {
