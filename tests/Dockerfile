@@ -1,4 +1,4 @@
-FROM golang:1.13
+FROM golang:1.14
 LABEL maintainer="OpenSlides Team <info@openslides.com>"
 WORKDIR /root/
 
