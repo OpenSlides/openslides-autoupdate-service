@@ -308,7 +308,7 @@ func TestUpdate(t *testing.T) {
 				t.Fatalf("Expected FromJSON() not to return an error, got: %v", err)
 			}
 			ider.data = tt.newDB
-			ider.reqLog = make([]string, 0)
+			ider.reqLog = ider.reqLog[:0]
 
 			if err := b.Update(mapKeys(tt.newDB)); err != nil {
 				t.Errorf("Expect Update() not to return an error, got: %v", err)

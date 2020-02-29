@@ -5,7 +5,6 @@
 * Logging, metrics and traces
 
 # Internal
-* Find a place for mocks
 * Run code checks in tests/Dockerfile
 * start the http server in http
 * create a simple handler

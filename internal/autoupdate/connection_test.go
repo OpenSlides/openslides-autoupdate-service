@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
+	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
 func TestConnect(t *testing.T) {
-	keychanges := newMockKeyChanged()
-	defer keychanges.close()
-	s := autoupdate.New(MockRestricter{}, keychanges)
+	keychanges := test.NewMockKeysChanged()
+	defer keychanges.Close()
+	s := autoupdate.New(test.MockRestricter{}, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -32,9 +33,9 @@ func TestConnect(t *testing.T) {
 }
 
 func TestConnectionReadNoNewData(t *testing.T) {
-	keychanges := newMockKeyChanged()
-	defer keychanges.close()
-	s := autoupdate.New(MockRestricter{}, keychanges)
+	keychanges := test.NewMockKeysChanged()
+	defer keychanges.Close()
+	s := autoupdate.New(test.MockRestricter{}, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -64,9 +65,9 @@ func TestConnectionReadNoNewData(t *testing.T) {
 }
 
 func TestConntectionReadNewData(t *testing.T) {
-	keychanges := newMockKeyChanged()
-	defer keychanges.close()
-	restricter := &MockRestricter{}
+	keychanges := test.NewMockKeysChanged()
+	defer keychanges.Close()
+	restricter := &test.MockRestricter{}
 	s := autoupdate.New(restricter, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -76,8 +77,8 @@ func TestConntectionReadNewData(t *testing.T) {
 	if !c.Next() {
 		t.Fatalf("Next returned false, expected true, err: %v", c.Err())
 	}
-	keychanges.send(keys("user/1/name"))
-	restricter.data = map[string]string{"user/1/name": "new value"}
+	keychanges.Send(keys("user/1/name"))
+	restricter.Data = keyValue{"user/1/name": "new value"}.m()
 
 	if !c.Next() {
 		t.Errorf("Next returned false, expected true")
@@ -92,9 +93,9 @@ func TestConntectionReadNewData(t *testing.T) {
 }
 
 func TestConntectionFilterData(t *testing.T) {
-	keychanges := newMockKeyChanged()
-	defer keychanges.close()
-	restricter := &MockRestricter{data: keyValue{"user/1/name": "name1"}.m()}
+	keychanges := test.NewMockKeysChanged()
+	defer keychanges.Close()
+	restricter := &test.MockRestricter{Data: keyValue{"user/1/name": "name1"}.m()}
 	s := autoupdate.New(restricter, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -104,7 +105,7 @@ func TestConntectionFilterData(t *testing.T) {
 	if !c.Next() {
 		t.Fatalf("Next returned false, expected true, err: %v", c.Err())
 	}
-	keychanges.send(keys("user/1/name")) // send again, value did not change in restricter
+	keychanges.Send(keys("user/1/name")) // send again, value did not change in restricter
 
 	if !c.Next() {
 		t.Errorf("Next returned false, expected true")
@@ -119,9 +120,9 @@ func TestConntectionFilterData(t *testing.T) {
 }
 
 func TestConntectionOnlyDifferentData(t *testing.T) {
-	keychanges := newMockKeyChanged()
-	defer keychanges.close()
-	restricter := &MockRestricter{data: keyValue{"user/1/name": "name1", "user/2/name": "name2"}.m()}
+	keychanges := test.NewMockKeysChanged()
+	defer keychanges.Close()
+	restricter := &test.MockRestricter{Data: keyValue{"user/1/name": "name1", "user/2/name": "name2"}.m()}
 	s := autoupdate.New(restricter, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -131,8 +132,8 @@ func TestConntectionOnlyDifferentData(t *testing.T) {
 	if !c.Next() {
 		t.Fatalf("Next returned false, expected true, err: %v", c.Err())
 	}
-	restricter.data["user/1/name"] = "newname" // Only change user/1 not user/2
-	keychanges.send(keys("user/1/name", "user/2/name"))
+	restricter.Data["user/1/name"] = "newname" // Only change user/1 not user/2
+	keychanges.Send(keys("user/1/name", "user/2/name"))
 
 	if !c.Next() {
 		t.Errorf("Next returned false, expected true")
@@ -148,15 +149,15 @@ func TestConntectionOnlyDifferentData(t *testing.T) {
 
 func BenchmarkFilterChanging(b *testing.B) {
 	const keyCount = 100
-	keychanges := newMockKeyChanged()
-	defer keychanges.close()
-	restricter := &MockRestricter{data: make(map[string]string)}
+	keychanges := test.NewMockKeysChanged()
+	defer keychanges.Close()
+	restricter := &test.MockRestricter{Data: make(map[string]string)}
 	s := autoupdate.New(restricter, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	keys := make([]string, keyCount)
+	keys := make([]string, 0, keyCount)
 	for i := 0; i < keyCount; i++ {
 		keys = append(keys, fmt.Sprintf("user/%d/name", i))
 	}
@@ -169,23 +170,23 @@ func BenchmarkFilterChanging(b *testing.B) {
 		c.Next()
 
 		for i := 0; i < keyCount; i++ {
-			restricter.data[fmt.Sprintf("user/%d/name", i)] = fmt.Sprintf("value %d", n)
+			restricter.Data[fmt.Sprintf("user/%d/name", i)] = fmt.Sprintf("value %d", n)
 		}
-		keychanges.send(keys)
+		keychanges.Send(keys)
 	}
 }
 
 func BenchmarkFilterNotChanging(b *testing.B) {
 	const keyCount = 100
-	keychanges := newMockKeyChanged()
-	defer keychanges.close()
-	restricter := &MockRestricter{data: make(map[string]string)}
+	keychanges := test.NewMockKeysChanged()
+	defer keychanges.Close()
+	restricter := &test.MockRestricter{Data: make(map[string]string)}
 	s := autoupdate.New(restricter, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	keys := make([]string, keyCount)
+	keys := make([]string, 0, keyCount)
 	for i := 0; i < keyCount; i++ {
 		keys = append(keys, fmt.Sprintf("user/%d/name", i))
 	}
@@ -196,6 +197,6 @@ func BenchmarkFilterNotChanging(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
 		c.Next()
-		keychanges.send(keys)
+		keychanges.Send(keys)
 	}
 }

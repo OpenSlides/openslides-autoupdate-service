@@ -47,6 +47,12 @@ of the request. Currently, all method-types (POST, GET, etc) are supported. An e
 
 To see a list of possible json-strings see the file internal/autoupdate/keysbuilder/keysbuilder_test.go
 
+There is a simpler method to request keys:
+
+`curl localhost:8002/system/autoupdate/keys?key1,key2`
+
+With this simpler method, it is not possible to request related keys.
+
 After the request is send, the values to the keys are returned in the form
 ```
 key1: value

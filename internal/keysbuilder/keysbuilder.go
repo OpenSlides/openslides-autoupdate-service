@@ -65,7 +65,7 @@ func (b *Builder) genKeys() error {
 		close(kc)
 	}()
 
-	b.keys = make([]string, 0)
+	b.keys = b.keys[:0]
 	var err error
 	for {
 		select {
