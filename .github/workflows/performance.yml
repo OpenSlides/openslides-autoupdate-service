@@ -1,0 +1,34 @@
+name: Performance
+on: [push, pull_request]
+jobs:
+  performance:
+    name: Performance
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis
+        ports:
+        - 6379:6379
+
+    steps:
+    - name: Set up Go 1.14
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.14
+      id: go
+
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Build autoupdate image
+      run: docker build . --tag autoupdate
+
+    - name: Start autoupdate
+      run: docker run -d --network host --env MESSAGIN_SERVICE=redis autoupdate
+
+    - name: Build performance
+      run: go build ./cmd/performance
+
+    - name: Run performance test
+      run: ./performance

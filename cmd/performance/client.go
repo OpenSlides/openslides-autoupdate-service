@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
 )
 
 // client holds one http connection to the autoupdate service.
@@ -17,7 +16,7 @@ type client struct{}
 // The function blocks until the connection is established.
 func (c *client) connect(ctx context.Context, keys chan<- string) error {
 	hc := http.Client{}
-	req, err := http.NewRequestWithContext(ctx, "GET", url, requestBody())
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return fmt.Errorf("can not create request: %w", err)
 	}
@@ -55,9 +54,4 @@ func (c *client) connect(ctx context.Context, keys chan<- string) error {
 		}
 	}()
 	return nil
-}
-
-// reqeuest Body returns the http body to be send to the autoupdate service
-func requestBody() *strings.Reader {
-	return strings.NewReader(`[{"ids": [5], "collection": "user", "fields": {"name": null}}]`)
 }
