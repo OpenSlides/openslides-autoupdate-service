@@ -6,19 +6,25 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
+	"os"
 	"time"
 )
 
 const (
 	connections = 5000
-	url         = "http://localhost:8002/system/autoupdate"
+	url         = "http://localhost:8002/system/autoupdate/keys?" + keyName
 	redisAddr   = "localhost:6379"
 	redisTopic  = "ModifiedFields"
+	keyName     = "MyKey"
 )
 
 func main() {
+	keepOpen := flag.Bool("keep-open", false, "Keeps the connections open after the test succeeded.")
+	flag.Parse()
+
 	p := newPool(redisAddr)
 
 	// Create clients
@@ -43,17 +49,22 @@ func main() {
 
 	// Update one key
 	start = time.Now()
-	p.sendKey("user/5/name")
+	p.sendKey(keyName)
 	readClients(connections, keys)
 	log.Printf("Send and Receive one key took %d milliseconds", time.Since(start)/time.Millisecond)
 
-	fmt.Println("Connections are kept open...")
+	if *keepOpen {
+		fmt.Println("Connections are kept open...")
 
-	for len(errs) == 0 {
-		readClients(connections, keys)
-		log.Println("Connections received data")
+		for len(errs) == 0 {
+			readClients(connections, keys)
+			log.Println("Connections received data")
+		}
 	}
-	fmt.Printf("Errors: %d, first: %v\n", len(errs), errs[0])
+	if len(errs) > 0 {
+		fmt.Printf("Errors: %d, first: %v\n", len(errs), errs[0])
+		os.Exit(1)
+	}
 }
 
 func readClients(count int, c <-chan string) {
