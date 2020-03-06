@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"time"
+	"syscall"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	ahttp "github.com/openslides/openslides-autoupdate-service/internal/http"
@@ -73,9 +73,12 @@ func main() {
 	<-exit
 }
 
-func shutdown(srv *http.Server, exit chan struct{}) {
+func shutdown(srv *http.Server, exit chan<- struct{}) {
 	sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt)
+	// syscall.SIGTERM is not pressent on all plattforms. Since the autoupdate
+	// service is only run on linux, this is ok. If other plattforms should be supported,
+	// os.Interrupt should be used instead.
+	signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM)
 	<-sigint
 	go func() {
 		<-sigint
@@ -83,13 +86,10 @@ func shutdown(srv *http.Server, exit chan struct{}) {
 	}()
 
 	// We received an interrupt signal, shut down.
-	// Give open connections a timeout of one second to close.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(context.Background()); err != nil {
 		// Error from closing listeners, or context timeout:
 		log.Printf("Error on HTTP server shutdown: %v", err)
 	}
-	cancel()
 	close(exit)
 }
 
