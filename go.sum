@@ -1,2 +1,4 @@
 github.com/garyburd/redigo v1.6.0 h1:0VruCpn7yAIIu7pWVClQC8wxCJEcG3nyzpMSHKi1PQc=
 github.com/garyburd/redigo v1.6.0/go.mod h1:NR3MbYisc3/PwhQ00EMzDiPmrwpPxAn5GI05/YaO1SY=
+github.com/ostcar/topic v0.0.0-20200306165900-a0376712e2b5 h1:jkgpGOzJJiZAre3eRunr39GMoWDnnYQm3AfjbBanLi0=
+github.com/ostcar/topic v0.0.0-20200306165900-a0376712e2b5/go.mod h1:61PcAdinfpVwmQTjP2W0rZoEJqnKku7zvGS9Ag4Si18=
