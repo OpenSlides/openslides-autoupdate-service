@@ -18,7 +18,7 @@ type Service struct {
 	restricter Restricter
 	keyChanged KeysChangedReceiver
 	closed     chan struct{}
-	topic      topic.Topic
+	topic      *topic.Topic
 }
 
 // New creates a new autoupdate service.
@@ -28,7 +28,7 @@ func New(restricter Restricter, keysChanges KeysChangedReceiver) *Service {
 		keyChanged: keysChanges,
 		closed:     make(chan struct{}),
 	}
-	s.topic = topic.Topic{Closed: s.closed}
+	s.topic = topic.New(topic.WithClosed(s.closed))
 	go s.receiveKeyChanges()
 	go s.pruneTopic()
 	return s

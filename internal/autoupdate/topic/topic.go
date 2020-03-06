@@ -17,28 +17,30 @@ import (
 // created. It is possible to get all strings at once or the strings that added after
 // a specivic id.
 //
+// A Topic has to be created with the topic.New() function.
+//
 // A Topic is save for concourent use.
-// If a topic is initialized with a Closed-channel, it can be closed
-// by closing this channel. It is not expected that the Closed channel is added
-// or removed afterwards.
 type Topic struct {
-	Closed chan struct{}
+	closed <-chan struct{}
 
-	mu    sync.RWMutex
-	head  *node
-	tail  *node
-	index map[uint64]*node
-
-	waitingMu sync.Mutex
-	waiting   []chan struct{}
+	mu      sync.RWMutex
+	head    *node
+	tail    *node
+	index   map[uint64]*node
+	waiting chan struct{}
 }
 
-// node implements a linked list.
-type node struct {
-	id    uint64
-	t     time.Time
-	next  *node
-	value []string
+// New creates a new topic.
+func New(options ...Option) *Topic {
+	top := &Topic{
+		waiting: make(chan struct{}),
+		index:   make(map[uint64]*node),
+	}
+
+	for _, o := range options {
+		o(top)
+	}
+	return top
 }
 
 // Add adds a list of strings to a topic. It creates a new id and returns it.
@@ -59,18 +61,11 @@ func (t *Topic) Add(value ...string) uint64 {
 	newNode.t = time.Now()
 	newNode.value = value
 
-	if t.index == nil {
-		t.index = make(map[uint64]*node)
-	}
 	t.index[newNode.id] = newNode
 
-	for _, c := range t.waiting {
-		close(c)
-	}
-	// This clears the waiting slice by keeping the underlieing array. The idea is, that it
-	// is very likely, that the same subscribers will subsribe again, the same size of array
-	// will be needed again.
-	t.waiting = t.waiting[:0]
+	close(t.waiting)
+	t.waiting = make(chan struct{})
+
 	return newNode.id
 }
 
@@ -87,14 +82,13 @@ func (t *Topic) Get(ctx context.Context, id uint64) (uint64, []string, error) {
 
 	// No new data
 	if t.tail == nil || id >= t.tail.id {
-		c := make(chan struct{})
-		t.wait(c)
+		c := t.waiting
 		t.mu.RUnlock()
 
 		select {
 		case <-c:
 			return t.Get(ctx, id)
-		case <-t.Closed:
+		case <-t.closed:
 		case <-ctx.Done():
 		}
 		return id, []string{}, nil
@@ -142,10 +136,12 @@ func (t *Topic) Prune(until time.Time) {
 	}
 }
 
-func (t *Topic) wait(c chan struct{}) {
-	t.waitingMu.Lock()
-	t.waiting = append(t.waiting, c)
-	t.waitingMu.Unlock()
+// node implements a linked list.
+type node struct {
+	id    uint64
+	t     time.Time
+	next  *node
+	value []string
 }
 
 // runNode returns all strings from a node and the following nodes.
