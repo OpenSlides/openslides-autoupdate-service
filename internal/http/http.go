@@ -50,15 +50,10 @@ func (h *Handler) autoupdate(kbg keysBuilderGetter) errHandleFunc {
 
 		connection := h.s.Connect(r.Context(), uid, kb)
 
+		// connection.Next() blocks, until there is new data or the client context or the server is
+		// closed.
 		for connection.Next() {
 			pushData(w, connection.Data())
-			select {
-			case <-r.Context().Done():
-				return nil
-			case <-h.s.Done():
-				return nil
-			default:
-			}
 		}
 		if connection.Err() != nil {
 			// It is not possible to return the error after content was sent to the client

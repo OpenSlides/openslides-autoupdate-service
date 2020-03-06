@@ -7,7 +7,7 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
-// Pool hold the redis connection
+// Pool hold the redis connection.
 type Pool struct {
 	pool *redis.Pool
 }
@@ -26,7 +26,7 @@ func New(addr string) *Pool {
 }
 
 // TestConn sends a ping command to redis. Does not return the response, but an error
-// if there is no response
+// if there is no response.
 func (s *Pool) TestConn() error {
 	conn := s.pool.Get()
 	defer conn.Close()
@@ -37,7 +37,7 @@ func (s *Pool) TestConn() error {
 	return nil
 }
 
-// XREAD reads new messages from one stream
+// XREAD reads new messages from one stream.
 func (s *Pool) XREAD(count, block, stream, id string) (interface{}, error) {
 	conn := s.pool.Get()
 	defer conn.Close()

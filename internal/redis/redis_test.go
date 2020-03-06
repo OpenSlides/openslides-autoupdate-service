@@ -2,6 +2,7 @@ package redis_test
 
 import (
 	"encoding/json"
+	"errors"
 	"sort"
 	"testing"
 
@@ -10,14 +11,6 @@ import (
 )
 
 const useRealRedis = false
-
-func getRedis() *redis.Service {
-	var c redis.Connection = mockConn{}
-	if useRealRedis {
-		c = conn.New("localhost:6379")
-	}
-	return &redis.Service{Conn: c}
-}
 
 func TestKeysChangedOnce(t *testing.T) {
 	keys, err := getRedis().KeysChanged()
@@ -46,7 +39,28 @@ func TestKeysChangedTwice(t *testing.T) {
 	}
 }
 
-type mockConn struct{}
+func TestRedisError(t *testing.T) {
+	r := &redis.Service{Conn: mockConn{err: errors.New("my error")}}
+	keys, err := r.KeysChanged()
+	if keys != nil {
+		t.Errorf("Expected no keys on error, got: %v", keys)
+	}
+	if err == nil {
+		t.Errorf("Expected an error, got none.")
+	}
+}
+
+func getRedis() *redis.Service {
+	var c redis.Connection = mockConn{}
+	if useRealRedis {
+		c = conn.New("localhost:6379")
+	}
+	return &redis.Service{Conn: c}
+}
+
+type mockConn struct {
+	err error
+}
 
 var testData = map[string]string{
 	"$": `[
@@ -78,6 +92,9 @@ var testData = map[string]string{
 }
 
 func (c mockConn) XREAD(count, block, stream, lastID string) (interface{}, error) {
+	if c.err != nil {
+		return nil, c.err
+	}
 	if _, ok := testData[lastID]; !ok {
 		return nil, nil
 	}

@@ -60,6 +60,7 @@ func (c *Connection) Next() bool {
 }
 
 func (c *Connection) update() ([]string, error) {
+	// topic.Get blocks forever or until c.ctx or the topic is closed.
 	tid, changedKeys, err := c.autoupdate.topic.Get(c.ctx, c.tid)
 	if err != nil {
 		return nil, fmt.Errorf("can not get new data: %w", err)

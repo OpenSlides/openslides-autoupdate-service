@@ -10,15 +10,14 @@ const (
 	// maxMessages desides how many messages are read at once from the stream.
 	maxMessages = "10"
 
-	// blockTimeout is the time in miliseconds, how long the xread command will block. A longer time means
-	// that the service needs longer to shutdown.
-	blockTimeout = "1000"
+	// blockTimeout is the time in miliseconds, how long the xread command will block.
+	blockTimeout = "3600000" // One Hour
 
 	// fieldChangedTopic is the redis key name of the stream.
 	fieldChangedTopic = "ModifiedFields"
 )
 
-// Service holds the state of the redis receiver
+// Service holds the state of the redis receiver.
 type Service struct {
 	Conn   Connection
 	lastID string
