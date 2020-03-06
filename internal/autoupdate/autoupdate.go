@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate/topic"
+	"github.com/ostcar/topic"
 )
 
 // pruneTime defines how long a topic id will be valid. If a client needs more time to process
