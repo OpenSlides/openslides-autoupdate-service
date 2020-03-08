@@ -7,11 +7,14 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
 )
+
+const uidHeader = "X-User-ID"
 
 // Handler is an http handler for the autoupdate service.
 type Handler struct {
@@ -27,8 +30,8 @@ func New(s *autoupdate.Service, auth Authenticator) *Handler {
 		mux:  http.NewServeMux(),
 		auth: auth,
 	}
-	h.mux.Handle("/system/autoupdate", errHandleFunc(h.autoupdate(h.komplex())))
-	h.mux.Handle("/system/autoupdate/keys", errHandleFunc(h.autoupdate(h.simple())))
+	h.mux.Handle("/system/autoupdate", h.authMiddleware(errHandleFunc(h.autoupdate(h.komplex()))))
+	h.mux.Handle("/system/autoupdate/keys", h.authMiddleware(errHandleFunc(h.autoupdate(h.simple()))))
 	return h
 }
 
@@ -36,11 +39,28 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.mux.ServeHTTP(w, r)
 }
 
-func (h *Handler) autoupdate(kbg keysBuilderGetter) errHandleFunc {
-	return errHandleFunc(func(w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		uid, err := h.auth.Authenticate(r.Context(), r)
 		if err != nil {
-			return fmt.Errorf("can not authenticate request: %w", err)
+			// TODO: Differ between auth error and 500er error
+			write400(w, fmt.Sprintf("Unauthorized access: %v", err))
+			return
+		}
+
+		r2 := new(http.Request)
+		*r2 = *r
+		r2.Header.Set(uidHeader, strconv.Itoa(uid))
+		next.ServeHTTP(w, r2)
+	})
+}
+
+func (h *Handler) autoupdate(kbg keysBuilderGetter) errHandleFunc {
+	return errHandleFunc(func(w http.ResponseWriter, r *http.Request) error {
+		rawUID := r.Header.Get(uidHeader)
+		uid, err := strconv.Atoi(rawUID)
+		if err != nil {
+			return fmt.Errorf("Invalid user id in header: %w", err)
 		}
 
 		kb, err := kbg(r, uid)
