@@ -22,6 +22,9 @@ type Service struct {
 }
 
 // New creates a new autoupdate service.
+//
+// After the service is not needed anymore, it has to be closed with
+// s.Close().
 func New(restricter Restricter, keysChanges KeysChangedReceiver) *Service {
 	s := &Service{
 		restricter: restricter,
@@ -39,12 +42,6 @@ func New(restricter Restricter, keysChanges KeysChangedReceiver) *Service {
 // it more then once. Onle the caller of New() should call Close().
 func (s *Service) Close() {
 	close(s.closed)
-}
-
-// Done returns a channel that is closed when the autoupdate service is
-// closed.
-func (s *Service) Done() <-chan struct{} {
-	return s.closed
 }
 
 // Connect returns a Connection object

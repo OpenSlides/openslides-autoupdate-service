@@ -21,7 +21,52 @@ func main() {
 	listenAddr := getEnv("LISTEN_HTTP_ADDR", ":8002")
 
 	f := faker{bufio.NewReader(os.Stdin), make(map[string]string)}
+	receiver := buildReceiver(f)
+	authService := buildAuth()
+	restricter := buildRestricter(f)
 
+	service := autoupdate.New(restricter, receiver)
+	defer service.Close()
+
+	handler := ahttp.New(service, authService)
+	srv := &http.Server{Addr: listenAddr, Handler: handler}
+	defer func() {
+		if err := srv.Shutdown(context.Background()); err != nil {
+			log.Printf("Error on HTTP server shutdown: %v", err)
+		}
+	}()
+
+	go func() {
+		fmt.Printf("Listen on %s\n", listenAddr)
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			log.Fatalf("HTTP server failed: %v", err)
+		}
+	}()
+
+	waitForShutdown()
+}
+
+// waitForShutdown blocks until the service should be waitForShutdown.
+//
+// It listens on SIGINT and SIGTERM. If the signal is received for a
+// second time, the process is killed with statuscode 1.
+func waitForShutdown() {
+	sigint := make(chan os.Signal, 1)
+	// syscall.SIGTERM is not pressent on all plattforms. Since the autoupdate
+	// service is only run on linux, this is ok. If other plattforms should be supported,
+	// os.Interrupt should be used instead.
+	signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM)
+	<-sigint
+	go func() {
+		<-sigint
+		os.Exit(1)
+	}()
+}
+
+// buildReceiver builds the receiver needed by the autoupdate service.
+// It uses environment variables to make the decission. Per default, the given
+// faker is used.
+func buildReceiver(f faker) autoupdate.KeysChangedReceiver {
 	// Choose the topic service
 	var receiver autoupdate.KeysChangedReceiver
 	fmt.Print("Messagin Service: ")
@@ -39,15 +84,13 @@ func main() {
 		receiver = f
 		fmt.Println("fake")
 	}
+	return receiver
+}
 
-	// Chose the auth service
-	var authService ahttp.Authenticator
-	switch getEnv("AUTH_SERVICE", "fake") {
-	default:
-		authService = fakeAuth(1)
-	}
-
-	// Chose the restricter service
+// buildRestricter builds the restricter needed by the autoupdate service.
+// It uses environment variables to make the decission. Per default, the given
+// faker is used.
+func buildRestricter(f faker) autoupdate.Restricter {
 	var restricter autoupdate.Restricter
 	switch getEnv("RESTRICTER_SERVICE", "fake") {
 	case "backend":
@@ -55,42 +98,14 @@ func main() {
 	default:
 		restricter = f
 	}
-
-	aService := autoupdate.New(restricter, receiver)
-
-	handler := ahttp.New(aService, authService)
-	srv := &http.Server{Addr: listenAddr, Handler: handler}
-	srv.RegisterOnShutdown(aService.Close)
-
-	exit := make(chan struct{})
-	go shutdown(srv, exit)
-
-	fmt.Printf("Listen on %s\n", listenAddr)
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		log.Fatalf("HTTP server failed: %v", err)
-	}
-
-	<-exit
+	return restricter
 }
 
-func shutdown(srv *http.Server, exit chan<- struct{}) {
-	sigint := make(chan os.Signal, 1)
-	// syscall.SIGTERM is not pressent on all plattforms. Since the autoupdate
-	// service is only run on linux, this is ok. If other plattforms should be supported,
-	// os.Interrupt should be used instead.
-	signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM)
-	<-sigint
-	go func() {
-		<-sigint
-		os.Exit(1)
-	}()
-
-	// We received an interrupt signal, shut down.
-	if err := srv.Shutdown(context.Background()); err != nil {
-		// Error from closing listeners, or context timeout:
-		log.Printf("Error on HTTP server shutdown: %v", err)
-	}
-	close(exit)
+// buildAuth returns the auth service needed by the http server.
+//
+// Currently, there is only the fakeAuth service.
+func buildAuth() ahttp.Authenticator {
+	return fakeAuth(1)
 }
 
 func getEnv(n, d string) string {

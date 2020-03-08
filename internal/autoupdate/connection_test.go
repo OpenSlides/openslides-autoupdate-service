@@ -64,7 +64,7 @@ func TestConnectionReadNoNewData(t *testing.T) {
 	}
 }
 
-func TestConntectionReadNewData(t *testing.T) {
+func TestConnectionReadNewData(t *testing.T) {
 	keychanges := test.NewMockKeysChanged()
 	defer keychanges.Close()
 	restricter := &test.MockRestricter{}
@@ -92,7 +92,7 @@ func TestConntectionReadNewData(t *testing.T) {
 	}
 }
 
-func TestConntectionFilterData(t *testing.T) {
+func TestConnectionFilterData(t *testing.T) {
 	keychanges := test.NewMockKeysChanged()
 	defer keychanges.Close()
 	restricter := &test.MockRestricter{Data: keyValue{"user/1/name": "name1"}.m()}
