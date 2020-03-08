@@ -13,7 +13,6 @@ import (
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	ahttp "github.com/openslides/openslides-autoupdate-service/internal/http"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
-	"github.com/openslides/openslides-autoupdate-service/internal/redis/conn"
 	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
 )
 
@@ -72,7 +71,7 @@ func buildReceiver(f faker) autoupdate.KeysChangedReceiver {
 	fmt.Print("Messagin Service: ")
 	switch getEnv("MESSAGIN_SERVICE", "fake") {
 	case "redis":
-		conn := conn.New(getEnv("REDIS_ADDR", "localhost:6379"))
+		conn := redis.NewConnection(getEnv("REDIS_ADDR", "localhost:6379"))
 		if getEnv("REDIS_TEST_CONN", "true") == "true" {
 			if err := conn.TestConn(); err != nil {
 				log.Fatalf("Can not connect to redis: %v", err)
