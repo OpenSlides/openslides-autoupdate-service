@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
-	"github.com/openslides/openslides-autoupdate-service/internal/redis/conn"
 )
 
 const useRealRedis = false
@@ -53,7 +52,7 @@ func TestRedisError(t *testing.T) {
 func getRedis() *redis.Service {
 	var c redis.Connection = mockConn{}
 	if useRealRedis {
-		c = conn.New("localhost:6379")
+		c = redis.NewConnection("localhost:6379")
 	}
 	return &redis.Service{Conn: c}
 }
