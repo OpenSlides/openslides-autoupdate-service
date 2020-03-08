@@ -13,6 +13,7 @@ func TestRestrictedIDs(t *testing.T) {
 	keychanges := test.NewMockKeysChanged()
 	defer keychanges.Close()
 	s := autoupdate.New(test.MockRestricter{}, keychanges)
+	defer s.Close()
 	ider := s.IDer(1)
 
 	tc := []struct {
@@ -64,6 +65,7 @@ func TestRestrictedIDsListErrors(t *testing.T) {
 			keychanges := test.NewMockKeysChanged()
 			defer keychanges.Close()
 			s := autoupdate.New(rest, keychanges)
+			defer s.Close()
 			ider := s.IDer(1)
 
 			_, err := ider.IDs(context.Background(), "motion/1/field_ids")
