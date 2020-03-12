@@ -60,6 +60,7 @@ func TestKeys(t *testing.T) {
 				"collection": "user",
 				"fields": {
 					"note_id": {
+						"type": "relation",
 						"collection": "note",
 						"fields": {"important": null}
 					}
@@ -75,6 +76,7 @@ func TestKeys(t *testing.T) {
 				"collection": "user",
 				"fields": {
 					"group_ids": {
+						"type": "relation-list",
 						"collection": "group",
 						"fields": {"admin": null}
 					}
@@ -90,9 +92,11 @@ func TestKeys(t *testing.T) {
 				"collection": "user",
 				"fields": {
 					"note_id": {
+						"type": "relation",
 						"collection": "note",
 						"fields": {
 							"motion_id": {
+								"type": "relation",
 								"collection": "motion",
 								"fields": {"name": null}
 							}
@@ -110,9 +114,11 @@ func TestKeys(t *testing.T) {
 				"collection": "user",
 				"fields": {
 					"group_ids": {
+						"type": "relation-list",
 						"collection": "group",
 						"fields": {
 							"perm_ids": {
+								"type": "relation-list",
 								"collection": "perm",
 								"fields": {"name": null}
 							}
@@ -140,6 +146,7 @@ func TestKeys(t *testing.T) {
 				"collection": "not_exist",
 				"fields": {
 					"note_id": {
+						"type": "relation",
 						"collection": "note",
 						"fields": {"important": null}
 					}
@@ -155,6 +162,7 @@ func TestKeys(t *testing.T) {
 				"collection": "not_exist",
 				"fields": {
 					"group_ids": {
+						"type": "relation-list",
 						"collection": "group",
 						"fields": {"name": null}
 					}
@@ -198,6 +206,7 @@ func TestUpdate(t *testing.T) {
 				"collection": "user",
 				"fields": {
 					"note_id": {
+						"type": "relation",
 						"collection": "note",
 						"fields": {"important": null}
 					}
@@ -214,6 +223,7 @@ func TestUpdate(t *testing.T) {
 				"collection": "user",
 				"fields": {
 					"note_id": {
+						"type": "relation",
 						"collection": "note",
 						"fields": {"important": null}
 					}
@@ -230,6 +240,7 @@ func TestUpdate(t *testing.T) {
 				"collection": "user",
 				"fields": {
 					"note_id": {
+						"type": "relation",
 						"collection": "note",
 						"fields": {"important": null}
 					}
@@ -246,10 +257,12 @@ func TestUpdate(t *testing.T) {
 				"collection": "user",
 				"fields": {
 					"note_id": {
+						"type": "relation",
 						"collection": "note",
 						"fields": {"important": null}
 					},
 					"group_ids": {
+						"type": "relation-list",
 						"collection": "group",
 						"fields": {"admin": null}
 					}
@@ -266,10 +279,12 @@ func TestUpdate(t *testing.T) {
 				"collection": "user",
 				"fields": {
 					"note_id": {
+						"type": "relation",
 						"collection": "note",
 						"fields": {"important": null}
 					},
 					"group_ids": {
+						"type": "relation-list",
 						"collection": "group",
 						"fields": {"admin": null}
 					}
@@ -286,9 +301,11 @@ func TestUpdate(t *testing.T) {
 				"collection": "user",
 				"fields": {
 					"group_ids": {
+						"type": "relation-list",
 						"collection": "group",
 						"fields": {
 							"perm_ids": {
+								"type": "relation-list",
 								"collection": "perm",
 								"fields": {"name": null}
 							}
@@ -331,9 +348,11 @@ func TestConcurency(t *testing.T) {
 		"collection": "user",
 		"fields": {
 			"group_ids": {
+				"type": "relation-list",
 				"collection": "group",
 				"fields": {
 					"perm_ids": {
+						"type": "relation-list",
 						"collection": "perm",
 						"fields": {"name": null}
 					}
@@ -370,6 +389,7 @@ func TestManyRequests(t *testing.T) {
 			"collection": "user",
 			"fields": {
 				"note_id": {
+					"type": "relation",
 					"collection": "note",
 					"fields": {"important": null}
 				}
@@ -383,6 +403,7 @@ func TestManyRequests(t *testing.T) {
 			"collection": "user",
 			"fields": {
 				"note_id": {
+					"type": "relation",
 					"collection": "note",
 					"fields": {"important": null}
 				}
@@ -417,6 +438,7 @@ func TestError(t *testing.T) {
 		"collection": "user",
 		"fields": {
 			"note_id": {
+				"type": "relation",
 				"collection": "note",
 				"fields": {"important": null}
 			}

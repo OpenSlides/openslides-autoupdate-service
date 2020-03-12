@@ -14,8 +14,8 @@ type cache struct {
 }
 
 type cacheEntry struct {
-	done chan struct{}
-	ids  []int
+	done  chan struct{}
+	value interface{}
 }
 
 func newCache() *cache {
@@ -29,7 +29,7 @@ func newCache() *cache {
 // of the second argument. If this method is called more then once
 // at the same time, only the first calculates the result, the other
 // calles get blocked until it is calculated.
-func (c *cache) getOrSet(key string, set func() []int) []int {
+func (c *cache) getOrSet(key string, set func() interface{}) interface{} {
 	c.mu.Lock()
 	entry, ok := c.data[key]
 
@@ -38,13 +38,13 @@ func (c *cache) getOrSet(key string, set func() []int) []int {
 		c.data[key] = entry
 		c.data[key].done = make(chan struct{})
 		c.mu.Unlock()
-		entry.ids = set()
+		entry.value = set()
 		close(entry.done)
-		return entry.ids
+		return entry.value
 	}
 	c.mu.Unlock()
 	<-entry.done
-	return entry.ids
+	return entry.value
 }
 
 func (c *cache) delete(keys []string) {

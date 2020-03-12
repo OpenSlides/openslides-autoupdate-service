@@ -22,14 +22,12 @@ func TestRestrictedIDs(t *testing.T) {
 		idCount int
 		err     string
 	}{
-		{"No Reference", "motion/1/name", 0, "key motion/1/name can not be a reference; expected suffix _id or _ids"},
 		{"Restricter error", "error_id", 0, "can not restrict key error_id:"},
-		{"ID field", "motion/1/category_id", 1, ""},
 		{"IDs field", "motion/1/category_ids", 2, ""},
 	}
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
-			ids, err := ider.IDs(context.Background(), tt.key)
+			ids, err := ider.IDList(context.Background(), tt.key)
 			if tt.err != "" {
 				if err == nil {
 					t.Fatal("Expected an error, got None")
@@ -68,7 +66,7 @@ func TestRestrictedIDsListErrors(t *testing.T) {
 			defer s.Close()
 			ider := s.IDer(1)
 
-			_, err := ider.IDs(context.Background(), "motion/1/field_ids")
+			_, err := ider.IDList(context.Background(), "motion/1/field_ids")
 
 			if err == nil {
 				t.Fatalf("Expected an error, got None")

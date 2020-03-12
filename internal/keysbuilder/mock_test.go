@@ -2,7 +2,6 @@ package keysbuilder_test
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -18,7 +17,26 @@ type mockIDer struct {
 	reqLog   []string
 }
 
-func (r *mockIDer) IDs(ctx context.Context, key string) ([]int, error) {
+func (r *mockIDer) ID(ctx context.Context, key string) (int, error) {
+	time.Sleep(r.sleep)
+	if r.err != nil {
+		return 0, r.err
+	}
+
+	r.reqLogMu.Lock()
+	r.reqLog = append(r.reqLog, key)
+	r.reqLogMu.Unlock()
+
+	if ids, ok := r.data[key]; ok {
+		return ids[0], nil
+	}
+	if strings.HasPrefix(key, "not_exist") {
+		return 0, nil
+	}
+	return 1, nil
+}
+
+func (r *mockIDer) IDList(ctx context.Context, key string) ([]int, error) {
 	time.Sleep(r.sleep)
 	if r.err != nil {
 		return nil, r.err
@@ -34,13 +52,7 @@ func (r *mockIDer) IDs(ctx context.Context, key string) ([]int, error) {
 	if strings.HasPrefix(key, "not_exist") {
 		return nil, nil
 	}
-	if strings.HasSuffix(key, "_id") {
-		return []int{1}, nil
-	}
-	if !strings.HasSuffix(key, "_ids") {
-		return nil, fmt.Errorf("key %s can not be a reference; expected suffex _id or _ids", key)
-	}
-	return []int{1, 2}, nil
+	return ids(1, 2), nil
 }
 
 func cmpSet(one, two map[string]bool) []string {
