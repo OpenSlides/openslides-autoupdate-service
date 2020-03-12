@@ -16,6 +16,7 @@ func TestJSONValid(t *testing.T) {
 		"collection": "user",
 		"fields": {
 			"motion_ids": {
+				"type": "relation-list",
 				"collection": "motion",
 				"fields": {"name": null}
 			}
@@ -120,36 +121,6 @@ func TestJSONNoIDs(t *testing.T) {
 	}
 }
 
-func TestJSONNoSuffix(t *testing.T) {
-	json := strings.NewReader(`
-	{
-		"ids": [5],
-		"collection": "user",
-		"fields": {
-			"name": {
-				"collection": "username",
-				"fields": {"inner_name": null}
-			}
-		}
-	}
-	`)
-	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
-	if err == nil {
-		t.Errorf("Expected an error, got none")
-	}
-	var kErr keysbuilder.ErrInvalid
-	if !errors.As(err, &kErr) {
-		t.Errorf("Expected err to be %T, got: %v", kErr, err)
-	}
-	expect := "field \"name\": relation but no _id or _ids suffix"
-	if got := kErr.Error(); got != expect {
-		t.Errorf("Expected error message \"%s\", got: \"%s\"", expect, got)
-	}
-	if fields := kErr.Fields(); len(fields) == 0 || fields[0] != "name" {
-		t.Errorf("Expected error to be on field name, got: %v", fields)
-	}
-}
-
 func TestJSONSuffixNoFields(t *testing.T) {
 	json := strings.NewReader(`
 	{
@@ -167,13 +138,14 @@ func TestJSONSuffixNoFields(t *testing.T) {
 	}
 }
 
-func TestJSONInnerNoCollection(t *testing.T) {
+func TestJSONRelationNoCollection(t *testing.T) {
 	json := strings.NewReader(`
 	{
 		"ids": [5],
 		"collection": "user",
 		"fields": {
 			"group_id": {
+				"type": "relation",
 				"fields": {"name": null}
 			}
 		}
@@ -196,13 +168,14 @@ func TestJSONInnerNoCollection(t *testing.T) {
 	}
 }
 
-func TestJSONInnerNoFields(t *testing.T) {
+func TestJSONRelationNoFields(t *testing.T) {
 	json := strings.NewReader(`
 	{
 		"ids": [5],
 		"collection": "user",
 		"fields": {
 			"group_id": {
+				"type": "relation",
 				"collection": "group"
 			}
 		}
@@ -225,16 +198,79 @@ func TestJSONInnerNoFields(t *testing.T) {
 	}
 }
 
-func TestJSONInnerTwiceNoFields(t *testing.T) {
+func TestJSONNoType(t *testing.T) {
+	json := strings.NewReader(`
+	{
+		"ids": [5],
+		"collection": "user",
+		"fields": {
+			"group_id": {
+				"collection": "group",
+				"fields": {"name": null}
+			}
+		}
+	}
+	`)
+	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
+	if err == nil {
+		t.Errorf("Expected an error, got none")
+	}
+	var kErr keysbuilder.ErrInvalid
+	if !errors.As(err, &kErr) {
+		t.Errorf("Expected err to be %T, got: %v", kErr, err)
+	}
+	expect := "field \"group_id\": no type"
+	if got := kErr.Error(); got != expect {
+		t.Errorf("Expected error message \"%s\", got: \"%s\"", expect, got)
+	}
+	if fields := kErr.Fields(); len(fields) == 0 || fields[0] != "group_id" {
+		t.Errorf("Expected error to be on field \"name\"")
+	}
+}
+
+func TestJSONUnknwonType(t *testing.T) {
+	json := strings.NewReader(`
+	{
+		"ids": [5],
+		"collection": "user",
+		"fields": {
+			"group_id": {
+				"type": "invalid-type",
+				"collection": "group",
+				"fields": {"name": null}
+			}
+		}
+	}
+	`)
+	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
+	if err == nil {
+		t.Errorf("Expected an error, got none")
+	}
+	var kErr keysbuilder.ErrInvalid
+	if !errors.As(err, &kErr) {
+		t.Errorf("Expected err to be %T, got: %v", kErr, err)
+	}
+	expect := "field \"group_id\": unknown type invalid-type"
+	if got := kErr.Error(); got != expect {
+		t.Errorf("Expected error message \"%s\", got: \"%s\"", expect, got)
+	}
+	if fields := kErr.Fields(); len(fields) == 0 || fields[0] != "group_id" {
+		t.Errorf("Expected error to be on field \"name\"")
+	}
+}
+
+func TestJSONRelationTwiceNoFields(t *testing.T) {
 	json := strings.NewReader(`
 	{
 		"ids": [5],
 		"collection": "user",
 		"fields": {
 			"group_ids": {
+				"type": "relation-list",
 				"collection": "group",
 				"fields": {
 					"perm_ids": {
+						"type": "relation-list",
 						"collection": "perm"
 					}
 				}
@@ -265,6 +301,7 @@ func TestManyFromJSON(t *testing.T) {
 		"collection": "user",
 		"fields": {
 			"group_ids": {
+				"type": "relation-list",
 				"collection": "group",
 				"fields": {
 					"name": null
@@ -292,6 +329,7 @@ func TestManyFromJSONInvalidJSON(t *testing.T) {
 		"collection": "user",
 		"fields": {
 			"group_ids": {
+				"type": "relation-list",
 				"collection": "group",
 				"fields": {
 					"name": null
@@ -321,6 +359,7 @@ func TestManyFromJSONInvalidInput(t *testing.T) {
 		"collection": "user",
 		"fields": {
 			"group_ids": {
+				"type": "relation-list",
 				"collection": "group",
 				"fields": {
 					"name": null
@@ -333,6 +372,7 @@ func TestManyFromJSONInvalidInput(t *testing.T) {
 		"collection": "user",
 		"fields": {
 			"group_ids": {
+				"type": "relation-list",
 				"fields": {
 					"name": null
 				}

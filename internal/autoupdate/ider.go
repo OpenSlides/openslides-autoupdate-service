@@ -13,17 +13,26 @@ type RestrictedIDs struct {
 	r    Restricter
 }
 
-// IDs returns ids for a key.
-func (i RestrictedIDs) IDs(ctx context.Context, key string) ([]int, error) {
-	var multi bool
-	switch {
-	case strings.HasSuffix(key, "_id"):
-	case strings.HasSuffix(key, "_ids"):
-		multi = true
-	default:
-		return nil, fmt.Errorf("key %s can not be a reference; expected suffix _id or _ids", key)
+// ID returns the id in the key.
+func (i RestrictedIDs) ID(ctx context.Context, key string) (int, error) {
+	ids, err := i.ids(ctx, key, false)
+	if err != nil {
+		return 0, err
 	}
+	return ids[0], nil
+}
 
+// IDList returns the ids in the key.
+func (i RestrictedIDs) IDList(ctx context.Context, key string) ([]int, error) {
+	ids, err := i.ids(ctx, key, true)
+	if err != nil {
+		return nil, err
+	}
+	return ids, nil
+}
+
+// ids returns ids for a key.
+func (i RestrictedIDs) ids(ctx context.Context, key string, multi bool) ([]int, error) {
 	data, err := i.r.Restrict(ctx, i.user, []string{key})
 	if err != nil {
 		return nil, fmt.Errorf("can not restrict key %s: %w", key, err)
