@@ -55,6 +55,18 @@ func (r *mockIDer) IDList(ctx context.Context, key string) ([]int, error) {
 	return ids(1, 2), nil
 }
 
+func cmpSlice(one, two []string) bool {
+	if len(one) != len(two) {
+		return false
+	}
+	for i := range one {
+		if one[i] != two[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func cmpSet(one, two map[string]bool) []string {
 	var out []string
 

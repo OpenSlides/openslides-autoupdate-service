@@ -58,69 +58,6 @@ func TestJSONSingleID(t *testing.T) {
 	}
 }
 
-func TestJSONNoField(t *testing.T) {
-	json := strings.NewReader(`
-	{
-		"ids": [5],
-		"collection": "user"
-	}
-	`)
-	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
-	if err == nil {
-		t.Errorf("Expected an error, got none")
-	}
-	var kErr keysbuilder.ErrInvalid
-	if !errors.As(err, &kErr) {
-		t.Errorf("Expected err to be %T, got: %v", kErr, err)
-	}
-	expect := "no fields"
-	if got := kErr.Error(); got != expect {
-		t.Errorf("Expected error message \"%s\", got: \"%s\"", expect, got)
-	}
-}
-
-func TestJSONNoCollection(t *testing.T) {
-	json := strings.NewReader(`
-	{
-		"ids": [5],
-		"fields": {"name": null}
-	}
-	`)
-	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
-	if err == nil {
-		t.Errorf("Expected an error, got none")
-	}
-	var kErr keysbuilder.ErrInvalid
-	if !errors.As(err, &kErr) {
-		t.Errorf("Expected err to be %T, got: %v", kErr, err)
-	}
-	expect := "no collection"
-	if got := kErr.Error(); got != expect {
-		t.Errorf("Expected error message \"%s\", got: \"%s\"", expect, got)
-	}
-}
-
-func TestJSONNoIDs(t *testing.T) {
-	json := strings.NewReader(`
-	{
-		"fields": {"name": null},
-		"collection": "user"
-	}
-	`)
-	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
-	if err == nil {
-		t.Errorf("Expected an error, got none")
-	}
-	var kErr keysbuilder.ErrInvalid
-	if !errors.As(err, &kErr) {
-		t.Errorf("Expected err to be %T, got: %v", kErr, err)
-	}
-	expect := "no ids"
-	if got := kErr.Error(); got != expect {
-		t.Errorf("Expected error message \"%s\", got: \"%s\"", expect, got)
-	}
-}
-
 func TestJSONSuffixNoFields(t *testing.T) {
 	json := strings.NewReader(`
 	{
@@ -138,160 +75,142 @@ func TestJSONSuffixNoFields(t *testing.T) {
 	}
 }
 
-func TestJSONRelationNoCollection(t *testing.T) {
-	json := strings.NewReader(`
-	{
-		"ids": [5],
-		"collection": "user",
-		"fields": {
-			"group_id": {
-				"type": "relation",
+func TestRequestErrors(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		input  string
+		msg    string
+		fields []string
+	}{
+		{
+			"NoField",
+			`{
+				"ids": [5],
+				"collection": "user"
+			}`,
+			"no fields",
+			keys(),
+		},
+		{
+			"No Collection",
+			`{
+				"ids": [5],
 				"fields": {"name": null}
-			}
-		}
-	}
-	`)
-	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
-	if err == nil {
-		t.Errorf("Expected an error, got none")
-	}
-	var kErr keysbuilder.ErrInvalid
-	if !errors.As(err, &kErr) {
-		t.Errorf("Expected err to be %T, got: %v", kErr, err)
-	}
-	expect := "field \"group_id\": no collection"
-	if got := kErr.Error(); got != expect {
-		t.Errorf("Expected error message \"%s\", got: \"%s\"", expect, got)
-	}
-	if fields := kErr.Fields(); len(fields) == 0 || fields[0] != "group_id" {
-		t.Errorf("Expected error to be on field \"name\"")
-	}
-}
-
-func TestJSONRelationNoFields(t *testing.T) {
-	json := strings.NewReader(`
-	{
-		"ids": [5],
-		"collection": "user",
-		"fields": {
-			"group_id": {
-				"type": "relation",
-				"collection": "group"
-			}
-		}
-	}
-	`)
-	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
-	if err == nil {
-		t.Errorf("Expected an error, got none")
-	}
-	var kErr keysbuilder.ErrInvalid
-	if !errors.As(err, &kErr) {
-		t.Errorf("Expected err to be %T, got: %v", kErr, err)
-	}
-	expect := "field \"group_id\": no fields"
-	if got := kErr.Error(); got != expect {
-		t.Errorf("Expected error message \"%s\", got: \"%s\"", expect, got)
-	}
-	if fields := kErr.Fields(); len(fields) == 0 || fields[0] != "group_id" {
-		t.Errorf("Expected error to be on field \"name\"")
-	}
-}
-
-func TestJSONNoType(t *testing.T) {
-	json := strings.NewReader(`
-	{
-		"ids": [5],
-		"collection": "user",
-		"fields": {
-			"group_id": {
-				"collection": "group",
-				"fields": {"name": null}
-			}
-		}
-	}
-	`)
-	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
-	if err == nil {
-		t.Errorf("Expected an error, got none")
-	}
-	var kErr keysbuilder.ErrInvalid
-	if !errors.As(err, &kErr) {
-		t.Errorf("Expected err to be %T, got: %v", kErr, err)
-	}
-	expect := "field \"group_id\": no type"
-	if got := kErr.Error(); got != expect {
-		t.Errorf("Expected error message \"%s\", got: \"%s\"", expect, got)
-	}
-	if fields := kErr.Fields(); len(fields) == 0 || fields[0] != "group_id" {
-		t.Errorf("Expected error to be on field \"name\"")
-	}
-}
-
-func TestJSONUnknwonType(t *testing.T) {
-	json := strings.NewReader(`
-	{
-		"ids": [5],
-		"collection": "user",
-		"fields": {
-			"group_id": {
-				"type": "invalid-type",
-				"collection": "group",
-				"fields": {"name": null}
-			}
-		}
-	}
-	`)
-	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
-	if err == nil {
-		t.Errorf("Expected an error, got none")
-	}
-	var kErr keysbuilder.ErrInvalid
-	if !errors.As(err, &kErr) {
-		t.Errorf("Expected err to be %T, got: %v", kErr, err)
-	}
-	expect := "field \"group_id\": unknown type invalid-type"
-	if got := kErr.Error(); got != expect {
-		t.Errorf("Expected error message \"%s\", got: \"%s\"", expect, got)
-	}
-	if fields := kErr.Fields(); len(fields) == 0 || fields[0] != "group_id" {
-		t.Errorf("Expected error to be on field \"name\"")
-	}
-}
-
-func TestJSONRelationTwiceNoFields(t *testing.T) {
-	json := strings.NewReader(`
-	{
-		"ids": [5],
-		"collection": "user",
-		"fields": {
-			"group_ids": {
-				"type": "relation-list",
-				"collection": "group",
+			}`,
+			"no collection",
+			keys(),
+		},
+		{
+			"no ids",
+			`{
+				"fields": {"name": null},
+				"collection": "user"
+			}`,
+			"no ids",
+			keys(),
+		},
+		{
+			"Relation no collection",
+			`{
+				"ids": [5],
+				"collection": "user",
 				"fields": {
-					"perm_ids": {
-						"type": "relation-list",
-						"collection": "perm"
+					"group_id": {
+						"type": "relation",
+						"fields": {"name": null}
 					}
 				}
+			}`,
+			`field "group_id": no collection`,
+			keys("group_id"),
+		},
+		{
+			"Relation No Fields",
+			`	{
+				"ids": [5],
+				"collection": "user",
+				"fields": {
+					"group_id": {
+						"type": "relation",
+						"collection": "group"
+					}
+				}
+			}`,
+			`field "group_id": no fields`,
+			keys("group_id"),
+		},
+		{
+			"NoType",
+			`	{
+				"ids": [5],
+				"collection": "user",
+				"fields": {
+					"group_id": {
+						"collection": "group",
+						"fields": {"name": null}
+					}
+				}
+			}`,
+			`field "group_id": no type`,
+			keys("group_id"),
+		},
+		{
+			"Unknown Type",
+			`	{
+				"ids": [5],
+				"collection": "user",
+				"fields": {
+					"group_id": {
+						"type": "invalid-type",
+						"collection": "group",
+						"fields": {"name": null}
+					}
+				}
+			}`,
+			`field "group_id": unknown type invalid-type`,
+			keys("group_id"),
+		},
+		{
+			"Relation twice no fields",
+			`{
+				"ids": [5],
+				"collection": "user",
+				"fields": {
+					"group_ids": {
+						"type": "relation-list",
+						"collection": "group",
+						"fields": {
+							"perm_ids": {
+								"type": "relation-list",
+								"collection": "perm"
+							}
+						}
+					}
+				}
+			}`,
+			`field "group_ids.perm_ids": no fields`,
+			keys("group_ids", "perm_ids"),
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.input), &mockIDer{})
+			if err == nil {
+				t.Errorf("Expected an error, got none")
 			}
-		}
-	}`)
-	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
-	if err == nil {
-		t.Errorf("Expected an error, got none")
+			var kErr keysbuilder.ErrInvalid
+			if !errors.As(err, &kErr) {
+				t.Errorf("Expected err to be %T, got: %v", kErr, err)
+			}
+			if got := kErr.Error(); got != tt.msg {
+				t.Errorf("Expected error message \"%s\", got: \"%s\"", tt.msg, got)
+			}
+			if fields := kErr.Fields(); !cmpSlice(fields, tt.fields) {
+				t.Errorf("Expected error to be on field \"%v\", got %v", tt.fields, fields)
+			}
+
+		})
 	}
-	var kErr keysbuilder.ErrInvalid
-	if !errors.As(err, &kErr) {
-		t.Errorf("Expected err to be %T, got: %v", kErr, err)
-	}
-	expect := "field \"group_ids.perm_ids\": no fields"
-	if got := kErr.Error(); got != expect {
-		t.Errorf("Expected error message \"%s\", got: \"%s\"", expect, got)
-	}
-	if fields := kErr.Fields(); len(fields) != 2 || fields[0] != "group_ids" || fields[1] != "perm_ids" {
-		t.Errorf("Expected error to be on field \"group_ids.perm_ids\", got: %v", fields)
-	}
+
 }
 
 func TestManyFromJSON(t *testing.T) {
