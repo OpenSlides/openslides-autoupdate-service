@@ -155,6 +155,29 @@ func TestRequestErrors(t *testing.T) {
 			keys("group_id"),
 		},
 		{
+			"NoType sub",
+			`	{
+				"ids": [5],
+				"collection": "user",
+				"fields": {
+					"group_id": {
+						"type": "relation-list",
+						"collection": "group",
+						"fields": {
+							"perm_ids": {
+								"fields": {
+									"collection": "perm",
+									"fields": {"name": null}
+								}
+							}
+						}
+					}
+				}
+			}`,
+			`field "group_id.perm_ids": no type`,
+			keys("group_id", "perm_ids"),
+		},
+		{
 			"Unknown Type",
 			`	{
 				"ids": [5],

@@ -12,6 +12,5 @@ type IDer interface {
 }
 
 type fieldDescription interface {
-	validate() error
 	build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error)
 }
