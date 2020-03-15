@@ -190,6 +190,36 @@ func TestKeys(t *testing.T) {
 			keys("user/1/group_$_ids", "user/1/group_1_ids", "user/1/group_2_ids", "group/1/name", "group/2/name"),
 			3,
 		},
+		{
+			"Generic field",
+			`{
+				"ids": [1],
+				"collection": "user",
+				"fields": {
+					"likes": {
+						"type": "generic-relation",
+						"fields": {"name": null}
+					}
+				}
+			}`,
+			keys("user/1/likes", "other/1/name"),
+			1,
+		},
+		{
+			"Generic list field",
+			`{
+				"ids": [1],
+				"collection": "user",
+				"fields": {
+					"likes": {
+						"type": "generic-relation-list",
+						"fields": {"name": null}
+					}
+				}
+			}`,
+			keys("user/1/likes", "other/1/name", "other/2/name"),
+			1,
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			ider := &mockIDer{}

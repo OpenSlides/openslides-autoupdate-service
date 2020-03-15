@@ -56,6 +56,32 @@ func (r *mockIDer) IDList(ctx context.Context, key string) ([]int, error) {
 	return ids(1, 2), nil
 }
 
+func (r *mockIDer) GenericID(ctx context.Context, key string) (string, error) {
+	time.Sleep(r.sleep)
+	if r.err != nil {
+		return "", r.err
+	}
+
+	r.reqLogMu.Lock()
+	r.reqLog = append(r.reqLog, key)
+	r.reqLogMu.Unlock()
+
+	return "other/1", nil
+}
+
+func (r *mockIDer) GenericIDs(ctx context.Context, key string) ([]string, error) {
+	time.Sleep(r.sleep)
+	if r.err != nil {
+		return nil, r.err
+	}
+
+	r.reqLogMu.Lock()
+	r.reqLog = append(r.reqLog, key)
+	r.reqLogMu.Unlock()
+
+	return keys("other/1", "other/2"), nil
+}
+
 func (r *mockIDer) Template(ctx context.Context, key string) ([]string, error) {
 	time.Sleep(r.sleep)
 	if r.err != nil {

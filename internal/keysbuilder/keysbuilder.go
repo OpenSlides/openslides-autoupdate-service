@@ -83,3 +83,7 @@ func (b *Builder) genKeys() error {
 func buildKey(collection string, id int, field string) string {
 	return collection + keySep + strconv.Itoa(id) + keySep + field
 }
+
+func buildGenericKey(collectionID string, field string) string {
+	return collectionID + keySep + field
+}
