@@ -40,7 +40,7 @@ func (b *body) UnmarshalJSON(data []byte) error {
 	if field.Collection == "" {
 		return ErrInvalid{msg: "no collection"}
 	}
-	if len(field.Fields.fields) == 0 {
+	if field.Fields.fields == nil {
 		return ErrInvalid{msg: "no fields"}
 	}
 	b.ids = field.IDs
@@ -85,7 +85,7 @@ func (r *relationField) UnmarshalJSON(data []byte) error {
 	if field.Collection == "" {
 		return ErrInvalid{msg: "no collection"}
 	}
-	if len(field.Fields.fields) == 0 {
+	if field.Fields.fields == nil {
 		return ErrInvalid{msg: "no fields"}
 	}
 	r.collection = field.Collection
@@ -94,17 +94,16 @@ func (r *relationField) UnmarshalJSON(data []byte) error {
 }
 
 func (r relationField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
-	v := builder.cache.getOrSet(key, func() interface{} {
-		id, err := builder.ider.ID(ctx, key)
-		if err != nil {
-			errs <- err
-			return nil
-		}
-		return id
+	v, err := builder.cache.getOrSet(key, func() (interface{}, error) {
+		return builder.ider.ID(ctx, key)
 	})
+	if err != nil {
+		errs <- err
+		return
+	}
 	id, ok := v.(int)
 	if !ok {
-		errs <- fmt.Errorf("invalid value type in keybuilder cache: %v", v)
+		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected int, got: %v", v, v)
 		return
 	}
 	if id == 0 {
@@ -132,17 +131,19 @@ type relationListField struct {
 }
 
 func (r relationListField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
-	v := builder.cache.getOrSet(key, func() interface{} {
-		ids, err := builder.ider.IDList(ctx, key)
-		if err != nil {
-			errs <- err
-			return nil
-		}
-		return ids
+	v, err := builder.cache.getOrSet(key, func() (interface{}, error) {
+		return builder.ider.IDList(ctx, key)
 	})
+	if err != nil {
+		errs <- err
+		return
+	}
 	ids, ok := v.([]int)
 	if !ok {
-		errs <- fmt.Errorf("invalid value type in keybuilder cache: %v", v)
+		if v == nil {
+			return
+		}
+		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected []int, got: %v", v, v)
 		return
 	}
 	var wg sync.WaitGroup
@@ -175,7 +176,7 @@ func (g *genericRelationField) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &field); err != nil {
 		return err
 	}
-	if len(field.Fields.fields) == 0 {
+	if field.Fields.fields == nil {
 		return ErrInvalid{msg: "no fields"}
 	}
 	g.fieldsMap = field.Fields
@@ -183,17 +184,16 @@ func (g *genericRelationField) UnmarshalJSON(data []byte) error {
 }
 
 func (g genericRelationField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
-	v := builder.cache.getOrSet(key, func() interface{} {
-		gid, err := builder.ider.GenericID(ctx, key)
-		if err != nil {
-			errs <- err
-			return nil
-		}
-		return gid
+	v, err := builder.cache.getOrSet(key, func() (interface{}, error) {
+		return builder.ider.GenericID(ctx, key)
 	})
+	if err != nil {
+		errs <- err
+		return
+	}
 	gid, ok := v.(string)
 	if !ok {
-		errs <- fmt.Errorf("invalid value type in keybuilder cache: %v", v)
+		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected string, got: %v", v, v)
 		return
 	}
 
@@ -222,17 +222,19 @@ type genericRelationListField struct {
 }
 
 func (g genericRelationListField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
-	v := builder.cache.getOrSet(key, func() interface{} {
-		gids, err := builder.ider.GenericIDs(ctx, key)
-		if err != nil {
-			errs <- err
-			return nil
-		}
-		return gids
+	v, err := builder.cache.getOrSet(key, func() (interface{}, error) {
+		return builder.ider.GenericIDs(ctx, key)
 	})
+	if err != nil {
+		errs <- err
+		return
+	}
 	gids, ok := v.([]string)
 	if !ok {
-		errs <- fmt.Errorf("invalid value type in keybuilder cache: %v", v)
+		if v == nil {
+			return
+		}
+		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected []string, got: %v", v, v)
 		return
 	}
 
@@ -260,35 +262,42 @@ type templateField struct {
 }
 
 func (t *templateField) UnmarshalJSON(data []byte) error {
-	var jsonTemplate struct {
+	var field struct {
 		Sub json.RawMessage `json:"sub"`
 	}
-	if err := json.Unmarshal(data, &jsonTemplate); err != nil {
-		return err
+	if err := json.Unmarshal(data, &field); err != nil {
+		return fmt.Errorf("can not decode template field: %w", err)
 	}
-	sub, err := unmarshalField(jsonTemplate.Sub)
+	if len(field.Sub) == 0 {
+		return nil
+	}
+
+	sub, err := unmarshalField(field.Sub)
 	if err != nil {
 		if sub, ok := err.(ErrInvalid); ok {
 			return ErrInvalid{sub: &sub, msg: "Error in template sub", field: "template"}
 		}
-		return err
+		return fmt.Errorf("can not decode sub attribute of template field: %w", err)
 	}
 	t.sub = sub
 	return nil
 }
 
 func (t templateField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
-	v := builder.cache.getOrSet(key, func() interface{} {
-		values, err := builder.ider.Template(ctx, key)
-		if err != nil {
-			errs <- err
-			return nil
-		}
-		return values
+	v, err := builder.cache.getOrSet(key, func() (interface{}, error) {
+		return builder.ider.Template(ctx, key)
+
 	})
+	if err != nil {
+		errs <- err
+		return
+	}
 	values, ok := v.([]string)
 	if !ok {
-		errs <- fmt.Errorf("invalid value type in keybuilder cache: %v", v)
+		if v == nil {
+			return
+		}
+		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected []string, got: %v", v, v)
 		return
 	}
 

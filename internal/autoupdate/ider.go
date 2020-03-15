@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 )
 
 // RestrictedIDs implements the IDer interface by using a restricer.
@@ -19,6 +18,9 @@ func (i RestrictedIDs) ID(ctx context.Context, key string) (int, error) {
 	ids, err := i.ids(ctx, key, false)
 	if err != nil {
 		return 0, err
+	}
+	if len(ids) == 0 {
+		return 0, nil
 	}
 	return ids[0], nil
 }
@@ -39,7 +41,15 @@ func (i RestrictedIDs) GenericID(ctx context.Context, key string) (string, error
 		return "", fmt.Errorf("can not restrict key %s: %w", key, err)
 	}
 
-	return data[key], nil
+	if _, ok := data[key]; !ok {
+		return "", nil
+	}
+
+	var value string
+	if err := json.Unmarshal([]byte(data[key]), &value); err != nil {
+		return "", fmt.Errorf("can not decode generic value from restricter: %w", err)
+	}
+	return value, nil
 }
 
 // GenericIDs returns a list of collection-id tuple.
@@ -49,9 +59,13 @@ func (i RestrictedIDs) GenericIDs(ctx context.Context, key string) ([]string, er
 		return nil, fmt.Errorf("can not restrict key %s: %w", key, err)
 	}
 
+	if _, ok := data[key]; !ok {
+		return nil, nil
+	}
+
 	var values []string
 	if err := json.Unmarshal([]byte(data[key]), &values); err != nil {
-		return nil, fmt.Errorf("can not decode template value from restricter: %w", err)
+		return nil, fmt.Errorf("can not decode generic-list value from restricter: %w", err)
 	}
 	return values, nil
 }
@@ -70,11 +84,16 @@ func (i RestrictedIDs) ids(ctx context.Context, key string, multi bool) ([]int, 
 
 	rawIDs, ok := data[key]
 	if !ok {
-		return []int{}, nil
+		return nil, nil
 	}
 
 	if multi {
-		return decodeNumberList(rawIDs)
+		var value []int
+		if err := json.Unmarshal([]byte(rawIDs), &value); err != nil {
+			return nil, fmt.Errorf("can not read ids from restricter: %w", err)
+		}
+		return value, nil
+		//return decodeNumberList(rawIDs)
 	}
 
 	id, err := strconv.Atoi(rawIDs)
@@ -82,31 +101,4 @@ func (i RestrictedIDs) ids(ctx context.Context, key string, multi bool) ([]int, 
 		return nil, fmt.Errorf("value in key %s is not an int, got: %s", key, rawIDs)
 	}
 	return []int{id}, nil
-}
-
-func decodeNumberList(value string) ([]int, error) {
-	if len(value) < 3 {
-		return nil, fmt.Errorf("invalid value, expect list of ints")
-	}
-	if value[0] != '[' || value[len(value)-1] != ']' {
-		return nil, fmt.Errorf("expected first and last byte to be [ and ]")
-	}
-	var out []int
-	value = value[1:]
-	var idx int
-	for {
-		idx = strings.IndexByte(value, ',')
-		if idx == -1 {
-			break
-		}
-		id, err := strconv.Atoi(value[:idx])
-		if err != nil {
-			return nil, fmt.Errorf("can not convert value `%s` to int", value[:idx])
-		}
-		out = append(out, id)
-		value = value[idx+1:]
-	}
-	id, err := strconv.Atoi(value[:len(value)-1])
-	out = append(out, id)
-	return out, err
 }

@@ -83,22 +83,13 @@ func TestRequestErrors(t *testing.T) {
 		fields []string
 	}{
 		{
-			"NoField",
-			`{
-				"ids": [5],
-				"collection": "user"
-			}`,
-			"no fields",
-			keys(),
-		},
-		{
 			"No Collection",
 			`{
 				"ids": [5],
 				"fields": {"name": null}
 			}`,
 			"no collection",
-			keys(),
+			strs(),
 		},
 		{
 			"no ids",
@@ -107,7 +98,7 @@ func TestRequestErrors(t *testing.T) {
 				"collection": "user"
 			}`,
 			"no ids",
-			keys(),
+			strs(),
 		},
 		{
 			"Relation no collection",
@@ -122,26 +113,11 @@ func TestRequestErrors(t *testing.T) {
 				}
 			}`,
 			`field "group_id": no collection`,
-			keys("group_id"),
-		},
-		{
-			"Relation No Fields",
-			`	{
-				"ids": [5],
-				"collection": "user",
-				"fields": {
-					"group_id": {
-						"type": "relation",
-						"collection": "group"
-					}
-				}
-			}`,
-			`field "group_id": no fields`,
-			keys("group_id"),
+			strs("group_id"),
 		},
 		{
 			"NoType",
-			`	{
+			`{
 				"ids": [5],
 				"collection": "user",
 				"fields": {
@@ -152,7 +128,7 @@ func TestRequestErrors(t *testing.T) {
 				}
 			}`,
 			`field "group_id": no type`,
-			keys("group_id"),
+			strs("group_id"),
 		},
 		{
 			"NoType sub",
@@ -175,7 +151,30 @@ func TestRequestErrors(t *testing.T) {
 				}
 			}`,
 			`field "group_id.perm_ids": no type`,
-			keys("group_id", "perm_ids"),
+			strs("group_id", "perm_ids"),
+		},
+		{
+			"NoType sub",
+			`	{
+				"ids": [5],
+				"collection": "user",
+				"fields": {
+					"group_id": {
+						"type": "relation-list",
+						"collection": "group",
+						"fields": {
+							"perm_ids": {
+								"fields": {
+									"collection": "perm",
+									"fields": {"name": null}
+								}
+							}
+						}
+					}
+				}
+			}`,
+			`field "group_id.perm_ids": no type`,
+			strs("group_id", "perm_ids"),
 		},
 		{
 			"Unknown Type",
@@ -191,7 +190,7 @@ func TestRequestErrors(t *testing.T) {
 				}
 			}`,
 			`field "group_id": unknown type invalid-type`,
-			keys("group_id"),
+			strs("group_id"),
 		},
 		{
 			"Relation twice no fields",
@@ -212,7 +211,7 @@ func TestRequestErrors(t *testing.T) {
 				}
 			}`,
 			`field "group_ids.perm_ids": no fields`,
-			keys("group_ids", "perm_ids"),
+			strs("group_ids", "perm_ids"),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

@@ -79,7 +79,7 @@ func (r *mockIDer) GenericIDs(ctx context.Context, key string) ([]string, error)
 	r.reqLog = append(r.reqLog, key)
 	r.reqLogMu.Unlock()
 
-	return keys("other/1", "other/2"), nil
+	return strs("other/1", "other/2"), nil
 }
 
 func (r *mockIDer) Template(ctx context.Context, key string) ([]string, error) {
@@ -102,7 +102,7 @@ func (r *mockIDer) Template(ctx context.Context, key string) ([]string, error) {
 	if strings.HasPrefix(key, "not_exist") {
 		return nil, nil
 	}
-	return keys("1", "2"), nil
+	return strs("1", "2"), nil
 
 }
 
@@ -155,5 +155,5 @@ func mapKeys(m map[string][]int) []string {
 	return out
 }
 
-func keys(keys ...string) []string { return keys }
-func ids(ids ...int) []int         { return ids }
+func strs(str ...string) []string { return str }
+func ids(ids ...int) []int        { return ids }
