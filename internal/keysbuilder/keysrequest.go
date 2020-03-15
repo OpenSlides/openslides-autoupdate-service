@@ -26,29 +26,27 @@ type body struct {
 // UnmarshallJSON builds a body object from json. It looks for the type
 // argument in the fields and decodes the fields accorently.
 func (b *body) UnmarshalJSON(data []byte) error {
-	var jsonBody struct {
+	var field struct {
 		IDs        []int     `json:"ids"`
 		Collection string    `json:"collection"`
 		Fields     fieldsMap `json:"fields"`
 	}
-	if err := json.Unmarshal(data, &jsonBody); err != nil {
+	if err := json.Unmarshal(data, &field); err != nil {
 		return err
 	}
-	b.ids = jsonBody.IDs
-	b.collection = jsonBody.Collection
-	b.fieldsMap = jsonBody.Fields
-	return nil
-}
-
-// validate makes sure the body is valid. Returns an ErrInvalid if not.
-func (b body) validate() error {
-	if len(b.ids) == 0 {
+	if len(field.IDs) == 0 {
 		return ErrInvalid{msg: "no ids"}
 	}
-	if b.collection == "" {
+	if field.Collection == "" {
 		return ErrInvalid{msg: "no collection"}
 	}
-	return b.fieldsMap.validate()
+	if len(field.Fields.fields) == 0 {
+		return ErrInvalid{msg: "no fields"}
+	}
+	b.ids = field.IDs
+	b.collection = field.Collection
+	b.fieldsMap = field.Fields
+	return nil
 }
 
 func (b body) build(ctx context.Context, builder *Builder, keys chan<- string, errs chan<- error) {
@@ -77,26 +75,22 @@ type relationField struct {
 }
 
 func (r *relationField) UnmarshalJSON(data []byte) error {
-	var jsonRelation struct {
+	var field struct {
 		Collection string    `json:"collection"`
 		Fields     fieldsMap `json:"fields"`
 	}
-	if err := json.Unmarshal(data, &jsonRelation); err != nil {
-		return fmt.Errorf("can not decode id and collection: %w", err)
+	if err := json.Unmarshal(data, &field); err != nil {
+		return err
 	}
-	r.collection = jsonRelation.Collection
-	r.fieldsMap = jsonRelation.Fields
-	return nil
-}
-
-func (r relationField) validate() error {
-	if len(r.fields) == 0 {
-		return ErrInvalid{msg: "no fields"}
-	}
-	if r.collection == "" {
+	if field.Collection == "" {
 		return ErrInvalid{msg: "no collection"}
 	}
-	return r.fieldsMap.validate()
+	if len(field.Fields.fields) == 0 {
+		return ErrInvalid{msg: "no fields"}
+	}
+	r.collection = field.Collection
+	r.fieldsMap = field.Fields
+	return nil
 }
 
 func (r relationField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
@@ -179,14 +173,13 @@ func (g *genericRelationField) UnmarshalJSON(data []byte) error {
 		Fields fieldsMap `json:"fields"`
 	}
 	if err := json.Unmarshal(data, &field); err != nil {
-		return fmt.Errorf("can not decode id and collection: %w", err)
+		return err
+	}
+	if len(field.Fields.fields) == 0 {
+		return ErrInvalid{msg: "no fields"}
 	}
 	g.fieldsMap = field.Fields
 	return nil
-}
-
-func (g genericRelationField) validate() error {
-	return g.fieldsMap.validate()
 }
 
 func (g genericRelationField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
@@ -271,17 +264,16 @@ func (t *templateField) UnmarshalJSON(data []byte) error {
 		Sub json.RawMessage `json:"sub"`
 	}
 	if err := json.Unmarshal(data, &jsonTemplate); err != nil {
-		return fmt.Errorf("can not decode template field: %w", err)
+		return err
 	}
-	fd, err := unmarshalFieldDescription(jsonTemplate.Sub)
+	sub, err := unmarshalField(jsonTemplate.Sub)
 	if err != nil {
-		return ErrInvalid{msg: err.Error(), field: "template"}
+		if sub, ok := err.(ErrInvalid); ok {
+			return ErrInvalid{sub: &sub, msg: "Error in template sub", field: "template"}
+		}
+		return err
 	}
-	t.sub = fd
-	return nil
-}
-
-func (t templateField) validate() error {
+	t.sub = sub
 	return nil
 }
 
@@ -316,35 +308,47 @@ func (t templateField) build(ctx context.Context, builder *Builder, key string, 
 	wg.Wait()
 }
 
-func unmarshalFieldDescription(data []byte) (fieldDescription, error) {
-	// TODO: handle json errors
+func unmarshalField(data []byte) (fieldDescription, error) {
 	var t *struct {
 		Type string `json:"type"`
 	}
-	json.Unmarshal(data, &t)
+	if err := json.Unmarshal(data, &t); err != nil {
+		return nil, err
+	}
 	if t == nil {
 		return nil, nil
 	}
+	var err error
 	switch t.Type {
 	case relationIdentifier:
 		var r relationField
-		json.Unmarshal(data, &r)
+		if err = json.Unmarshal(data, &r); err != nil {
+			return nil, err
+		}
 		return r, nil
 	case relationListIdentifier:
 		var r relationListField
-		json.Unmarshal(data, &r)
+		if err = json.Unmarshal(data, &r); err != nil {
+			return nil, err
+		}
 		return r, nil
 	case genericRelationIdentifier:
 		var r genericRelationField
-		json.Unmarshal(data, &r)
+		if err = json.Unmarshal(data, &r); err != nil {
+			return nil, err
+		}
 		return r, nil
 	case genericRelationListIdentifier:
 		var r genericRelationListField
-		json.Unmarshal(data, &r)
+		if err = json.Unmarshal(data, &r); err != nil {
+			return nil, err
+		}
 		return r, nil
 	case templateIdentifier:
 		var r templateField
-		json.Unmarshal(data, &r)
+		if err = json.Unmarshal(data, &r); err != nil {
+			return nil, err
+		}
 		return r, nil
 	case "":
 		return nil, ErrInvalid{msg: "no type"}
@@ -363,30 +367,17 @@ func (f *fieldsMap) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &fm); err != nil {
 		return fmt.Errorf("can not decode fields: %w", err)
 	}
-	f.fields = make(map[string]fieldDescription)
-	for name, description := range fm {
-		fd, err := unmarshalFieldDescription(description)
+
+	f.fields = make(map[string]fieldDescription, len(fm))
+	for name, field := range fm {
+		fd, err := unmarshalField(field)
 		if err != nil {
-			return ErrInvalid{msg: err.Error(), field: name}
+			if sub, ok := err.(ErrInvalid); ok {
+				return ErrInvalid{sub: &sub, msg: "Error on field", field: name}
+			}
+			return err
 		}
 		f.fields[name] = fd
-	}
-	return nil
-}
-
-// validate maks sure the fields are valid. Returns an ErrInvalid if not.
-func (f fieldsMap) validate() error {
-	if len(f.fields) == 0 {
-		return ErrInvalid{msg: "no fields"}
-	}
-	for name, description := range f.fields {
-		if description == nil {
-			continue
-		}
-		if err := description.validate(); err != nil {
-			sub := err.(ErrInvalid)
-			return ErrInvalid{sub: &sub, field: name, msg: "Error on field"}
-		}
 	}
 	return nil
 }
