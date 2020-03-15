@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 )
 
 const (
 	relationIdentifier     = "relation"
 	relationListIdentifier = "relation-list"
+	templateIdentifier     = "template"
 )
 
 // body holds the information what keys are requested by the client.
@@ -28,7 +30,7 @@ func (b *body) UnmarshalJSON(data []byte) error {
 		Fields     fieldsMap `json:"fields"`
 	}
 	if err := json.Unmarshal(data, &jsonBody); err != nil {
-		return fmt.Errorf("can not decode id and collection: %w", err)
+		return err
 	}
 	b.ids = jsonBody.IDs
 	b.collection = jsonBody.Collection
@@ -66,13 +68,13 @@ func (b body) build(ctx context.Context, builder *Builder, keys chan<- string, e
 	wg.Wait()
 }
 
-// relation is a fieldtype that redirects to one other collection
-type relation struct {
+// relationField is a fieldtype that redirects to one other collection
+type relationField struct {
 	collection string
 	fieldsMap
 }
 
-func (r *relation) UnmarshalJSON(data []byte) error {
+func (r *relationField) UnmarshalJSON(data []byte) error {
 	var jsonRelation struct {
 		Collection string    `json:"collection"`
 		Fields     fieldsMap `json:"fields"`
@@ -85,7 +87,7 @@ func (r *relation) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (r relation) validate() error {
+func (r relationField) validate() error {
 	if len(r.fields) == 0 {
 		return ErrInvalid{msg: "no fields"}
 	}
@@ -95,7 +97,7 @@ func (r relation) validate() error {
 	return r.fieldsMap.validate()
 }
 
-func (r relation) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
+func (r relationField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
 	v := builder.cache.getOrSet(key, func() interface{} {
 		id, err := builder.ider.ID(ctx, key)
 		if err != nil {
@@ -128,12 +130,12 @@ func (r relation) build(ctx context.Context, builder *Builder, key string, keys 
 	wg.Wait()
 }
 
-// relationList is a fieldtype like relation, but redirects to a list of objects.
-type relationList struct {
-	relation
+// relationListField is a fieldtype like relation, but redirects to a list of objects.
+type relationListField struct {
+	relationField
 }
 
-func (r relationList) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
+func (r relationListField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
 	v := builder.cache.getOrSet(key, func() interface{} {
 		ids, err := builder.ider.IDList(ctx, key)
 		if err != nil {
@@ -165,43 +167,106 @@ func (r relationList) build(ctx context.Context, builder *Builder, key string, k
 	wg.Wait()
 }
 
+// templateField requests a list of fields from a template.
+type templateField struct {
+	sub fieldDescription
+}
+
+func (t *templateField) UnmarshalJSON(data []byte) error {
+	var jsonTemplate struct {
+		Sub json.RawMessage `json:"sub"`
+	}
+	if err := json.Unmarshal(data, &jsonTemplate); err != nil {
+		return fmt.Errorf("can not decode template field: %w", err)
+	}
+	fd, err := unmarshalFieldDescription(jsonTemplate.Sub)
+	if err != nil {
+		return ErrInvalid{msg: err.Error(), field: "template"}
+	}
+	t.sub = fd
+	return nil
+}
+
+func (t templateField) validate() error {
+	return nil
+}
+
+func (t templateField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
+	v := builder.cache.getOrSet(key, func() interface{} {
+		values, err := builder.ider.Template(ctx, key)
+		if err != nil {
+			errs <- err
+			return nil
+		}
+		return values
+	})
+	values, ok := v.([]string)
+	if !ok {
+		errs <- fmt.Errorf("invalid value type in keybuilder cache: %v", v)
+		return
+	}
+
+	var wg sync.WaitGroup
+	for _, value := range values {
+		newKey := strings.Replace(key, "$", value, 1)
+		keys <- newKey
+		if t.sub == nil {
+			continue
+		}
+		wg.Add(1)
+		go func() {
+			t.sub.build(ctx, builder, newKey, keys, errs)
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+}
+
+func unmarshalFieldDescription(data []byte) (fieldDescription, error) {
+	var t *struct {
+		Type string `json:"type"`
+	}
+	json.Unmarshal(data, &t)
+	if t == nil {
+		return nil, nil
+	}
+	switch t.Type {
+	case relationIdentifier:
+		var r relationField
+		json.Unmarshal(data, &r)
+		return r, nil
+	case relationListIdentifier:
+		var r relationListField
+		json.Unmarshal(data, &r)
+		return r, nil
+	case templateIdentifier:
+		var r templateField
+		json.Unmarshal(data, &r)
+		return r, nil
+	case "":
+		return nil, ErrInvalid{msg: "no type"}
+	default:
+		return nil, ErrInvalid{msg: fmt.Sprintf("unknown type %s", t.Type)}
+	}
+}
+
 // fieldsMap describes in a abstract way the fieldsMap of a collection.
 type fieldsMap struct {
 	fields map[string]fieldDescription
 }
 
 func (f *fieldsMap) UnmarshalJSON(data []byte) error {
-	s := string(data)
-	_ = s
 	var fm map[string]json.RawMessage
 	if err := json.Unmarshal(data, &fm); err != nil {
 		return fmt.Errorf("can not decode fields: %w", err)
 	}
-	var t *struct {
-		Type string `json:"type"`
-	}
 	f.fields = make(map[string]fieldDescription)
 	for name, description := range fm {
-		t = nil
-		json.Unmarshal(description, &t)
-		if t == nil {
-			f.fields[name] = nil
-			continue
+		fd, err := unmarshalFieldDescription(description)
+		if err != nil {
+			return ErrInvalid{msg: err.Error(), field: name}
 		}
-		switch t.Type {
-		case relationIdentifier:
-			var r relation
-			json.Unmarshal(description, &r)
-			f.fields[name] = r
-		case relationListIdentifier:
-			var r relationList
-			json.Unmarshal(description, &r)
-			f.fields[name] = r
-		case "":
-			return ErrInvalid{msg: "no type", field: name}
-		default:
-			return ErrInvalid{msg: fmt.Sprintf("unknown type %s", t.Type), field: name}
-		}
+		f.fields[name] = fd
 	}
 	return nil
 }
