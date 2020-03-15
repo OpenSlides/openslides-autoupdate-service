@@ -24,7 +24,7 @@ func TestKeys(t *testing.T) {
 				"collection": "user",
 				"fields": {"name": null}
 			}`,
-			keys("user/1/name"),
+			strs("user/1/name"),
 			0,
 		},
 		{
@@ -37,7 +37,7 @@ func TestKeys(t *testing.T) {
 					"last": null
 				}
 			}`,
-			keys("user/1/first", "user/1/last"),
+			strs("user/1/first", "user/1/last"),
 			0,
 		},
 		{
@@ -50,7 +50,7 @@ func TestKeys(t *testing.T) {
 					"last": null
 				}
 			}`,
-			keys("user/1/first", "user/1/last", "user/2/first", "user/2/last"),
+			strs("user/1/first", "user/1/last", "user/2/first", "user/2/last"),
 			0,
 		},
 		{
@@ -66,7 +66,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			keys("user/1/note_id", "note/1/important"),
+			strs("user/1/note_id", "note/1/important"),
 			1,
 		},
 		{
@@ -82,7 +82,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			keys("user/1/group_ids", "group/1/admin", "group/2/admin"),
+			strs("user/1/group_ids", "group/1/admin", "group/2/admin"),
 			1,
 		},
 		{
@@ -104,7 +104,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			keys("user/1/note_id", "note/1/motion_id", "motion/1/name"),
+			strs("user/1/note_id", "note/1/motion_id", "motion/1/name"),
 			2,
 		},
 		{
@@ -126,7 +126,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			keys("user/1/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name"),
+			strs("user/1/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name"),
 			3,
 		},
 		{
@@ -136,7 +136,7 @@ func TestKeys(t *testing.T) {
 				"collection": "user",
 				"fields": {"note_id": null}
 			}`,
-			keys("user/1/note_id"),
+			strs("user/1/note_id"),
 			0,
 		},
 		{
@@ -152,7 +152,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`, // "not_exist" is a magic string in the ider mock
-			keys("not_exist/1/note_id"),
+			strs("not_exist/1/note_id"),
 			1,
 		},
 		{
@@ -168,7 +168,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`, // "not_exist" is a magic string in the ider mock
-			keys("not_exist/1/group_ids"),
+			strs("not_exist/1/group_ids"),
 			1,
 		},
 		{
@@ -187,7 +187,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			keys("user/1/group_$_ids", "user/1/group_1_ids", "user/1/group_2_ids", "group/1/name", "group/2/name"),
+			strs("user/1/group_$_ids", "user/1/group_1_ids", "user/1/group_2_ids", "group/1/name", "group/2/name"),
 			3,
 		},
 		{
@@ -202,8 +202,29 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			keys("user/1/likes", "other/1/name"),
+			strs("user/1/likes", "other/1/name"),
 			1,
+		},
+		{
+			"Generic field with sub fields",
+			`{
+				"ids": [1],
+				"collection": "user",
+				"fields": {
+					"likes": {
+						"type": "generic-relation",
+						"fields": {
+							"tag_ids": {
+								"type": "relation-list",
+								"collection": "tag",
+								"fields": {"name": null}
+							}
+						}
+					}
+				}
+			}`,
+			strs("user/1/likes", "other/1/tag_ids", "tag/1/name", "tag/2/name"),
+			2,
 		},
 		{
 			"Generic list field",
@@ -217,7 +238,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			keys("user/1/likes", "other/1/name", "other/2/name"),
+			strs("user/1/likes", "other/1/name", "other/2/name"),
 			1,
 		},
 	} {
@@ -262,7 +283,7 @@ func TestUpdate(t *testing.T) {
 				}
 			}`,
 			map[string][]int{"user/1/note_id": ids(2)},
-			keys("user/1/note_id", "note/2/important"),
+			strs("user/1/note_id", "note/2/important"),
 			1,
 		},
 		{
@@ -279,7 +300,7 @@ func TestUpdate(t *testing.T) {
 				}
 			}`,
 			map[string][]int{},
-			keys("user/1/note_id", "note/1/important"),
+			strs("user/1/note_id", "note/1/important"),
 			0,
 		},
 		{
@@ -296,7 +317,7 @@ func TestUpdate(t *testing.T) {
 				}
 			}`,
 			map[string][]int{"user/1/note_id": ids(2)},
-			keys("user/1/note_id", "user/2/note_id", "note/1/important", "note/2/important"),
+			strs("user/1/note_id", "user/2/note_id", "note/1/important", "note/2/important"),
 			1,
 		},
 		{
@@ -318,7 +339,7 @@ func TestUpdate(t *testing.T) {
 				}
 			}`,
 			map[string][]int{"user/1/note_id": ids(2)},
-			keys("user/1/note_id", "user/1/group_ids", "note/2/important", "group/1/admin", "group/2/admin"),
+			strs("user/1/note_id", "user/1/group_ids", "note/2/important", "group/1/admin", "group/2/admin"),
 			1,
 		},
 		{
@@ -340,7 +361,7 @@ func TestUpdate(t *testing.T) {
 				}
 			}`,
 			map[string][]int{"user/1/note_id": ids(2), "user/1/group_ids": ids(2)},
-			keys("user/1/note_id", "note/2/important", "user/1/group_ids", "group/2/admin"),
+			strs("user/1/note_id", "note/2/important", "user/1/group_ids", "group/2/admin"),
 			2,
 		},
 		{
@@ -363,7 +384,7 @@ func TestUpdate(t *testing.T) {
 				}
 			}`,
 			map[string][]int{"user/1/group_ids": ids(2)},
-			keys("user/1/group_ids", "group/2/perm_ids", "perm/2/name", "perm/1/name"),
+			strs("user/1/group_ids", "group/2/perm_ids", "perm/2/name", "perm/1/name"),
 			1,
 		},
 	} {
@@ -421,7 +442,7 @@ func TestConcurency(t *testing.T) {
 	if finished > 30*time.Millisecond {
 		t.Errorf("Expect keysbuilder to run in less then 30 Milliseconds, got: %v", finished)
 	}
-	expect := keys("user/1/group_ids", "user/2/group_ids", "user/3/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name")
+	expect := strs("user/1/group_ids", "user/2/group_ids", "user/3/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name")
 	if diff := cmpSet(set(expect...), set(b.Keys()...)); diff != nil {
 		t.Errorf("Expected %v, got: %v", expect, diff)
 	}
@@ -471,7 +492,7 @@ func TestManyRequests(t *testing.T) {
 		t.Errorf("Expect keysbuilder to run in less then 20 Milliseconds, got: %v", finished)
 	}
 
-	expect := keys("user/1/note_id", "user/2/note_id", "motion/1/name", "note/1/important")
+	expect := strs("user/1/note_id", "user/2/note_id", "motion/1/name", "note/1/important")
 	if diff := cmpSet(set(expect...), set(b.Keys()...)); diff != nil {
 		t.Errorf("Expected %v, got: %v", expect, diff)
 	}
