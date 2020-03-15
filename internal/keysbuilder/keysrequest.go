@@ -9,9 +9,11 @@ import (
 )
 
 const (
-	relationIdentifier     = "relation"
-	relationListIdentifier = "relation-list"
-	templateIdentifier     = "template"
+	relationIdentifier            = "relation"
+	relationListIdentifier        = "relation-list"
+	genericRelationIdentifier     = "generic-relation"
+	genericRelationListIdentifier = "generic-relation-list"
+	templateIdentifier            = "template"
 )
 
 // body holds the information what keys are requested by the client.
@@ -167,6 +169,98 @@ func (r relationListField) build(ctx context.Context, builder *Builder, key stri
 	wg.Wait()
 }
 
+// genericRelationField is like a relationField but the collection is given from the restricter.
+type genericRelationField struct {
+	fieldsMap
+}
+
+func (g *genericRelationField) UnmarshalJSON(data []byte) error {
+	var field struct {
+		Fields fieldsMap `json:"fields"`
+	}
+	if err := json.Unmarshal(data, &field); err != nil {
+		return fmt.Errorf("can not decode id and collection: %w", err)
+	}
+	g.fieldsMap = field.Fields
+	return nil
+}
+
+func (g genericRelationField) validate() error {
+	return g.fieldsMap.validate()
+}
+
+func (g genericRelationField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
+	v := builder.cache.getOrSet(key, func() interface{} {
+		gid, err := builder.ider.GenericID(ctx, key)
+		if err != nil {
+			errs <- err
+			return nil
+		}
+		return gid
+	})
+	gid, ok := v.(string)
+	if !ok {
+		errs <- fmt.Errorf("invalid value type in keybuilder cache: %v", v)
+		return
+	}
+
+	if gid == "" {
+		return
+	}
+	var wg sync.WaitGroup
+	for name, description := range g.fields {
+		key := buildGenericKey(gid, name)
+		keys <- key
+		if description == nil {
+			continue
+		}
+		wg.Add(1)
+		go func(description fieldDescription) {
+			description.build(ctx, builder, key, keys, errs)
+			wg.Done()
+		}(description)
+	}
+	wg.Wait()
+}
+
+// genericRelationListField is like a genericRelationField but with a list of relations.
+type genericRelationListField struct {
+	genericRelationField
+}
+
+func (g genericRelationListField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
+	v := builder.cache.getOrSet(key, func() interface{} {
+		gids, err := builder.ider.GenericIDs(ctx, key)
+		if err != nil {
+			errs <- err
+			return nil
+		}
+		return gids
+	})
+	gids, ok := v.([]string)
+	if !ok {
+		errs <- fmt.Errorf("invalid value type in keybuilder cache: %v", v)
+		return
+	}
+
+	var wg sync.WaitGroup
+	for _, gid := range gids {
+		for name, description := range g.fields {
+			key := buildGenericKey(gid, name)
+			keys <- key
+			if description == nil {
+				continue
+			}
+			wg.Add(1)
+			go func(description fieldDescription) {
+				description.build(ctx, builder, key, keys, errs)
+				wg.Done()
+			}(description)
+		}
+	}
+	wg.Wait()
+}
+
 // templateField requests a list of fields from a template.
 type templateField struct {
 	sub fieldDescription
@@ -223,6 +317,7 @@ func (t templateField) build(ctx context.Context, builder *Builder, key string, 
 }
 
 func unmarshalFieldDescription(data []byte) (fieldDescription, error) {
+	// TODO: handle json errors
 	var t *struct {
 		Type string `json:"type"`
 	}
@@ -237,6 +332,14 @@ func unmarshalFieldDescription(data []byte) (fieldDescription, error) {
 		return r, nil
 	case relationListIdentifier:
 		var r relationListField
+		json.Unmarshal(data, &r)
+		return r, nil
+	case genericRelationIdentifier:
+		var r genericRelationField
+		json.Unmarshal(data, &r)
+		return r, nil
+	case genericRelationListIdentifier:
+		var r genericRelationListField
 		json.Unmarshal(data, &r)
 		return r, nil
 	case templateIdentifier:

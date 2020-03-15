@@ -32,8 +32,18 @@ func (i RestrictedIDs) IDList(ctx context.Context, key string) ([]int, error) {
 	return ids, nil
 }
 
-// Template returns the strings from a template field.
-func (i RestrictedIDs) Template(ctx context.Context, key string) ([]string, error) {
+// GenericID returns a collection-id tuple.
+func (i RestrictedIDs) GenericID(ctx context.Context, key string) (string, error) {
+	data, err := i.r.Restrict(ctx, i.user, []string{key})
+	if err != nil {
+		return "", fmt.Errorf("can not restrict key %s: %w", key, err)
+	}
+
+	return data[key], nil
+}
+
+// GenericIDs returns a list of collection-id tuple.
+func (i RestrictedIDs) GenericIDs(ctx context.Context, key string) ([]string, error) {
 	data, err := i.r.Restrict(ctx, i.user, []string{key})
 	if err != nil {
 		return nil, fmt.Errorf("can not restrict key %s: %w", key, err)
@@ -44,6 +54,11 @@ func (i RestrictedIDs) Template(ctx context.Context, key string) ([]string, erro
 		return nil, fmt.Errorf("can not decode template value from restricter: %w", err)
 	}
 	return values, nil
+}
+
+// Template returns the strings from a template field.
+func (i RestrictedIDs) Template(ctx context.Context, key string) ([]string, error) {
+	return i.GenericIDs(ctx, key)
 }
 
 // ids returns ids for a key.
