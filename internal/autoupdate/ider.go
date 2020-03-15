@@ -2,6 +2,7 @@ package autoupdate
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -29,6 +30,20 @@ func (i RestrictedIDs) IDList(ctx context.Context, key string) ([]int, error) {
 		return nil, err
 	}
 	return ids, nil
+}
+
+// Template returns the strings from a template field.
+func (i RestrictedIDs) Template(ctx context.Context, key string) ([]string, error) {
+	data, err := i.r.Restrict(ctx, i.user, []string{key})
+	if err != nil {
+		return nil, fmt.Errorf("can not restrict key %s: %w", key, err)
+	}
+
+	var values []string
+	if err := json.Unmarshal([]byte(data[key]), &values); err != nil {
+		return nil, fmt.Errorf("can not decode template value from restricter: %w", err)
+	}
+	return values, nil
 }
 
 // ids returns ids for a key.

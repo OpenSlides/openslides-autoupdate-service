@@ -3,6 +3,7 @@ package keysbuilder_test
 import (
 	"context"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -53,6 +54,30 @@ func (r *mockIDer) IDList(ctx context.Context, key string) ([]int, error) {
 		return nil, nil
 	}
 	return ids(1, 2), nil
+}
+
+func (r *mockIDer) Template(ctx context.Context, key string) ([]string, error) {
+	time.Sleep(r.sleep)
+	if r.err != nil {
+		return nil, r.err
+	}
+
+	r.reqLogMu.Lock()
+	r.reqLog = append(r.reqLog, key)
+	r.reqLogMu.Unlock()
+
+	if ids, ok := r.data[key]; ok {
+		var out []string
+		for _, id := range ids {
+			out = append(out, strconv.Itoa(id))
+		}
+		return out, nil
+	}
+	if strings.HasPrefix(key, "not_exist") {
+		return nil, nil
+	}
+	return keys("1", "2"), nil
+
 }
 
 func cmpSlice(one, two []string) bool {

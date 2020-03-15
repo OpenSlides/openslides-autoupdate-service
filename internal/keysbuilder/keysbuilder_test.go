@@ -171,6 +171,25 @@ func TestKeys(t *testing.T) {
 			keys("not_exist/1/group_ids"),
 			1,
 		},
+		{
+			"Template field",
+			`{
+				"ids": [1],
+				"collection": "user",
+				"fields": {
+					"group_$_ids": {
+						"type": "template",
+						"sub": {
+							"type": "relation-list",
+							"collection": "group",
+							"fields": {"name": null}
+						}
+					}
+				}
+			}`,
+			keys("user/1/group_$_ids", "user/1/group_1_ids", "user/1/group_2_ids", "group/1/name", "group/2/name"),
+			3,
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			ider := &mockIDer{}

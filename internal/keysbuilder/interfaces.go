@@ -6,6 +6,7 @@ import "context"
 type IDer interface {
 	ID(ctx context.Context, key string) (int, error)
 	IDList(ctx context.Context, key string) ([]int, error)
+	Template(ctx context.Context, key string) ([]string, error)
 }
 
 type fieldDescription interface {
