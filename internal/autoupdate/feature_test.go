@@ -210,6 +210,23 @@ func TestFeatures(t *testing.T) {
 			},
 		},
 		{
+			"template fields",
+			`{
+				"collection": "D",
+				"ids": [1, 2],
+				"fields": {
+					"d": null,
+					"B_$_ids": null
+				}
+			}`,
+			map[string]string{
+				"D/1/d":       `"d1"`,
+				"D/1/B_$_ids": `["1", "2", "3"]`,
+				"D/2/d":       `"d2"`,
+				"D/2/B_$_ids": `["1", "4"]`,
+			},
+		},
+		{
 			"structured fields without references",
 			`{
 				"collection": "D",
@@ -241,7 +258,7 @@ func TestFeatures(t *testing.T) {
 				"fields": {
 					"B_$_ids": {
 						"type": "template",
-						"sub": {
+						"values": {
 							"type": "relation-list",
 							"collection": "B",
 							"fields": {
