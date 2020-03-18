@@ -25,11 +25,11 @@ func main() {
 	restricter := buildRestricter(f)
 
 	service := autoupdate.New(restricter, receiver)
-	defer service.Close()
 
 	handler := ahttp.New(service, authService)
 	srv := &http.Server{Addr: listenAddr, Handler: handler}
 	defer func() {
+		service.Close()
 		if err := srv.Shutdown(context.Background()); err != nil {
 			log.Printf("Error on HTTP server shutdown: %v", err)
 		}
