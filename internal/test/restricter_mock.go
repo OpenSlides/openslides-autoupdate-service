@@ -40,7 +40,7 @@ func (r MockRestricter) Restrict(ctx context.Context, uid int, keys []string) (m
 		case strings.HasSuffix(key, "_ids"):
 			out[key] = "[1,2]"
 		default:
-			out[key] = "some value"
+			out[key] = `"some value"`
 		}
 	}
 	return out, nil
