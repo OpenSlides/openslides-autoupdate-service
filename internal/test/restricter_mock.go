@@ -1,8 +1,11 @@
 package test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"time"
@@ -26,30 +29,37 @@ type MockRestricter struct {
 // If the key ends with "_ids", "[1,2]" is returned.
 //
 // In any other case, "some value" is returned.
-func (r *MockRestricter) Restrict(ctx context.Context, uid int, keys []string) (map[string]string, error) {
+func (r *MockRestricter) Restrict(ctx context.Context, uid int, keys []string) (io.Reader, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	out := make(map[string]string, len(keys))
+	data := make(map[string]json.RawMessage, len(keys))
 	for _, key := range keys {
 		v, ok := r.Data[key]
 		if ok {
-			out[key] = v
+			data[key] = json.RawMessage(v)
 			continue
 		}
 
+		var value string
 		switch {
 		case strings.HasPrefix(key, "error"):
 			return nil, fmt.Errorf("Restricter got an error")
 		case strings.HasSuffix(key, "_id"):
-			out[key] = `1`
+			value = `1`
 		case strings.HasSuffix(key, "_ids"):
-			out[key] = `[1,2]`
+			value = `[1,2]`
 		default:
-			out[key] = fmt.Sprintf(`"The time is: %s"`, time.Now())
+			value = fmt.Sprintf(`"The time is: %s"`, time.Now())
 		}
+		data[key] = json.RawMessage([]byte(value))
 	}
-	return out, nil
+	out, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, '\n')
+	return bytes.NewReader(out), nil
 }
 
 // Update updates the values from the restricter

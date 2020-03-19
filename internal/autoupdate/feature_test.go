@@ -1,7 +1,11 @@
 package autoupdate_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 	"strings"
 	"testing"
 
@@ -14,10 +18,10 @@ var dataSet = map[string]string{
 	"A/1/title":               `"a1"`,
 	"A/1/B_id":                `1`,
 	"A/1/C_ids":               `[]`,
-	"A/1/G1_ids":              `[1, 2]`,
+	"A/1/G1_ids":              `[1,2]`,
 	"A/2/a":                   `"a2"`,
 	"A/2/title":               `"a2"`,
-	"A/2/C_ids":               `[1, 2]`,
+	"A/2/C_ids":               `[1,2]`,
 	"A/2/G1_ids":              `[]`,
 	"B/1/b":                   `"b1"`,
 	"B/1/title":               `"b1"`,
@@ -28,35 +32,35 @@ var dataSet = map[string]string{
 	"B/1/D_ids":               `[1]`,
 	"B/2/b":                   `"b2"`,
 	"B/2/title":               `"b2"`,
-	"B/2/C_ids":               `[1, 2]`,
+	"B/2/C_ids":               `[1,2]`,
 	"B/2/B_parent_id":         `1`,
 	"B/2/B_children_ids":      `[]`,
-	"B/2/D_ids":               `[1, 2]`,
+	"B/2/D_ids":               `[1,2]`,
 	"C/1/c":                   `"c1"`,
 	"C/1/title":               `"c1"`,
 	"C/1/A_id":                `2`,
-	"C/1/B_ids":               `[1, 2]`,
-	"C/1/G1_ids":              `[2, 3]`,
+	"C/1/B_ids":               `[1,2]`,
+	"C/1/G1_ids":              `[2,3]`,
 	"C/2/c":                   `"c2"`,
 	"C/2/title":               `"c2"`,
 	"C/2/A_id":                `2`,
 	"C/2/B_ids":               `[2]`,
-	"C/2/G1_ids":              `[2, 3]`,
+	"C/2/G1_ids":              `[2,3]`,
 	"D/1/d":                   `"d1"`,
-	"D/1/B_$_ids":             `["1", "2", "3"]`,
-	"D/1/B_1_ids":             `[1, 2]`,
+	"D/1/B_$_ids":             `["1","2","3"]`,
+	"D/1/B_1_ids":             `[1,2]`,
 	"D/1/B_2_ids":             `[1]`,
 	"D/1/B_3_ids":             `[]`,
 	"D/2/d":                   `"d2"`,
-	"D/2/B_$_ids":             `["1", "4"]`,
+	"D/2/B_$_ids":             `["1","4"]`,
 	"D/2/B_1_ids":             `[]`,
 	"D/2/B_4_ids":             `[2]`,
 	"G1/1/g1":                 `"g1.1"`,
 	"G1/1/content_object_ids": `["A/1"]`,
 	"G1/2/g1":                 `"g1.2"`,
-	"G1/2/content_object_ids": `["A/1", "C/1", "C/2"]`,
+	"G1/2/content_object_ids": `["A/1","C/1","C/2"]`,
 	"G1/3/g1":                 `"g1.3"`,
-	"G1/3/content_object_ids": `["C/1", "C/2"]`,
+	"G1/3/content_object_ids": `["C/1","C/2"]`,
 	"G2/1/g2":                 `"g2.1"`,
 	"G2/1/content_object_id":  `"B/1"`,
 }
@@ -113,14 +117,14 @@ func TestFeatures(t *testing.T) {
 				"A/1/a":      `"a1"`,
 				"A/1/C_ids":  `[]`,
 				"A/1/B_id":   `1`,
-				"A/1/G1_ids": `[1, 2]`,
+				"A/1/G1_ids": `[1,2]`,
 				"A/2/a":      `"a2"`,
-				"A/2/C_ids":  `[1, 2]`,
+				"A/2/C_ids":  `[1,2]`,
 				"A/2/G1_ids": `[]`,
 				"C/1/c":      `"c1"`,
-				"C/1/G1_ids": `[2, 3]`,
+				"C/1/G1_ids": `[2,3]`,
 				"C/2/c":      `"c2"`,
-				"C/2/G1_ids": `[2, 3]`,
+				"C/2/G1_ids": `[2,3]`,
 				"G1/1/g1":    `"g1.1"`,
 				"G1/2/g1":    `"g1.2"`,
 				"G1/3/g1":    `"g1.3"`,
@@ -166,7 +170,7 @@ func TestFeatures(t *testing.T) {
 				"B/1/B_children_ids":     `[2]`,
 				"B/1/C_ids":              `[1]`,
 				"B/1/G2_id":              `1`,
-				"B/2/C_ids":              `[1, 2]`,
+				"B/2/C_ids":              `[1,2]`,
 				"B/2/B_parent_id":        `1`,
 				"G2/1/content_object_id": `"B/1"`,
 				"C/1/c":                  `"c1"`,
@@ -178,7 +182,7 @@ func TestFeatures(t *testing.T) {
 			"non-existent ids, fields, fqids, references, generic relations and fields without a relation",
 			`{
 				"collection": "G1",
-				"ids": [2, 4],
+				"ids": [2,4],
 				"fields": {
 					"content_object_ids": {
 						"type": "generic-relation-list",
@@ -197,23 +201,23 @@ func TestFeatures(t *testing.T) {
 				}
 			}`,
 			map[string]string{
-				"G1/2/content_object_ids": `["A/1", "C/1", "C/2"]`,
+				"G1/2/content_object_ids": `["A/1","C/1","C/2"]`,
 				"A/1/a":                   `"a1"`,
 				"A/1/title":               `"a1"`,
-				"A/1/G1_ids":              `[1, 2]`,
+				"A/1/G1_ids":              `[1,2]`,
 				"C/1/title":               `"c1"`,
 				"C/1/A_id":                `2`,
-				"C/1/G1_ids":              `[2, 3]`,
+				"C/1/G1_ids":              `[2,3]`,
 				"C/2/title":               `"c2"`,
 				"C/2/A_id":                `2`,
-				"C/2/G1_ids":              `[2, 3]`,
+				"C/2/G1_ids":              `[2,3]`,
 			},
 		},
 		{
 			"template fields",
 			`{
 				"collection": "D",
-				"ids": [1, 2],
+				"ids": [1,2],
 				"fields": {
 					"d": null,
 					"B_$_ids": null
@@ -221,16 +225,16 @@ func TestFeatures(t *testing.T) {
 			}`,
 			map[string]string{
 				"D/1/d":       `"d1"`,
-				"D/1/B_$_ids": `["1", "2", "3"]`,
+				"D/1/B_$_ids": `["1","2","3"]`,
 				"D/2/d":       `"d2"`,
-				"D/2/B_$_ids": `["1", "4"]`,
+				"D/2/B_$_ids": `["1","4"]`,
 			},
 		},
 		{
 			"structured fields without references",
 			`{
 				"collection": "D",
-				"ids": [1, 2],
+				"ids": [1,2],
 				"fields": {
 					"d": null,
 					"B_$_ids": {
@@ -240,12 +244,12 @@ func TestFeatures(t *testing.T) {
 			}`,
 			map[string]string{
 				"D/1/d":       `"d1"`,
-				"D/1/B_$_ids": `["1", "2", "3"]`,
-				"D/1/B_1_ids": `[1, 2]`,
+				"D/1/B_$_ids": `["1","2","3"]`,
+				"D/1/B_1_ids": `[1,2]`,
 				"D/1/B_2_ids": `[1]`,
 				"D/1/B_3_ids": `[]`,
 				"D/2/d":       `"d2"`,
-				"D/2/B_$_ids": `["1", "4"]`,
+				"D/2/B_$_ids": `["1","4"]`,
 				"D/2/B_1_ids": `[]`,
 				"D/2/B_4_ids": `[2]`,
 			},
@@ -254,7 +258,7 @@ func TestFeatures(t *testing.T) {
 			"structed references",
 			`{
 				"collection": "D",
-				"ids": [1, 2],
+				"ids": [1,2],
 				"fields": {
 					"B_$_ids": {
 						"type": "template",
@@ -276,11 +280,11 @@ func TestFeatures(t *testing.T) {
 				}
 			}`,
 			map[string]string{
-				"D/1/B_$_ids": `["1", "2", "3"]`,
-				"D/1/B_1_ids": `[1, 2]`,
+				"D/1/B_$_ids": `["1","2","3"]`,
+				"D/1/B_1_ids": `[1,2]`,
 				"D/1/B_2_ids": `[1]`,
 				"D/1/B_3_ids": `[]`,
-				"D/2/B_$_ids": `["1", "4"]`,
+				"D/2/B_$_ids": `["1","4"]`,
 				"D/2/B_1_ids": `[]`,
 				"D/2/B_4_ids": `[2]`,
 				"B/1/b":       `"b1"`,
@@ -295,13 +299,18 @@ func TestFeatures(t *testing.T) {
 				t.Fatalf("Expected FromJSON() not to return an error, got: %v", err)
 			}
 			c := s.Connect(context.Background(), 1, b)
-			data, err := c.Next()
+			reader, err := c.Next()
 			if err != nil {
-				t.Errorf("c.Next() returned an error: %v", err)
+				t.Fatalf("Can not get data: %v", err)
+			}
+			var rdata map[string]json.RawMessage
+			if err := json.NewDecoder(reader).Decode(&rdata); err != nil {
+				t.Fatalf("Can not decode keys from data: %v", err)
 			}
 
+			data := mapConv(rdata)
 			if diff := cmpMap(data, tt.data); !diff {
-				t.Errorf("Expected %v, got: %v", tt.data, data)
+				t.Errorf("Expected %v,got: %v", tt.data, data)
 			}
 		})
 	}
@@ -309,16 +318,20 @@ func TestFeatures(t *testing.T) {
 
 type datasetMock struct{}
 
-func (d *datasetMock) Restrict(ctx context.Context, uid int, keys []string) (map[string]string, error) {
-	out := make(map[string]string)
+func (d *datasetMock) Restrict(ctx context.Context, uid int, keys []string) (io.Reader, error) {
+	data := make(map[string]json.RawMessage)
 	for _, key := range keys {
 		value, ok := dataSet[key]
 		if !ok {
 			continue
 		}
-		out[key] = value
+		data[key] = json.RawMessage(value)
 	}
-	return out, nil
+	out, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("can not decode restricted data: %v", err)
+	}
+	return bytes.NewReader(out), nil
 }
 
 func (d *datasetMock) KeysChanged() ([]string, error) {
@@ -339,4 +352,12 @@ func cmpMap(one, two map[string]string) bool {
 		}
 	}
 	return true
+}
+
+func mapConv(m map[string]json.RawMessage) map[string]string {
+	out := make(map[string]string)
+	for k, v := range m {
+		out[k] = string(v)
+	}
+	return out
 }

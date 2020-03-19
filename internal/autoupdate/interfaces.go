@@ -1,6 +1,9 @@
 package autoupdate
 
-import "context"
+import (
+	"context"
+	"io"
+)
 
 // KeysChangedReceiver returns keys that have changes.
 // Blocks for some time until there are changed data.
@@ -12,7 +15,9 @@ type KeysChangedReceiver interface {
 
 // Restricter restricts keys.
 type Restricter interface {
-	Restrict(ctx context.Context, uid int, keys []string) (map[string]string, error)
+	// Restrict returns an io.Reader which returns a json encoded object
+	// with the requested keys with the values.
+	Restrict(ctx context.Context, uid int, keys []string) (io.Reader, error)
 }
 
 // KeysBuilder holds the keys that are requested by a user.

@@ -17,10 +17,12 @@ func TestRestrict(t *testing.T) {
 	s := &restrict.Service{
 		Addr: srv.URL,
 	}
-	data, err := s.Restrict(context.Background(), 1, []string{"motion/1/name"})
+	r, err := s.Restrict(context.Background(), 1, []string{"motion/1/name"})
 	if err != nil {
 		t.Errorf("did not expect an error, got: %v", err)
 	}
+	var data map[string]string
+	json.NewDecoder(r).Decode(&data)
 
 	if len(data) != 1 {
 		t.Errorf("expect data to have one value, got: %d", len(data))

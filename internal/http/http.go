@@ -56,7 +56,7 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 		// connection.Next() blocks, until there is new data or the client context or the server is
 		// closed.
 		for {
-			data, err := connection.Next()
+			read, err := connection.Next()
 			if err != nil {
 				var derr definedError
 				if errors.As(err, &derr) {
@@ -66,10 +66,10 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 				internalErr(w, err)
 				return nil
 			}
-			if data == nil {
+			if read == nil {
 				return nil
 			}
-			if err := decode(w, data); err != nil {
+			if _, err := io.Copy(w, read); err != nil {
 				internalErr(w, err)
 				return nil
 			}
