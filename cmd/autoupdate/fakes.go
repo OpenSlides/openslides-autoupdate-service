@@ -32,7 +32,7 @@ func (r faker) KeysChanged() ([]string, error) {
 	for _, d := range data {
 		keyValue := strings.SplitN(d, "=", 2)
 		if len(keyValue) == 1 {
-			keyValue = append(keyValue, fmt.Sprintf("The time is: %s", time.Now()))
+			keyValue = append(keyValue, fmt.Sprintf(`"The time is: %s"`, time.Now()))
 		}
 		keys = append(keys, keyValue[0])
 		r.data[keyValue[0]] = keyValue[1]
@@ -54,7 +54,7 @@ func (r faker) Restrict(ctx context.Context, uid int, keys []string) (map[string
 		case strings.HasSuffix(key, "_ids"):
 			out[key] = "[1,2]"
 		default:
-			out[key] = fmt.Sprintf("The time is: %s", time.Now())
+			out[key] = fmt.Sprintf(`"The time is: %s"`, time.Now())
 		}
 	}
 	return out, nil

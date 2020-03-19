@@ -37,7 +37,7 @@ func (m *MockKeysChanged) Send(keys []string) {
 	m.c <- keys
 }
 
-// Closed cleans up after the Mock is used.
+// Close cleans up after the Mock is used.
 func (m *MockKeysChanged) Close() {
 	m.t.Stop()
 }

@@ -27,8 +27,8 @@ func TestConnect(t *testing.T) {
 	}
 
 	key := "user/1/name"
-	if value, ok := c.Data()[key]; !ok || value != "some value" {
-		t.Errorf("Expected data to have key \"%s\" = \"%s\", got value \"%s\"", key, "some value", value)
+	if value, ok := c.Data()[key]; !ok || value != `"some value"` {
+		t.Errorf("Expected data to have key \"%s\" = \"%s\", got value \"%s\"", key, `"some value"`, value)
 	}
 }
 

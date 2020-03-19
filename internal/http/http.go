@@ -144,8 +144,9 @@ func decode(w io.Writer, m map[string]string) error {
 	buf := new(bytes.Buffer)
 	fmt.Fprintf(buf, "{")
 	for k, v := range m {
-		fmt.Fprintf(buf, `"%s":%s`, k, v)
+		fmt.Fprintf(buf, `"%s":%s,`, k, v)
 	}
+	buf.Truncate(buf.Len() - 1)
 	fmt.Fprintf(buf, "}\n")
 	_, err := io.Copy(w, buf)
 	return err
