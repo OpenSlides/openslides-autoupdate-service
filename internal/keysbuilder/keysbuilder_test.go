@@ -179,7 +179,7 @@ func TestKeys(t *testing.T) {
 				"fields": {
 					"group_$_ids": {
 						"type": "template",
-						"sub": {
+						"values": {
 							"type": "relation-list",
 							"collection": "group",
 							"fields": {"name": null}

@@ -258,28 +258,28 @@ func (g genericRelationListField) build(ctx context.Context, builder *Builder, k
 
 // templateField requests a list of fields from a template.
 type templateField struct {
-	sub fieldDescription
+	values fieldDescription
 }
 
 func (t *templateField) UnmarshalJSON(data []byte) error {
 	var field struct {
-		Sub json.RawMessage `json:"sub"`
+		Values json.RawMessage `json:"values"`
 	}
 	if err := json.Unmarshal(data, &field); err != nil {
 		return fmt.Errorf("can not decode template field: %w", err)
 	}
-	if len(field.Sub) == 0 {
+	if len(field.Values) == 0 {
 		return nil
 	}
 
-	sub, err := unmarshalField(field.Sub)
+	values, err := unmarshalField(field.Values)
 	if err != nil {
 		if sub, ok := err.(ErrInvalid); ok {
 			return ErrInvalid{sub: &sub, msg: "Error in template sub", field: "template"}
 		}
 		return fmt.Errorf("can not decode sub attribute of template field: %w", err)
 	}
-	t.sub = sub
+	t.values = values
 	return nil
 }
 
@@ -305,12 +305,12 @@ func (t templateField) build(ctx context.Context, builder *Builder, key string, 
 	for _, value := range values {
 		newKey := strings.Replace(key, "$", value, 1)
 		keys <- newKey
-		if t.sub == nil {
+		if t.values == nil {
 			continue
 		}
 		wg.Add(1)
 		go func() {
-			t.sub.build(ctx, builder, newKey, keys, errs)
+			t.values.build(ctx, builder, newKey, keys, errs)
 			wg.Done()
 		}()
 	}
