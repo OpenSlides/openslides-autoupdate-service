@@ -2,7 +2,7 @@
 package http
 
 import (
-	"encoding/json"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -53,12 +53,10 @@ func (h *Handler) autoupdate(kbg keysBuilderGetter) errHandleFunc {
 
 		connection := h.s.Connect(r.Context(), uid, kb)
 
-		encoder := json.NewEncoder(w)
-
 		// connection.Next() blocks, until there is new data or the client context or the server is
 		// closed.
 		for connection.Next() {
-			if err := encoder.Encode(connection.Data()); err != nil {
+			if err := decode(w, connection.Data()); err != nil {
 				writeErr(w, err.Error())
 				return nil
 			}
@@ -140,4 +138,15 @@ func write400(w http.ResponseWriter, msg string) {
 func writeErr(w io.Writer, msg string) {
 	log.Printf("Error: %s", msg)
 	fmt.Fprintf(w, `{"error": {"detail": "%s"}}`, msg)
+}
+
+func decode(w io.Writer, m map[string]string) error {
+	buf := new(bytes.Buffer)
+	fmt.Fprintf(buf, "{")
+	for k, v := range m {
+		fmt.Fprintf(buf, `"%s":%s`, k, v)
+	}
+	fmt.Fprintf(buf, "}\n")
+	_, err := io.Copy(w, buf)
+	return err
 }
