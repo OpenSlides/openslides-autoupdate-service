@@ -2,6 +2,7 @@
 package http
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -68,17 +69,24 @@ func (h *Handler) autoupdate(kbg keysBuilderGetter) errHandleFunc {
 			return err
 		}
 
+		w.Header().Set("Content-Type", "application/octet-stream")
+
 		connection := h.s.Connect(r.Context(), uid, kb)
+
+		encoder := json.NewEncoder(w)
 
 		// connection.Next() blocks, until there is new data or the client context or the server is
 		// closed.
 		for connection.Next() {
-			pushData(w, connection.Data())
+			if err := encoder.Encode(connection.Data()); err != nil {
+				writeErr(w, err.Error())
+				return nil
+			}
+			w.(http.Flusher).Flush()
 		}
 		if connection.Err() != nil {
-			// It is not possible to return the error after content was sent to the client
-			fmt.Fprintf(w, "Error: Ups, something went wrong!")
-			log.Printf("Error: %v", err)
+			writeErr(w, err.Error())
+			return nil
 		}
 		return nil
 	})
@@ -123,6 +131,7 @@ func (h *Handler) simple() keysBuilderGetter {
 }
 
 func pushData(w http.ResponseWriter, data map[string]string) {
+
 	for key, value := range data {
 		fmt.Fprintf(w, "%s: %s\n", key, value)
 		w.(http.Flusher).Flush()
@@ -146,4 +155,9 @@ func (f errHandleFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func write400(w http.ResponseWriter, msg string) {
 	w.WriteHeader(http.StatusBadRequest)
 	fmt.Fprint(w, msg)
+}
+
+func writeErr(w io.Writer, msg string) {
+	log.Printf("Error: %s", msg)
+	fmt.Fprintf(w, `{"error": {"detail": "%s"}}`, msg)
 }

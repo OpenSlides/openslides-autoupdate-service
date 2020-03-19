@@ -1,7 +1,6 @@
 package keysbuilder
 
 import (
-	"strings"
 	"sync"
 )
 
@@ -14,8 +13,9 @@ type cache struct {
 }
 
 type cacheEntry struct {
-	done chan struct{}
-	ids  []int
+	done  chan struct{}
+	value interface{}
+	err   error
 }
 
 func newCache() *cache {
@@ -29,7 +29,7 @@ func newCache() *cache {
 // of the second argument. If this method is called more then once
 // at the same time, only the first calculates the result, the other
 // calles get blocked until it is calculated.
-func (c *cache) getOrSet(key string, set func() []int) []int {
+func (c *cache) getOrSet(key string, set func() (interface{}, error)) (interface{}, error) {
 	c.mu.Lock()
 	entry, ok := c.data[key]
 
@@ -38,21 +38,18 @@ func (c *cache) getOrSet(key string, set func() []int) []int {
 		c.data[key] = entry
 		c.data[key].done = make(chan struct{})
 		c.mu.Unlock()
-		entry.ids = set()
+		entry.value, entry.err = set()
 		close(entry.done)
-		return entry.ids
+		return entry.value, entry.err
 	}
 	c.mu.Unlock()
 	<-entry.done
-	return entry.ids
+	return entry.value, entry.err
 }
 
 func (c *cache) delete(keys []string) {
 	c.mu.Lock()
 	for _, key := range keys {
-		if !(strings.HasSuffix(key, "_id") || strings.HasSuffix(key, "_ids")) {
-			continue
-		}
 		delete(c.data, key)
 	}
 	c.mu.Unlock()

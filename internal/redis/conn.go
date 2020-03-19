@@ -1,4 +1,4 @@
-package conn
+package redis
 
 import (
 	"fmt"
@@ -12,8 +12,8 @@ type Pool struct {
 	pool *redis.Pool
 }
 
-// New creates a new pool
-func New(addr string) *Pool {
+// NewConnection creates a new pool
+func NewConnection(addr string) *Pool {
 	return &Pool{
 		pool: &redis.Pool{
 			MaxActive:   100,

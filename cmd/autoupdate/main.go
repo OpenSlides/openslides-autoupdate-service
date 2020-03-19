@@ -13,7 +13,6 @@ import (
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	ahttp "github.com/openslides/openslides-autoupdate-service/internal/http"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
-	"github.com/openslides/openslides-autoupdate-service/internal/redis/conn"
 	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
 )
 
@@ -26,11 +25,11 @@ func main() {
 	restricter := buildRestricter(f)
 
 	service := autoupdate.New(restricter, receiver)
-	defer service.Close()
 
 	handler := ahttp.New(service, authService)
 	srv := &http.Server{Addr: listenAddr, Handler: handler}
 	defer func() {
+		service.Close()
 		if err := srv.Shutdown(context.Background()); err != nil {
 			log.Printf("Error on HTTP server shutdown: %v", err)
 		}
@@ -72,7 +71,7 @@ func buildReceiver(f faker) autoupdate.KeysChangedReceiver {
 	fmt.Print("Messagin Service: ")
 	switch getEnv("MESSAGIN_SERVICE", "fake") {
 	case "redis":
-		conn := conn.New(getEnv("REDIS_ADDR", "localhost:6379"))
+		conn := redis.NewConnection(getEnv("REDIS_ADDR", "localhost:6379"))
 		if getEnv("REDIS_TEST_CONN", "true") == "true" {
 			if err := conn.TestConn(); err != nil {
 				log.Fatalf("Can not connect to redis: %v", err)

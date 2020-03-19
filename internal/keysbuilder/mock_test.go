@@ -2,8 +2,8 @@ package keysbuilder_test
 
 import (
 	"context"
-	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -18,7 +18,26 @@ type mockIDer struct {
 	reqLog   []string
 }
 
-func (r *mockIDer) IDs(ctx context.Context, key string) ([]int, error) {
+func (r *mockIDer) ID(ctx context.Context, key string) (int, error) {
+	time.Sleep(r.sleep)
+	if r.err != nil {
+		return 0, r.err
+	}
+
+	r.reqLogMu.Lock()
+	r.reqLog = append(r.reqLog, key)
+	r.reqLogMu.Unlock()
+
+	if ids, ok := r.data[key]; ok {
+		return ids[0], nil
+	}
+	if strings.HasPrefix(key, "not_exist") {
+		return 0, nil
+	}
+	return 1, nil
+}
+
+func (r *mockIDer) IDList(ctx context.Context, key string) ([]int, error) {
 	time.Sleep(r.sleep)
 	if r.err != nil {
 		return nil, r.err
@@ -34,13 +53,69 @@ func (r *mockIDer) IDs(ctx context.Context, key string) ([]int, error) {
 	if strings.HasPrefix(key, "not_exist") {
 		return nil, nil
 	}
-	if strings.HasSuffix(key, "_id") {
-		return []int{1}, nil
+	return ids(1, 2), nil
+}
+
+func (r *mockIDer) GenericID(ctx context.Context, key string) (string, error) {
+	time.Sleep(r.sleep)
+	if r.err != nil {
+		return "", r.err
 	}
-	if !strings.HasSuffix(key, "_ids") {
-		return nil, fmt.Errorf("key %s can not be a reference; expected suffex _id or _ids", key)
+
+	r.reqLogMu.Lock()
+	r.reqLog = append(r.reqLog, key)
+	r.reqLogMu.Unlock()
+
+	return "other/1", nil
+}
+
+func (r *mockIDer) GenericIDs(ctx context.Context, key string) ([]string, error) {
+	time.Sleep(r.sleep)
+	if r.err != nil {
+		return nil, r.err
 	}
-	return []int{1, 2}, nil
+
+	r.reqLogMu.Lock()
+	r.reqLog = append(r.reqLog, key)
+	r.reqLogMu.Unlock()
+
+	return strs("other/1", "other/2"), nil
+}
+
+func (r *mockIDer) Template(ctx context.Context, key string) ([]string, error) {
+	time.Sleep(r.sleep)
+	if r.err != nil {
+		return nil, r.err
+	}
+
+	r.reqLogMu.Lock()
+	r.reqLog = append(r.reqLog, key)
+	r.reqLogMu.Unlock()
+
+	if ids, ok := r.data[key]; ok {
+		var out []string
+		for _, id := range ids {
+			out = append(out, strconv.Itoa(id))
+		}
+		return out, nil
+	}
+	if strings.HasPrefix(key, "not_exist") {
+		return nil, nil
+	}
+	return strs("1", "2"), nil
+
+}
+
+func cmpSlice(one, two []string) bool {
+	if len(one) != len(two) {
+		return false
+	}
+	for i := range one {
+		if one[i] != two[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func cmpSet(one, two map[string]bool) []string {
@@ -80,5 +155,5 @@ func mapKeys(m map[string][]int) []string {
 	return out
 }
 
-func keys(keys ...string) []string { return keys }
-func ids(ids ...int) []int         { return ids }
+func strs(str ...string) []string { return str }
+func ids(ids ...int) []int        { return ids }

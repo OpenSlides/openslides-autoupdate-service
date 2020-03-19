@@ -11,10 +11,10 @@ import (
 func FromJSON(ctx context.Context, r io.Reader, ider IDer) (*Builder, error) {
 	var b body
 	if err := json.NewDecoder(r).Decode(&b); err != nil {
+		if sub, ok := err.(ErrInvalid); ok {
+			return nil, sub
+		}
 		return nil, ErrJSON{msg: "can not decode keysbuilder from json", err: err}
-	}
-	if err := b.validate(); err != nil {
-		return nil, err
 	}
 
 	kb, err := newBuilder(ctx, ider, b)
@@ -28,12 +28,10 @@ func FromJSON(ctx context.Context, r io.Reader, ider IDer) (*Builder, error) {
 func ManyFromJSON(ctx context.Context, r io.Reader, ider IDer) (*Builder, error) {
 	var bs []body
 	if err := json.NewDecoder(r).Decode(&bs); err != nil {
-		return nil, ErrJSON{msg: "can not decode many keysbuilder from json", err: err}
-	}
-	for _, b := range bs {
-		if err := b.validate(); err != nil {
-			return nil, err
+		if sub, ok := err.(ErrInvalid); ok {
+			return nil, sub
 		}
+		return nil, ErrJSON{msg: "can not decode many keysbuilder from json", err: err}
 	}
 
 	kb, err := newBuilder(ctx, ider, bs...)

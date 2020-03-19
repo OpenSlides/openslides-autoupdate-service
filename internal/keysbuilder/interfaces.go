@@ -2,7 +2,15 @@ package keysbuilder
 
 import "context"
 
-// IDer Returns ids for a key with suffix _id or _ids
+// IDer Returns relations from a key.
 type IDer interface {
-	IDs(ctx context.Context, key string) ([]int, error)
+	ID(ctx context.Context, key string) (int, error)
+	IDList(ctx context.Context, key string) ([]int, error)
+	GenericID(ctx context.Context, key string) (string, error)
+	GenericIDs(ctx context.Context, key string) ([]string, error)
+	Template(ctx context.Context, key string) ([]string, error)
+}
+
+type fieldDescription interface {
+	build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error)
 }

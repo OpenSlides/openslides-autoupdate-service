@@ -1,12 +1,11 @@
 package http_test
 
 import (
-	"bufio"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"sort"
-	"strings"
 	"testing"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
@@ -91,14 +90,18 @@ func TestSimple(t *testing.T) {
 				t.Errorf("Expected status %s, got %s", http.StatusText(tt.status), resp.Status)
 			}
 
-			s := bufio.NewScanner(resp.Body)
-			keys := make([]string, 0, len(tt.keys))
-			for s.Scan() {
-				line := s.Text()
-				keys = append(keys, line[:strings.Index(line, ": ")])
+			expected := "application/octet-stream"
+			if got := resp.Header.Get("Content-Type"); got != expected {
+				t.Errorf("Got content-type %s, expected: %s", got, expected)
 			}
-			if !cmpSlice(tt.keys, keys) {
-				t.Errorf("Returned keys are not equal, expected %v, got %v", tt.keys, keys)
+
+			var body map[string]json.RawMessage
+			if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+				t.Errorf("Got invalid json: %v", err)
+			}
+
+			if got := mapKeys(body); !cmpSlice(got, tt.keys) {
+				t.Errorf("Got keys %v, expected %v", got, tt.keys)
 			}
 		})
 	}
@@ -114,6 +117,14 @@ func (a mockAuth) Authenticate(context.Context, *http.Request) (int, error) {
 
 func keys(ks ...string) []string {
 	return ks
+}
+
+func mapKeys(m map[string]json.RawMessage) []string {
+	out := make([]string, 0, len(m))
+	for key := range m {
+		out = append(out, key)
+	}
+	return out
 }
 
 func cmpSlice(one, two []string) bool {
