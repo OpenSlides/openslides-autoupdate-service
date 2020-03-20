@@ -16,8 +16,7 @@ import (
 // takes each word on each line as changed key.
 type faker struct {
 	test.MockRestricter
-	buf  *bufio.Reader
-	data map[string]string
+	buf *bufio.Reader
 }
 
 func (r *faker) KeysChanged() ([]string, error) {
