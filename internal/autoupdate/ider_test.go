@@ -36,6 +36,9 @@ func TestRestrictedIDs(t *testing.T) {
 				}
 				return
 			}
+			if err != nil {
+				t.Errorf("ider.IDList returned the unexpected error: %v", err)
+			}
 			if len(ids) != tt.idCount {
 				t.Errorf("Expected %d ids, got: %v", tt.idCount, ids)
 			}
