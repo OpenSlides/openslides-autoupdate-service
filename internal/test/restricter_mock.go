@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
+	"time"
 )
 
 // MockRestricter implements the restricter interface. The returned values can be controlled
 // with the the Data attribute
 type MockRestricter struct {
+	mu   sync.Mutex
 	Data map[string]string
 }
 
@@ -23,7 +26,10 @@ type MockRestricter struct {
 // If the key ends with "_ids", "[1,2]" is returned.
 //
 // In any other case, "some value" is returned.
-func (r MockRestricter) Restrict(ctx context.Context, uid int, keys []string) (map[string]string, error) {
+func (r *MockRestricter) Restrict(ctx context.Context, uid int, keys []string) (map[string]string, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	out := make(map[string]string, len(keys))
 	for _, key := range keys {
 		v, ok := r.Data[key]
@@ -36,12 +42,27 @@ func (r MockRestricter) Restrict(ctx context.Context, uid int, keys []string) (m
 		case strings.HasPrefix(key, "error"):
 			return nil, fmt.Errorf("Restricter got an error")
 		case strings.HasSuffix(key, "_id"):
-			out[key] = "1"
+			out[key] = `1`
 		case strings.HasSuffix(key, "_ids"):
-			out[key] = "[1,2]"
+			out[key] = `[1,2]`
 		default:
-			out[key] = `"some value"`
+			out[key] = fmt.Sprintf(`"The time is: %s"`, time.Now())
 		}
 	}
 	return out, nil
+}
+
+// Update updates the values from the restricter
+func (r *MockRestricter) Update(data map[string]string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if r.Data == nil {
+		r.Data = data
+		return
+	}
+
+	for key, value := range data {
+		r.Data[key] = value
+	}
 }

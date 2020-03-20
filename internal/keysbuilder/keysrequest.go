@@ -3,9 +3,12 @@ package keysbuilder
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
+
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 )
 
 const (
@@ -98,15 +101,14 @@ func (r relationField) build(ctx context.Context, builder *Builder, key string, 
 		return builder.ider.ID(ctx, key)
 	})
 	if err != nil {
-		errs <- err
+		if !errors.Is(err, autoupdate.ErrUnknownKey) {
+			errs <- fmt.Errorf("can not use value of key %s: %w", key, err)
+		}
 		return
 	}
 	id, ok := v.(int)
 	if !ok {
 		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected int, got: %v", v, v)
-		return
-	}
-	if id == 0 {
 		return
 	}
 	var wg sync.WaitGroup
@@ -135,14 +137,13 @@ func (r relationListField) build(ctx context.Context, builder *Builder, key stri
 		return builder.ider.IDList(ctx, key)
 	})
 	if err != nil {
-		errs <- err
+		if !errors.Is(err, autoupdate.ErrUnknownKey) {
+			errs <- fmt.Errorf("can not use value of key %s: %w", key, err)
+		}
 		return
 	}
 	ids, ok := v.([]int)
 	if !ok {
-		if v == nil {
-			return
-		}
 		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected []int, got: %v", v, v)
 		return
 	}
@@ -188,18 +189,17 @@ func (g genericRelationField) build(ctx context.Context, builder *Builder, key s
 		return builder.ider.GenericID(ctx, key)
 	})
 	if err != nil {
-		errs <- err
+		if !errors.Is(err, autoupdate.ErrUnknownKey) {
+			errs <- fmt.Errorf("can not use value of key %s: %w", key, err)
+		}
 		return
 	}
 	gid, ok := v.(string)
 	if !ok {
-		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected string, got: %v", v, v)
+		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected []string, got: %v", v, v)
 		return
 	}
 
-	if gid == "" {
-		return
-	}
 	var wg sync.WaitGroup
 	for name, description := range g.fields {
 		key := buildGenericKey(gid, name)
@@ -226,14 +226,13 @@ func (g genericRelationListField) build(ctx context.Context, builder *Builder, k
 		return builder.ider.GenericIDs(ctx, key)
 	})
 	if err != nil {
-		errs <- err
+		if !errors.Is(err, autoupdate.ErrUnknownKey) {
+			errs <- fmt.Errorf("can not use value of key %s: %w", key, err)
+		}
 		return
 	}
 	gids, ok := v.([]string)
 	if !ok {
-		if v == nil {
-			return
-		}
 		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected []string, got: %v", v, v)
 		return
 	}
@@ -289,14 +288,13 @@ func (t templateField) build(ctx context.Context, builder *Builder, key string, 
 
 	})
 	if err != nil {
-		errs <- err
+		if !errors.Is(err, autoupdate.ErrUnknownKey) {
+			errs <- fmt.Errorf("can not use value of key %s: %w", key, err)
+		}
 		return
 	}
 	values, ok := v.([]string)
 	if !ok {
-		if v == nil {
-			return
-		}
 		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected []string, got: %v", v, v)
 		return
 	}

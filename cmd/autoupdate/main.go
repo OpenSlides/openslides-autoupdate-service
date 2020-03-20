@@ -19,7 +19,7 @@ import (
 func main() {
 	listenAddr := getEnv("LISTEN_HTTP_ADDR", ":8002")
 
-	f := faker{bufio.NewReader(os.Stdin), make(map[string]string)}
+	f := &faker{buf: bufio.NewReader(os.Stdin)}
 	receiver := buildReceiver(f)
 	authService := buildAuth()
 	restricter := buildRestricter(f)
@@ -65,7 +65,7 @@ func waitForShutdown() {
 // buildReceiver builds the receiver needed by the autoupdate service.
 // It uses environment variables to make the decission. Per default, the given
 // faker is used.
-func buildReceiver(f faker) autoupdate.KeysChangedReceiver {
+func buildReceiver(f *faker) autoupdate.KeysChangedReceiver {
 	// Choose the topic service
 	var receiver autoupdate.KeysChangedReceiver
 	fmt.Print("Messagin Service: ")
@@ -89,7 +89,7 @@ func buildReceiver(f faker) autoupdate.KeysChangedReceiver {
 // buildRestricter builds the restricter needed by the autoupdate service.
 // It uses environment variables to make the decission. Per default, the given
 // faker is used.
-func buildRestricter(f faker) autoupdate.Restricter {
+func buildRestricter(f *faker) autoupdate.Restricter {
 	var restricter autoupdate.Restricter
 	switch getEnv("RESTRICTER_SERVICE", "fake") {
 	case "backend":

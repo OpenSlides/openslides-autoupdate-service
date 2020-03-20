@@ -12,7 +12,7 @@ import (
 type Connection struct {
 	autoupdate *Service
 	ctx        context.Context
-	user       int
+	uid        int
 	tid        uint64
 	kb         KeysBuilder
 	histroy    map[string]uint64
@@ -49,7 +49,7 @@ func (c *Connection) Next() bool {
 		}
 	}
 
-	data, err := c.autoupdate.restricter.Restrict(c.ctx, c.user, keys)
+	data, err := c.autoupdate.restricter.Restrict(c.ctx, c.uid, keys)
 	if err != nil {
 		c.err = fmt.Errorf("can not restrict data: %v", err)
 		return false
@@ -63,7 +63,7 @@ func (c *Connection) update() ([]string, error) {
 	// topic.Get blocks forever or until c.ctx or the topic is closed.
 	tid, changedKeys, err := c.autoupdate.topic.Get(c.ctx, c.tid)
 	if err != nil {
-		return nil, fmt.Errorf("can not get new data: %w", err)
+		return nil, fmt.Errorf("can not get new keys: %w", err)
 	}
 	c.tid = tid
 

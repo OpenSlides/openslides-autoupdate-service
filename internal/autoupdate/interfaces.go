@@ -10,7 +10,7 @@ type KeysChangedReceiver interface {
 	KeysChanged() ([]string, error)
 }
 
-// Restricter restricts keys. See autoupdate.Restricter
+// Restricter restricts keys.
 type Restricter interface {
 	Restrict(ctx context.Context, uid int, keys []string) (map[string]string, error)
 }
