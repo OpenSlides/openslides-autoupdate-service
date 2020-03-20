@@ -11,7 +11,7 @@ import (
 // MockRestricter implements the restricter interface. The returned values can be controlled
 // with the the Data attribute
 type MockRestricter struct {
-	mu   sync.Mutex
+	mu   sync.RWMutex
 	Data map[string]string
 }
 
@@ -27,8 +27,8 @@ type MockRestricter struct {
 //
 // In any other case, "some value" is returned.
 func (r *MockRestricter) Restrict(ctx context.Context, uid int, keys []string) (map[string]string, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
 	out := make(map[string]string, len(keys))
 	for _, key := range keys {
