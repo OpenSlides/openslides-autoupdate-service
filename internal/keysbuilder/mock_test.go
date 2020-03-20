@@ -71,7 +71,7 @@ func (r *mockIDer) GenericID(ctx context.Context, key string) (string, error) {
 	if strings.HasPrefix(key, "not_exist") {
 		return "", autoupdate.ErrUnknownKey
 	}
-	return `"other/1"`, nil
+	return "other/1", nil
 }
 
 func (r *mockIDer) GenericIDs(ctx context.Context, key string) ([]string, error) {
@@ -87,7 +87,7 @@ func (r *mockIDer) GenericIDs(ctx context.Context, key string) ([]string, error)
 	if strings.HasPrefix(key, "not_exist") {
 		return nil, autoupdate.ErrUnknownKey
 	}
-	return strs(`"other/1"`, `"other/2"`), nil
+	return strs("other/1", "other/2"), nil
 }
 
 func (r *mockIDer) Template(ctx context.Context, key string) ([]string, error) {

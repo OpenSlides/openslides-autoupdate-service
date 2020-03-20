@@ -12,7 +12,7 @@ import (
 func TestConnect(t *testing.T) {
 	keychanges := test.NewMockKeysChanged()
 	defer keychanges.Close()
-	s := autoupdate.New(new(test.MockRestricter), keychanges)
+	s := autoupdate.New(&test.MockRestricter{Data: map[string]string{"user/1/name": `"some value"`}}, keychanges)
 	defer s.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -87,8 +87,8 @@ func TestConnectionReadNewData(t *testing.T) {
 		t.Fatalf("Did not expect an error, got: %v", c.Err())
 	}
 
-	if data := c.Data(); len(data) != 1 || data["user/1/name"] != "new value" {
-		t.Errorf("Expect data[\"user/1/name\"] to be \"new value\", got: \"%v\"", data["user/1/name"])
+	if data := c.Data(); len(data) != 1 || data["user/1/name"] != `"new value"` {
+		t.Errorf("Expect data[\"user/1/name\"] to be \"new value\", got: %v", data["user/1/name"])
 	}
 }
 
@@ -142,8 +142,8 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 		t.Fatalf("Did not expect an error, got: %v", c.Err())
 	}
 
-	if data := c.Data(); len(data) != 1 || data["user/1/name"] != "newname" {
-		t.Errorf("Expect data[\"user/1/name\"] to be \"newname\", got: \"%v\"", data)
+	if data := c.Data(); len(data) != 1 || data["user/1/name"] != `"newname"` {
+		t.Errorf("Expect data[\"user/1/name\"] to be newname, got: %v", data)
 	}
 }
 
