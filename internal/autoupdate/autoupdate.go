@@ -44,12 +44,12 @@ func (s *Service) Close() {
 	close(s.closed)
 }
 
-// Connect returns a Connection object
+// Connect returns a new connection object.
 func (s *Service) Connect(ctx context.Context, uid int, kb KeysBuilder) *Connection {
 	return &Connection{
 		autoupdate: s,
 		ctx:        ctx,
-		user:       uid,
+		uid:        uid,
 		kb:         kb,
 	}
 }

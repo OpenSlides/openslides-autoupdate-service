@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 )
 
 type mockIDer struct {
@@ -32,7 +34,7 @@ func (r *mockIDer) ID(ctx context.Context, key string) (int, error) {
 		return ids[0], nil
 	}
 	if strings.HasPrefix(key, "not_exist") {
-		return 0, nil
+		return 0, autoupdate.ErrUnknownKey
 	}
 	return 1, nil
 }
@@ -51,7 +53,7 @@ func (r *mockIDer) IDList(ctx context.Context, key string) ([]int, error) {
 		return ids, nil
 	}
 	if strings.HasPrefix(key, "not_exist") {
-		return nil, nil
+		return nil, autoupdate.ErrUnknownKey
 	}
 	return ids(1, 2), nil
 }
@@ -66,6 +68,9 @@ func (r *mockIDer) GenericID(ctx context.Context, key string) (string, error) {
 	r.reqLog = append(r.reqLog, key)
 	r.reqLogMu.Unlock()
 
+	if strings.HasPrefix(key, "not_exist") {
+		return "", autoupdate.ErrUnknownKey
+	}
 	return "other/1", nil
 }
 
@@ -79,6 +84,9 @@ func (r *mockIDer) GenericIDs(ctx context.Context, key string) ([]string, error)
 	r.reqLog = append(r.reqLog, key)
 	r.reqLogMu.Unlock()
 
+	if strings.HasPrefix(key, "not_exist") {
+		return nil, autoupdate.ErrUnknownKey
+	}
 	return strs("other/1", "other/2"), nil
 }
 

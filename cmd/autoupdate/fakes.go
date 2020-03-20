@@ -8,16 +8,19 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
 // fakeReceiver implements the Receiver interface. It reads on a Reader, for example stdin and
 // takes each word on each line as changed key.
 type faker struct {
+	test.MockRestricter
 	buf  *bufio.Reader
 	data map[string]string
 }
 
-func (r faker) KeysChanged() ([]string, error) {
+func (r *faker) KeysChanged() ([]string, error) {
 	msg, err := r.buf.ReadString('\n')
 	if err == io.EOF {
 		// Don't return anything (block forever) if the reader is empty.
@@ -35,29 +38,9 @@ func (r faker) KeysChanged() ([]string, error) {
 			keyValue = append(keyValue, fmt.Sprintf(`"The time is: %s"`, time.Now()))
 		}
 		keys = append(keys, keyValue[0])
-		r.data[keyValue[0]] = keyValue[1]
+		r.Update(map[string]string{keyValue[0]: keyValue[1]})
 	}
 	return keys, nil
-}
-
-func (r faker) Restrict(ctx context.Context, uid int, keys []string) (map[string]string, error) {
-	out := make(map[string]string, len(keys))
-	for _, key := range keys {
-		o := r.data[key]
-		if len(o) != 0 {
-			out[key] = o
-			continue
-		}
-		switch {
-		case strings.HasSuffix(key, "_id"):
-			out[key] = "1"
-		case strings.HasSuffix(key, "_ids"):
-			out[key] = "[1,2]"
-		default:
-			out[key] = fmt.Sprintf(`"The time is: %s"`, time.Now())
-		}
-	}
-	return out, nil
 }
 
 // fake Auth implements the Authenticater interface. It always returns the given number.

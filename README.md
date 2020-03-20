@@ -53,18 +53,20 @@ There is a simpler method to request keys:
 
 With this simpler method, it is not possible to request related keys.
 
-After the request is send, the values to the keys are returned in the form
+After the request is send, the values to the keys are returned as a json-object without a newline:
 ```
-key1: value
-key2: value
-key3: value
+{"key1": "value", "key2":"value"}
 ```
 
-To "update" keys, you can send them to the server via stdin in the form:
+To "update" keys, you can send them to the server via stdin with a value or without a value in the form:
 ```
 user/5/name
-user/6/name=Emanuel
+user/6/name="Emanuel"
+user/1/group_ids=[1,2,3]
+key1="foo" key2="bar"
 ```
+
+If you give not value, the current time is used as value. If you give a value, it has to be valid json without any spaces.
 
 All clients that listen for the keys get an update in the same form then the initial form.
 
