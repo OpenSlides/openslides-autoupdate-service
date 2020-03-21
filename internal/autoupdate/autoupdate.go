@@ -51,6 +51,7 @@ func (s *Service) Connect(ctx context.Context, uid int, kb KeysBuilder) *Connect
 		ctx:        ctx,
 		uid:        uid,
 		kb:         kb,
+		f:          new(filter),
 	}
 }
 
