@@ -200,14 +200,16 @@ func TestErrors(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := http.DefaultClient.Do(tt.request)
+			ctx, cancel := context.WithCancel(context.Background())
+			resp, err := http.DefaultClient.Do(tt.request.WithContext(ctx))
 			if err != nil {
 				t.Fatalf("Can not send request: %v", err)
 			}
 			defer resp.Body.Close()
+			cancel()
 
 			if resp.StatusCode != tt.status {
-				t.Errorf("Expected status %s, got %s", http.StatusText(tt.status), resp.Status)
+				t.Fatalf("Expected status %s, got %s", http.StatusText(tt.status), resp.Status)
 			}
 
 			var data struct {

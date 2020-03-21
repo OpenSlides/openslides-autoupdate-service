@@ -57,12 +57,7 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 		// closed.
 		for connection.Next() {
 			if err := decode(w, connection.Data()); err != nil {
-				var derr definedError
-				if errors.As(err, &derr) {
-					writeErr(w, derr)
-					return nil
-				}
-				log.Printf("Error: %v", err)
+				internalErr(w, err)
 				return nil
 			}
 			w.(http.Flusher).Flush()
@@ -71,9 +66,9 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 			var derr definedError
 			if errors.As(err, &derr) {
 				writeErr(w, derr)
-				return nil
+			} else {
+				internalErr(w, err)
 			}
-			log.Printf("Error: %v", err)
 			return nil
 		}
 		return nil
@@ -105,13 +100,17 @@ func (f errHandleFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("Error: %v", err)
-		http.Error(w, `{"error": {"type": "InternalError", "msg": "Ups, something went wrong!"}}`, http.StatusInternalServerError)
+		internalErr(w, err)
 	}
 }
 
 func writeErr(w io.Writer, err definedError) {
-	fmt.Fprint(w, fmt.Sprintf(`{"error": {"type": "%s", "msg": "%s"}}`, err.Type(), quote(err.Error())))
+	fmt.Fprintf(w, `{"error": {"type": "%s", "msg": "%s"}}`, err.Type(), quote(err.Error()))
+}
+
+func internalErr(w io.Writer, err error) {
+	log.Printf("Error: %v", err)
+	fmt.Fprintln(w, `{"error": {"type": "InternalError", "msg": "Ups, something went wrong!"}}`)
 }
 
 func decode(w io.Writer, m map[string]string) error {

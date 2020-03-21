@@ -48,7 +48,7 @@ func (b *Builder) Keys() []string {
 func (b *Builder) genKeys() error {
 	var wg sync.WaitGroup
 	keys := make(chan string, 1)
-	errs := make(chan error, 1)
+	errs := make(chan error)
 	ctx, cancel := context.WithCancel(b.ctx)
 	defer cancel()
 
