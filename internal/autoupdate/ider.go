@@ -27,7 +27,7 @@ func (i RestrictedIDs) ID(ctx context.Context, key string) (int, error) {
 
 	id, err := strconv.Atoi(string(data))
 	if err != nil {
-		return 0, fmt.Errorf("value in key %s is not an int, got: %v", key, data)
+		return 0, ErrValue{key: key}
 	}
 
 	return id, nil
@@ -42,7 +42,7 @@ func (i RestrictedIDs) IDList(ctx context.Context, key string) ([]int, error) {
 
 	var value []int
 	if err := json.Unmarshal(data, &value); err != nil {
-		return nil, fmt.Errorf("can not read ids from value `%s`: %w", data, err)
+		return nil, ErrValue{key: key}
 	}
 	return value, nil
 }
@@ -56,7 +56,7 @@ func (i RestrictedIDs) GenericID(ctx context.Context, key string) (string, error
 
 	var value string
 	if err := json.Unmarshal(data, &value); err != nil {
-		return "", fmt.Errorf("can not decode generic value from restricter: %w", err)
+		return "", ErrValue{key: key}
 	}
 	return value, nil
 }
@@ -70,7 +70,7 @@ func (i RestrictedIDs) GenericIDs(ctx context.Context, key string) ([]string, er
 
 	var values []string
 	if err := json.Unmarshal(data, &values); err != nil {
-		return nil, fmt.Errorf("can not decode generic-list value from restricter: %w", err)
+		return nil, ErrValue{key: key}
 	}
 	return values, nil
 }

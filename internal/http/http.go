@@ -28,8 +28,8 @@ func New(s *autoupdate.Service, auth Authenticator) *Handler {
 		mux:  http.NewServeMux(),
 		auth: auth,
 	}
-	h.mux.Handle("/system/autoupdate", errHandleFunc(h.autoupdate(h.komplex())))
-	h.mux.Handle("/system/autoupdate/keys", errHandleFunc(h.autoupdate(h.simple())))
+	h.mux.Handle("/system/autoupdate", errHandleFunc(h.autoupdate(h.komplex)))
+	h.mux.Handle("/system/autoupdate/keys", errHandleFunc(h.autoupdate(h.simple)))
 	return h
 }
 
@@ -37,7 +37,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.mux.ServeHTTP(w, r)
 }
 
-func (h *Handler) autoupdate(kbg keysBuilderGetter) errHandleFunc {
+func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilder, error)) errHandleFunc {
 	return errHandleFunc(func(w http.ResponseWriter, r *http.Request) error {
 		uid, err := h.auth.Authenticate(r.Context(), r)
 		if err != nil {
@@ -46,7 +46,7 @@ func (h *Handler) autoupdate(kbg keysBuilderGetter) errHandleFunc {
 
 		kb, err := kbg(r, uid)
 		if err != nil {
-			return err
+			return fmt.Errorf("can not build keysbuilder: %w", err)
 		}
 
 		w.Header().Set("Content-Type", "application/octet-stream")
@@ -57,79 +57,61 @@ func (h *Handler) autoupdate(kbg keysBuilderGetter) errHandleFunc {
 		// closed.
 		for connection.Next() {
 			if err := decode(w, connection.Data()); err != nil {
-				writeErr(w, err.Error())
+				var derr definedError
+				if errors.As(err, &derr) {
+					writeErr(w, derr)
+					return nil
+				}
+				log.Printf("Error: %v", err)
 				return nil
 			}
 			w.(http.Flusher).Flush()
 		}
 		if connection.Err() != nil {
-			writeErr(w, err.Error())
+			var derr definedError
+			if errors.As(err, &derr) {
+				writeErr(w, derr)
+				return nil
+			}
+			log.Printf("Error: %v", err)
 			return nil
 		}
 		return nil
 	})
 }
 
-type keysBuilderGetter func(r *http.Request, uid int) (autoupdate.KeysBuilder, error)
-
 // komplex builds a keysbuilder from the body of a request. The body has to be
-// in the format specified in the keysbuilder package. It returns an err400 if
-// the input is wrong.
-func (h *Handler) komplex() keysBuilderGetter {
-	return keysBuilderGetter(func(r *http.Request, uid int) (autoupdate.KeysBuilder, error) {
-		kb, err := keysbuilder.ManyFromJSON(r.Context(), r.Body, h.s.IDer(uid))
-		defer r.Body.Close()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				return nil, raiseErr400(fmt.Errorf("empty body, expected key request"))
-			}
-			var errInvalid keysbuilder.ErrInvalid
-			if errors.As(err, &errInvalid) {
-				return nil, raiseErr400(err)
-			}
-
-			var errJSON keysbuilder.ErrJSON
-			if errors.As(err, &errJSON) {
-				return nil, raiseErr400(fmt.Errorf("request body is not valid json: %w", err))
-			}
-
-			return nil, fmt.Errorf("can not parse request body: %w", err)
-		}
-		return kb, nil
-	})
+// in the format specified in the keysbuilder package.
+func (h *Handler) komplex(r *http.Request, uid int) (autoupdate.KeysBuilder, error) {
+	defer r.Body.Close()
+	return keysbuilder.ManyFromJSON(r.Context(), r.Body, h.s.IDer(uid))
 }
 
 // simple builds a keysbuilder from the url query. It expects a
 // comma seperated list of keysname.
-func (h *Handler) simple() keysBuilderGetter {
-	return keysBuilderGetter(func(r *http.Request, uid int) (autoupdate.KeysBuilder, error) {
-		keys := strings.Split(r.URL.RawQuery, ",")
-		return &keysbuilder.Simple{K: keys}, nil
-	})
+func (h *Handler) simple(r *http.Request, uid int) (autoupdate.KeysBuilder, error) {
+	keys := strings.Split(r.URL.RawQuery, ",")
+	return &keysbuilder.Simple{K: keys}, nil
 }
 
 type errHandleFunc func(w http.ResponseWriter, r *http.Request) error
 
 func (f errHandleFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := f(w, r); err != nil {
-		var inputErr err400
-		if errors.As(err, &inputErr) {
-			write400(w, fmt.Sprintf("Wrong input: %v", inputErr.Error()))
+		var derr definedError
+		if errors.As(err, &derr) {
+			w.WriteHeader(http.StatusBadRequest)
+			writeErr(w, derr)
 			return
 		}
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("Error: %v", err)
-		http.Error(w, "Ups, something went wrong!", http.StatusInternalServerError)
+		http.Error(w, `{"error": {"type": "InternalError", "msg": "Ups, something went wrong!"}}`, http.StatusInternalServerError)
 	}
 }
 
-func write400(w http.ResponseWriter, msg string) {
-	w.WriteHeader(http.StatusBadRequest)
-	fmt.Fprint(w, msg)
-}
-
-func writeErr(w io.Writer, msg string) {
-	log.Printf("Error: %s", msg)
-	fmt.Fprintf(w, `{"error": {"detail": "%s"}}`, msg)
+func writeErr(w io.Writer, err definedError) {
+	fmt.Fprint(w, fmt.Sprintf(`{"error": {"type": "%s", "msg": "%s"}}`, err.Type(), quote(err.Error())))
 }
 
 func decode(w io.Writer, m map[string]string) error {
@@ -142,4 +124,8 @@ func decode(w io.Writer, m map[string]string) error {
 	fmt.Fprintf(buf, "}\n")
 	_, err := io.Copy(w, buf)
 	return err
+}
+
+func quote(s string) string {
+	return strings.ReplaceAll(s, `"`, `\"`)
 }
