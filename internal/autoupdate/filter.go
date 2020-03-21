@@ -41,11 +41,11 @@ func (f *filter) filter(r io.Reader, err error) (io.Reader, error) {
 		return new(bytes.Reader), nil
 	}
 
-	out := decodeMap(data)
+	out := encodeMap(data)
 	return out, nil
 }
 
-func decodeMap(m map[string]json.RawMessage) io.Reader {
+func encodeMap(m map[string]json.RawMessage) io.Reader {
 	buf := new(bytes.Buffer)
 	fmt.Fprintf(buf, "{")
 	for k, v := range m {

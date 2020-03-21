@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
+	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
 func TestRestrict(t *testing.T) {
@@ -19,10 +22,13 @@ func TestRestrict(t *testing.T) {
 	}
 	r, err := s.Restrict(context.Background(), 1, []string{"motion/1/name"})
 	if err != nil {
-		t.Errorf("did not expect an error, got: %v", err)
+		t.Fatalf("did not expect an error, got: %v", err)
 	}
-	var data map[string]string
-	json.NewDecoder(r).Decode(&data)
+
+	var data map[string]json.RawMessage
+	if err := json.NewDecoder(r).Decode(&data); err != nil {
+		t.Fatalf("can not decode restricted data: %v", err)
+	}
 
 	if len(data) != 1 {
 		t.Errorf("expect data to have one value, got: %d", len(data))
@@ -46,11 +52,14 @@ func testSrv(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "no data in request")
 		return
 	}
-
-	out := []map[string]string{make(map[string]string)}
-	for _, key := range reqData[0].Keys {
-		out[0][key] = "restricted value for " + key
+	mr := new(test.MockRestricter)
+	reader, err := mr.Restrict(r.Context(), reqData[0].UID, reqData[0].Keys)
+	if err != nil {
+		http.Error(w, "can not get restricted data", http.StatusInternalServerError)
+		return
 	}
-
-	json.NewEncoder(w).Encode(out)
+	readers := io.MultiReader(strings.NewReader("["), reader, strings.NewReader("]"))
+	if _, err := io.Copy(w, readers); err != nil {
+		http.Error(w, "copy data from restricter to response", http.StatusInternalServerError)
+	}
 }

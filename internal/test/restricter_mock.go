@@ -52,14 +52,9 @@ func (r *MockRestricter) Restrict(ctx context.Context, uid int, keys []string) (
 		default:
 			value = fmt.Sprintf(`"The time is: %s"`, time.Now())
 		}
-		data[key] = json.RawMessage([]byte(value))
+		data[key] = json.RawMessage(value)
 	}
-	out, err := json.Marshal(data)
-	if err != nil {
-		return nil, err
-	}
-	out = append(out, '\n')
-	return bytes.NewReader(out), nil
+	return encodeMap(data), nil
 }
 
 // Update updates the values from the restricter
@@ -75,4 +70,15 @@ func (r *MockRestricter) Update(data map[string]string) {
 	for key, value := range data {
 		r.Data[key] = value
 	}
+}
+
+func encodeMap(m map[string]json.RawMessage) io.Reader {
+	buf := new(bytes.Buffer)
+	fmt.Fprintf(buf, "{")
+	for k, v := range m {
+		fmt.Fprintf(buf, `"%s":%s,`, k, v)
+	}
+	buf.Truncate(buf.Len() - 1)
+	fmt.Fprintf(buf, "}\n")
+	return buf
 }

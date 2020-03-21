@@ -62,6 +62,5 @@ func (s *Service) Restrict(ctx context.Context, uid int, keys []string) (io.Read
 	if len(respData) == 0 {
 		return nil, fmt.Errorf("backend did not return any data")
 	}
-
 	return bytes.NewReader(respData[0]), nil
 }
