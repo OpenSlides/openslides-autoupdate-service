@@ -20,7 +20,12 @@ func (e ErrInvalid) Error() string {
 	return fmt.Sprintf("field \"%s\": %s", strings.Join(fields, "."), last.msg)
 }
 
-// Fields returns a list of field names from the parent to this error
+// Type returns the name of the error.
+func (e ErrInvalid) Type() string {
+	return "SyntaxError"
+}
+
+// Fields returns a list of field names from the parent to this error.
 func (e ErrInvalid) Fields() []string {
 	fields, _ := e.fields()
 	return fields
@@ -45,15 +50,19 @@ func (e ErrInvalid) fields() ([]string, *ErrInvalid) {
 // ErrJSON is returned when invalid json is parsed or the json can not
 // be decoded to a keysbuilder.
 type ErrJSON struct {
-	msg string
 	err error
 }
 
 func (e ErrJSON) Error() string {
-	return e.msg + ": " + e.err.Error()
+	return e.err.Error()
 }
 
-// Unwrap returns the thrown error
+// Unwrap returns the thrown error.
 func (e ErrJSON) Unwrap() error {
 	return e.err
+}
+
+// Type returns the name of the error.
+func (e ErrJSON) Type() string {
+	return "JsonError"
 }

@@ -3,9 +3,11 @@ package http_test
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
@@ -103,6 +105,143 @@ func TestSimple(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestErrors(t *testing.T) {
+	keyschanges := test.NewMockKeysChanged()
+	defer keyschanges.Close()
+	s := autoupdate.New(new(test.MockRestricter), keyschanges)
+	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}))
+	defer srv.Close()
+
+	for _, tt := range []struct {
+		name    string
+		request *http.Request
+		status  int
+		errType string
+		errMsg  string
+	}{
+		{
+			"No Body",
+			mustRequest(http.NewRequest(
+				"GET",
+				srv.URL+"/system/autoupdate",
+				nil,
+			)),
+			400,
+			`SyntaxError`,
+			`No data`,
+		},
+		{
+			"Empty List",
+			mustRequest(http.NewRequest(
+				"GET",
+				srv.URL+"/system/autoupdate",
+				strings.NewReader("[]"),
+			)),
+			400,
+			`SyntaxError`,
+			`No data`,
+		},
+		{
+			"Invalid json",
+			mustRequest(http.NewRequest(
+				"GET",
+				srv.URL+"/system/autoupdate",
+				strings.NewReader("{5"),
+			)),
+			400,
+			`JsonError`,
+			`invalid character '5' looking for beginning of object key string`,
+		},
+		{
+			"Invalid KeyRequest",
+			mustRequest(http.NewRequest(
+				"GET",
+				srv.URL+"/system/autoupdate",
+				strings.NewReader(`[{"ids":[123]}]`),
+			)),
+			400,
+			`SyntaxError`,
+			`no collection`,
+		},
+		{
+			"No list",
+			mustRequest(http.NewRequest(
+				"GET",
+				srv.URL+"/system/autoupdate",
+				strings.NewReader(`{"ids":[1],"collection":"foo","fields":{}}`),
+			)),
+			400,
+			`SyntaxError`,
+			`wrong format at byte 1`,
+		},
+		{
+			"Wrong field value",
+			mustRequest(http.NewRequest(
+				"GET",
+				srv.URL+"/system/autoupdate",
+				strings.NewReader(`
+				[{
+					"ids": [1],
+					"collection": "foo",
+					"fields": {
+						"name": {
+							"type": "relation",
+							"collection": "bar",
+							"fields": {}
+						}
+					}
+				}]`),
+			)),
+			400,
+			`ValueError`,
+			`Invalid value in key foo/1/name`,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := http.DefaultClient.Do(tt.request)
+			if err != nil {
+				t.Fatalf("Can not send request: %v", err)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != tt.status {
+				t.Errorf("Expected status %s, got %s", http.StatusText(tt.status), resp.Status)
+			}
+
+			var data struct {
+				Error struct {
+					Type string `json:"type"`
+					Msg  string `json:"msg"`
+				} `json:"error"`
+			}
+
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				t.Fatalf("Can not read body: %v", err)
+			}
+
+			if err := json.Unmarshal(body, &data); err != nil {
+				t.Fatalf("Can not decode body `%s`: %v", body, err)
+			}
+
+			if data.Error.Type != tt.errType {
+				t.Errorf("Got error type %s, expected %s", data.Error.Type, tt.errType)
+			}
+
+			if data.Error.Msg != tt.errMsg {
+				t.Errorf("Got error message `%s`, expected %s", data.Error.Msg, tt.errMsg)
+			}
+		})
+	}
+}
+
+func mustRequest(r *http.Request, err error) *http.Request {
+	if err != nil {
+		panic(err)
+	}
+	return r
 }
 
 type mockAuth struct {
