@@ -3,7 +3,6 @@ package autoupdate
 import (
 	"context"
 	"fmt"
-	"hash/maphash"
 )
 
 // Connection is a generator-like object that holds the state of an
@@ -13,12 +12,10 @@ type Connection struct {
 	autoupdate *Service
 	ctx        context.Context
 	uid        int
-	tid        uint64
 	kb         KeysBuilder
-	histroy    map[string]uint64
-	data       map[string]string
-	err        error
-	hash       maphash.Hash
+	tid        uint64
+	f          *filter
+	next       bool
 }
 
 // Next listens for data changes and blocks until then. When data has changed,
@@ -26,46 +23,22 @@ type Connection struct {
 // When the given context is done, it returns immediately with nil data.
 // If an error happens, Next returns with nil. You have to check if an error happend
 // with the Err() method.
-func (c *Connection) Next() bool {
-	if c.err != nil {
-		return false
-	}
-
-	var keys []string
-	if c.histroy == nil {
-		// First time Next() is called.
+func (c *Connection) Next() (map[string]string, error) {
+	if !c.next {
+		// First time called
+		c.next = true
 		c.tid = c.autoupdate.topic.LastID()
-		keys = c.kb.Keys()
-	} else {
-		var err error
-		c.data = nil
-		keys, err = c.update()
-		if err != nil {
-			c.err = err
-			return false
-		}
-		if keys == nil {
-			return false
-		}
+		return c.f.filter(c.autoupdate.restricter.Restrict(c.ctx, c.uid, c.kb.Keys()))
 	}
 
-	data, err := c.autoupdate.restricter.Restrict(c.ctx, c.uid, keys)
-	if err != nil {
-		c.err = fmt.Errorf("can not restrict data: %v", err)
-		return false
-	}
-	c.filter(data)
-	c.data = data
-	return true
-}
+	var err error
+	var changedKeys []string
 
-func (c *Connection) update() ([]string, error) {
-	// topic.Get blocks forever or until c.ctx or the topic is closed.
-	tid, changedKeys, err := c.autoupdate.topic.Get(c.ctx, c.tid)
+	// Blocks until the topic is closed (on server exit) or the context is done.
+	c.tid, changedKeys, err = c.autoupdate.topic.Get(c.ctx, c.tid)
 	if err != nil {
 		return nil, fmt.Errorf("can not get new keys: %w", err)
 	}
-	c.tid = tid
 
 	if len(changedKeys) == 0 {
 		// Exit early
@@ -94,36 +67,13 @@ func (c *Connection) update() ([]string, error) {
 		}
 		keys = append(keys, key)
 	}
-	return keys, nil
-}
 
-// Data returns the data gathered by Next().
-func (c *Connection) Data() map[string]string {
-	return c.data
-}
-
-// Err returns an error if some happen when calling Next().
-func (c *Connection) Err() error {
-	return c.err
-}
-
-// filter removes values from data, that are the same as before.
-func (c *Connection) filter(data map[string]string) {
-	if c.histroy == nil {
-		c.histroy = make(map[string]uint64)
+	if len(keys) == 0 {
+		// No data. Try again.
+		return c.Next()
 	}
-	for key, value := range data {
-		c.hash.Reset()
-		c.hash.WriteString(value)
-		new := c.hash.Sum64()
-		old, ok := c.histroy[key]
-		if ok && old == new {
-			delete(data, key)
-			continue
-		}
 
-		c.histroy[key] = new
-	}
+	return c.f.filter(c.autoupdate.restricter.Restrict(c.ctx, c.uid, keys))
 }
 
 func keysDiff(old []string, new []string) []string {

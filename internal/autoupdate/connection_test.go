@@ -19,15 +19,13 @@ func TestConnect(t *testing.T) {
 	kb := mockKeysBuilder{keys: keys("user/1/name")}
 
 	c := s.Connect(ctx, 1, kb)
-	if !c.Next() {
-		t.Errorf("Next returned false, expected true")
-	}
-	if err := c.Err(); err != nil {
-		t.Fatalf("Did not expect an error, got: %v", err)
+	data, err := c.Next()
+	if err != nil {
+		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
 	key := "user/1/name"
-	if value, ok := c.Data()[key]; !ok || value != `"some value"` {
+	if value, ok := data[key]; !ok || value != `"some value"` {
 		t.Errorf("Expected data to have key \"%s\" = \"%s\", got value \"%s\"", key, `"some value"`, value)
 	}
 }
@@ -41,26 +39,17 @@ func TestConnectionReadNoNewData(t *testing.T) {
 	defer cancel()
 	kb := mockKeysBuilder{keys: keys("user/1/name")}
 	c := s.Connect(ctx, 1, kb)
-	if !c.Next() {
-		t.Errorf("Next returned false, expected true")
-	}
-	if err := c.Err(); err != nil {
-		t.Fatalf("Did not expect an error, got: %v", err)
+	if _, err := c.Next(); err != nil {
+		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	go func() {
-		// Simulate, that the client closes the connection
-		cancel()
-	}()
-
-	if c.Next() {
-		t.Errorf("Did not expect data")
+	cancel()
+	data, err := c.Next()
+	if err != nil {
+		t.Errorf("c.Next() returned an error: %v", err)
 	}
-	if c.Err() != nil {
-		t.Fatalf("Did not expect an error, got: %v", c.Err())
-	}
-	if len(c.Data()) != 0 {
-		t.Errorf("Expect no new data, got: %v", c.Data())
+	if len(data) != 0 {
+		t.Errorf("Expect no new data, got: %v", data)
 	}
 }
 
@@ -74,20 +63,18 @@ func TestConnectionReadNewData(t *testing.T) {
 	defer cancel()
 	kb := mockKeysBuilder{keys: keys("user/1/name")}
 	c := s.Connect(ctx, 1, kb)
-	if !c.Next() {
-		t.Fatalf("Next returned false, expected true, err: %v", c.Err())
+	if _, err := c.Next(); err != nil {
+		t.Errorf("c.Next() returned an error: %v", err)
 	}
 	restricter.Update(map[string]string{"user/1/name": `"new value"`})
 	keychanges.Send(keys("user/1/name"))
 
-	if !c.Next() {
-		t.Errorf("Next returned false, expected true")
-	}
-	if c.Err() != nil {
-		t.Fatalf("Did not expect an error, got: %v", c.Err())
+	data, err := c.Next()
+	if err != nil {
+		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	if data := c.Data(); len(data) != 1 || data["user/1/name"] != `"new value"` {
+	if len(data) != 1 || data["user/1/name"] != `"new value"` {
 		t.Errorf("Expect data[\"user/1/name\"] to be \"new value\", got: %v", data["user/1/name"])
 	}
 }
@@ -102,19 +89,17 @@ func TestConnectionFilterData(t *testing.T) {
 	defer cancel()
 	kb := mockKeysBuilder{keys: keys("user/1/name")}
 	c := s.Connect(ctx, 1, kb)
-	if !c.Next() {
-		t.Fatalf("Next returned false, expected true, err: %v", c.Err())
+	if _, err := c.Next(); err != nil {
+		t.Errorf("c.Next() returned an error: %v", err)
 	}
 	keychanges.Send(keys("user/1/name")) // send again, value did not change in restricter
 
-	if !c.Next() {
-		t.Errorf("Next returned false, expected true")
-	}
-	if c.Err() != nil {
-		t.Fatalf("Did not expect an error, got: %v", c.Err())
+	data, err := c.Next()
+	if err != nil {
+		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	if data := c.Data(); len(data) != 0 {
+	if len(data) != 0 {
 		t.Errorf("Expect emty data; got \"%v\"", data)
 	}
 }
@@ -129,20 +114,18 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	defer cancel()
 	kb := mockKeysBuilder{keys: keys("user/1/name", "user/2/name")}
 	c := s.Connect(ctx, 1, kb)
-	if !c.Next() {
-		t.Fatalf("Next returned false, expected true, err: %v", c.Err())
+	if _, err := c.Next(); err != nil {
+		t.Errorf("c.Next() returned an error: %v", err)
 	}
 	restricter.Update(map[string]string{"user/1/name": `"newname"`}) // Only change user/1 not user/2
 	keychanges.Send(keys("user/1/name", "user/2/name"))
 
-	if !c.Next() {
-		t.Errorf("Next returned false, expected true")
-	}
-	if c.Err() != nil {
-		t.Fatalf("Did not expect an error, got: %v", c.Err())
+	data, err := c.Next()
+	if err != nil {
+		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	if data := c.Data(); len(data) != 1 || data["user/1/name"] != `"newname"` {
+	if len(data) != 1 || data["user/1/name"] != `"newname"` {
 		t.Errorf("Expect data[\"user/1/name\"] to be newname, got: %v", data)
 	}
 }

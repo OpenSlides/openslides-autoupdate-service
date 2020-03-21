@@ -55,23 +55,26 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 
 		// connection.Next() blocks, until there is new data or the client context or the server is
 		// closed.
-		for connection.Next() {
-			if err := decode(w, connection.Data()); err != nil {
+		for {
+			data, err := connection.Next()
+			if err != nil {
+				var derr definedError
+				if errors.As(err, &derr) {
+					writeErr(w, derr)
+					return nil
+				}
+				internalErr(w, err)
+				return nil
+			}
+			if data == nil {
+				return nil
+			}
+			if err := decode(w, data); err != nil {
 				internalErr(w, err)
 				return nil
 			}
 			w.(http.Flusher).Flush()
 		}
-		if connection.Err() != nil {
-			var derr definedError
-			if errors.As(err, &derr) {
-				writeErr(w, derr)
-			} else {
-				internalErr(w, err)
-			}
-			return nil
-		}
-		return nil
 	})
 }
 

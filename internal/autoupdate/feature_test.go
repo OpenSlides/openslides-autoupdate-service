@@ -295,10 +295,10 @@ func TestFeatures(t *testing.T) {
 				t.Fatalf("Expected FromJSON() not to return an error, got: %v", err)
 			}
 			c := s.Connect(context.Background(), 1, b)
-			if next := c.Next(); !next {
-				t.Fatalf("Expected connection to have data, got err: %v", c.Err())
+			data, err := c.Next()
+			if err != nil {
+				t.Errorf("c.Next() returned an error: %v", err)
 			}
-			data := c.Data()
 
 			if diff := cmpMap(data, tt.data); !diff {
 				t.Errorf("Expected %v, got: %v", tt.data, data)
