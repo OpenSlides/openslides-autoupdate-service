@@ -80,14 +80,19 @@ func (i RestrictedIDs) Template(ctx context.Context, key string) ([]string, erro
 	return i.GenericIDs(ctx, key)
 }
 
-func (i RestrictedIDs) decodedRestricter(ctx context.Context, key string) ([]byte, error) {
-	data, err := i.r.Restrict(ctx, i.user, []string{key})
+func (i RestrictedIDs) decodedRestricter(ctx context.Context, key string) (json.RawMessage, error) {
+	r, err := i.r.Restrict(ctx, i.user, []string{key})
 	if err != nil {
 		return nil, fmt.Errorf("can not restrict key %s: %w", key, err)
+	}
+
+	var data map[string]json.RawMessage
+	if err := json.NewDecoder(r).Decode(&data); err != nil {
+		return nil, fmt.Errorf("can not decode restricted data: %w", err)
 	}
 
 	if _, ok := data[key]; !ok {
 		return nil, ErrUnknownKey
 	}
-	return []byte(data[key]), nil
+	return data[key], nil
 }

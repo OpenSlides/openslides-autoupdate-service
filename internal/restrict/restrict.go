@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 )
@@ -23,7 +24,7 @@ type Service struct {
 }
 
 // Restrict returns the values for some keys for an user id
-func (s *Service) Restrict(ctx context.Context, uid int, keys []string) (map[string]string, error) {
+func (s *Service) Restrict(ctx context.Context, uid int, keys []string) (io.Reader, error) {
 	var buf bytes.Buffer
 	reqData := []struct {
 		UID  int      `json:"user_id"`
@@ -53,7 +54,7 @@ func (s *Service) Restrict(ctx context.Context, uid int, keys []string) (map[str
 		return nil, fmt.Errorf("backend responded with status %s: %s", resp.Status, content)
 	}
 
-	var respData []map[string]string
+	var respData []json.RawMessage
 	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
 		return nil, fmt.Errorf("can not decode response body: %w", err)
 	}
@@ -61,6 +62,5 @@ func (s *Service) Restrict(ctx context.Context, uid int, keys []string) (map[str
 	if len(respData) == 0 {
 		return nil, fmt.Errorf("backend did not return any data")
 	}
-
-	return respData[0], nil
+	return bytes.NewReader(respData[0]), nil
 }

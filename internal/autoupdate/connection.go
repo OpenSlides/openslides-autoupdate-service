@@ -3,10 +3,10 @@ package autoupdate
 import (
 	"context"
 	"fmt"
+	"io"
 )
 
-// Connection is a generator-like object that holds the state of an
-// open connection to the autoupdate system.
+// Connection holds the state of a client.
 // It has to be created by colling Connect() on a autoupdate.Service instance.
 type Connection struct {
 	autoupdate *Service
@@ -18,12 +18,11 @@ type Connection struct {
 	next       bool
 }
 
-// Next listens for data changes and blocks until then. When data has changed,
-// it returns with the new data.
-// When the given context is done, it returns immediately with nil data.
-// If an error happens, Next returns with nil. You have to check if an error happend
-// with the Err() method.
-func (c *Connection) Next() (map[string]string, error) {
+// Next returns the next data in form of an reader.
+//
+// Next blocks until there are new data or the context or the server
+// closes. In this case, nil is returned as first argument.
+func (c *Connection) Next() (io.Reader, error) {
 	if !c.next {
 		// First time called
 		c.next = true
@@ -41,7 +40,6 @@ func (c *Connection) Next() (map[string]string, error) {
 	}
 
 	if len(changedKeys) == 0 {
-		// Exit early
 		return nil, nil
 	}
 
