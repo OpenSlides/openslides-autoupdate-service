@@ -7,7 +7,7 @@ import (
 
 var errNil = errors.New("nil returned")
 
-// stream parses a redis stream objekt an autoupdate.KeyChanges objekt.
+// stream parses a redis stream objekt an autoupdate.KeyChanges object.
 func stream(reply interface{}, err error) (string, []string, error) {
 	var keys []string
 	if err != nil {
@@ -78,9 +78,9 @@ func stream(reply interface{}, err error) (string, []string, error) {
 	return id, keys, nil
 }
 
-// tostr converts an interface with value string or []byte to string
-// this is an helper, because the test-code generates strings but the
-// redis code generates []bytes.
+// tostr converts an interface with value string or []byte to string this is an
+// helper, because the test-code generates strings but the redis code generates
+// []bytes.
 func tostr(i interface{}) (string, bool) {
 	switch rid := i.(type) {
 	case string:

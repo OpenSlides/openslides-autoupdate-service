@@ -1,5 +1,5 @@
 // Package restrict implements the autoupdate.Restricter interface by calleng in
-// restricter in the openslides-backend service
+// restricter in the openslides-backend service.
 package restrict
 
 import (
@@ -17,13 +17,13 @@ const (
 	urlPath = "/system/api/restrictions"
 )
 
-// Service holds the state of the restricter
+// Service holds the state of the restricter.
 type Service struct {
 	client http.Client
 	Addr   string
 }
 
-// Restrict returns the values for some keys for an user id
+// Restrict returns the values for keys for an user id.
 func (s *Service) Restrict(ctx context.Context, uid int, keys []string) (io.Reader, error) {
 	var buf bytes.Buffer
 	reqData := []struct {

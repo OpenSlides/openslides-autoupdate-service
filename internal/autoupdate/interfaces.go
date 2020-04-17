@@ -5,18 +5,16 @@ import (
 	"io"
 )
 
-// KeysChangedReceiver returns keys that have changes.
-// Blocks for some time until there are changed data.
-// An implementation should not block forever but handle the
-// server shutdown.
+// KeysChangedReceiver returns keys that have changes. Blocks until there is
+// changed data.
 type KeysChangedReceiver interface {
 	KeysChanged() ([]string, error)
 }
 
 // Restricter restricts keys.
 type Restricter interface {
-	// Restrict returns an io.Reader which returns a json encoded object
-	// with the requested keys with the values.
+	// Restrict returns an io.Reader which returns a json encoded object with
+	// the requested keys with the values.
 	Restrict(ctx context.Context, uid int, keys []string) (io.Reader, error)
 }
 

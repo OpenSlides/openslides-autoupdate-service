@@ -12,7 +12,7 @@ type Pool struct {
 	pool *redis.Pool
 }
 
-// NewConnection creates a new pool
+// NewConnection creates a new pool.
 func NewConnection(addr string) *Pool {
 	return &Pool{
 		pool: &redis.Pool{
@@ -25,8 +25,8 @@ func NewConnection(addr string) *Pool {
 	}
 }
 
-// TestConn sends a ping command to redis. Does not return the response, but an error
-// if there is no response.
+// TestConn sends a ping command to redis. Does not return the response, but an
+// error if there is no response.
 func (s *Pool) TestConn() error {
 	conn := s.pool.Get()
 	defer conn.Close()

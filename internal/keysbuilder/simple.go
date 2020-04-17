@@ -1,7 +1,7 @@
 package keysbuilder
 
-// Simple implements the autoupdate.Keysbuilder interface. It returns the
-// keys it was initialized with.
+// Simple implements the autoupdate.Keysbuilder interface. It returns the keys
+// it was initialized with.
 type Simple struct {
 	K []string
 }

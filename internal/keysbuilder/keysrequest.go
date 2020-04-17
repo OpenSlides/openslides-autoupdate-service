@@ -1,3 +1,22 @@
+/*
+This file defines the different field types. The body (the "root" field) is also
+defined.
+
+Each fieldtype implements the fieldDescription interface by implementing the
+build method.
+
+Each field is processed by creating a field object from json. Therefore most
+field types also implement the json.Unmarshaler interface.
+
+Most fields have sub-keys. Together the different fields create a tree like
+object starting from the body.
+
+After the tree is parsed, the build-methods are used to receive the acutal keys.
+
+Each build-call parses its branches concurrently. But it is important that the
+build method only returns, when all sub-jobs are done.
+*/
+
 package keysbuilder
 
 import (
@@ -19,33 +38,37 @@ const (
 	templateIdentifier            = "template"
 )
 
-// body holds the information what keys are requested by the client.
+// body holds the information which keys are requested by the client.
 type body struct {
 	ids        []int
 	collection string
 	fieldsMap
 }
 
-// UnmarshallJSON builds a body object from json. It looks for the type
-// argument in the fields and decodes the fields accorently.
+// UnmarshallJSON builds a body object from json. It looks for the type argument
+// in the fields and decodes the fields accorently.
 func (b *body) UnmarshalJSON(data []byte) error {
 	var field struct {
 		IDs        []int     `json:"ids"`
 		Collection string    `json:"collection"`
 		Fields     fieldsMap `json:"fields"`
 	}
+
+	// Read and validate the data.
 	if err := json.Unmarshal(data, &field); err != nil {
 		return err
 	}
 	if len(field.IDs) == 0 {
-		return ErrInvalid{msg: "no ids"}
+		return InvalidError{msg: "no ids"}
 	}
 	if field.Collection == "" {
-		return ErrInvalid{msg: "no collection"}
+		return InvalidError{msg: "no collection"}
 	}
 	if field.Fields.fields == nil {
-		return ErrInvalid{msg: "no fields"}
+		return InvalidError{msg: "no fields"}
 	}
+
+	// Set the body fields.
 	b.ids = field.IDs
 	b.collection = field.Collection
 	b.fieldsMap = field.Fields
@@ -55,18 +78,11 @@ func (b *body) UnmarshalJSON(data []byte) error {
 func (b body) build(ctx context.Context, builder *Builder, keys chan<- string, errs chan<- error) {
 	var wg sync.WaitGroup
 	for _, id := range b.ids {
-		for name, description := range b.fields {
-			key := buildKey(b.collection, id, name)
-			keys <- key
-			if description == nil {
-				continue
-			}
-			wg.Add(1)
-			go func(description fieldDescription) {
-				description.build(ctx, builder, key, keys, errs)
-				wg.Done()
-			}(description)
-		}
+		wg.Add(1)
+		go func(id int) {
+			b.fieldsMap.build(ctx, buildCollectionID(b.collection, id), builder, keys, errs)
+			wg.Done()
+		}(id)
 	}
 	wg.Wait()
 }
@@ -86,10 +102,10 @@ func (r *relationField) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if field.Collection == "" {
-		return ErrInvalid{msg: "no collection"}
+		return InvalidError{msg: "no collection"}
 	}
 	if field.Fields.fields == nil {
-		return ErrInvalid{msg: "no fields"}
+		return InvalidError{msg: "no fields"}
 	}
 	r.collection = field.Collection
 	r.fieldsMap = field.Fields
@@ -111,20 +127,7 @@ func (r relationField) build(ctx context.Context, builder *Builder, key string, 
 		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected int, got: %v", v, v)
 		return
 	}
-	var wg sync.WaitGroup
-	for name, description := range r.fields {
-		key := buildKey(r.collection, id, name)
-		keys <- key
-		if description == nil {
-			continue
-		}
-		wg.Add(1)
-		go func(description fieldDescription) {
-			description.build(ctx, builder, key, keys, errs)
-			wg.Done()
-		}(description)
-	}
-	wg.Wait()
+	r.fieldsMap.build(ctx, buildCollectionID(r.collection, id), builder, keys, errs)
 }
 
 // relationListField is a fieldtype like relation, but redirects to a list of objects.
@@ -149,18 +152,11 @@ func (r relationListField) build(ctx context.Context, builder *Builder, key stri
 	}
 	var wg sync.WaitGroup
 	for _, id := range ids {
-		for name, description := range r.fields {
-			key := buildKey(r.collection, id, name)
-			keys <- key
-			if description == nil {
-				continue
-			}
-			wg.Add(1)
-			go func(description fieldDescription) {
-				description.build(ctx, builder, key, keys, errs)
-				wg.Done()
-			}(description)
-		}
+		wg.Add(1)
+		go func(id int) {
+			r.fieldsMap.build(ctx, buildCollectionID(r.collection, id), builder, keys, errs)
+			wg.Done()
+		}(id)
 	}
 	wg.Wait()
 }
@@ -178,7 +174,7 @@ func (g *genericRelationField) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if field.Fields.fields == nil {
-		return ErrInvalid{msg: "no fields"}
+		return InvalidError{msg: "no fields"}
 	}
 	g.fieldsMap = field.Fields
 	return nil
@@ -199,21 +195,7 @@ func (g genericRelationField) build(ctx context.Context, builder *Builder, key s
 		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected []string, got: %v", v, v)
 		return
 	}
-
-	var wg sync.WaitGroup
-	for name, description := range g.fields {
-		key := buildGenericKey(gid, name)
-		keys <- key
-		if description == nil {
-			continue
-		}
-		wg.Add(1)
-		go func(description fieldDescription) {
-			description.build(ctx, builder, key, keys, errs)
-			wg.Done()
-		}(description)
-	}
-	wg.Wait()
+	g.fieldsMap.build(ctx, gid, builder, keys, errs)
 }
 
 // genericRelationListField is like a genericRelationField but with a list of relations.
@@ -239,18 +221,11 @@ func (g genericRelationListField) build(ctx context.Context, builder *Builder, k
 
 	var wg sync.WaitGroup
 	for _, gid := range gids {
-		for name, description := range g.fields {
-			key := buildGenericKey(gid, name)
-			keys <- key
-			if description == nil {
-				continue
-			}
-			wg.Add(1)
-			go func(description fieldDescription) {
-				description.build(ctx, builder, key, keys, errs)
-				wg.Done()
-			}(description)
-		}
+		wg.Add(1)
+		go func(gid string) {
+			g.fieldsMap.build(ctx, gid, builder, keys, errs)
+			wg.Done()
+		}(gid)
 	}
 	wg.Wait()
 }
@@ -273,8 +248,8 @@ func (t *templateField) UnmarshalJSON(data []byte) error {
 
 	values, err := unmarshalField(field.Values)
 	if err != nil {
-		if sub, ok := err.(ErrInvalid); ok {
-			return ErrInvalid{sub: &sub, msg: "Error in template sub", field: "template"}
+		if sub, ok := err.(InvalidError); ok {
+			return InvalidError{sub: &sub, msg: "Error in template sub", field: "template"}
 		}
 		return fmt.Errorf("can not decode sub attribute of template field: %w", err)
 	}
@@ -315,6 +290,8 @@ func (t templateField) build(ctx context.Context, builder *Builder, key string, 
 	wg.Wait()
 }
 
+// unmarshalField uses the type-attribute in the json object get the field-type.
+// Afterwards, the json is parsed as this field-type and returned.
 func unmarshalField(data []byte) (fieldDescription, error) {
 	var t *struct {
 		Type string `json:"type"`
@@ -325,43 +302,35 @@ func unmarshalField(data []byte) (fieldDescription, error) {
 	if t == nil {
 		return nil, nil
 	}
-	var err error
+
+	var r fieldDescription
 	switch t.Type {
 	case relationIdentifier:
-		var r relationField
-		if err = json.Unmarshal(data, &r); err != nil {
-			return nil, err
-		}
-		return r, nil
+		r = new(relationField)
+
 	case relationListIdentifier:
-		var r relationListField
-		if err = json.Unmarshal(data, &r); err != nil {
-			return nil, err
-		}
-		return r, nil
+		r = new(relationListField)
+
 	case genericRelationIdentifier:
-		var r genericRelationField
-		if err = json.Unmarshal(data, &r); err != nil {
-			return nil, err
-		}
-		return r, nil
+		r = new(genericRelationField)
+
 	case genericRelationListIdentifier:
-		var r genericRelationListField
-		if err = json.Unmarshal(data, &r); err != nil {
-			return nil, err
-		}
-		return r, nil
+		r = new(genericRelationListField)
+
 	case templateIdentifier:
-		var r templateField
-		if err = json.Unmarshal(data, &r); err != nil {
-			return nil, err
-		}
-		return r, nil
+		r = new(templateField)
+
 	case "":
-		return nil, ErrInvalid{msg: "no type"}
+		return nil, InvalidError{msg: "no type"}
+
 	default:
-		return nil, ErrInvalid{msg: fmt.Sprintf("unknown type %s", t.Type)}
+		return nil, InvalidError{msg: fmt.Sprintf("unknown type %s", t.Type)}
 	}
+
+	if err := json.Unmarshal(data, &r); err != nil {
+		return nil, err
+	}
+	return r, nil
 }
 
 // fieldsMap describes in a abstract way the fieldsMap of a collection.
@@ -379,12 +348,30 @@ func (f *fieldsMap) UnmarshalJSON(data []byte) error {
 	for name, field := range fm {
 		fd, err := unmarshalField(field)
 		if err != nil {
-			if sub, ok := err.(ErrInvalid); ok {
-				return ErrInvalid{sub: &sub, msg: "Error on field", field: name}
+			if sub, ok := err.(InvalidError); ok {
+				return InvalidError{sub: &sub, msg: "Error on field", field: name}
 			}
 			return err
 		}
 		f.fields[name] = fd
 	}
 	return nil
+}
+
+// build calls the build method for all fields in the fieldsMap.
+func (f *fieldsMap) build(ctx context.Context, collectionID string, builder *Builder, keys chan<- string, errs chan<- error) {
+	var wg sync.WaitGroup
+	for name, description := range f.fields {
+		key := buildGenericKey(collectionID, name)
+		keys <- key
+		if description == nil {
+			continue
+		}
+		wg.Add(1)
+		go func(description fieldDescription) {
+			description.build(ctx, builder, key, keys, errs)
+			wg.Done()
+		}(description)
+	}
+	wg.Wait()
 }
