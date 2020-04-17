@@ -13,6 +13,9 @@ type filter struct {
 	history map[string]uint64
 }
 
+// filter has to be called on a reader that contains a decoded json object.
+// Filter is called multiple times it removes values from the json object, that
+// did not chance. If the given error is not nil, it is returned immediately.
 func (f *filter) filter(r io.Reader, err error) (io.Reader, error) {
 	if err != nil {
 		return nil, err
@@ -21,9 +24,10 @@ func (f *filter) filter(r io.Reader, err error) (io.Reader, error) {
 	if f.history == nil {
 		f.history = make(map[string]uint64)
 	}
+
 	var data map[string]json.RawMessage
 	if err := json.NewDecoder(r).Decode(&data); err != nil {
-		return nil, fmt.Errorf("can not unpack data: %w", err)
+		return nil, fmt.Errorf("can not decode data: %w", err)
 	}
 
 	for key, value := range data {
@@ -45,6 +49,8 @@ func (f *filter) filter(r io.Reader, err error) (io.Reader, error) {
 	return out, nil
 }
 
+// encodeMap decodes m into a json object. It does this manualy to be faster
+// then the json package.
 func encodeMap(m map[string]json.RawMessage) io.Reader {
 	buf := new(bytes.Buffer)
 	fmt.Fprintf(buf, "{")

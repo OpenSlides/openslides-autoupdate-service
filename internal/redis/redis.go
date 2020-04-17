@@ -1,5 +1,5 @@
-// Package redis holds the Service type, that implements the KeysChangedReceiver interface
-// of the autoupdate package by reading from a redis stream.
+// Package redis holds the Service type, that implements the KeysChangedReceiver
+// interface of the autoupdate package by reading from a redis stream.
 package redis
 
 import (
@@ -10,7 +10,8 @@ const (
 	// maxMessages desides how many messages are read at once from the stream.
 	maxMessages = "10"
 
-	// blockTimeout is the time in miliseconds, how long the xread command will block.
+	// blockTimeout is the time in miliseconds, how long the xread command will
+	// block.
 	blockTimeout = "3600000" // One Hour
 
 	// fieldChangedTopic is the redis key name of the stream.

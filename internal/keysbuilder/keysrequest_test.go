@@ -34,7 +34,7 @@ func TestJSONInvalid(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected an error, got none")
 	}
-	var errJSON keysbuilder.ErrJSON
+	var errJSON keysbuilder.JSONError
 	if !errors.As(err, &errJSON) {
 		t.Errorf("Expected error to be of type ErrJSON, got: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestJSONSingleID(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected an error, got none")
 	}
-	var errJSON keysbuilder.ErrJSON
+	var errJSON keysbuilder.JSONError
 	if !errors.As(err, &errJSON) {
 		t.Errorf("Expected error to be of type ErrJSON, got: %v", err)
 	}
@@ -219,7 +219,7 @@ func TestRequestErrors(t *testing.T) {
 			if err == nil {
 				t.Errorf("Expected an error, got none")
 			}
-			var kErr keysbuilder.ErrInvalid
+			var kErr keysbuilder.InvalidError
 			if !errors.As(err, &kErr) {
 				t.Errorf("Expected err to be %T, got: %v", kErr, err)
 			}
@@ -287,7 +287,7 @@ func TestManyFromJSONInvalidJSON(t *testing.T) {
 	if err == nil {
 		t.Error("Expected ManyFromJSON() to return an error, got not")
 	}
-	var errJSON keysbuilder.ErrJSON
+	var errJSON keysbuilder.JSONError
 	if !errors.As(err, &errJSON) {
 		t.Errorf("Expected error to be of type ErrJSON, got: %v", err)
 	}
@@ -324,7 +324,7 @@ func TestManyFromJSONInvalidInput(t *testing.T) {
 	if err == nil {
 		t.Error("Expected ManyFromJSON() to return an error, got not")
 	}
-	var kErr keysbuilder.ErrInvalid
+	var kErr keysbuilder.InvalidError
 	if !errors.As(err, &kErr) {
 		t.Errorf("Expected error to be of type ErrInvalid, got: %v", err)
 	}

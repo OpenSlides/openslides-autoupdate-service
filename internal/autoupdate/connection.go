@@ -6,39 +6,40 @@ import (
 	"io"
 )
 
-// Connection holds the state of a client.
-// It has to be created by colling Connect() on a autoupdate.Service instance.
+// Connection holds the state of a client. It has to be created by colling
+// Connect() on a autoupdate.Service instance.
 type Connection struct {
 	autoupdate *Service
 	ctx        context.Context
 	uid        int
 	kb         KeysBuilder
 	tid        uint64
-	f          *filter
+	filter     *filter
 	next       bool
 }
 
 // Next returns the next data in form of an reader.
 //
-// Next blocks until there are new data or the context or the server
-// closes. In this case, nil is returned as first argument.
+// Next blocks until there are new data or the context or the server closes. In
+// this case, the returned io.Reader is nil.
 func (c *Connection) Next() (io.Reader, error) {
 	if !c.next {
 		// First time called
 		c.next = true
 		c.tid = c.autoupdate.topic.LastID()
-		return c.f.filter(c.autoupdate.restricter.Restrict(c.ctx, c.uid, c.kb.Keys()))
+		return c.filter.filter(c.autoupdate.restricter.Restrict(c.ctx, c.uid, c.kb.Keys()))
 	}
 
 	var err error
 	var changedKeys []string
 
 	// Blocks until the topic is closed (on server exit) or the context is done.
-	c.tid, changedKeys, err = c.autoupdate.topic.Get(c.ctx, c.tid)
+	c.tid, changedKeys, err = c.autoupdate.topic.Receive(c.ctx, c.tid)
 	if err != nil {
 		return nil, fmt.Errorf("can not get new keys: %w", err)
 	}
 
+	// When changedKeys is empty, then the service or the connection is closed.
 	if len(changedKeys) == 0 {
 		return nil, nil
 	}
@@ -71,7 +72,7 @@ func (c *Connection) Next() (io.Reader, error) {
 		return c.Next()
 	}
 
-	return c.f.filter(c.autoupdate.restricter.Restrict(c.ctx, c.uid, keys))
+	return c.filter.filter(c.autoupdate.restricter.Restrict(c.ctx, c.uid, keys))
 }
 
 func keysDiff(old []string, new []string) []string {

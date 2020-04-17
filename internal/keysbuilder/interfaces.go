@@ -2,7 +2,7 @@ package keysbuilder
 
 import "context"
 
-// IDer Returns relations from a key.
+// IDer returns relations from a key.
 type IDer interface {
 	ID(ctx context.Context, key string) (int, error)
 	IDList(ctx context.Context, key string) ([]int, error)

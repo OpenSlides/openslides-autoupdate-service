@@ -12,12 +12,12 @@ func FromJSON(ctx context.Context, r io.Reader, ider IDer) (*Builder, error) {
 	var b body
 	if err := json.NewDecoder(r).Decode(&b); err != nil {
 		if err == io.EOF {
-			return nil, ErrInvalid{msg: "No data"}
+			return nil, InvalidError{msg: "No data"}
 		}
-		if sub, ok := err.(ErrInvalid); ok {
+		if sub, ok := err.(InvalidError); ok {
 			return nil, sub
 		}
-		return nil, ErrJSON{err}
+		return nil, JSONError{err}
 	}
 
 	kb, err := newBuilder(ctx, ider, b)
@@ -27,27 +27,27 @@ func FromJSON(ctx context.Context, r io.Reader, ider IDer) (*Builder, error) {
 	return kb, nil
 }
 
-// ManyFromJSON creates a Keysbuilder from a json list.
+// ManyFromJSON creates a list of Keysbuilder objects from a json list.
 func ManyFromJSON(ctx context.Context, r io.Reader, ider IDer) (*Builder, error) {
 	var bs []body
 	if err := json.NewDecoder(r).Decode(&bs); err != nil {
 		if err == io.EOF {
-			return nil, ErrInvalid{msg: "No data"}
+			return nil, InvalidError{msg: "No data"}
 		}
-		if sub, ok := err.(ErrInvalid); ok {
+		if sub, ok := err.(InvalidError); ok {
 			return nil, sub
 		}
 		if jerr, ok := err.(*json.SyntaxError); ok {
-			return nil, ErrJSON{jerr}
+			return nil, JSONError{jerr}
 		}
 		if jerr, ok := err.(*json.UnmarshalTypeError); ok {
-			return nil, ErrInvalid{msg: fmt.Sprintf("wrong format at byte %d", jerr.Offset)}
+			return nil, InvalidError{msg: fmt.Sprintf("wrong format at byte %d", jerr.Offset)}
 		}
-		return nil, fmt.Errorf("can not decode keysrequest: %v", err)
+		return nil, fmt.Errorf("can not decode keysrequest: %w", err)
 	}
 
 	if len(bs) == 0 {
-		return nil, ErrInvalid{msg: "No data"}
+		return nil, InvalidError{msg: "No data"}
 	}
 
 	kb, err := newBuilder(ctx, ider, bs...)

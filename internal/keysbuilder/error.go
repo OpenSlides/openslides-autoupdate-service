@@ -5,14 +5,14 @@ import (
 	"strings"
 )
 
-// ErrInvalid is an error that happens on an invalid request.
-type ErrInvalid struct {
+// InvalidError is an error that happens on an invalid request.
+type InvalidError struct {
 	msg   string
 	field string
-	sub   *ErrInvalid
+	sub   *InvalidError
 }
 
-func (e ErrInvalid) Error() string {
+func (e InvalidError) Error() string {
 	fields, last := e.fields()
 	if fields == nil {
 		return e.msg
@@ -21,17 +21,17 @@ func (e ErrInvalid) Error() string {
 }
 
 // Type returns the name of the error.
-func (e ErrInvalid) Type() string {
+func (e InvalidError) Type() string {
 	return "SyntaxError"
 }
 
 // Fields returns a list of field names from the parent to this error.
-func (e ErrInvalid) Fields() []string {
+func (e InvalidError) Fields() []string {
 	fields, _ := e.fields()
 	return fields
 }
 
-func (e ErrInvalid) fields() ([]string, *ErrInvalid) {
+func (e InvalidError) fields() ([]string, *InvalidError) {
 	if e.field == "" {
 		return nil, nil
 	}
@@ -47,22 +47,22 @@ func (e ErrInvalid) fields() ([]string, *ErrInvalid) {
 	return fields, last
 }
 
-// ErrJSON is returned when invalid json is parsed or the json can not
-// be decoded to a keysbuilder.
-type ErrJSON struct {
+// JSONError is returned when invalid json is parsed or the json can not be
+// decoded as a keysbuilder.
+type JSONError struct {
 	err error
 }
 
-func (e ErrJSON) Error() string {
+func (e JSONError) Error() string {
 	return e.err.Error()
 }
 
 // Unwrap returns the thrown error.
-func (e ErrJSON) Unwrap() error {
+func (e JSONError) Unwrap() error {
 	return e.err
 }
 
 // Type returns the name of the error.
-func (e ErrJSON) Type() string {
+func (e JSONError) Type() string {
 	return "JsonError"
 }

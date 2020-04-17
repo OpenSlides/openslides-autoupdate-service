@@ -27,13 +27,13 @@ func (i RestrictedIDs) ID(ctx context.Context, key string) (int, error) {
 
 	id, err := strconv.Atoi(string(data))
 	if err != nil {
-		return 0, ErrValue{key: key}
+		return 0, ValueError{key: key}
 	}
 
 	return id, nil
 }
 
-// IDList returns the ids in the key.
+// IDList returns the a list of ids in the key.
 func (i RestrictedIDs) IDList(ctx context.Context, key string) ([]int, error) {
 	data, err := i.decodedRestricter(ctx, key)
 	if err != nil {
@@ -42,7 +42,7 @@ func (i RestrictedIDs) IDList(ctx context.Context, key string) ([]int, error) {
 
 	var value []int
 	if err := json.Unmarshal(data, &value); err != nil {
-		return nil, ErrValue{key: key}
+		return nil, ValueError{key: key}
 	}
 	return value, nil
 }
@@ -56,12 +56,12 @@ func (i RestrictedIDs) GenericID(ctx context.Context, key string) (string, error
 
 	var value string
 	if err := json.Unmarshal(data, &value); err != nil {
-		return "", ErrValue{key: key}
+		return "", ValueError{key: key}
 	}
 	return value, nil
 }
 
-// GenericIDs returns a list of collection-id tuple.
+// GenericIDs returns a list of collection-id tuples.
 func (i RestrictedIDs) GenericIDs(ctx context.Context, key string) ([]string, error) {
 	data, err := i.decodedRestricter(ctx, key)
 	if err != nil {
@@ -70,7 +70,7 @@ func (i RestrictedIDs) GenericIDs(ctx context.Context, key string) ([]string, er
 
 	var values []string
 	if err := json.Unmarshal(data, &values); err != nil {
-		return nil, ErrValue{key: key}
+		return nil, ValueError{key: key}
 	}
 	return values, nil
 }

@@ -11,14 +11,15 @@ import (
 	"time"
 )
 
-// MockRestricter implements the restricter interface. The returned values can be controlled
-// with the the Data attribute
+// MockRestricter implements the restricter interface. The returned values can
+// be controlled with the the Data attribute.
 type MockRestricter struct {
 	mu   sync.RWMutex
 	Data map[string]string
 }
 
-// Restrict returnes the values for the given keys be returning the values in the Data attribute.
+// Restrict returnes the values for the given keys be returning the values in
+// the Data attribute.
 //
 // If a key is not present in Data, a default value is returned.
 //
@@ -57,7 +58,7 @@ func (r *MockRestricter) Restrict(ctx context.Context, uid int, keys []string) (
 	return encodeMap(data), nil
 }
 
-// Update updates the values from the restricter
+// Update updates the values from the restricter.
 func (r *MockRestricter) Update(data map[string]string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

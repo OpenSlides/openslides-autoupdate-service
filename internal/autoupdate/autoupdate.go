@@ -1,4 +1,9 @@
-// Package autoupdate allows clients to request keys and get updates when the keys changes.
+// Package autoupdate allows clients to request keys and get updates when the
+// keys changes.
+//
+// To register to the autoupdate serive, a client has to receive a Connection
+// object by calling the Connect()-method. It is not necessary and therefore not
+// possible to close a connection. The client can just stop listening.
 package autoupdate
 
 import (
@@ -9,11 +14,16 @@ import (
 	"github.com/ostcar/topic"
 )
 
-// pruneTime defines how long a topic id will be valid. If a client needs more time to process
-// the data, it will get an error and has to reconnect.
-const pruneTime = 10 * time.Second
+// pruneTime defines how long a topic id will be valid. If a client needs more
+// time to process the data, it will get an error and has to reconnect. A higher
+// value means, that more memory is used.
+const pruneTime = time.Minute
 
-// Service holds the state of the autoupdate service. It has to be initialized with autoupdate.New().
+// Service holds the state of the autoupdate service. It has to be initialized
+// with autoupdate.New().
+//
+// The service updates its data in the background. To stop this background job,
+// the service has to be closed in the end with the Close()-method.
 type Service struct {
 	restricter Restricter
 	keyChanged KeysChangedReceiver
@@ -23,8 +33,7 @@ type Service struct {
 
 // New creates a new autoupdate service.
 //
-// After the service is not needed anymore, it has to be closed with
-// s.Close().
+// After the service is not needed anymore, it has to be closed with s.Close().
 func New(restricter Restricter, keysChanges KeysChangedReceiver) *Service {
 	s := &Service{
 		restricter: restricter,
@@ -37,31 +46,39 @@ func New(restricter Restricter, keysChanges KeysChangedReceiver) *Service {
 	return s
 }
 
-// Close calls the shutdown logic of the service.
-// This method is not save for concourent use. It not allowed to call
-// it more then once. Onle the caller of New() should call Close().
+// Close calls the shutdown logic of the service. This method is not save for
+// concourent use. It not allowed to call it more then once. Only the caller of
+// New() should call Close().
 func (s *Service) Close() {
 	close(s.closed)
 }
 
-// Connect returns a new connection object.
-func (s *Service) Connect(ctx context.Context, uid int, kb KeysBuilder) *Connection {
+// Connect has to be called by a client to register to the service. The method
+// returns a Connection object, that can be used to receive the data.
+//
+// There is no need to "close" the Connection object.
+func (s *Service) Connect(ctx context.Context, userID int, kb KeysBuilder) *Connection {
 	return &Connection{
-		ctx:        ctx,
 		autoupdate: s,
+		ctx:        ctx,
+		uid:        userID,
 		kb:         kb,
-		uid:        uid,
-		f:          new(filter),
+
+		// The filter makes sure, that values, that did not change are not send
+		// to the client again.
+		filter: new(filter),
 	}
 }
 
-// IDer returns an object, that can be used to return ids for an related key.
+// IDer returns an object, that implements the keysbuilder.IDer interface. It is
+// used to return ids for a key. This implementation uses the restricter to get
+// the ids.
 func (s *Service) IDer(uid int) RestrictedIDs {
 	return RestrictedIDs{uid, s.restricter}
 }
 
-// pruneTopic removes old data from the topic.
-// Blocks until the service is closed.
+// pruneTopic removes old data from the topic. Blocks until the service is
+// closed.
 func (s *Service) pruneTopic() {
 	tick := time.NewTicker(time.Second)
 	defer tick.Stop()
@@ -75,8 +92,8 @@ func (s *Service) pruneTopic() {
 	}
 }
 
-// receiveKeyChanges listens for updates and saves then into the topic.
-// Blocks until the service is closed.
+// receiveKeyChanges listens for updates and saves then into the topic. This
+// function blocks until the service is closed.
 func (s *Service) receiveKeyChanges() {
 	for {
 		select {
@@ -87,14 +104,10 @@ func (s *Service) receiveKeyChanges() {
 
 		keys, err := s.keyChanged.KeysChanged()
 		if err != nil {
-			log.Printf("Could not update keys: %v", err)
+			log.Printf("Could not update keys: %v\n", err)
 			continue
 		}
 
-		if len(keys) == 0 {
-			continue
-		}
-
-		s.topic.Add(keys...)
+		s.topic.Publish(keys...)
 	}
 }
