@@ -25,7 +25,10 @@ func main() {
 	keepOpen := flag.Bool("keep-open", false, "Keeps the connections open after the test succeeded.")
 	flag.Parse()
 
-	p := newPool(redisAddr)
+	p, err := newClient(redisAddr)
+	if err != nil {
+		log.Fatalf("Can not create connection to redis: %v", err)
+	}
 
 	// Create clients
 	clients := make([]*client, connections)

@@ -71,13 +71,16 @@ func buildReceiver(f *faker) autoupdate.KeysChangedReceiver {
 	fmt.Print("Messagin Service: ")
 	switch getEnv("MESSAGIN_SERVICE", "fake") {
 	case "redis":
-		conn := redis.NewConnection(getEnv("REDIS_ADDR", "localhost:6379"))
-		if getEnv("REDIS_TEST_CONN", "true") == "true" {
-			if err := conn.TestConn(); err != nil {
-				log.Fatalf("Can not connect to redis: %v", err)
-			}
+		client, err := redis.NewClient(getEnv("REDIS_ADDR", "localhost:6379"))
+		if err != nil {
+			log.Fatalf("Can not connect to redis: %v", err)
 		}
-		receiver = &redis.Service{Conn: conn}
+		// if getEnv("REDIS_TEST_CONN", "true") == "true" {
+		// 	if err := conn.TestConn(); err != nil {
+		// 		log.Fatalf("Can not connect to redis: %v", err)
+		// 	}
+		// }
+		receiver = &redis.Updater{Client: client}
 		fmt.Println("redis")
 	default:
 		receiver = f

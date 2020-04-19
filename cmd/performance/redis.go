@@ -2,34 +2,28 @@ package main
 
 import (
 	"log"
-	"time"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/mediocregopher/radix/v3"
 )
 
 type redisPool struct {
-	pool *redis.Pool
+	client radix.Client
 }
 
-// New creates a new pool
-func newPool(addr string) *redisPool {
-	return &redisPool{
-		pool: &redis.Pool{
-			MaxActive:   100,
-			Wait:        true,
-			MaxIdle:     10,
-			IdleTimeout: 240 * time.Second,
-			Dial:        func() (redis.Conn, error) { return redis.Dial("tcp", addr) },
-		},
+// newClient creates a new redis client.
+func newClient(addr string) (*redisPool, error) {
+	client, err := radix.NewPool("tcp", addr, 10)
+	if err != nil {
+		return nil, err
 	}
+	return &redisPool{
+		client: client,
+	}, nil
 }
 
 // sendKey updates the key in redis so an autoupdate is tiggert.
 func (p *redisPool) sendKey(key string) {
-	conn := p.pool.Get()
-	defer conn.Close()
-
-	if _, err := conn.Do("XADD", redisTopic, "*", "modified", key); err != nil {
+	if err := p.client.Do(radix.Cmd(nil, "XADD", redisTopic, "*", key, "modified")); err != nil {
 		log.Fatalf("Can not send data to redis: %v", err)
 	}
 }

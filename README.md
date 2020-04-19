@@ -88,5 +88,3 @@ The Service uses the following environment variables:
 * `RESTRICTER_SERVICE=fake`: The same for the restricter service. `fake`(default) or `backend`
 * `RESTRICTER_ADDR`: Addr of the restricter service with a protocol prefix. The default is `http://localhost:8000`
 * `REDIS_ADDR=localhost:6379`: The address to redis.
-* `REDIS_TEST_CONN=true`: Test the redis connection on startup. Disable on the cloud if redis needs more time to start then this service.
-
