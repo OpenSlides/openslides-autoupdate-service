@@ -104,7 +104,8 @@ func (s *Service) receiveKeyChanges() {
 
 		keys, err := s.keyChanged.KeysChanged()
 		if err != nil {
-			log.Fatalf("Could not update keys: %v\n", err)
+			log.Printf("Could not update keys: %v\n", err)
+			time.Sleep(time.Second)
 			continue
 		}
 

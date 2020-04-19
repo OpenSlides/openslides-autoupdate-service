@@ -75,11 +75,6 @@ func buildReceiver(f *faker) autoupdate.KeysChangedReceiver {
 		if err != nil {
 			log.Fatalf("Can not connect to redis: %v", err)
 		}
-		// if getEnv("REDIS_TEST_CONN", "true") == "true" {
-		// 	if err := conn.TestConn(); err != nil {
-		// 		log.Fatalf("Can not connect to redis: %v", err)
-		// 	}
-		// }
 		receiver = &redis.Updater{Client: client}
 		fmt.Println("redis")
 	default:
