@@ -63,10 +63,6 @@ func (s *Service) Connect(ctx context.Context, userID int, kb KeysBuilder) *Conn
 		ctx:        ctx,
 		uid:        userID,
 		kb:         kb,
-
-		// The filter makes sure, that values, that did not change are not send
-		// to the client again.
-		filter: new(filter),
 	}
 }
 
