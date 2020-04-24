@@ -21,7 +21,7 @@ func TestRestrictedIDs(t *testing.T) {
 		idCount int
 		err     string
 	}{
-		{"error_id", 0, "can not restrict key error_id:"},
+		{"error_id", 0, "restrict key error_id:"},
 		{"motion/1/category_ids", 2, ""},
 	}
 	for _, tt := range tc {
@@ -32,7 +32,7 @@ func TestRestrictedIDs(t *testing.T) {
 					t.Fatal("Expected an error, got None")
 				}
 				if got := err.Error(); !strings.HasPrefix(got, tt.err) {
-					t.Errorf("Expected error msg to have prefix `%s`, got `%s`", tt.err, got)
+					t.Errorf("got error message `%s`, expected prefix `%s`", got, tt.err)
 				}
 				return
 			}

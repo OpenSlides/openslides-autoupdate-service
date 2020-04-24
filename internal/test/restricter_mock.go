@@ -8,14 +8,14 @@ import (
 	"io"
 	"strings"
 	"sync"
-	"time"
 )
 
 // MockRestricter implements the restricter interface. The returned values can
 // be controlled with the the Data attribute.
 type MockRestricter struct {
-	mu   sync.RWMutex
-	Data map[string]string
+	mu       sync.RWMutex
+	Data     map[string]string
+	OnlyData bool
 }
 
 // Restrict returnes the values for the given keys be returning the values in
@@ -42,6 +42,9 @@ func (r *MockRestricter) Restrict(ctx context.Context, uid int, keys []string) (
 			continue
 		}
 
+		if r.OnlyData {
+			continue
+		}
 		var value string
 		switch {
 		case strings.HasPrefix(key, "error"):
@@ -51,11 +54,42 @@ func (r *MockRestricter) Restrict(ctx context.Context, uid int, keys []string) (
 		case strings.HasSuffix(key, "_ids"):
 			value = `[1,2]`
 		default:
-			value = fmt.Sprintf(`"The time is: %s"`, time.Now())
+			value = `"Hello World"`
 		}
 		data[key] = json.RawMessage(value)
 	}
-	return encodeMap(data), nil
+
+	modelData, err := modelFormat(data)
+	if err != nil {
+		return nil, fmt.Errorf("convert keys to modelFormat: %w", err)
+	}
+	buf := new(bytes.Buffer)
+	if err := json.NewEncoder(buf).Encode(modelData); err != nil {
+		return nil, fmt.Errorf("decode modelData: %w", err)
+	}
+	return buf, nil
+}
+
+func modelFormat(data map[string]json.RawMessage) (map[string]map[string]map[string]json.RawMessage, error) {
+	modelData := make(map[string]map[string]map[string]json.RawMessage)
+	for key, value := range data {
+		keyParts := strings.SplitN(key, "/", 3)
+		if len(keyParts) != 3 {
+			return nil, fmt.Errorf("invalid key `%s`", key)
+		}
+
+		collection := keyParts[0]
+		id := keyParts[1]
+		field := keyParts[2]
+		if modelData[collection] == nil {
+			modelData[collection] = make(map[string]map[string]json.RawMessage)
+		}
+		if modelData[collection][id] == nil {
+			modelData[collection][id] = make(map[string]json.RawMessage)
+		}
+		modelData[collection][id][field] = value
+	}
+	return modelData, nil
 }
 
 // Update updates the values from the restricter.
@@ -71,15 +105,4 @@ func (r *MockRestricter) Update(data map[string]string) {
 	for key, value := range data {
 		r.Data[key] = value
 	}
-}
-
-func encodeMap(m map[string]json.RawMessage) io.Reader {
-	buf := new(bytes.Buffer)
-	fmt.Fprintf(buf, "{")
-	for k, v := range m {
-		fmt.Fprintf(buf, `"%s":%s,`, k, v)
-	}
-	buf.Truncate(buf.Len() - 1)
-	fmt.Fprintf(buf, "}\n")
-	return buf
 }

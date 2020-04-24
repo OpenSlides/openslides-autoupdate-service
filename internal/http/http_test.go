@@ -65,7 +65,6 @@ func TestSimple(t *testing.T) {
 	}{
 		{"user/1/name", keys("user/1/name"), http.StatusOK},
 		{"user/1/name,user/2/name", keys("user/1/name", "user/2/name"), http.StatusOK},
-		{"key1,key2", keys("key1", "key2"), http.StatusOK},
 	}
 
 	for _, tt := range tc {
@@ -94,7 +93,7 @@ func TestSimple(t *testing.T) {
 				t.Errorf("Got content-type %s, expected: %s", got, expected)
 			}
 
-			var body map[string]json.RawMessage
+			var body map[string]map[string]map[string]json.RawMessage
 			if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
 				t.Errorf("Got invalid json: %v", err)
 			}

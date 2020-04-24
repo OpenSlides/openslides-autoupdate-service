@@ -25,7 +25,7 @@ func TestConnect(t *testing.T) {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	var data map[string]json.RawMessage
+	var data map[string]map[string]map[string]json.RawMessage
 	decoder := json.NewDecoder(read)
 
 	if err := decoder.Decode(&data); err != nil {
@@ -85,17 +85,32 @@ func TestConnectionReadNewData(t *testing.T) {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	var data map[string]json.RawMessage
+	var data map[string]map[string]map[string]json.RawMessage
 	if err := json.NewDecoder(read).Decode(&data); err != nil {
 		t.Errorf("Can not decode connectoin stream: %v", err)
 	}
 	if got := len(data); got != 1 {
 		t.Errorf("Expected data to have one key, got: %d", got)
 	}
-	if _, ok := data["user/1/name"]; !ok {
+	got, ok := inResult(data, "user", "1", "name")
+	if !ok {
 		t.Errorf("Returned value does not have key `user/1/name`")
 	}
-	if got := string(data["user/1/name"]); got != `"new value"` {
+	if got != `"new value"` {
 		t.Errorf("Expect value `new value` got: %s", got)
 	}
+}
+
+func inResult(data map[string]map[string]map[string]json.RawMessage, collection, id, field string) (string, bool) {
+	if _, ok := data[collection]; !ok {
+		return "", false
+	}
+	if _, ok := data[collection][id]; !ok {
+		return "", false
+	}
+	value, ok := data[collection][id][field]
+	if !ok {
+		return "", false
+	}
+	return string(value), true
 }

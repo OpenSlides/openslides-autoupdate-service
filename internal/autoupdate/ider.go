@@ -5,8 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
+	"strings"
 )
+
+const keySep = "/"
 
 // ErrUnknownKey ist returned from RestrictedIDs, when the requested key is not
 // returned from the restricter.
@@ -83,16 +87,36 @@ func (i RestrictedIDs) Template(ctx context.Context, key string) ([]string, erro
 func (i RestrictedIDs) decodedRestricter(ctx context.Context, key string) (json.RawMessage, error) {
 	r, err := i.r.Restrict(ctx, i.user, []string{key})
 	if err != nil {
-		return nil, fmt.Errorf("can not restrict key %s: %w", key, err)
+		return nil, fmt.Errorf("restrict key %s: %w", key, err)
 	}
 
-	var data map[string]json.RawMessage
+	return fromModel(key, r)
+}
+
+func fromModel(key string, r io.Reader) (json.RawMessage, error) {
+	keyParts := strings.SplitN(key, keySep, 3)
+	if len(keyParts) != 3 {
+		return nil, fmt.Errorf("invalid key %s", key)
+	}
+
+	collection := keyParts[0]
+	id := keyParts[1]
+	field := keyParts[2]
+
+	var data map[string]map[string]map[string]json.RawMessage
 	if err := json.NewDecoder(r).Decode(&data); err != nil {
-		return nil, fmt.Errorf("can not decode restricted data: %w", err)
+		return nil, fmt.Errorf("decode restricted data: %w", err)
 	}
 
-	if _, ok := data[key]; !ok {
+	if _, ok := data[collection]; !ok {
 		return nil, ErrUnknownKey
 	}
-	return data[key], nil
+	if _, ok := data[collection][id]; !ok {
+		return nil, ErrUnknownKey
+	}
+	if _, ok := data[collection][id][field]; !ok {
+		return nil, ErrUnknownKey
+	}
+
+	return data[collection][id][field], nil
 }
