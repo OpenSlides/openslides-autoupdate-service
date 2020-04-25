@@ -41,8 +41,10 @@ func New(restricter Restricter, keysChanges KeysChangedReceiver) *Service {
 		closed:     make(chan struct{}),
 	}
 	s.topic = topic.New(topic.WithClosed(s.closed))
+
 	go s.receiveKeyChanges()
 	go s.pruneTopic()
+
 	return s
 }
 
@@ -78,6 +80,7 @@ func (s *Service) IDer(uid int) RestrictedIDs {
 func (s *Service) pruneTopic() {
 	tick := time.NewTicker(time.Second)
 	defer tick.Stop()
+
 	for {
 		select {
 		case <-s.closed:

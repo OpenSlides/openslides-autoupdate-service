@@ -229,10 +229,8 @@ func TestRequestErrors(t *testing.T) {
 			if fields := kErr.Fields(); !cmpSlice(fields, tt.fields) {
 				t.Errorf("Expected error to be on field \"%v\", got %v", tt.fields, fields)
 			}
-
 		})
 	}
-
 }
 
 func TestManyFromJSON(t *testing.T) {

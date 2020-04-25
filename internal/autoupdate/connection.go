@@ -75,16 +75,18 @@ func (c *Connection) Next() (io.Reader, error) {
 }
 
 func keysDiff(old []string, new []string) []string {
-	slice := make(map[string]bool, len(old))
+	keySet := make(map[string]bool, len(old))
 	for _, key := range old {
-		slice[key] = true
+		keySet[key] = true
 	}
+
 	added := []string{}
 	for _, key := range new {
-		if slice[key] {
+		if keySet[key] {
 			continue
 		}
 		added = append(added, key)
 	}
+
 	return added
 }
