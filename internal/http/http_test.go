@@ -27,7 +27,7 @@ func TestHandlerTestURLs(t *testing.T) {
 	}{
 		{"", http.StatusNotFound},
 		{"/system/autoupdate", http.StatusBadRequest},
-		{"/system/autoupdate/keys", http.StatusOK},
+		{"/system/autoupdate/keys?user/1/name", http.StatusOK},
 	}
 
 	for _, tt := range tc {
@@ -62,9 +62,11 @@ func TestSimple(t *testing.T) {
 		query  string
 		keys   []string
 		status int
+		errMsg string
 	}{
-		{"user/1/name", keys("user/1/name"), http.StatusOK},
-		{"user/1/name,user/2/name", keys("user/1/name", "user/2/name"), http.StatusOK},
+		{"user/1/name", keys("user/1/name"), http.StatusOK, ""},
+		{"user/1/name,user/2/name", keys("user/1/name", "user/2/name"), http.StatusOK, ""},
+		{"key1,key2", keys("key1", "key2"), http.StatusBadRequest, "Invalid keys"},
 	}
 
 	for _, tt := range tc {
@@ -93,9 +95,25 @@ func TestSimple(t *testing.T) {
 				t.Errorf("Got content-type %s, expected: %s", got, expected)
 			}
 
+			if tt.errMsg != "" {
+				var body map[string]map[string]string
+				if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+					t.Errorf("Got invalid json: %v", err)
+				}
+
+				if v := body["error"]["msg"]; v != tt.errMsg {
+					t.Errorf("Got error message `%s`, expected `%s`", v, tt.errMsg)
+				}
+				return
+			}
+
 			var body map[string]map[string]map[string]json.RawMessage
 			if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
 				t.Errorf("Got invalid json: %v", err)
+			}
+
+			if v, ok := body["error"]; ok {
+				t.Errorf("Error: %v", v)
 			}
 
 			if got := mapKeys(body); !cmpSlice(got, tt.keys) {
