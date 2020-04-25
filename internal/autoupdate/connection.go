@@ -14,7 +14,6 @@ type Connection struct {
 	uid        int
 	kb         KeysBuilder
 	tid        uint64
-	filter     *filter
 	next       bool
 }
 
@@ -27,7 +26,7 @@ func (c *Connection) Next() (io.Reader, error) {
 		// First time called
 		c.next = true
 		c.tid = c.autoupdate.topic.LastID()
-		return c.filter.filter(c.autoupdate.restricter.Restrict(c.ctx, c.uid, c.kb.Keys()))
+		return c.autoupdate.restricter.Restrict(c.ctx, c.uid, c.kb.Keys())
 	}
 
 	var err error
@@ -72,20 +71,22 @@ func (c *Connection) Next() (io.Reader, error) {
 		return c.Next()
 	}
 
-	return c.filter.filter(c.autoupdate.restricter.Restrict(c.ctx, c.uid, keys))
+	return c.autoupdate.restricter.Restrict(c.ctx, c.uid, keys)
 }
 
 func keysDiff(old []string, new []string) []string {
-	slice := make(map[string]bool, len(old))
+	keySet := make(map[string]bool, len(old))
 	for _, key := range old {
-		slice[key] = true
+		keySet[key] = true
 	}
+
 	added := []string{}
 	for _, key := range new {
-		if slice[key] {
+		if keySet[key] {
 			continue
 		}
 		added = append(added, key)
 	}
+
 	return added
 }

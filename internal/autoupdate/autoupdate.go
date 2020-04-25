@@ -41,8 +41,10 @@ func New(restricter Restricter, keysChanges KeysChangedReceiver) *Service {
 		closed:     make(chan struct{}),
 	}
 	s.topic = topic.New(topic.WithClosed(s.closed))
+
 	go s.receiveKeyChanges()
 	go s.pruneTopic()
+
 	return s
 }
 
@@ -63,10 +65,6 @@ func (s *Service) Connect(ctx context.Context, userID int, kb KeysBuilder) *Conn
 		ctx:        ctx,
 		uid:        userID,
 		kb:         kb,
-
-		// The filter makes sure, that values, that did not change are not send
-		// to the client again.
-		filter: new(filter),
 	}
 }
 
@@ -82,6 +80,7 @@ func (s *Service) IDer(uid int) RestrictedIDs {
 func (s *Service) pruneTopic() {
 	tick := time.NewTicker(time.Second)
 	defer tick.Stop()
+
 	for {
 		select {
 		case <-s.closed:

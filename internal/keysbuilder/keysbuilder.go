@@ -92,17 +92,10 @@ func (b *Builder) genKeys() error {
 	}
 }
 
-// buildKey returns a valid key from a collection, id and fildname.
-//
-// buildKey("motion", 5, "title") -> "motion/5/title"
-func buildKey(collection string, id int, field string) string {
-	return collection + keySep + strconv.Itoa(id) + keySep + field
-}
-
 // buildGenericKey returns a valid key when the collection and id are already
 // together.
 //
-// buildGenericKey("motion/5", "title") -> "motion/5/title"
+// buildGenericKey("motion/5", "title") -> "motion/5/title".
 func buildGenericKey(collectionID string, field string) string {
 	return collectionID + keySep + field
 }

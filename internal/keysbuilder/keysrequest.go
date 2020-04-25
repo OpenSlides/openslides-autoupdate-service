@@ -260,7 +260,6 @@ func (t *templateField) UnmarshalJSON(data []byte) error {
 func (t templateField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
 	v, err := builder.cache.getOrSet(key, func() (interface{}, error) {
 		return builder.ider.Template(ctx, key)
-
 	})
 	if err != nil {
 		if !errors.Is(err, autoupdate.ErrUnknownKey) {
@@ -268,6 +267,7 @@ func (t templateField) build(ctx context.Context, builder *Builder, key string, 
 		}
 		return
 	}
+
 	values, ok := v.([]string)
 	if !ok {
 		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected []string, got: %v", v, v)

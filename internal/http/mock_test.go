@@ -3,6 +3,7 @@ package http_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"sort"
 )
@@ -26,10 +27,15 @@ func keys(ks ...string) []string {
 	return ks
 }
 
-func mapKeys(m map[string]json.RawMessage) []string {
+func mapKeys(m map[string]map[string]map[string]json.RawMessage) []string {
 	out := make([]string, 0, len(m))
-	for key := range m {
-		out = append(out, key)
+	for collection, v := range m {
+		for id, v := range v {
+			for field := range v {
+				out = append(out, fmt.Sprintf("%s/%s/%s", collection, id, field))
+			}
+		}
+
 	}
 	return out
 }

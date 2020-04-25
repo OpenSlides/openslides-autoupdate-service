@@ -39,6 +39,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // autoupdate creates a Handler for a specific Keysbuilder.
 func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilder, error)) errHandleFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		w.Header().Set("Content-Type", "application/octet-stream")
+
 		uid, err := h.auth.Authenticate(r.Context(), r)
 		if err != nil {
 			return fmt.Errorf("can not authenticate request: %w", err)
@@ -48,8 +50,6 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 		if err != nil {
 			return fmt.Errorf("can not build keysbuilder: %w", err)
 		}
-
-		w.Header().Set("Content-Type", "application/octet-stream")
 
 		connection := h.s.Connect(r.Context(), uid, kb)
 
@@ -88,11 +88,15 @@ func (h *Handler) complex(r *http.Request, uid int) (autoupdate.KeysBuilder, err
 	return keysbuilder.ManyFromJSON(r.Context(), r.Body, h.s.IDer(uid))
 }
 
-// simple builds a keysbuilder from the url query. It expects a comma seperated
+// simple builds a keysbuilder from the url query. It expects a comma separated
 // list of keysname.
 func (h *Handler) simple(r *http.Request, uid int) (autoupdate.KeysBuilder, error) {
 	keys := strings.Split(r.URL.RawQuery, ",")
-	return &keysbuilder.Simple{K: keys}, nil
+	kb := &keysbuilder.Simple{K: keys}
+	if err := kb.Validate(); err != nil {
+		return nil, err
+	}
+	return kb, nil
 }
 
 // errHandleFunc is like a http.Handler, but has a error as return value.
@@ -115,7 +119,7 @@ func (f errHandleFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// writeErr formats a DefinedError and sents it to the writer (normaly the
+// writeErr formats a DefinedError and sents it to the writer (normally the
 // client).
 func writeErr(w io.Writer, err DefinedError) {
 	fmt.Fprintf(w, `{"error": {"type": "%s", "msg": "%s"}}`, err.Type(), quote(err.Error()))

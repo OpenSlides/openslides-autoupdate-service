@@ -1,16 +1,14 @@
 package autoupdate_test
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
-	"io"
 	"strings"
 	"testing"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
+	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
 var dataSet = map[string]string{
@@ -66,14 +64,14 @@ var dataSet = map[string]string{
 }
 
 func TestFeatures(t *testing.T) {
-	m := &datasetMock{}
-	s := autoupdate.New(m, m)
+	r := &test.MockRestricter{Data: dataSet, OnlyData: true}
+	s := autoupdate.New(r, test.NewMockKeysChanged())
 	defer s.Close()
 
 	for _, tt := range []struct {
 		name    string
 		request string
-		data    map[string]string
+		result  string
 	}{
 		{
 			"Basic",
@@ -113,22 +111,42 @@ func TestFeatures(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{
-				"A/1/a":      `"a1"`,
-				"A/1/C_ids":  `[]`,
-				"A/1/B_id":   `1`,
-				"A/1/G1_ids": `[1,2]`,
-				"A/2/a":      `"a2"`,
-				"A/2/C_ids":  `[1,2]`,
-				"A/2/G1_ids": `[]`,
-				"C/1/c":      `"c1"`,
-				"C/1/G1_ids": `[2,3]`,
-				"C/2/c":      `"c2"`,
-				"C/2/G1_ids": `[2,3]`,
-				"G1/1/g1":    `"g1.1"`,
-				"G1/2/g1":    `"g1.2"`,
-				"G1/3/g1":    `"g1.3"`,
-			},
+			`{
+				"A": {
+					"1": {
+						"a": "a1",
+						"C_ids": [],
+						"B_id": 1,
+						"G1_ids": [1,2]
+					},
+					"2": {
+						"a": "a2",
+						"C_ids": [1,2],
+						"G1_ids": []
+					}
+				},
+				"C": {
+					"1": {
+						"c": "c1",
+						"G1_ids": [2,3]
+					},
+					"2": {
+						"c": "c2",
+						"G1_ids": [2,3]
+					}
+				},
+				"G1": {
+					"1": {
+						"g1": "g1.1"
+					},
+					"2": {
+						"g1": "g1.2"
+					},
+					"3": {
+						"g1": "g1.3"
+					}
+				}
+			}`,
 		},
 		{
 			"Partial merged fields, generic lookup",
@@ -166,17 +184,33 @@ func TestFeatures(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{
-				"B/1/B_children_ids":     `[2]`,
-				"B/1/C_ids":              `[1]`,
-				"B/1/G2_id":              `1`,
-				"B/2/C_ids":              `[1,2]`,
-				"B/2/B_parent_id":        `1`,
-				"G2/1/content_object_id": `"B/1"`,
-				"C/1/c":                  `"c1"`,
-				"C/1/title":              `"c1"`,
-				"C/2/c":                  `"c2"`,
-			},
+			`{
+				"B": {
+					"1": {
+						"B_children_ids": [2],
+						"C_ids": [1],
+						"G2_id": 1
+					},
+					"2" : {
+						"C_ids": [1,2],
+						"B_parent_id": 1
+					}
+				},
+				"G2": {
+					"1": {
+						"content_object_id": "B/1"
+					}
+				},
+				"C": {
+					"1": {
+						"c": "c1",
+						"title": "c1"
+					},
+					"2": {
+						"c": "c2"
+					}
+				}
+			}`,
 		},
 		{
 			"non-existent ids, fields, fqids, references, generic relations and fields without a relation",
@@ -200,18 +234,32 @@ func TestFeatures(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{
-				"G1/2/content_object_ids": `["A/1","C/1","C/2"]`,
-				"A/1/a":                   `"a1"`,
-				"A/1/title":               `"a1"`,
-				"A/1/G1_ids":              `[1,2]`,
-				"C/1/title":               `"c1"`,
-				"C/1/A_id":                `2`,
-				"C/1/G1_ids":              `[2,3]`,
-				"C/2/title":               `"c2"`,
-				"C/2/A_id":                `2`,
-				"C/2/G1_ids":              `[2,3]`,
-			},
+			`{
+				"G1": {
+					"2": {
+						"content_object_ids": ["A/1","C/1","C/2"]
+					}
+				},
+				"A": {
+					"1": {
+						"a": "a1",
+						"title": "a1",
+						"G1_ids": [1,2]
+					}
+				},
+				"C": {
+					"1": {
+						"title": "c1",
+						"A_id": 2,
+						"G1_ids": [2,3]
+					},
+					"2": {
+						"title": "c2",
+						"A_id": 2,
+						"G1_ids": [2,3]
+					}
+				}
+			}`,
 		},
 		{
 			"template fields",
@@ -223,12 +271,18 @@ func TestFeatures(t *testing.T) {
 					"B_$_ids": null
 				}
 			}`,
-			map[string]string{
-				"D/1/d":       `"d1"`,
-				"D/1/B_$_ids": `["1","2","3"]`,
-				"D/2/d":       `"d2"`,
-				"D/2/B_$_ids": `["1","4"]`,
-			},
+			`{
+				"D": {
+					"1": {
+						"d": "d1",
+						"B_$_ids": ["1","2","3"]
+					},
+					"2": {
+						"d": "d2",
+						"B_$_ids": ["1","4"]
+					}
+				}
+			}`,
 		},
 		{
 			"structured fields without references",
@@ -242,17 +296,23 @@ func TestFeatures(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{
-				"D/1/d":       `"d1"`,
-				"D/1/B_$_ids": `["1","2","3"]`,
-				"D/1/B_1_ids": `[1,2]`,
-				"D/1/B_2_ids": `[1]`,
-				"D/1/B_3_ids": `[]`,
-				"D/2/d":       `"d2"`,
-				"D/2/B_$_ids": `["1","4"]`,
-				"D/2/B_1_ids": `[]`,
-				"D/2/B_4_ids": `[2]`,
-			},
+			`{
+				"D": {
+					"1":{
+						"d": "d1",
+						"B_$_ids": ["1","2","3"],
+						"B_1_ids": [1,2],
+						"B_2_ids": [1],
+						"B_3_ids": []
+					},
+					"2": {
+						"d":       "d2",
+						"B_$_ids": ["1","4"],
+						"B_1_ids": [],
+						"B_4_ids": [2]
+					}
+				}
+			}`,
 		},
 		{
 			"structed references",
@@ -279,18 +339,30 @@ func TestFeatures(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{
-				"D/1/B_$_ids": `["1","2","3"]`,
-				"D/1/B_1_ids": `[1,2]`,
-				"D/1/B_2_ids": `[1]`,
-				"D/1/B_3_ids": `[]`,
-				"D/2/B_$_ids": `["1","4"]`,
-				"D/2/B_1_ids": `[]`,
-				"D/2/B_4_ids": `[2]`,
-				"B/1/b":       `"b1"`,
-				"B/2/b":       `"b2"`,
-				"B/2/title":   `"b2"`,
-			},
+			`{
+				"D": {
+					"1": {
+						"B_$_ids": ["1","2","3"],
+						"B_1_ids": [1,2],
+						"B_2_ids": [1],
+						"B_3_ids": []
+					},
+					"2": {
+						"B_$_ids": ["1","4"],
+						"B_1_ids": [],
+						"B_4_ids": [2]
+					}
+				},
+				"B": {
+					"1": {
+						"b": "b1"
+					},
+					"2": {
+						"b": "b2",
+						"title": "b2"
+					}
+				}
+			}`,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -303,61 +375,25 @@ func TestFeatures(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Can not get data: %v", err)
 			}
-			var rdata map[string]json.RawMessage
-			if err := json.NewDecoder(reader).Decode(&rdata); err != nil {
+
+			var got map[string]map[string]map[string]json.RawMessage
+			if err := json.NewDecoder(reader).Decode(&got); err != nil {
 				t.Fatalf("Can not decode keys from data: %v", err)
 			}
-
-			data := mapConv(rdata)
-			if diff := cmpMap(data, tt.data); !diff {
-				t.Errorf("Expected %v,got: %v", tt.data, data)
+			var expect map[string]map[string]map[string]json.RawMessage
+			if err := json.Unmarshal([]byte(tt.result), &expect); err != nil {
+				t.Fatalf("Can not decode keys from expected data: %v", err)
 			}
+
+			cmpMap(t, got, expect)
 		})
 	}
 }
 
-type datasetMock struct{}
-
-func (d *datasetMock) Restrict(ctx context.Context, uid int, keys []string) (io.Reader, error) {
-	data := make(map[string]json.RawMessage)
-	for _, key := range keys {
-		value, ok := dataSet[key]
-		if !ok {
-			continue
-		}
-		data[key] = json.RawMessage(value)
+func cmpMap(t *testing.T, got, expect map[string]map[string]map[string]json.RawMessage) {
+	v1, _ := json.Marshal(got)
+	v2, _ := json.Marshal(expect)
+	if string(v1) != string(v2) {
+		t.Errorf("got %s, expected %s", string(v1), string(v2))
 	}
-	out, err := json.Marshal(data)
-	if err != nil {
-		return nil, fmt.Errorf("can not decode restricted data: %v", err)
-	}
-	return bytes.NewReader(out), nil
-}
-
-func (d *datasetMock) KeysChanged() ([]string, error) {
-	select {}
-}
-
-func cmpMap(one, two map[string]string) bool {
-	if len(one) != len(two) {
-		return false
-	}
-	for key := range one {
-		tv, ok := two[key]
-		if !ok {
-			return false
-		}
-		if one[key] != tv {
-			return false
-		}
-	}
-	return true
-}
-
-func mapConv(m map[string]json.RawMessage) map[string]string {
-	out := make(map[string]string)
-	for k, v := range m {
-		out[k] = string(v)
-	}
-	return out
 }
