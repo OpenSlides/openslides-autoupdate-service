@@ -18,7 +18,7 @@ const (
 	url         = "http://localhost:8002/system/autoupdate/keys?" + keyName
 	redisAddr   = "localhost:6379"
 	redisTopic  = "ModifiedFields"
-	keyName     = "MyKey"
+	keyName     = "user/5/name"
 )
 
 func main() {
