@@ -70,7 +70,7 @@ func buildDatastore(f *faker) autoupdate.Datastore {
 	fmt.Print("Datastore Service: ")
 	switch getEnv("DATASTORE", "fake") {
 	case "service":
-		url := getEnv("DATASTORE_URL", "http://localhost:8002")
+		url := getEnv("DATASTORE_URL", "http://localhost:8001")
 		fmt.Println(url)
 		receiver := buildReceiver(f)
 		restricter = datastore.New(url, receiver)

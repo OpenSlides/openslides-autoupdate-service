@@ -75,7 +75,7 @@ All clients that listen for the keys get an update in the same form then the ini
 
 To connect the autoupdate-service with the datastore service, the following environment variables can be used:
 
-`DATASTORE=service DATASTORE_URL=http://localhost:8002 MESSAGIN_SERVICE=redis ./autoupdate`
+`DATASTORE=service MESSAGIN_SERVICE=redis ./autoupdate`
 
 
 ### With redis
@@ -92,7 +92,7 @@ The Service uses the following environment variables:
 
 * `LISTEN_HTTP_ADDR=:8002`: Lets the service listen on port 8080 on any device. The default is `:8002`.
 * `DATASTORE=fake`: Sets the datastore service. `fake` (default) or `service`.
-* `DATASTORE_URL`: Sets the url for the datastore service. The default is `http://localhost:8002`.
+* `DATASTORE_URL`: Sets the url for the datastore service. The default is `http://localhost:8001`.
 * `MESSAGIN=fake`: Tells the service what kind of messagin service is used. `fake`(default) or `redis`
 * `REDIS_ADDR=localhost:6379`: The address to redis.
 * `REDIS_TEST_CONN=true`: Test the redis connection on startup. Disable on the cloud if redis needs more time to start then this service.

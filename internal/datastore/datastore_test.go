@@ -12,7 +12,7 @@ func TestDataStoreGet(t *testing.T) {
 	ts := newTestServer()
 	d := datastore.New(ts.ts.URL, new(test.MockKeysChanged))
 
-	value, err := d.Get(context.Background(), "key")
+	value, err := d.Get(context.Background(), "collection/1/field")
 
 	if err != nil {
 		t.Errorf("Get() returned an unexpected error: %v", err)
@@ -28,7 +28,7 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 	ts := newTestServer()
 	d := datastore.New(ts.ts.URL, new(test.MockKeysChanged))
 
-	got, err := d.Get(context.Background(), "key1", "key2")
+	got, err := d.Get(context.Background(), "collection/1/field", "collection/2/field")
 
 	if err != nil {
 		t.Errorf("Get() returned an unexpected error: %v", err)

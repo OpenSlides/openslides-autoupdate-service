@@ -129,7 +129,7 @@ func writeErr(w io.Writer, err DefinedError) {
 // internalErr sends a nonsense error message to the client and logs the real
 // message to stdout.
 func internalErr(w io.Writer, err error) {
-	log.Printf("Error: %v", err)
+	log.Printf("Internal Error: %v", err)
 	fmt.Fprintln(w, `{"error": {"type": "InternalError", "msg": "Ups, something went wrong!"}}`)
 }
 

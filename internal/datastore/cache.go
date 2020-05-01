@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"context"
+	"fmt"
 	"sync"
 )
 
@@ -76,6 +77,9 @@ func (c *cache) getOrSet(ctx context.Context, keys []string, set func(keys []str
 
 		go func() {
 			retrievedValues, err := set(missingKeys)
+			if err == nil && len(retrievedValues) < len(missingKeys) {
+				err = fmt.Errorf("no value returned")
+			}
 			for i, key := range missingKeys {
 				entry := entries[key]
 				// Only set enty.value and entry.err if key was not canceled.
@@ -85,7 +89,12 @@ func (c *cache) getOrSet(ctx context.Context, keys []string, set func(keys []str
 					// TODO: is this a race condition??? if not:
 					// entry.mu has not to be locked. It is guaraneed, that the values
 					// can not be written.
-					entry.value, entry.err = retrievedValues[i], err
+					if err != nil {
+						entry.err = err
+
+					} else {
+						entry.value = retrievedValues[i]
+					}
 				}
 				close(entry.done)
 			}
