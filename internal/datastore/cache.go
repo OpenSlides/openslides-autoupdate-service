@@ -2,7 +2,6 @@ package datastore
 
 import (
 	"context"
-	"fmt"
 	"sync"
 )
 
@@ -45,7 +44,7 @@ func newCache() *cache {
 //
 // If the context is done, getOrSet returns. But the set() call is not stopped.
 // Other calls to getOrSet may wait for its result.
-func (c *cache) getOrSet(ctx context.Context, keys []string, set func(keys []string) ([]string, error)) ([]string, error) {
+func (c *cache) getOrSet(ctx context.Context, keys []string, set func(keys []string) (map[string]string, error)) ([]string, error) {
 	// entries is a map like cache.data. All values from cache.data are also
 	// saved in this map, so cache.data does not have to be locked for long.
 	entries := make(map[string]*cacheEntry, len(keys))
@@ -76,11 +75,8 @@ func (c *cache) getOrSet(ctx context.Context, keys []string, set func(keys []str
 		done := make(chan struct{})
 
 		go func() {
-			retrievedValues, err := set(missingKeys)
-			if err == nil && len(retrievedValues) < len(missingKeys) {
-				err = fmt.Errorf("no value returned")
-			}
-			for i, key := range missingKeys {
+			data, err := set(missingKeys)
+			for _, key := range missingKeys {
 				entry := entries[key]
 				// Only set enty.value and entry.err if key was not canceled.
 				select {
@@ -93,7 +89,10 @@ func (c *cache) getOrSet(ctx context.Context, keys []string, set func(keys []str
 						entry.err = err
 
 					} else {
-						entry.value = retrievedValues[i]
+						entry.value, ok = data[key]
+						if !ok {
+							entry.value = "null"
+						}
 					}
 				}
 				close(entry.done)

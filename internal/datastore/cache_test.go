@@ -10,8 +10,8 @@ import (
 
 func TestCacheGetOrSet(t *testing.T) {
 	c := newCache()
-	v, err := c.getOrSet(context.Background(), test.Str("key1"), func([]string) ([]string, error) {
-		return test.Str("value"), nil
+	v, err := c.getOrSet(context.Background(), test.Str("key1"), func([]string) (map[string]string, error) {
+		return map[string]string{"key1": "value"}, nil
 	})
 
 	if err != nil {
@@ -25,15 +25,15 @@ func TestCacheGetOrSet(t *testing.T) {
 
 func TestCacheGetOrSetNoSecondCall(t *testing.T) {
 	c := newCache()
-	c.getOrSet(context.Background(), test.Str("key1"), func([]string) ([]string, error) {
-		return test.Str("value"), nil
+	c.getOrSet(context.Background(), test.Str("key1"), func([]string) (map[string]string, error) {
+		return map[string]string{"key1": "value"}, nil
 	})
 
 	var called bool
 
-	v, err := c.getOrSet(context.Background(), test.Str("key1"), func([]string) ([]string, error) {
+	v, err := c.getOrSet(context.Background(), test.Str("key1"), func([]string) (map[string]string, error) {
 		called = true
-		return test.Str("Shut not be returned"), nil
+		return map[string]string{"key1": "Shut not be returned"}, nil
 	})
 
 	if err != nil {
@@ -52,17 +52,17 @@ func TestCacheGetOrSetBlockSecondCall(t *testing.T) {
 	c := newCache()
 	wait := make(chan struct{})
 	go func() {
-		c.getOrSet(context.Background(), test.Str("key1"), func([]string) ([]string, error) {
+		c.getOrSet(context.Background(), test.Str("key1"), func([]string) (map[string]string, error) {
 			<-wait
-			return test.Str("value"), nil
+			return map[string]string{"key1": "value"}, nil
 		})
 	}()
 
 	// close done, when the second call is finished.
 	done := make(chan struct{})
 	go func() {
-		c.getOrSet(context.Background(), test.Str("key1"), func([]string) ([]string, error) {
-			return test.Str("Shut not be returned"), nil
+		c.getOrSet(context.Background(), test.Str("key1"), func([]string) (map[string]string, error) {
+			return map[string]string{"key1": "Shut not be returned"}, nil
 		})
 		close(done)
 	}()
@@ -86,8 +86,8 @@ func TestCacheGetOrSetBlockSecondCall(t *testing.T) {
 
 func TestCacheSetIfExist(t *testing.T) {
 	c := newCache()
-	c.getOrSet(context.Background(), test.Str("key1"), func([]string) ([]string, error) {
-		return test.Str("value"), nil
+	c.getOrSet(context.Background(), test.Str("key1"), func([]string) (map[string]string, error) {
+		return map[string]string{"key1": "value"}, nil
 	})
 
 	// Set key1 and key2. key1 is in the cache. key2 should be ignored.
@@ -98,8 +98,12 @@ func TestCacheSetIfExist(t *testing.T) {
 
 	// Get key1 and key2 from the cache. The existing key1 should not be set.
 	// key2 should be.
-	got, _ := c.getOrSet(context.Background(), test.Str("key1", "key2"), func(keys []string) ([]string, error) {
-		return keys, nil
+	got, _ := c.getOrSet(context.Background(), test.Str("key1", "key2"), func(keys []string) (map[string]string, error) {
+		data := make(map[string]string)
+		for _, key := range keys {
+			data[key] = key
+		}
+		return data, nil
 	})
 
 	expect := test.Str("new value", "key2")
@@ -113,13 +117,13 @@ func TestCacheSetIfExistParallelToGetOrSet(t *testing.T) {
 
 	waitForGetOrSet := make(chan struct{})
 	go func() {
-		c.getOrSet(context.Background(), test.Str("key1"), func(keys []string) ([]string, error) {
+		c.getOrSet(context.Background(), test.Str("key1"), func(keys []string) (map[string]string, error) {
 			// Signal, that getOrSet was called.
 			close(waitForGetOrSet)
 
 			// Wait for some time.
 			time.Sleep(10 * time.Millisecond)
-			return test.Str("shut not be used"), nil
+			return map[string]string{"key1": "shut not be used"}, nil
 		})
 	}()
 
@@ -128,8 +132,8 @@ func TestCacheSetIfExistParallelToGetOrSet(t *testing.T) {
 	// Set key1 to new value and stop the ongoing getOrSet-Call
 	c.setIfExist(map[string]string{"key1": "new value"})
 
-	got, _ := c.getOrSet(context.Background(), test.Str("key1"), func([]string) ([]string, error) {
-		return test.Str("Expect values in cache"), nil
+	got, _ := c.getOrSet(context.Background(), test.Str("key1"), func([]string) (map[string]string, error) {
+		return map[string]string{"key1": "Expect values in cache"}, nil
 	})
 
 	expect := test.Str("new value")

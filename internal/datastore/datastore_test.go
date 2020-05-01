@@ -18,9 +18,9 @@ func TestDataStoreGet(t *testing.T) {
 		t.Errorf("Get() returned an unexpected error: %v", err)
 	}
 
-	expected := `"value"`
-	if len(value) != 1 || value[0] != expected {
-		t.Errorf("Get() returned %v, expected [%s]", value, expected)
+	expected := test.Str(`"value"`)
+	if !test.CmpSlice(value, expected) {
+		t.Errorf("Get() returned `%v`, expected `%v`", value, expected)
 	}
 }
 

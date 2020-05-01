@@ -37,7 +37,7 @@ func newTestServer() *testServer {
 			if _, ok := responceData[fqid]; !ok {
 				responceData[fqid] = make(map[string]string)
 			}
-			responceData[fqid][r.MappedFields[0]] = `"value"`
+			responceData[fqid][r.MappedFields[0]] = "value"
 		}
 
 		json.NewEncoder(w).Encode(responceData)

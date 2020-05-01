@@ -34,7 +34,7 @@ func New(url string, keychanger KeysChangedReceiver) *Datastore {
 
 // Get returns the value for one or many keys.
 func (d *Datastore) Get(ctx context.Context, keys ...string) ([]string, error) {
-	values, err := d.cache.getOrSet(ctx, keys, func(keys []string) ([]string, error) {
+	values, err := d.cache.getOrSet(ctx, keys, func(keys []string) (map[string]string, error) {
 		return d.requestKeys(keys)
 	})
 	if err != nil {
@@ -46,14 +46,25 @@ func (d *Datastore) Get(ctx context.Context, keys ...string) ([]string, error) {
 
 // KeysChanged blocks until some key have changed. Then, it returns the keys.
 func (d *Datastore) KeysChanged() ([]string, error) {
-	// TODO: update cache
-	return d.keychanger.KeysChanged()
+	keys, err := d.keychanger.KeysChanged()
+	if err != nil {
+		return nil, err
+	}
 
+	// TODO: only request keys that exist in the cache.
+	data, err := d.requestKeys(keys)
+	if err != nil {
+		return nil, fmt.Errorf("request values for keys: %w", err)
+	}
+
+	d.cache.setIfExist(data)
+
+	return keys, nil
 }
 
 // requestKeys request a list of keys by the datastore. It returns the values in
 // the same order. If an error happens, no key is returned.
-func (d *Datastore) requestKeys(keys []string) ([]string, error) {
+func (d *Datastore) requestKeys(keys []string) (map[string]string, error) {
 	requestData, err := keysToGetManyRequest(keys)
 	if err != nil {
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)
@@ -84,16 +95,7 @@ func (d *Datastore) requestKeys(keys []string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse responce: %w", err)
 	}
-
-	values := make([]string, 0, len(keys))
-	for _, key := range keys {
-		value, ok := responseData[key]
-		if !ok {
-			return nil, fmt.Errorf("key `%s` is not in responce", key)
-		}
-		values = append(values, value)
-	}
-	return values, nil
+	return responseData, nil
 }
 
 // keysToGetManyRequest returns an list of datastore GetManyRequests encoded as
