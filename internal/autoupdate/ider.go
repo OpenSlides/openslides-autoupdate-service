@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"strconv"
-	"strings"
 )
 
 const keySep = "/"
@@ -18,8 +16,8 @@ var ErrUnknownKey = errors.New("key does not exist")
 
 // RestrictedIDs implements the IDer interface by using a restricer.
 type RestrictedIDs struct {
-	user int
-	r    Restricter
+	user       int
+	autoupdate *Service
 }
 
 // ID returns the id in the key.
@@ -84,39 +82,10 @@ func (i RestrictedIDs) Template(ctx context.Context, key string) ([]string, erro
 	return i.GenericIDs(ctx, key)
 }
 
-func (i RestrictedIDs) decodedRestricter(ctx context.Context, key string) (json.RawMessage, error) {
-	r, err := i.r.Restrict(ctx, i.user, []string{key})
+func (i RestrictedIDs) decodedRestricter(ctx context.Context, key string) ([]byte, error) {
+	data, err := i.autoupdate.restrictedData(ctx, i.user, key)
 	if err != nil {
-		return nil, fmt.Errorf("restrict key %s: %w", key, err)
+		return nil, fmt.Errorf("get value for key `%s`: %w", key, err)
 	}
-
-	return fromModel(key, r)
-}
-
-func fromModel(key string, r io.Reader) (json.RawMessage, error) {
-	keyParts := strings.SplitN(key, keySep, 3)
-	if len(keyParts) != 3 {
-		return nil, fmt.Errorf("invalid key %s", key)
-	}
-
-	collection := keyParts[0]
-	id := keyParts[1]
-	field := keyParts[2]
-
-	var data map[string]map[string]map[string]json.RawMessage
-	if err := json.NewDecoder(r).Decode(&data); err != nil {
-		return nil, fmt.Errorf("decode restricted data: %w", err)
-	}
-
-	if _, ok := data[collection]; !ok {
-		return nil, ErrUnknownKey
-	}
-	if _, ok := data[collection][id]; !ok {
-		return nil, ErrUnknownKey
-	}
-	if _, ok := data[collection][id][field]; !ok {
-		return nil, ErrUnknownKey
-	}
-
-	return data[collection][id][field], nil
+	return []byte(data[key]), nil
 }

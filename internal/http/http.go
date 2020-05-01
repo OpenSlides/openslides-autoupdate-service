@@ -2,6 +2,7 @@
 package http
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -56,7 +57,7 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 		// connection.Next() blocks, until there is new data or the client
 		// context or the server is closed.
 		for {
-			reader, err := connection.Next()
+			data, err := connection.Next()
 			if err != nil {
 				var derr DefinedError
 				if errors.As(err, &derr) {
@@ -67,12 +68,12 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 				return nil
 			}
 
-			// reader is nil when the topic or the connection are closed.
-			if reader == nil {
+			// data is nil when the topic or the connection are closed.
+			if data == nil {
 				return nil
 			}
 
-			if _, err := io.Copy(w, reader); err != nil {
+			if err := sendData(w, data); err != nil {
 				internalErr(w, err)
 				return nil
 			}
@@ -136,4 +137,8 @@ func internalErr(w io.Writer, err error) {
 // valid json.
 func quote(s string) string {
 	return strings.ReplaceAll(s, `"`, `\"`)
+}
+
+func sendData(w io.Writer, data map[string]string) error {
+	return json.NewEncoder(w).Encode(data)
 }

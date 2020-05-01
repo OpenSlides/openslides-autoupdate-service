@@ -3,6 +3,8 @@
 * Listen on logout messages
 * Speak with the auth service
 * Logging, metrics and traces
+* The filter could be added again.
 
-# Discuss
-* What should Restricter return when an error happens in an open connection (after http 200 was send)
+
+# Fix
+* performance tool

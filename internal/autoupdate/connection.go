@@ -3,7 +3,6 @@ package autoupdate
 import (
 	"context"
 	"fmt"
-	"io"
 )
 
 // Connection holds the state of a client. It has to be created by colling
@@ -17,16 +16,16 @@ type Connection struct {
 	next       bool
 }
 
-// Next returns the next data in form of an reader.
+// Next returns the next data for the user.
 //
 // Next blocks until there are new data or the context or the server closes. In
-// this case, the returned io.Reader is nil.
-func (c *Connection) Next() (io.Reader, error) {
+// this case, nil is returned.
+func (c *Connection) Next() (map[string]string, error) {
 	if !c.next {
 		// First time called
 		c.next = true
 		c.tid = c.autoupdate.topic.LastID()
-		return c.autoupdate.restricter.Restrict(c.ctx, c.uid, c.kb.Keys())
+		return c.autoupdate.restrictedData(c.ctx, c.uid, c.kb.Keys()...)
 	}
 
 	var err error
@@ -71,7 +70,7 @@ func (c *Connection) Next() (io.Reader, error) {
 		return c.Next()
 	}
 
-	return c.autoupdate.restricter.Restrict(c.ctx, c.uid, keys)
+	return c.autoupdate.restrictedData(c.ctx, c.uid, keys...)
 }
 
 func keysDiff(old []string, new []string) []string {

@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -9,7 +10,7 @@ import (
 
 func TestCacheGetOrSet(t *testing.T) {
 	c := newCache()
-	v, err := c.getOrSet(test.Str("key1"), func([]string) ([]string, error) {
+	v, err := c.getOrSet(context.Background(), test.Str("key1"), func([]string) ([]string, error) {
 		return test.Str("value"), nil
 	})
 
@@ -24,13 +25,13 @@ func TestCacheGetOrSet(t *testing.T) {
 
 func TestCacheGetOrSetNoSecondCall(t *testing.T) {
 	c := newCache()
-	c.getOrSet(test.Str("key1"), func([]string) ([]string, error) {
+	c.getOrSet(context.Background(), test.Str("key1"), func([]string) ([]string, error) {
 		return test.Str("value"), nil
 	})
 
 	var called bool
 
-	v, err := c.getOrSet(test.Str("key1"), func([]string) ([]string, error) {
+	v, err := c.getOrSet(context.Background(), test.Str("key1"), func([]string) ([]string, error) {
 		called = true
 		return test.Str("Shut not be returned"), nil
 	})
@@ -51,7 +52,7 @@ func TestCacheGetOrSetBlockSecondCall(t *testing.T) {
 	c := newCache()
 	wait := make(chan struct{})
 	go func() {
-		c.getOrSet(test.Str("key1"), func([]string) ([]string, error) {
+		c.getOrSet(context.Background(), test.Str("key1"), func([]string) ([]string, error) {
 			<-wait
 			return test.Str("value"), nil
 		})
@@ -60,7 +61,7 @@ func TestCacheGetOrSetBlockSecondCall(t *testing.T) {
 	// close done, when the second call is finished.
 	done := make(chan struct{})
 	go func() {
-		c.getOrSet(test.Str("key1"), func([]string) ([]string, error) {
+		c.getOrSet(context.Background(), test.Str("key1"), func([]string) ([]string, error) {
 			return test.Str("Shut not be returned"), nil
 		})
 		close(done)
@@ -85,7 +86,7 @@ func TestCacheGetOrSetBlockSecondCall(t *testing.T) {
 
 func TestCacheSetIfExist(t *testing.T) {
 	c := newCache()
-	c.getOrSet(test.Str("key1"), func([]string) ([]string, error) {
+	c.getOrSet(context.Background(), test.Str("key1"), func([]string) ([]string, error) {
 		return test.Str("value"), nil
 	})
 
@@ -97,7 +98,7 @@ func TestCacheSetIfExist(t *testing.T) {
 
 	// Get key1 and key2 from the cache. The existing key1 should not be set.
 	// key2 should be.
-	got, _ := c.getOrSet(test.Str("key1", "key2"), func(keys []string) ([]string, error) {
+	got, _ := c.getOrSet(context.Background(), test.Str("key1", "key2"), func(keys []string) ([]string, error) {
 		return keys, nil
 	})
 
@@ -112,7 +113,7 @@ func TestCacheSetIfExistParallelToGetOrSet(t *testing.T) {
 
 	waitForGetOrSet := make(chan struct{})
 	go func() {
-		c.getOrSet(test.Str("key1"), func(keys []string) ([]string, error) {
+		c.getOrSet(context.Background(), test.Str("key1"), func(keys []string) ([]string, error) {
 			// Signal, that getOrSet was called.
 			close(waitForGetOrSet)
 
@@ -127,7 +128,7 @@ func TestCacheSetIfExistParallelToGetOrSet(t *testing.T) {
 	// Set key1 to new value and stop the ongoing getOrSet-Call
 	c.setIfExist(map[string]string{"key1": "new value"})
 
-	got, _ := c.getOrSet(test.Str("key1"), func([]string) ([]string, error) {
+	got, _ := c.getOrSet(context.Background(), test.Str("key1"), func([]string) ([]string, error) {
 		return test.Str("Expect values in cache"), nil
 	})
 

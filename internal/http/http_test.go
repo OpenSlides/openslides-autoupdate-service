@@ -15,9 +15,9 @@ import (
 )
 
 func TestHandlerTestURLs(t *testing.T) {
-	keyschanges := test.NewMockKeysChanged()
-	defer keyschanges.Close()
-	s := autoupdate.New(new(test.MockRestricter), keyschanges)
+	datastore := test.NewMockDatastore()
+	defer datastore.Close()
+	s := autoupdate.New(datastore, new(test.MockRestricter))
 	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}))
 	defer srv.Close()
 
@@ -52,9 +52,9 @@ func TestHandlerTestURLs(t *testing.T) {
 }
 
 func TestSimple(t *testing.T) {
-	keyschanges := test.NewMockKeysChanged()
-	defer keyschanges.Close()
-	s := autoupdate.New(new(test.MockRestricter), keyschanges)
+	datastore := test.NewMockDatastore()
+	defer datastore.Close()
+	s := autoupdate.New(datastore, new(test.MockRestricter))
 	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}))
 	defer srv.Close()
 
@@ -124,9 +124,9 @@ func TestSimple(t *testing.T) {
 }
 
 func TestErrors(t *testing.T) {
-	keyschanges := test.NewMockKeysChanged()
-	defer keyschanges.Close()
-	s := autoupdate.New(new(test.MockRestricter), keyschanges)
+	datastore := test.NewMockDatastore()
+	defer datastore.Close()
+	s := autoupdate.New(datastore, new(test.MockRestricter))
 	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}))
 	defer srv.Close()
 

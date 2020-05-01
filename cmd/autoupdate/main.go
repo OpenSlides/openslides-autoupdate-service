@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
+	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
 	ahttp "github.com/openslides/openslides-autoupdate-service/internal/http"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
 	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
@@ -20,11 +21,10 @@ func main() {
 	listenAddr := getEnv("LISTEN_HTTP_ADDR", ":8002")
 
 	f := &faker{buf: bufio.NewReader(os.Stdin)}
-	receiver := buildReceiver(f)
 	authService := buildAuth()
-	restricter := buildRestricter(f)
+	datastoreService := buildDatastore(f)
 
-	service := autoupdate.New(restricter, receiver)
+	service := autoupdate.New(datastoreService, new(restrict.Restricter))
 
 	handler := ahttp.New(service, authService)
 	srv := &http.Server{Addr: listenAddr, Handler: handler}
@@ -62,12 +62,30 @@ func waitForShutdown() {
 	}()
 }
 
-// buildReceiver builds the receiver needed by the autoupdate service.
+// buildDatastore builds the datastore  needed by the autoupdate service.
 // It uses environment variables to make the decission. Per default, the given
 // faker is used.
-func buildReceiver(f *faker) autoupdate.KeysChangedReceiver {
-	// Choose the topic service
-	var receiver autoupdate.KeysChangedReceiver
+func buildDatastore(f *faker) autoupdate.Datastore {
+	var restricter autoupdate.Datastore
+	fmt.Print("Datastore Service: ")
+	switch getEnv("DATASTORE", "fake") {
+	case "service":
+		url := getEnv("DATASTORE_URL", "http://localhost:8002")
+		fmt.Println(url)
+		receiver := buildReceiver(f)
+		restricter = datastore.New(url, receiver)
+	default:
+		restricter = f
+		fmt.Println("fake")
+	}
+	return restricter
+}
+
+// buildReceiver builds the receiver needed by the datastore service.
+// It uses environment variables to make the decission. Per default, the given
+// faker is used.
+func buildReceiver(f *faker) datastore.KeysChangedReceiver {
+	var receiver datastore.KeysChangedReceiver
 	fmt.Print("Messagin Service: ")
 	switch getEnv("MESSAGIN_SERVICE", "fake") {
 	case "redis":
@@ -84,20 +102,6 @@ func buildReceiver(f *faker) autoupdate.KeysChangedReceiver {
 		fmt.Println("fake")
 	}
 	return receiver
-}
-
-// buildRestricter builds the restricter needed by the autoupdate service.
-// It uses environment variables to make the decission. Per default, the given
-// faker is used.
-func buildRestricter(f *faker) autoupdate.Restricter {
-	var restricter autoupdate.Restricter
-	switch getEnv("RESTRICTER_SERVICE", "fake") {
-	case "backend":
-		restricter = &restrict.Service{Addr: getEnv("BACKEND_ADDR", "http://localhost:8000")}
-	default:
-		restricter = f
-	}
-	return restricter
 }
 
 // buildAuth returns the auth service needed by the http server.

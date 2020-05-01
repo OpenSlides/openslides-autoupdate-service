@@ -2,7 +2,7 @@ package test
 
 import "time"
 
-// MockKeysChanged implements the autoupdate.KeysChangedReceiver interface.
+// MockKeysChanged implements the datastore.KeysChangedReceiver interface.
 //
 // The received keys can be controlled by using the Send-method.
 //

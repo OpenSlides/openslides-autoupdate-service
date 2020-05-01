@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"context"
 	"sync"
 )
 
@@ -40,7 +41,10 @@ func newCache() *cache {
 //
 // The set function is used to create the cache values. It is called only with
 // the missing keys.
-func (c *cache) getOrSet(keys []string, set func(keys []string) ([]string, error)) ([]string, error) {
+//
+// If the context is done, getOrSet returns. But the set() call is not stopped.
+// Other calls to getOrSet may wait for its result.
+func (c *cache) getOrSet(ctx context.Context, keys []string, set func(keys []string) ([]string, error)) ([]string, error) {
 	// entries is a map like cache.data. All values from cache.data are also
 	// saved in this map, so cache.data does not have to be locked for long.
 	entries := make(map[string]*cacheEntry, len(keys))
@@ -68,19 +72,30 @@ func (c *cache) getOrSet(keys []string, set func(keys []string) ([]string, error
 
 	// Get values that are missing
 	if len(missingKeys) > 0 {
-		retrievedValues, err := set(missingKeys)
-		for i, key := range missingKeys {
-			entry := entries[key]
-			// Only set enty.value and entry.err if key was not canceled.
-			select {
-			case <-entry.cancel:
-			default:
-				// TODO: is this a race condition??? if not:
-				// entry.mu has not to be locked. It is guaraneed, that the values
-				// can not be written.
-				entry.value, entry.err = retrievedValues[i], err
+		done := make(chan struct{})
+
+		go func() {
+			retrievedValues, err := set(missingKeys)
+			for i, key := range missingKeys {
+				entry := entries[key]
+				// Only set enty.value and entry.err if key was not canceled.
+				select {
+				case <-entry.cancel:
+				default:
+					// TODO: is this a race condition??? if not:
+					// entry.mu has not to be locked. It is guaraneed, that the values
+					// can not be written.
+					entry.value, entry.err = retrievedValues[i], err
+				}
+				close(entry.done)
 			}
-			close(entry.done)
+			close(done)
+		}()
+
+		select {
+		case <-done:
+		case <-ctx.Done():
+			return nil, ctx.Err()
 		}
 	}
 

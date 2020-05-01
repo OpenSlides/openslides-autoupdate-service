@@ -10,9 +10,9 @@ import (
 )
 
 func TestRestrictedIDs(t *testing.T) {
-	keychanges := test.NewMockKeysChanged()
-	defer keychanges.Close()
-	s := autoupdate.New(new(test.MockRestricter), keychanges)
+	datastore := test.NewMockDatastore()
+	defer datastore.Close()
+	s := autoupdate.New(datastore, new(test.MockRestricter))
 	defer s.Close()
 	ider := s.IDer(1)
 
@@ -21,7 +21,6 @@ func TestRestrictedIDs(t *testing.T) {
 		idCount int
 		err     string
 	}{
-		{"error_id", 0, "restrict key error_id:"},
 		{"motion/1/category_ids", 2, ""},
 	}
 	for _, tt := range tc {
@@ -29,10 +28,10 @@ func TestRestrictedIDs(t *testing.T) {
 			ids, err := ider.IDList(context.Background(), tt.key)
 			if tt.err != "" {
 				if err == nil {
-					t.Fatal("Expected an error, got None")
+					t.Fatal("Got no error, expected one.")
 				}
 				if got := err.Error(); !strings.HasPrefix(got, tt.err) {
-					t.Errorf("got error message `%s`, expected prefix `%s`", got, tt.err)
+					t.Errorf("Got error message `%s`, expected prefix `%s`", got, tt.err)
 				}
 				return
 			}
@@ -40,7 +39,7 @@ func TestRestrictedIDs(t *testing.T) {
 				t.Errorf("ider.IDList returned the unexpected error: %v", err)
 			}
 			if len(ids) != tt.idCount {
-				t.Errorf("Expected %d ids, got: %v", tt.idCount, ids)
+				t.Errorf("Got %v, expected %v", ids, tt.idCount)
 			}
 		})
 	}

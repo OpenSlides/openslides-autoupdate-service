@@ -8,6 +8,7 @@ package autoupdate
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -25,8 +26,8 @@ const pruneTime = time.Minute
 // The service updates its data in the background. To stop this background job,
 // the service has to be closed in the end with the Close()-method.
 type Service struct {
+	datastore  Datastore
 	restricter Restricter
-	keyChanged KeysChangedReceiver
 	closed     chan struct{}
 	topic      *topic.Topic
 }
@@ -34,10 +35,10 @@ type Service struct {
 // New creates a new autoupdate service.
 //
 // After the service is not needed anymore, it has to be closed with s.Close().
-func New(restricter Restricter, keysChanges KeysChangedReceiver) *Service {
+func New(datastore Datastore, restricter Restricter) *Service {
 	s := &Service{
+		datastore:  datastore,
 		restricter: restricter,
-		keyChanged: keysChanges,
 		closed:     make(chan struct{}),
 	}
 	s.topic = topic.New(topic.WithClosed(s.closed))
@@ -72,7 +73,7 @@ func (s *Service) Connect(ctx context.Context, userID int, kb KeysBuilder) *Conn
 // used to return ids for a key. This implementation uses the restricter to get
 // the ids.
 func (s *Service) IDer(uid int) RestrictedIDs {
-	return RestrictedIDs{uid, s.restricter}
+	return RestrictedIDs{uid, s}
 }
 
 // pruneTopic removes old data from the topic. Blocks until the service is
@@ -101,7 +102,7 @@ func (s *Service) receiveKeyChanges() {
 		default:
 		}
 
-		keys, err := s.keyChanged.KeysChanged()
+		keys, err := s.datastore.KeysChanged()
 		if err != nil {
 			log.Printf("Could not update keys: %v\n", err)
 			continue
@@ -109,4 +110,21 @@ func (s *Service) receiveKeyChanges() {
 
 		s.topic.Publish(keys...)
 	}
+}
+
+// restrictedData returns a map containing the restricted data for the given
+// keys.
+func (s *Service) restrictedData(ctx context.Context, uid int, keys ...string) (map[string]string, error) {
+	values, err := s.datastore.Get(ctx, keys...)
+	if err != nil {
+		return nil, fmt.Errorf("get values for keys `%v` from datastore: %w", keys, err)
+	}
+
+	data := make(map[string]string, len(keys))
+	for i, key := range keys {
+		data[key] = values[i]
+	}
+
+	s.restricter.Restrict(uid, data)
+	return data, nil
 }

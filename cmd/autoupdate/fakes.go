@@ -15,7 +15,7 @@ import (
 // fakeReceiver implements the Receiver interface. It reads on a Reader, for example stdin and
 // takes each word on each line as changed key.
 type faker struct {
-	test.MockRestricter
+	test.MockDatastore
 	buf *bufio.Reader
 }
 

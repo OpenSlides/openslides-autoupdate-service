@@ -1,6 +1,7 @@
 package datastore_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
@@ -9,9 +10,9 @@ import (
 
 func TestDataStoreGet(t *testing.T) {
 	ts := newTestServer()
-	d := datastore.New(ts.ts.URL)
+	d := datastore.New(ts.ts.URL, new(test.MockKeysChanged))
 
-	value, err := d.Get("key")
+	value, err := d.Get(context.Background(), "key")
 
 	if err != nil {
 		t.Errorf("Get() returned an unexpected error: %v", err)
@@ -25,9 +26,9 @@ func TestDataStoreGet(t *testing.T) {
 
 func TestDataStoreGetMultiValue(t *testing.T) {
 	ts := newTestServer()
-	d := datastore.New(ts.ts.URL)
+	d := datastore.New(ts.ts.URL, new(test.MockKeysChanged))
 
-	got, err := d.Get("key1", "key2")
+	got, err := d.Get(context.Background(), "key1", "key2")
 
 	if err != nil {
 		t.Errorf("Get() returned an unexpected error: %v", err)

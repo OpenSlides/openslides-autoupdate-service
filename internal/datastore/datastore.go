@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -14,33 +15,34 @@ const urlPath = "/internal/datastore/reader/getKeys"
 //
 // Has to be created with datastore.New().
 type Datastore struct {
-	url    string
-	cache  *cache
-	client *http.Client
+	url        string
+	cache      *cache
+	keychanger KeysChangedReceiver
 }
 
 // New returns a new Datastore object.
-func New(url string) *Datastore {
+func New(url string, keychanger KeysChangedReceiver) *Datastore {
 	return &Datastore{
 		cache: newCache(),
 		url:   url + urlPath,
 	}
 }
 
-// Get returns the value for one or many keys
-func (d *Datastore) Get(keys ...string) ([]string, error) {
-	values, err := d.cache.getOrSet(keys, func(keys []string) ([]string, error) {
+// Get returns the value for one or many keys.
+func (d *Datastore) Get(ctx context.Context, keys ...string) ([]string, error) {
+	values, err := d.cache.getOrSet(ctx, keys, func(keys []string) ([]string, error) {
 		return d.requestKeys(keys)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("getOrSet for keys `%s`: %w", keys, err)
 	}
+
 	return values, nil
 }
 
-// KeysChanged blocks until some key have change. Then, it returns the keys.
+// KeysChanged blocks until some key have changed. Then, it returns the keys.
 func (d *Datastore) KeysChanged() ([]string, error) {
-	return nil, nil
+	return d.keychanger.KeysChanged()
 
 }
 
