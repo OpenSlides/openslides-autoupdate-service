@@ -1,43 +1,46 @@
 package datastore
 
 import (
-	"context"
 	"testing"
 	"time"
+
+	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
 func TestCacheGetOrSet(t *testing.T) {
 	c := newCache()
-	v, err := c.getOrSet("key1", func(context.Context) (string, error) {
-		return "value", nil
+	v, err := c.getOrSet(test.Str("key1"), func([]string) ([]string, error) {
+		return test.Str("value"), nil
 	})
 
 	if err != nil {
 		t.Errorf("getOrSet() returned the unexpected error %v", err)
 	}
-	if v != "value" {
-		t.Errorf("getOrSet() returned %v, expected \"value\"", v)
+	expect := test.Str("value")
+	if !test.CmpSlice(v, expect) {
+		t.Errorf("getOrSet() returned %v, expected %v", v, expect)
 	}
 }
 
 func TestCacheGetOrSetNoSecondCall(t *testing.T) {
 	c := newCache()
-	c.getOrSet("key1", func(context.Context) (string, error) {
-		return "value", nil
+	c.getOrSet(test.Str("key1"), func([]string) ([]string, error) {
+		return test.Str("value"), nil
 	})
 
 	var called bool
 
-	v, err := c.getOrSet("key1", func(context.Context) (string, error) {
+	v, err := c.getOrSet(test.Str("key1"), func([]string) ([]string, error) {
 		called = true
-		return "Shut not be returned", nil
+		return test.Str("Shut not be returned"), nil
 	})
 
 	if err != nil {
 		t.Errorf("getOrSet() returned the unexpected error %v", err)
 	}
-	if v != "value" {
-		t.Errorf("getOrSet() returned %v, expected \"value\"", v)
+	expect := test.Str("value")
+	if !test.CmpSlice(v, expect) {
+		t.Errorf("getOrSet() returned %v, expected %v", v, expect)
 	}
 	if called {
 		t.Errorf("getOrSet() called the set method")
@@ -48,17 +51,17 @@ func TestCacheGetOrSetBlockSecondCall(t *testing.T) {
 	c := newCache()
 	wait := make(chan struct{})
 	go func() {
-		c.getOrSet("key1", func(context.Context) (string, error) {
+		c.getOrSet(test.Str("key1"), func([]string) ([]string, error) {
 			<-wait
-			return "value", nil
+			return test.Str("value"), nil
 		})
 	}()
 
 	// close done, when the second call is finished.
 	done := make(chan struct{})
 	go func() {
-		c.getOrSet("key1", func(context.Context) (string, error) {
-			return "Shut not be returned", nil
+		c.getOrSet(test.Str("key1"), func([]string) ([]string, error) {
+			return test.Str("Shut not be returned"), nil
 		})
 		close(done)
 	}()
@@ -82,60 +85,54 @@ func TestCacheGetOrSetBlockSecondCall(t *testing.T) {
 
 func TestCacheSetIfExist(t *testing.T) {
 	c := newCache()
-	c.getOrSet("key1", func(context.Context) (string, error) {
-		return "value", nil
+	c.getOrSet(test.Str("key1"), func([]string) ([]string, error) {
+		return test.Str("value"), nil
 	})
 
-	c.setIfExist("key1", "new value")
-	c.setIfExist("key2", "new value")
-
-	v1, _ := c.getOrSet("key1", func(context.Context) (string, error) {
-		return "Shut not be returned", nil
-	})
-	v2, _ := c.getOrSet("key2", func(context.Context) (string, error) {
-		return "Shut be returned", nil
+	// Set key1 and key2. key1 is in the cache. key2 should be ignored.
+	c.setIfExist(map[string]string{
+		"key1": "new value",
+		"key2": "new value",
 	})
 
-	if v1 != "new value" {
-		t.Errorf("key1 is %s, expected %s", v1, "new value")
-	}
-	if v2 != "Shut be returned" {
-		t.Errorf("key1 is %s, expected %s", v1, "Shut be returned")
+	// Get key1 and key2 from the cache. The existing key1 should not be set.
+	// key2 should be.
+	got, _ := c.getOrSet(test.Str("key1", "key2"), func(keys []string) ([]string, error) {
+		return keys, nil
+	})
+
+	expect := test.Str("new value", "key2")
+	if !test.CmpSlice(got, expect) {
+		t.Errorf("Got %v, expected %v", got, expect)
 	}
 }
 
-func TestCacheSetIfExistCloseGetOrSetCalls(t *testing.T) {
+func TestCacheSetIfExistParallelToGetOrSet(t *testing.T) {
 	c := newCache()
 
-	var v string
-	getOrSetDone := make(chan struct{})
 	waitForGetOrSet := make(chan struct{})
 	go func() {
-		v, _ = c.getOrSet("key1", func(ctx context.Context) (string, error) {
+		c.getOrSet(test.Str("key1"), func(keys []string) ([]string, error) {
 			// Signal, that getOrSet was called.
 			close(waitForGetOrSet)
 
-			// wait until context is done
-			<-ctx.Done()
-			return "shut not be used", nil
+			// Wait for some time.
+			time.Sleep(10 * time.Millisecond)
+			return test.Str("shut not be used"), nil
 		})
-		close(getOrSetDone)
 	}()
 
 	<-waitForGetOrSet
 
 	// Set key1 to new value and stop the ongoing getOrSet-Call
-	c.setIfExist("key1", "new value")
+	c.setIfExist(map[string]string{"key1": "new value"})
 
-	timer := time.NewTimer(time.Millisecond)
-	defer timer.Stop()
-	select {
-	case <-getOrSetDone:
-	case <-timer.C:
-		t.Errorf("Expected getOrSet() to return after call to setIfExist. Took more then one millisecond.")
-	}
+	got, _ := c.getOrSet(test.Str("key1"), func([]string) ([]string, error) {
+		return test.Str("Expect values in cache"), nil
+	})
 
-	if v != "new value" {
-		t.Errorf("key1 is `%s`, expected `%s`", v, "new value")
+	expect := test.Str("new value")
+	if !test.CmpSlice(got, expect) {
+		t.Errorf("Got `%v`, expected `%v`", got, expect)
 	}
 }

@@ -1,7 +1,6 @@
 package datastore
 
 import (
-	"context"
 	"sync"
 )
 
@@ -13,13 +12,13 @@ import (
 //
 // A new cache instance has to be created with newCache().
 type cache struct {
-	mu   sync.RWMutex
+	mu   sync.Mutex
 	data map[string]*cacheEntry
 }
 
 type cacheEntry struct {
 	done   chan struct{}
-	cancel context.CancelFunc
+	cancel chan struct{}
 
 	mu    sync.RWMutex
 	value string
@@ -30,55 +29,93 @@ func newCache() *cache {
 	return &cache{data: make(map[string]*cacheEntry)}
 }
 
-// getOrSet returns the value for a key. If the values does not exist, it is
-// created by the return value of the second argument. If this method is called
-// more then once at the same time, only the first calculates the result, the
-// other calles get blocked until it is calculated.
-func (c *cache) getOrSet(key string, set func(context.Context) (string, error)) (string, error) {
+// getOrSet returns the values for a list of keys. If one or more keys do not
+// exist in the cache, then the missing values are created with the given set
+// function. If this method is called more then once at the same time, only the
+// first calculates the result, the other calles get blocked until it is
+// calculated.
+//
+// All values get returned at once. If only one key is missing, this function
+// blocks, until all values are retrieved.
+//
+// The set function is used to create the cache values. It is called only with
+// the missing keys.
+func (c *cache) getOrSet(keys []string, set func(keys []string) ([]string, error)) ([]string, error) {
+	// entries is a map like cache.data. All values from cache.data are also
+	// saved in this map, so cache.data does not have to be locked for long.
+	entries := make(map[string]*cacheEntry, len(keys))
+
 	c.mu.Lock()
-	entry, ok := c.data[key]
 
-	if !ok {
-		ctx, cancel := context.WithCancel(context.Background())
-		entry = &cacheEntry{
+	// Get all requested entries from cache. If entry does not exist, create a
+	// new one.
+	var missingKeys []string
+	var ok bool
+	for _, key := range keys {
+		entries[key], ok = c.data[key]
+		if ok {
+			continue
+		}
+
+		missingKeys = append(missingKeys, key)
+		entries[key] = &cacheEntry{
 			done:   make(chan struct{}),
-			cancel: cancel,
+			cancel: make(chan struct{}),
 		}
-		c.data[key] = entry
-		c.mu.Unlock()
-
-		value, err := set(ctx)
-
-		// Only set enty.value and entry.err if set was not canceled.
-		select {
-		case <-ctx.Done():
-		default:
-			entry.value, entry.err = value, err
-		}
-		close(entry.done)
-		return entry.value, entry.err
+		c.data[key] = entries[key]
 	}
 	c.mu.Unlock()
 
-	<-entry.done
+	// Get values that are missing
+	if len(missingKeys) > 0 {
+		retrievedValues, err := set(missingKeys)
+		for i, key := range missingKeys {
+			entry := entries[key]
+			// Only set enty.value and entry.err if key was not canceled.
+			select {
+			case <-entry.cancel:
+			default:
+				// TODO: is this a race condition??? if not:
+				// entry.mu has not to be locked. It is guaraneed, that the values
+				// can not be written.
+				entry.value, entry.err = retrievedValues[i], err
+			}
+			close(entry.done)
+		}
+	}
 
-	entry.mu.RLock()
-	defer entry.mu.RUnlock()
-	return entry.value, entry.err
+	values := make([]string, len(keys))
+	for i, key := range keys {
+		entry := entries[key]
+		// Wait until each entry is done.
+		<-entry.done
+
+		entry.mu.RLock()
+		if err := entry.err; err != nil {
+			entry.mu.RUnlock()
+			return nil, err
+		}
+		values[i] = entry.value
+		entry.mu.RUnlock()
+	}
+	return values, nil
 }
 
-func (c *cache) setIfExist(key string, value string) {
+func (c *cache) setIfExist(data map[string]string) {
 	c.mu.Lock()
-	entry, ok := c.data[key]
-	c.mu.Unlock()
+	defer c.mu.Unlock()
 
-	if !ok {
-		return
+	for key, value := range data {
+		entry, ok := c.data[key]
+
+		if !ok {
+			return
+		}
+
+		entry.mu.Lock()
+		entry.value = value
+		entry.err = nil
+		close(entry.cancel)
+		entry.mu.Unlock()
 	}
-
-	entry.mu.Lock()
-	defer entry.mu.Unlock()
-	entry.value = value
-	entry.err = nil
-	entry.cancel()
 }
