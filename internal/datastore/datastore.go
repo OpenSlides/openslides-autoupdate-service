@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const urlPath = "/internal/datastore/reader/get_many"
@@ -50,6 +51,9 @@ func (d *Datastore) KeysChanged() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO: Remove this line after datastore is fixed.
+	time.Sleep(time.Second)
 
 	// TODO: only request keys that exist in the cache.
 	data, err := d.requestKeys(keys)

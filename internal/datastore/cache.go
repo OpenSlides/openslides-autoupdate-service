@@ -19,7 +19,8 @@ type cache struct {
 
 type cacheEntry struct {
 	done   chan struct{}
-	cancel chan struct{}
+	ctx    context.Context
+	cancel context.CancelFunc
 
 	mu    sync.RWMutex
 	value string
@@ -62,9 +63,11 @@ func (c *cache) getOrSet(ctx context.Context, keys []string, set func(keys []str
 		}
 
 		missingKeys = append(missingKeys, key)
+		ctx, cancel := context.WithCancel(context.Background())
 		entries[key] = &cacheEntry{
 			done:   make(chan struct{}),
-			cancel: make(chan struct{}),
+			ctx:    ctx,
+			cancel: cancel,
 		}
 		c.data[key] = entries[key]
 	}
@@ -80,7 +83,7 @@ func (c *cache) getOrSet(ctx context.Context, keys []string, set func(keys []str
 				entry := entries[key]
 				// Only set enty.value and entry.err if key was not canceled.
 				select {
-				case <-entry.cancel:
+				case <-entry.ctx.Done():
 				default:
 					// TODO: is this a race condition??? if not:
 					// entry.mu has not to be locked. It is guaraneed, that the values
@@ -138,7 +141,7 @@ func (c *cache) setIfExist(data map[string]string) {
 		entry.mu.Lock()
 		entry.value = value
 		entry.err = nil
-		close(entry.cancel)
+		entry.cancel()
 		entry.mu.Unlock()
 	}
 }
