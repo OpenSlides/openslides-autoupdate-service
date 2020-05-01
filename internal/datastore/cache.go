@@ -135,7 +135,7 @@ func (c *cache) setIfExist(data map[string]string) {
 		entry, ok := c.data[key]
 
 		if !ok {
-			return
+			continue
 		}
 
 		entry.mu.Lock()

@@ -92,8 +92,8 @@ func TestCacheSetIfExist(t *testing.T) {
 
 	// Set key1 and key2. key1 is in the cache. key2 should be ignored.
 	c.setIfExist(map[string]string{
-		"key1": "new value",
-		"key2": "new value",
+		"key1": "new_value",
+		"key2": "new_value",
 	})
 
 	// Get key1 and key2 from the cache. The existing key1 should not be set.
@@ -106,7 +106,7 @@ func TestCacheSetIfExist(t *testing.T) {
 		return data, nil
 	})
 
-	expect := test.Str("new value", "key2")
+	expect := test.Str("new_value", "key2")
 	if !test.CmpSlice(got, expect) {
 		t.Errorf("Got %v, expected %v", got, expect)
 	}
