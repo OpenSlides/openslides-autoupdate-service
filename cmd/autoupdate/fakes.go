@@ -12,15 +12,30 @@ import (
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
-// fakeReceiver implements the Receiver interface. It reads on a Reader, for example stdin and
-// takes each word on each line as changed key.
+// fakeReceiver implements the Datastore interface. It reads on a Reader, for
+// example stdin and takes each word on each line as changed key.
 type faker struct {
-	test.MockDatastore
+	ts  *test.DatastoreServer
 	buf *bufio.Reader
 }
 
-func (r *faker) KeysChanged() ([]string, error) {
-	msg, err := r.buf.ReadString('\n')
+func newFaker(r io.Reader) *faker {
+	f := new(faker)
+
+	// This starts the fake datastore service.
+	f.ts = test.NewDatastoreServer()
+
+	f.buf = bufio.NewReader(r)
+	return f
+}
+
+func (f *faker) KeysChanged() ([]string, error) {
+	if f == nil {
+		// If the faker was not initualized. Block forever.
+		select {}
+	}
+
+	msg, err := f.buf.ReadString('\n')
 	if err == io.EOF {
 		// Don't return anything (block forever) if the reader is empty.
 		select {}
@@ -37,7 +52,7 @@ func (r *faker) KeysChanged() ([]string, error) {
 			keyValue = append(keyValue, fmt.Sprintf(`"The time is: %s"`, time.Now()))
 		}
 		keys = append(keys, keyValue[0])
-		r.Update(map[string]string{keyValue[0]: keyValue[1]})
+		f.ts.Update(map[string]string{keyValue[0]: keyValue[1]})
 	}
 	return keys, nil
 }

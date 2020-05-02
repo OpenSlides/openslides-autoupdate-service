@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"log"
@@ -19,10 +18,8 @@ import (
 
 func main() {
 	listenAddr := getEnv("LISTEN_HTTP_ADDR", ":8002")
-
-	f := &faker{buf: bufio.NewReader(os.Stdin)}
 	authService := buildAuth()
-	datastoreService := buildDatastore(f)
+	datastoreService := buildDatastore()
 
 	service := autoupdate.New(datastoreService, new(restrict.Restricter))
 
@@ -62,23 +59,21 @@ func waitForShutdown() {
 	}()
 }
 
-// buildDatastore builds the datastore  needed by the autoupdate service.
-// It uses environment variables to make the decission. Per default, the given
-// faker is used.
-func buildDatastore(f *faker) autoupdate.Datastore {
-	var restricter autoupdate.Datastore
-	fmt.Print("Datastore Service: ")
-	switch getEnv("DATASTORE", "fake") {
-	case "service":
-		url := getEnv("DATASTORE_URL", "http://localhost:8001")
-		fmt.Println(url)
-		receiver := buildReceiver(f)
-		restricter = datastore.New(url, receiver)
-	default:
-		restricter = f
-		fmt.Println("fake")
+// buildDatastore builds the datastore needed by the autoupdate service. It uses
+// environment variables to make the decission. Per default, a fake server is
+// started and its url is used.
+func buildDatastore() autoupdate.Datastore {
+	dsService := getEnv("DATASTORE", "fake")
+	url := getEnv("DATASTORE_URL", "http://localhost:8001")
+
+	var f *faker
+	if dsService == "fake" {
+		fmt.Println("Fake Datastore")
+		f = newFaker(os.Stdin)
+		url = f.ts.TS.URL
 	}
-	return restricter
+	fmt.Println("Datastore URL:", url)
+	return datastore.New(url, buildReceiver(f))
 }
 
 // buildReceiver builds the receiver needed by the datastore service.
@@ -99,7 +94,11 @@ func buildReceiver(f *faker) datastore.KeysChangedReceiver {
 		fmt.Println("redis")
 	default:
 		receiver = f
-		fmt.Println("fake")
+		if f == nil {
+			fmt.Println("none")
+		} else {
+			fmt.Println("fake")
+		}
 	}
 	return receiver
 }

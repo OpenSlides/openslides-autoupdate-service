@@ -9,12 +9,9 @@ import (
 
 // MockDatastore implements the autoupdate.Datastore interface.
 type MockDatastore struct {
-	mu       sync.Mutex
-	Data     map[string]string
-	OnlyData bool
-
 	changes chan []string
 	done    chan struct{}
+	DatastoreValues
 }
 
 // NewMockDatastore returns a new MockDatastore.
@@ -38,31 +35,17 @@ func NewMockDatastore() *MockDatastore {
 //
 // In any other case, "some value" is returned.
 func (d *MockDatastore) Get(ctx context.Context, keys ...string) ([]string, error) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
 	data := make(map[string]string, len(keys))
 	for _, key := range keys {
-		v, ok := d.Data[key]
-		if ok {
-			data[key] = v
+		value, exist, err := d.DatastoreValues.Value(key)
+		if err != nil {
+			return nil, err
+		}
+
+		if !exist {
 			continue
 		}
 
-		if d.OnlyData {
-			continue
-		}
-		var value string
-		switch {
-		case strings.HasPrefix(key, "error"):
-			return nil, fmt.Errorf("mock datastore error")
-		case strings.HasSuffix(key, "_id"):
-			value = `1`
-		case strings.HasSuffix(key, "_ids"):
-			value = `[1,2]`
-		default:
-			value = `"Hello World"`
-		}
 		data[key] = value
 	}
 
@@ -94,10 +77,44 @@ func (d *MockDatastore) Close() {
 	close(d.done)
 }
 
+// DatastoreValues returns data for the test.MockDatastore and the test.DatastoreServer.
+type DatastoreValues struct {
+	mu       sync.RWMutex
+	Data     map[string]string
+	OnlyData bool
+}
+
+// Value returns a value for a key. If the value does not exist, the second
+// return value is false.
+func (d *DatastoreValues) Value(key string) (string, bool, error) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	v, ok := d.Data[key]
+	if ok {
+		return v, true, nil
+	}
+
+	if d.OnlyData {
+		return "", false, nil
+	}
+
+	switch {
+	case strings.HasPrefix(key, "error"):
+		return "", true, fmt.Errorf("mock datastore error")
+	case strings.HasSuffix(key, "_id"):
+		return `1`, true, nil
+	case strings.HasSuffix(key, "_ids"):
+		return `[1,2]`, true, nil
+	default:
+		return `"Hello World"`, true, nil
+	}
+}
+
 // Update updates the values from the Datastore.
 //
 // This does not send a KeysChanged signal.
-func (d *MockDatastore) Update(data map[string]string) {
+func (d *DatastoreValues) Update(data map[string]string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
