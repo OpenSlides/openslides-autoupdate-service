@@ -1,49 +1,34 @@
 package autoupdate_test
 
 import (
-	"context"
 	"testing"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
 func TestConnect(t *testing.T) {
-	datastore := test.NewMockDatastore()
-	defer datastore.Close()
-	datastore.Data = map[string]string{"user/1/name": `"some value"`}
-	s := autoupdate.New(datastore, new(test.MockRestricter))
-	defer s.Close()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	kb := mockKeysBuilder{keys: keys("user/1/name")}
+	c, _, _, close := getConnection()
+	defer close()
 
-	c := s.Connect(ctx, 1, kb)
 	data, err := c.Next()
 	if err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	if value, ok := data["user/1/name"]; !ok || value != `"some value"` {
-		t.Errorf("c.Next() returned %v, expected %v", data, datastore.Data)
+	if value, ok := data["user/1/name"]; !ok || value != `"Hello World"` {
+		t.Errorf("c.Next() returned %v, expected map[user/1/name:\"Hello World\"", data)
 	}
 }
 
 func TestConnectionReadNoNewData(t *testing.T) {
-	datastore := test.NewMockDatastore()
-	defer datastore.Close()
-	datastore.Data = map[string]string{"user/1/name": `"some value"`}
-	s := autoupdate.New(datastore, new(test.MockRestricter))
-	defer s.Close()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	kb := mockKeysBuilder{keys: keys("user/1/name")}
-	c := s.Connect(ctx, 1, kb)
+	c, _, disconnect, close := getConnection()
+	defer close()
+
 	if _, err := c.Next(); err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	cancel()
+	disconnect()
 	data, err := c.Next()
 	if err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
@@ -54,20 +39,14 @@ func TestConnectionReadNoNewData(t *testing.T) {
 }
 
 func TestConnectionReadNewData(t *testing.T) {
-	datastore := test.NewMockDatastore()
-	defer datastore.Close()
-	s := autoupdate.New(datastore, new(test.MockRestricter))
-	defer s.Close()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	kb := mockKeysBuilder{keys: keys("user/1/name")}
-	c := s.Connect(ctx, 1, kb)
+	c, datastore, _, close := getConnection()
+	defer close()
 	if _, err := c.Next(); err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
 	datastore.Update(map[string]string{"user/1/name": `"new value"`})
-	datastore.Send(keys("user/1/name"))
+	datastore.Send(test.Str("user/1/name"))
 	data, err := c.Next()
 
 	if err != nil {

@@ -1,3 +1,5 @@
+// Package restrict holds the Restricter obect that filters data for a specific
+// user.
 package restrict
 
 // Restricter implements the autoupdate.Restricter interface.

@@ -8,7 +8,7 @@ import (
 // Connection holds the state of a client. It has to be created by colling
 // Connect() on a autoupdate.Service instance.
 type Connection struct {
-	autoupdate *Service
+	autoupdate *Autoupdate
 	ctx        context.Context
 	uid        int
 	kb         KeysBuilder
@@ -34,7 +34,7 @@ func (c *Connection) Next() (map[string]string, error) {
 	// Blocks until the topic is closed (on server exit) or the context is done.
 	c.tid, changedKeys, err = c.autoupdate.topic.Receive(c.ctx, c.tid)
 	if err != nil {
-		return nil, fmt.Errorf("can not get new keys: %w", err)
+		return nil, fmt.Errorf("get updated keys: %w", err)
 	}
 
 	// When changedKeys is empty, then the service or the connection is closed.
@@ -46,7 +46,7 @@ func (c *Connection) Next() (map[string]string, error) {
 
 	// Update keysbuilder get new list of keys
 	if err := c.kb.Update(changedKeys); err != nil {
-		return nil, fmt.Errorf("can not update keysbuilder: %w", err)
+		return nil, fmt.Errorf("update keysbuilder: %w", err)
 	}
 
 	// Start with keys hat are new for the user

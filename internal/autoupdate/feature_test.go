@@ -64,7 +64,9 @@ var dataSet = map[string]string{
 }
 
 func TestFeatures(t *testing.T) {
+	//TODO
 	t.Skip("Talk with Finn, if its ok to return a dict again.")
+
 	datastore := test.NewMockDatastore()
 	datastore.Data = dataSet
 	datastore.OnlyData = true

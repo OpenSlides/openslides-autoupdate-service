@@ -7,4 +7,4 @@
 
 
 # Fix
-* performance tool
+* Reactivate feature_test

@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-// Datastore gets values for keys and informs the service, if some keys change.
+// Datastore gets values for keys and informs, if they change.
 type Datastore interface {
 	Get(ctx context.Context, keys ...string) ([]string, error)
 	KeysChanged() ([]string, error)

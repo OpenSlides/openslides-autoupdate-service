@@ -12,45 +12,45 @@ import (
 type client struct{}
 
 // connect creates a new connection to the autoupdate service. It returns the
-// resonce of the server to the keys-channel.
-// The function blocks until the connection is established.
+// responce of the server to the given keys-channel. The function blocks until
+// the connection is established. It is held open in the beckgrond.
 func (c *client) connect(ctx context.Context, keys chan<- string) error {
-	hc := http.Client{}
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return fmt.Errorf("can not create request: %w", err)
+		return fmt.Errorf("create request: %w", err)
 	}
 
-	resp, err := hc.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("can not send request: %w", err)
+		return fmt.Errorf("send request: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			body = []byte(resp.Status)
+			return fmt.Errorf("server returned %s", resp.Status)
 		}
-		return fmt.Errorf("server response: %s", body)
+		return fmt.Errorf("server returned %s: %s", resp.Status, body)
 	}
 
 	go func() {
 		defer resp.Body.Close()
+
 		buf := make([]byte, 1024)
 		for {
-			out := []byte{}
+			var data []byte
 			for {
 				n, err := resp.Body.Read(buf)
 				if err != nil {
 					log.Fatalf("Can not read from response body: %v", err)
 				}
-				out = append(out, buf[:n]...)
+				data = append(data, buf[:n]...)
 
 				if n < len(buf) {
 					break
 				}
 			}
-			keys <- string(out)
+			keys <- string(data)
 		}
 	}()
 	return nil

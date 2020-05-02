@@ -1,4 +1,4 @@
-// Package http helps to handel http requests for the autoupate service.
+// Package http handles http requests for the autoupate service.
 package http
 
 import (
@@ -16,13 +16,13 @@ import (
 
 // Handler is an http handler for the autoupdate service.
 type Handler struct {
-	s    *autoupdate.Service
+	s    *autoupdate.Autoupdate
 	mux  *http.ServeMux
 	auth Authenticator
 }
 
 // New create a new Handler with the correct urls.
-func New(s *autoupdate.Service, auth Authenticator) *Handler {
+func New(s *autoupdate.Autoupdate, auth Authenticator) *Handler {
 	h := &Handler{
 		s:    s,
 		mux:  http.NewServeMux(),
@@ -44,12 +44,12 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 
 		uid, err := h.auth.Authenticate(r.Context(), r)
 		if err != nil {
-			return fmt.Errorf("can not authenticate request: %w", err)
+			return fmt.Errorf("authenticate request: %w", err)
 		}
 
 		kb, err := kbg(r, uid)
 		if err != nil {
-			return fmt.Errorf("can not build keysbuilder: %w", err)
+			return fmt.Errorf("build keysbuilder: %w", err)
 		}
 
 		connection := h.s.Connect(r.Context(), uid, kb)

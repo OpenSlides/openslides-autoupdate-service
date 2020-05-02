@@ -22,7 +22,7 @@ func FromJSON(ctx context.Context, r io.Reader, ider IDer) (*Builder, error) {
 
 	kb, err := newBuilder(ctx, ider, b)
 	if err != nil {
-		return nil, fmt.Errorf("can not build keys: %w", err)
+		return nil, fmt.Errorf("build keys: %w", err)
 	}
 	return kb, nil
 }
@@ -43,7 +43,7 @@ func ManyFromJSON(ctx context.Context, r io.Reader, ider IDer) (*Builder, error)
 		if jerr, ok := err.(*json.UnmarshalTypeError); ok {
 			return nil, InvalidError{msg: fmt.Sprintf("wrong format at byte %d", jerr.Offset)}
 		}
-		return nil, fmt.Errorf("can not decode keysrequest: %w", err)
+		return nil, fmt.Errorf("decode keysrequest: %w", err)
 	}
 
 	if len(bs) == 0 {
@@ -52,7 +52,7 @@ func ManyFromJSON(ctx context.Context, r io.Reader, ider IDer) (*Builder, error)
 
 	kb, err := newBuilder(ctx, ider, bs...)
 	if err != nil {
-		return nil, fmt.Errorf("can not build keys: %w", err)
+		return nil, fmt.Errorf("build keys: %w", err)
 	}
 	return kb, nil
 }

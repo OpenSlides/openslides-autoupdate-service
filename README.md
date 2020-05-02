@@ -66,9 +66,9 @@ user/1/group_ids=[1,2,3]
 user/1/name="foo" user/2/name="bar"
 ```
 
-If the value is skipede, the current time is used as value. If you give a value, it has to be valid json without any spaces.
+If the value is skipped, the current time is used as value. If you give a value, it has to be valid json without any spaces.
 
-All clients that listen for the keys get an update in the same form then the initial form.
+All clients that listen for the keys get an update for that key.
 
 
 ### With datastore-service

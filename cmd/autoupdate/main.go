@@ -11,7 +11,7 @@ import (
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
-	ahttp "github.com/openslides/openslides-autoupdate-service/internal/http"
+	autoupdateHttp "github.com/openslides/openslides-autoupdate-service/internal/http"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
 	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
 )
@@ -23,7 +23,7 @@ func main() {
 
 	service := autoupdate.New(datastoreService, new(restrict.Restricter))
 
-	handler := ahttp.New(service, authService)
+	handler := autoupdateHttp.New(service, authService)
 	srv := &http.Server{Addr: listenAddr, Handler: handler}
 	defer func() {
 		service.Close()
@@ -42,15 +42,15 @@ func main() {
 	waitForShutdown()
 }
 
-// waitForShutdown blocks until the service should be waitForShutdown.
+// waitForShutdown blocks until the service exists.
 //
-// It listens on SIGINT and SIGTERM. If the signal is received for a
-// second time, the process is killed with statuscode 1.
+// It listens on SIGINT and SIGTERM. If the signal is received for a second
+// time, the process is killed with statuscode 1.
 func waitForShutdown() {
 	sigint := make(chan os.Signal, 1)
 	// syscall.SIGTERM is not pressent on all plattforms. Since the autoupdate
-	// service is only run on linux, this is ok. If other plattforms should be supported,
-	// os.Interrupt should be used instead.
+	// service is only run on linux, this is ok. If other plattforms should be
+	// supported, os.Interrupt should be used instead.
 	signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM)
 	<-sigint
 	go func() {
@@ -59,9 +59,9 @@ func waitForShutdown() {
 	}()
 }
 
-// buildDatastore builds the datastore needed by the autoupdate service. It uses
-// environment variables to make the decission. Per default, a fake server is
-// started and its url is used.
+// buildDatastore builds the datastore implementation needed by the autoupdate
+// service. It uses environment variables to make the decission. Per default, a
+// fake server is started and its url is used.
 func buildDatastore() autoupdate.Datastore {
 	dsService := getEnv("DATASTORE", "fake")
 	url := getEnv("DATASTORE_URL", "http://localhost:8001")
@@ -76,9 +76,9 @@ func buildDatastore() autoupdate.Datastore {
 	return datastore.New(url, buildReceiver(f))
 }
 
-// buildReceiver builds the receiver needed by the datastore service.
-// It uses environment variables to make the decission. Per default, the given
-// faker is used.
+// buildReceiver builds the receiver needed by the datastore service. It uses
+// environment variables to make the decission. Per default, the given faker is
+// used.
 func buildReceiver(f *faker) datastore.KeysChangedReceiver {
 	var receiver datastore.KeysChangedReceiver
 	fmt.Print("Messagin Service: ")
@@ -106,14 +106,16 @@ func buildReceiver(f *faker) datastore.KeysChangedReceiver {
 // buildAuth returns the auth service needed by the http server.
 //
 // Currently, there is only the fakeAuth service.
-func buildAuth() ahttp.Authenticator {
+func buildAuth() autoupdateHttp.Authenticator {
 	return fakeAuth(1)
 }
 
-func getEnv(n, d string) string {
-	out := os.Getenv(n)
-	if out == "" {
-		return d
+// getEnv returns the value of the environment variable env. If it is empty, the
+// defaultValue is used.
+func getEnv(env, devaultValue string) string {
+	value := os.Getenv(env)
+	if value == "" {
+		return devaultValue
 	}
-	return out
+	return value
 }

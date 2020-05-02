@@ -127,6 +127,8 @@ func (c *cache) getOrSet(ctx context.Context, keys []string, set func(keys []str
 	return values, nil
 }
 
+// setIfExist updates each the cache with the value in the given map. But only
+// values that are already in the cache get an update.
 func (c *cache) setIfExist(data map[string]string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

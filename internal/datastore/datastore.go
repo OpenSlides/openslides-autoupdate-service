@@ -1,3 +1,9 @@
+// Package datastore connects to the datastore service to receive values. It
+// also connections to redis to get the keyupdates from the datastore
+// connection.
+//
+// The Datastore object uses a cache to only request keys once. If a key in the
+// cache gets an update via the keychanger, the cache gets updated.
 package datastore
 
 import (
@@ -66,8 +72,8 @@ func (d *Datastore) KeysChanged() ([]string, error) {
 	return keys, nil
 }
 
-// requestKeys request a list of keys by the datastore. It returns the values in
-// the same order. If an error happens, no key is returned.
+// requestKeys request a list of keys by the datastore. If an error happens, no
+// key is returned.
 func (d *Datastore) requestKeys(keys []string) (map[string]string, error) {
 	requestData, err := keysToGetManyRequest(keys)
 	if err != nil {
@@ -131,6 +137,8 @@ func keysToGetManyRequest(keys []string) ([]byte, error) {
 	return json.Marshal(request)
 }
 
+// getManyResponceToKeyValue reads the responce from the getMany request and
+// returns the content as key-values.
 func getManyResponceToKeyValue(r io.Reader) (map[string]string, error) {
 	var data map[string]map[string]json.RawMessage
 	if err := json.NewDecoder(r).Decode(&data); err != nil {
