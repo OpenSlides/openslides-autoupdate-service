@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -58,7 +59,7 @@ func (f *faker) KeysChanged() ([]string, error) {
 			keyValue = append(keyValue, fmt.Sprintf(`"The time is: %s"`, time.Now()))
 		}
 		keys = append(keys, keyValue[0])
-		f.ts.Update(map[string]string{keyValue[0]: keyValue[1]})
+		f.ts.Update(map[string]json.RawMessage{keyValue[0]: []byte(keyValue[1])})
 	}
 	return keys, nil
 }

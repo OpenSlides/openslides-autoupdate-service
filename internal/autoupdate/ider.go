@@ -20,7 +20,7 @@ func (i RestrictedIDs) ID(ctx context.Context, key string) (int, error) {
 		return 0, fmt.Errorf("get value for key `%s`: %w", key, err)
 	}
 
-	id, err := strconv.Atoi(data[key])
+	id, err := strconv.Atoi(string(data[key]))
 	if err != nil {
 		return 0, ValueError{key: key}
 	}
@@ -36,7 +36,7 @@ func (i RestrictedIDs) IDList(ctx context.Context, key string) ([]int, error) {
 	}
 
 	var value []int
-	if err := json.Unmarshal([]byte(data[key]), &value); err != nil {
+	if err := json.Unmarshal(data[key], &value); err != nil {
 		return nil, ValueError{key: key}
 	}
 	return value, nil
@@ -50,7 +50,7 @@ func (i RestrictedIDs) GenericID(ctx context.Context, key string) (string, error
 	}
 
 	var value string
-	if err := json.Unmarshal([]byte(data[key]), &value); err != nil {
+	if err := json.Unmarshal(data[key], &value); err != nil {
 		return "", ValueError{key: key}
 	}
 	return value, nil
@@ -64,7 +64,7 @@ func (i RestrictedIDs) GenericIDs(ctx context.Context, key string) ([]string, er
 	}
 
 	var values []string
-	if err := json.Unmarshal([]byte(data[key]), &values); err != nil {
+	if err := json.Unmarshal(data[key], &values); err != nil {
 		return nil, ValueError{key: key}
 	}
 	return values, nil

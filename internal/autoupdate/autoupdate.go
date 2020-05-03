@@ -8,6 +8,7 @@ package autoupdate
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -114,13 +115,13 @@ func (a *Autoupdate) receiveKeyChanges() {
 
 // restrictedData returns a map containing the restricted values for the given
 // keys.
-func (a *Autoupdate) restrictedData(ctx context.Context, uid int, keys ...string) (map[string]string, error) {
+func (a *Autoupdate) restrictedData(ctx context.Context, uid int, keys ...string) (map[string]json.RawMessage, error) {
 	values, err := a.datastore.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("get values for keys `%v` from datastore: %w", keys, err)
 	}
 
-	data := make(map[string]string, len(keys))
+	data := make(map[string]json.RawMessage, len(keys))
 	for i, key := range keys {
 		data[key] = values[i]
 	}

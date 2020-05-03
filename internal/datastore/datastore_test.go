@@ -12,15 +12,15 @@ func TestDataStoreGet(t *testing.T) {
 	ts := test.NewDatastoreServer()
 	d := datastore.New(ts.TS.URL, new(test.MockKeysChanged))
 
-	value, err := d.Get(context.Background(), "collection/1/field")
+	got, err := d.Get(context.Background(), "collection/1/field")
 
 	if err != nil {
 		t.Errorf("Get() returned an unexpected error: %v", err)
 	}
 
-	expected := test.Str(`"Hello World"`)
-	if !test.CmpSlice(value, expected) {
-		t.Errorf("Get() returned `%v`, expected `%v`", value, expected)
+	expect := test.Str(`"Hello World"`)
+	if len(got) != 1 || string(got[0]) != expect[0] {
+		t.Errorf("Get() returned `%v`, expected `%v`", got, expect)
 	}
 }
 
@@ -34,9 +34,9 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 		t.Errorf("Get() returned an unexpected error: %v", err)
 	}
 
-	expected := test.Str(`"Hello World"`, `"Hello World"`)
-	if !test.CmpSlice(got, expected) {
-		t.Errorf("Get() returned %v, expected %v", got, expected)
+	expect := test.Str(`"Hello World"`, `"Hello World"`)
+	if len(got) != 2 || string(got[0]) != expect[0] || string(got[1]) != expect[1] {
+		t.Errorf("Get() returned %v, expected %v", got, expect)
 	}
 
 	if ts.RequestCount != 1 {

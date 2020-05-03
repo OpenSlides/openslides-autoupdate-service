@@ -40,8 +40,8 @@ func New(url string, keychanger KeysChangedReceiver) *Datastore {
 }
 
 // Get returns the value for one or many keys.
-func (d *Datastore) Get(ctx context.Context, keys ...string) ([]string, error) {
-	values, err := d.cache.getOrSet(ctx, keys, func(keys []string) (map[string]string, error) {
+func (d *Datastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage, error) {
+	values, err := d.cache.getOrSet(ctx, keys, func(keys []string) (map[string]json.RawMessage, error) {
 		return d.requestKeys(keys)
 	})
 	if err != nil {
@@ -74,7 +74,7 @@ func (d *Datastore) KeysChanged() ([]string, error) {
 
 // requestKeys request a list of keys by the datastore. If an error happens, no
 // key is returned.
-func (d *Datastore) requestKeys(keys []string) (map[string]string, error) {
+func (d *Datastore) requestKeys(keys []string) (map[string]json.RawMessage, error) {
 	requestData, err := keysToGetManyRequest(keys)
 	if err != nil {
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)
@@ -110,7 +110,7 @@ func (d *Datastore) requestKeys(keys []string) (map[string]string, error) {
 
 // keysToGetManyRequest returns an list of datastore GetManyRequests encoded as
 // json.
-func keysToGetManyRequest(keys []string) ([]byte, error) {
+func keysToGetManyRequest(keys []string) (json.RawMessage, error) {
 	type getManyRequest struct {
 		Collection   string   `json:"collection"`
 		IDs          []int    `json:"ids"`
@@ -139,16 +139,16 @@ func keysToGetManyRequest(keys []string) ([]byte, error) {
 
 // getManyResponceToKeyValue reads the responce from the getMany request and
 // returns the content as key-values.
-func getManyResponceToKeyValue(r io.Reader) (map[string]string, error) {
+func getManyResponceToKeyValue(r io.Reader) (map[string]json.RawMessage, error) {
 	var data map[string]map[string]json.RawMessage
 	if err := json.NewDecoder(r).Decode(&data); err != nil {
 		return nil, fmt.Errorf("decoding responce: %w", err)
 	}
 
-	keyValue := make(map[string]string)
+	keyValue := make(map[string]json.RawMessage)
 	for fqid, inner := range data {
 		for field, value := range inner {
-			keyValue[fqid+"/"+field] = string(value)
+			keyValue[fqid+"/"+field] = value
 		}
 	}
 	return keyValue, nil

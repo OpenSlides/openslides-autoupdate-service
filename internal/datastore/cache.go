@@ -2,11 +2,12 @@ package datastore
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 )
 
 // cacheSetFunc is a function to update cache keys.
-type cacheSetFunc func(keys []string) (map[string]string, error)
+type cacheSetFunc func(keys []string) (map[string]json.RawMessage, error)
 
 // cache stores the values to the datastore.
 //
@@ -38,7 +39,7 @@ func newCache() *cache {
 //
 // If the context is done, getOrSet returns. But the set() call is not stopped.
 // Other calls to getOrSet may wait for its result.
-func (c *cache) getOrSet(ctx context.Context, keys []string, set cacheSetFunc) ([]string, error) {
+func (c *cache) getOrSet(ctx context.Context, keys []string, set cacheSetFunc) ([]json.RawMessage, error) {
 	// Get all requested entries from cache. If entry does not exist, create a
 	// new one.
 	c.mu.Lock()
@@ -73,7 +74,7 @@ func (c *cache) getOrSet(ctx context.Context, keys []string, set cacheSetFunc) (
 		}
 	}
 
-	values := make([]string, len(keys))
+	values := make([]json.RawMessage, len(keys))
 	for i, key := range keys {
 		c.mu.RLock()
 		entry := c.data[key]
@@ -100,7 +101,7 @@ func (c *cache) fetchMissing(keys []string, set cacheSetFunc) {
 		value, ok := data[key]
 		if !ok {
 			// TODO: think about this.
-			value = "null"
+			value = []byte("null")
 		}
 		c.data[key].set(value, err)
 	}
@@ -108,7 +109,7 @@ func (c *cache) fetchMissing(keys []string, set cacheSetFunc) {
 
 // setIfExist updates each the cache with the value in the given map. But only
 // values that are already in the cache get an update.
-func (c *cache) setIfExist(data map[string]string) {
+func (c *cache) setIfExist(data map[string]json.RawMessage) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -126,13 +127,13 @@ func (c *cache) setIfExist(data map[string]string) {
 type cacheEntry struct {
 	mu    sync.RWMutex
 	done  chan struct{}
-	value string
+	value json.RawMessage
 	err   error
 }
 
 // get returns the value and error from the cacheEntry. It block until the value
 // is ready.
-func (ce *cacheEntry) get() (string, error) {
+func (ce *cacheEntry) get() (json.RawMessage, error) {
 	<-ce.done
 
 	ce.mu.RLock()
@@ -142,7 +143,7 @@ func (ce *cacheEntry) get() (string, error) {
 }
 
 // set sets the cache entry.
-func (ce *cacheEntry) set(value string, err error) {
+func (ce *cacheEntry) set(value json.RawMessage, err error) {
 	ce.mu.Lock()
 	defer ce.mu.Unlock()
 
@@ -165,7 +166,7 @@ func (ce *cacheEntry) set(value string, err error) {
 
 // update updates the cache entry. The differece to set is, that is writes the
 // value, even when it is done.
-func (ce *cacheEntry) update(value string) {
+func (ce *cacheEntry) update(value json.RawMessage) {
 	ce.mu.Lock()
 	defer ce.mu.Unlock()
 

@@ -139,6 +139,6 @@ func quote(s string) string {
 	return strings.ReplaceAll(s, `"`, `\"`)
 }
 
-func sendData(w io.Writer, data map[string]string) error {
+func sendData(w io.Writer, data map[string]json.RawMessage) error {
 	return json.NewEncoder(w).Encode(data)
 }

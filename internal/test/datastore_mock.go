@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -34,8 +35,8 @@ func NewMockDatastore() *MockDatastore {
 // If the key ends with "_ids", "[1,2]" is returned.
 //
 // In any other case, "some value" is returned.
-func (d *MockDatastore) Get(ctx context.Context, keys ...string) ([]string, error) {
-	data := make(map[string]string, len(keys))
+func (d *MockDatastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage, error) {
+	data := make(map[string]json.RawMessage, len(keys))
 	for _, key := range keys {
 		value, exist, err := d.DatastoreValues.Value(key)
 		if err != nil {
@@ -49,7 +50,7 @@ func (d *MockDatastore) Get(ctx context.Context, keys ...string) ([]string, erro
 		data[key] = value
 	}
 
-	values := make([]string, len(keys))
+	values := make([]json.RawMessage, len(keys))
 	for i, key := range keys {
 		values[i] = data[key]
 	}
@@ -80,13 +81,13 @@ func (d *MockDatastore) Close() {
 // DatastoreValues returns data for the test.MockDatastore and the test.DatastoreServer.
 type DatastoreValues struct {
 	mu       sync.RWMutex
-	Data     map[string]string
+	Data     map[string]json.RawMessage
 	OnlyData bool
 }
 
 // Value returns a value for a key. If the value does not exist, the second
 // return value is false.
-func (d *DatastoreValues) Value(key string) (string, bool, error) {
+func (d *DatastoreValues) Value(key string) (json.RawMessage, bool, error) {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
@@ -96,25 +97,25 @@ func (d *DatastoreValues) Value(key string) (string, bool, error) {
 	}
 
 	if d.OnlyData {
-		return "", false, nil
+		return nil, false, nil
 	}
 
 	switch {
 	case strings.HasPrefix(key, "error"):
-		return "", true, fmt.Errorf("mock datastore error")
+		return nil, true, fmt.Errorf("mock datastore error")
 	case strings.HasSuffix(key, "_id"):
-		return `1`, true, nil
+		return json.RawMessage(`1`), true, nil
 	case strings.HasSuffix(key, "_ids"):
-		return `[1,2]`, true, nil
+		return json.RawMessage(`[1,2]`), true, nil
 	default:
-		return `"Hello World"`, true, nil
+		return json.RawMessage(`"Hello World"`), true, nil
 	}
 }
 
 // Update updates the values from the Datastore.
 //
 // This does not send a KeysChanged signal.
-func (d *DatastoreValues) Update(data map[string]string) {
+func (d *DatastoreValues) Update(data map[string]json.RawMessage) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 

@@ -1,6 +1,7 @@
 package autoupdate_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
@@ -15,7 +16,7 @@ func TestConnect(t *testing.T) {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	if value, ok := data["user/1/name"]; !ok || value != `"Hello World"` {
+	if value, ok := data["user/1/name"]; !ok || string(value) != `"Hello World"` {
 		t.Errorf("c.Next() returned %v, expected map[user/1/name:\"Hello World\"", data)
 	}
 }
@@ -45,7 +46,7 @@ func TestConnectionReadNewData(t *testing.T) {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	datastore.Update(map[string]string{"user/1/name": `"new value"`})
+	datastore.Update(map[string]json.RawMessage{"user/1/name": []byte(`"new value"`)})
 	datastore.Send(test.Str("user/1/name"))
 	data, err := c.Next()
 
@@ -55,7 +56,7 @@ func TestConnectionReadNewData(t *testing.T) {
 	if got := len(data); got != 1 {
 		t.Errorf("Expected data to have one key, got: %d", got)
 	}
-	if value, ok := data["user/1/name"]; !ok || value != `"new value"` {
+	if value, ok := data["user/1/name"]; !ok || string(value) != `"new value"` {
 		t.Errorf("c.Next() returned %v, expected %v", data, map[string]string{"user/1/name": `"new value"`})
 	}
 }

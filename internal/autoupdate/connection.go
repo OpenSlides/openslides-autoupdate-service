@@ -2,6 +2,7 @@ package autoupdate
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 )
 
@@ -20,7 +21,7 @@ type Connection struct {
 //
 // Next blocks until there are new data or the context or the server closes. In
 // this case, nil is returned.
-func (c *Connection) Next() (map[string]string, error) {
+func (c *Connection) Next() (map[string]json.RawMessage, error) {
 	if !c.next {
 		// First time called
 		c.next = true
