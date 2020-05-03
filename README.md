@@ -90,7 +90,7 @@ Afterwards it is possible to update keys by sending the following command to red
 
 The Service uses the following environment variables:
 
-* `LISTEN_HTTP_ADDR=:8002`: Lets the service listen on port 8080 on any device. The default is `:8002`.
+* `LISTEN_HTTP_ADDR=:8002`: Lets the service listen on port 8002 on any device. The default is `:8002`.
 * `DATASTORE=fake`: Sets the datastore service. `fake` (default) or `service`.
 * `DATASTORE_URL`: Sets the url for the datastore service. The default is `http://localhost:8001`.
 * `MESSAGIN=fake`: Tells the service what kind of messagin service is used. `fake`(default) or `redis`
