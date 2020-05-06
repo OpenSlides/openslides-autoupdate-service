@@ -1,7 +1,8 @@
-// Package http helps to handel http requests for the autoupate service.
+// Package http handles http requests for the autoupate service.
 package http
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -15,13 +16,13 @@ import (
 
 // Handler is an http handler for the autoupdate service.
 type Handler struct {
-	s    *autoupdate.Service
+	s    *autoupdate.Autoupdate
 	mux  *http.ServeMux
 	auth Authenticator
 }
 
 // New create a new Handler with the correct urls.
-func New(s *autoupdate.Service, auth Authenticator) *Handler {
+func New(s *autoupdate.Autoupdate, auth Authenticator) *Handler {
 	h := &Handler{
 		s:    s,
 		mux:  http.NewServeMux(),
@@ -43,12 +44,12 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 
 		uid, err := h.auth.Authenticate(r.Context(), r)
 		if err != nil {
-			return fmt.Errorf("can not authenticate request: %w", err)
+			return fmt.Errorf("authenticate request: %w", err)
 		}
 
 		kb, err := kbg(r, uid)
 		if err != nil {
-			return fmt.Errorf("can not build keysbuilder: %w", err)
+			return fmt.Errorf("build keysbuilder: %w", err)
 		}
 
 		connection := h.s.Connect(r.Context(), uid, kb)
@@ -56,7 +57,7 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 		// connection.Next() blocks, until there is new data or the client
 		// context or the server is closed.
 		for {
-			reader, err := connection.Next()
+			data, err := connection.Next()
 			if err != nil {
 				var derr DefinedError
 				if errors.As(err, &derr) {
@@ -67,12 +68,12 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 				return nil
 			}
 
-			// reader is nil when the topic or the connection are closed.
-			if reader == nil {
+			// data is nil when the topic or the connection are closed.
+			if data == nil {
 				return nil
 			}
 
-			if _, err := io.Copy(w, reader); err != nil {
+			if err := sendData(w, data); err != nil {
 				internalErr(w, err)
 				return nil
 			}
@@ -128,7 +129,7 @@ func writeErr(w io.Writer, err DefinedError) {
 // internalErr sends a nonsense error message to the client and logs the real
 // message to stdout.
 func internalErr(w io.Writer, err error) {
-	log.Printf("Error: %v", err)
+	log.Printf("Internal Error: %v", err)
 	fmt.Fprintln(w, `{"error": {"type": "InternalError", "msg": "Ups, something went wrong!"}}`)
 }
 
@@ -136,4 +137,8 @@ func internalErr(w io.Writer, err error) {
 // valid json.
 func quote(s string) string {
 	return strings.ReplaceAll(s, `"`, `\"`)
+}
+
+func sendData(w io.Writer, data map[string]json.RawMessage) error {
+	return json.NewEncoder(w).Encode(data)
 }

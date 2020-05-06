@@ -49,13 +49,13 @@ To see a list of possible json-strings see the file internal/autoupdate/keysbuil
 
 There is a simpler method to request keys:
 
-`curl localhost:8002/system/autoupdate/keys?key1,key2`
+`curl localhost:8002/system/autoupdate/keys?user/1/name,user/2/name`
 
 With this simpler method, it is not possible to request related keys.
 
 After the request is send, the values to the keys are returned as a json-object without a newline:
 ```
-{"key1": "value", "key2":"value"}
+{"user/1/name": "value", "user/2/name":"value"}
 ```
 
 To "update" keys, you can send them to the server via stdin with a value or without a value in the form:
@@ -63,12 +63,20 @@ To "update" keys, you can send them to the server via stdin with a value or with
 user/5/name
 user/6/name="Emanuel"
 user/1/group_ids=[1,2,3]
-key1="foo" key2="bar"
+user/1/name="foo" user/2/name="bar"
 ```
 
-If you give not value, the current time is used as value. If you give a value, it has to be valid json without any spaces.
+If the value is skipped, the current time is used as value. If you give a value, it has to be valid json without any spaces.
 
-All clients that listen for the keys get an update in the same form then the initial form.
+All clients that listen for the keys get an update for that key.
+
+
+### With datastore-service
+
+To connect the autoupdate-service with the datastore service, the following environment variables can be used:
+
+`DATASTORE=service MESSAGIN_SERVICE=redis ./autoupdate`
+
 
 ### With redis
 
@@ -82,11 +90,9 @@ Afterwards it is possible to update keys by sending the following command to red
 
 The Service uses the following environment variables:
 
-* `LISTEN_HTTP_ADDR=:8080`: Lets the service listen on port 8080 on any device. The default is `:8002`.
-* `MESSAGIN_SERVICE=fake`: Tells the service what kind of messagin service is used. `fake`(default) or `redis`
-* `AUTH_SERVICE=fake`: The same for the auth service.
-* `RESTRICTER_SERVICE=fake`: The same for the restricter service. `fake`(default) or `backend`
-* `RESTRICTER_ADDR`: Addr of the restricter service with a protocol prefix. The default is `http://localhost:8000`
+* `LISTEN_HTTP_ADDR=:8002`: Lets the service listen on port 8002 on any device. The default is `:8002`.
+* `DATASTORE=fake`: Sets the datastore service. `fake` (default) or `service`.
+* `DATASTORE_URL`: Sets the url for the datastore service. The default is `http://localhost:8001`.
+* `MESSAGIN=fake`: Tells the service what kind of messagin service is used. `fake`(default) or `redis`
 * `REDIS_ADDR=localhost:6379`: The address to redis.
 * `REDIS_TEST_CONN=true`: Test the redis connection on startup. Disable on the cloud if redis needs more time to start then this service.
-

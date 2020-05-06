@@ -2,14 +2,14 @@ package autoupdate
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"io"
 )
 
 // Connection holds the state of a client. It has to be created by colling
 // Connect() on a autoupdate.Service instance.
 type Connection struct {
-	autoupdate *Service
+	autoupdate *Autoupdate
 	ctx        context.Context
 	uid        int
 	kb         KeysBuilder
@@ -17,16 +17,16 @@ type Connection struct {
 	next       bool
 }
 
-// Next returns the next data in form of an reader.
+// Next returns the next data for the user.
 //
 // Next blocks until there are new data or the context or the server closes. In
-// this case, the returned io.Reader is nil.
-func (c *Connection) Next() (io.Reader, error) {
+// this case, nil is returned.
+func (c *Connection) Next() (map[string]json.RawMessage, error) {
 	if !c.next {
 		// First time called
 		c.next = true
 		c.tid = c.autoupdate.topic.LastID()
-		return c.autoupdate.restricter.Restrict(c.ctx, c.uid, c.kb.Keys())
+		return c.autoupdate.restrictedData(c.ctx, c.uid, c.kb.Keys()...)
 	}
 
 	var err error
@@ -35,7 +35,7 @@ func (c *Connection) Next() (io.Reader, error) {
 	// Blocks until the topic is closed (on server exit) or the context is done.
 	c.tid, changedKeys, err = c.autoupdate.topic.Receive(c.ctx, c.tid)
 	if err != nil {
-		return nil, fmt.Errorf("can not get new keys: %w", err)
+		return nil, fmt.Errorf("get updated keys: %w", err)
 	}
 
 	// When changedKeys is empty, then the service or the connection is closed.
@@ -47,7 +47,7 @@ func (c *Connection) Next() (io.Reader, error) {
 
 	// Update keysbuilder get new list of keys
 	if err := c.kb.Update(changedKeys); err != nil {
-		return nil, fmt.Errorf("can not update keysbuilder: %w", err)
+		return nil, fmt.Errorf("update keysbuilder: %w", err)
 	}
 
 	// Start with keys hat are new for the user
@@ -71,7 +71,7 @@ func (c *Connection) Next() (io.Reader, error) {
 		return c.Next()
 	}
 
-	return c.autoupdate.restricter.Restrict(c.ctx, c.uid, keys)
+	return c.autoupdate.restrictedData(c.ctx, c.uid, keys...)
 }
 
 func keysDiff(old []string, new []string) []string {

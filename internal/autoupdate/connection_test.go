@@ -1,116 +1,62 @@
 package autoupdate_test
 
 import (
-	"context"
 	"encoding/json"
-	"io/ioutil"
 	"testing"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
 func TestConnect(t *testing.T) {
-	keychanges := test.NewMockKeysChanged()
-	defer keychanges.Close()
-	s := autoupdate.New(&test.MockRestricter{Data: map[string]string{"user/1/name": `"some value"`}}, keychanges)
-	defer s.Close()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	kb := mockKeysBuilder{keys: keys("user/1/name")}
+	c, _, _, close := getConnection()
+	defer close()
 
-	c := s.Connect(ctx, 1, kb)
-	read, err := c.Next()
+	data, err := c.Next()
 	if err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	var data map[string]map[string]map[string]json.RawMessage
-	decoder := json.NewDecoder(read)
-
-	if err := decoder.Decode(&data); err != nil {
-		t.Errorf("Can not decode connectoin stream: %v", err)
-	}
-
-	otherData, err := ioutil.ReadAll(decoder.Buffered())
-	if err != nil {
-		t.Errorf("Can not read buffer from decoder: %v", err)
-	}
-	if !(len(otherData) == 0 || (len(otherData) == 1 && otherData[0] == '\n')) {
-		t.Errorf("Expected no more data, got: %v", otherData)
+	if value, ok := data["user/1/name"]; !ok || string(value) != `"Hello World"` {
+		t.Errorf("c.Next() returned %v, expected map[user/1/name:\"Hello World\"", data)
 	}
 }
 
 func TestConnectionReadNoNewData(t *testing.T) {
-	keychanges := test.NewMockKeysChanged()
-	defer keychanges.Close()
-	s := autoupdate.New(new(test.MockRestricter), keychanges)
-	defer s.Close()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	kb := mockKeysBuilder{keys: keys("user/1/name")}
-	c := s.Connect(ctx, 1, kb)
+	c, _, disconnect, close := getConnection()
+	defer close()
+
 	if _, err := c.Next(); err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	cancel()
-	r, err := c.Next()
+	disconnect()
+	data, err := c.Next()
 	if err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
-	if r != nil {
-		t.Errorf("Expect no new data, got: %v", r)
+	if data != nil {
+		t.Errorf("Expect no new data, got: %v", data)
 	}
 }
 
 func TestConnectionReadNewData(t *testing.T) {
-	keychanges := test.NewMockKeysChanged()
-	defer keychanges.Close()
-	restricter := new(test.MockRestricter)
-	s := autoupdate.New(restricter, keychanges)
-	defer s.Close()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	kb := mockKeysBuilder{keys: keys("user/1/name")}
-	c := s.Connect(ctx, 1, kb)
+	c, datastore, _, close := getConnection()
+	defer close()
 	if _, err := c.Next(); err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	restricter.Update(map[string]string{"user/1/name": `"new value"`})
-	keychanges.Send(keys("user/1/name"))
-	read, err := c.Next()
+	datastore.Update(map[string]json.RawMessage{"user/1/name": []byte(`"new value"`)})
+	datastore.Send(test.Str("user/1/name"))
+	data, err := c.Next()
+
 	if err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
-	}
-
-	var data map[string]map[string]map[string]json.RawMessage
-	if err := json.NewDecoder(read).Decode(&data); err != nil {
-		t.Errorf("Can not decode connectoin stream: %v", err)
 	}
 	if got := len(data); got != 1 {
 		t.Errorf("Expected data to have one key, got: %d", got)
 	}
-	got, ok := inResult(data, "user", "1", "name")
-	if !ok {
-		t.Errorf("Returned value does not have key `user/1/name`")
+	if value, ok := data["user/1/name"]; !ok || string(value) != `"new value"` {
+		t.Errorf("c.Next() returned %v, expected %v", data, map[string]string{"user/1/name": `"new value"`})
 	}
-	if got != `"new value"` {
-		t.Errorf("Expect value `new value` got: %s", got)
-	}
-}
-
-func inResult(data map[string]map[string]map[string]json.RawMessage, collection, id, field string) (string, bool) {
-	if _, ok := data[collection]; !ok {
-		return "", false
-	}
-	if _, ok := data[collection][id]; !ok {
-		return "", false
-	}
-	value, ok := data[collection][id][field]
-	if !ok {
-		return "", false
-	}
-	return string(value), true
 }

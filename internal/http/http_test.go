@@ -15,9 +15,9 @@ import (
 )
 
 func TestHandlerTestURLs(t *testing.T) {
-	keyschanges := test.NewMockKeysChanged()
-	defer keyschanges.Close()
-	s := autoupdate.New(new(test.MockRestricter), keyschanges)
+	datastore := test.NewMockDatastore()
+	defer datastore.Close()
+	s := autoupdate.New(datastore, new(test.MockRestricter))
 	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}))
 	defer srv.Close()
 
@@ -52,9 +52,9 @@ func TestHandlerTestURLs(t *testing.T) {
 }
 
 func TestSimple(t *testing.T) {
-	keyschanges := test.NewMockKeysChanged()
-	defer keyschanges.Close()
-	s := autoupdate.New(new(test.MockRestricter), keyschanges)
+	datastore := test.NewMockDatastore()
+	defer datastore.Close()
+	s := autoupdate.New(datastore, new(test.MockRestricter))
 	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}))
 	defer srv.Close()
 
@@ -107,7 +107,7 @@ func TestSimple(t *testing.T) {
 				return
 			}
 
-			var body map[string]map[string]map[string]json.RawMessage
+			var body map[string]json.RawMessage
 			if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
 				t.Errorf("Got invalid json: %v", err)
 			}
@@ -116,7 +116,12 @@ func TestSimple(t *testing.T) {
 				t.Errorf("Error: %v", v)
 			}
 
-			if got := mapKeys(body); !cmpSlice(got, tt.keys) {
+			got := make([]string, 0, len(body))
+			for key := range body {
+				got = append(got, key)
+			}
+
+			if !cmpSlice(got, tt.keys) {
 				t.Errorf("Got keys %v, expected %v", got, tt.keys)
 			}
 		})
@@ -124,9 +129,9 @@ func TestSimple(t *testing.T) {
 }
 
 func TestErrors(t *testing.T) {
-	keyschanges := test.NewMockKeysChanged()
-	defer keyschanges.Close()
-	s := autoupdate.New(new(test.MockRestricter), keyschanges)
+	datastore := test.NewMockDatastore()
+	defer datastore.Close()
+	s := autoupdate.New(datastore, new(test.MockRestricter))
 	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}))
 	defer srv.Close()
 

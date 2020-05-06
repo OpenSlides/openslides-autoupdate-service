@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"log"
@@ -11,22 +10,20 @@ import (
 	"syscall"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
-	ahttp "github.com/openslides/openslides-autoupdate-service/internal/http"
+	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
+	autoupdateHttp "github.com/openslides/openslides-autoupdate-service/internal/http"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
 	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
 )
 
 func main() {
 	listenAddr := getEnv("LISTEN_HTTP_ADDR", ":8002")
-
-	f := &faker{buf: bufio.NewReader(os.Stdin)}
-	receiver := buildReceiver(f)
 	authService := buildAuth()
-	restricter := buildRestricter(f)
+	datastoreService := buildDatastore()
 
-	service := autoupdate.New(restricter, receiver)
+	service := autoupdate.New(datastoreService, new(restrict.Restricter))
 
-	handler := ahttp.New(service, authService)
+	handler := autoupdateHttp.New(service, authService)
 	srv := &http.Server{Addr: listenAddr, Handler: handler}
 	defer func() {
 		service.Close()
@@ -45,15 +42,15 @@ func main() {
 	waitForShutdown()
 }
 
-// waitForShutdown blocks until the service should be waitForShutdown.
+// waitForShutdown blocks until the service exists.
 //
-// It listens on SIGINT and SIGTERM. If the signal is received for a
-// second time, the process is killed with statuscode 1.
+// It listens on SIGINT and SIGTERM. If the signal is received for a second
+// time, the process is killed with statuscode 1.
 func waitForShutdown() {
 	sigint := make(chan os.Signal, 1)
 	// syscall.SIGTERM is not pressent on all plattforms. Since the autoupdate
-	// service is only run on linux, this is ok. If other plattforms should be supported,
-	// os.Interrupt should be used instead.
+	// service is only run on linux, this is ok. If other plattforms should be
+	// supported, os.Interrupt should be used instead.
 	signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM)
 	<-sigint
 	go func() {
@@ -62,12 +59,28 @@ func waitForShutdown() {
 	}()
 }
 
-// buildReceiver builds the receiver needed by the autoupdate service.
-// It uses environment variables to make the decission. Per default, the given
-// faker is used.
-func buildReceiver(f *faker) autoupdate.KeysChangedReceiver {
-	// Choose the topic service
-	var receiver autoupdate.KeysChangedReceiver
+// buildDatastore builds the datastore implementation needed by the autoupdate
+// service. It uses environment variables to make the decission. Per default, a
+// fake server is started and its url is used.
+func buildDatastore() autoupdate.Datastore {
+	dsService := getEnv("DATASTORE", "fake")
+	url := getEnv("DATASTORE_URL", "http://localhost:8001")
+
+	var f *faker
+	if dsService == "fake" {
+		fmt.Println("Fake Datastore")
+		f = newFaker(os.Stdin)
+		url = f.ts.TS.URL
+	}
+	fmt.Println("Datastore URL:", url)
+	return datastore.New(url, buildReceiver(f))
+}
+
+// buildReceiver builds the receiver needed by the datastore service. It uses
+// environment variables to make the decission. Per default, the given faker is
+// used.
+func buildReceiver(f *faker) datastore.KeysChangedReceiver {
+	var receiver datastore.KeysChangedReceiver
 	fmt.Print("Messagin Service: ")
 	switch getEnv("MESSAGIN_SERVICE", "fake") {
 	case "redis":
@@ -81,36 +94,28 @@ func buildReceiver(f *faker) autoupdate.KeysChangedReceiver {
 		fmt.Println("redis")
 	default:
 		receiver = f
-		fmt.Println("fake")
+		if f == nil {
+			fmt.Println("none")
+		} else {
+			fmt.Println("fake")
+		}
 	}
 	return receiver
-}
-
-// buildRestricter builds the restricter needed by the autoupdate service.
-// It uses environment variables to make the decission. Per default, the given
-// faker is used.
-func buildRestricter(f *faker) autoupdate.Restricter {
-	var restricter autoupdate.Restricter
-	switch getEnv("RESTRICTER_SERVICE", "fake") {
-	case "backend":
-		restricter = &restrict.Service{Addr: getEnv("BACKEND_ADDR", "http://localhost:8000")}
-	default:
-		restricter = f
-	}
-	return restricter
 }
 
 // buildAuth returns the auth service needed by the http server.
 //
 // Currently, there is only the fakeAuth service.
-func buildAuth() ahttp.Authenticator {
+func buildAuth() autoupdateHttp.Authenticator {
 	return fakeAuth(1)
 }
 
-func getEnv(n, d string) string {
-	out := os.Getenv(n)
-	if out == "" {
-		return d
+// getEnv returns the value of the environment variable env. If it is empty, the
+// defaultValue is used.
+func getEnv(env, devaultValue string) string {
+	value := os.Getenv(env)
+	if value == "" {
+		return devaultValue
 	}
-	return out
+	return value
 }

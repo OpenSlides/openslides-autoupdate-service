@@ -36,7 +36,7 @@ func (s *Service) KeysChanged() ([]string, error) {
 			// No new data
 			return keys, nil
 		}
-		return keys, fmt.Errorf("can not get data from redis: %w", err)
+		return keys, fmt.Errorf("get xread data from redis: %w", err)
 	}
 	if id != "" {
 		s.lastID = id

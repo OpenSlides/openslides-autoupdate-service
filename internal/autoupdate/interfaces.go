@@ -2,20 +2,19 @@ package autoupdate
 
 import (
 	"context"
-	"io"
+	"encoding/json"
 )
 
-// KeysChangedReceiver returns keys that have changes. Blocks until there is
-// changed data.
-type KeysChangedReceiver interface {
+// Datastore gets values for keys and informs, if they change.
+type Datastore interface {
+	Get(ctx context.Context, keys ...string) ([]json.RawMessage, error)
 	KeysChanged() ([]string, error)
 }
 
 // Restricter restricts keys.
 type Restricter interface {
-	// Restrict returns an io.Reader which returns a json encoded object with
-	// the requested keys with the values.
-	Restrict(ctx context.Context, uid int, keys []string) (io.Reader, error)
+	// Restrict manipulates the values for the user with the given id.
+	Restrict(uid int, data map[string]json.RawMessage)
 }
 
 // KeysBuilder holds the keys that are requested by a user.
