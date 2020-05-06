@@ -64,9 +64,6 @@ var dataSet = map[string]json.RawMessage{
 }
 
 func TestFeatures(t *testing.T) {
-	//TODO
-	t.Skip("Talk with Finn, if its ok to return a dict again.")
-
 	datastore := test.NewMockDatastore()
 	datastore.Data = dataSet
 	datastore.OnlyData = true
@@ -74,9 +71,16 @@ func TestFeatures(t *testing.T) {
 	defer s.Close()
 
 	for _, tt := range []struct {
-		name    string
+		name string
+
+		// request is an example request to the autoupdate service. The
+		// http-server expects not one request, but a list of requests.
 		request string
-		result  string
+
+		// result is the data returned for the request. The http-server returns
+		// the same json encoded data but its format differs. It only returns
+		// one line without spaces.
+		result string
 	}{
 		{
 			"Basic",
@@ -117,40 +121,20 @@ func TestFeatures(t *testing.T) {
 				}
 			}`,
 			`{
-				"A": {
-					"1": {
-						"a": "a1",
-						"C_ids": [],
-						"B_id": 1,
-						"G1_ids": [1,2]
-					},
-					"2": {
-						"a": "a2",
-						"C_ids": [1,2],
-						"G1_ids": []
-					}
-				},
-				"C": {
-					"1": {
-						"c": "c1",
-						"G1_ids": [2,3]
-					},
-					"2": {
-						"c": "c2",
-						"G1_ids": [2,3]
-					}
-				},
-				"G1": {
-					"1": {
-						"g1": "g1.1"
-					},
-					"2": {
-						"g1": "g1.2"
-					},
-					"3": {
-						"g1": "g1.3"
-					}
-				}
+				"A/1/a":      "a1",
+				"A/1/C_ids":  [],
+				"A/1/B_id":   1,
+				"A/1/G1_ids": [1,2],
+				"A/2/a":      "a2",
+				"A/2/C_ids":  [1,2],
+				"A/2/G1_ids": [],
+				"C/1/c":      "c1",
+				"C/1/G1_ids": [2,3],
+				"C/2/c":      "c2",
+				"C/2/G1_ids": [2,3],
+				"G1/1/g1":    "g1.1",
+				"G1/2/g1":    "g1.2",
+				"G1/3/g1":    "g1.3"
 			}`,
 		},
 		{
@@ -190,31 +174,15 @@ func TestFeatures(t *testing.T) {
 				}
 			}`,
 			`{
-				"B": {
-					"1": {
-						"B_children_ids": [2],
-						"C_ids": [1],
-						"G2_id": 1
-					},
-					"2" : {
-						"C_ids": [1,2],
-						"B_parent_id": 1
-					}
-				},
-				"G2": {
-					"1": {
-						"content_object_id": "B/1"
-					}
-				},
-				"C": {
-					"1": {
-						"c": "c1",
-						"title": "c1"
-					},
-					"2": {
-						"c": "c2"
-					}
-				}
+				"B/1/B_children_ids":     [2],
+				"B/1/C_ids":              [1],
+				"B/1/G2_id":              1,
+				"B/2/C_ids":              [1,2],
+				"B/2/B_parent_id":        1,
+				"G2/1/content_object_id": "B/1",
+				"C/1/c":                  "c1",
+				"C/1/title":              "c1",
+				"C/2/c":                  "c2"
 			}`,
 		},
 		{
@@ -240,30 +208,16 @@ func TestFeatures(t *testing.T) {
 				}
 			}`,
 			`{
-				"G1": {
-					"2": {
-						"content_object_ids": ["A/1","C/1","C/2"]
-					}
-				},
-				"A": {
-					"1": {
-						"a": "a1",
-						"title": "a1",
-						"G1_ids": [1,2]
-					}
-				},
-				"C": {
-					"1": {
-						"title": "c1",
-						"A_id": 2,
-						"G1_ids": [2,3]
-					},
-					"2": {
-						"title": "c2",
-						"A_id": 2,
-						"G1_ids": [2,3]
-					}
-				}
+				"G1/2/content_object_ids": ["A/1","C/1","C/2"],
+				"A/1/a":                   "a1",
+				"A/1/title":               "a1",
+				"A/1/G1_ids":              [1,2],
+				"C/1/title":               "c1",
+				"C/1/A_id":                2,
+				"C/1/G1_ids":              [2,3],
+				"C/2/title":               "c2",
+				"C/2/A_id":                2,
+				"C/2/G1_ids":              [2,3]
 			}`,
 		},
 		{
@@ -277,16 +231,10 @@ func TestFeatures(t *testing.T) {
 				}
 			}`,
 			`{
-				"D": {
-					"1": {
-						"d": "d1",
-						"B_$_ids": ["1","2","3"]
-					},
-					"2": {
-						"d": "d2",
-						"B_$_ids": ["1","4"]
-					}
-				}
+				"D/1/d":       "d1",
+				"D/1/B_$_ids": ["1","2","3"],
+				"D/2/d":       "d2",
+				"D/2/B_$_ids": ["1","4"]
 			}`,
 		},
 		{
@@ -302,21 +250,15 @@ func TestFeatures(t *testing.T) {
 				}
 			}`,
 			`{
-				"D": {
-					"1":{
-						"d": "d1",
-						"B_$_ids": ["1","2","3"],
-						"B_1_ids": [1,2],
-						"B_2_ids": [1],
-						"B_3_ids": []
-					},
-					"2": {
-						"d":       "d2",
-						"B_$_ids": ["1","4"],
-						"B_1_ids": [],
-						"B_4_ids": [2]
-					}
-				}
+				"D/1/d":       "d1",
+				"D/1/B_$_ids": ["1","2","3"],
+				"D/1/B_1_ids": [1,2],
+				"D/1/B_2_ids": [1],
+				"D/1/B_3_ids": [],
+				"D/2/d":       "d2",
+				"D/2/B_$_ids": ["1","4"],
+				"D/2/B_1_ids": [],
+				"D/2/B_4_ids": [2]
 			}`,
 		},
 		{
@@ -345,35 +287,23 @@ func TestFeatures(t *testing.T) {
 				}
 			}`,
 			`{
-				"D": {
-					"1": {
-						"B_$_ids": ["1","2","3"],
-						"B_1_ids": [1,2],
-						"B_2_ids": [1],
-						"B_3_ids": []
-					},
-					"2": {
-						"B_$_ids": ["1","4"],
-						"B_1_ids": [],
-						"B_4_ids": [2]
-					}
-				},
-				"B": {
-					"1": {
-						"b": "b1"
-					},
-					"2": {
-						"b": "b2",
-						"title": "b2"
-					}
-				}
+				"D/1/B_$_ids": ["1","2","3"],
+				"D/1/B_1_ids": [1,2],
+				"D/1/B_2_ids": [1],
+				"D/1/B_3_ids": [],
+				"D/2/B_$_ids": ["1","4"],
+				"D/2/B_1_ids": [],
+				"D/2/B_4_ids": [2],
+				"B/1/b":       "b1",
+				"B/2/b":       "b2",
+				"B/2/title":   "b2"
 			}`,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.request), s, 1)
 			if err != nil {
-				t.Fatalf("Expected FromJSON() not to return an error, got: %v", err)
+				t.Fatalf("FromJSON() returned an unexpected error: %v", err)
 			}
 			c := s.Connect(context.Background(), 1, b)
 			data, err := c.Next()
@@ -381,7 +311,7 @@ func TestFeatures(t *testing.T) {
 				t.Fatalf("Can not get data: %v", err)
 			}
 
-			var expect map[string]map[string]map[string]json.RawMessage
+			var expect map[string]json.RawMessage
 			if err := json.Unmarshal([]byte(tt.result), &expect); err != nil {
 				t.Fatalf("Can not decode keys from expected data: %v", err)
 			}
@@ -391,7 +321,7 @@ func TestFeatures(t *testing.T) {
 	}
 }
 
-func cmpMap(t *testing.T, got map[string]json.RawMessage, expect map[string]map[string]map[string]json.RawMessage) {
+func cmpMap(t *testing.T, got, expect map[string]json.RawMessage) {
 	v1, _ := json.Marshal(got)
 	v2, _ := json.Marshal(expect)
 	if string(v1) != string(v2) {
