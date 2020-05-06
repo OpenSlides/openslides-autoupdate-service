@@ -23,14 +23,14 @@ func TestJSONValid(t *testing.T) {
 		}
 	}
 	`)
-	if _, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{}); err != nil {
+	if _, err := keysbuilder.FromJSON(context.Background(), json, &mockValuer{}, 1); err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
 }
 
 func TestJSONInvalid(t *testing.T) {
 	json := strings.NewReader(`{5`)
-	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
+	_, err := keysbuilder.FromJSON(context.Background(), json, &mockValuer{}, 1)
 	if err == nil {
 		t.Errorf("Expected an error, got none")
 	}
@@ -48,7 +48,7 @@ func TestJSONSingleID(t *testing.T) {
 		"fields": {"name": null}
 	}
 	`)
-	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
+	_, err := keysbuilder.FromJSON(context.Background(), json, &mockValuer{}, 1)
 	if err == nil {
 		t.Errorf("Expected an error, got none")
 	}
@@ -69,7 +69,7 @@ func TestJSONSuffixNoFields(t *testing.T) {
 		}
 	}
 	`)
-	_, err := keysbuilder.FromJSON(context.Background(), json, &mockIDer{})
+	_, err := keysbuilder.FromJSON(context.Background(), json, &mockValuer{}, 1)
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -215,7 +215,7 @@ func TestRequestErrors(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.input), &mockIDer{})
+			_, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.input), &mockValuer{}, 1)
 			if err == nil {
 				t.Errorf("Expected an error, got none")
 			}
@@ -255,7 +255,8 @@ func TestManyFromJSON(t *testing.T) {
 			"name": null
 		}
 	}]`)
-	_, err := keysbuilder.ManyFromJSON(context.Background(), json, &mockIDer{})
+
+	_, err := keysbuilder.ManyFromJSON(context.Background(), json, &mockValuer{}, 1)
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -281,7 +282,7 @@ func TestManyFromJSONInvalidJSON(t *testing.T) {
 		"collection": "user",
 		"fi
 	}]`)
-	_, err := keysbuilder.ManyFromJSON(context.Background(), json, &mockIDer{})
+	_, err := keysbuilder.ManyFromJSON(context.Background(), json, &mockValuer{}, 1)
 	if err == nil {
 		t.Error("Expected ManyFromJSON() to return an error, got not")
 	}
@@ -318,7 +319,7 @@ func TestManyFromJSONInvalidInput(t *testing.T) {
 			}
 		}
 	}]`)
-	_, err := keysbuilder.ManyFromJSON(context.Background(), json, &mockIDer{})
+	_, err := keysbuilder.ManyFromJSON(context.Background(), json, &mockValuer{}, 1)
 	if err == nil {
 		t.Error("Expected ManyFromJSON() to return an error, got not")
 	}

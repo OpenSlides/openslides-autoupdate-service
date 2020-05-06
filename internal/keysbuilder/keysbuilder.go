@@ -18,16 +18,18 @@ const keySep = "/"
 // Has to be created with keysbuilder.FromJSON() or keysbuilder.ManyFromJSON().
 type Builder struct {
 	ctx    context.Context
-	ider   IDer
+	valuer Valuer
+	uid    int
 	bodies []body
 	keys   []string
 }
 
 // newBuilder creates a new Builder instance from one or more bodies.
-func newBuilder(ctx context.Context, ider IDer, bodys ...body) (*Builder, error) {
+func newBuilder(ctx context.Context, valuer Valuer, uid int, bodys ...body) (*Builder, error) {
 	b := &Builder{
 		ctx:    ctx,
-		ider:   ider,
+		valuer: valuer,
+		uid:    uid,
 		bodies: bodys,
 	}
 	if err := b.Update(); err != nil {
@@ -53,7 +55,7 @@ func (b *Builder) Update() error {
 	for _, request := range b.bodies {
 		wg.Add(1)
 		go func(request body) {
-			request.build(ctx, b, keys, errC)
+			request.build(ctx, b.valuer, b.uid, keys, errC)
 			wg.Done()
 		}(request)
 	}

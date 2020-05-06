@@ -230,7 +230,7 @@ func TestErrors(t *testing.T) {
 			cancel()
 
 			if resp.StatusCode != tt.status {
-				t.Fatalf("Expected status %s, got %s", http.StatusText(tt.status), resp.Status)
+				t.Errorf("Expected status %d %s, got %s", tt.status, http.StatusText(tt.status), resp.Status)
 			}
 
 			var data struct {

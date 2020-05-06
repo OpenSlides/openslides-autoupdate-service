@@ -9,6 +9,7 @@ package autoupdate
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -70,11 +71,26 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) *C
 	}
 }
 
-// IDer returns an object, that implements the keysbuilder.IDer interface. It is
-// used to return ids for a key. This implementation uses the restricter to get
-// the ids.
-func (a *Autoupdate) IDer(uid int) RestrictedIDs {
-	return RestrictedIDs{uid, a}
+// Value decodes the restricted value for the given key.
+func (a *Autoupdate) Value(ctx context.Context, uid int, key string, value interface{}) error {
+	data, err := a.restrictedData(ctx, uid, key)
+	if err != nil {
+		return fmt.Errorf("get restricted value for key %s: %w", key, err)
+	}
+
+	if _, ok := data[key]; !ok {
+		// No value for key.
+		return nil
+	}
+
+	if err := json.Unmarshal(data[key], value); err != nil {
+		var invalidErr *json.UnmarshalTypeError
+		if match := errors.As(err, &invalidErr); match {
+			return ValueError{key: key, err: err}
+		}
+		return fmt.Errorf("decode value of key %s: %w", key, err)
+	}
+	return nil
 }
 
 // pruneTopic removes old data from the topic. Blocks until the service is
@@ -123,6 +139,10 @@ func (a *Autoupdate) restrictedData(ctx context.Context, uid int, keys ...string
 
 	data := make(map[string]json.RawMessage, len(keys))
 	for i, key := range keys {
+		if len(values[i]) == 0 {
+			// Skip non existing values.
+			continue
+		}
 		data[key] = values[i]
 	}
 

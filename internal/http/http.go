@@ -86,7 +86,7 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 // in the format specified in the keysbuilder package.
 func (h *Handler) complex(r *http.Request, uid int) (autoupdate.KeysBuilder, error) {
 	defer r.Body.Close()
-	return keysbuilder.ManyFromJSON(r.Context(), r.Body, h.s.IDer(uid))
+	return keysbuilder.ManyFromJSON(r.Context(), r.Body, h.s, uid)
 }
 
 // simple builds a keysbuilder from the url query. It expects a comma separated

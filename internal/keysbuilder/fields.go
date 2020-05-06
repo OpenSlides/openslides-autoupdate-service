@@ -72,12 +72,12 @@ func (b *body) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (b body) build(ctx context.Context, builder *Builder, keys chan<- string, errs chan<- error) {
+func (b *body) build(ctx context.Context, valuer Valuer, uid int, keys chan<- string, errs chan<- error) {
 	var wg sync.WaitGroup
 	for _, id := range b.ids {
 		wg.Add(1)
 		go func(id int) {
-			b.fieldsMap.build(ctx, buildCollectionID(b.collection, id), builder, keys, errs)
+			b.fieldsMap.build(ctx, buildCollectionID(b.collection, id), valuer, uid, keys, errs)
 			wg.Done()
 		}(id)
 	}
@@ -109,13 +109,16 @@ func (r *relationField) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (r relationField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
-	id, err := builder.ider.ID(ctx, key)
-	if err != nil {
+func (r *relationField) build(ctx context.Context, valuer Valuer, uid int, key string, keys chan<- string, errs chan<- error) {
+	var id int
+	if err := valuer.Value(ctx, uid, key, &id); err != nil {
+		if _, ok := err.(keyDoesNotExister); ok {
+			return
+		}
 		errs <- fmt.Errorf("get id from key %s: %w", key, err)
 		return
 	}
-	r.fieldsMap.build(ctx, buildCollectionID(r.collection, id), builder, keys, errs)
+	r.fieldsMap.build(ctx, buildCollectionID(r.collection, id), valuer, uid, keys, errs)
 }
 
 // relationListField is a fieldtype like relation, but redirects to a list of objects.
@@ -123,9 +126,12 @@ type relationListField struct {
 	relationField
 }
 
-func (r relationListField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
-	ids, err := builder.ider.IDList(ctx, key)
-	if err != nil {
+func (r *relationListField) build(ctx context.Context, valuer Valuer, uid int, key string, keys chan<- string, errs chan<- error) {
+	var ids []int
+	if err := valuer.Value(ctx, uid, key, &ids); err != nil {
+		if _, ok := err.(keyDoesNotExister); ok {
+			return
+		}
 		errs <- fmt.Errorf("get id list from key %s: %w", key, err)
 		return
 	}
@@ -133,7 +139,7 @@ func (r relationListField) build(ctx context.Context, builder *Builder, key stri
 	for _, id := range ids {
 		wg.Add(1)
 		go func(id int) {
-			r.fieldsMap.build(ctx, buildCollectionID(r.collection, id), builder, keys, errs)
+			r.fieldsMap.build(ctx, buildCollectionID(r.collection, id), valuer, uid, keys, errs)
 			wg.Done()
 		}(id)
 	}
@@ -159,13 +165,16 @@ func (g *genericRelationField) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (g genericRelationField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
-	gid, err := builder.ider.GenericID(ctx, key)
-	if err != nil {
+func (g *genericRelationField) build(ctx context.Context, valuer Valuer, uid int, key string, keys chan<- string, errs chan<- error) {
+	var gid string
+	if err := valuer.Value(ctx, uid, key, &gid); err != nil {
+		if _, ok := err.(keyDoesNotExister); ok {
+			return
+		}
 		errs <- fmt.Errorf("get generic id from key %s: %w", key, err)
 		return
 	}
-	g.fieldsMap.build(ctx, gid, builder, keys, errs)
+	g.fieldsMap.build(ctx, gid, valuer, uid, keys, errs)
 }
 
 // genericRelationListField is like a genericRelationField but with a list of relations.
@@ -173,9 +182,12 @@ type genericRelationListField struct {
 	genericRelationField
 }
 
-func (g genericRelationListField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
-	gids, err := builder.ider.GenericIDs(ctx, key)
-	if err != nil {
+func (g *genericRelationListField) build(ctx context.Context, valuer Valuer, uid int, key string, keys chan<- string, errs chan<- error) {
+	var gids []string
+	if err := valuer.Value(ctx, uid, key, &gids); err != nil {
+		if _, ok := err.(keyDoesNotExister); ok {
+			return
+		}
 		errs <- fmt.Errorf("get generic id list from key %s: %w", key, err)
 		return
 	}
@@ -184,7 +196,7 @@ func (g genericRelationListField) build(ctx context.Context, builder *Builder, k
 	for _, gid := range gids {
 		wg.Add(1)
 		go func(gid string) {
-			g.fieldsMap.build(ctx, gid, builder, keys, errs)
+			g.fieldsMap.build(ctx, gid, valuer, uid, keys, errs)
 			wg.Done()
 		}(gid)
 	}
@@ -218,9 +230,12 @@ func (t *templateField) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (t templateField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
-	values, err := builder.ider.Template(ctx, key)
-	if err != nil {
+func (t *templateField) build(ctx context.Context, valuer Valuer, uid int, key string, keys chan<- string, errs chan<- error) {
+	var values []string
+	if err := valuer.Value(ctx, uid, key, &values); err != nil {
+		if _, ok := err.(keyDoesNotExister); ok {
+			return
+		}
 		errs <- fmt.Errorf("get template values from key %s: %w", key, err)
 		return
 	}
@@ -233,10 +248,10 @@ func (t templateField) build(ctx context.Context, builder *Builder, key string, 
 			continue
 		}
 		wg.Add(1)
-		go func() {
-			t.values.build(ctx, builder, newKey, keys, errs)
+		go func(neyKey string) {
+			t.values.build(ctx, valuer, uid, newKey, keys, errs)
 			wg.Done()
-		}()
+		}(newKey)
 	}
 	wg.Wait()
 }
@@ -310,7 +325,7 @@ func (f *fieldsMap) UnmarshalJSON(data []byte) error {
 }
 
 // build calls the build method for all fields in the fieldsMap.
-func (f *fieldsMap) build(ctx context.Context, collectionID string, builder *Builder, keys chan<- string, errs chan<- error) {
+func (f *fieldsMap) build(ctx context.Context, collectionID string, valuer Valuer, uid int, keys chan<- string, errs chan<- error) {
 	var wg sync.WaitGroup
 	for name, description := range f.fields {
 		key := buildGenericKey(collectionID, name)
@@ -320,7 +335,7 @@ func (f *fieldsMap) build(ctx context.Context, collectionID string, builder *Bui
 		}
 		wg.Add(1)
 		go func(description fieldDescription) {
-			description.build(ctx, builder, key, keys, errs)
+			description.build(ctx, valuer, uid, key, keys, errs)
 			wg.Done()
 		}(description)
 	}

@@ -371,7 +371,7 @@ func TestFeatures(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.request), s.IDer(1))
+			b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.request), s, 1)
 			if err != nil {
 				t.Fatalf("Expected FromJSON() not to return an error, got: %v", err)
 			}
