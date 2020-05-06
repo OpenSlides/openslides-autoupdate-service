@@ -12,10 +12,10 @@ import (
 
 func TestKeys(t *testing.T) {
 	for _, tt := range []struct {
-		name     string
-		request  string
-		keys     []string
-		reqCount int
+		name    string
+		request string
+		data    map[string]interface{}
+		keys    []string
 	}{
 		{
 			"One Field",
@@ -24,8 +24,8 @@ func TestKeys(t *testing.T) {
 				"collection": "user",
 				"fields": {"name": null}
 			}`,
+			nil,
 			strs("user/1/name"),
-			0,
 		},
 		{
 			"Many Fields",
@@ -37,8 +37,8 @@ func TestKeys(t *testing.T) {
 					"last": null
 				}
 			}`,
+			nil,
 			strs("user/1/first", "user/1/last"),
-			0,
 		},
 		{
 			"Many IDs Many Fields",
@@ -50,8 +50,8 @@ func TestKeys(t *testing.T) {
 					"last": null
 				}
 			}`,
+			nil,
 			strs("user/1/first", "user/1/last", "user/2/first", "user/2/last"),
-			0,
 		},
 		{
 			"Redirect Once id",
@@ -66,8 +66,8 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
+			map[string]interface{}{"user/1/note_id": 1},
 			strs("user/1/note_id", "note/1/important"),
-			1,
 		},
 		{
 			"Redirect Once ids",
@@ -82,8 +82,8 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
+			map[string]interface{}{"user/1/group_ids": []int{1, 2}},
 			strs("user/1/group_ids", "group/1/admin", "group/2/admin"),
-			1,
 		},
 		{
 			"Redirect twice id",
@@ -104,8 +104,11 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
+			map[string]interface{}{
+				"user/1/note_id":   1,
+				"note/1/motion_id": 1,
+			},
 			strs("user/1/note_id", "note/1/motion_id", "motion/1/name"),
-			2,
 		},
 		{
 			"Redirect twice ids",
@@ -126,8 +129,12 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
+			map[string]interface{}{
+				"user/1/group_ids": []int{1, 2},
+				"group/1/perm_ids": []int{1, 2},
+				"group/2/perm_ids": []int{1, 2},
+			},
 			strs("user/1/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name"),
-			3,
 		},
 		{
 			"Request _id without redirect",
@@ -136,8 +143,8 @@ func TestKeys(t *testing.T) {
 				"collection": "user",
 				"fields": {"note_id": null}
 			}`,
+			nil,
 			strs("user/1/note_id"),
-			0,
 		},
 		{
 			"Redirect id not exist",
@@ -151,9 +158,9 @@ func TestKeys(t *testing.T) {
 						"fields": {"important": null}
 					}
 				}
-			}`, // "not_exist" is a magic string in the ider mock
+			}`,
+			nil,
 			strs("not_exist/1/note_id"),
-			1,
 		},
 		{
 			"Redirect ids not exist",
@@ -167,9 +174,9 @@ func TestKeys(t *testing.T) {
 						"fields": {"name": null}
 					}
 				}
-			}`, // "not_exist" is a magic string in the ider mock
+			}`,
+			nil,
 			strs("not_exist/1/group_ids"),
-			1,
 		},
 		{
 			"Template field",
@@ -187,8 +194,12 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
+			map[string]interface{}{
+				"user/1/group_$_ids": []string{"1", "2"},
+				"user/1/group_1_ids": []int{1, 2},
+				"user/1/group_2_ids": []int{1, 2},
+			},
 			strs("user/1/group_$_ids", "user/1/group_1_ids", "user/1/group_2_ids", "group/1/name", "group/2/name"),
-			3,
 		},
 		{
 			"Generic field",
@@ -202,8 +213,10 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
+			map[string]interface{}{
+				"user/1/likes": "other/1",
+			},
 			strs("user/1/likes", "other/1/name"),
-			1,
 		},
 		{
 			"Generic field with sub fields",
@@ -223,8 +236,11 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
+			map[string]interface{}{
+				"user/1/likes":    "other/1",
+				"other/1/tag_ids": []int{1, 2},
+			},
 			strs("user/1/likes", "other/1/tag_ids", "tag/1/name", "tag/2/name"),
-			2,
 		},
 		{
 			"Generic list field",
@@ -238,24 +254,23 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
+			map[string]interface{}{
+				"user/1/likes": []string{"other/1", "other/2"},
+			},
 			strs("user/1/likes", "other/1/name", "other/2/name"),
-			1,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ider := &mockIDer{}
-			b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.request), ider)
+			valuer := &mockValuer{data: tt.data}
+			b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.request), valuer, 1)
 			if err != nil {
-				t.Fatalf("Expected FromJSON() not to return an error, got: %v", err)
+				t.Fatalf("FromJSON returned the unexpected error: %v", err)
 			}
 
 			keys := b.Keys()
 
 			if diff := cmpSet(set(tt.keys...), set(keys...)); diff != nil {
-				t.Errorf("Expected %v, got: %v", tt.keys, diff)
-			}
-			if len(ider.reqLog) != tt.reqCount {
-				t.Errorf("Expected %d requests to the restricter, got: %d: %v", tt.reqCount, len(ider.reqLog), ider.reqLog)
+				t.Errorf("Got keys %v, expected %v", diff, tt.keys)
 			}
 		})
 	}
@@ -265,7 +280,8 @@ func TestUpdate(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		request string
-		newDB   map[string][]int
+		data    map[string]interface{}
+		newData map[string]interface{}
 		got     []string
 		count   int
 	}{
@@ -282,7 +298,8 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string][]int{"user/1/note_id": ids(2)},
+			map[string]interface{}{"user/1/note_id": 1},
+			map[string]interface{}{"user/1/note_id": 2},
 			strs("user/1/note_id", "note/2/important"),
 			1,
 		},
@@ -299,7 +316,8 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string][]int{},
+			map[string]interface{}{"user/1/note_id": 1},
+			map[string]interface{}{"user/1/note_id": 1},
 			strs("user/1/note_id", "note/1/important"),
 			0,
 		},
@@ -316,7 +334,8 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string][]int{"user/1/note_id": ids(2)},
+			map[string]interface{}{"user/1/note_id": 1, "user/2/note_id": 1},
+			map[string]interface{}{"user/1/note_id": 2, "user/2/note_id": 1},
 			strs("user/1/note_id", "user/2/note_id", "note/1/important", "note/2/important"),
 			1,
 		},
@@ -338,7 +357,8 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string][]int{"user/1/note_id": ids(2)},
+			map[string]interface{}{"user/1/note_id": 1, "user/1/group_ids": []int{1, 2}, "user/2/group_ids": []int{1, 2}},
+			map[string]interface{}{"user/1/note_id": 2, "user/1/group_ids": []int{1, 2}, "user/2/group_ids": []int{1, 2}},
 			strs("user/1/note_id", "user/1/group_ids", "note/2/important", "group/1/admin", "group/2/admin"),
 			1,
 		},
@@ -360,7 +380,8 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string][]int{"user/1/note_id": ids(2), "user/1/group_ids": ids(2)},
+			map[string]interface{}{"user/1/note_id": 1, "group_ids": []int{1, 2}},
+			map[string]interface{}{"user/1/note_id": 2, "user/1/group_ids": []int{2}},
 			strs("user/1/note_id", "note/2/important", "user/1/group_ids", "group/2/admin"),
 			2,
 		},
@@ -383,29 +404,34 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string][]int{"user/1/group_ids": ids(2)},
+			map[string]interface{}{
+				"user/1/group_ids": []int{1, 2},
+				"group/1/perm_ids": []int{1, 2},
+				"group/2/perm_ids": []int{1, 2},
+			},
+			map[string]interface{}{
+				"user/1/group_ids": []int{2},
+				"group/1/perm_ids": []int{1, 2},
+				"group/2/perm_ids": []int{1, 2},
+			},
 			strs("user/1/group_ids", "group/2/perm_ids", "perm/2/name", "perm/1/name"),
 			1,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ider := &mockIDer{}
-			b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.request), ider)
+			valuer := &mockValuer{data: tt.data}
+			b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.request), valuer, 1)
 			if err != nil {
-				t.Fatalf("Expected FromJSON() not to return an error, got: %v", err)
+				t.Fatalf("FromJSON() returned an unexpected error: %v", err)
 			}
-			ider.data = tt.newDB
-			ider.reqLog = ider.reqLog[:0]
+			valuer.data = tt.newData
 
-			if err := b.Update(mapKeys(tt.newDB)); err != nil {
-				t.Errorf("Expect Update() not to return an error, got: %v", err)
+			if err := b.Update(); err != nil {
+				t.Errorf("Update() returned an unexpect error: %v", err)
 			}
 
 			if diff := cmpSet(set(tt.got...), set(b.Keys()...)); diff != nil {
-				t.Errorf("Expected %v, got: %v", b.Keys(), diff)
-			}
-			if tt.count != len(ider.reqLog) {
-				t.Errorf("Expected %d requests to the restricter, got: %d: %v", tt.count, len(ider.reqLog), ider.reqLog)
+				t.Errorf("Update() returned %v, expected %v", diff, b.Keys())
 			}
 		})
 	}
@@ -431,9 +457,16 @@ func TestConcurency(t *testing.T) {
 		}
 
 	}`
-	ider := &mockIDer{sleep: 10 * time.Millisecond}
+	data := map[string]interface{}{
+		"user/1/group_ids": []int{1, 2},
+		"user/2/group_ids": []int{1, 2},
+		"user/3/group_ids": []int{1, 2},
+		"group/1/perm_ids": []int{1, 2},
+		"group/2/perm_ids": []int{1, 2},
+	}
+	valuer := &mockValuer{data: data, sleep: 10 * time.Millisecond}
 	start := time.Now()
-	b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(json), ider)
+	b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(json), valuer, 1)
 	if err != nil {
 		t.Fatalf("Expected FromJSON() not to return an error, got: %v", err)
 	}
@@ -445,9 +478,6 @@ func TestConcurency(t *testing.T) {
 	expect := strs("user/1/group_ids", "user/2/group_ids", "user/3/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name")
 	if diff := cmpSet(set(expect...), set(b.Keys()...)); diff != nil {
 		t.Errorf("Expected %v, got: %v", expect, diff)
-	}
-	if len(ider.reqLog) != 5 {
-		t.Errorf("Expected %d requests to the restricter.IDsFromKey, got: %d: %v", 5, len(ider.reqLog), ider.reqLog)
 	}
 }
 
@@ -480,24 +510,25 @@ func TestManyRequests(t *testing.T) {
 			}
 		}
 	]`
-	ider := &mockIDer{sleep: 10 * time.Millisecond}
+	data := map[string]interface{}{
+		"user/1/note_id": 1,
+		"user/2/note_id": 1,
+	}
+	valuer := &mockValuer{data: data, sleep: 10 * time.Millisecond}
 	start := time.Now()
-	b, err := keysbuilder.ManyFromJSON(context.Background(), strings.NewReader(json), ider)
+	b, err := keysbuilder.ManyFromJSON(context.Background(), strings.NewReader(json), valuer, 1)
 	if err != nil {
-		t.Fatalf("Expected FromJSON() not to return an error, got: %v", err)
+		t.Fatalf("FromJSON() returned an unexpected error: %v", err)
 	}
 
 	finished := time.Since(start)
 	if finished > 20*time.Millisecond {
-		t.Errorf("Expect keysbuilder to run in less then 20 Milliseconds, got: %v", finished)
+		t.Errorf("ManyFromJON() took %v, expected less then 20 Milliseconds", finished)
 	}
 
 	expect := strs("user/1/note_id", "user/2/note_id", "motion/1/name", "note/1/important")
 	if diff := cmpSet(set(expect...), set(b.Keys()...)); diff != nil {
-		t.Errorf("Expected %v, got: %v", expect, diff)
-	}
-	if len(ider.reqLog) != 2 {
-		t.Errorf("Expected %d requests to the restricter.IDsFromKey, got: %d: %v", 2, len(ider.reqLog), ider.reqLog)
+		t.Errorf("Got %v, expected %v", diff, expect)
 	}
 }
 
@@ -514,10 +545,10 @@ func TestError(t *testing.T) {
 			}
 		}
 	}`
-	ider := &mockIDer{err: errors.New("Some Error"), sleep: 10 * time.Millisecond}
+	valuer := &mockValuer{err: errors.New("Some Error"), sleep: 10 * time.Millisecond}
 
 	start := time.Now()
-	_, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(json), ider)
+	_, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(json), valuer, 1)
 	if err == nil {
 		t.Fatalf("Expected FromJSON() to return an error, got none")
 	}
