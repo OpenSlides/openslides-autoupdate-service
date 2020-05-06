@@ -16,7 +16,6 @@ type Builder struct {
 	ctx    context.Context
 	ider   IDer
 	bodies []body
-	cache  *cache
 	keys   []string
 }
 
@@ -26,7 +25,6 @@ func newBuilder(ctx context.Context, ider IDer, bodys ...body) (*Builder, error)
 		ctx:    ctx,
 		ider:   ider,
 		bodies: bodys,
-		cache:  newCache(),
 	}
 	if err := b.genKeys(); err != nil {
 		return nil, err
@@ -36,7 +34,6 @@ func newBuilder(ctx context.Context, ider IDer, bodys ...body) (*Builder, error)
 
 // Update triggers a key update.
 func (b *Builder) Update(keys []string) error {
-	b.cache.delete(keys)
 	return b.genKeys()
 }
 

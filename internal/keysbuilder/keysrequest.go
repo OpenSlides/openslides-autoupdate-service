@@ -113,18 +113,12 @@ func (r *relationField) UnmarshalJSON(data []byte) error {
 }
 
 func (r relationField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
-	v, err := builder.cache.getOrSet(key, func() (interface{}, error) {
-		return builder.ider.ID(ctx, key)
-	})
+	id, err := builder.ider.ID(ctx, key)
 	if err != nil {
 		if !errors.Is(err, autoupdate.ErrUnknownKey) {
 			errs <- fmt.Errorf("can not use value of key %s: %w", key, err)
 		}
-		return
-	}
-	id, ok := v.(int)
-	if !ok {
-		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected int, got: %v", v, v)
+		// TODO: why not return error?? Also in other build functions.
 		return
 	}
 	r.fieldsMap.build(ctx, buildCollectionID(r.collection, id), builder, keys, errs)
@@ -136,18 +130,11 @@ type relationListField struct {
 }
 
 func (r relationListField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
-	v, err := builder.cache.getOrSet(key, func() (interface{}, error) {
-		return builder.ider.IDList(ctx, key)
-	})
+	ids, err := builder.ider.IDList(ctx, key)
 	if err != nil {
 		if !errors.Is(err, autoupdate.ErrUnknownKey) {
 			errs <- fmt.Errorf("can not use value of key %s: %w", key, err)
 		}
-		return
-	}
-	ids, ok := v.([]int)
-	if !ok {
-		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected []int, got: %v", v, v)
 		return
 	}
 	var wg sync.WaitGroup
@@ -181,18 +168,11 @@ func (g *genericRelationField) UnmarshalJSON(data []byte) error {
 }
 
 func (g genericRelationField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
-	v, err := builder.cache.getOrSet(key, func() (interface{}, error) {
-		return builder.ider.GenericID(ctx, key)
-	})
+	gid, err := builder.ider.GenericID(ctx, key)
 	if err != nil {
 		if !errors.Is(err, autoupdate.ErrUnknownKey) {
 			errs <- fmt.Errorf("can not use value of key %s: %w", key, err)
 		}
-		return
-	}
-	gid, ok := v.(string)
-	if !ok {
-		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected []string, got: %v", v, v)
 		return
 	}
 	g.fieldsMap.build(ctx, gid, builder, keys, errs)
@@ -204,18 +184,11 @@ type genericRelationListField struct {
 }
 
 func (g genericRelationListField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
-	v, err := builder.cache.getOrSet(key, func() (interface{}, error) {
-		return builder.ider.GenericIDs(ctx, key)
-	})
+	gids, err := builder.ider.GenericIDs(ctx, key)
 	if err != nil {
 		if !errors.Is(err, autoupdate.ErrUnknownKey) {
 			errs <- fmt.Errorf("can not use value of key %s: %w", key, err)
 		}
-		return
-	}
-	gids, ok := v.([]string)
-	if !ok {
-		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected []string, got: %v", v, v)
 		return
 	}
 
@@ -258,19 +231,11 @@ func (t *templateField) UnmarshalJSON(data []byte) error {
 }
 
 func (t templateField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
-	v, err := builder.cache.getOrSet(key, func() (interface{}, error) {
-		return builder.ider.Template(ctx, key)
-	})
+	values, err := builder.ider.Template(ctx, key)
 	if err != nil {
 		if !errors.Is(err, autoupdate.ErrUnknownKey) {
 			errs <- fmt.Errorf("can not use value of key %s: %w", key, err)
 		}
-		return
-	}
-
-	values, ok := v.([]string)
-	if !ok {
-		errs <- fmt.Errorf("invalid value type %T in keysbuilder cache, expected []string, got: %v", v, v)
 		return
 	}
 

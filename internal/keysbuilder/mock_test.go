@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
@@ -15,9 +14,6 @@ type mockIDer struct {
 	err   error
 	data  map[string][]int
 	sleep time.Duration
-
-	reqLogMu sync.Mutex
-	reqLog   []string
 }
 
 func (r *mockIDer) ID(ctx context.Context, key string) (int, error) {
@@ -25,10 +21,6 @@ func (r *mockIDer) ID(ctx context.Context, key string) (int, error) {
 	if r.err != nil {
 		return 0, r.err
 	}
-
-	r.reqLogMu.Lock()
-	r.reqLog = append(r.reqLog, key)
-	r.reqLogMu.Unlock()
 
 	if ids, ok := r.data[key]; ok {
 		return ids[0], nil
@@ -45,10 +37,6 @@ func (r *mockIDer) IDList(ctx context.Context, key string) ([]int, error) {
 		return nil, r.err
 	}
 
-	r.reqLogMu.Lock()
-	r.reqLog = append(r.reqLog, key)
-	r.reqLogMu.Unlock()
-
 	if ids, ok := r.data[key]; ok {
 		return ids, nil
 	}
@@ -64,10 +52,6 @@ func (r *mockIDer) GenericID(ctx context.Context, key string) (string, error) {
 		return "", r.err
 	}
 
-	r.reqLogMu.Lock()
-	r.reqLog = append(r.reqLog, key)
-	r.reqLogMu.Unlock()
-
 	if strings.HasPrefix(key, "not_exist") {
 		return "", autoupdate.ErrUnknownKey
 	}
@@ -80,10 +64,6 @@ func (r *mockIDer) GenericIDs(ctx context.Context, key string) ([]string, error)
 		return nil, r.err
 	}
 
-	r.reqLogMu.Lock()
-	r.reqLog = append(r.reqLog, key)
-	r.reqLogMu.Unlock()
-
 	if strings.HasPrefix(key, "not_exist") {
 		return nil, autoupdate.ErrUnknownKey
 	}
@@ -95,10 +75,6 @@ func (r *mockIDer) Template(ctx context.Context, key string) ([]string, error) {
 	if r.err != nil {
 		return nil, r.err
 	}
-
-	r.reqLogMu.Lock()
-	r.reqLog = append(r.reqLog, key)
-	r.reqLogMu.Unlock()
 
 	if ids, ok := r.data[key]; ok {
 		var out []string
