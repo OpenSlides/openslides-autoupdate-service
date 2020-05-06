@@ -46,7 +46,7 @@ func (c *Connection) Next() (map[string]json.RawMessage, error) {
 	oldKeys := c.kb.Keys()
 
 	// Update keysbuilder get new list of keys
-	if err := c.kb.Update(changedKeys); err != nil {
+	if err := c.kb.Update(); err != nil {
 		return nil, fmt.Errorf("update keysbuilder: %w", err)
 	}
 

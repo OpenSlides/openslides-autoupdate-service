@@ -11,7 +11,7 @@ type Simple struct {
 }
 
 // Update does nothing. The keys of a simple keysbuilder can not change.
-func (s *Simple) Update([]string) error {
+func (s *Simple) Update() error {
 	return nil
 }
 

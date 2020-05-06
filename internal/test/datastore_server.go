@@ -3,7 +3,6 @@ package test
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -31,7 +30,6 @@ type DatastoreServer struct {
 func NewDatastoreServer() *DatastoreServer {
 	ts := new(DatastoreServer)
 	ts.TS = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Request to Datastore")
 		var data getManyRequest
 		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 			http.Error(w, fmt.Sprintf("Invalid json input: %v", err), http.StatusBadRequest)

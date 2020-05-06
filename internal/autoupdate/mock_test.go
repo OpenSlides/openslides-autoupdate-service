@@ -11,7 +11,7 @@ type mockKeysBuilder struct {
 	keys []string
 }
 
-func (m mockKeysBuilder) Update([]string) error {
+func (m mockKeysBuilder) Update() error {
 	return nil
 }
 

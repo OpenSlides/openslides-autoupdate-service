@@ -378,7 +378,7 @@ func TestUpdate(t *testing.T) {
 			}
 			ider.data = tt.newDB
 
-			if err := b.Update(mapKeys(tt.newDB)); err != nil {
+			if err := b.Update(); err != nil {
 				t.Errorf("Expect Update() not to return an error, got: %v", err)
 			}
 

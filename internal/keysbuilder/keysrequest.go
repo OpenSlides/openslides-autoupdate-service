@@ -22,12 +22,9 @@ package keysbuilder
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
-
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 )
 
 const (
@@ -115,10 +112,7 @@ func (r *relationField) UnmarshalJSON(data []byte) error {
 func (r relationField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
 	id, err := builder.ider.ID(ctx, key)
 	if err != nil {
-		if !errors.Is(err, autoupdate.ErrUnknownKey) {
-			errs <- fmt.Errorf("can not use value of key %s: %w", key, err)
-		}
-		// TODO: why not return error?? Also in other build functions.
+		errs <- fmt.Errorf("get id from key %s: %w", key, err)
 		return
 	}
 	r.fieldsMap.build(ctx, buildCollectionID(r.collection, id), builder, keys, errs)
@@ -132,9 +126,7 @@ type relationListField struct {
 func (r relationListField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
 	ids, err := builder.ider.IDList(ctx, key)
 	if err != nil {
-		if !errors.Is(err, autoupdate.ErrUnknownKey) {
-			errs <- fmt.Errorf("can not use value of key %s: %w", key, err)
-		}
+		errs <- fmt.Errorf("get id list from key %s: %w", key, err)
 		return
 	}
 	var wg sync.WaitGroup
@@ -170,9 +162,7 @@ func (g *genericRelationField) UnmarshalJSON(data []byte) error {
 func (g genericRelationField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
 	gid, err := builder.ider.GenericID(ctx, key)
 	if err != nil {
-		if !errors.Is(err, autoupdate.ErrUnknownKey) {
-			errs <- fmt.Errorf("can not use value of key %s: %w", key, err)
-		}
+		errs <- fmt.Errorf("get generic id from key %s: %w", key, err)
 		return
 	}
 	g.fieldsMap.build(ctx, gid, builder, keys, errs)
@@ -186,9 +176,7 @@ type genericRelationListField struct {
 func (g genericRelationListField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
 	gids, err := builder.ider.GenericIDs(ctx, key)
 	if err != nil {
-		if !errors.Is(err, autoupdate.ErrUnknownKey) {
-			errs <- fmt.Errorf("can not use value of key %s: %w", key, err)
-		}
+		errs <- fmt.Errorf("get generic id list from key %s: %w", key, err)
 		return
 	}
 
@@ -213,7 +201,7 @@ func (t *templateField) UnmarshalJSON(data []byte) error {
 		Values json.RawMessage `json:"values"`
 	}
 	if err := json.Unmarshal(data, &field); err != nil {
-		return fmt.Errorf("can not decode template field: %w", err)
+		return fmt.Errorf("decode template field: %w", err)
 	}
 	if len(field.Values) == 0 {
 		return nil
@@ -224,7 +212,7 @@ func (t *templateField) UnmarshalJSON(data []byte) error {
 		if sub, ok := err.(InvalidError); ok {
 			return InvalidError{sub: &sub, msg: "Error in template sub", field: "template"}
 		}
-		return fmt.Errorf("can not decode sub attribute of template field: %w", err)
+		return fmt.Errorf("decoding sub attribute of template field: %w", err)
 	}
 	t.values = values
 	return nil
@@ -233,9 +221,7 @@ func (t *templateField) UnmarshalJSON(data []byte) error {
 func (t templateField) build(ctx context.Context, builder *Builder, key string, keys chan<- string, errs chan<- error) {
 	values, err := builder.ider.Template(ctx, key)
 	if err != nil {
-		if !errors.Is(err, autoupdate.ErrUnknownKey) {
-			errs <- fmt.Errorf("can not use value of key %s: %w", key, err)
-		}
+		errs <- fmt.Errorf("get template values from key %s: %w", key, err)
 		return
 	}
 
@@ -306,7 +292,7 @@ type fieldsMap struct {
 func (f *fieldsMap) UnmarshalJSON(data []byte) error {
 	var fm map[string]json.RawMessage
 	if err := json.Unmarshal(data, &fm); err != nil {
-		return fmt.Errorf("can not decode fields: %w", err)
+		return fmt.Errorf("decode fields: %w", err)
 	}
 
 	f.fields = make(map[string]fieldDescription, len(fm))
