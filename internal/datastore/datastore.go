@@ -14,8 +14,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"strconv"
-	"strings"
 )
 
 const urlPath = "/internal/datastore/reader/get_many"
@@ -104,32 +102,11 @@ func (d *Datastore) requestKeys(keys []string) (map[string]json.RawMessage, erro
 	return responseData, nil
 }
 
-// keysToGetManyRequest returns an list of datastore GetManyRequests encoded as
-// json.
+// keysToGetManyRequest a json envoding of the get_many request.
 func keysToGetManyRequest(keys []string) (json.RawMessage, error) {
-	type getManyRequest struct {
-		Collection   string   `json:"collection"`
-		IDs          []int    `json:"ids"`
-		MappedFields []string `json:"mapped_fields"`
-	}
-
-	requestsPart := make([]getManyRequest, len(keys))
-
-	for i, key := range keys {
-		keyParts := strings.SplitN(key, "/", 3)
-		if len(keyParts) != 3 {
-			return nil, fmt.Errorf("invalid key %s", key)
-		}
-
-		id, err := strconv.Atoi(keyParts[1])
-		if err != nil {
-			return nil, fmt.Errorf("invalid key %s", key)
-		}
-		requestsPart[i] = getManyRequest{Collection: keyParts[0], IDs: []int{id}, MappedFields: []string{keyParts[2]}}
-	}
 	request := struct {
-		Requests []getManyRequest `json:"requests"`
-	}{requestsPart}
+		Requests []string `json:"requests"`
+	}{keys}
 	return json.Marshal(request)
 }
 
