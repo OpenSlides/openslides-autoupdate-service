@@ -61,6 +61,14 @@ func (d *Datastore) KeysChanged() ([]string, error) {
 		return nil, fmt.Errorf("request values for keys: %w", err)
 	}
 
+	// Add keys to data, that where not returned by the datastore. This is not
+	// neccessary if redis would send the data
+	for _, key := range keys {
+		if _, ok := data[key]; !ok {
+			data[key] = []byte("null")
+		}
+	}
+
 	d.cache.setIfExist(data)
 
 	return keys, nil
