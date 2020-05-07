@@ -5,15 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
+	"strings"
 )
 
 type getManyRequest struct {
-	Requests []struct {
-		Collection   string   `json:"collection"`
-		IDs          []int    `json:"ids"`
-		MappedFields []string `json:"mapped_fields"`
-	} `json:"requests"`
+	Keys []string `json:"requests"`
 }
 
 // DatastoreServer simulates the Datastore-Service. Only the methods required by the
@@ -38,13 +34,7 @@ func NewDatastoreServer() *DatastoreServer {
 		defer r.Body.Close()
 
 		responceData := make(map[string]map[string]json.RawMessage)
-		for _, r := range data.Requests {
-			fqid := r.Collection + "/" + strconv.Itoa(r.IDs[0])
-			if _, ok := responceData[fqid]; !ok {
-				responceData[fqid] = make(map[string]json.RawMessage)
-			}
-
-			key := r.Collection + "/" + strconv.Itoa(r.IDs[0]) + "/" + r.MappedFields[0]
+		for _, key := range data.Keys {
 			value, exist, err := ts.DatastoreValues.Value(key)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
@@ -55,7 +45,13 @@ func NewDatastoreServer() *DatastoreServer {
 				continue
 			}
 
-			responceData[fqid][r.MappedFields[0]] = json.RawMessage(value)
+			keyParts := strings.SplitN(key, "/", 3)
+			fqid := keyParts[0] + "/" + keyParts[1]
+
+			if _, ok := responceData[fqid]; !ok {
+				responceData[fqid] = make(map[string]json.RawMessage)
+			}
+			responceData[fqid][keyParts[2]] = json.RawMessage(value)
 		}
 
 		json.NewEncoder(w).Encode(responceData)
