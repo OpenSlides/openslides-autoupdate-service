@@ -78,7 +78,7 @@ func (a *Autoupdate) Value(ctx context.Context, uid int, key string, value inter
 		return fmt.Errorf("get restricted value for key %s: %w", key, err)
 	}
 
-	if _, ok := data[key]; !ok {
+	if len(data[key]) == 0 {
 		// No value for key.
 		return NotExistError{Key: key}
 	}
@@ -140,10 +140,6 @@ func (a *Autoupdate) restrictedData(ctx context.Context, uid int, keys ...string
 
 	data := make(map[string]json.RawMessage, len(keys))
 	for i, key := range keys {
-		if len(values[i]) == 0 {
-			// Skip non existing values.
-			continue
-		}
 		data[key] = values[i]
 	}
 

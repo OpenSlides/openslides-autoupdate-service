@@ -140,5 +140,19 @@ func quote(s string) string {
 }
 
 func sendData(w io.Writer, data map[string]json.RawMessage) error {
-	return json.NewEncoder(w).Encode(data)
+	// TODO: Handle errors
+	first := true
+	w.Write([]byte("{"))
+	for key, value := range data {
+		if !first {
+			w.Write([]byte{','})
+		}
+		first = false
+		w.Write([]byte{'"'})
+		w.Write([]byte(key))
+		w.Write([]byte{'"', ':'})
+		w.Write(value)
+	}
+	w.Write([]byte("}\n"))
+	return nil
 }
