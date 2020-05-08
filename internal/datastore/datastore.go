@@ -108,13 +108,6 @@ func (d *Datastore) requestKeys(keys []string) (map[string]json.RawMessage, erro
 		return nil, fmt.Errorf("parse responce: %w", err)
 	}
 
-	// Delete "null" values
-	// TODO: If the datastore does this, it is not necessary to loop though the responceData here.
-	for k, v := range responseData {
-		if bytes.Equal(v, []byte("null")) {
-			responseData[k] = nil
-		}
-	}
 	return responseData, nil
 }
 
