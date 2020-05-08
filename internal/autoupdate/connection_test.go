@@ -152,6 +152,29 @@ func TestConnectionEmptyData(t *testing.T) {
 
 		})
 	}
+
+	t.Run("exit->not exist-> not exist", func(t *testing.T) {
+		c := s.Connect(context.Background(), 1, kb)
+		if _, err := c.Next(); err != nil {
+			t.Errorf("c.Next() returned an error: %v", err)
+		}
+
+		// First time not exist
+		datastore.Update(map[string]json.RawMessage{doesExistKey: nil})
+		datastore.Send([]string{doesExistKey})
+		c.Next()
+
+		// Second time not exist
+		datastore.Send([]string{doesExistKey})
+		data, err := c.Next()
+
+		if err != nil {
+			t.Fatalf("c.Next() returned an error: %v", err)
+		}
+		if _, ok := data[doesExistKey]; ok {
+			t.Errorf("key %s in second responce: true, expect: false", doesExistKey)
+		}
+	})
 }
 
 func TestConnectionFilterData(t *testing.T) {

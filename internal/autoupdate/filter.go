@@ -20,7 +20,8 @@ func (f *filter) filter(data map[string]json.RawMessage) error {
 
 	for key, value := range data {
 		if len(value) == 0 {
-			// Do not save empty values
+			// Delete empty data
+			f.history[key] = 0
 			continue
 		}
 

@@ -93,15 +93,15 @@ func (c *Connection) Next() (map[string]json.RawMessage, error) {
 		return nil, fmt.Errorf("restrict data: %w", err)
 	}
 
-	if err := c.filter.filter(data); err != nil {
-		return nil, fmt.Errorf("filter data: %w", err)
-	}
-
 	for k, v := range data {
 		// Filter empty values that where empty before.
 		if len(v) == 0 && c.filter.history[k] == 0 {
 			delete(data, k)
 		}
+	}
+
+	if err := c.filter.filter(data); err != nil {
+		return nil, fmt.Errorf("filter data: %w", err)
 	}
 
 	return data, nil
