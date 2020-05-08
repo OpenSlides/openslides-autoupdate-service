@@ -107,6 +107,7 @@ func (d *Datastore) requestKeys(keys []string) (map[string]json.RawMessage, erro
 	if err != nil {
 		return nil, fmt.Errorf("parse responce: %w", err)
 	}
+
 	return responseData, nil
 }
 

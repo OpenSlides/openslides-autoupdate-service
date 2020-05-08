@@ -100,8 +100,7 @@ func (c *cache) fetchMissing(keys []string, set cacheSetFunc) {
 	for _, key := range keys {
 		value, ok := data[key]
 		if !ok {
-			// TODO: think about this.
-			value = []byte("null")
+			value = nil
 		}
 		c.data[key].set(value, err)
 	}

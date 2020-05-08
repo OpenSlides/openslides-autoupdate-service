@@ -38,13 +38,9 @@ func NewMockDatastore() *MockDatastore {
 func (d *MockDatastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage, error) {
 	data := make(map[string]json.RawMessage, len(keys))
 	for _, key := range keys {
-		value, exist, err := d.DatastoreValues.Value(key)
+		value, _, err := d.DatastoreValues.Value(key)
 		if err != nil {
 			return nil, err
-		}
-
-		if !exist {
-			continue
 		}
 
 		data[key] = value
