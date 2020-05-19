@@ -28,11 +28,11 @@ import (
 )
 
 const (
-	relationIdentifier            = "relation"
-	relationListIdentifier        = "relation-list"
-	genericRelationIdentifier     = "generic-relation"
-	genericRelationListIdentifier = "generic-relation-list"
-	templateIdentifier            = "template"
+	ftRelation            = "relation"
+	ftRelationList        = "relation-list"
+	ftGenericRelation     = "generic-relation"
+	ftGenericRelationList = "generic-relation-list"
+	ftTemplate            = "template"
 )
 
 // body holds the information which keys are requested by the client.
@@ -84,7 +84,19 @@ func (b *body) build(ctx context.Context, valuer Valuer, uid int, keys chan<- st
 	wg.Wait()
 }
 
-// relationField is a fieldtype that redirects to one other collection
+// relationField is a fieldtype that redirects to one other collection.
+//
+// {
+//	"ids": [1],
+//	"collection": "user",
+//	"fields": {
+//		"note_id": {
+//			"type": "relation",
+//			"collection": "note",
+//			"fields": {"important": null}
+//		}
+//	}
+// }
 type relationField struct {
 	collection string
 	fieldsMap
@@ -122,6 +134,18 @@ func (r *relationField) build(ctx context.Context, valuer Valuer, uid int, key s
 }
 
 // relationListField is a fieldtype like relation, but redirects to a list of objects.
+//
+// {
+//	"ids": [1],
+//	"collection": "user",
+//	"fields": {
+//		"group_ids": {
+//			"type": "relation-list",
+//			"collection": "group",
+//			"fields": {"name": null}
+//		}
+//	}
+// }
 type relationListField struct {
 	relationField
 }
@@ -147,6 +171,17 @@ func (r *relationListField) build(ctx context.Context, valuer Valuer, uid int, k
 }
 
 // genericRelationField is like a relationField but the collection is given from the restricter.
+//
+//{
+//	"ids": [1],
+//	"collection": "user",
+//	"fields": {
+//		"most_seen": {
+//			"type": "generic-relation",
+//			"fields": {"name": null}
+//		}
+//	}
+// }
 type genericRelationField struct {
 	fieldsMap
 }
@@ -178,6 +213,17 @@ func (g *genericRelationField) build(ctx context.Context, valuer Valuer, uid int
 }
 
 // genericRelationListField is like a genericRelationField but with a list of relations.
+//
+// {
+//	"ids": [1],
+//	"collection": "user",
+//	"fields": {
+//		"seen": {
+//			"type": "generic-relation-list",
+//			"fields": {"name": null}
+//		}
+//	}
+// }
 type genericRelationListField struct {
 	genericRelationField
 }
@@ -204,6 +250,21 @@ func (g *genericRelationListField) build(ctx context.Context, valuer Valuer, uid
 }
 
 // templateField requests a list of fields from a template.
+//
+// {
+//	"ids": [1],
+//	"collection": "user",
+//	"fields": {
+//		"group_$_ids": {
+//			"type": "template",
+//			"values": {
+//				"type": "relation-list",
+//				"collection": "group",
+//				"fields": {"name": null}
+//			}
+//		}
+//	}
+// }
 type templateField struct {
 	values fieldDescription
 }
@@ -271,19 +332,19 @@ func unmarshalField(data []byte) (fieldDescription, error) {
 
 	var r fieldDescription
 	switch t.Type {
-	case relationIdentifier:
+	case ftRelation:
 		r = new(relationField)
 
-	case relationListIdentifier:
+	case ftRelationList:
 		r = new(relationListField)
 
-	case genericRelationIdentifier:
+	case ftGenericRelation:
 		r = new(genericRelationField)
 
-	case genericRelationListIdentifier:
+	case ftGenericRelationList:
 		r = new(genericRelationListField)
 
-	case templateIdentifier:
+	case ftTemplate:
 		r = new(templateField)
 
 	case "":
@@ -299,7 +360,13 @@ func unmarshalField(data []byte) (fieldDescription, error) {
 	return r, nil
 }
 
-// fieldsMap describes in a abstract way the fieldsMap of a collection.
+// fieldsMap is a map from each field of another field descrption.
+//
+// For example, user_id to a relation-field and group_ids to a
+// relation-list-field.
+//
+// A fieldsMap knows how to be decoded from json and how to build the keys from
+// it.
 type fieldsMap struct {
 	fields map[string]fieldDescription
 }
@@ -325,10 +392,10 @@ func (f *fieldsMap) UnmarshalJSON(data []byte) error {
 }
 
 // build calls the build method for all fields in the fieldsMap.
-func (f *fieldsMap) build(ctx context.Context, collectionID string, valuer Valuer, uid int, keys chan<- string, errs chan<- error) {
+func (f *fieldsMap) build(ctx context.Context, fqID string, valuer Valuer, uid int, keys chan<- string, errs chan<- error) {
 	var wg sync.WaitGroup
 	for name, description := range f.fields {
-		key := buildGenericKey(collectionID, name)
+		key := buildGenericKey(fqID, name)
 		keys <- key
 		if description == nil {
 			continue
