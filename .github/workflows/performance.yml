@@ -25,7 +25,7 @@ jobs:
       run: docker build . --tag autoupdate
 
     - name: Start autoupdate
-      run: docker run -d --network host --env MESSAGIN_SERVICE=redis autoupdate
+      run: docker run -d --network host --env MESSAGING_SERVICE=redis autoupdate
 
     - name: Build performance
       run: go build ./cmd/performance

@@ -82,7 +82,7 @@ func buildDatastore() autoupdate.Datastore {
 func buildReceiver(f *faker) datastore.KeysChangedReceiver {
 	var receiver datastore.KeysChangedReceiver
 	var serviceName string
-	switch getEnv("MESSAGIN_SERVICE", "fake") {
+	switch getEnv("MESSAGING_SERVICE", "fake") {
 	case "redis":
 		conn := redis.NewConnection(getEnv("REDIS_ADDR", "localhost:6379"))
 		if getEnv("REDIS_TEST_CONN", "true") == "true" {
@@ -96,10 +96,10 @@ func buildReceiver(f *faker) datastore.KeysChangedReceiver {
 		receiver = f
 		serviceName = "fake"
 		if f == nil {
-			fmt.Println("none")
+			serviceName = "none"
 		}
 	}
-	fmt.Printf("Messagin Service: %s", serviceName)
+	fmt.Printf("Messaging Service: %s\n", serviceName)
 	return receiver
 }
 
