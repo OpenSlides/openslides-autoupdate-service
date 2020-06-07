@@ -1,6 +1,7 @@
 package redis_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"sort"
 
@@ -26,11 +27,11 @@ var testData = map[string]string{
 			[
 				[
 					"12345-0",
-					["modified", "key1", "modified", "key2"]
+					["user/1/name", "Helga", "user/2/name", "Isolde"]
 				],
 				[
 					"12346-0",
-					["modified", "key1", "modified", "key3"]
+					["user/1/name", "Hubert", "user/3/name", "Igor"]
 				]
 			]
 		]
@@ -41,7 +42,7 @@ var testData = map[string]string{
 			[
 				[
 					"12346-0",
-					["modified", "key1", "modified", "key3"]
+					["user/1/name", "Hubert", "user/3/name", "Igor"]
 				]
 			]
 		]
@@ -69,6 +70,19 @@ func cmpSlice(one, two []string) bool {
 	sort.Strings(two)
 	for i := range one {
 		if one[i] != two[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func cmpMap(one, two map[string]json.RawMessage) bool {
+	if len(one) != len(two) {
+		return false
+	}
+
+	for key := range one {
+		if bytes.Compare(one[key], two[key]) != 0 {
 			return false
 		}
 	}

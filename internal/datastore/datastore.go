@@ -24,11 +24,11 @@ const urlPath = "/internal/datastore/reader/get_many"
 type Datastore struct {
 	url        string
 	cache      *cache
-	keychanger KeysChangedReceiver
+	keychanger Updater
 }
 
 // New returns a new Datastore object.
-func New(url string, keychanger KeysChangedReceiver) *Datastore {
+func New(url string, keychanger Updater) *Datastore {
 	return &Datastore{
 		cache:      newCache(),
 		url:        url + urlPath,
@@ -50,26 +50,17 @@ func (d *Datastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage,
 
 // KeysChanged blocks until some key have changed. Then, it returns the keys.
 func (d *Datastore) KeysChanged() ([]string, error) {
-	keys, err := d.keychanger.KeysChanged()
+	data, err := d.keychanger.Update()
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: only request keys that exist in the cache.
-	data, err := d.requestKeys(keys)
-	if err != nil {
-		return nil, fmt.Errorf("request values for keys: %w", err)
-	}
-
-	// Add keys to data, that where not returned by the datastore. This is not
-	// neccessary if redis would send the data
-	for _, key := range keys {
-		if _, ok := data[key]; !ok {
-			data[key] = []byte("null")
-		}
-	}
-
 	d.cache.setIfExist(data)
+
+	keys := make([]string, 0, len(data))
+	for k := range data {
+		keys = append(keys, k)
+	}
 
 	return keys, nil
 }

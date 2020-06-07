@@ -1,8 +1,9 @@
-// Package redis holds the Service type, that implements the KeysChangedReceiver
+// Package redis holds the Service type, that implements the datastore.Updater
 // interface of the autoupdate package by reading from a redis stream.
 package redis
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -24,8 +25,8 @@ type Service struct {
 	lastID string
 }
 
-// KeysChanged is a blocking function that returns, when there is new data.
-func (s *Service) KeysChanged() ([]string, error) {
+// Update is a blocking function that returns, when there is new data.
+func (s *Service) Update() (map[string]json.RawMessage, error) {
 	id := s.lastID
 	if id == "" {
 		id = "$"

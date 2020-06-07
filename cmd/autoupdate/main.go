@@ -79,8 +79,8 @@ func buildDatastore() autoupdate.Datastore {
 // buildReceiver builds the receiver needed by the datastore service. It uses
 // environment variables to make the decission. Per default, the given faker is
 // used.
-func buildReceiver(f *faker) datastore.KeysChangedReceiver {
-	var receiver datastore.KeysChangedReceiver
+func buildReceiver(f *faker) datastore.Updater {
+	var receiver datastore.Updater
 	var serviceName string
 	switch getEnv("MESSAGING_SERVICE", "fake") {
 	case "redis":

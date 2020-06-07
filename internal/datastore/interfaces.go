@@ -1,7 +1,9 @@
 package datastore
 
-// KeysChangedReceiver returns keys that have changes. Blocks until there is
+import "encoding/json"
+
+// Updater returns keys that have changes. Blocks until there is
 // changed data.
-type KeysChangedReceiver interface {
-	KeysChanged() ([]string, error)
+type Updater interface {
+	Update() (map[string]json.RawMessage, error)
 }
