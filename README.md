@@ -1,8 +1,8 @@
 # OpenSlides Autoupdate Service
 
-The Autoupdate Service is part of the OpenSlides environment. It is a
-http endpoint where the clients can connect to get the actual data and
-also get updates, when the requested data changes.
+The Autoupdate Service is part of the OpenSlides environment. It is a http
+endpoint where the clients can connect to get the actual data and also get
+updates, when the requested data changes.
 
 ## Start
 
@@ -40,12 +40,14 @@ docker run autoupdate-test
 
 ### Without redis
 
-When the server is started, clients can listen for keys to do so, they have to send a keyrequest in the body
-of the request. Currently, all method-types (POST, GET, etc) are supported. An example request
+When the server is started, clients can listen for keys to do so, they have to
+send a keyrequest in the body of the request. Currently, all method-types (POST,
+GET, etc) are supported. An example request
 
 `curl localhost:8002/system/autoupdate -d '[{"ids": [5], "collection": "user", "fields": {"name": null}}]'`
 
-To see a list of possible json-strings see the file internal/autoupdate/keysbuilder/keysbuilder_test.go
+To see a list of possible json-strings see the file
+internal/autoupdate/keysbuilder/keysbuilder_test.go
 
 There is a simpler method to request keys:
 
@@ -53,12 +55,14 @@ There is a simpler method to request keys:
 
 With this simpler method, it is not possible to request related keys.
 
-After the request is send, the values to the keys are returned as a json-object without a newline:
+After the request is send, the values to the keys are returned as a json-object
+without a newline:
 ```
 {"user/1/name": "value", "user/2/name":"value"}
 ```
 
-To "update" keys, you can send them to the server via stdin with a value or without a value in the form:
+To "update" keys, you can send them to the server via stdin with a value or
+without a value in the form:
 ```
 user/5/name
 user/6/name="Emanuel"
@@ -66,22 +70,25 @@ user/1/group_ids=[1,2,3]
 user/1/name="foo" user/2/name="bar"
 ```
 
-If the value is skipped, the current time is used as value. If you give a value, it has to be valid json without any spaces.
+If the value is skipped, the current time is used as value. If you give a value,
+it has to be valid json without any spaces.
 
 All clients that listen for the keys get an update for that key.
 
 
 ### With datastore-service
 
-To connect the autoupdate-service with the datastore service, the following environment variables can be used:
+To connect the autoupdate-service with the datastore service, the following
+environment variables can be used:
 
-`DATASTORE=service MESSAGIN_SERVICE=redis ./autoupdate`
+`DATASTORE=service MESSAGING_SERVICE=redis ./autoupdate`
 
 
 ### With redis
 
-When redis is installed, it can be used to update keys. Start the autoupdate service with the envirnmentvariable `MESSAGIN_SERVICE=redis`.
-Afterwards it is possible to update keys by sending the following command to redis:
+When redis is installed, it can be used to update keys. Start the autoupdate
+service with the envirnmentvariable `MESSAGING_SERVICE=redis`. Afterwards it is
+possible to update keys by sending the following command to redis:
 
 `xadd field_changed * updated user/5/name updated user/5/password`
 
@@ -90,9 +97,13 @@ Afterwards it is possible to update keys by sending the following command to red
 
 The Service uses the following environment variables:
 
-* `LISTEN_HTTP_ADDR=:8002`: Lets the service listen on port 8002 on any device. The default is `:8002`.
+* `LISTEN_HTTP_ADDR=:8002`: Lets the service listen on port 8002 on any device.
+  The default is `:8002`.
 * `DATASTORE=fake`: Sets the datastore service. `fake` (default) or `service`.
-* `DATASTORE_URL`: Sets the url for the datastore service. The default is `http://localhost:8001`.
-* `MESSAGIN=fake`: Tells the service what kind of messagin service is used. `fake`(default) or `redis`
+* `DATASTORE_URL`: Sets the url for the datastore service. The default is
+  `http://localhost:8001`.
+* `MESSAGING_SERVICE=fake`: Sets the type of messaging service. `fake`(default)
+  or `redis`.
 * `REDIS_ADDR=localhost:6379`: The address to redis.
-* `REDIS_TEST_CONN=true`: Test the redis connection on startup. Disable on the cloud if redis needs more time to start then this service.
+* `REDIS_TEST_CONN=true`: Test the redis connection on startup. Disable on the
+  cloud if redis needs more time to start then this service.

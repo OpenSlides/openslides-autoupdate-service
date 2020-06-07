@@ -1,7 +1,6 @@
 name: Autoupdate
 on: [push, pull_request]
 jobs:
-
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -13,6 +12,9 @@ jobs:
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
+
+    - name: go fmt
+      run: test -z $(gofmt -l .)
 
     - name: go vet
       run: go vet ./...
