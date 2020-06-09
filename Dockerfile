@@ -23,6 +23,6 @@ WORKDIR /root/
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder /root/autoupdate .
 
-EXPOSE 8002
+EXPOSE 9012
 
 CMD ./autoupdate

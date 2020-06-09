@@ -17,7 +17,7 @@ go build ./cmd/autoupdate
 
 ```
 docker build . --tag autoupdate
-docker run -ip 8002:8002 autoupdate
+docker run -ip 9012:9012 autoupdate
 ```
 The i argument is important for fake key changes.
 
@@ -44,14 +44,14 @@ When the server is started, clients can listen for keys to do so, they have to
 send a keyrequest in the body of the request. Currently, all method-types (POST,
 GET, etc) are supported. An example request
 
-`curl localhost:8002/system/autoupdate -d '[{"ids": [5], "collection": "user", "fields": {"name": null}}]'`
+`curl localhost:9012/system/autoupdate -d '[{"ids": [5], "collection": "user", "fields": {"name": null}}]'`
 
 To see a list of possible json-strings see the file
 internal/autoupdate/keysbuilder/keysbuilder_test.go
 
 There is a simpler method to request keys:
 
-`curl localhost:8002/system/autoupdate/keys?user/1/name,user/2/name`
+`curl localhost:9012/system/autoupdate/keys?user/1/name,user/2/name`
 
 With this simpler method, it is not possible to request related keys.
 
@@ -97,8 +97,8 @@ possible to update keys by sending the following command to redis:
 
 The Service uses the following environment variables:
 
-* `LISTEN_HTTP_ADDR=:8002`: Lets the service listen on port 8002 on any device.
-  The default is `:8002`.
+* `LISTEN_HTTP_ADDR=:9012`: Lets the service listen on port 9012 on any device.
+  The default is `:9012`.
 * `DATASTORE=fake`: Sets the datastore service. `fake` (default) or `service`.
 * `DATASTORE_URL`: Sets the url for the datastore service. The default is
   `http://localhost:8001`.
