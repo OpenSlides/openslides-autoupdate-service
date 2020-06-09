@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	listenAddr := getEnv("LISTEN_HTTP_ADDR", ":8002")
+	listenAddr := getEnv("LISTEN_HTTP_ADDR", ":9012")
 	authService := buildAuth()
 	datastoreService := buildDatastore()
 
