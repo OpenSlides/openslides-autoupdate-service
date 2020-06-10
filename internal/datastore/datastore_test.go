@@ -10,7 +10,7 @@ import (
 
 func TestDataStoreGet(t *testing.T) {
 	ts := test.NewDatastoreServer()
-	d := datastore.New(ts.TS.URL, new(test.MockKeysChanged))
+	d := datastore.New(ts.TS.URL, new(test.UpdaterMock))
 
 	got, err := d.Get(context.Background(), "collection/1/field")
 
@@ -26,7 +26,7 @@ func TestDataStoreGet(t *testing.T) {
 
 func TestDataStoreGetMultiValue(t *testing.T) {
 	ts := test.NewDatastoreServer()
-	d := datastore.New(ts.TS.URL, new(test.MockKeysChanged))
+	d := datastore.New(ts.TS.URL, new(test.UpdaterMock))
 
 	got, err := d.Get(context.Background(), "collection/1/field", "collection/2/field")
 

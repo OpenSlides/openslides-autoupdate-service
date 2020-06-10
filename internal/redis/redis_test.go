@@ -1,6 +1,7 @@
 package redis_test
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -11,42 +12,46 @@ import (
 // mock.
 const useRealRedis = false
 
-func TestKeysChangedOnce(t *testing.T) {
-	keys, err := getRedis().KeysChanged()
+func TestUpdateOnce(t *testing.T) {
+	data, err := getRedis().Update()
 	if err != nil {
-		t.Errorf("KeysChanged() returned an unexpected error %v", err)
+		t.Errorf("Update() returned an unexpected error %v", err)
 	}
 
-	expect := []string{"key1", "key2", "key3"}
-	if !cmpSlice(keys, expect) {
-		t.Errorf("KeysChanged() returned %v, expected %v", keys, expect)
+	expect := map[string]json.RawMessage{
+		"user/1/name": []byte("Hubert"),
+		"user/2/name": []byte("Isolde"),
+		"user/3/name": []byte("Igor"),
+	}
+	if !cmpMap(data, expect) {
+		t.Errorf("Update() returned %v, expected %v", data, expect)
 	}
 }
 
-func TestKeysChangedTwice(t *testing.T) {
+func TestUpdateTwice(t *testing.T) {
 	r := getRedis()
-	if _, err := r.KeysChanged(); err != nil {
-		t.Errorf("KeysChanged() returned an unexpected error %v", err)
+	if _, err := r.Update(); err != nil {
+		t.Errorf("Update() returned an unexpected error %v", err)
 	}
 
-	keys, err := r.KeysChanged()
+	keys, err := r.Update()
 	if err != nil {
-		t.Errorf("KeysChanged() returned an unexpected error %v", err)
+		t.Errorf("Update() returned an unexpected error %v", err)
 	}
 
-	expect := []string{}
-	if !cmpSlice(keys, expect) {
-		t.Errorf("KeysChanged() returned %v, expected %v", keys, expect)
+	expect := map[string]json.RawMessage{}
+	if !cmpMap(keys, expect) {
+		t.Errorf("Update() returned %v, expected %v", keys, expect)
 	}
 }
 
 func TestRedisError(t *testing.T) {
 	r := &redis.Service{Conn: mockConn{err: errors.New("my error")}}
-	keys, err := r.KeysChanged()
+	keys, err := r.Update()
 	if err == nil {
-		t.Errorf("KeysChange() did not return an error, expected one.")
+		t.Errorf("Update() did not return an error, expected one.")
 	}
 	if keys != nil {
-		t.Errorf("KeysChanged() returned %v, expected no keys.", keys)
+		t.Errorf("Update() returned %v, expected no keys.", keys)
 	}
 }

@@ -33,10 +33,10 @@ func newFaker(r io.Reader) *faker {
 	return f
 }
 
-// KeysChanged blocks, until there in new data. The nil value blocks forever. If
+// Update blocks, until there in new data. The nil value blocks forever. If
 // the faker was initialized with a reader, it reads each line form it and
 // interpretes each word (separated by space) and a key that should be updated.
-func (f *faker) KeysChanged() ([]string, error) {
+func (f *faker) Update() (map[string]json.RawMessage, error) {
 	if f == nil {
 		// If the faker was not initualized. Block forever.
 		select {}
@@ -51,17 +51,16 @@ func (f *faker) KeysChanged() ([]string, error) {
 		return nil, fmt.Errorf("read from buffer: %w", err)
 	}
 
-	data := strings.Split(strings.TrimSpace(msg), " ")
-	var keys []string
-	for _, d := range data {
+	input := strings.Split(strings.TrimSpace(msg), " ")
+	data := make(map[string]json.RawMessage)
+	for _, d := range input {
 		keyValue := strings.SplitN(d, "=", 2)
 		if len(keyValue) == 1 {
 			keyValue = append(keyValue, fmt.Sprintf(`"The time is: %s"`, time.Now()))
 		}
-		keys = append(keys, keyValue[0])
-		f.ts.Update(map[string]json.RawMessage{keyValue[0]: []byte(keyValue[1])})
+		data[keyValue[0]] = []byte(keyValue[1])
 	}
-	return keys, nil
+	return data, nil
 }
 
 // fake Auth implements the Authenticater interface. It always returns the given number.

@@ -1,8 +1,8 @@
 package redis
 
 import (
+	"bytes"
 	"encoding/json"
-	"sort"
 	"strings"
 	"testing"
 )
@@ -16,11 +16,11 @@ func TestStream(t *testing.T) {
 			[
 				[
 					"12345-0",
-					["modified", "key1", "modified", "key2"]
+					["user/1/name", "Helga", "user/2/name", "Isolde"]
 				],
 				[
 					"12346-0",
-					["modified", "key1", "modified", "key3"]
+					["user/1/name", "Hubert", "user/3/name", "Igor"]
 				]
 			]
 		]
@@ -29,13 +29,17 @@ func TestStream(t *testing.T) {
 		t.Fatalf("Data is invalid json: %v", err)
 	}
 
-	id, keys, err := stream(data, nil)
+	id, retData, err := stream(data, nil)
 	if err != nil {
-		t.Errorf("Did not expect an error, got: %v", err)
+		t.Errorf("Returned unexpected error %v", err)
 	}
-	expect := []string{"key1", "key2", "key3"}
-	if !cmpSlice(keys, expect) {
-		t.Errorf("Expected %v, got %v", expect, keys)
+	expect := map[string]json.RawMessage{
+		"user/1/name": []byte("Hubert"),
+		"user/2/name": []byte("Isolde"),
+		"user/3/name": []byte("Igor"),
+	}
+	if !cmpMap(retData, expect) {
+		t.Errorf("Got %v, expected %v", retData, expect)
 	}
 	if id != "12346-0" {
 		t.Errorf("Expected id to be 12346-0, got: %v", id)
@@ -64,7 +68,6 @@ func TestStreamInvalidData(t *testing.T) {
 		{"Odd key value", `[["one", [["123", ["1"]]]]]`, "invalid input. Odd number of key value pairs"},
 		{"Key no string", `[["one", [["123", [1, "2"]]]]]`, "invalid input. Key has to be a string"},
 		{"Value no string", `[["one", [["123", ["1", 2]]]]]`, "invalid input. Values has to be a string"},
-		{"unknown key", `[["one", [["123", ["data", "value"]]]]]`, "invalid input. Unknown key \"data\""},
 	}
 	for _, tt := range td {
 		t.Run(tt.name, func(t *testing.T) {
@@ -85,15 +88,13 @@ func TestStreamInvalidData(t *testing.T) {
 	}
 }
 
-func cmpSlice(one, two []string) bool {
+func cmpMap(one, two map[string]json.RawMessage) bool {
 	if len(one) != len(two) {
 		return false
 	}
 
-	sort.Strings(one)
-	sort.Strings(two)
-	for i := range one {
-		if one[i] != two[i] {
+	for key := range one {
+		if bytes.Compare(one[key], two[key]) != 0 {
 			return false
 		}
 	}
