@@ -97,7 +97,7 @@ possible to update keys by sending the following command to redis:
 
 The Service uses the following environment variables:
 
-* `LISTEN_HTTP_ADDR=:9012`: Lets the service listen on port 9012 on any device.
+* `AUTOUPDATE_PORT=9012`: Lets the service listen on port 9012 on any device.
   The default is `:9012`.
 * `DATASTORE=fake`: Sets the datastore service. `fake` (default) or `service`.
 * `DATASTORE_URL`: Sets the url for the datastore service. The default is

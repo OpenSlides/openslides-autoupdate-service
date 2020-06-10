@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	listenAddr := getEnv("LISTEN_HTTP_ADDR", ":9012")
+	listenAddr := ":" + getEnv("AUTOUPDATE_PORT", "9012")
 	authService := buildAuth()
 	datastoreService := buildDatastore()
 
@@ -63,14 +63,20 @@ func waitForShutdown() {
 // service. It uses environment variables to make the decission. Per default, a
 // fake server is started and its url is used.
 func buildDatastore() autoupdate.Datastore {
-	dsService := getEnv("DATASTORE", "fake")
-	url := getEnv("DATASTORE_URL", "http://localhost:9010")
+	dsService := getEnv("DATASTORE", "service")
 
 	var f *faker
+	var url string
 	if dsService == "fake" {
 		fmt.Println("Fake Datastore")
 		f = newFaker(os.Stdin)
 		url = f.ts.TS.URL
+	} else if dsService == "service" {
+		host := getEnv("DATASTORE_READER_HOST", "localhost")
+		port := getEnv("DATASTORE_READER_PORT", "9010")
+		url = "http://" + host + ":" + port
+	} else {
+		log.Fatalf("Unknown datastore reader service %s\n", dsService)
 	}
 	fmt.Println("Datastore URL:", url)
 	return datastore.New(url, buildReceiver(f))
@@ -81,23 +87,24 @@ func buildDatastore() autoupdate.Datastore {
 // used.
 func buildReceiver(f *faker) datastore.Updater {
 	var receiver datastore.Updater
-	var serviceName string
-	switch getEnv("MESSAGING_SERVICE", "fake") {
+	serviceName := getEnv("MESSAGING_SERVICE", "redis")
+	switch serviceName {
 	case "redis":
-		conn := redis.NewConnection(getEnv("REDIS_ADDR", "localhost:6379"))
+		redisAddress := getEnv("MESSAGE_BUS_HOST", "localhost") + ":" + getEnv("MESSAGE_BUS_PORT", "6379")
+		conn := redis.NewConnection(redisAddress)
 		if getEnv("REDIS_TEST_CONN", "true") == "true" {
 			if err := conn.TestConn(); err != nil {
 				log.Fatalf("Can not connect to redis: %v", err)
 			}
 		}
 		receiver = &redis.Service{Conn: conn}
-		serviceName = "redis"
-	default:
+	case "fake":
 		receiver = f
-		serviceName = "fake"
 		if f == nil {
 			serviceName = "none"
 		}
+	default:
+		log.Fatalf("Unknown messagin service %s\n", serviceName)
 	}
 	fmt.Printf("Messaging Service: %s\n", serviceName)
 	return receiver
