@@ -33,7 +33,7 @@ func NewDatastoreServer() *DatastoreServer {
 		}
 		defer r.Body.Close()
 
-		responceData := make(map[string]map[string]json.RawMessage)
+		responceData := make(map[string]map[string]map[string]json.RawMessage)
 		for _, key := range data.Keys {
 			value, exist, err := ts.DatastoreValues.Value(key)
 			if err != nil {
@@ -46,12 +46,15 @@ func NewDatastoreServer() *DatastoreServer {
 			}
 
 			keyParts := strings.SplitN(key, "/", 3)
-			fqid := keyParts[0] + "/" + keyParts[1]
 
-			if _, ok := responceData[fqid]; !ok {
-				responceData[fqid] = make(map[string]json.RawMessage)
+			if _, ok := responceData[keyParts[0]]; !ok {
+				responceData[keyParts[0]] = make(map[string]map[string]json.RawMessage)
 			}
-			responceData[fqid][keyParts[2]] = json.RawMessage(value)
+
+			if _, ok := responceData[keyParts[0]][keyParts[1]]; !ok {
+				responceData[keyParts[0]][keyParts[1]] = make(map[string]json.RawMessage)
+			}
+			responceData[keyParts[0]][keyParts[1]][keyParts[2]] = json.RawMessage(value)
 		}
 
 		json.NewEncoder(w).Encode(responceData)

@@ -113,15 +113,17 @@ func keysToGetManyRequest(keys []string) (json.RawMessage, error) {
 // getManyResponceToKeyValue reads the responce from the getMany request and
 // returns the content as key-values.
 func getManyResponceToKeyValue(r io.Reader) (map[string]json.RawMessage, error) {
-	var data map[string]map[string]json.RawMessage
+	var data map[string]map[string]map[string]json.RawMessage
 	if err := json.NewDecoder(r).Decode(&data); err != nil {
 		return nil, fmt.Errorf("decoding responce: %w", err)
 	}
 
 	keyValue := make(map[string]json.RawMessage)
-	for fqid, inner := range data {
-		for field, value := range inner {
-			keyValue[fqid+"/"+field] = value
+	for collection, idField := range data {
+		for id, fieldValue := range idField {
+			for field, value := range fieldValue {
+				keyValue[collection+"/"+id+"/"+field] = value
+			}
 		}
 	}
 	return keyValue, nil
