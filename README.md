@@ -101,7 +101,7 @@ The Service uses the following environment variables:
   The default is `:9012`.
 * `DATASTORE=fake`: Sets the datastore service. `fake` (default) or `service`.
 * `DATASTORE_URL`: Sets the url for the datastore service. The default is
-  `http://localhost:8001`.
+  `http://localhost:9010`.
 * `MESSAGING_SERVICE=fake`: Sets the type of messaging service. `fake`(default)
   or `redis`.
 * `REDIS_ADDR=localhost:6379`: The address to redis.
