@@ -64,7 +64,7 @@ func waitForShutdown() {
 // fake server is started and its url is used.
 func buildDatastore() autoupdate.Datastore {
 	dsService := getEnv("DATASTORE", "fake")
-	url := getEnv("DATASTORE_URL", "http://localhost:8001")
+	url := getEnv("DATASTORE_URL", "http://localhost:9010")
 
 	var f *faker
 	if dsService == "fake" {
