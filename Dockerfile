@@ -24,5 +24,7 @@ WORKDIR /root/
 COPY --from=builder /root/autoupdate .
 
 EXPOSE 9012
+ENV DATASTORE service
+ENV MESSAGING redis
 
 CMD ./autoupdate

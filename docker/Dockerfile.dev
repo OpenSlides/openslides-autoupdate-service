@@ -1,17 +1,21 @@
 FROM golang:1.14-alpine
 LABEL maintainer="OpenSlides Team <info@openslides.com>"
-WORKDIR /app/
+WORKDIR /root/
 
 # Install git, it is needed to install the dependencies
 RUN apk --no-cache add git
 
-# Preload dependencies
 RUN ["go", "get", "github.com/githubnemo/CompileDaemon"]
+
+# Preload dependencies
 COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy everything from the current directory
-COPY ./cmd ./cmd
-COPY ./internal ./internal
+COPY . .
+
+EXPOSE 9012
+ENV DATASTORE service
+ENV MESSAGING redis
 
 CMD CompileDaemon -log-prefix=false -build="go build ./cmd/autoupdate" -command="./autoupdate"

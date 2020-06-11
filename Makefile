@@ -1,5 +1,6 @@
 build-dev:
-	docker build -t openslides-autoupdate-dev -f Dockerfile.dev .
+	docker build . -f docker/Dockerfile.dev --tag openslides-autoupdate-dev
 
 run-tests:
-	echo "I promise to add tests here"
+	docker build . -f docker/Dockerfile.test --tag openslides-autoupdate-test
+	docker run openslides-autoupdate-test
