@@ -15,11 +15,36 @@ go build ./cmd/autoupdate
 
 ### With Docker
 
+The docker build uses the redis messaging service and the real datastore service
+as default. Either configure it to use the fake services (see environment
+variables below) or make sure the service inside the docker container can
+connect to redis and the datastore-reader. For example with the docker argument
+
 ```
-docker build . --tag autoupdate
-docker run -ip 9012:9012 autoupdate
+docker build . --tag openslides-autoupdate
+docker run --network host -ip 9012:9012 openslides-autoupdate
 ```
 The i argument is important for fake key changes.
+
+
+### With Auto Restart
+
+To restart the service when ever a source file has shanged, the tool
+[CompileDaemon](https://github.com/githubnemo/CompileDaemon) can help.
+
+```
+go get github.com/githubnemo/CompileDaemon
+CompileDaemon -log-prefix=false -build "go build ./cmd/autoupdate" -command "./autoupdate"
+```
+
+There is a Dockerfile, that starts a docker container with CompileDaemon. It
+uses different default environment variables. See Start With Docker.
+
+```
+docker build . -f docker/Dockerfile.dev --tag openslides-autoupdate-dev
+docker run --network host -ip 9012:9012 openslides-autoupdate-dev
+```
+
 
 ## Test
 
@@ -32,9 +57,18 @@ go test ./...
 ### With Docker
 
 ```
-docker build . -f tests/Dockerfile --tag autoupdate-test
-docker run autoupdate-test
+docker build . -f docker/Dockerfile.test --tag openslides-autoupdate-test
+docker run openslides-autoupdate-test
 ```
+
+### With Make
+
+There is a make target, that creates and runs the docker-test-container:
+
+```
+make run-tests
+```
+
 
 ## Examples
 
@@ -42,7 +76,7 @@ docker run autoupdate-test
 
 When the server is started, clients can listen for keys to do so, they have to
 send a keyrequest in the body of the request. Currently, all method-types (POST,
-GET, etc) are supported. An example request
+GET, etc) are supported. An example request is:
 
 `curl localhost:9012/system/autoupdate -d '[{"ids": [5], "collection": "user", "fields": {"name": null}}]'`
 
@@ -81,7 +115,7 @@ All clients that listen for the keys get an update for that key.
 To connect the autoupdate-service with the datastore service, the following
 environment variables can be used:
 
-`DATASTORE=service MESSAGING_SERVICE=redis ./autoupdate`
+`DATASTORE=service MESSAGING=redis ./autoupdate`
 
 
 ### With redis
@@ -97,13 +131,19 @@ possible to update keys by sending the following command to redis:
 
 The Service uses the following environment variables:
 
-* `LISTEN_HTTP_ADDR=:9012`: Lets the service listen on port 9012 on any device.
-  The default is `:9012`.
-* `DATASTORE=fake`: Sets the datastore service. `fake` (default) or `service`.
-* `DATASTORE_URL`: Sets the url for the datastore service. The default is
-  `http://localhost:9010`.
-* `MESSAGING_SERVICE=fake`: Sets the type of messaging service. `fake`(default)
-  or `redis`.
-* `REDIS_ADDR=localhost:6379`: The address to redis.
-* `REDIS_TEST_CONN=true`: Test the redis connection on startup. Disable on the
-  cloud if redis needs more time to start then this service.
+* `AUTOUPDATE_PORT`: Lets the service listen on port 9012. The default is
+  `9012`.
+* `AUTOUPDATE_HOST`: The device where the service starts. The default is am
+  empty string which starts the service on any device.
+* `DATASTORE`: Sets the datastore service. `fake` (default) or `service`.
+* `DATASTORE_READER_HOST`: Host of the datastore reader. The default is
+  `localhost`.
+* `DATASTORE_READER_PORT`: Port of the datastore reader. The default is `9010`.
+* `DATASTORE_READER_PROTOCOL`: Protocol of the datastore reader. The default is
+  `http`.
+* `MESSAGING`: Sets the type of messaging service. `fake`(default) or
+  `redis`.
+* `MESSAGE_BUS_HOST`: Host of the redis server. The default is `localhost`.
+* `MESSAGE_BUS_PORT`: Port of the redis server. The default is `6379`.
+* `REDIS_TEST_CONN`: Test the redis connection on startup. Disable on the cloud
+  if redis needs more time to start then this service. The default is `true`.

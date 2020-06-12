@@ -1,6 +1,9 @@
-FROM golang:1.14
+FROM golang:1.14-alpine
 LABEL maintainer="OpenSlides Team <info@openslides.com>"
 WORKDIR /root/
+
+# Install git, it is needed to install the dependencies
+RUN apk --no-cache add git build-base
 
 # Preload dependencies
 COPY go.mod go.sum ./
