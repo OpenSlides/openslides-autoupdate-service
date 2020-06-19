@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
@@ -16,17 +17,19 @@ import (
 
 // Handler is an http handler for the autoupdate service.
 type Handler struct {
-	s    *autoupdate.Autoupdate
-	mux  *http.ServeMux
-	auth Authenticator
+	s         *autoupdate.Autoupdate
+	mux       *http.ServeMux
+	auth      Authenticator
+	keepAlive int
 }
 
 // New create a new Handler with the correct urls.
-func New(s *autoupdate.Autoupdate, auth Authenticator) *Handler {
+func New(s *autoupdate.Autoupdate, auth Authenticator, keepAlive int) *Handler {
 	h := &Handler{
-		s:    s,
-		mux:  http.NewServeMux(),
-		auth: auth,
+		s:         s,
+		mux:       http.NewServeMux(),
+		auth:      auth,
+		keepAlive: keepAlive,
 	}
 	h.mux.Handle("/system/autoupdate", h.autoupdate(h.complex))
 	h.mux.Handle("/system/autoupdate/keys", h.autoupdate(h.simple))
@@ -54,10 +57,34 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 
 		connection := h.s.Connect(r.Context(), uid, kb)
 
+		ticker := new(time.Ticker)
+		if h.keepAlive > 0 {
+			ticker = time.NewTicker(time.Duration(h.keepAlive) * time.Second)
+			defer ticker.Stop()
+		}
+
 		// connection.Next() blocks, until there is new data or the client
 		// context or the server is closed.
+		var data map[string]json.RawMessage
 		for {
-			data, err := connection.Next()
+			event := make(chan struct{})
+			go func() {
+				data, err = connection.Next()
+				close(event)
+			}()
+
+			select {
+			case <-ticker.C:
+				if err := sendKeepAlive(w); err != nil {
+					internalErr(w, err)
+				}
+				continue
+			case <-event:
+				// Received autoupdate event.
+				// TODO: Reset ticker. This will be possible in go 1.15 that will be released in august:
+				//       https://tip.golang.org/doc/go1.15#time
+			}
+
 			if err != nil {
 				var derr DefinedError
 				if errors.As(err, &derr) {
@@ -77,7 +104,6 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 				internalErr(w, err)
 				return nil
 			}
-			w.(http.Flusher).Flush()
 		}
 	}
 }
@@ -124,6 +150,7 @@ func (f errHandleFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // client).
 func writeErr(w io.Writer, err DefinedError) {
 	fmt.Fprintf(w, `{"error": {"type": "%s", "msg": "%s"}}`, err.Type(), quote(err.Error()))
+	w.(http.Flusher).Flush()
 }
 
 // internalErr sends a nonsense error message to the client and logs the real
@@ -131,6 +158,7 @@ func writeErr(w io.Writer, err DefinedError) {
 func internalErr(w io.Writer, err error) {
 	log.Printf("Internal Error: %v", err)
 	fmt.Fprintln(w, `{"error": {"type": "InternalError", "msg": "Ups, something went wrong!"}}`)
+	w.(http.Flusher).Flush()
 }
 
 // quote decodes changes quotation marks with a backslash to make sure, they are
@@ -154,5 +182,13 @@ func sendData(w io.Writer, data map[string]json.RawMessage) error {
 		w.Write(value)
 	}
 	w.Write([]byte("}\n"))
+	w.(http.Flusher).Flush()
 	return nil
+}
+
+// sendKeepAlive sends an empty message to the client.
+func sendKeepAlive(w io.Writer) error {
+	_, err := fmt.Fprintln(w, `{}`)
+	w.(http.Flusher).Flush()
+	return err
 }

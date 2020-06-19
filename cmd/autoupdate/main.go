@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
@@ -18,6 +19,12 @@ import (
 
 func main() {
 	listenAddr := getEnv("AUTOUPDATE_HOST", "") + ":" + getEnv("AUTOUPDATE_PORT", "9012")
+	keepAliveRaw := getEnv("KEEP_ALIVE_DURATION", "30")
+	keepAlive, err := strconv.Atoi(keepAliveRaw)
+	if err != nil {
+		log.Fatalf("Invalid value for KEEP_ALIVE_DURATION, got %s, expected an int: %v", keepAliveRaw, err)
+	}
+
 	authService := buildAuth()
 	datastoreService, err := buildDatastore()
 	if err != nil {
@@ -26,7 +33,7 @@ func main() {
 
 	service := autoupdate.New(datastoreService, new(restrict.Restricter))
 
-	handler := autoupdateHttp.New(service, authService)
+	handler := autoupdateHttp.New(service, authService, keepAlive)
 	srv := &http.Server{Addr: listenAddr, Handler: handler}
 	defer func() {
 		service.Close()
