@@ -18,7 +18,7 @@ func TestHandlerTestURLs(t *testing.T) {
 	datastore := test.NewMockDatastore()
 	defer datastore.Close()
 	s := autoupdate.New(datastore, new(test.MockRestricter))
-	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}))
+	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}, 0))
 	defer srv.Close()
 
 	tc := []struct {
@@ -55,7 +55,7 @@ func TestSimple(t *testing.T) {
 	datastore := test.NewMockDatastore()
 	defer datastore.Close()
 	s := autoupdate.New(datastore, new(test.MockRestricter))
-	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}))
+	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}, 0))
 	defer srv.Close()
 
 	tc := []struct {
@@ -132,7 +132,7 @@ func TestErrors(t *testing.T) {
 	datastore := test.NewMockDatastore()
 	defer datastore.Close()
 	s := autoupdate.New(datastore, new(test.MockRestricter))
-	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}))
+	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}, 0))
 	defer srv.Close()
 
 	for _, tt := range []struct {
