@@ -24,6 +24,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Invalid value for KEEP_ALIVE_DURATION, got %s, expected an int: %v", keepAliveRaw, err)
 	}
+	msg := "off"
+	if keepAlive > 0 {
+		msg = fmt.Sprintf("%d seconds", keepAlive)
+	}
+	fmt.Printf("Keep Alive Interval: %s\n", msg)
 
 	authService := buildAuth()
 	datastoreService, err := buildDatastore()
