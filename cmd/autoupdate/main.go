@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
@@ -38,7 +39,7 @@ func main() {
 
 	service := autoupdate.New(datastoreService, new(restrict.Restricter))
 
-	handler := autoupdateHttp.New(service, authService, keepAlive)
+	handler := autoupdateHttp.New(service, authService, time.Duration(keepAlive)*time.Second)
 	srv := &http.Server{Addr: listenAddr, Handler: handler}
 	defer func() {
 		service.Close()

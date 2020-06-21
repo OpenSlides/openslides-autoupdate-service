@@ -11,10 +11,10 @@ import (
 )
 
 func TestConnect(t *testing.T) {
-	c, _, _, close := getConnection()
+	c, _, close := getConnection()
 	defer close()
 
-	data, err := c.Next()
+	data, err := c.Next(context.Background())
 	if err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
@@ -25,15 +25,16 @@ func TestConnect(t *testing.T) {
 }
 
 func TestConnectionReadNoNewData(t *testing.T) {
-	c, _, disconnect, close := getConnection()
+	c, _, close := getConnection()
 	defer close()
+	ctx, disconnect := context.WithCancel(context.Background())
 
-	if _, err := c.Next(); err != nil {
+	if _, err := c.Next(ctx); err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
 	disconnect()
-	data, err := c.Next()
+	data, err := c.Next(ctx)
 	if err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
@@ -43,15 +44,16 @@ func TestConnectionReadNoNewData(t *testing.T) {
 }
 
 func TestConnectionReadNewData(t *testing.T) {
-	c, datastore, _, close := getConnection()
+	c, datastore, close := getConnection()
 	defer close()
-	if _, err := c.Next(); err != nil {
+
+	if _, err := c.Next(context.Background()); err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
 	datastore.Update(map[string]json.RawMessage{"user/1/name": []byte(`"new value"`)})
 	datastore.Send(test.Str("user/1/name"))
-	data, err := c.Next()
+	data, err := c.Next(context.Background())
 
 	if err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
@@ -84,9 +86,9 @@ func TestConnectionEmptyData(t *testing.T) {
 	kb := mockKeysBuilder{keys: test.Str(doesExistKey, doesNotExistKey)}
 
 	t.Run("First responce", func(t *testing.T) {
-		c := s.Connect(context.Background(), 1, kb)
+		c := s.Connect(1, kb)
 
-		data, err := c.Next()
+		data, err := c.Next(context.Background())
 
 		if err != nil {
 			t.Errorf("c.Next() returned an error: %v", err)
@@ -131,14 +133,14 @@ func TestConnectionEmptyData(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			c := s.Connect(context.Background(), 1, kb)
-			if _, err := c.Next(); err != nil {
+			c := s.Connect(1, kb)
+			if _, err := c.Next(context.Background()); err != nil {
 				t.Errorf("c.Next() returned an error: %v", err)
 			}
 
 			datastore.Update(tt.update)
 			datastore.Send([]string{doesExistKey, doesNotExistKey})
-			data, err := c.Next()
+			data, err := c.Next(context.Background())
 
 			if err != nil {
 				t.Fatalf("c.Next() returned an error: %v", err)
@@ -154,19 +156,19 @@ func TestConnectionEmptyData(t *testing.T) {
 	}
 
 	t.Run("exit->not exist-> not exist", func(t *testing.T) {
-		c := s.Connect(context.Background(), 1, kb)
-		if _, err := c.Next(); err != nil {
+		c := s.Connect(1, kb)
+		if _, err := c.Next(context.Background()); err != nil {
 			t.Errorf("c.Next() returned an error: %v", err)
 		}
 
 		// First time not exist
 		datastore.Update(map[string]json.RawMessage{doesExistKey: nil})
 		datastore.Send([]string{doesExistKey})
-		c.Next()
+		c.Next(context.Background())
 
 		// Second time not exist
 		datastore.Send([]string{doesExistKey})
-		data, err := c.Next()
+		data, err := c.Next(context.Background())
 
 		if err != nil {
 			t.Fatalf("c.Next() returned an error: %v", err)
@@ -183,13 +185,13 @@ func TestConnectionFilterData(t *testing.T) {
 	s := autoupdate.New(datastore, new(test.MockRestricter))
 	defer s.Close()
 	kb := mockKeysBuilder{keys: test.Str("user/1/name")}
-	c := s.Connect(context.Background(), 1, kb)
-	if _, err := c.Next(); err != nil {
+	c := s.Connect(1, kb)
+	if _, err := c.Next(context.Background()); err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
 	datastore.Send(test.Str("user/1/name")) // send again, value did not change in restricter
-	data, err := c.Next()
+	data, err := c.Next(context.Background())
 
 	if err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
@@ -208,14 +210,14 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	s := autoupdate.New(datastore, new(test.MockRestricter))
 	defer s.Close()
 	kb := mockKeysBuilder{keys: test.Str("user/1/name")}
-	c := s.Connect(context.Background(), 1, kb)
-	if _, err := c.Next(); err != nil {
+	c := s.Connect(1, kb)
+	if _, err := c.Next(context.Background()); err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
 	datastore.Update(map[string]json.RawMessage{"user/1/name": []byte(`"newname"`)}) // Only change user/1 not user/2
 	datastore.Send(test.Str("user/1/name", "user/2/name"))
-	data, err := c.Next()
+	data, err := c.Next(context.Background())
 
 	if err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
@@ -245,12 +247,12 @@ func BenchmarkFilterChanging(b *testing.B) {
 	kb := mockKeysBuilder{keys: keys}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	c := s.Connect(ctx, 1, kb)
+	c := s.Connect(1, kb)
 
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		c.Next()
+		c.Next(ctx)
 		for i := 0; i < keyCount; i++ {
 			datastore.Update(map[string]json.RawMessage{fmt.Sprintf("user/%d/name", i): []byte(fmt.Sprintf(`"value %d"`, n))})
 		}
@@ -272,12 +274,12 @@ func BenchmarkFilterNotChanging(b *testing.B) {
 	kb := mockKeysBuilder{keys: keys}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	c := s.Connect(ctx, 1, kb)
+	c := s.Connect(1, kb)
 
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		c.Next()
+		c.Next(ctx)
 		datastore.Send(keys)
 	}
 }
