@@ -3,6 +3,7 @@ package autoupdate_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -35,8 +36,8 @@ func TestConnectionReadNoNewData(t *testing.T) {
 
 	disconnect()
 	data, err := c.Next(ctx)
-	if err != nil {
-		t.Errorf("c.Next() returned an error: %v", err)
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("c.Next() returned error %v, expected context.Canceled", err)
 	}
 	if data != nil {
 		t.Errorf("Expect no new data, got: %v", data)

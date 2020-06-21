@@ -54,11 +54,6 @@ func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, erro
 		return nil, fmt.Errorf("get updated keys: %w", err)
 	}
 
-	// When changedKeys is empty, then the service or the connection is closed.
-	if len(changedKeys) == 0 {
-		return nil, nil
-	}
-
 	oldKeys := c.kb.Keys()
 
 	// Update keysbuilder get new list of keys

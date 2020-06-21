@@ -67,16 +67,19 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 		connection := h.s.Connect(uid, kb)
 
 		for {
-			if err := h.autoupdateLoop(w, r, connection); err != nil {
+			if err := autoupdateLoop(r.Context(), h.keepAlive, w, connection); err != nil {
 				return err
 			}
 		}
 	}
 }
 
-func (h *Handler) autoupdateLoop(w io.Writer, r *http.Request, connection *autoupdate.Connection) error {
-	ctx, cancel := context.WithTimeout(r.Context(), h.keepAlive)
-	defer cancel()
+func autoupdateLoop(ctx context.Context, timeout time.Duration, w io.Writer, connection *autoupdate.Connection) error {
+	if timeout > 0 {
+		var cancel func()
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
 
 	// connection.Next() blocks, until there is new data or the client
 	// context or the server is closed.
@@ -143,7 +146,7 @@ func (f errHandleFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if status {
 				w.WriteHeader(http.StatusBadRequest)
 			}
-			fmt.Fprintf(w, `{"error": {"type": "%s", "msg": "%s"}}`, derr.Type(), quote(err.Error()))
+			fmt.Fprintf(w, `{"error": {"type": "%s", "msg": "%s"}}`, derr.Type(), quote(derr.Error()))
 			return
 		}
 
