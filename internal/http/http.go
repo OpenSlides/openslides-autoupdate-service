@@ -2,6 +2,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,11 +21,11 @@ type Handler struct {
 	s         *autoupdate.Autoupdate
 	mux       *http.ServeMux
 	auth      Authenticator
-	keepAlive int
+	keepAlive time.Duration
 }
 
 // New create a new Handler with the correct urls.
-func New(s *autoupdate.Autoupdate, auth Authenticator, keepAlive int) *Handler {
+func New(s *autoupdate.Autoupdate, auth Authenticator, keepAlive time.Duration) *Handler {
 	h := &Handler{
 		s:         s,
 		mux:       http.NewServeMux(),
@@ -55,57 +56,48 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 			return fmt.Errorf("build keysbuilder: %w", err)
 		}
 
-		connection := h.s.Connect(r.Context(), uid, kb)
-
-		ticker := new(time.Ticker)
-		if h.keepAlive > 0 {
-			ticker = time.NewTicker(time.Duration(h.keepAlive) * time.Second)
-			defer ticker.Stop()
-		}
-
-		// connection.Next() blocks, until there is new data or the client
-		// context or the server is closed.
-		var data map[string]json.RawMessage
-		for {
-			event := make(chan struct{})
-			go func() {
-				data, err = connection.Next()
-				close(event)
-			}()
-
-			select {
-			case <-ticker.C:
-				if err := sendKeepAlive(w); err != nil {
-					internalErr(w, err)
-				}
-				continue
-			case <-event:
-				// Received autoupdate event.
-				// TODO: Reset ticker. This will be possible in go 1.15 that will be released in august:
-				//       https://tip.golang.org/doc/go1.15#time
-			}
-
+		defer func() {
+			// After this line, it is not allowed for the handler to set a
+			// status error.
 			if err != nil {
-				var derr DefinedError
-				if errors.As(err, &derr) {
-					writeErr(w, derr)
-					return nil
-				}
-				internalErr(w, err)
-				return nil
+				err = noStatusCodeError{err}
 			}
+		}()
 
-			// data is nil when the topic or the connection are closed.
-			if data == nil {
-				return nil
-			}
+		connection := h.s.Connect(uid, kb)
 
-			if err := sendData(w, data); err != nil {
-				internalErr(w, err)
-				return nil
+		for {
+			if err := autoupdateLoop(r.Context(), h.keepAlive, w, connection); err != nil {
+				return err
 			}
 		}
 	}
+}
+
+func autoupdateLoop(ctx context.Context, timeout time.Duration, w io.Writer, connection *autoupdate.Connection) error {
+	if timeout > 0 {
+		var cancel func()
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
+
+	// connection.Next() blocks, until there is new data or the client
+	// context or the server is closed.
+	data, err := connection.Next(ctx)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			if err := sendKeepAlive(w); err != nil {
+				return err
+			}
+			return nil
+		}
+		return err
+	}
+
+	if err := sendData(w, data); err != nil {
+		return err
+	}
+	return nil
 }
 
 // complex builds a keysbuilder from the body of a request. The body has to be
@@ -135,30 +127,35 @@ type errHandleFunc func(w http.ResponseWriter, r *http.Request) error
 
 func (f errHandleFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := f(w, r); err != nil {
-		var derr DefinedError
-		if errors.As(err, &derr) {
-			w.WriteHeader(http.StatusBadRequest)
-			writeErr(w, derr)
+		var noStatusErr noStatusCodeError
+		status := true
+		if errors.As(err, &noStatusErr) {
+			status = false
+		}
+
+		var closing interface {
+			Closing()
+		}
+		if errors.As(err, &closing) || errors.Is(err, context.Canceled) {
+			// Shutdown or connection closed.
 			return
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		internalErr(w, err)
+
+		var derr DefinedError
+		if errors.As(err, &derr) {
+			if status {
+				w.WriteHeader(http.StatusBadRequest)
+			}
+			fmt.Fprintf(w, `{"error": {"type": "%s", "msg": "%s"}}`, derr.Type(), quote(derr.Error()))
+			return
+		}
+
+		if status {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		log.Printf("Internal Error: %v", err)
+		fmt.Fprintln(w, `{"error": {"type": "InternalError", "msg": "Ups, something went wrong!"}}`)
 	}
-}
-
-// writeErr formats a DefinedError and sents it to the writer (normally the
-// client).
-func writeErr(w io.Writer, err DefinedError) {
-	fmt.Fprintf(w, `{"error": {"type": "%s", "msg": "%s"}}`, err.Type(), quote(err.Error()))
-	w.(http.Flusher).Flush()
-}
-
-// internalErr sends a nonsense error message to the client and logs the real
-// message to stdout.
-func internalErr(w io.Writer, err error) {
-	log.Printf("Internal Error: %v", err)
-	fmt.Fprintln(w, `{"error": {"type": "InternalError", "msg": "Ups, something went wrong!"}}`)
-	w.(http.Flusher).Flush()
 }
 
 // quote decodes changes quotation marks with a backslash to make sure, they are

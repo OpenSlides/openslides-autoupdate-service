@@ -62,10 +62,9 @@ func (a *Autoupdate) Close() {
 // returns a Connection object, that can be used to receive the data.
 //
 // There is no need to "close" the Connection object.
-func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) *Connection {
+func (a *Autoupdate) Connect(userID int, kb KeysBuilder) *Connection {
 	return &Connection{
 		autoupdate: a,
-		ctx:        ctx,
 		uid:        userID,
 		kb:         kb,
 	}

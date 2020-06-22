@@ -10,7 +10,6 @@ import (
 // Connect() on a autoupdate.Service instance.
 type Connection struct {
 	autoupdate *Autoupdate
-	ctx        context.Context
 	uid        int
 	kb         KeysBuilder
 	tid        uint64
@@ -21,13 +20,13 @@ type Connection struct {
 //
 // Next blocks until there are new data or the context or the server closes. In
 // this case, nil is returned.
-func (c *Connection) Next() (map[string]json.RawMessage, error) {
+func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, error) {
 	if c.filter == nil {
 		// First time called
 		c.filter = new(filter)
 		c.tid = c.autoupdate.topic.LastID()
 
-		data, err := c.autoupdate.restrictedData(c.ctx, c.uid, c.kb.Keys()...)
+		data, err := c.autoupdate.restrictedData(ctx, c.uid, c.kb.Keys()...)
 		if err != nil {
 			return nil, fmt.Errorf("get first time restricted data: %w", err)
 		}
@@ -50,14 +49,9 @@ func (c *Connection) Next() (map[string]json.RawMessage, error) {
 	var changedKeys []string
 
 	// Blocks until the topic is closed (on server exit) or the context is done.
-	c.tid, changedKeys, err = c.autoupdate.topic.Receive(c.ctx, c.tid)
+	c.tid, changedKeys, err = c.autoupdate.topic.Receive(ctx, c.tid)
 	if err != nil {
 		return nil, fmt.Errorf("get updated keys: %w", err)
-	}
-
-	// When changedKeys is empty, then the service or the connection is closed.
-	if len(changedKeys) == 0 {
-		return nil, nil
 	}
 
 	oldKeys := c.kb.Keys()
@@ -85,10 +79,10 @@ func (c *Connection) Next() (map[string]json.RawMessage, error) {
 
 	if len(keys) == 0 {
 		// No data. Try again.
-		return c.Next()
+		return c.Next(ctx)
 	}
 
-	data, err := c.autoupdate.restrictedData(c.ctx, c.uid, keys...)
+	data, err := c.autoupdate.restrictedData(ctx, c.uid, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("restrict data: %w", err)
 	}
