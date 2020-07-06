@@ -3,6 +3,8 @@ package datastore
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"log"
 	"sync"
 )
 
@@ -17,12 +19,16 @@ type cacheSetFunc func(keys []string) (map[string]json.RawMessage, error)
 //
 // A new cache instance has to be created with newCache().
 type cache struct {
-	mu   sync.RWMutex
-	data map[string]*cacheEntry
+	mu      sync.RWMutex
+	data    map[string]json.RawMessage
+	pending map[string]chan struct{}
 }
 
 func newCache() *cache {
-	return &cache{data: make(map[string]*cacheEntry)}
+	return &cache{
+		data:    make(map[string]json.RawMessage),
+		pending: make(map[string]chan struct{}),
+	}
 }
 
 // getOrSet returns the values for a list of keys. If one or more keys do not
@@ -40,8 +46,8 @@ func newCache() *cache {
 // If the context is done, getOrSet returns. But the set() call is not stopped.
 // Other calls to getOrSet may wait for its result.
 func (c *cache) getOrSet(ctx context.Context, keys []string, set cacheSetFunc) ([]json.RawMessage, error) {
-	// Get all requested entries from cache. If entry does not exist, create a
-	// new one.
+	// Get all requested entries from cache. If entry does not exist, set it to
+	// pending.
 	c.mu.Lock()
 	var missingKeys []string
 	for _, key := range keys {
@@ -49,10 +55,13 @@ func (c *cache) getOrSet(ctx context.Context, keys []string, set cacheSetFunc) (
 			continue
 		}
 
-		missingKeys = append(missingKeys, key)
-		c.data[key] = &cacheEntry{
-			done: make(chan struct{}),
+		if _, ok := c.pending[key]; ok {
+			continue
 		}
+
+		missingKeys = append(missingKeys, key)
+		c.pending[key] = make(chan struct{})
+		c.data[key] = nil
 	}
 	c.mu.Unlock()
 
@@ -75,107 +84,87 @@ func (c *cache) getOrSet(ctx context.Context, keys []string, set cacheSetFunc) (
 	}
 
 	values := make([]json.RawMessage, len(keys))
+	c.mu.RLock()
 	for i, key := range keys {
-		c.mu.RLock()
-		entry := c.data[key]
-		c.mu.RUnlock()
 
-		// This blocks until the value is ready.
-		value, err := entry.get()
+		v := c.data[key]
+		p, pendingOK := c.pending[key]
 
-		if err != nil {
-			return nil, err
+		if !pendingOK {
+			values[i] = v
+			continue
 		}
-		values[i] = value
+
+		c.mu.RUnlock()
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-p:
+		}
+		c.mu.RLock()
+
+		v, ok := c.data[key]
+		if !ok {
+			// The value is not in the cache after pending was done. This
+			// happens when the request to the datastore returned with an error.
+			return nil, fmt.Errorf("key %s is unknoen", key)
+		}
+		values[i] = v
 	}
+	c.mu.RUnlock()
 	return values, nil
 }
 
 func (c *cache) fetchMissing(keys []string, set cacheSetFunc) {
 	data, err := set(keys)
 
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	for _, key := range keys {
-		value, ok := data[key]
-		if !ok {
-			value = nil
+	if err != nil {
+		log.Printf("Can not load keys %v: %v", keys, err)
+		for _, k := range keys {
+			close(c.pending[k])
+			delete(c.pending, k)
 		}
-		c.data[key].set(value, err)
+		return
+	}
+
+	for k, v := range data {
+		c.data[k] = v
+
+		p, ok := c.pending[k]
+		if !ok {
+			continue
+		}
+
+		close(p)
+		delete(c.pending, k)
 	}
 }
 
 // setIfExist updates each the cache with the value in the given map. But only
 // values that are already in the cache get an update.
+//
+// Pending keys are not updated
 func (c *cache) setIfExist(data map[string]json.RawMessage) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	for key, value := range data {
-		entry, ok := c.data[key]
+		_, ok := c.data[key]
 
 		if !ok {
 			continue
 		}
 
-		entry.update(value)
-	}
-}
+		p, ok := c.pending[key]
 
-type cacheEntry struct {
-	mu    sync.RWMutex
-	done  chan struct{}
-	value json.RawMessage
-	err   error
-}
+		if ok {
+			close(p)
+			delete(c.pending, key)
+		}
 
-// get returns the value and error from the cacheEntry. It block until the value
-// is ready.
-func (ce *cacheEntry) get() (json.RawMessage, error) {
-	<-ce.done
-
-	ce.mu.RLock()
-	defer ce.mu.RUnlock()
-
-	return ce.value, ce.err
-}
-
-// set sets the cache entry.
-func (ce *cacheEntry) set(value json.RawMessage, err error) {
-	ce.mu.Lock()
-	defer ce.mu.Unlock()
-
-	// Only set entry, if it is not done (by setIfExist).
-	select {
-	case <-ce.done:
-		return
-	default:
-	}
-
-	defer close(ce.done)
-
-	if err != nil {
-		ce.err = err
-		return
-	}
-
-	ce.value = value
-}
-
-// update updates the cache entry. The differece to set is, that is writes the
-// value, even when it is done.
-func (ce *cacheEntry) update(value json.RawMessage) {
-	ce.mu.Lock()
-	defer ce.mu.Unlock()
-
-	ce.value = value
-	ce.err = nil
-
-	// If it was done before, set it to done.
-	select {
-	case <-ce.done:
-	default:
-		close(ce.done)
+		c.data[key] = value
 	}
 }
