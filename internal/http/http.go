@@ -51,6 +51,10 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 			return fmt.Errorf("authenticate request: %w", err)
 		}
 
+		// Save tid before the keybuilder is generated. If the datastore gets an
+		// update, the update can be handeled.
+		tid := h.s.LastID()
+
 		kb, err := kbg(r, uid)
 		if err != nil {
 			return fmt.Errorf("build keysbuilder: %w", err)
@@ -64,7 +68,7 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 			}
 		}()
 
-		connection := h.s.Connect(uid, kb)
+		connection := h.s.Connect(uid, kb, tid)
 
 		for {
 			if err := autoupdateLoop(r.Context(), h.keepAlive, w, connection); err != nil {

@@ -24,7 +24,9 @@ func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, erro
 	if c.filter == nil {
 		// First time called
 		c.filter = new(filter)
-		c.tid = c.autoupdate.topic.LastID()
+		if c.tid == 0 {
+			c.tid = c.autoupdate.topic.LastID()
+		}
 
 		data, err := c.autoupdate.restrictedData(ctx, c.uid, c.kb.Keys()...)
 		if err != nil {

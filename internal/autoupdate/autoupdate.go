@@ -62,11 +62,12 @@ func (a *Autoupdate) Close() {
 // returns a Connection object, that can be used to receive the data.
 //
 // There is no need to "close" the Connection object.
-func (a *Autoupdate) Connect(userID int, kb KeysBuilder) *Connection {
+func (a *Autoupdate) Connect(userID int, kb KeysBuilder, tid uint64) *Connection {
 	return &Connection{
 		autoupdate: a,
 		uid:        userID,
 		kb:         kb,
+		tid:        tid,
 	}
 }
 
@@ -91,6 +92,11 @@ func (a *Autoupdate) Value(ctx context.Context, uid int, key string, value inter
 		return fmt.Errorf("decode value of key %s: %w", key, err)
 	}
 	return nil
+}
+
+// LastID returns the last id of the last data update.
+func (a *Autoupdate) LastID() uint64 {
+	return a.topic.LastID()
 }
 
 // pruneTopic removes old data from the topic. Blocks until the service is

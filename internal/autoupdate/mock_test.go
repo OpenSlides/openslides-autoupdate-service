@@ -21,7 +21,7 @@ func getConnection() (connection *autoupdate.Connection, datastore *test.MockDat
 	datastore = test.NewMockDatastore()
 	s := autoupdate.New(datastore, new(test.MockRestricter))
 	kb := mockKeysBuilder{keys: test.Str("user/1/name")}
-	c := s.Connect(1, kb)
+	c := s.Connect(1, kb, 0)
 
 	return c, datastore, func() {
 		s.Close()

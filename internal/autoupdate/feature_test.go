@@ -305,7 +305,7 @@ func TestFeatures(t *testing.T) {
 			if err != nil {
 				t.Fatalf("FromJSON() returned an unexpected error: %v", err)
 			}
-			c := s.Connect(1, b)
+			c := s.Connect(1, b, 0)
 			data, err := c.Next(context.Background())
 			if err != nil {
 				t.Fatalf("Can not get data: %v", err)
