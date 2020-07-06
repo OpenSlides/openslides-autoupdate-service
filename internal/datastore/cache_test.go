@@ -20,7 +20,25 @@ func TestCacheGetOrSet(t *testing.T) {
 	}
 	expect := test.Str("value")
 	if len(got) != 1 || string(got[0]) != expect[0] {
-		t.Errorf("getOrSet() returned %v, expected %v", got, expect)
+		t.Errorf("getOrSet() returned `%v`, expected `%v`", got, expect)
+	}
+}
+
+func TestCacheGetOrSetAdditionalKeys(t *testing.T) {
+	c := newCache()
+	got, err := c.getOrSet(context.Background(), test.Str("key1"), func([]string) (map[string]json.RawMessage, error) {
+		return map[string]json.RawMessage{
+			"key1": json.RawMessage("value"),
+			"key2": json.RawMessage("value2"),
+		}, nil
+	})
+
+	if err != nil {
+		t.Errorf("getOrSet() returned the unexpected error %v", err)
+	}
+	expect := []json.RawMessage{[]byte("value"), []byte("value2")}
+	if test.CmpSliceBytes(got, expect) {
+		t.Errorf("getOrSet() returned `%s`, expected `%s`", got, expect)
 	}
 }
 
@@ -139,6 +157,6 @@ func TestCacheSetIfExistParallelToGetOrSet(t *testing.T) {
 
 	expect := test.Str("new value")
 	if len(got) != 1 || string(got[0]) != expect[0] {
-		t.Errorf("Got `%v`, expected `%v`", got, expect)
+		t.Errorf("Got `%s`, expected `%s`", got, expect)
 	}
 }
