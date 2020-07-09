@@ -128,6 +128,7 @@ func (a *Autoupdate) receiveKeyChanges() {
 		keys, err := a.datastore.KeysChanged()
 		if err != nil {
 			log.Printf("Could not update keys: %v\n", err)
+			time.Sleep(time.Second)
 			continue
 		}
 
