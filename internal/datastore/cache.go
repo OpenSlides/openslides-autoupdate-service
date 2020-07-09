@@ -43,6 +43,9 @@ func newCache() *cache {
 // The set function is used to create the cache values. It is called only with
 // the missing keys.
 //
+// If a value is not returned by the set function, it is saved in the cache as
+// nil to prevent a second call for the same key.
+//
 // If the context is done, getOrSet returns. But the set() call is not stopped.
 // Other calls to getOrSet may wait for its result.
 func (c *cache) getOrSet(ctx context.Context, keys []string, set cacheSetFunc) ([]json.RawMessage, error) {
@@ -86,7 +89,6 @@ func (c *cache) getOrSet(ctx context.Context, keys []string, set cacheSetFunc) (
 	values := make([]json.RawMessage, len(keys))
 	c.mu.RLock()
 	for i, key := range keys {
-
 		v := c.data[key]
 		p, pendingOK := c.pending[key]
 
@@ -121,12 +123,25 @@ func (c *cache) fetchMissing(keys []string, set cacheSetFunc) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if err != nil {
-		log.Printf("Can not load keys %v: %v", keys, err)
+	// Make sure all pending keys are closed and deleted. Make also sure, that
+	// missing keys are set to nil.
+	defer func() {
 		for _, k := range keys {
-			close(c.pending[k])
+			if _, ok := c.data[k]; !ok {
+				c.data[k] = nil
+			}
+
+			p, ok := c.pending[k]
+			if !ok {
+				continue
+			}
+			close(p)
 			delete(c.pending, k)
 		}
+	}()
+
+	if err != nil {
+		log.Printf("Can not load keys %v: %v", keys, err)
 		return
 	}
 
@@ -137,7 +152,6 @@ func (c *cache) fetchMissing(keys []string, set cacheSetFunc) {
 		if !ok {
 			continue
 		}
-
 		close(p)
 		delete(c.pending, k)
 	}
