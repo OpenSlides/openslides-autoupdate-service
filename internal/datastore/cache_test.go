@@ -32,12 +32,40 @@ func TestCacheGetOrSetAdditionalKeys(t *testing.T) {
 			"key2": json.RawMessage("value2"),
 		}, nil
 	})
+	if err != nil {
+		t.Errorf("getOrSet() returned the unexpected error %v", err)
+	}
+
+	_, err = c.getOrSet(context.Background(), test.Str("key2"), func([]string) (map[string]json.RawMessage, error) {
+		t.Errorf("set was called again for key key2")
+		return nil, nil
+	})
+	if err != nil {
+		t.Errorf("getOrSet() returned the unexpected error %v", err)
+	}
 
 	if err != nil {
 		t.Errorf("getOrSet() returned the unexpected error %v", err)
 	}
-	expect := []json.RawMessage{[]byte("value"), []byte("value2")}
-	if test.CmpSliceBytes(got, expect) {
+	expect := []json.RawMessage{[]byte("value")}
+	if !test.CmpSliceBytes(got, expect) {
+		t.Errorf("getOrSet() returned `%s`, expected `%s`", got, expect)
+	}
+}
+
+func TestCacheGetOrSetMissingKeys(t *testing.T) {
+	c := newCache()
+	got, err := c.getOrSet(context.Background(), test.Str("key1", "key2"), func([]string) (map[string]json.RawMessage, error) {
+		return map[string]json.RawMessage{
+			"key1": json.RawMessage("value"),
+		}, nil
+	})
+
+	if err != nil {
+		t.Errorf("getOrSet() returned the unexpected error %v", err)
+	}
+	expect := []json.RawMessage{[]byte("value"), nil}
+	if !test.CmpSliceBytes(got, expect) {
 		t.Errorf("getOrSet() returned `%s`, expected `%s`", got, expect)
 	}
 }
