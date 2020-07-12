@@ -38,7 +38,7 @@ func New(url string, keychanger Updater) *Datastore {
 
 // Get returns the value for one or many keys.
 func (d *Datastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage, error) {
-	values, err := d.cache.getOrSet(ctx, keys, func(keys []string) (map[string]json.RawMessage, error) {
+	values, err := d.cache.GetOrSet(ctx, keys, func(keys []string) (map[string]json.RawMessage, error) {
 		return d.requestKeys(keys)
 	})
 	if err != nil {
@@ -55,7 +55,7 @@ func (d *Datastore) KeysChanged() ([]string, error) {
 		return nil, err
 	}
 
-	d.cache.setIfExist(data)
+	d.cache.SetIfExist(data)
 
 	keys := make([]string, 0, len(data))
 	for k := range data {
