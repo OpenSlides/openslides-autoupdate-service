@@ -3,6 +3,7 @@ package datastore
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
@@ -18,11 +19,11 @@ func TestCacheGetOrSet(t *testing.T) {
 	})
 
 	if err != nil {
-		t.Errorf("getOrSet() returned the unexpected error: %v", err)
+		t.Errorf("GetOrSet() returned the unexpected error: %v", err)
 	}
 	expect := []string{"value"}
 	if len(got) != 1 || string(got[0]) != expect[0] {
-		t.Errorf("getOrSet() returned `%v`, expected `%v`", got, expect)
+		t.Errorf("GetOrSet() returned `%v`, expected `%v`", got, expect)
 	}
 }
 
@@ -35,11 +36,11 @@ func TestCacheGetOrSetMissingKeys(t *testing.T) {
 	})
 
 	if err != nil {
-		t.Errorf("getOrSet() returned the unexpected error: %v", err)
+		t.Errorf("GetOrSet() returned the unexpected error: %v", err)
 	}
 	expect := []json.RawMessage{[]byte("value"), nil}
 	if !test.CmpSliceBytes(got, expect) {
-		t.Errorf("getOrSet() returned `%s`, expected `%s`", got, expect)
+		t.Errorf("GetOrSet() returned `%s`, expected `%s`", got, expect)
 	}
 }
 
@@ -57,14 +58,14 @@ func TestCacheGetOrSetNoSecondCall(t *testing.T) {
 	})
 
 	if err != nil {
-		t.Errorf("getOrSet() returned the unexpected error %v", err)
+		t.Errorf("GetOrSet() returned the unexpected error %v", err)
 	}
 	expect := []string{"value"}
 	if len(got) != 1 || string(got[0]) != expect[0] {
-		t.Errorf("getOrSet() returned %v, expected %v", got, expect)
+		t.Errorf("GetOrSet() returned %v, expected %v", got, expect)
 	}
 	if called {
-		t.Errorf("getOrSet() called the set method")
+		t.Errorf("GetOrSet() called the set method")
 	}
 }
 
@@ -100,7 +101,7 @@ func TestCacheGetOrSetBlockSecondCall(t *testing.T) {
 	select {
 	case <-done:
 	case <-timer.C:
-		t.Errorf("Second getOrSet-Call was not done one Millisecond after the frist getOrSet-Call was called.")
+		t.Errorf("Second GetOrSet-Call was not done one Millisecond after the frist GetOrSet-Call was called.")
 	}
 }
 
@@ -138,7 +139,7 @@ func TestCacheSetIfExistParallelToGetOrSet(t *testing.T) {
 	waitForGetOrSet := make(chan struct{})
 	go func() {
 		c.GetOrSet(context.Background(), []string{"key1"}, func(keys []string) (map[string]json.RawMessage, error) {
-			// Signal, that getOrSet was called.
+			// Signal, that GetOrSet was called.
 			close(waitForGetOrSet)
 
 			// Wait for some time.
@@ -149,7 +150,7 @@ func TestCacheSetIfExistParallelToGetOrSet(t *testing.T) {
 
 	<-waitForGetOrSet
 
-	// Set key1 to new value and stop the ongoing getOrSet-Call
+	// Set key1 to new value and stop the ongoing GetOrSet-Call
 	c.SetIfExist(map[string]json.RawMessage{"key1": json.RawMessage("new value")})
 
 	got, _ := c.GetOrSet(context.Background(), []string{"key1"}, func([]string) (map[string]json.RawMessage, error) {
@@ -162,7 +163,7 @@ func TestCacheSetIfExistParallelToGetOrSet(t *testing.T) {
 	}
 }
 
-func TestGetOrSetOldData(t *testing.T) {
+func TestCacheGetOrSetOldData(t *testing.T) {
 	// GetOrSet is called with key1. It returns key1 and key2 on version1 but
 	// takes a long time. In the meantime there is an update via setIfExist for
 	// key1 and key2 on version2. At the end, there should not be the old
@@ -202,7 +203,7 @@ func TestGetOrSetOldData(t *testing.T) {
 		return data, nil
 	})
 	if err != nil {
-		t.Errorf("getOrSet returned unexpected error: %v", err)
+		t.Errorf("GetOrSet returned unexpected error: %v", err)
 	}
 
 	if string(data[0]) != "v2" {
@@ -212,5 +213,71 @@ func TestGetOrSetOldData(t *testing.T) {
 	if string(data[1]) == "v1" {
 		t.Errorf("value for key2 is `v1`, expected `v2` or `key not in cache`")
 	}
+}
 
+func TestCacheErrorOnFetching(t *testing.T) {
+	// Make sure, that if a GetOrSet call fails the requested keys are not left
+	// in pending state.
+	c := newCache()
+	rErr := errors.New("GetOrSet Error")
+	_, err := c.GetOrSet(context.Background(), []string{"key1"}, func(keys []string) (map[string]json.RawMessage, error) {
+		return nil, rErr
+	})
+
+	if !errors.Is(err, rErr) {
+		t.Errorf("GetOrSet returned err `%v`, expected `%v`", err, rErr)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		_, err := c.GetOrSet(context.Background(), []string{"key1"}, func(keys []string) (map[string]json.RawMessage, error) {
+			return map[string]json.RawMessage{
+				"key1": []byte("value"),
+			}, nil
+		})
+		if err != nil {
+			t.Errorf("Second GetOrSet returned unexpected err: %v", err)
+		}
+		close(done)
+	}()
+
+	timer := time.NewTimer(time.Millisecond)
+	defer timer.Stop()
+	select {
+	case <-done:
+	case <-timer.C:
+		t.Errorf("Second GetOrSet-Call was not done one Millisecond")
+	}
+}
+
+func TestCacheFailInOthetGetOrSetCall(t *testing.T) {
+	// When two GetOrSetCalls are run in parallel and the first one returns an
+	// error, then the second one should retry the fetch the key.
+	c := newCache()
+
+	waitForFirstGetOrSetStart := make(chan struct{})
+
+	go func() {
+		c.GetOrSet(context.Background(), []string{"key"}, func(keys []string) (map[string]json.RawMessage, error) {
+			close(waitForFirstGetOrSetStart)
+
+			// Wait a shot time so the second call to getOrSet can start.
+			time.Sleep(time.Millisecond)
+			return nil, errors.New("Some error")
+		})
+	}()
+
+	<-waitForFirstGetOrSetStart
+	data, err := c.GetOrSet(context.Background(), []string{"key"}, func(keys []string) (map[string]json.RawMessage, error) {
+		return map[string]json.RawMessage{
+			"key": []byte("value"),
+		}, nil
+	})
+	if err != nil {
+		t.Fatalf("second GetOrSet returned unexpected err: %v", err)
+	}
+
+	if string(data[0]) != "value" {
+		t.Errorf("second GetOrSet returned `%v`, expected `value`", data[0])
+	}
 }
