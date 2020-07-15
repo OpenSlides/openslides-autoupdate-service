@@ -195,7 +195,18 @@ func TestErrors(t *testing.T) {
 			)),
 			400,
 			`SyntaxError`,
-			`wrong format at byte 1`,
+			"wrong type at field ``. Got object, expected list",
+		},
+		{
+			"String ID",
+			mustRequest(http.NewRequest(
+				"GET",
+				srv.URL+"/system/autoupdate",
+				strings.NewReader(`[{"ids":["1"],"collection":"foo","fields":{}}]`),
+			)),
+			400,
+			`SyntaxError`,
+			"wrong type at field `ids`. Got string, expected number",
 		},
 		{
 			"Wrong field value",
