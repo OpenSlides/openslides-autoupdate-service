@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"reflect"
 )
 
 // FromJSON creates a Keysbuilder from json.
@@ -41,7 +42,19 @@ func ManyFromJSON(ctx context.Context, r io.Reader, valuer Valuer, uid int) (*Bu
 			return nil, JSONError{jerr}
 		}
 		if jerr, ok := err.(*json.UnmarshalTypeError); ok {
-			return nil, InvalidError{msg: fmt.Sprintf("wrong format at byte %d", jerr.Offset)}
+			var expectType string
+			switch jerr.Type.Kind() {
+			case reflect.Struct:
+				expectType = "object"
+			case reflect.Slice:
+				expectType = "list"
+			case reflect.Int:
+				expectType = "number"
+			default:
+				expectType = jerr.Type.Kind().String()
+			}
+
+			return nil, InvalidError{msg: fmt.Sprintf("wrong type at field `%s`. Got %s, expected %v", jerr.Field, jerr.Value, expectType)}
 		}
 		return nil, fmt.Errorf("decode keysrequest: %w", err)
 	}
