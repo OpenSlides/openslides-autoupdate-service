@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
@@ -18,19 +17,17 @@ import (
 
 // Handler is an http handler for the autoupdate service.
 type Handler struct {
-	s         *autoupdate.Autoupdate
-	mux       *http.ServeMux
-	auth      Authenticator
-	keepAlive time.Duration
+	s    *autoupdate.Autoupdate
+	mux  *http.ServeMux
+	auth Authenticator
 }
 
 // New create a new Handler with the correct urls.
-func New(s *autoupdate.Autoupdate, auth Authenticator, keepAlive time.Duration) *Handler {
+func New(s *autoupdate.Autoupdate, auth Authenticator) *Handler {
 	h := &Handler{
-		s:         s,
-		mux:       http.NewServeMux(),
-		auth:      auth,
-		keepAlive: keepAlive,
+		s:    s,
+		mux:  http.NewServeMux(),
+		auth: auth,
 	}
 	h.mux.Handle("/system/autoupdate", h.autoupdate(h.complex))
 	h.mux.Handle("/system/autoupdate/keys", h.autoupdate(h.simple))
@@ -71,37 +68,18 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 		connection := h.s.Connect(uid, kb, tid)
 
 		for {
-			if err := autoupdateLoop(r.Context(), h.keepAlive, w, connection); err != nil {
+			// connection.Next() blocks, until there is new data or the client context
+			// or the server is closed.
+			data, err := connection.Next(r.Context())
+			if err != nil {
+				return err
+			}
+
+			if err := sendData(w, data); err != nil {
 				return err
 			}
 		}
 	}
-}
-
-func autoupdateLoop(ctx context.Context, timeout time.Duration, w io.Writer, connection *autoupdate.Connection) error {
-	if timeout > 0 {
-		var cancel func()
-		ctx, cancel = context.WithTimeout(ctx, timeout)
-		defer cancel()
-	}
-
-	// connection.Next() blocks, until there is new data or the client
-	// context or the server is closed.
-	data, err := connection.Next(ctx)
-	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			if err := sendKeepAlive(w); err != nil {
-				return err
-			}
-			return nil
-		}
-		return err
-	}
-
-	if err := sendData(w, data); err != nil {
-		return err
-	}
-	return nil
 }
 
 // complex builds a keysbuilder from the body of a request. The body has to be
@@ -185,11 +163,4 @@ func sendData(w io.Writer, data map[string]json.RawMessage) error {
 	w.Write([]byte("}\n"))
 	w.(http.Flusher).Flush()
 	return nil
-}
-
-// sendKeepAlive sends an empty message to the client.
-func sendKeepAlive(w io.Writer) error {
-	_, err := fmt.Fprintln(w, `{}`)
-	w.(http.Flusher).Flush()
-	return err
 }

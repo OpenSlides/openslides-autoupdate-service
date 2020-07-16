@@ -140,8 +140,6 @@ The Service uses the following environment variables:
   `9012`.
 * `AUTOUPDATE_HOST`: The device where the service starts. The default is am
   empty string which starts the service on any device.
-* `KEEP_ALIVE_DURATION`: Time in seconds how often an empty keep alive package
-  should be send to the client.
 * `CERT_DIR`: Path where the tls certificates and the keys are. The default is
   `./cert`.
 * `DATASTORE`: Sets the datastore service. `fake` (default) or `service`.
