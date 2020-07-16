@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
 	"strconv"
 	"syscall"
 	"time"
@@ -16,6 +17,13 @@ import (
 	autoupdateHttp "github.com/openslides/openslides-autoupdate-service/internal/http"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
 	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
+)
+
+const (
+	generalCertName = "cert.pem"
+	generalKeyName  = "key.pem"
+	specialCertName = "autoupdate.pem"
+	specialKeyName  = "autoupdate-key.pem"
 )
 
 func main() {
@@ -48,14 +56,41 @@ func main() {
 		}
 	}()
 
+	if err := startServer(srv); err != nil {
+		log.Fatalf("Can not start server: %v", err)
+	}
+	waitForShutdown()
+}
+
+// startServer detects the cert and key files and starts the server in a
+// separate goroutine.
+func startServer(srv *http.Server) error {
+	certDir := getEnv("CERT_DIR", "./cert/")
+	certFile := path.Join(certDir, specialCertName)
+	if _, err := os.Stat(certFile); os.IsNotExist(err) {
+		certFile2 := path.Join(certDir, generalCertName)
+		if _, err := os.Stat(certFile); os.IsNotExist(err) {
+			return fmt.Errorf("%s or %s has to exist", certFile, certFile2)
+		}
+		certFile = certFile2
+	}
+
+	keyFile := path.Join(certDir, specialKeyName)
+	if _, err := os.Stat(keyFile); os.IsNotExist(err) {
+		keyFile2 := path.Join(certDir, generalKeyName)
+		if _, err := os.Stat(keyFile); os.IsNotExist(err) {
+			return fmt.Errorf("%s or %s has to exist", keyFile, keyFile2)
+		}
+		keyFile = keyFile2
+	}
+
 	go func() {
-		fmt.Printf("Listen on %s\n", listenAddr)
-		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+		fmt.Printf("Listen on %s\n", srv.Addr)
+		if err := srv.ListenAndServeTLS(certFile, keyFile); err != http.ErrServerClosed {
 			log.Fatalf("HTTP server failed: %v", err)
 		}
 	}()
-
-	waitForShutdown()
+	return nil
 }
 
 // waitForShutdown blocks until the service exists.
