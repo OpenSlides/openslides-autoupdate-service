@@ -1,6 +1,7 @@
 package http_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io/ioutil"
@@ -18,7 +19,9 @@ func TestHandlerTestURLs(t *testing.T) {
 	datastore := test.NewMockDatastore()
 	defer datastore.Close()
 	s := autoupdate.New(datastore, new(test.MockRestricter))
-	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}, 0))
+	srv := httptest.NewUnstartedServer(ahttp.New(s, mockAuth{1}))
+	srv.EnableHTTP2 = true
+	srv.StartTLS()
 	defer srv.Close()
 
 	tc := []struct {
@@ -38,14 +41,20 @@ func TestHandlerTestURLs(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Can not create request: %v", err)
 			}
-			resp, err := http.DefaultClient.Do(req)
+			resp, err := srv.Client().Do(req)
 			if err != nil {
 				t.Fatalf("Can not send request: %v", err)
 			}
 			defer resp.Body.Close()
 
 			if resp.StatusCode != tt.status {
-				t.Errorf("Handler returned %s, expected %d, %s", resp.Status, tt.status, http.StatusText(tt.status))
+				body, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					body = nil
+				}
+				body = bytes.TrimSpace(body)
+
+				t.Errorf("Handler returned %s: %s, expected %d, %s", resp.Status, body, tt.status, http.StatusText(tt.status))
 			}
 		})
 	}
@@ -55,7 +64,9 @@ func TestSimple(t *testing.T) {
 	datastore := test.NewMockDatastore()
 	defer datastore.Close()
 	s := autoupdate.New(datastore, new(test.MockRestricter))
-	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}, 0))
+	srv := httptest.NewUnstartedServer(ahttp.New(s, mockAuth{1}))
+	srv.EnableHTTP2 = true
+	srv.StartTLS()
 	defer srv.Close()
 
 	tc := []struct {
@@ -77,14 +88,11 @@ func TestSimple(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Can not create request: %v", err)
 			}
-			resp, err := http.DefaultClient.Do(req)
+			resp, err := srv.Client().Do(req)
 			if err != nil {
 				t.Fatalf("Can not send request: %v", err)
 			}
 			defer resp.Body.Close()
-
-			// Close connection
-			cancel()
 
 			if resp.StatusCode != tt.status {
 				t.Errorf("Expected status %s, got %s", http.StatusText(tt.status), resp.Status)
@@ -132,7 +140,9 @@ func TestErrors(t *testing.T) {
 	datastore := test.NewMockDatastore()
 	defer datastore.Close()
 	s := autoupdate.New(datastore, new(test.MockRestricter))
-	srv := httptest.NewServer(ahttp.New(s, mockAuth{1}, 0))
+	srv := httptest.NewUnstartedServer(ahttp.New(s, mockAuth{1}))
+	srv.EnableHTTP2 = true
+	srv.StartTLS()
 	defer srv.Close()
 
 	for _, tt := range []struct {
@@ -233,15 +243,20 @@ func TestErrors(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
-			resp, err := http.DefaultClient.Do(tt.request.WithContext(ctx))
+			defer cancel()
+			resp, err := srv.Client().Do(tt.request.WithContext(ctx))
 			if err != nil {
 				t.Fatalf("Can not send request: %v", err)
 			}
 			defer resp.Body.Close()
-			cancel()
 
 			if resp.StatusCode != tt.status {
 				t.Errorf("Expected status %d %s, got %s", tt.status, http.StatusText(tt.status), resp.Status)
+			}
+
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				t.Fatalf("Can not read body: %v", err)
 			}
 
 			var data struct {
@@ -250,12 +265,6 @@ func TestErrors(t *testing.T) {
 					Msg  string `json:"msg"`
 				} `json:"error"`
 			}
-
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				t.Fatalf("Can not read body: %v", err)
-			}
-
 			if err := json.Unmarshal(body, &data); err != nil {
 				t.Fatalf("Can not decode body `%s`: %v", body, err)
 			}

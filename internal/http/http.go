@@ -29,8 +29,8 @@ func New(s *autoupdate.Autoupdate, auth Authenticator) *Handler {
 		mux:  http.NewServeMux(),
 		auth: auth,
 	}
-	h.mux.Handle("/system/autoupdate", h.autoupdate(h.complex))
-	h.mux.Handle("/system/autoupdate/keys", h.autoupdate(h.simple))
+	h.mux.Handle("/system/autoupdate", http2Only(h.autoupdate(h.complex)))
+	h.mux.Handle("/system/autoupdate/keys", http2Only(h.autoupdate(h.simple)))
 	return h
 }
 
@@ -163,4 +163,14 @@ func sendData(w io.Writer, data map[string]json.RawMessage) error {
 	w.Write([]byte("}\n"))
 	w.(http.Flusher).Flush()
 	return nil
+}
+
+func http2Only(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !r.ProtoAtLeast(2, 0) {
+			http.Error(w, "Only http2 is supported", http.StatusBadRequest)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
 }
