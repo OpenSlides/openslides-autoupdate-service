@@ -7,11 +7,16 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"time"
+
+	"golang.org/x/net/http2"
 )
 
 const (
@@ -19,7 +24,7 @@ const (
 	connections = 5000
 
 	// The url of the request.
-	url = "https://localhost:9012/system/autoupdate/keys?" + keyName
+	url = "http://localhost:9012/system/autoupdate/keys?" + keyName
 
 	// The addr of redis server.
 	redisAddr = "localhost:6379"
@@ -38,10 +43,20 @@ func main() {
 
 	pool := newPool(redisAddr)
 
+	// http2 client
+	httpClient := &http.Client{
+		Transport: &http2.Transport{
+			AllowHTTP: true,
+			DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+				return net.Dial(network, addr)
+			},
+		},
+	}
+
 	// Create clients.
 	clients := make([]*client, connections)
 	for i := 0; i < connections; i++ {
-		clients[i] = new(client)
+		clients[i] = &client{httpClient}
 	}
 
 	keys := make(chan string, connections)

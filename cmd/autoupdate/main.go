@@ -15,6 +15,8 @@ import (
 	autoupdateHttp "github.com/openslides/openslides-autoupdate-service/internal/http"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
 	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 const (
@@ -36,7 +38,22 @@ func main() {
 	service := autoupdate.New(datastoreService, new(restrict.Restricter))
 
 	handler := autoupdateHttp.New(service, authService)
+
+	certFile, keyFile, err := getCertFile()
+	if err != nil {
+		log.Fatalf("Can not find certificates: %v", err)
+	}
+
 	srv := &http.Server{Addr: listenAddr, Handler: handler}
+	proto := "https"
+	if certFile == "" || keyFile == "" {
+		srv = &http.Server{
+			Addr:    listenAddr,
+			Handler: h2c.NewHandler(handler, &http2.Server{}),
+		}
+		proto = "http"
+	}
+
 	defer func() {
 		service.Close()
 		if err := srv.Shutdown(context.Background()); err != nil {
@@ -44,21 +61,26 @@ func main() {
 		}
 	}()
 
-	if err := startServer(srv); err != nil {
-		log.Fatalf("Can not start server: %v", err)
-	}
+	go func() {
+		fmt.Printf("Listen on %s with %s\n", listenAddr, proto)
+		if err := startServer(srv, certFile, keyFile); err != nil {
+			log.Fatalf("Can not start server: %v", err)
+		}
+	}()
+
 	waitForShutdown()
 }
 
-// startServer detects the cert and key files and starts the server in a
-// separate goroutine.
-func startServer(srv *http.Server) error {
-	certDir := getEnv("CERT_DIR", "./cert/")
+func getCertFile() (string, string, error) {
+	certDir := getEnv("CERT_DIR", "")
+	if certDir == "" {
+		return "", "", nil
+	}
 	certFile := path.Join(certDir, specialCertName)
 	if _, err := os.Stat(certFile); os.IsNotExist(err) {
 		certFile2 := path.Join(certDir, generalCertName)
 		if _, err := os.Stat(certFile); os.IsNotExist(err) {
-			return fmt.Errorf("%s or %s has to exist", certFile, certFile2)
+			return "", "", fmt.Errorf("%s or %s has to exist", certFile, certFile2)
 		}
 		certFile = certFile2
 	}
@@ -67,18 +89,19 @@ func startServer(srv *http.Server) error {
 	if _, err := os.Stat(keyFile); os.IsNotExist(err) {
 		keyFile2 := path.Join(certDir, generalKeyName)
 		if _, err := os.Stat(keyFile); os.IsNotExist(err) {
-			return fmt.Errorf("%s or %s has to exist", keyFile, keyFile2)
+			return "", "", fmt.Errorf("%s or %s has to exist", keyFile, keyFile2)
 		}
 		keyFile = keyFile2
 	}
 
-	go func() {
-		fmt.Printf("Listen on %s\n", srv.Addr)
-		if err := srv.ListenAndServeTLS(certFile, keyFile); err != http.ErrServerClosed {
-			log.Fatalf("HTTP server failed: %v", err)
-		}
-	}()
-	return nil
+	return certFile, keyFile, nil
+}
+
+func startServer(srv *http.Server, certFile, keyFile string) error {
+	if certFile == "" || keyFile == "" {
+		return srv.ListenAndServe()
+	}
+	return srv.ListenAndServeTLS(certFile, keyFile)
 }
 
 // waitForShutdown blocks until the service exists.
