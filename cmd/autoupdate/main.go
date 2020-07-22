@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,8 +17,6 @@ import (
 	autoupdateHttp "github.com/openslides/openslides-autoupdate-service/internal/http"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
 	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 const (
@@ -39,20 +39,23 @@ func main() {
 
 	handler := autoupdateHttp.New(service, authService)
 
-	certFile, keyFile, err := getCertFile()
+	cert, err := getCert()
 	if err != nil {
-		log.Fatalf("Can not find certificates: %v", err)
+		log.Fatalf("Can not get certificate: %v", err)
 	}
 
 	srv := &http.Server{Addr: listenAddr, Handler: handler}
-	proto := "https"
-	if certFile == "" || keyFile == "" {
-		srv = &http.Server{
-			Addr:    listenAddr,
-			Handler: h2c.NewHandler(handler, &http2.Server{}),
-		}
-		proto = "http"
+	tlsConf := new(tls.Config)
+	tlsConf.NextProtos = []string{"h2"}
+	tlsConf.Certificates = []tls.Certificate{cert}
+
+	ln, err := net.Listen("tcp", listenAddr)
+	if err != nil {
+		log.Fatalf("Can not listen on %s: %v", listenAddr, err)
 	}
+	defer ln.Close()
+
+	tlsListener := tls.NewListener(ln, tlsConf)
 
 	defer func() {
 		service.Close()
@@ -62,8 +65,8 @@ func main() {
 	}()
 
 	go func() {
-		fmt.Printf("Listen on %s with %s\n", listenAddr, proto)
-		if err := startServer(srv, certFile, keyFile); err != nil {
+		fmt.Printf("Listen on %s\n", listenAddr)
+		if err := srv.Serve(tlsListener); err != nil {
 			log.Fatalf("Can not start server: %v", err)
 		}
 	}()
@@ -71,16 +74,21 @@ func main() {
 	waitForShutdown()
 }
 
-func getCertFile() (string, string, error) {
+func getCert() (tls.Certificate, error) {
 	certDir := getEnv("CERT_DIR", "")
 	if certDir == "" {
-		return "", "", nil
+		cert, err := autoupdateHttp.GenerateCert()
+		if err != nil {
+			return tls.Certificate{}, fmt.Errorf("creating new certificate: %w", err)
+		}
+		fmt.Println("Use inmemory self signed certificate")
+		return cert, nil
 	}
 	certFile := path.Join(certDir, specialCertName)
 	if _, err := os.Stat(certFile); os.IsNotExist(err) {
 		certFile2 := path.Join(certDir, generalCertName)
 		if _, err := os.Stat(certFile); os.IsNotExist(err) {
-			return "", "", fmt.Errorf("%s or %s has to exist", certFile, certFile2)
+			return tls.Certificate{}, fmt.Errorf("%s or %s has to exist", certFile, certFile2)
 		}
 		certFile = certFile2
 	}
@@ -89,19 +97,18 @@ func getCertFile() (string, string, error) {
 	if _, err := os.Stat(keyFile); os.IsNotExist(err) {
 		keyFile2 := path.Join(certDir, generalKeyName)
 		if _, err := os.Stat(keyFile); os.IsNotExist(err) {
-			return "", "", fmt.Errorf("%s or %s has to exist", keyFile, keyFile2)
+			return tls.Certificate{}, fmt.Errorf("%s or %s has to exist", keyFile, keyFile2)
 		}
 		keyFile = keyFile2
 	}
 
-	return certFile, keyFile, nil
-}
-
-func startServer(srv *http.Server, certFile, keyFile string) error {
-	if certFile == "" || keyFile == "" {
-		return srv.ListenAndServe()
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return tls.Certificate{}, fmt.Errorf("loading certificates from %s and %s: %w", certFile, keyFile, err)
 	}
-	return srv.ListenAndServeTLS(certFile, keyFile)
+	fmt.Printf("Use certificate %s with key %s\n", certFile, keyFile)
+
+	return cert, nil
 }
 
 // waitForShutdown blocks until the service exists.
