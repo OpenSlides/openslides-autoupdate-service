@@ -1,4 +1,4 @@
-name: Check Readme commands
+name: Check Commands in README.md
 on: [push, pull_request]
 jobs:
   readme:
@@ -25,10 +25,10 @@ jobs:
       run: go build ./cmd/autoupdate && timeout --preserve-status 2s ./autoupdate
 
     - name: Start With Docker
-      run: docker build . --tag openslides-autoupdate && timeout --preserve-status 2s docker run --network host openslides-autoupdate
+      run: docker build . --tag openslides-autoupdate && timeout --preserve-status 5s docker run --network host openslides-autoupdate
 
     - name: Start With Auto Restart
-      run: make build-dev && --preserve-status 2s docker run --network host openslides-autoupdate-dev
+      run: make build-dev && timeout --preserve-status 2s docker run --network host openslides-autoupdate-dev
 
     - name: Test With Golang
       run: go test ./...
