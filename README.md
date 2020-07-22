@@ -6,7 +6,7 @@ updates, when the requested data changes.
 
 ## Start
 
-### With Go
+### With Golang
 
 ```
 go build ./cmd/autoupdate
@@ -22,9 +22,8 @@ connect to redis and the datastore-reader. For example with the docker argument
 
 ```
 docker build . --tag openslides-autoupdate
-docker run --network host -ip 9012:9012 openslides-autoupdate
+docker run --network host openslides-autoupdate
 ```
-The i argument is important for fake key changes.
 
 
 ### With Auto Restart
@@ -37,29 +36,22 @@ go get github.com/githubnemo/CompileDaemon
 CompileDaemon -log-prefix=false -build "go build ./cmd/autoupdate" -command "./autoupdate"
 ```
 
-There is a Dockerfile, that starts a docker container with CompileDaemon. It
-uses different default environment variables. See Start With Docker.
+The make target `build-dev` creates a docker image that uses this tool:
 
 ```
-docker build . -f docker/Dockerfile.dev --tag openslides-autoupdate-dev
-docker run --network host -ip 9012:9012 openslides-autoupdate-dev
+make build-dev
+docker run --network host openslides-autoupdate-dev
 ```
 
 
 ## Test
 
-### With Go
+### With Golang
 
 ```
 go test ./...
 ```
 
-### With Docker
-
-```
-docker build . -f docker/Dockerfile.test --tag openslides-autoupdate-test
-docker run openslides-autoupdate-test
-```
 
 ### With Make
 

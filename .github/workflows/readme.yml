@@ -1,0 +1,37 @@
+name: Check Readme commands
+on: [push, pull_request]
+jobs:
+  readme:
+    name: Readme
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis
+        ports:
+        - 6379:6379
+
+    steps:
+    - name: Set up Go 1.14
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.14
+      id: go
+
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Start With golang
+      run: go build ./cmd/autoupdate && timeout --preserve-status 2s ./autoupdate
+
+    - name: Start With Docker
+      run: docker build . --tag openslides-autoupdate && timeout --preserve-status 2s docker run --network host openslides-autoupdate
+
+    - name: Start With Auto Restart
+      run: make build-dev && --preserve-status 2s docker run --network host openslides-autoupdate-dev
+
+    - name: Test With Golang
+      run: go test ./...
+
+    - name: Test With With Make
+      run: make run-tests
