@@ -26,12 +26,18 @@ jobs:
 
     - name: Start With Docker
       run: docker build . --tag openslides-autoupdate && timeout --preserve-status 5s docker run --network host openslides-autoupdate
+      env:
+        DOCKER_BUILDKIT: 1
 
     - name: Start With Auto Restart
       run: make build-dev && timeout --preserve-status 2s docker run --network host openslides-autoupdate-dev
+      env:
+        DOCKER_BUILDKIT: 1
 
     - name: Test With Golang
       run: go test ./...
 
     - name: Test With With Make
       run: make run-tests
+      env:
+        DOCKER_BUILDKIT: 1

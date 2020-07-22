@@ -23,6 +23,8 @@ jobs:
 
     - name: Build autoupdate image
       run: docker build . --tag openslides-autoupdate
+      env:
+        DOCKER_BUILDKIT: 1
 
     - name: Start autoupdate
       run: docker run -d --network host --env DATASTORE=fake openslides-autoupdate
