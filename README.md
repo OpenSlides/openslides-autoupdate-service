@@ -32,7 +32,7 @@ connect to redis and the datastore-reader. For example with the docker argument
 
 ```
 docker build . --tag openslides-autoupdate
-docker run -v $(pwd)/cert:/root/cert --network host openslides-autoupdate
+docker run --network host openslides-autoupdate
 ```
 
 It uses the host network to connect to redis.
