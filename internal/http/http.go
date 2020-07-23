@@ -31,6 +31,7 @@ func New(s *autoupdate.Autoupdate, auth Authenticator) *Handler {
 	}
 	h.mux.Handle("/system/autoupdate", http2Only(h.autoupdate(h.complex)))
 	h.mux.Handle("/system/autoupdate/keys", http2Only(h.autoupdate(h.simple)))
+	h.mux.Handle("/system/autoupdate/health", http2Only(http.HandlerFunc(h.health)))
 	return h
 }
 
@@ -98,6 +99,10 @@ func (h *Handler) simple(r *http.Request, uid int) (autoupdate.KeysBuilder, erro
 		return nil, err
 	}
 	return kb, nil
+}
+
+func (h *Handler) health(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, `{"healthy": true}`)
 }
 
 // errHandleFunc is like a http.Handler, but has a error as return value.
