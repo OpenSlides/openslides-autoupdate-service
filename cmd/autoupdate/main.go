@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
+	"path"
 	"syscall"
-	"time"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
@@ -18,18 +19,15 @@ import (
 	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
 )
 
+const (
+	generalCertName = "cert.pem"
+	generalKeyName  = "key.pem"
+	specialCertName = "autoupdate.pem"
+	specialKeyName  = "autoupdate-key.pem"
+)
+
 func main() {
 	listenAddr := getEnv("AUTOUPDATE_HOST", "") + ":" + getEnv("AUTOUPDATE_PORT", "9012")
-	keepAliveRaw := getEnv("KEEP_ALIVE_DURATION", "30")
-	keepAlive, err := strconv.Atoi(keepAliveRaw)
-	if err != nil {
-		log.Fatalf("Invalid value for KEEP_ALIVE_DURATION, got %s, expected an int: %v", keepAliveRaw, err)
-	}
-	msg := "off"
-	if keepAlive > 0 {
-		msg = fmt.Sprintf("%d seconds", keepAlive)
-	}
-	fmt.Printf("Keep Alive Interval: %s\n", msg)
 
 	authService := buildAuth()
 	datastoreService, err := buildDatastore()
@@ -39,8 +37,26 @@ func main() {
 
 	service := autoupdate.New(datastoreService, new(restrict.Restricter))
 
-	handler := autoupdateHttp.New(service, authService, time.Duration(keepAlive)*time.Second)
+	handler := autoupdateHttp.New(service, authService)
+
+	cert, err := getCert()
+	if err != nil {
+		log.Fatalf("Can not get certificate: %v", err)
+	}
+
 	srv := &http.Server{Addr: listenAddr, Handler: handler}
+	tlsConf := new(tls.Config)
+	tlsConf.NextProtos = []string{"h2"}
+	tlsConf.Certificates = []tls.Certificate{cert}
+
+	ln, err := net.Listen("tcp", listenAddr)
+	if err != nil {
+		log.Fatalf("Can not listen on %s: %v", listenAddr, err)
+	}
+	defer ln.Close()
+
+	tlsListener := tls.NewListener(ln, tlsConf)
+
 	defer func() {
 		service.Close()
 		if err := srv.Shutdown(context.Background()); err != nil {
@@ -50,12 +66,49 @@ func main() {
 
 	go func() {
 		fmt.Printf("Listen on %s\n", listenAddr)
-		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-			log.Fatalf("HTTP server failed: %v", err)
+		if err := srv.Serve(tlsListener); err != nil {
+			log.Fatalf("Can not start server: %v", err)
 		}
 	}()
 
 	waitForShutdown()
+}
+
+func getCert() (tls.Certificate, error) {
+	certDir := getEnv("CERT_DIR", "")
+	if certDir == "" {
+		cert, err := autoupdateHttp.GenerateCert()
+		if err != nil {
+			return tls.Certificate{}, fmt.Errorf("creating new certificate: %w", err)
+		}
+		fmt.Println("Use inmemory self signed certificate")
+		return cert, nil
+	}
+	certFile := path.Join(certDir, specialCertName)
+	if _, err := os.Stat(certFile); os.IsNotExist(err) {
+		certFile2 := path.Join(certDir, generalCertName)
+		if _, err := os.Stat(certFile); os.IsNotExist(err) {
+			return tls.Certificate{}, fmt.Errorf("%s or %s has to exist", certFile, certFile2)
+		}
+		certFile = certFile2
+	}
+
+	keyFile := path.Join(certDir, specialKeyName)
+	if _, err := os.Stat(keyFile); os.IsNotExist(err) {
+		keyFile2 := path.Join(certDir, generalKeyName)
+		if _, err := os.Stat(keyFile); os.IsNotExist(err) {
+			return tls.Certificate{}, fmt.Errorf("%s or %s has to exist", keyFile, keyFile2)
+		}
+		keyFile = keyFile2
+	}
+
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return tls.Certificate{}, fmt.Errorf("loading certificates from %s and %s: %w", certFile, keyFile, err)
+	}
+	fmt.Printf("Use certificate %s with key %s\n", certFile, keyFile)
+
+	return cert, nil
 }
 
 // waitForShutdown blocks until the service exists.

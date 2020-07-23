@@ -4,3 +4,7 @@ build-dev:
 run-tests:
 	docker build . --target testing --tag openslides-autoupdate-test
 	docker run openslides-autoupdate-test
+
+dev-cert:
+	mkdir -p ./cert/
+	mkcert -cert-file ./cert/autoupdate.pem -key-file ./cert/autoupdate-key.pem localhost

@@ -7,10 +7,11 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"log"
-	"os"
+	"net/http"
 	"time"
 )
 
@@ -19,7 +20,7 @@ const (
 	connections = 5000
 
 	// The url of the request.
-	url = "http://localhost:9012/system/autoupdate/keys?" + keyName
+	url = "https://localhost:9012/system/autoupdate/keys?" + keyName
 
 	// The addr of redis server.
 	redisAddr = "localhost:6379"
@@ -38,21 +39,27 @@ func main() {
 
 	pool := newPool(redisAddr)
 
+	// http client
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
+			ForceAttemptHTTP2: true,
+		},
+	}
+
 	// Create clients.
 	clients := make([]*client, connections)
 	for i := 0; i < connections; i++ {
-		clients[i] = new(client)
+		clients[i] = &client{httpClient}
 	}
 
-	keys := make(chan string, connections)
-	var errs []error
-
 	// Connect test
+	keys := make(chan string, connections)
 	start := time.Now()
 	for _, c := range clients {
 		go func(c *client) {
 			if err := c.connect(context.Background(), keys); err != nil {
-				errs = append(errs, err)
+				log.Fatalf("Can not connect client: %v", err)
 			}
 		}(c)
 	}
@@ -68,15 +75,10 @@ func main() {
 	if *keepOpen {
 		fmt.Println("Connections are kept open...")
 
-		for len(errs) == 0 {
+		for {
 			readClients(connections, keys)
 			log.Println("Connections received data.")
 		}
-	}
-
-	if len(errs) > 0 {
-		fmt.Printf("Errors: %d, first: %v\n", len(errs), errs[0])
-		os.Exit(1)
 	}
 }
 
