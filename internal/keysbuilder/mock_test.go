@@ -15,7 +15,7 @@ type mockValuer struct {
 	sleep time.Duration
 }
 
-func (r *mockValuer) Value(ctx context.Context, uid int, key string, value interface{}) error {
+func (r *mockValuer) Value(_ context.Context, uid int, key string, value interface{}) error {
 	time.Sleep(r.sleep)
 	if r.err != nil {
 		return r.err
@@ -28,6 +28,38 @@ func (r *mockValuer) Value(ctx context.Context, uid int, key string, value inter
 	}
 
 	val.Elem().Set(reflect.ValueOf(v))
+	return nil
+}
+
+type mockPreloadValuter struct {
+	mockValuer
+	requestCount int
+	loadedKeys   map[string]bool
+}
+
+func (r *mockPreloadValuter) LoadKeys(_ context.Context, keys ...string) error {
+	if r.loadedKeys == nil {
+		r.loadedKeys = make(map[string]bool)
+	}
+
+	r.requestCount++
+	for _, key := range keys {
+		r.loadedKeys[key] = true
+	}
+	return nil
+}
+
+func (r *mockPreloadValuter) Value(ctx context.Context, uid int, key string, value interface{}) error {
+	if r.loadedKeys == nil {
+		r.loadedKeys = make(map[string]bool)
+	}
+
+	if !r.loadedKeys[key] {
+		r.requestCount++
+		r.loadedKeys[key] = true
+	}
+
+	r.mockValuer.Value(ctx, uid, key, value)
 	return nil
 }
 

@@ -105,3 +105,11 @@ func buildGenericKey(collectionID string, field string) string {
 func buildCollectionID(collection string, id int) string {
 	return collection + keySep + strconv.Itoa(id)
 }
+
+func buildCollectionIDs(collection string, ids []int) []string {
+	collectionIDs := make([]string, len(ids))
+	for i, id := range ids {
+		collectionIDs[i] = buildCollectionID(collection, id)
+	}
+	return collectionIDs
+}

@@ -558,3 +558,31 @@ func TestError(t *testing.T) {
 		t.Errorf("Expect keysbuilder to run in less then 20 Milliseconds, got: %v", finished)
 	}
 }
+
+func TestPreloading(t *testing.T) {
+	valuer := new(mockPreloadValuter)
+	json := `{
+		"ids": [1],
+		"collection": "user",
+		"fields": {
+			"name": null,
+			"goodLocking": null,
+			"note_ids": {
+				"type": "relation-list",
+				"collection": "note",
+				"fields": {
+					"important": null,
+					"text": null
+				}
+			}
+		}
+	}`
+	_, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(json), valuer, 1)
+	if err != nil {
+		t.Fatalf("FromJSON returned unexpected error: %v", err)
+	}
+
+	if valuer.requestCount != 2 {
+		t.Errorf("Updated() did %d requests, expected 2", valuer.requestCount)
+	}
+}

@@ -94,6 +94,15 @@ func (a *Autoupdate) Value(ctx context.Context, uid int, key string, value inter
 	return nil
 }
 
+// LoadKeys loads keys in the datastore cache.
+func (a *Autoupdate) LoadKeys(ctx context.Context, keys ...string) error {
+	_, err := a.datastore.Get(ctx, keys...)
+	if err != nil {
+		return fmt.Errorf("loading keys: %w", err)
+	}
+	return nil
+}
+
 // LastID returns the last id of the last data update.
 func (a *Autoupdate) LastID() uint64 {
 	return a.topic.LastID()

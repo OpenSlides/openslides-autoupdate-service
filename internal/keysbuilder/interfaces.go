@@ -14,3 +14,7 @@ type fieldDescription interface {
 type keyDoesNotExister interface {
 	KeyDoesNotExist() bool
 }
+
+type preloader interface {
+	LoadKeys(context.Context, ...string) error
+}

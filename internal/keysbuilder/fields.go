@@ -73,6 +73,11 @@ func (b *body) UnmarshalJSON(data []byte) error {
 }
 
 func (b *body) build(ctx context.Context, valuer Valuer, uid int, keys chan<- string, errs chan<- error) {
+	if err := b.fieldsMap.preloadKeys(ctx, valuer, buildCollectionIDs(b.collection, b.ids)); err != nil {
+		errs <- fmt.Errorf("preload keys: %w", err)
+		return
+	}
+
 	var wg sync.WaitGroup
 	for _, id := range b.ids {
 		wg.Add(1)
@@ -130,6 +135,12 @@ func (r *relationField) build(ctx context.Context, valuer Valuer, uid int, key s
 		errs <- fmt.Errorf("get id from key %s: %w", key, err)
 		return
 	}
+
+	if err := r.fieldsMap.preloadKeys(ctx, valuer, buildCollectionIDs(r.collection, []int{id})); err != nil {
+		errs <- fmt.Errorf("preload keys: %w", err)
+		return
+	}
+
 	r.fieldsMap.build(ctx, buildCollectionID(r.collection, id), valuer, uid, keys, errs)
 }
 
@@ -159,6 +170,12 @@ func (r *relationListField) build(ctx context.Context, valuer Valuer, uid int, k
 		errs <- fmt.Errorf("get id list from key %s: %w", key, err)
 		return
 	}
+
+	if err := r.fieldsMap.preloadKeys(ctx, valuer, buildCollectionIDs(r.collection, ids)); err != nil {
+		errs <- fmt.Errorf("preload keys: %w", err)
+		return
+	}
+
 	var wg sync.WaitGroup
 	for _, id := range ids {
 		wg.Add(1)
@@ -209,6 +226,12 @@ func (g *genericRelationField) build(ctx context.Context, valuer Valuer, uid int
 		errs <- fmt.Errorf("get generic id from key %s: %w", key, err)
 		return
 	}
+
+	if err := g.fieldsMap.preloadKeys(ctx, valuer, []string{gid}); err != nil {
+		errs <- fmt.Errorf("preload keys: %w", err)
+		return
+	}
+
 	g.fieldsMap.build(ctx, gid, valuer, uid, keys, errs)
 }
 
@@ -235,6 +258,11 @@ func (g *genericRelationListField) build(ctx context.Context, valuer Valuer, uid
 			return
 		}
 		errs <- fmt.Errorf("get generic id list from key %s: %w", key, err)
+		return
+	}
+
+	if err := g.fieldsMap.preloadKeys(ctx, valuer, gids); err != nil {
+		errs <- fmt.Errorf("preload keys: %w", err)
 		return
 	}
 
@@ -400,6 +428,7 @@ func (f *fieldsMap) build(ctx context.Context, fqID string, valuer Valuer, uid i
 		if description == nil {
 			continue
 		}
+
 		wg.Add(1)
 		go func(description fieldDescription) {
 			description.build(ctx, valuer, uid, key, keys, errs)
@@ -407,4 +436,24 @@ func (f *fieldsMap) build(ctx context.Context, fqID string, valuer Valuer, uid i
 		}(description)
 	}
 	wg.Wait()
+}
+
+func (f *fieldsMap) preloadKeys(ctx context.Context, valuer Valuer, collectionIDs []string) error {
+	preloader, ok := valuer.(preloader)
+	if ok {
+		allKeys := make([]string, 0, len(collectionIDs)*len(f.fields))
+		for _, collectionID := range collectionIDs {
+			for field, description := range f.fields {
+				if description == nil {
+					// Only preload special fileds
+					continue
+				}
+				allKeys = append(allKeys, buildGenericKey(collectionID, field))
+			}
+		}
+		if err := preloader.LoadKeys(ctx, allKeys...); err != nil {
+			return err
+		}
+	}
+	return nil
 }
