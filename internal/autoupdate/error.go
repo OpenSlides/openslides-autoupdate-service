@@ -2,17 +2,20 @@ package autoupdate
 
 import (
 	"fmt"
+	"reflect"
 )
 
 // ValueError in returned by autoupdate.Value(), when the value of a key has not the
 // expected format.
 type ValueError struct {
-	key string
-	err error
+	key        string
+	gotType    string
+	expectType reflect.Type
+	err        error
 }
 
 func (e ValueError) Error() string {
-	return fmt.Sprintf("invalid value in key %s", e.key)
+	return fmt.Sprintf("invalid value in key %s. Got %s, expected %s", e.key, e.gotType, e.expectType)
 }
 
 // Type returns the name of the error.
