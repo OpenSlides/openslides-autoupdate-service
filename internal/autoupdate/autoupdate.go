@@ -87,7 +87,6 @@ func (a *Autoupdate) Value(ctx context.Context, uid int, key string, value inter
 		var invalidErr *json.UnmarshalTypeError
 		if errors.As(err, &invalidErr) {
 			// value has wrong type.
-			log.Printf("%T, %s,%s", value, key, data[key])
 			return ValueError{key: key, gotType: invalidErr.Value, expectType: invalidErr.Type, err: err}
 		}
 		return fmt.Errorf("decode value of key %s: %w", key, err)

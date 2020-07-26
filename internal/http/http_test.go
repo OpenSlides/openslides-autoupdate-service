@@ -239,7 +239,7 @@ func TestErrors(t *testing.T) {
 			)),
 			400,
 			`ValueError`,
-			`invalid value in key foo/1/name`,
+			`invalid value in key foo/1/name. Got string, expected int`,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
