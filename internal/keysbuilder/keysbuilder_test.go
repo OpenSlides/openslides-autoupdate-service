@@ -567,3 +567,39 @@ func TestError(t *testing.T) {
 		t.Errorf("Expect keysbuilder to run in less then 20 Milliseconds, got: %v", finished)
 	}
 }
+
+func TestRequestCount(t *testing.T) {
+	dataProvider := new(mockDataProvider)
+	json := `{
+		"ids": [1],
+		"collection": "user",
+		"fields": {
+			"name": null,
+			"goodLocking": null,
+			"note_ids": {
+				"type": "relation-list",
+				"collection": "note",
+				"fields": {
+					"important": null,
+					"text": null
+				}
+			},
+			"main-group": {
+				"type": "relation",
+				"collection": "note",
+				"fields": {
+					"name": null,
+					"permissions": null
+				}
+			}
+		}
+	}`
+	_, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(json), dataProvider, 1)
+	if err != nil {
+		t.Fatalf("FromJSON returned unexpected error: %v", err)
+	}
+
+	if dataProvider.requestCount != 1 {
+		t.Errorf("Updated() did %d requests, expected 1", dataProvider.requestCount)
+	}
+}

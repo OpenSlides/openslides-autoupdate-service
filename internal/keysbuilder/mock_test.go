@@ -8,9 +8,10 @@ import (
 )
 
 type mockDataProvider struct {
-	err   error
-	data  map[string]json.RawMessage
-	sleep time.Duration
+	err          error
+	data         map[string]json.RawMessage
+	sleep        time.Duration
+	requestCount int
 }
 
 func (r *mockDataProvider) RestrictedData(ctx context.Context, uid int, keys ...string) (map[string]json.RawMessage, error) {
@@ -18,6 +19,8 @@ func (r *mockDataProvider) RestrictedData(ctx context.Context, uid int, keys ...
 	if r.err != nil {
 		return nil, r.err
 	}
+
+	r.requestCount++
 
 	data := make(map[string]json.RawMessage, len(keys))
 	for _, key := range keys {
