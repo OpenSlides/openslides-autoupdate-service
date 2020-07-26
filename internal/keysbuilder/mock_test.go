@@ -2,33 +2,34 @@ package keysbuilder_test
 
 import (
 	"context"
-	"reflect"
+	"encoding/json"
 	"sort"
 	"time"
-
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 )
 
-type mockValuer struct {
+type mockDataProvider struct {
 	err   error
-	data  map[string]interface{}
+	data  map[string]json.RawMessage
 	sleep time.Duration
 }
 
-func (r *mockValuer) Value(ctx context.Context, uid int, key string, value interface{}) error {
+func (r *mockDataProvider) RestrictedData(ctx context.Context, uid int, keys ...string) (map[string]json.RawMessage, error) {
 	time.Sleep(r.sleep)
 	if r.err != nil {
-		return r.err
+		return nil, r.err
 	}
 
-	val := reflect.ValueOf(value)
-	v, ok := r.data[key]
-	if !ok {
-		return autoupdate.NotExistError{Key: key}
+	data := make(map[string]json.RawMessage, len(keys))
+	for _, key := range keys {
+		v, ok := r.data[key]
+		if !ok {
+			data[key] = nil
+			continue
+		}
+		data[key] = v
 	}
 
-	val.Elem().Set(reflect.ValueOf(v))
-	return nil
+	return data, nil
 }
 
 func cmpSlice(one, two []string) bool {

@@ -1,6 +1,8 @@
 package autoupdate_test
 
 import (
+	"context"
+
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
@@ -9,7 +11,7 @@ type mockKeysBuilder struct {
 	keys []string
 }
 
-func (m mockKeysBuilder) Update() error {
+func (m mockKeysBuilder) Update(context.Context) error {
 	return nil
 }
 

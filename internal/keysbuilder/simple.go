@@ -1,6 +1,7 @@
 package keysbuilder
 
 import (
+	"context"
 	"strings"
 )
 
@@ -11,7 +12,7 @@ type Simple struct {
 }
 
 // Update does nothing. The keys of a simple keysbuilder can not change.
-func (s *Simple) Update() error {
+func (s *Simple) Update(context.Context) error {
 	return nil
 }
 

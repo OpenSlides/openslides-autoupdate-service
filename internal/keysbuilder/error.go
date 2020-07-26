@@ -2,6 +2,7 @@ package keysbuilder
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -65,4 +66,26 @@ func (e JSONError) Unwrap() error {
 // Type returns the name of the error.
 func (e JSONError) Type() string {
 	return "JsonError"
+}
+
+// ValueError in returned by keysbuilder.Update(), when the value of a key has
+// not the expected format.
+type ValueError struct {
+	key        string
+	gotType    string
+	expectType reflect.Type
+	err        error
+}
+
+func (e ValueError) Error() string {
+	return fmt.Sprintf("invalid value in key %s. Got %s, expected %s", e.key, e.gotType, e.expectType)
+}
+
+// Type returns the name of the error.
+func (e ValueError) Type() string {
+	return "ValueError"
+}
+
+func (e ValueError) Unwrap() error {
+	return e.err
 }

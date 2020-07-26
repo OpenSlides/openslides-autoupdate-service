@@ -1,16 +1,15 @@
 package keysbuilder
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
-// Valuer decodes a restricted value for an key.
-type Valuer interface {
-	Value(ctx context.Context, uid int, key string, value interface{}) error
+// DataProvider decodes a restricted value for an key.
+type DataProvider interface {
+	RestrictedData(ctx context.Context, uid int, keys ...string) (map[string]json.RawMessage, error)
 }
 
 type fieldDescription interface {
-	build(ctx context.Context, valuer Valuer, uid int, key string, keys chan<- string, errs chan<- error)
-}
-
-type keyDoesNotExister interface {
-	KeyDoesNotExist() bool
+	keys(key string, value json.RawMessage, data map[string]fieldDescription) error
 }

@@ -3,9 +3,10 @@ package keysbuilder
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
-	"sync"
 )
 
 const keySep = "/"
@@ -17,22 +18,20 @@ const keySep = "/"
 //
 // Has to be created with keysbuilder.FromJSON() or keysbuilder.ManyFromJSON().
 type Builder struct {
-	ctx    context.Context
-	valuer Valuer
-	uid    int
-	bodies []body
-	keys   []string
+	dataProvider DataProvider
+	uid          int
+	bodies       []body
+	keys         []string
 }
 
 // newBuilder creates a new Builder instance from one or more bodies.
-func newBuilder(ctx context.Context, valuer Valuer, uid int, bodys ...body) (*Builder, error) {
+func newBuilder(ctx context.Context, dataProvider DataProvider, uid int, bodys ...body) (*Builder, error) {
 	b := &Builder{
-		ctx:    ctx,
-		valuer: valuer,
-		uid:    uid,
-		bodies: bodys,
+		dataProvider: dataProvider,
+		uid:          uid,
+		bodies:       bodys,
 	}
-	if err := b.Update(); err != nil {
+	if err := b.Update(ctx); err != nil {
 		return nil, fmt.Errorf("build keys for the first time: %w", err)
 	}
 	return b, nil
@@ -40,50 +39,75 @@ func newBuilder(ctx context.Context, valuer Valuer, uid int, bodys ...body) (*Bu
 
 // Update triggers a key update. It generates the list of keys, that can be
 // requested with the Keys() method. It travels the KeysRequests object like a
-// tree. Each branch is processed concurrently.
+// tree.
 //
-// When Update() returns an error, then the keys in the builder are not valid.
 // It is not allowed to call builder.Keys() after Update returned an error.
-func (b *Builder) Update() error {
-	var wg sync.WaitGroup
-	keys := make(chan string, 1)
-	errC := make(chan error)
-	ctx, cancel := context.WithCancel(b.ctx)
-	defer cancel()
-
-	// Go though all bodies at the same time.
-	for _, request := range b.bodies {
-		wg.Add(1)
-		go func(request body) {
-			request.build(ctx, b.valuer, b.uid, keys, errC)
-			wg.Done()
-		}(request)
-	}
-
-	// Close the keys channel as soon as all bodies are traveled.
-	go func() {
-		wg.Wait()
-		close(keys)
-	}()
-
-	// Clears the keys slice without reallocating memory.
-	b.keys = b.keys[:0]
-
-	var err error
-	for {
-		select {
-		case key, ok := <-keys:
-			if !ok || err != nil {
-				// ok is false when keys channel was closed. This happens when everything is
-				// done.
-				return err
-			}
-			b.keys = append(b.keys, key)
-		case err = <-errC:
-			cancel()
+func (b *Builder) Update(ctx context.Context) (err error) {
+	defer func() {
+		// Reset keys if an error happens
+		if err != nil {
 			b.keys = b.keys[:0]
 		}
+	}()
+
+	// Start with all keys from all the bodies.
+	process := make(map[string]fieldDescription)
+	for _, body := range b.bodies {
+		body.keys(process)
 	}
+
+	b.keys = b.keys[:0]
+	var needed []string
+	processed := make(map[string]fieldDescription)
+	for {
+		// Get all keys and descriptions
+		for key, description := range process {
+			b.keys = append(b.keys, key)
+			if description == nil {
+				continue
+			}
+
+			needed = append(needed, key)
+			processed[key] = description
+		}
+
+		if len(needed) == 0 {
+			break
+		}
+
+		// Get values for all special (not none) fields.
+		data, err := b.dataProvider.RestrictedData(ctx, b.uid, needed...)
+		if err != nil {
+			return fmt.Errorf("load needed keys: %w", err)
+		}
+
+		// Clear process and needed without freeing the memory.
+		needed = needed[:0]
+		for k := range process {
+			delete(process, k)
+		}
+
+		for key, description := range processed {
+			if data[key] == nil {
+				continue
+			}
+
+			if err := description.keys(key, data[key], process); err != nil {
+				var invalidErr *json.UnmarshalTypeError
+				if errors.As(err, &invalidErr) {
+					// value has wrong type.
+					return ValueError{key: key, gotType: invalidErr.Value, expectType: invalidErr.Type, err: err}
+				}
+				return err
+			}
+		}
+
+		// Clear processed.
+		for k := range processed {
+			delete(processed, k)
+		}
+	}
+	return nil
 }
 
 // Keys returns the keys.
