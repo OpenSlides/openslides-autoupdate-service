@@ -9,7 +9,6 @@ package autoupdate
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -71,29 +70,6 @@ func (a *Autoupdate) Connect(userID int, kb KeysBuilder, tid uint64) *Connection
 	}
 }
 
-// Value decodes the restricted value for the given key.
-func (a *Autoupdate) Value(ctx context.Context, uid int, key string, value interface{}) error {
-	data, err := a.restrictedData(ctx, uid, key)
-	if err != nil {
-		return fmt.Errorf("get restricted value for key %s: %w", key, err)
-	}
-
-	if len(data[key]) == 0 {
-		// No value for key.
-		return NotExistError{Key: key}
-	}
-
-	if err := json.Unmarshal(data[key], value); err != nil {
-		var invalidErr *json.UnmarshalTypeError
-		if errors.As(err, &invalidErr) {
-			// value has wrong type.
-			return ValueError{key: key, gotType: invalidErr.Value, expectType: invalidErr.Type, err: err}
-		}
-		return fmt.Errorf("decode value of key %s: %w", key, err)
-	}
-	return nil
-}
-
 // LastID returns the last id of the last data update.
 func (a *Autoupdate) LastID() uint64 {
 	return a.topic.LastID()
@@ -136,9 +112,10 @@ func (a *Autoupdate) receiveKeyChanges() {
 	}
 }
 
-// restrictedData returns a map containing the restricted values for the given
-// keys.
-func (a *Autoupdate) restrictedData(ctx context.Context, uid int, keys ...string) (map[string]json.RawMessage, error) {
+// RestrictedData returns a map containing the restricted values for the given
+// keys. If a key does not exist or the user has not the permission to see it,
+// the value in the returned map is nil.
+func (a *Autoupdate) RestrictedData(ctx context.Context, uid int, keys ...string) (map[string]json.RawMessage, error) {
 	values, err := a.datastore.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("get values for keys `%v` from datastore: %w", keys, err)

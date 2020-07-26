@@ -19,6 +19,6 @@ type Restricter interface {
 
 // KeysBuilder holds the keys that are requested by a user.
 type KeysBuilder interface {
-	Update() error
+	Update(ctx context.Context) error
 	Keys() []string
 }

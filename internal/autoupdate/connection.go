@@ -28,7 +28,7 @@ func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, erro
 			c.tid = c.autoupdate.topic.LastID()
 		}
 
-		data, err := c.autoupdate.restrictedData(ctx, c.uid, c.kb.Keys()...)
+		data, err := c.autoupdate.RestrictedData(ctx, c.uid, c.kb.Keys()...)
 		if err != nil {
 			return nil, fmt.Errorf("get first time restricted data: %w", err)
 		}
@@ -59,7 +59,7 @@ func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, erro
 	oldKeys := c.kb.Keys()
 
 	// Update keysbuilder get new list of keys
-	if err := c.kb.Update(); err != nil {
+	if err := c.kb.Update(ctx); err != nil {
 		return nil, fmt.Errorf("update keysbuilder: %w", err)
 	}
 
@@ -84,7 +84,7 @@ func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, erro
 		return c.Next(ctx)
 	}
 
-	data, err := c.autoupdate.restrictedData(ctx, c.uid, keys...)
+	data, err := c.autoupdate.RestrictedData(ctx, c.uid, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("restrict data: %w", err)
 	}

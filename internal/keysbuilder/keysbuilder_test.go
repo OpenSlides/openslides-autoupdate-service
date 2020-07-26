@@ -2,6 +2,7 @@ package keysbuilder_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -14,7 +15,7 @@ func TestKeys(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		request string
-		data    map[string]interface{}
+		data    map[string]json.RawMessage
 		keys    []string
 	}{
 		{
@@ -66,7 +67,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]interface{}{"user/1/note_id": 1},
+			map[string]json.RawMessage{"user/1/note_id": []byte("1")},
 			strs("user/1/note_id", "note/1/important"),
 		},
 		{
@@ -82,7 +83,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]interface{}{"user/1/group_ids": []int{1, 2}},
+			map[string]json.RawMessage{"user/1/group_ids": []byte("[1,2]")},
 			strs("user/1/group_ids", "group/1/admin", "group/2/admin"),
 		},
 		{
@@ -104,9 +105,9 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]interface{}{
-				"user/1/note_id":   1,
-				"note/1/motion_id": 1,
+			map[string]json.RawMessage{
+				"user/1/note_id":   []byte("1"),
+				"note/1/motion_id": []byte("1"),
 			},
 			strs("user/1/note_id", "note/1/motion_id", "motion/1/name"),
 		},
@@ -129,10 +130,10 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]interface{}{
-				"user/1/group_ids": []int{1, 2},
-				"group/1/perm_ids": []int{1, 2},
-				"group/2/perm_ids": []int{1, 2},
+			map[string]json.RawMessage{
+				"user/1/group_ids": []byte("[1,2]"),
+				"group/1/perm_ids": []byte("[1,2]"),
+				"group/2/perm_ids": []byte("[1,2]"),
 			},
 			strs("user/1/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name"),
 		},
@@ -194,10 +195,10 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]interface{}{
-				"user/1/group_$_ids": []string{"1", "2"},
-				"user/1/group_1_ids": []int{1, 2},
-				"user/1/group_2_ids": []int{1, 2},
+			map[string]json.RawMessage{
+				"user/1/group_$_ids": []byte(`["1","2"]`),
+				"user/1/group_1_ids": []byte("[1,2]"),
+				"user/1/group_2_ids": []byte("[1,2]"),
 			},
 			strs("user/1/group_$_ids", "user/1/group_1_ids", "user/1/group_2_ids", "group/1/name", "group/2/name"),
 		},
@@ -213,8 +214,8 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]interface{}{
-				"user/1/likes": "other/1",
+			map[string]json.RawMessage{
+				"user/1/likes": []byte(`"other/1"`),
 			},
 			strs("user/1/likes", "other/1/name"),
 		},
@@ -236,9 +237,9 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]interface{}{
-				"user/1/likes":    "other/1",
-				"other/1/tag_ids": []int{1, 2},
+			map[string]json.RawMessage{
+				"user/1/likes":    []byte(`"other/1"`),
+				"other/1/tag_ids": []byte("[1,2]"),
 			},
 			strs("user/1/likes", "other/1/tag_ids", "tag/1/name", "tag/2/name"),
 		},
@@ -254,15 +255,15 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]interface{}{
-				"user/1/likes": []string{"other/1", "other/2"},
+			map[string]json.RawMessage{
+				"user/1/likes": []byte(`["other/1","other/2"]`),
 			},
 			strs("user/1/likes", "other/1/name", "other/2/name"),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			valuer := &mockValuer{data: tt.data}
-			b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.request), valuer, 1)
+			dataProvider := &mockDataProvider{data: tt.data}
+			b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.request), dataProvider, 1)
 			if err != nil {
 				t.Fatalf("FromJSON returned the unexpected error: %v", err)
 			}
@@ -280,8 +281,8 @@ func TestUpdate(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		request string
-		data    map[string]interface{}
-		newData map[string]interface{}
+		data    map[string]json.RawMessage
+		newData map[string]json.RawMessage
 		got     []string
 		count   int
 	}{
@@ -298,8 +299,8 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]interface{}{"user/1/note_id": 1},
-			map[string]interface{}{"user/1/note_id": 2},
+			map[string]json.RawMessage{"user/1/note_id": []byte("1")},
+			map[string]json.RawMessage{"user/1/note_id": []byte("2")},
 			strs("user/1/note_id", "note/2/important"),
 			1,
 		},
@@ -316,8 +317,8 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]interface{}{"user/1/note_id": 1},
-			map[string]interface{}{"user/1/note_id": 1},
+			map[string]json.RawMessage{"user/1/note_id": []byte("1")},
+			map[string]json.RawMessage{"user/1/note_id": []byte("1")},
 			strs("user/1/note_id", "note/1/important"),
 			0,
 		},
@@ -334,8 +335,8 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]interface{}{"user/1/note_id": 1, "user/2/note_id": 1},
-			map[string]interface{}{"user/1/note_id": 2, "user/2/note_id": 1},
+			map[string]json.RawMessage{"user/1/note_id": []byte("1"), "user/2/note_id": []byte("1")},
+			map[string]json.RawMessage{"user/1/note_id": []byte("2"), "user/2/note_id": []byte("1")},
 			strs("user/1/note_id", "user/2/note_id", "note/1/important", "note/2/important"),
 			1,
 		},
@@ -357,8 +358,16 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]interface{}{"user/1/note_id": 1, "user/1/group_ids": []int{1, 2}, "user/2/group_ids": []int{1, 2}},
-			map[string]interface{}{"user/1/note_id": 2, "user/1/group_ids": []int{1, 2}, "user/2/group_ids": []int{1, 2}},
+			map[string]json.RawMessage{
+				"user/1/note_id":   []byte("1"),
+				"user/1/group_ids": []byte("[1,2]"),
+				"user/2/group_ids": []byte("[1,2]"),
+			},
+			map[string]json.RawMessage{
+				"user/1/note_id":   []byte("2"),
+				"user/1/group_ids": []byte("[1,2]"),
+				"user/2/group_ids": []byte("[1,2]"),
+			},
 			strs("user/1/note_id", "user/1/group_ids", "note/2/important", "group/1/admin", "group/2/admin"),
 			1,
 		},
@@ -380,8 +389,8 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]interface{}{"user/1/note_id": 1, "group_ids": []int{1, 2}},
-			map[string]interface{}{"user/1/note_id": 2, "user/1/group_ids": []int{2}},
+			map[string]json.RawMessage{"user/1/note_id": []byte("1"), "group_ids": []byte("[1,2]")},
+			map[string]json.RawMessage{"user/1/note_id": []byte("2"), "user/1/group_ids": []byte("[2]")},
 			strs("user/1/note_id", "note/2/important", "user/1/group_ids", "group/2/admin"),
 			2,
 		},
@@ -404,29 +413,29 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]interface{}{
-				"user/1/group_ids": []int{1, 2},
-				"group/1/perm_ids": []int{1, 2},
-				"group/2/perm_ids": []int{1, 2},
+			map[string]json.RawMessage{
+				"user/1/group_ids": []byte("[1,2]"),
+				"group/1/perm_ids": []byte("[1,2]"),
+				"group/2/perm_ids": []byte("[1,2]"),
 			},
-			map[string]interface{}{
-				"user/1/group_ids": []int{2},
-				"group/1/perm_ids": []int{1, 2},
-				"group/2/perm_ids": []int{1, 2},
+			map[string]json.RawMessage{
+				"user/1/group_ids": []byte("[2]"),
+				"group/1/perm_ids": []byte("[1,2]"),
+				"group/2/perm_ids": []byte("[1,2]"),
 			},
 			strs("user/1/group_ids", "group/2/perm_ids", "perm/2/name", "perm/1/name"),
 			1,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			valuer := &mockValuer{data: tt.data}
-			b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.request), valuer, 1)
+			dataProvider := &mockDataProvider{data: tt.data}
+			b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.request), dataProvider, 1)
 			if err != nil {
 				t.Fatalf("FromJSON() returned an unexpected error: %v", err)
 			}
-			valuer.data = tt.newData
+			dataProvider.data = tt.newData
 
-			if err := b.Update(); err != nil {
+			if err := b.Update(context.Background()); err != nil {
 				t.Errorf("Update() returned an unexpect error: %v", err)
 			}
 
@@ -438,7 +447,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestConcurency(t *testing.T) {
-	json := `
+	jsonData := `
 	{
 		"ids": [1, 2, 3],
 		"collection": "user",
@@ -457,16 +466,16 @@ func TestConcurency(t *testing.T) {
 		}
 
 	}`
-	data := map[string]interface{}{
-		"user/1/group_ids": []int{1, 2},
-		"user/2/group_ids": []int{1, 2},
-		"user/3/group_ids": []int{1, 2},
-		"group/1/perm_ids": []int{1, 2},
-		"group/2/perm_ids": []int{1, 2},
+	data := map[string]json.RawMessage{
+		"user/1/group_ids": []byte("[1,2]"),
+		"user/2/group_ids": []byte("[1,2]"),
+		"user/3/group_ids": []byte("[1,2]"),
+		"group/1/perm_ids": []byte("[1,2]"),
+		"group/2/perm_ids": []byte("[1,2]"),
 	}
-	valuer := &mockValuer{data: data, sleep: 10 * time.Millisecond}
+	dataProvider := &mockDataProvider{data: data, sleep: 10 * time.Millisecond}
 	start := time.Now()
-	b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(json), valuer, 1)
+	b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(jsonData), dataProvider, 1)
 	if err != nil {
 		t.Fatalf("Expected FromJSON() not to return an error, got: %v", err)
 	}
@@ -482,7 +491,7 @@ func TestConcurency(t *testing.T) {
 }
 
 func TestManyRequests(t *testing.T) {
-	json := `
+	jsonData := `
 	[
 		{
 			"ids": [1],
@@ -510,13 +519,13 @@ func TestManyRequests(t *testing.T) {
 			}
 		}
 	]`
-	data := map[string]interface{}{
-		"user/1/note_id": 1,
-		"user/2/note_id": 1,
+	data := map[string]json.RawMessage{
+		"user/1/note_id": []byte("1"),
+		"user/2/note_id": []byte("1"),
 	}
-	valuer := &mockValuer{data: data, sleep: 10 * time.Millisecond}
+	dataProvider := &mockDataProvider{data: data, sleep: 10 * time.Millisecond}
 	start := time.Now()
-	b, err := keysbuilder.ManyFromJSON(context.Background(), strings.NewReader(json), valuer, 1)
+	b, err := keysbuilder.ManyFromJSON(context.Background(), strings.NewReader(jsonData), dataProvider, 1)
 	if err != nil {
 		t.Fatalf("FromJSON() returned an unexpected error: %v", err)
 	}
@@ -545,10 +554,10 @@ func TestError(t *testing.T) {
 			}
 		}
 	}`
-	valuer := &mockValuer{err: errors.New("Some Error"), sleep: 10 * time.Millisecond}
+	dataProvider := &mockDataProvider{err: errors.New("Some Error"), sleep: 10 * time.Millisecond}
 
 	start := time.Now()
-	_, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(json), valuer, 1)
+	_, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(json), dataProvider, 1)
 	if err == nil {
 		t.Fatalf("Expected FromJSON() to return an error, got none")
 	}
@@ -556,5 +565,41 @@ func TestError(t *testing.T) {
 
 	if finished > 20*time.Millisecond {
 		t.Errorf("Expect keysbuilder to run in less then 20 Milliseconds, got: %v", finished)
+	}
+}
+
+func TestRequestCount(t *testing.T) {
+	dataProvider := new(mockDataProvider)
+	json := `{
+		"ids": [1],
+		"collection": "user",
+		"fields": {
+			"name": null,
+			"goodLocking": null,
+			"note_ids": {
+				"type": "relation-list",
+				"collection": "note",
+				"fields": {
+					"important": null,
+					"text": null
+				}
+			},
+			"main-group": {
+				"type": "relation",
+				"collection": "note",
+				"fields": {
+					"name": null,
+					"permissions": null
+				}
+			}
+		}
+	}`
+	_, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(json), dataProvider, 1)
+	if err != nil {
+		t.Fatalf("FromJSON returned unexpected error: %v", err)
+	}
+
+	if dataProvider.requestCount != 1 {
+		t.Errorf("Updated() did %d requests, expected 1", dataProvider.requestCount)
 	}
 }
