@@ -30,12 +30,20 @@ func main() {
 	listenAddr := getEnv("AUTOUPDATE_HOST", "") + ":" + getEnv("AUTOUPDATE_PORT", "9012")
 
 	authService := buildAuth()
-	datastoreService, err := buildDatastore()
+
+	closed := make(chan struct{})
+	defer close(closed)
+
+	errHandler := func(err error) {
+		log.Printf("Error: %v", err)
+	}
+
+	datastoreService, err := buildDatastore(closed, errHandler)
 	if err != nil {
 		log.Fatalf("Can not create datastore service: %v", err)
 	}
 
-	service := autoupdate.New(datastoreService, new(restrict.Restricter))
+	service := autoupdate.New(datastoreService, new(restrict.Restricter), closed)
 
 	handler := autoupdateHttp.New(service, authService)
 
@@ -58,7 +66,6 @@ func main() {
 	tlsListener := tls.NewListener(ln, tlsConf)
 
 	defer func() {
-		service.Close()
 		if err := srv.Shutdown(context.Background()); err != nil {
 			log.Printf("Error on HTTP server shutdown: %v", err)
 		}
@@ -131,7 +138,7 @@ func waitForShutdown() {
 // buildDatastore builds the datastore implementation needed by the autoupdate
 // service. It uses environment variables to make the decission. Per default, a
 // fake server is started and its url is used.
-func buildDatastore() (autoupdate.Datastore, error) {
+func buildDatastore(closed <-chan struct{}, errHandler func(error)) (autoupdate.Datastore, error) {
 	var f *faker
 	var url string
 	dsService := getEnv("DATASTORE", "fake")
@@ -156,7 +163,7 @@ func buildDatastore() (autoupdate.Datastore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("build receiver: %w", err)
 	}
-	return datastore.New(url, receiver), nil
+	return datastore.New(url, closed, errHandler, receiver), nil
 }
 
 // buildReceiver builds the receiver needed by the datastore service. It uses

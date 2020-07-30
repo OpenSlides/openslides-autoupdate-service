@@ -9,8 +9,10 @@ import (
 )
 
 func TestDataStoreGet(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
 	ts := test.NewDatastoreServer()
-	d := datastore.New(ts.TS.URL, new(test.UpdaterMock))
+	d := datastore.New(ts.TS.URL, closed, func(error) {}, test.NewUpdaterMock())
 
 	got, err := d.Get(context.Background(), "collection/1/field")
 
@@ -25,8 +27,10 @@ func TestDataStoreGet(t *testing.T) {
 }
 
 func TestDataStoreGetMultiValue(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
 	ts := test.NewDatastoreServer()
-	d := datastore.New(ts.TS.URL, new(test.UpdaterMock))
+	d := datastore.New(ts.TS.URL, closed, func(error) {}, test.NewUpdaterMock())
 
 	got, err := d.Get(context.Background(), "collection/1/field", "collection/2/field")
 

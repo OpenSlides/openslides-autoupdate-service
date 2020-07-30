@@ -10,17 +10,8 @@ import (
 
 // MockDatastore implements the autoupdate.Datastore interface.
 type MockDatastore struct {
-	changes chan []string
-	done    chan struct{}
+	changeListeners []func(map[string]json.RawMessage) error
 	DatastoreValues
-}
-
-// NewMockDatastore returns a new MockDatastore.
-func NewMockDatastore() *MockDatastore {
-	return &MockDatastore{
-		changes: make(chan []string),
-		done:    make(chan struct{}),
-	}
 }
 
 // Get returnes the values for the given keys. If the keys exist in the Data
@@ -53,25 +44,21 @@ func (d *MockDatastore) Get(ctx context.Context, keys ...string) ([]json.RawMess
 	return values, nil
 }
 
-// KeysChanged returnes keys that have changed. Blocks until keys are send with
-// the Send-method.
-func (d *MockDatastore) KeysChanged() ([]string, error) {
-	select {
-	case v := <-d.changes:
-		return v, nil
-	case <-d.done:
-		return nil, nil
-	}
+// RegisterChangeListener registers a change listener.
+func (d *MockDatastore) RegisterChangeListener(f func(map[string]json.RawMessage) error) {
+	d.changeListeners = append(d.changeListeners, f)
 }
 
 // Send sends keys to the mock that can be received with KeysChanged().
 func (d *MockDatastore) Send(keys []string) {
-	d.changes <- keys
-}
+	data := make(map[string]json.RawMessage, len(keys))
+	for _, key := range keys {
+		data[key] = nil
+	}
 
-// Close cleans up after the Mock is used.
-func (d *MockDatastore) Close() {
-	close(d.done)
+	for _, f := range d.changeListeners {
+		f(data)
+	}
 }
 
 // DatastoreValues returns data for the test.MockDatastore and the test.DatastoreServer.

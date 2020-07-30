@@ -12,8 +12,9 @@ import (
 )
 
 func TestConnect(t *testing.T) {
-	c, _, close := getConnection()
-	defer close()
+	closed := make(chan struct{})
+	defer close(closed)
+	c, _ := getConnection(closed)
 
 	data, err := c.Next(context.Background())
 	if err != nil {
@@ -26,8 +27,9 @@ func TestConnect(t *testing.T) {
 }
 
 func TestConnectionReadNoNewData(t *testing.T) {
-	c, _, close := getConnection()
-	defer close()
+	closed := make(chan struct{})
+	defer close(closed)
+	c, _ := getConnection(closed)
 	ctx, disconnect := context.WithCancel(context.Background())
 
 	if _, err := c.Next(ctx); err != nil {
@@ -45,8 +47,9 @@ func TestConnectionReadNoNewData(t *testing.T) {
 }
 
 func TestConnectionReadNewData(t *testing.T) {
-	c, datastore, close := getConnection()
-	defer close()
+	closed := make(chan struct{})
+	defer close(closed)
+	c, datastore := getConnection(closed)
 
 	if _, err := c.Next(context.Background()); err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
@@ -73,16 +76,17 @@ func TestConnectionEmptyData(t *testing.T) {
 		doesExistKey    = "user/1/name"
 	)
 
-	datastore := test.NewMockDatastore()
-	defer datastore.Close()
+	datastore := new(test.MockDatastore)
 
 	datastore.Data = map[string]json.RawMessage{
 		doesExistKey: []byte("exist"),
 	}
 	datastore.OnlyData = true
 
-	s := autoupdate.New(datastore, new(test.MockRestricter))
-	defer s.Close()
+	closed := make(chan struct{})
+	defer close(closed)
+
+	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
 
 	kb := mockKeysBuilder{keys: test.Str(doesExistKey, doesNotExistKey)}
 
@@ -181,10 +185,11 @@ func TestConnectionEmptyData(t *testing.T) {
 }
 
 func TestConnectionFilterData(t *testing.T) {
-	datastore := test.NewMockDatastore()
-	defer datastore.Close()
-	s := autoupdate.New(datastore, new(test.MockRestricter))
-	defer s.Close()
+	datastore := new(test.MockDatastore)
+
+	closed := make(chan struct{})
+	defer close(closed)
+	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
 	kb := mockKeysBuilder{keys: test.Str("user/1/name")}
 	c := s.Connect(1, kb, 0)
 	if _, err := c.Next(context.Background()); err != nil {
@@ -206,10 +211,10 @@ func TestConnectionFilterData(t *testing.T) {
 }
 
 func TestConntectionFilterOnlyOneKey(t *testing.T) {
-	datastore := test.NewMockDatastore()
-	defer datastore.Close()
-	s := autoupdate.New(datastore, new(test.MockRestricter))
-	defer s.Close()
+	datastore := new(test.MockDatastore)
+	closed := make(chan struct{})
+	close(closed)
+	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
 	kb := mockKeysBuilder{keys: test.Str("user/1/name")}
 	c := s.Connect(1, kb, 0)
 	if _, err := c.Next(context.Background()); err != nil {
@@ -236,10 +241,10 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 
 func BenchmarkFilterChanging(b *testing.B) {
 	const keyCount = 100
-	datastore := test.NewMockDatastore()
-	defer datastore.Close()
-	s := autoupdate.New(datastore, new(test.MockRestricter))
-	defer s.Close()
+	datastore := new(test.MockDatastore)
+	closed := make(chan struct{})
+	defer close(closed)
+	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
 
 	keys := make([]string, 0, keyCount)
 	for i := 0; i < keyCount; i++ {
@@ -263,10 +268,10 @@ func BenchmarkFilterChanging(b *testing.B) {
 
 func BenchmarkFilterNotChanging(b *testing.B) {
 	const keyCount = 100
-	datastore := test.NewMockDatastore()
-	defer datastore.Close()
-	s := autoupdate.New(datastore, new(test.MockRestricter))
-	defer s.Close()
+	datastore := new(test.MockDatastore)
+	closed := make(chan struct{})
+	defer close(closed)
+	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
 
 	keys := make([]string, 0, keyCount)
 	for i := 0; i < keyCount; i++ {
