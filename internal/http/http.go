@@ -29,9 +29,9 @@ func New(s *autoupdate.Autoupdate, auth Authenticator) *Handler {
 		mux:  http.NewServeMux(),
 		auth: auth,
 	}
-	h.mux.Handle("/system/autoupdate", http2Only(h.autoupdate(h.complex)))
-	h.mux.Handle("/system/autoupdate/keys", http2Only(h.autoupdate(h.simple)))
-	h.mux.Handle("/system/autoupdate/health", http2Only(http.HandlerFunc(h.health)))
+	h.mux.Handle("/system/autoupdate", validRequest(h.autoupdate(h.complex)))
+	h.mux.Handle("/system/autoupdate/keys", validRequest(h.autoupdate(h.simple)))
+	h.mux.Handle("/system/autoupdate/health", validRequest(http.HandlerFunc(h.health)))
 	return h
 }
 
@@ -170,12 +170,20 @@ func sendData(w io.Writer, data map[string]json.RawMessage) error {
 	return nil
 }
 
-func http2Only(h http.Handler) http.Handler {
+func validRequest(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Only allow http2 requests.
 		if !r.ProtoAtLeast(2, 0) {
 			http.Error(w, "Only http2 is supported", http.StatusBadRequest)
 			return
 		}
+
+		// Only allow GET or POST requests.
+		if !(r.Method == http.MethodPost || r.Method == http.MethodGet) {
+			http.Error(w, "Only GET or POST requests are supported", http.StatusMethodNotAllowed)
+			return
+		}
+
 		h.ServeHTTP(w, r)
 	})
 }
