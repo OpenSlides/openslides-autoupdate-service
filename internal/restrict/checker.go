@@ -25,7 +25,7 @@ func OpenSlidesChecker(perm Permission) map[string]Checker {
 
 		// Structured fields.
 		if strings.Contains(k, "$") {
-			re := strings.Replace(k, "$", "[a-z0-9]", 1)
+			re := strings.Replace(k, "$", "[a-z0-9]+", 1)
 			checker = &structuredField{
 				perm:    perm,
 				checker: checker,
