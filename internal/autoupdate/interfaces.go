@@ -14,7 +14,7 @@ type Datastore interface {
 // Restricter restricts keys.
 type Restricter interface {
 	// Restrict manipulates the values for the user with the given id.
-	Restrict(uid int, data map[string]json.RawMessage)
+	Restrict(uid int, data map[string]json.RawMessage) error
 }
 
 // KeysBuilder holds the keys that are requested by a user.

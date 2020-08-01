@@ -6,6 +6,6 @@ import "encoding/json"
 type MockRestricter struct{}
 
 // Restrict does currently nothing.
-func (r *MockRestricter) Restrict(uid int, data map[string]json.RawMessage) {
-
+func (r *MockRestricter) Restrict(uid int, data map[string]json.RawMessage) error {
+	return nil
 }

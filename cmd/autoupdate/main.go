@@ -17,6 +17,7 @@ import (
 	autoupdateHttp "github.com/openslides/openslides-autoupdate-service/internal/http"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
 	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
+	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
 const (
@@ -43,7 +44,10 @@ func main() {
 		log.Fatalf("Can not create datastore service: %v", err)
 	}
 
-	service := autoupdate.New(datastoreService, new(restrict.Restricter), closed)
+	perms := &test.MockPermission{}
+	perms.Default = true
+
+	service := autoupdate.New(datastoreService, restrict.New(perms, restrict.OpenSlidesChecker(perms)), closed)
 
 	handler := autoupdateHttp.New(service, authService)
 
@@ -74,7 +78,7 @@ func main() {
 	go func() {
 		fmt.Printf("Listen on %s\n", listenAddr)
 		if err := srv.Serve(tlsListener); err != nil {
-			log.Fatalf("Can not start server: %v", err)
+			log.Fatalf("HTTP Server Error: %v", err)
 		}
 	}()
 
