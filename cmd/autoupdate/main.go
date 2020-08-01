@@ -28,10 +28,6 @@ const (
 )
 
 func main() {
-	listenAddr := getEnv("AUTOUPDATE_HOST", "") + ":" + getEnv("AUTOUPDATE_PORT", "9012")
-
-	authService := buildAuth()
-
 	closed := make(chan struct{})
 	defer close(closed)
 
@@ -39,23 +35,35 @@ func main() {
 		log.Printf("Error: %v", err)
 	}
 
+	// Datastore Service.
 	datastoreService, err := buildDatastore(closed, errHandler)
 	if err != nil {
 		log.Fatalf("Can not create datastore service: %v", err)
 	}
 
+	// Perm Service.
 	perms := &test.MockPermission{}
 	perms.Default = true
 
-	service := autoupdate.New(datastoreService, restrict.New(perms, restrict.OpenSlidesChecker(perms)), closed)
+	// Restricter Service.
+	restricter := restrict.New(perms, restrict.OpenSlidesChecker(perms))
 
+	// Autoupdate Service.
+	service := autoupdate.New(datastoreService, restricter, closed)
+
+	// Auth Service.
+	authService := buildAuth()
+
+	// HTTP Hanlder.
 	handler := autoupdateHttp.New(service, authService)
 
+	// Create tls http2 server.
 	cert, err := getCert()
 	if err != nil {
 		log.Fatalf("Can not get certificate: %v", err)
 	}
 
+	listenAddr := getEnv("AUTOUPDATE_HOST", "") + ":" + getEnv("AUTOUPDATE_PORT", "9012")
 	srv := &http.Server{Addr: listenAddr, Handler: handler}
 	tlsConf := new(tls.Config)
 	tlsConf.NextProtos = []string{"h2"}

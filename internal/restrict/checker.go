@@ -1,6 +1,6 @@
 package restrict
 
-//go:generate  sh -c "go run models/main.go > def.go && go fmt def.go"
+//go:generate  sh -c "go run gendef/main.go > def.go && go fmt def.go"
 import (
 	"encoding/json"
 	"fmt"
@@ -101,4 +101,13 @@ func (g *genericRelationList) Check(uid int, key string, value json.RawMessage) 
 		return nil, fmt.Errorf("encoding restricted fqids: %w", err)
 	}
 	return v, nil
+}
+
+type structuredField struct {
+	perm   Permission
+	values map[string]bool
+}
+
+func (g *structuredField) Check(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
+	return value, nil
 }
