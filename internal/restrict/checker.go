@@ -4,6 +4,7 @@ package restrict
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -24,10 +25,14 @@ func OpenSlidesChecker(perm Permission) map[string]Checker {
 
 		// Structured fields.
 		if strings.Contains(k, "$") {
+			re := strings.Replace(k, "$", "[a-z0-9]", 1)
 			checker = &structuredField{
+				perm:    perm,
 				checker: checker,
+				re:      regexp.MustCompile(re),
 			}
 		}
+
 		checkers[k] = checker
 	}
 	return checkers
@@ -105,10 +110,42 @@ func (g *genericRelationList) Check(uid int, key string, value json.RawMessage) 
 }
 
 type structuredField struct {
-	fields  []string
+	perm    Permission
 	checker Checker
+	re      *regexp.Regexp
 }
 
 func (s *structuredField) Check(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
-	return value, nil
+	var replacments []string
+	if err := json.Unmarshal(value, &replacments); err != nil {
+		return nil, fmt.Errorf("decoding key %s: %w", key, err)
+	}
+
+	keys := make([]string, len(replacments))
+	keyToReplacement := make(map[string]string, len(replacments))
+	for i, r := range replacments {
+		keys[i] = strings.Replace(key, "$", r, 1)
+		keyToReplacement[keys[i]] = r
+	}
+
+	allowed, err := s.perm.CheckFQFields(uid, keys)
+	if err != nil {
+		return nil, fmt.Errorf("check generated structured fields: %w", err)
+	}
+
+	allowedReplacements := make([]string, 0, len(allowed))
+	for key := range allowed {
+		allowedReplacements = append(allowedReplacements, keyToReplacement[key])
+	}
+
+	v, err := json.Marshal(allowedReplacements)
+	if err != nil {
+		return nil, fmt.Errorf("encoding restricted template field: %w", err)
+	}
+
+	return v, nil
+}
+
+func (s *structuredField) Match(field string) bool {
+	return s.re.MatchString(field)
 }
