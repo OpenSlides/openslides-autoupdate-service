@@ -64,11 +64,12 @@ var dataSet = map[string]json.RawMessage{
 }
 
 func TestFeatures(t *testing.T) {
-	datastore := test.NewMockDatastore()
+	datastore := new(test.MockDatastore)
 	datastore.Data = dataSet
 	datastore.OnlyData = true
-	s := autoupdate.New(datastore, new(test.MockRestricter))
-	defer s.Close()
+	closed := make(chan struct{})
+	defer close(closed)
+	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
 
 	for _, tt := range []struct {
 		name string

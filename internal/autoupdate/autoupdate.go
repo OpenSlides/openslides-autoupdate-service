@@ -10,7 +10,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/ostcar/topic"
@@ -19,42 +18,37 @@ import (
 // pruneTime defines how long a topic id will be valid. If a client needs more
 // time to process the data, it will get an error and has to reconnect. A higher
 // value means, that more memory is used.
-const pruneTime = time.Minute
+const pruneTime = 10 * time.Minute
 
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
 // with autoupdate.New().
-//
-// The service updates its data in the background. To stop this background job,
-// the service has to be closed in the end with the Close()-method.
 type Autoupdate struct {
 	datastore  Datastore
 	restricter Restricter
-	closed     chan struct{}
 	topic      *topic.Topic
 }
 
 // New creates a new autoupdate service.
-//
-// After the service is not needed anymore, it has to be closed with s.Close().
-func New(datastore Datastore, restricter Restricter) *Autoupdate {
-	s := &Autoupdate{
+func New(datastore Datastore, restricter Restricter, closed <-chan struct{}) *Autoupdate {
+	a := &Autoupdate{
 		datastore:  datastore,
 		restricter: restricter,
-		closed:     make(chan struct{}),
+		topic:      topic.New(topic.WithClosed(closed)),
 	}
-	s.topic = topic.New(topic.WithClosed(s.closed))
 
-	go s.receiveKeyChanges()
-	go s.pruneTopic()
+	// Update the topic when an data update is received.
+	a.datastore.RegisterChangeListener(func(data map[string]json.RawMessage) error {
+		keys := make([]string, 0, len(data))
+		for k := range data {
+			keys = append(keys, k)
+		}
+		a.topic.Publish(keys...)
+		return nil
+	})
 
-	return s
-}
+	go a.pruneTopic(closed)
 
-// Close calls the shutdown logic of the service. This method is not save for
-// concourent use. It not allowed to call it more then once. Only the caller of
-// New() should call Close().
-func (a *Autoupdate) Close() {
-	close(a.closed)
+	return a
 }
 
 // Connect has to be called by a client to register to the service. The method
@@ -77,38 +71,17 @@ func (a *Autoupdate) LastID() uint64 {
 
 // pruneTopic removes old data from the topic. Blocks until the service is
 // closed.
-func (a *Autoupdate) pruneTopic() {
-	tick := time.NewTicker(time.Second)
+func (a *Autoupdate) pruneTopic(closed <-chan struct{}) {
+	tick := time.NewTicker(time.Minute)
 	defer tick.Stop()
 
 	for {
 		select {
-		case <-a.closed:
+		case <-closed:
 			return
 		case <-tick.C:
 			a.topic.Prune(time.Now().Add(-pruneTime))
 		}
-	}
-}
-
-// receiveKeyChanges listens for updates and saves then into the topic. This
-// function blocks until the service is closed.
-func (a *Autoupdate) receiveKeyChanges() {
-	for {
-		select {
-		case <-a.closed:
-			return
-		default:
-		}
-
-		keys, err := a.datastore.KeysChanged()
-		if err != nil {
-			log.Printf("Could not update keys: %v\n", err)
-			time.Sleep(time.Second)
-			continue
-		}
-
-		a.topic.Publish(keys...)
 	}
 }
 
@@ -126,6 +99,8 @@ func (a *Autoupdate) RestrictedData(ctx context.Context, uid int, keys ...string
 		data[key] = values[i]
 	}
 
-	a.restricter.Restrict(uid, data)
+	if err := a.restricter.Restrict(uid, data); err != nil {
+		return nil, fmt.Errorf("restrict data: %w", err)
+	}
 	return data, nil
 }

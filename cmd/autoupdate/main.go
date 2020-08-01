@@ -17,6 +17,7 @@ import (
 	autoupdateHttp "github.com/openslides/openslides-autoupdate-service/internal/http"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
 	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
+	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
 const (
@@ -27,23 +28,42 @@ const (
 )
 
 func main() {
-	listenAddr := getEnv("AUTOUPDATE_HOST", "") + ":" + getEnv("AUTOUPDATE_PORT", "9012")
+	closed := make(chan struct{})
+	defer close(closed)
 
-	authService := buildAuth()
-	datastoreService, err := buildDatastore()
+	errHandler := func(err error) {
+		log.Printf("Error: %v", err)
+	}
+
+	// Datastore Service.
+	datastoreService, err := buildDatastore(closed, errHandler)
 	if err != nil {
 		log.Fatalf("Can not create datastore service: %v", err)
 	}
 
-	service := autoupdate.New(datastoreService, new(restrict.Restricter))
+	// Perm Service.
+	perms := &test.MockPermission{}
+	perms.Default = true
 
+	// Restricter Service.
+	restricter := restrict.New(perms, restrict.OpenSlidesChecker(perms))
+
+	// Autoupdate Service.
+	service := autoupdate.New(datastoreService, restricter, closed)
+
+	// Auth Service.
+	authService := buildAuth()
+
+	// HTTP Hanlder.
 	handler := autoupdateHttp.New(service, authService)
 
+	// Create tls http2 server.
 	cert, err := getCert()
 	if err != nil {
 		log.Fatalf("Can not get certificate: %v", err)
 	}
 
+	listenAddr := getEnv("AUTOUPDATE_HOST", "") + ":" + getEnv("AUTOUPDATE_PORT", "9012")
 	srv := &http.Server{Addr: listenAddr, Handler: handler}
 	tlsConf := new(tls.Config)
 	tlsConf.NextProtos = []string{"h2"}
@@ -58,7 +78,6 @@ func main() {
 	tlsListener := tls.NewListener(ln, tlsConf)
 
 	defer func() {
-		service.Close()
 		if err := srv.Shutdown(context.Background()); err != nil {
 			log.Printf("Error on HTTP server shutdown: %v", err)
 		}
@@ -67,7 +86,7 @@ func main() {
 	go func() {
 		fmt.Printf("Listen on %s\n", listenAddr)
 		if err := srv.Serve(tlsListener); err != nil {
-			log.Fatalf("Can not start server: %v", err)
+			log.Fatalf("HTTP Server Error: %v", err)
 		}
 	}()
 
@@ -131,7 +150,7 @@ func waitForShutdown() {
 // buildDatastore builds the datastore implementation needed by the autoupdate
 // service. It uses environment variables to make the decission. Per default, a
 // fake server is started and its url is used.
-func buildDatastore() (autoupdate.Datastore, error) {
+func buildDatastore(closed <-chan struct{}, errHandler func(error)) (autoupdate.Datastore, error) {
 	var f *faker
 	var url string
 	dsService := getEnv("DATASTORE", "fake")
@@ -156,7 +175,7 @@ func buildDatastore() (autoupdate.Datastore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("build receiver: %w", err)
 	}
-	return datastore.New(url, receiver), nil
+	return datastore.New(url, closed, errHandler, receiver), nil
 }
 
 // buildReceiver builds the receiver needed by the datastore service. It uses

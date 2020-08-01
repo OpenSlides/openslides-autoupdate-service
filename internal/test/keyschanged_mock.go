@@ -9,8 +9,7 @@ import (
 //
 // The received keys can be controlled by using the Send-method.
 //
-// The mock has to be initialized with NewMockKeysChanged and be closed at the
-// end with the Close method.
+// The mock has to be initialized with NewUpdaterMock.
 type UpdaterMock struct {
 	c chan map[string]json.RawMessage
 	t *time.Ticker

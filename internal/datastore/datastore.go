@@ -14,6 +14,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 const urlPath = "/internal/datastore/reader/get_many"
@@ -22,18 +23,25 @@ const urlPath = "/internal/datastore/reader/get_many"
 //
 // Has to be created with datastore.New().
 type Datastore struct {
-	url        string
-	cache      *cache
-	keychanger Updater
+	url             string
+	cache           *cache
+	keychanger      Updater
+	changeListeners []func(map[string]json.RawMessage) error
+	closed          <-chan struct{}
 }
 
 // New returns a new Datastore object.
-func New(url string, keychanger Updater) *Datastore {
-	return &Datastore{
+func New(url string, closed <-chan struct{}, errHandler func(error), keychanger Updater) *Datastore {
+	d := &Datastore{
 		cache:      newCache(),
 		url:        url + urlPath,
 		keychanger: keychanger,
+		closed:     closed,
 	}
+
+	go d.receiveKeyChanges(errHandler)
+
+	return d
 }
 
 // Get returns the value for one or many keys.
@@ -48,21 +56,36 @@ func (d *Datastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage,
 	return values, nil
 }
 
-// KeysChanged blocks until some key have changed. Then, it returns the keys.
-func (d *Datastore) KeysChanged() ([]string, error) {
-	data, err := d.keychanger.Update()
-	if err != nil {
-		return nil, err
+// RegisterChangeListener registers a function that gets changed data.
+func (d *Datastore) RegisterChangeListener(f func(map[string]json.RawMessage) error) {
+	d.changeListeners = append(d.changeListeners, f)
+}
+
+// receiveKeyChanges listens for updates and saves then into the topic. This
+// function blocks until the service is closed.
+func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
+	for {
+		select {
+		case <-d.closed:
+			return
+		default:
+		}
+
+		data, err := d.keychanger.Update()
+		if err != nil {
+			errHandler(fmt.Errorf("update data: %w", err))
+			time.Sleep(time.Second)
+			continue
+		}
+
+		d.cache.SetIfExist(data)
+
+		for _, f := range d.changeListeners {
+			if err := f(data); err != nil {
+				errHandler(err)
+			}
+		}
 	}
-
-	d.cache.SetIfExist(data)
-
-	keys := make([]string, 0, len(data))
-	for k := range data {
-		keys = append(keys, k)
-	}
-
-	return keys, nil
 }
 
 // requestKeys request a list of keys by the datastore. If an error happens, no

@@ -19,14 +19,11 @@ func (m mockKeysBuilder) Keys() []string {
 	return m.keys
 }
 
-func getConnection() (connection *autoupdate.Connection, datastore *test.MockDatastore, close func()) {
-	datastore = test.NewMockDatastore()
-	s := autoupdate.New(datastore, new(test.MockRestricter))
+func getConnection(closed <-chan struct{}) (*autoupdate.Connection, *test.MockDatastore) {
+	datastore := new(test.MockDatastore)
+	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
 	kb := mockKeysBuilder{keys: test.Str("user/1/name")}
 	c := s.Connect(1, kb, 0)
 
-	return c, datastore, func() {
-		s.Close()
-		datastore.Close()
-	}
+	return c, datastore
 }
