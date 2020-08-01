@@ -16,6 +16,14 @@ func OpenSlidesChecker(perm Permission) map[string]Checker {
 			continue
 		}
 
+		// Generic relation list.
+		if v == "*" {
+			checkers[k] = &genericRelationList{
+				perm: perm,
+			}
+			continue
+		}
+
 		checkers[k] = &relationList{
 			perm:  perm,
 			model: v,
@@ -57,6 +65,40 @@ func (r *relationList) Check(uid int, key string, value json.RawMessage) (json.R
 	v, err := json.Marshal(allowedIDs)
 	if err != nil {
 		return nil, fmt.Errorf("encoding restricted ids: %w", err)
+	}
+	return v, nil
+}
+
+type genericRelationList struct {
+	perm Permission
+}
+
+func (g *genericRelationList) Check(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
+	var fqids []string
+	if err := json.Unmarshal(value, &fqids); err != nil {
+		return nil, fmt.Errorf("decoding %s: %w", key, err)
+	}
+
+	keys := make([]string, len(fqids))
+	for i, fqid := range fqids {
+		keys[i] = fqid
+	}
+
+	allowed, err := g.perm.CheckFQIDs(uid, keys)
+	if err != nil {
+		return nil, fmt.Errorf("check fqids: %w", err)
+	}
+
+	allowedFQIDs := make([]string, 0, len(fqids))
+	for fqid, a := range allowed {
+		if a {
+			allowedFQIDs = append(allowedFQIDs, fqid)
+		}
+	}
+
+	v, err := json.Marshal(allowedFQIDs)
+	if err != nil {
+		return nil, fmt.Errorf("encoding restricted fqids: %w", err)
 	}
 	return v, nil
 }

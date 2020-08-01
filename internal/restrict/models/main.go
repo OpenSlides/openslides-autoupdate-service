@@ -47,7 +47,7 @@ func loadDefition() (io.ReadCloser, error) {
 
 func parse(r io.Reader) (map[string]string, error) {
 	reInterface := regexp.MustCompile("^Interface ([a-z_]+) {$")
-	reRelationField := regexp.MustCompile(`^\s*([a-z0-9_]+(?:\$<[^>]+>)?(?:[a-z0-9_]+)?): \(([a-z_]+)/[^)]*\)\[\];\s*(?://.*)?$`)
+	reRelationField := regexp.MustCompile(`^\s*([a-z0-9_]+(?:\$<[^>]+>)?(?:[a-z0-9_]+)?): \((\*|[a-z_]+)/[^)]*\)\[\];\s*(?://.*)?$`)
 	reTemplateID := regexp.MustCompile(`<[^>]+>`)
 
 	s := bufio.NewScanner(r)
