@@ -49,7 +49,8 @@ func (d *MockDatastore) RegisterChangeListener(f func(map[string]json.RawMessage
 	d.changeListeners = append(d.changeListeners, f)
 }
 
-// Send sends keys to the mock that can be received with KeysChanged().
+// Send sends keys to the mock that can be received with a listerer registered
+// by RegisterChangeListener().
 func (d *MockDatastore) Send(keys []string) {
 	data := make(map[string]json.RawMessage, len(keys))
 	for _, key := range keys {
@@ -97,7 +98,7 @@ func (d *DatastoreValues) Value(key string) (json.RawMessage, bool, error) {
 
 // Update updates the values from the Datastore.
 //
-// This does not send a KeysChanged signal.
+// This does not send a signal to the listeners.
 func (d *DatastoreValues) Update(data map[string]json.RawMessage) {
 	d.mu.Lock()
 	defer d.mu.Unlock()

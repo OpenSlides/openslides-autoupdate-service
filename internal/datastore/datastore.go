@@ -56,23 +56,6 @@ func (d *Datastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage,
 	return values, nil
 }
 
-// KeysChanged blocks until some key have changed. Then, it returns the keys.
-func (d *Datastore) KeysChanged() ([]string, error) {
-	data, err := d.keychanger.Update()
-	if err != nil {
-		return nil, err
-	}
-
-	d.cache.SetIfExist(data)
-
-	keys := make([]string, 0, len(data))
-	for k := range data {
-		keys = append(keys, k)
-	}
-
-	return keys, nil
-}
-
 // RegisterChangeListener registers a function that gets changed data.
 func (d *Datastore) RegisterChangeListener(f func(map[string]json.RawMessage) error) {
 	d.changeListeners = append(d.changeListeners, f)

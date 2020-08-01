@@ -11,23 +11,24 @@ import (
 func OpenSlidesChecker(perm Permission) map[string]Checker {
 	checkers := make(map[string]Checker)
 	for k, v := range relationLists {
-		// TODO structured fields.
-		if strings.Contains(k, "$") {
-			continue
-		}
-
 		// Generic relation list.
-		if v == "*" {
-			checkers[k] = &genericRelationList{
-				perm: perm,
-			}
-			continue
-		}
-
-		checkers[k] = &relationList{
+		var checker Checker = &relationList{
 			perm:  perm,
 			model: v,
 		}
+		if v == "*" {
+			checker = &genericRelationList{
+				perm: perm,
+			}
+		}
+
+		// Structured fields.
+		if strings.Contains(k, "$") {
+			checker = &structuredField{
+				checker: checker,
+			}
+		}
+		checkers[k] = checker
 	}
 	return checkers
 }
@@ -104,10 +105,10 @@ func (g *genericRelationList) Check(uid int, key string, value json.RawMessage) 
 }
 
 type structuredField struct {
-	perm   Permission
-	values map[string]bool
+	fields  []string
+	checker Checker
 }
 
-func (g *structuredField) Check(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
+func (s *structuredField) Check(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
 	return value, nil
 }

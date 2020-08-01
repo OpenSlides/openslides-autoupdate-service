@@ -14,7 +14,7 @@ func TestRestrict(t *testing.T) {
 		"user/1/name":     true,
 		"user/1/password": false,
 	}
-	r := restrict.New(perms, nil)
+	r := restrict.New(perms, new(test.MockDatastore), nil)
 	data := map[string]json.RawMessage{
 		"user/1/name":     []byte("uwe"),
 		"user/1/password": []byte("easy"),
@@ -51,7 +51,7 @@ func TestChecker(t *testing.T) {
 		}),
 	}
 
-	r := restrict.New(perms, checker)
+	r := restrict.New(perms, new(test.MockDatastore), checker)
 	data := map[string]json.RawMessage{
 		"user/1/name":     []byte("uwe"),
 		"user/1/password": []byte("easy"),

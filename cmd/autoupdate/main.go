@@ -46,7 +46,7 @@ func main() {
 	perms.Default = true
 
 	// Restricter Service.
-	restricter := restrict.New(perms, restrict.OpenSlidesChecker(perms))
+	restricter := restrict.New(perms, datastoreService, restrict.OpenSlidesChecker(perms))
 
 	// Autoupdate Service.
 	service := autoupdate.New(datastoreService, restricter, closed)
