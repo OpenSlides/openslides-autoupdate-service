@@ -1,6 +1,6 @@
 module github.com/openslides/openslides-autoupdate-service
 
-go 1.14
+go 1.15
 
 require (
 	github.com/garyburd/redigo v1.6.0
