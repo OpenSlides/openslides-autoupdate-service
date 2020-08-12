@@ -29,7 +29,6 @@ const (
 
 func main() {
 	closed := make(chan struct{})
-	defer close(closed)
 
 	errHandler := func(err error) {
 		log.Printf("Error: %v", err)
@@ -77,20 +76,19 @@ func main() {
 
 	tlsListener := tls.NewListener(ln, tlsConf)
 
-	defer func() {
-		if err := srv.Shutdown(context.Background()); err != nil {
-			log.Printf("Error on HTTP server shutdown: %v", err)
-		}
-	}()
-
 	go func() {
 		fmt.Printf("Listen on %s\n", listenAddr)
-		if err := srv.Serve(tlsListener); err != nil {
+		if err := srv.Serve(tlsListener); err != http.ErrServerClosed {
 			log.Fatalf("HTTP Server Error: %v", err)
 		}
 	}()
 
 	waitForShutdown()
+
+	close(closed)
+	if err := srv.Shutdown(context.Background()); err != nil {
+		log.Printf("Error on HTTP server shutdown: %v", err)
+	}
 }
 
 func getCert() (tls.Certificate, error) {
