@@ -4,23 +4,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 var errNil = errors.New("nil returned")
 
-// stream parses a redis stream objekt an autoupdate.KeyChanges object.
+// stream parses a redis stream object to an autoupdate.KeyChanges object.
 //
 // The first return value is the redis stream id. The second one is the data and
 // the third is an error.
 func stream(reply interface{}, err error) (string, map[string]json.RawMessage, error) {
-
 	if err != nil {
 		return "", nil, err
 	}
 	if reply == nil {
 		return "", nil, errNil
 	}
-	updatedSet := make(map[string]bool)
 	streams, ok := reply.([]interface{})
 	if !ok {
 		return "", nil, fmt.Errorf("invalid input. Data has to be a list, not %T", reply)
@@ -65,15 +64,15 @@ func stream(reply interface{}, err error) (string, map[string]json.RawMessage, e
 			if !ok {
 				return "", nil, fmt.Errorf("invalid input. Key has to be a string, got %T", kv[i])
 			}
+			if strings.Count(key, "/") != 2 {
+				return "", nil, fmt.Errorf("invalid key %s", key)
+			}
 			value, ok := tostr(kv[i+1])
 			if !ok {
 				return "", nil, fmt.Errorf("invalid input. Values has to be a string, got %T", kv[i+1])
 			}
 
-			if !updatedSet[value] {
-				retData[key] = json.RawMessage(value)
-				updatedSet[value] = true
-			}
+			retData[key] = json.RawMessage(value)
 		}
 	}
 	return id, retData, nil

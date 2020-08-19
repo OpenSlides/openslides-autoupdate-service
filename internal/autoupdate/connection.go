@@ -72,7 +72,7 @@ func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, erro
 	}
 
 	// Append keys that are old but have been changed.
-	for _, key := range c.kb.Keys() {
+	for _, key := range oldKeys {
 		if !changedSlice[key] {
 			continue
 		}

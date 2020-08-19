@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -22,7 +23,8 @@ type cacheSetFunc func(keys []string) (map[string]json.RawMessage, error)
 // Each value of the cache has three states. Either it exists, it does not
 // exist, or it is pending. Pending means, that there is a current request to
 // the datastore. An existing key can have the value `nil` which means, that the
-// cache knows, that the key does not exist in the datastore.
+// cache knows, that the key does not exist in the datastore. Each value
+// []byte("null") is changed to nil.
 //
 // cache.keyState() tells, if a key exist or is pending.
 //
@@ -206,6 +208,10 @@ func (c *cache) keyState(key string) int {
 
 // set sets a key in the cache to a value. Closes the pending state.
 func (c *cache) set(key string, value json.RawMessage) {
+	// Change "null" values to nil.
+	if bytes.Equal(value, []byte("null")) {
+		value = nil
+	}
 	c.data[key] = value
 	if p, ok := c.pending[key]; ok {
 		close(p)

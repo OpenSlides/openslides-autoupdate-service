@@ -88,6 +88,8 @@ func (b *Builder) Update(ctx context.Context) (err error) {
 		}
 
 		for key, description := range processed {
+			// This are fields that do not exist or the user has not the
+			// permission to see them.
 			if data[key] == nil {
 				continue
 			}
@@ -111,11 +113,8 @@ func (b *Builder) Update(ctx context.Context) (err error) {
 }
 
 // Keys returns the keys.
-//
-// This method reads the values from a cache. Therefore the method returns in
-// constant time.
 func (b *Builder) Keys() []string {
-	return b.keys
+	return append(b.keys[:0:0], b.keys...)
 }
 
 // buildGenericKey returns a valid key when the collection and id are already
