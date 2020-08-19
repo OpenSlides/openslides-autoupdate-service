@@ -76,19 +76,23 @@ func main() {
 
 	tlsListener := tls.NewListener(ln, tlsConf)
 
+	// Shutdown logig in separate goroutine.
+	shutdownDone := make(chan struct{})
 	go func() {
-		fmt.Printf("Listen on %s\n", listenAddr)
-		if err := srv.Serve(tlsListener); err != http.ErrServerClosed {
-			log.Fatalf("HTTP Server Error: %v", err)
+		defer close(shutdownDone)
+		waitForShutdown()
+
+		close(closed)
+		if err := srv.Shutdown(context.Background()); err != nil {
+			log.Printf("Error on HTTP server shutdown: %v", err)
 		}
 	}()
 
-	waitForShutdown()
-
-	close(closed)
-	if err := srv.Shutdown(context.Background()); err != nil {
-		log.Printf("Error on HTTP server shutdown: %v", err)
+	fmt.Printf("Listen on %s\n", listenAddr)
+	if err := srv.Serve(tlsListener); err != http.ErrServerClosed {
+		log.Fatalf("HTTP Server Error: %v", err)
 	}
+	<-shutdownDone
 }
 
 func getCert() (tls.Certificate, error) {
