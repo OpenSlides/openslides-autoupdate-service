@@ -163,6 +163,9 @@ func sendData(w io.Writer, data map[string]json.RawMessage) error {
 		w.Write([]byte{'"'})
 		w.Write([]byte(key))
 		w.Write([]byte{'"', ':'})
+		if value == nil {
+			value = []byte("null")
+		}
 		w.Write(value)
 	}
 	w.Write([]byte("}\n"))

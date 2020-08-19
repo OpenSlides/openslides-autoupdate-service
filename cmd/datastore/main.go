@@ -53,6 +53,10 @@ func updater(r io.Reader) {
 			exampleData[keyValue[0]] = []byte(keyValue[1])
 		}
 
+		if len(args) == 2 {
+			continue
+		}
+
 		if _, err := conn.Do("XADD", args...); err != nil {
 			log.Fatalf("Can not send command to redis: %v", err)
 		}

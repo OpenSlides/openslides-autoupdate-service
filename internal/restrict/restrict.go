@@ -85,7 +85,7 @@ func structuredKeys(key string, replecments []string) []string {
 	return replaced
 }
 
-func fqfieldToModelField(fqfied string) string {
-	t := strings.Split(fqfied, "/")
+func fqfieldToModelField(fqfield string) string {
+	t := strings.Split(fqfield, "/")
 	return t[0] + "/" + t[2]
 }

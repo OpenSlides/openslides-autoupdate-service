@@ -67,7 +67,6 @@ func TestStreamInvalidData(t *testing.T) {
 		{"key-value no string list", `[["one", [["123", "data"]]]]`, "invalid input. Key values has to be a list of strings"},
 		{"Odd key value", `[["one", [["123", ["1"]]]]]`, "invalid input. Odd number of key value pairs"},
 		{"Key no string", `[["one", [["123", [1, "2"]]]]]`, "invalid input. Key has to be a string"},
-		{"Value no string", `[["one", [["123", ["1", 2]]]]]`, "invalid input. Values has to be a string"},
 	}
 	for _, tt := range td {
 		t.Run(tt.name, func(t *testing.T) {
