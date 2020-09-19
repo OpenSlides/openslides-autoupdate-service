@@ -1,6 +1,6 @@
 package restrict
 
-//go:generate  sh -c "go run gendef/main.go > def.go && go fmt def.go"
+//go:generate  sh -c "go run gendef/*.go > def.go && go fmt def.go"
 import (
 	"encoding/json"
 	"fmt"

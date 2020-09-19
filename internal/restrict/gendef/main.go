@@ -3,24 +3,22 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"regexp"
 	"text/template"
+
+	"gopkg.in/yaml.v3"
 )
 
-const defURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/models.txt"
-
-const pkgName = "restrict"
+const defURL = "https://raw.githubusercontent.com/normanjaeckel/OpenSlides/modelsToYML/docs/models.yml"
 
 func main() {
 	r, err := loadDefition()
 	if err != nil {
-		log.Fatalf("Can not load defition: %v", err)
+		log.Fatalf("Can not load models defition: %v", err)
 	}
 	defer r.Close()
 
@@ -45,43 +43,34 @@ func loadDefition() (io.ReadCloser, error) {
 	return r.Body, nil
 }
 
+// parse returns all relation-list and generic-relation-list fields and where
+// they point to.
 func parse(r io.Reader) (map[string]string, error) {
-	reInterface := regexp.MustCompile("^Interface ([a-z_]+) {$")
-	reRelationField := regexp.MustCompile(`^\s*([a-z0-9_]+(?:\$<[^>]+>)?(?:[a-z0-9_]+)?): \((\*|[a-z_]+)/[^)]*\)\[\];\s*(?://.*)?$`)
-	reTemplateID := regexp.MustCompile(`<[^>]+>`)
-
-	s := bufio.NewScanner(r)
-	var currentModel string
-	out := make(map[string]string)
-	for s.Scan() {
-		// Look for current Model.
-		m := reInterface.FindStringSubmatch(s.Text())
-		if len(m) == 2 {
-			currentModel = m[1]
-			continue
-		}
-
-		// If there was no current model yet, continue.
-		if currentModel == "" {
-			continue
-		}
-
-		m = reRelationField.FindStringSubmatch(s.Text())
-		if len(m) == 3 {
-			key := fmt.Sprintf("%s/%s", currentModel, m[1])
-			key = reTemplateID.ReplaceAllString(key, "")
-			out[key] = m[2]
-		}
-
+	var inData map[string]map[string]mValue
+	if err := yaml.NewDecoder(r).Decode(&inData); err != nil {
+		return nil, fmt.Errorf("decoding models.yml: %w", err)
 	}
-	if err := s.Err(); err != nil {
-		return nil, fmt.Errorf("scanning: %w", err)
+
+	outData := make(map[string]string)
+
+	for model, fields := range inData {
+		for field, value := range fields {
+			if value.Type == "template" {
+				value = value.template.Fields
+			}
+
+			if value.Type == "relation-list" || value.Type == "generic-relation-list" {
+				outData[fmt.Sprintf("%s/%s", model, field)] = value.relation.toCollection()
+				continue
+			}
+
+		}
 	}
-	return out, nil
+	return outData, nil
 }
 
 const tpl = `// Code generated with models.txt DO NOT EDIT.
-package {{.PackageName}}
+package restrict
 
 var relationLists = map[string]string{
 	{{- range $key, $value := .Def}}
@@ -98,8 +87,7 @@ func writeFile(w io.Writer, rlist map[string]string) error {
 	}
 
 	data := map[string]interface{}{
-		"PackageName": pkgName,
-		"Def":         rlist,
+		"Def": rlist,
 	}
 
 	if err := t.Execute(w, data); err != nil {
