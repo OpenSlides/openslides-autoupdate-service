@@ -35,8 +35,9 @@ func TestRestrict(t *testing.T) {
 func TestChecker(t *testing.T) {
 	perms := new(test.MockPermission)
 	perms.Data = map[string]bool{
-		"user/1/name":     true,
-		"user/1/password": false,
+		"user/1/name":       true,
+		"user/1/password":   false,
+		"user/1/first_name": true,
 	}
 
 	called := make(map[string]bool)
@@ -49,12 +50,17 @@ func TestChecker(t *testing.T) {
 			called[key] = true
 			return []byte("touched"), nil
 		}),
+		"user/first_name": restrict.CheckerFunc(func(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
+			called[key] = true
+			return []byte("touched"), nil
+		}),
 	}
 
 	r := restrict.New(perms, checker)
 	data := map[string]json.RawMessage{
-		"user/1/name":     []byte("uwe"),
-		"user/1/password": []byte("easy"),
+		"user/1/name":       []byte("uwe"),
+		"user/1/password":   []byte("easy"),
+		"user/1/first_name": nil,
 	}
 	if err := r.Restrict(1, data); err != nil {
 		t.Errorf("Restrict returned unexpected error: %v", err)
@@ -74,5 +80,9 @@ func TestChecker(t *testing.T) {
 
 	if called["user/1/password"] {
 		t.Errorf("checker for key user/1/password was called")
+	}
+
+	if called["user/1/first_name"] {
+		t.Errorf("checker for key user/1/first_name was called")
 	}
 }
