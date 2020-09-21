@@ -49,6 +49,8 @@ func newCache() *cache {
 // first call fetches the result, the other calles get blocked until it the
 // answer was fetched.
 //
+// A non existing value is returned as nil.
+//
 // All values get returned together. If only one key is missing, this function
 // blocks, until all values are retrieved.
 //

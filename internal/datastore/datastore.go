@@ -45,6 +45,8 @@ func New(url string, closed <-chan struct{}, errHandler func(error), keychanger 
 }
 
 // Get returns the value for one or many keys.
+//
+// If a key does not exist, the value nil is returned for that key.
 func (d *Datastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage, error) {
 	values, err := d.cache.GetOrSet(ctx, keys, func(keys []string) (map[string]json.RawMessage, error) {
 		return d.requestKeys(keys)

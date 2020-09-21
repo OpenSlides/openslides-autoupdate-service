@@ -48,6 +48,10 @@ func (r *Restricter) Restrict(uid int, data map[string]json.RawMessage) error {
 	}
 
 	for k, v := range data {
+		if v == nil {
+			continue
+		}
+
 		if !allowed[k] {
 			data[k] = nil
 			continue
