@@ -222,7 +222,7 @@ func buildAuth() (autoupdateHttp.Authenticator, error) {
 	switch method {
 	case "token":
 		fmt.Println("Auth Method: token")
-		return &auth.Auth{}, nil
+		return new(auth.Auth), nil
 	case "fake":
 		fmt.Println("Auth Method: FakeAuth (User ID 1 for all requests)")
 		return fakeAuth(1), nil

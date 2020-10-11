@@ -111,11 +111,11 @@ func (h *Handler) health(w http.ResponseWriter, r *http.Request) error {
 func (h *Handler) authMiddleware(next errHandleFunc) errHandleFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx, cancel, err := h.auth.Authenticate(r)
-		defer cancel()
-
 		if err != nil {
 			return fmt.Errorf("authenticate request: %w", err)
 		}
+		defer cancel()
+
 		return next(w, r.WithContext(ctx))
 	}
 }
