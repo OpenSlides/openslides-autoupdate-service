@@ -33,8 +33,8 @@ func newFaker(r io.Reader) *faker {
 	return f
 }
 
-// Update blocks, until there in new data. The nil value blocks forever. If
-// the faker was initialized with a reader, it reads each line form it and
+// Update blocks, until there in new data. The nil value blocks forever. If the
+// faker was initialized with a reader, it reads each line form it and
 // interpretes each word (separated by space) and a key that should be updated.
 func (f *faker) Update() (map[string]json.RawMessage, error) {
 	if f == nil {
@@ -63,9 +63,14 @@ func (f *faker) Update() (map[string]json.RawMessage, error) {
 	return data, nil
 }
 
-// fake Auth implements the Authenticater interface. It always returns the given number.
+// fake Auth implements the Authenticater interface. It always returns the given
+// number.
 type fakeAuth int
 
-func (a fakeAuth) Authenticate(context.Context, *http.Request) (int, error) {
-	return int(a), nil
+func (a fakeAuth) Authenticate(r *http.Request) (context.Context, error) {
+	return r.Context(), nil
+}
+
+func (a fakeAuth) FromContext(ctx context.Context) int {
+	return int(a)
 }
