@@ -25,10 +25,11 @@ go build ./cmd/autoupdate
 
 ### With Docker
 
-The docker build uses the redis messaging service and the real datastore service
-as default. Either configure it to use the fake services (see environment
-variables below) or make sure the service inside the docker container can
-connect to redis and the datastore-reader. For example with the docker argument
+The docker build uses the redis messaging service, the auth token and the real
+datastore service as default. Either configure it to use the fake services (see
+environment variables below) or make sure the service inside the docker
+container can connect to redis and the datastore-reader. For example with the
+docker argument --network host.
 
 ```
 docker build . --tag openslides-autoupdate
@@ -87,14 +88,14 @@ When the server is started, clients can listen for keys to do so, they have to
 send a keyrequest in the body of the request. Currently, all method-types (POST,
 GET, etc) are supported. An example request is:
 
-`curl -Nk  https://localhost:9012/system/autoupdate -d '[{"ids": [5], "collection": "user", "fields": {"name": null}}]'`
+`curl -Nk  https://localhost:9012/system/autoupdate -d '[{"ids": [1], "collection": "user", "fields": {"username": null}}]'`
 
 To see a list of possible json-strings see the file
 internal/autoupdate/keysbuilder/keysbuilder_test.go
 
 There is a simpler method to request keys:
 
-`curl -Nk https://localhost:9012/system/autoupdate/keys?user/1/name,user/2/name`
+`curl -Nk https://localhost:9012/system/autoupdate/keys?user/1/username,user/2/username`
 
 With this simpler method, it is not possible to request related keys.
 
@@ -134,7 +135,7 @@ When redis is installed, it can be used to update keys. Start the autoupdate
 service with the envirnmentvariable `MESSAGING_SERVICE=redis`. Afterwards it is
 possible to update keys by sending the following command to redis:
 
-`xadd field_changed * updated user/5/name updated user/5/password`
+`xadd field_changed * updated user/1/username updated user/1/password`
 
 
 ## Environment
@@ -159,3 +160,4 @@ The Service uses the following environment variables:
 * `MESSAGE_BUS_PORT`: Port of the redis server. The default is `6379`.
 * `REDIS_TEST_CONN`: Test the redis connection on startup. Disable on the cloud
   if redis needs more time to start then this service. The default is `true`.
+* `AUTH`: Sets the type of the auth service. `fake` (default) or `token`.

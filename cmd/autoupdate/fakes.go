@@ -67,8 +67,8 @@ func (f *faker) Update() (map[string]json.RawMessage, error) {
 // number.
 type fakeAuth int
 
-func (a fakeAuth) Authenticate(r *http.Request) (context.Context, error) {
-	return r.Context(), nil
+func (a fakeAuth) Authenticate(r *http.Request) (context.Context, func(), error) {
+	return r.Context(), func() {}, nil
 }
 
 func (a fakeAuth) FromContext(ctx context.Context) int {

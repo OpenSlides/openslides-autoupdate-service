@@ -12,6 +12,7 @@ import (
 	"path"
 	"syscall"
 
+	"github.com/openslides/openslides-autoupdate-service/internal/auth"
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
 	autoupdateHttp "github.com/openslides/openslides-autoupdate-service/internal/http"
@@ -51,7 +52,10 @@ func main() {
 	service := autoupdate.New(datastoreService, restricter, closed)
 
 	// Auth Service.
-	authService := buildAuth()
+	authService, err := buildAuth()
+	if err != nil {
+		log.Fatalf("Can not create auth method: %v", err)
+	}
 
 	// HTTP Hanlder.
 	handler := autoupdateHttp.New(service, authService)
@@ -213,8 +217,18 @@ func buildReceiver(f *faker) (datastore.Updater, error) {
 // buildAuth returns the auth service needed by the http server.
 //
 // Currently, there is only the fakeAuth service.
-func buildAuth() autoupdateHttp.Authenticator {
-	return fakeAuth(1)
+func buildAuth() (autoupdateHttp.Authenticator, error) {
+	method := getEnv("AUTH", "fake")
+	switch method {
+	case "token":
+		fmt.Println("Auth Method: token")
+		return &auth.Auth{}, nil
+	case "fake":
+		fmt.Println("Auth Method: FakeAuth (User ID 1 for all requests)")
+		return fakeAuth(1), nil
+	default:
+		return nil, fmt.Errorf("unknown auth method %s", method)
+	}
 }
 
 // getEnv returns the value of the environment variable env. If it is empty, the
