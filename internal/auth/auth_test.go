@@ -19,11 +19,10 @@ func TestFromContext(t *testing.T) {
 	})
 
 	t.Run("Context from Authenticate", func(t *testing.T) {
-		ctx, cancel, err := a.Authenticate(&http.Request{})
+		ctx, err := a.Authenticate(&http.Request{})
 		if err != nil {
 			t.Fatalf("Can not create context from Authenticate: %v", err)
 		}
-		defer cancel()
 
 		got := a.FromContext(ctx)
 		if got != 1 {

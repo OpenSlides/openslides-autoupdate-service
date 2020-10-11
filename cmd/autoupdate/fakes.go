@@ -63,12 +63,16 @@ func (f *faker) Update() (map[string]json.RawMessage, error) {
 	return data, nil
 }
 
+func (f *faker) LogoutEvent() ([]string, error) {
+	select {}
+}
+
 // fake Auth implements the Authenticater interface. It always returns the given
 // number.
 type fakeAuth int
 
-func (a fakeAuth) Authenticate(r *http.Request) (context.Context, func(), error) {
-	return r.Context(), func() {}, nil
+func (a fakeAuth) Authenticate(r *http.Request) (context.Context, error) {
+	return r.Context(), nil
 }
 
 func (a fakeAuth) FromContext(ctx context.Context) int {

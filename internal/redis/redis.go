@@ -44,3 +44,9 @@ func (s *Service) Update() (map[string]json.RawMessage, error) {
 	}
 	return keys, nil
 }
+
+// LogoutEvent is a blocking function that returns, when a session was revoked.
+func (s *Service) LogoutEvent() ([]string, error) {
+	// TODO
+	select {}
+}

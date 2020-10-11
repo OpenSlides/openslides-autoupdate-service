@@ -5,10 +5,9 @@ import (
 	"net/http"
 )
 
-// Authenticator gives an user id for an request.
-// returns 0 for anonymous.
+// Authenticator gives an user id for an request. Returns 0 for anonymous.
 type Authenticator interface {
-	Authenticate(*http.Request) (context.Context, func(), error)
+	Authenticate(*http.Request) (context.Context, error)
 	FromContext(context.Context) int
 }
 

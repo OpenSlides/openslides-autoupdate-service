@@ -3,6 +3,7 @@
 * Listen on logout messages
 * Speak with the auth service
     * Validate token
+    * Implement redis logout event
 * Logging, metrics and traces
 * Max keys per request
 

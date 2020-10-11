@@ -5,34 +5,74 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/dgrijalva/jwt-go/v4"
+	"github.com/ostcar/topic"
 )
 
+// pruneTime defines how long a topic id will be valid. This should be higher
+// then the max livetime of a token.
+const pruneTime = 15 * time.Minute
+
 // Auth authenticates a request against the auth service.
-type Auth struct{}
+type Auth struct {
+	logoutEventer    LogoutEventer
+	logedoutSessions *topic.Topic
+	closed           <-chan struct{}
+}
+
+// New initializes a Auth service.
+func New(logoutEventer LogoutEventer, closed <-chan struct{}, errHandler func(error)) *Auth {
+	a := &Auth{
+		closed:           closed,
+		logoutEventer:    logoutEventer,
+		logedoutSessions: topic.New(topic.WithClosed(closed)),
+	}
+
+	go a.receiveLogoutEvent(errHandler)
+	go a.pruneLogoutEvent(closed)
+
+	return a
+}
 
 // Authenticate uses the headers from the given request to get the user id. The
 // returned context will be cancled, if the session is revoced.
-func (a *Auth) Authenticate(r *http.Request) (ctx context.Context, cancel func(), err error) {
+func (a *Auth) Authenticate(r *http.Request) (ctx context.Context, err error) {
 	p := new(payload)
 	if err := loadToken(r, p); err != nil {
-		return nil, nil, fmt.Errorf("reading token: %w", err)
+		return nil, fmt.Errorf("reading token: %w", err)
 	}
 
 	if p.UserID == 0 {
 		// Empty token or anonymous token. No need to save anything in the
 		// context.
-		return r.Context(), func() {}, nil
+		return r.Context(), nil
 	}
 
-	ctx = context.WithValue(r.Context(), userIDType, p.UserID)
+	ctx, cancelCtx := context.WithCancel(context.WithValue(r.Context(), userIDType, p.UserID))
 
-	// TODO:
-	// listen if p.SessionID is revoced and if so, cancel the ctx.
-	// if the cancel func was called, stop listening.
-	// Is a cancel function necessary or would it be possible to listen on r.Context()?
-	return ctx, func() {}, nil
+	go func() {
+		var cid uint64
+		var sessionIDs []string
+		var err error
+		for {
+			cid, sessionIDs, err = a.logedoutSessions.Receive(ctx, cid)
+			if err != nil {
+				// TODO: Do something with the error.
+				return
+			}
+
+			for _, sid := range sessionIDs {
+				if sid == p.SessionID {
+					cancelCtx()
+					return
+				}
+			}
+		}
+	}()
+
+	return ctx, nil
 }
 
 // FromContext returnes the user id from a context returned by Authenticate. If
@@ -45,6 +85,40 @@ func (a *Auth) FromContext(ctx context.Context) int {
 	}
 
 	return v.(int)
+}
+
+func (a *Auth) receiveLogoutEvent(errHandler func(error)) {
+	for {
+		select {
+		case <-a.closed:
+			return
+		default:
+		}
+
+		data, err := a.logoutEventer.LogoutEvent()
+		if err != nil {
+			// TODO: handle closing error
+			errHandler(fmt.Errorf("receiving logout event: %w", err))
+			time.Sleep(time.Second)
+			continue
+		}
+
+		a.logedoutSessions.Publish(data...)
+	}
+}
+
+func (a *Auth) pruneLogoutEvent(closed <-chan struct{}) {
+	tick := time.NewTicker(5 * time.Minute)
+	defer tick.Stop()
+
+	for {
+		select {
+		case <-closed:
+			return
+		case <-tick.C:
+			a.logedoutSessions.Prune(time.Now().Add(-pruneTime))
+		}
+	}
 }
 
 type authString string
