@@ -7,8 +7,8 @@ RUN apk add git
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY . .
-
+COPY cmd cmd
+COPY internal internal
 
 # Build service in seperate stage.
 FROM basis as builder
