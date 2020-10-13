@@ -46,7 +46,7 @@ type relationList struct {
 func (r *relationList) Check(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
 	var ids []int
 	if err := json.Unmarshal(value, &ids); err != nil {
-		return nil, fmt.Errorf("decoding %s: %w", key, err)
+		return nil, fmt.Errorf("decoding %s=%s: %w", key, value, err)
 	}
 
 	keys := make([]string, len(ids))
