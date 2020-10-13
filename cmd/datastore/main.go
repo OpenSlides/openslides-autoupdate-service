@@ -42,19 +42,20 @@ func updater(r io.Reader) {
 
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		input := strings.Split(strings.TrimSpace(scanner.Text()), " ")
-		args := []interface{}{redisKey, "*"}
-		for _, d := range input {
-			keyValue := strings.SplitN(d, "=", 2)
-			if len(keyValue) != 2 {
-				continue
-			}
-			args = append(args, keyValue[0], keyValue[1])
-			exampleData[keyValue[0]] = []byte(keyValue[1])
+		if len(scanner.Text()) == 0 {
+			continue
 		}
 
-		if len(args) == 2 {
+		var data map[string]json.RawMessage
+		if err := json.Unmarshal(scanner.Bytes(), &data); err != nil {
+			log.Printf("Invalid json input: %v", err)
 			continue
+		}
+
+		args := []interface{}{redisKey, "*"}
+		for key, value := range data {
+			args = append(args, key, string(value))
+			exampleData[key] = value
 		}
 
 		if _, err := conn.Do("XADD", args...); err != nil {
