@@ -196,11 +196,11 @@ func TestKeys(t *testing.T) {
 				}
 			}`,
 			map[string]json.RawMessage{
-				"user/1/group_$_ids": []byte(`["1","2"]`),
-				"user/1/group_1_ids": []byte("[1,2]"),
-				"user/1/group_2_ids": []byte("[1,2]"),
+				"user/1/group_$_ids":  []byte(`["1","2"]`),
+				"user/1/group_$1_ids": []byte("[1,2]"),
+				"user/1/group_$2_ids": []byte("[1,2]"),
 			},
-			strs("user/1/group_$_ids", "user/1/group_1_ids", "user/1/group_2_ids", "group/1/name", "group/2/name"),
+			strs("user/1/group_$_ids", "user/1/group_$1_ids", "user/1/group_$2_ids", "group/1/name", "group/2/name"),
 		},
 		{
 			"Generic field",

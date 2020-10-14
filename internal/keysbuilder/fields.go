@@ -275,7 +275,7 @@ func (t *templateField) keys(key string, value json.RawMessage, data map[string]
 	}
 
 	for _, value := range values {
-		key := strings.Replace(key, "$", value, 1)
+		key := strings.Replace(key, "$", "$"+value, 1)
 		data[key] = t.values
 	}
 	return nil

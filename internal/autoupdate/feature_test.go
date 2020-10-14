@@ -46,13 +46,13 @@ var dataSet = map[string]json.RawMessage{
 	"C/2/G1_ids":              []byte(`[2,3]`),
 	"D/1/d":                   []byte(`"d1"`),
 	"D/1/B_$_ids":             []byte(`["1","2","3"]`),
-	"D/1/B_1_ids":             []byte(`[1,2]`),
-	"D/1/B_2_ids":             []byte(`[1]`),
-	"D/1/B_3_ids":             []byte(`[]`),
+	"D/1/B_$1_ids":            []byte(`[1,2]`),
+	"D/1/B_$2_ids":            []byte(`[1]`),
+	"D/1/B_$3_ids":            []byte(`[]`),
 	"D/2/d":                   []byte(`"d2"`),
 	"D/2/B_$_ids":             []byte(`["1","4"]`),
-	"D/2/B_1_ids":             []byte(`[]`),
-	"D/2/B_4_ids":             []byte(`[2]`),
+	"D/2/B_$1_ids":            []byte(`[]`),
+	"D/2/B_$4_ids":            []byte(`[2]`),
 	"G1/1/g1":                 []byte(`"g1.1"`),
 	"G1/1/content_object_ids": []byte(`["A/1"]`),
 	"G1/2/g1":                 []byte(`"g1.2"`),
@@ -253,13 +253,13 @@ func TestFeatures(t *testing.T) {
 			`{
 				"D/1/d":       "d1",
 				"D/1/B_$_ids": ["1","2","3"],
-				"D/1/B_1_ids": [1,2],
-				"D/1/B_2_ids": [1],
-				"D/1/B_3_ids": [],
+				"D/1/B_$1_ids": [1,2],
+				"D/1/B_$2_ids": [1],
+				"D/1/B_$3_ids": [],
 				"D/2/d":       "d2",
 				"D/2/B_$_ids": ["1","4"],
-				"D/2/B_1_ids": [],
-				"D/2/B_4_ids": [2]
+				"D/2/B_$1_ids": [],
+				"D/2/B_$4_ids": [2]
 			}`,
 		},
 		{
@@ -278,7 +278,7 @@ func TestFeatures(t *testing.T) {
 							}
 						}
 					},
-					"B_4_ids": {
+					"B_$4_ids": {
 						"type": "relation-list",
 						"collection": "B",
 						"fields": {
@@ -289,12 +289,12 @@ func TestFeatures(t *testing.T) {
 			}`,
 			`{
 				"D/1/B_$_ids": ["1","2","3"],
-				"D/1/B_1_ids": [1,2],
-				"D/1/B_2_ids": [1],
-				"D/1/B_3_ids": [],
+				"D/1/B_$1_ids": [1,2],
+				"D/1/B_$2_ids": [1],
+				"D/1/B_$3_ids": [],
 				"D/2/B_$_ids": ["1","4"],
-				"D/2/B_1_ids": [],
-				"D/2/B_4_ids": [2],
+				"D/2/B_$1_ids": [],
+				"D/2/B_$4_ids": [2],
 				"B/1/b":       "b1",
 				"B/2/b":       "b2",
 				"B/2/title":   "b2"
