@@ -1,3 +1,7 @@
+github.com/OpenSlides/openslides-modelsvalidate v0.1.2 h1:HlLMQ2+oznCUcBRxWJYBhRajaZXAZWl+adIOEAGGpAE=
+github.com/OpenSlides/openslides-modelsvalidate v0.1.2/go.mod h1:l1nWrqkRmnJAJRTVaH/Rl4txzxnqiNxV2jAFvoMmTh0=
+github.com/OpenSlides/openslides-modelsvalidate v0.1.3-0.20201014142442-c13bbcae8cd1 h1:cG2otySc85ELIWUGUmCMFClOwpFUf9l2tLnFC0fMREc=
+github.com/OpenSlides/openslides-modelsvalidate v0.1.3-0.20201014142442-c13bbcae8cd1/go.mod h1:l1nWrqkRmnJAJRTVaH/Rl4txzxnqiNxV2jAFvoMmTh0=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/gomodule/redigo v1.8.2 h1:H5XSIre1MB5NbPYFp+i1NBbb5qN1W8Y8YAQoAYbkm8k=

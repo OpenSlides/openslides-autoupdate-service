@@ -10,10 +10,10 @@ import (
 	"os"
 	"text/template"
 
-	"gopkg.in/yaml.v3"
+	"github.com/OpenSlides/openslides-modelsvalidate/models"
 )
 
-const defURL = "https://raw.githubusercontent.com/normanjaeckel/OpenSlides/modelsToYML/docs/models.yml"
+const defURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/models.yml"
 
 func main() {
 	r, err := loadDefition()
@@ -46,26 +46,28 @@ func loadDefition() (io.ReadCloser, error) {
 // parse returns all relation-list and generic-relation-list fields and where
 // they point to.
 func parse(r io.Reader) (map[string]string, error) {
-	var inData map[string]map[string]mValue
-	if err := yaml.NewDecoder(r).Decode(&inData); err != nil {
-		return nil, fmt.Errorf("decoding models.yml: %w", err)
+	inData, err := models.Unmarshal(r)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshalling models.yml: %w", err)
 	}
 
 	outData := make(map[string]string)
+	for modelName, model := range inData {
+		for attrName, attr := range model.Attributes {
+			r := attr.Relation()
 
-	for model, fields := range inData {
-		for field, value := range fields {
-			if value.Type == "template" {
-				value = value.template.Fields
-			}
-
-			if value.Type == "relation-list" || value.Type == "generic-relation-list" {
-				outData[fmt.Sprintf("%s/%s", model, field)] = value.relation.toCollection()
+			if r == nil {
 				continue
 			}
 
+			to := r.ToCollection()
+			if len(to) != 1 {
+				to[0] = "*"
+			}
+			outData[fmt.Sprintf("%s/%s", modelName, attrName)] = to[0]
 		}
 	}
+
 	return outData, nil
 }
 
