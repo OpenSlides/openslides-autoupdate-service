@@ -1,3 +1,7 @@
+github.com/OpenSlides/openslides-models-to-go v0.0.0-20201014144520-3ab9f69f55dc h1:gHk+LOT2Cv0EBEO2WaJHh+U0V4NYtAFxVB1eEgZtEZc=
+github.com/OpenSlides/openslides-models-to-go v0.0.0-20201014144520-3ab9f69f55dc/go.mod h1:qTqSOOz3fFyVT1pSCLh/4K/Mt0HTbjTZ8AC0GQ5/UN8=
+github.com/OpenSlides/openslides-modelsvalidate v0.1.2 h1:HlLMQ2+oznCUcBRxWJYBhRajaZXAZWl+adIOEAGGpAE=
+github.com/OpenSlides/openslides-modelsvalidate v0.1.2/go.mod h1:l1nWrqkRmnJAJRTVaH/Rl4txzxnqiNxV2jAFvoMmTh0=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/gomodule/redigo v1.8.2 h1:H5XSIre1MB5NbPYFp+i1NBbb5qN1W8Y8YAQoAYbkm8k=
@@ -13,3 +17,5 @@ gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.2.2 h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
+gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 h1:tQIYjPdBoyREyB9XMu+nnTclpTYkz2zFM+lzLJFO4gQ=
+gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
