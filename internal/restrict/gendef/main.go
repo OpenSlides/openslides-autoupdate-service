@@ -10,7 +10,7 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/OpenSlides/openslides-modelsvalidate/models"
+	models "github.com/OpenSlides/openslides-models-to-go"
 )
 
 const defURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/models.yml"
