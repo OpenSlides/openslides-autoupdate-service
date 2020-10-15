@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 )
 
-// Permission tells the restricter, if a user has the required permissions.
-type Permission interface {
+// Permissioner tells the restricter, if a user has the required permissions.
+type Permissioner interface {
 	CheckFQIDs(uid int, fqids []string) (map[string]bool, error)
 	CheckFQFields(uid int, fqfields []string) (map[string]bool, error)
 }

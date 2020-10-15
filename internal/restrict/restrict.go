@@ -10,23 +10,17 @@ import (
 
 // Restricter implements the autoupdate.Restricter interface.
 type Restricter struct {
-	perm             Permission
-	checks           map[string]Checker
-	structuredFields []*structuredField
+	permer Permissioner
+	checks map[string]Checker
 }
 
 // New creates an initialized Restricter.
-func New(perm Permission, checker map[string]Checker) *Restricter {
+func New(permer Permissioner, checker map[string]Checker) *Restricter {
 	r := &Restricter{
-		perm:   perm,
+		permer: permer,
 		checks: checker,
 	}
 
-	for _, c := range checker {
-		if s, ok := c.(*structuredField); ok {
-			r.structuredFields = append(r.structuredFields, s)
-		}
-	}
 	return r
 }
 
@@ -42,7 +36,7 @@ func (r *Restricter) Restrict(uid int, data map[string]json.RawMessage) error {
 	for k := range data {
 		keys = append(keys, k)
 	}
-	allowed, err := r.perm.CheckFQFields(uid, keys)
+	allowed, err := r.permer.CheckFQFields(uid, keys)
 	if err != nil {
 		return fmt.Errorf("check permissions: %w", err)
 	}
@@ -57,19 +51,9 @@ func (r *Restricter) Restrict(uid int, data map[string]json.RawMessage) error {
 			continue
 		}
 
-		modelField := fqfieldToModelField(k)
-		checker, ok := r.checks[modelField]
+		checker, ok := r.checks[checkerIndex(k)]
 		if !ok {
-			for _, sf := range r.structuredFields {
-				if sf.Match(modelField) {
-					checker = sf.checker
-					break
-				}
-			}
-			if checker == nil {
-				// Not a check and not a structured field.
-				continue
-			}
+			continue
 		}
 
 		nv, err := checker.Check(uid, k, v)
@@ -89,7 +73,19 @@ func structuredKeys(key string, replecments []string) []string {
 	return replaced
 }
 
-func fqfieldToModelField(fqfield string) string {
+// checkerIndex returns the index of the checker list. This is the modelField
+// (fqfield without middle part) or normal fields and template fields
+// (foo/1/prefix_$_bar, foo/1/prefix_$). For fields that are derivated from a
+// template field, this is only the prefix of the field.
+func checkerIndex(fqfield string) string {
 	t := strings.Split(fqfield, "/")
-	return t[0] + "/" + t[2]
+	modelField := t[0] + "/" + t[2]
+
+	i := strings.IndexByte(modelField, '$')
+	if i < 0 || i == len(modelField)-1 || modelField[i+1] == '_' {
+		// Normal field or $ at the end or $_
+		return modelField
+	}
+
+	return modelField[:i]
 }
