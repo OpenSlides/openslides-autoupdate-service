@@ -4,33 +4,28 @@ package restrict
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strings"
 )
 
 // OpenSlidesChecker returns the restricter checkers for the openslides models.
-func OpenSlidesChecker(perm Permission) map[string]Checker {
+func OpenSlidesChecker(permer Permissioner) map[string]Checker {
 	checkers := make(map[string]Checker)
 	for k, v := range relationLists {
 		// Generic relation list.
 		var checker Checker = &relationList{
-			perm:  perm,
-			model: v,
+			permer: permer,
+			model:  v,
 		}
 		if v == "*" {
 			checker = &genericRelationList{
-				perm: perm,
+				permer: permer,
 			}
 		}
 
 		// Structured fields.
 		if strings.Contains(k, "$") {
-			re := strings.Replace(k, "$", "[a-z0-9_]+", 1)
-			checker = &structuredField{
-				perm:    perm,
-				checker: checker,
-				re:      regexp.MustCompile(re),
-			}
+			checkers[k] = &templateField{}
+			k = k[:strings.IndexByte(k, '$')]
 		}
 
 		checkers[k] = checker
@@ -39,8 +34,8 @@ func OpenSlidesChecker(perm Permission) map[string]Checker {
 }
 
 type relationList struct {
-	perm  Permission
-	model string
+	permer Permissioner
+	model  string
 }
 
 func (r *relationList) Check(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
@@ -56,7 +51,7 @@ func (r *relationList) Check(uid int, key string, value json.RawMessage) (json.R
 		keyToID[keys[i]] = id
 	}
 
-	allowed, err := r.perm.CheckFQIDs(uid, keys)
+	allowed, err := r.permer.CheckFQIDs(uid, keys)
 	if err != nil {
 		return nil, fmt.Errorf("check fqids: %w", err)
 	}
@@ -76,7 +71,7 @@ func (r *relationList) Check(uid int, key string, value json.RawMessage) (json.R
 }
 
 type genericRelationList struct {
-	perm Permission
+	permer Permissioner
 }
 
 func (g *genericRelationList) Check(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
@@ -90,7 +85,7 @@ func (g *genericRelationList) Check(uid int, key string, value json.RawMessage) 
 		keys[i] = fqid
 	}
 
-	allowed, err := g.perm.CheckFQIDs(uid, keys)
+	allowed, err := g.permer.CheckFQIDs(uid, keys)
 	if err != nil {
 		return nil, fmt.Errorf("check fqids: %w", err)
 	}
@@ -109,13 +104,11 @@ func (g *genericRelationList) Check(uid int, key string, value json.RawMessage) 
 	return v, nil
 }
 
-type structuredField struct {
-	perm    Permission
-	checker Checker
-	re      *regexp.Regexp
+type templateField struct {
+	permer Permissioner
 }
 
-func (s *structuredField) Check(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
+func (s *templateField) Check(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
 	var replacments []string
 	if err := json.Unmarshal(value, &replacments); err != nil {
 		return nil, fmt.Errorf("decoding key %s: %w", key, err)
@@ -124,17 +117,20 @@ func (s *structuredField) Check(uid int, key string, value json.RawMessage) (jso
 	keys := make([]string, len(replacments))
 	keyToReplacement := make(map[string]string, len(replacments))
 	for i, r := range replacments {
-		keys[i] = strings.Replace(key, "$", r, 1)
+		keys[i] = strings.Replace(key, "$", "$"+r, 1)
 		keyToReplacement[keys[i]] = r
 	}
 
-	allowed, err := s.perm.CheckFQFields(uid, keys)
+	allowed, err := s.permer.CheckFQFields(uid, keys)
 	if err != nil {
 		return nil, fmt.Errorf("check generated structured fields: %w", err)
 	}
 
 	allowedReplacements := make([]string, 0, len(allowed))
 	for key := range allowed {
+		if !allowed[key] {
+			continue
+		}
 		allowedReplacements = append(allowedReplacements, keyToReplacement[key])
 	}
 
@@ -144,8 +140,4 @@ func (s *structuredField) Check(uid int, key string, value json.RawMessage) (jso
 	}
 
 	return v, nil
-}
-
-func (s *structuredField) Match(field string) bool {
-	return s.re.MatchString(field)
 }
