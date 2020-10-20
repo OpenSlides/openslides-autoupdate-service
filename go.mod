@@ -1,3 +1,3 @@
-module github.com/openslides/openslides-permission-service
+module github.com/OpenSlides/openslides-permission-service
 
 go 1.14
