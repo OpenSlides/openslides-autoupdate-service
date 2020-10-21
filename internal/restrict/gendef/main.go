@@ -56,7 +56,7 @@ func parse(r io.Reader) (map[string]string, error) {
 		for attrName, attr := range model.Attributes {
 			r := attr.Relation()
 
-			if r == nil {
+			if r == nil || attr.Type == "relation" || attr.Type == "generic-relation" {
 				continue
 			}
 
