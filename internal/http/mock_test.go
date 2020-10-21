@@ -17,7 +17,7 @@ type mockAuth struct {
 	uid int
 }
 
-func (a mockAuth) Authenticate(r *http.Request) (context.Context, error) {
+func (a mockAuth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Context, error) {
 	return r.Context(), nil
 }
 

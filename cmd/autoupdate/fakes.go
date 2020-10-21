@@ -71,7 +71,7 @@ func (f *faker) LogoutEvent() ([]string, error) {
 // number.
 type fakeAuth int
 
-func (a fakeAuth) Authenticate(r *http.Request) (context.Context, error) {
+func (a fakeAuth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Context, error) {
 	return r.Context(), nil
 }
 

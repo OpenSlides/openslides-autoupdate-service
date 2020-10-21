@@ -7,7 +7,7 @@ import (
 
 // Authenticator gives an user id for an request. Returns 0 for anonymous.
 type Authenticator interface {
-	Authenticate(*http.Request) (context.Context, error)
+	Authenticate(http.ResponseWriter, *http.Request) (context.Context, error)
 	FromContext(context.Context) int
 }
 

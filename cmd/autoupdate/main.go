@@ -44,7 +44,7 @@ func main() {
 
 	r, err := buildReceiver(f)
 	if err != nil {
-		log.Printf("Can not create message receiver: %v", err)
+		log.Fatalf("Can not create message receiver: %v", err)
 	}
 
 	// Datastore Service.
@@ -223,14 +223,25 @@ func buildReceiver(f *faker) (receiver, error) {
 }
 
 // buildAuth returns the auth service needed by the http server.
-//
-// Currently, there is only the fakeAuth service.
 func buildAuth(receiver auth.LogoutEventer, closed <-chan struct{}, errHandler func(error)) (autoupdateHttp.Authenticator, error) {
 	method := getEnv("AUTH", "fake")
 	switch method {
-	case "token":
+	case "ticket":
 		fmt.Println("Auth Method: token")
-		return auth.New(receiver, closed, errHandler), nil
+		const debugKey = "auth-dev-key"
+		tokenKey := getEnv("AUTH_KEY_TOKEN", debugKey)
+		cookieKey := getEnv("AUTH_KEY_COOKIE", debugKey)
+		if tokenKey == debugKey || cookieKey == debugKey {
+			fmt.Println("Auth with debug key")
+		}
+
+		protocol := getEnv("AUTH_SERIVCE_PROTOCOL", "http")
+		host := getEnv("AUTH_SERIVCE_HOST", "localhost")
+		port := getEnv("AUTH_SERIVCE_PORT", "9004")
+		url := protocol + "://" + host + ":" + port
+
+		fmt.Printf("Auth Service: %s\n", url)
+		return auth.New(url, receiver, closed, errHandler, []byte(tokenKey), []byte(cookieKey))
 	case "fake":
 		fmt.Println("Auth Method: FakeAuth (User ID 1 for all requests)")
 		return fakeAuth(1), nil

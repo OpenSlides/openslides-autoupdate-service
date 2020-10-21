@@ -160,4 +160,9 @@ The Service uses the following environment variables:
 * `MESSAGE_BUS_PORT`: Port of the redis server. The default is `6379`.
 * `REDIS_TEST_CONN`: Test the redis connection on startup. Disable on the cloud
   if redis needs more time to start then this service. The default is `true`.
-* `AUTH`: Sets the type of the auth service. `fake` (default) or `token`.
+* `AUTH`: Sets the type of the auth service. `fake` (default) or `ticket`.
+* `AUTH_KEY_TOKEN`: Key to sign the JWT auth tocken. Default `auth-dev-key`.
+* `AUTH_KEY_COOKIE`: Key to sign the JWT auth cookie. Default `auth-dev-key`.
+* `AUTH_SERVICE_HOST`: Host of the auth service. The default is `localhost`.
+* `AUTH_SERVICE_PORT`: Port of the auth service. The default is `9004`.
+* `AUTH_SERVICE_PROTOCOL`: Protocol of the auth servicer. The default is `http`.
