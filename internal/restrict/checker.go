@@ -24,7 +24,7 @@ func OpenSlidesChecker(permer Permissioner) map[string]Checker {
 
 		// Structured fields.
 		if strings.Contains(k, "$") {
-			checkers[k] = &templateField{}
+			checkers[k] = &templateField{permer: permer}
 			k = k[:strings.IndexByte(k, '$')]
 		}
 
