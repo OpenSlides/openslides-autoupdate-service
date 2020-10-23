@@ -56,7 +56,7 @@ func parse(r io.Reader) (map[string]string, error) {
 		for attrName, attr := range model.Attributes {
 			r := attr.Relation()
 
-			if r == nil {
+			if r == nil || !r.List() {
 				continue
 			}
 
@@ -74,7 +74,14 @@ func parse(r io.Reader) (map[string]string, error) {
 const tpl = `// Code generated with models.txt DO NOT EDIT.
 package restrict
 
-var relationLists = map[string]string{
+
+// RelationLists is list from all relation-list and generic-relation-list the
+// model where it directs to. generic-relation-list habe '*' als value. The list
+// contains also all template-fields that contain relation-list and
+// geneeric-relation-lists.
+//
+// The map is automaticly created from the models.yml file.
+var RelationLists = map[string]string{
 	{{- range $key, $value := .Def}}
 	"{{$key}}": "{{$value}}",
 	{{- end}}

@@ -7,8 +7,9 @@ import (
 	"strings"
 )
 
-// OpenSlidesChecker returns the restricter checkers for the openslides models.
-func OpenSlidesChecker(permer Permissioner) map[string]Checker {
+// RelationChecker creates a map of checkers from a map of relation-lists to
+// there to-model.
+func RelationChecker(relationLists map[string]string, permer Permissioner) map[string]Checker {
 	checkers := make(map[string]Checker)
 	for k, v := range relationLists {
 		// Generic relation list.
@@ -24,7 +25,7 @@ func OpenSlidesChecker(permer Permissioner) map[string]Checker {
 
 		// Structured fields.
 		if strings.Contains(k, "$") {
-			checkers[k] = &templateField{}
+			checkers[k] = &templateField{permer: permer}
 			k = k[:strings.IndexByte(k, '$')]
 		}
 
