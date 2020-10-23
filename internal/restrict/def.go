@@ -1,7 +1,13 @@
 // Code generated with models.txt DO NOT EDIT.
 package restrict
 
-var relationLists = map[string]string{
+// RelationLists is list from all relation-list and generic-relation-list the
+// model where it directs to. generic-relation-list habe '*' als value. The list
+// contains also all template-fields that contain relation-list and
+// geneeric-relation-lists.
+//
+// The map is automaticly created from the models.yml file.
+var RelationLists = map[string]string{
 	"agenda_item/child_ids":                                    "agenda_item",
 	"agenda_item/current_projector_ids":                        "projector",
 	"agenda_item/projection_ids":                               "projection",
