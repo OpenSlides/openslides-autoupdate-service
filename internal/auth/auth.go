@@ -47,6 +47,9 @@ func New(authServiceURL string, logoutEventer LogoutEventer, closed <-chan struc
 		cookieKey:        cookieKey,
 	}
 
+	// Make sure the topic is not empty
+	a.logedoutSessions.Publish("")
+
 	if logoutEventer != nil {
 		go a.receiveLogoutEvent(errHandler)
 	}
@@ -68,6 +71,16 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (ctx context
 		// Empty token or anonymous token. No need to save anything in the
 		// context.
 		return r.Context(), nil
+	}
+
+	_, sessionIDs, err := a.logedoutSessions.Receive(context.Background(), 0)
+	if err != nil {
+		return nil, fmt.Errorf("getting already logged out sessions: %w", err)
+	}
+	for _, sid := range sessionIDs {
+		if sid == p.SessionID {
+			return nil, &authError{"invalid session", nil}
+		}
 	}
 
 	ctx, cancelCtx := context.WithCancel(context.WithValue(r.Context(), userIDType, p.UserID))
@@ -120,7 +133,6 @@ func (a *Auth) receiveLogoutEvent(errHandler func(error)) {
 
 		data, err := a.logoutEventer.LogoutEvent(a.closed)
 		if err != nil {
-			// TODO: handle closing error
 			errHandler(fmt.Errorf("receiving logout event: %w", err))
 			time.Sleep(time.Second)
 			continue
