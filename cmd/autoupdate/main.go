@@ -111,10 +111,11 @@ func run() error {
 	// Create tls http2 server.
 	handler := autoupdateHttp.New(service, authService)
 	listenAddr := env["AUTOUPDATE_HOST"] + ":" + env["AUTOUPDATE_PORT"]
-	listener, err := buildHTTPListener(env, listenAddr, handler)
+	ln, err := buildHTTPListener(env, listenAddr, handler)
 	if err != nil {
 		return fmt.Errorf("creating http listener: %w", err)
 	}
+	defer ln.Close()
 	srv := &http.Server{Addr: listenAddr, Handler: handler}
 
 	// Shutdown logic in separate goroutine.
@@ -129,7 +130,7 @@ func run() error {
 		}
 	}()
 
-	if err := srv.Serve(listener); err != http.ErrServerClosed {
+	if err := srv.Serve(ln); err != http.ErrServerClosed {
 		return fmt.Errorf("http server: %w", err)
 	}
 	<-shutdownDone
@@ -150,7 +151,6 @@ func buildHTTPListener(env map[string]string, addr string, handler http.Handler)
 	if err != nil {
 		log.Fatalf("Can not listen on %s: %v", addr, err)
 	}
-	defer ln.Close()
 
 	tlsListener := tls.NewListener(ln, tlsConf)
 	fmt.Printf("Listen on %s\n", addr)
