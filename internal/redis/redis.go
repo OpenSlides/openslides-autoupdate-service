@@ -51,9 +51,6 @@ func (s *Service) Update(closing <-chan struct{}) (map[string]json.RawMessage, e
 		data = d
 		return nil
 	})
-	if err != nil {
-		return nil, fmt.Errorf("reading from redis: %w", err)
-	}
 
 	if err != nil {
 		if err == errNil {
@@ -86,9 +83,6 @@ func (s *Service) LogoutEvent(closing <-chan struct{}) ([]string, error) {
 		sessionIDs = sIDs
 		return nil
 	})
-	if err != nil {
-		return nil, fmt.Errorf("reading from redis: %w", err)
-	}
 
 	if err != nil {
 		if err == errNil {
