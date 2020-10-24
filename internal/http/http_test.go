@@ -19,7 +19,7 @@ func TestHandlerTestURLs(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 	s := autoupdate.New(new(test.MockDatastore), new(test.MockRestricter), closed)
-	srv := httptest.NewUnstartedServer(ahttp.New(s, mockAuth{1}))
+	srv := httptest.NewUnstartedServer(ahttp.New(s, test.Auth(1)))
 	srv.EnableHTTP2 = true
 	srv.StartTLS()
 	defer srv.Close()
@@ -65,7 +65,7 @@ func TestSimple(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 	s := autoupdate.New(new(test.MockDatastore), new(test.MockRestricter), closed)
-	srv := httptest.NewUnstartedServer(ahttp.New(s, mockAuth{1}))
+	srv := httptest.NewUnstartedServer(ahttp.New(s, test.Auth(1)))
 	srv.EnableHTTP2 = true
 	srv.StartTLS()
 	defer srv.Close()
@@ -141,7 +141,7 @@ func TestErrors(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 	s := autoupdate.New(new(test.MockDatastore), new(test.MockRestricter), closed)
-	srv := httptest.NewUnstartedServer(ahttp.New(s, mockAuth{1}))
+	srv := httptest.NewUnstartedServer(ahttp.New(s, test.Auth(1)))
 	srv.EnableHTTP2 = true
 	srv.StartTLS()
 	defer srv.Close()

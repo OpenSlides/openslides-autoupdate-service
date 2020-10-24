@@ -34,23 +34,28 @@ type receiver interface {
 }
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalf("Fatal error: %v", err)
+	}
+}
+
+func run() error {
 	closed := make(chan struct{})
 
 	errHandler := func(err error) {
 		log.Printf("Error: %v", err)
 	}
 
-	var f *faker
-
-	r, err := buildReceiver(f)
+	// Receiver for datastore and logout events.
+	r, err := buildReceiver()
 	if err != nil {
-		log.Fatalf("Can not create message receiver: %v", err)
+		return fmt.Errorf("creating messsaging adapter: %w", err)
 	}
 
 	// Datastore Service.
-	datastoreService, err := buildDatastore(f, r, closed, errHandler)
+	datastoreService, err := buildDatastore(r, closed, errHandler)
 	if err != nil {
-		log.Fatalf("Can not create datastore service: %v", err)
+		return fmt.Errorf("creating datastore adapter: %w", err)
 	}
 
 	// Perm Service.
@@ -66,33 +71,19 @@ func main() {
 	// Auth Service.
 	authService, err := buildAuth(r, closed, errHandler)
 	if err != nil {
-		log.Fatalf("Can not create auth method: %v", err)
+		return fmt.Errorf("creating auth adapter: %w", err)
 	}
-
-	// HTTP Hanlder.
-	handler := autoupdateHttp.New(service, authService)
 
 	// Create tls http2 server.
-	cert, err := getCert()
-	if err != nil {
-		log.Fatalf("Can not get certificate: %v", err)
-	}
-
+	handler := autoupdateHttp.New(service, authService)
 	listenAddr := getEnv("AUTOUPDATE_HOST", "") + ":" + getEnv("AUTOUPDATE_PORT", "9012")
-	srv := &http.Server{Addr: listenAddr, Handler: handler}
-	tlsConf := new(tls.Config)
-	tlsConf.NextProtos = []string{"h2"}
-	tlsConf.Certificates = []tls.Certificate{cert}
-
-	ln, err := net.Listen("tcp", listenAddr)
+	listener, err := buildHTTPListener(listenAddr, handler)
 	if err != nil {
-		log.Fatalf("Can not listen on %s: %v", listenAddr, err)
+		return fmt.Errorf("creating http listener: %w", err)
 	}
-	defer ln.Close()
+	srv := &http.Server{Addr: listenAddr, Handler: handler}
 
-	tlsListener := tls.NewListener(ln, tlsConf)
-
-	// Shutdown logig in separate goroutine.
+	// Shutdown logic in separate goroutine.
 	shutdownDone := make(chan struct{})
 	go func() {
 		defer close(shutdownDone)
@@ -104,11 +95,32 @@ func main() {
 		}
 	}()
 
-	fmt.Printf("Listen on %s\n", listenAddr)
-	if err := srv.Serve(tlsListener); err != http.ErrServerClosed {
-		log.Fatalf("HTTP Server Error: %v", err)
+	if err := srv.Serve(listener); err != http.ErrServerClosed {
+		return fmt.Errorf("http server: %w", err)
 	}
 	<-shutdownDone
+	return nil
+}
+
+func buildHTTPListener(addr string, handler http.Handler) (net.Listener, error) {
+	cert, err := getCert()
+	if err != nil {
+		return nil, fmt.Errorf("getting http certs: %w", err)
+	}
+
+	tlsConf := new(tls.Config)
+	tlsConf.NextProtos = []string{"h2"}
+	tlsConf.Certificates = []tls.Certificate{cert}
+
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Fatalf("Can not listen on %s: %v", addr, err)
+	}
+	defer ln.Close()
+
+	tlsListener := tls.NewListener(ln, tlsConf)
+	fmt.Printf("Listen on %s\n", addr)
+	return tlsListener, nil
 }
 
 func getCert() (tls.Certificate, error) {
@@ -168,14 +180,13 @@ func waitForShutdown() {
 // buildDatastore builds the datastore implementation needed by the autoupdate
 // service. It uses environment variables to make the decission. Per default, a
 // fake server is started and its url is used.
-func buildDatastore(f *faker, receiver datastore.Updater, closed <-chan struct{}, errHandler func(error)) (autoupdate.Datastore, error) {
+func buildDatastore(receiver datastore.Updater, closed <-chan struct{}, errHandler func(error)) (autoupdate.Datastore, error) {
 	var url string
 	dsService := getEnv("DATASTORE", "fake")
 	switch dsService {
 	case "fake":
 		fmt.Println("Fake Datastore")
-		f = newFaker(os.Stdin)
-		url = f.ts.TS.URL
+		url = test.NewDatastoreServer().TS.URL
 
 	case "service":
 		host := getEnv("DATASTORE_READER_HOST", "localhost")
@@ -195,35 +206,34 @@ func buildDatastore(f *faker, receiver datastore.Updater, closed <-chan struct{}
 // buildReceiver builds the receiver needed by the datastore service. It uses
 // environment variables to make the decission. Per default, the given faker is
 // used.
-func buildReceiver(f *faker) (receiver, error) {
-	var r receiver
+func buildReceiver() (receiver, error) {
 	serviceName := getEnv("MESSAGING", "fake")
+	fmt.Printf("Messaging Service: %s\n", serviceName)
+
+	var conn redis.Connection
 	switch serviceName {
 	case "redis":
 		redisAddress := getEnv("MESSAGE_BUS_HOST", "localhost") + ":" + getEnv("MESSAGE_BUS_PORT", "6379")
-		conn := redis.NewConnection(redisAddress)
+		c := redis.NewConnection(redisAddress)
 		if getEnv("REDIS_TEST_CONN", "true") == "true" {
-			if err := conn.TestConn(); err != nil {
+			if err := c.TestConn(); err != nil {
 				return nil, fmt.Errorf("connect to redis: %w", err)
 			}
 		}
-		r = &redis.Service{Conn: conn}
+
+		conn = c
 
 	case "fake":
-		r = f
-		if f == nil {
-			serviceName = "none"
-		}
+		conn = redis.BlockingConn{}
 	default:
 		return nil, fmt.Errorf("unknown messagin service %s", serviceName)
 	}
 
-	fmt.Printf("Messaging Service: %s\n", serviceName)
-	return r, nil
+	return &redis.Service{Conn: conn}, nil
 }
 
 // buildAuth returns the auth service needed by the http server.
-func buildAuth(receiver auth.LogoutEventer, closed <-chan struct{}, errHandler func(error)) (autoupdateHttp.Authenticator, error) {
+func buildAuth(receiver auth.LogoutEventer, closed <-chan struct{}, errHandler func(error)) (autoupdateHttp.Authenticater, error) {
 	method := getEnv("AUTH", "fake")
 	switch method {
 	case "ticket":
@@ -244,7 +254,7 @@ func buildAuth(receiver auth.LogoutEventer, closed <-chan struct{}, errHandler f
 		return auth.New(url, receiver, closed, errHandler, []byte(tokenKey), []byte(cookieKey))
 	case "fake":
 		fmt.Println("Auth Method: FakeAuth (User ID 1 for all requests)")
-		return fakeAuth(1), nil
+		return test.Auth(1), nil
 	default:
 		return nil, fmt.Errorf("unknown auth method %s", method)
 	}

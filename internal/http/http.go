@@ -19,11 +19,11 @@ import (
 type Handler struct {
 	s    *autoupdate.Autoupdate
 	mux  *http.ServeMux
-	auth Authenticator
+	auth Authenticater
 }
 
 // New create a new Handler with the correct urls.
-func New(s *autoupdate.Autoupdate, auth Authenticator) *Handler {
+func New(s *autoupdate.Autoupdate, auth Authenticater) *Handler {
 	h := &Handler{
 		s:    s,
 		mux:  http.NewServeMux(),
