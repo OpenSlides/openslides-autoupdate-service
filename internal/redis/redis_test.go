@@ -13,7 +13,10 @@ import (
 const useRealRedis = false
 
 func TestUpdateOnce(t *testing.T) {
-	data, err := getRedis().Update()
+	closing := make(chan struct{})
+	defer close(closing)
+
+	data, err := getRedis().Update(closing)
 	if err != nil {
 		t.Errorf("Update() returned an unexpected error %v", err)
 	}
@@ -29,12 +32,15 @@ func TestUpdateOnce(t *testing.T) {
 }
 
 func TestUpdateTwice(t *testing.T) {
+	closing := make(chan struct{})
+	defer close(closing)
+
 	r := getRedis()
-	if _, err := r.Update(); err != nil {
+	if _, err := r.Update(closing); err != nil {
 		t.Errorf("Update() returned an unexpected error %v", err)
 	}
 
-	keys, err := r.Update()
+	keys, err := r.Update(closing)
 	if err != nil {
 		t.Errorf("Update() returned an unexpected error %v", err)
 	}
@@ -46,8 +52,11 @@ func TestUpdateTwice(t *testing.T) {
 }
 
 func TestRedisError(t *testing.T) {
+	closing := make(chan struct{})
+	defer close(closing)
+
 	r := &redis.Service{Conn: mockConn{err: errors.New("my error")}}
-	keys, err := r.Update()
+	keys, err := r.Update(closing)
 	if err == nil {
 		t.Errorf("Update() did not return an error, expected one.")
 	}

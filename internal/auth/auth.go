@@ -27,6 +27,7 @@ type Auth struct {
 	logoutEventer    LogoutEventer
 	logedoutSessions *topic.Topic
 	closed           <-chan struct{}
+	errHandler       func(error)
 
 	authServiceURL string
 
@@ -38,12 +39,16 @@ type Auth struct {
 func New(authServiceURL string, logoutEventer LogoutEventer, closed <-chan struct{}, errHandler func(error), tokenKey, cookieKey []byte) (*Auth, error) {
 	a := &Auth{
 		closed:           closed,
+		errHandler:       errHandler,
 		logoutEventer:    logoutEventer,
 		logedoutSessions: topic.New(topic.WithClosed(closed)),
 		authServiceURL:   authServiceURL,
 		tokenKey:         tokenKey,
 		cookieKey:        cookieKey,
 	}
+
+	// Make sure the topic is not empty
+	a.logedoutSessions.Publish("")
 
 	if logoutEventer != nil {
 		go a.receiveLogoutEvent(errHandler)
@@ -68,22 +73,32 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (ctx context
 		return r.Context(), nil
 	}
 
+	_, sessionIDs, err := a.logedoutSessions.Receive(context.Background(), 0)
+	if err != nil {
+		return nil, fmt.Errorf("getting already logged out sessions: %w", err)
+	}
+	for _, sid := range sessionIDs {
+		if sid == p.SessionID {
+			return nil, &authError{"invalid session", nil}
+		}
+	}
+
 	ctx, cancelCtx := context.WithCancel(context.WithValue(r.Context(), userIDType, p.UserID))
 
 	go func() {
+		defer cancelCtx()
+
 		var cid uint64
 		var sessionIDs []string
 		var err error
 		for {
 			cid, sessionIDs, err = a.logedoutSessions.Receive(ctx, cid)
 			if err != nil {
-				// TODO: Do something with the error.
 				return
 			}
 
 			for _, sid := range sessionIDs {
 				if sid == p.SessionID {
-					cancelCtx()
 					return
 				}
 			}
@@ -116,9 +131,8 @@ func (a *Auth) receiveLogoutEvent(errHandler func(error)) {
 		default:
 		}
 
-		data, err := a.logoutEventer.LogoutEvent()
+		data, err := a.logoutEventer.LogoutEvent(a.closed)
 		if err != nil {
-			// TODO: handle closing error
 			errHandler(fmt.Errorf("receiving logout event: %w", err))
 			time.Sleep(time.Second)
 			continue

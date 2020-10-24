@@ -73,7 +73,7 @@ func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 		default:
 		}
 
-		data, err := d.keychanger.Update()
+		data, err := d.keychanger.Update(d.closed)
 		if err != nil {
 			errHandler(fmt.Errorf("update data: %w", err))
 			time.Sleep(time.Second)

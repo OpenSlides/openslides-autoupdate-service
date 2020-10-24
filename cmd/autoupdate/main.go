@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -21,36 +22,74 @@ import (
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
-const (
-	generalCertName = "cert.pem"
-	generalKeyName  = "key.pem"
-	specialCertName = "autoupdate.pem"
-	specialKeyName  = "autoupdate-key.pem"
-)
-
 type receiver interface {
 	datastore.Updater
 	auth.LogoutEventer
 }
 
 func main() {
-	closed := make(chan struct{})
+	if err := run(); err != nil {
+		log.Fatalf("Fatal error: %v", err)
+	}
+}
 
-	errHandler := func(err error) {
-		log.Printf("Error: %v", err)
+func defaultEnv() map[string]string {
+	defaults := map[string]string{
+		"AUTOUPDATE_HOST": "",
+		"AUTOUPDATE_PORT": "9012",
+
+		"CERT_DIR": "",
+
+		"DATASTORE":                 "fake",
+		"DATASTORE_READER_HOST":     "localhost",
+		"DATASTORE_READER_PORT":     "9010",
+		"DATASTORE_READER_PROTOCOL": "http",
+
+		"MESSAGING":        "fake",
+		"MESSAGE_BUS_HOST": "localhost",
+		"MESSAGE_BUS_PORT": "6379",
+		"REDIS_TEST_CONN":  "true",
+
+		"AUTH":                  "fake",
+		"AUTH_KEY_TOKEN":        "auth-dev-key",
+		"AUTH_KEY_COOKIE":       "auth-dev-key",
+		"AUTH_SERIVCE_PROTOCOL": "http",
+		"AUTH_SERIVCE_HOST":     "localhost",
+		"AUTH_SERVICE_PORT":     "9004",
 	}
 
-	var f *faker
+	for k := range defaults {
+		e, ok := os.LookupEnv(k)
+		if ok {
+			defaults[k] = e
+		}
+	}
+	return defaults
+}
 
-	r, err := buildReceiver(f)
+func run() error {
+	env := defaultEnv()
+	closed := make(chan struct{})
+	errHandler := func(err error) {
+		// If an error happend, we just close the session.
+		var closing interface {
+			Closing()
+		}
+		if !errors.As(err, &closing) {
+			log.Printf("Error: %v", err)
+		}
+	}
+
+	// Receiver for datastore and logout events.
+	r, err := buildReceiver(env)
 	if err != nil {
-		log.Fatalf("Can not create message receiver: %v", err)
+		return fmt.Errorf("creating messsaging adapter: %w", err)
 	}
 
 	// Datastore Service.
-	datastoreService, err := buildDatastore(f, r, closed, errHandler)
+	datastoreService, err := buildDatastore(env, r, closed, errHandler)
 	if err != nil {
-		log.Fatalf("Can not create datastore service: %v", err)
+		return fmt.Errorf("creating datastore adapter: %w", err)
 	}
 
 	// Perm Service.
@@ -64,35 +103,22 @@ func main() {
 	service := autoupdate.New(datastoreService, restricter, closed)
 
 	// Auth Service.
-	authService, err := buildAuth(r, closed, errHandler)
+	authService, err := buildAuth(env, r, closed, errHandler)
 	if err != nil {
-		log.Fatalf("Can not create auth method: %v", err)
+		return fmt.Errorf("creating auth adapter: %w", err)
 	}
-
-	// HTTP Hanlder.
-	handler := autoupdateHttp.New(service, authService)
 
 	// Create tls http2 server.
-	cert, err := getCert()
+	handler := autoupdateHttp.New(service, authService)
+	listenAddr := env["AUTOUPDATE_HOST"] + ":" + env["AUTOUPDATE_PORT"]
+	ln, err := buildHTTPListener(env, listenAddr, handler)
 	if err != nil {
-		log.Fatalf("Can not get certificate: %v", err)
-	}
-
-	listenAddr := getEnv("AUTOUPDATE_HOST", "") + ":" + getEnv("AUTOUPDATE_PORT", "9012")
-	srv := &http.Server{Addr: listenAddr, Handler: handler}
-	tlsConf := new(tls.Config)
-	tlsConf.NextProtos = []string{"h2"}
-	tlsConf.Certificates = []tls.Certificate{cert}
-
-	ln, err := net.Listen("tcp", listenAddr)
-	if err != nil {
-		log.Fatalf("Can not listen on %s: %v", listenAddr, err)
+		return fmt.Errorf("creating http listener: %w", err)
 	}
 	defer ln.Close()
+	srv := &http.Server{Addr: listenAddr, Handler: handler}
 
-	tlsListener := tls.NewListener(ln, tlsConf)
-
-	// Shutdown logig in separate goroutine.
+	// Shutdown logic in separate goroutine.
 	shutdownDone := make(chan struct{})
 	go func() {
 		defer close(shutdownDone)
@@ -104,15 +130,42 @@ func main() {
 		}
 	}()
 
-	fmt.Printf("Listen on %s\n", listenAddr)
-	if err := srv.Serve(tlsListener); err != http.ErrServerClosed {
-		log.Fatalf("HTTP Server Error: %v", err)
+	if err := srv.Serve(ln); err != http.ErrServerClosed {
+		return fmt.Errorf("http server: %w", err)
 	}
 	<-shutdownDone
+	return nil
 }
 
-func getCert() (tls.Certificate, error) {
-	certDir := getEnv("CERT_DIR", "")
+func buildHTTPListener(env map[string]string, addr string, handler http.Handler) (net.Listener, error) {
+	cert, err := getCert(env)
+	if err != nil {
+		return nil, fmt.Errorf("getting http certs: %w", err)
+	}
+
+	tlsConf := new(tls.Config)
+	tlsConf.NextProtos = []string{"h2"}
+	tlsConf.Certificates = []tls.Certificate{cert}
+
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Fatalf("Can not listen on %s: %v", addr, err)
+	}
+
+	tlsListener := tls.NewListener(ln, tlsConf)
+	fmt.Printf("Listen on %s\n", addr)
+	return tlsListener, nil
+}
+
+func getCert(env map[string]string) (tls.Certificate, error) {
+	const (
+		generalCertName = "cert.pem"
+		generalKeyName  = "key.pem"
+		specialCertName = "autoupdate.pem"
+		specialKeyName  = "autoupdate-key.pem"
+	)
+
+	certDir := env["CERT_DIR"]
 	if certDir == "" {
 		cert, err := autoupdateHttp.GenerateCert()
 		if err != nil {
@@ -168,19 +221,18 @@ func waitForShutdown() {
 // buildDatastore builds the datastore implementation needed by the autoupdate
 // service. It uses environment variables to make the decission. Per default, a
 // fake server is started and its url is used.
-func buildDatastore(f *faker, receiver datastore.Updater, closed <-chan struct{}, errHandler func(error)) (autoupdate.Datastore, error) {
+func buildDatastore(env map[string]string, receiver datastore.Updater, closed <-chan struct{}, errHandler func(error)) (autoupdate.Datastore, error) {
 	var url string
-	dsService := getEnv("DATASTORE", "fake")
+	dsService := env["DATASTORE"]
 	switch dsService {
 	case "fake":
 		fmt.Println("Fake Datastore")
-		f = newFaker(os.Stdin)
-		url = f.ts.TS.URL
+		url = test.NewDatastoreServer().TS.URL
 
 	case "service":
-		host := getEnv("DATASTORE_READER_HOST", "localhost")
-		port := getEnv("DATASTORE_READER_PORT", "9010")
-		protocol := getEnv("DATASTORE_READER_PROTOCOL", "http")
+		host := env["DATASTORE_READER_HOST"]
+		port := env["DATASTORE_READER_PORT"]
+		protocol := env["DATASTORE_READER_PROTOCOL"]
 		url = protocol + "://" + host + ":" + port
 
 	default:
@@ -195,67 +247,56 @@ func buildDatastore(f *faker, receiver datastore.Updater, closed <-chan struct{}
 // buildReceiver builds the receiver needed by the datastore service. It uses
 // environment variables to make the decission. Per default, the given faker is
 // used.
-func buildReceiver(f *faker) (receiver, error) {
-	var r receiver
-	serviceName := getEnv("MESSAGING", "fake")
+func buildReceiver(env map[string]string) (receiver, error) {
+	serviceName := env["MESSAGING"]
+	fmt.Printf("Messaging Service: %s\n", serviceName)
+
+	var conn redis.Connection
 	switch serviceName {
 	case "redis":
-		redisAddress := getEnv("MESSAGE_BUS_HOST", "localhost") + ":" + getEnv("MESSAGE_BUS_PORT", "6379")
-		conn := redis.NewConnection(redisAddress)
-		if getEnv("REDIS_TEST_CONN", "true") == "true" {
-			if err := conn.TestConn(); err != nil {
+		redisAddress := env["MESSAGE_BUS_HOST"] + ":" + env["MESSAGE_BUS_PORT"]
+		c := redis.NewConnection(redisAddress)
+		if env["REDIS_TEST_CONN"] == "true" {
+			if err := c.TestConn(); err != nil {
 				return nil, fmt.Errorf("connect to redis: %w", err)
 			}
 		}
-		r = &redis.Service{Conn: conn}
+
+		conn = c
 
 	case "fake":
-		r = f
-		if f == nil {
-			serviceName = "none"
-		}
+		conn = redis.BlockingConn{}
 	default:
 		return nil, fmt.Errorf("unknown messagin service %s", serviceName)
 	}
 
-	fmt.Printf("Messaging Service: %s\n", serviceName)
-	return r, nil
+	return &redis.Service{Conn: conn}, nil
 }
 
 // buildAuth returns the auth service needed by the http server.
-func buildAuth(receiver auth.LogoutEventer, closed <-chan struct{}, errHandler func(error)) (autoupdateHttp.Authenticator, error) {
-	method := getEnv("AUTH", "fake")
+func buildAuth(env map[string]string, receiver auth.LogoutEventer, closed <-chan struct{}, errHandler func(error)) (autoupdateHttp.Authenticater, error) {
+	method := env["AUTH"]
 	switch method {
 	case "ticket":
 		fmt.Println("Auth Method: token")
 		const debugKey = "auth-dev-key"
-		tokenKey := getEnv("AUTH_KEY_TOKEN", debugKey)
-		cookieKey := getEnv("AUTH_KEY_COOKIE", debugKey)
+		tokenKey := env["AUTH_KEY_TOKEN"]
+		cookieKey := env["AUTH_KEY_COOKIE"]
 		if tokenKey == debugKey || cookieKey == debugKey {
 			fmt.Println("Auth with debug key")
 		}
 
-		protocol := getEnv("AUTH_SERIVCE_PROTOCOL", "http")
-		host := getEnv("AUTH_SERIVCE_HOST", "localhost")
-		port := getEnv("AUTH_SERIVCE_PORT", "9004")
+		protocol := env["AUTH_SERIVCE_PROTOCOL"]
+		host := env["AUTH_SERIVCE_HOST"]
+		port := env["AUTH_SERIVCE_PORT"]
 		url := protocol + "://" + host + ":" + port
 
 		fmt.Printf("Auth Service: %s\n", url)
 		return auth.New(url, receiver, closed, errHandler, []byte(tokenKey), []byte(cookieKey))
 	case "fake":
 		fmt.Println("Auth Method: FakeAuth (User ID 1 for all requests)")
-		return fakeAuth(1), nil
+		return test.Auth(1), nil
 	default:
 		return nil, fmt.Errorf("unknown auth method %s", method)
 	}
-}
-
-// getEnv returns the value of the environment variable env. If it is empty, the
-// defaultValue is used.
-func getEnv(env, devaultValue string) string {
-	value := os.Getenv(env)
-	if value == "" {
-		return devaultValue
-	}
-	return value
 }
