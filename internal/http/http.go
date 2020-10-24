@@ -29,9 +29,14 @@ func New(s *autoupdate.Autoupdate, auth Authenticator) *Handler {
 		mux:  http.NewServeMux(),
 		auth: auth,
 	}
-	h.mux.Handle("/system/autoupdate", validRequest(h.autoupdate(h.complex)))
-	h.mux.Handle("/system/autoupdate/keys", validRequest(h.autoupdate(h.simple)))
-	h.mux.Handle("/system/autoupdate/health", validRequest(http.HandlerFunc(h.health)))
+
+	middlewares := func(next errHandleFunc) http.Handler {
+		return validRequest(h.authMiddleware(next))
+	}
+
+	h.mux.Handle("/system/autoupdate", middlewares(h.autoupdate(h.complex)))
+	h.mux.Handle("/system/autoupdate/keys", middlewares(h.autoupdate(h.simple)))
+	h.mux.Handle("/system/autoupdate/health", middlewares(h.health))
 	return h
 }
 
@@ -44,10 +49,7 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 	return func(w http.ResponseWriter, r *http.Request) error {
 		w.Header().Set("Content-Type", "application/octet-stream")
 
-		uid, err := h.auth.Authenticate(r.Context(), r)
-		if err != nil {
-			return fmt.Errorf("authenticate request: %w", err)
-		}
+		uid := h.auth.FromContext(r.Context())
 
 		// Save tid before the keybuilder is generated. If the datastore gets an
 		// update, the update can be handeled.
@@ -101,8 +103,20 @@ func (h *Handler) simple(r *http.Request, uid int) (autoupdate.KeysBuilder, erro
 	return kb, nil
 }
 
-func (h *Handler) health(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) health(w http.ResponseWriter, r *http.Request) error {
 	fmt.Fprintln(w, `{"healthy": true}`)
+	return nil
+}
+
+func (h *Handler) authMiddleware(next errHandleFunc) errHandleFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		ctx, err := h.auth.Authenticate(w, r)
+		if err != nil {
+			return fmt.Errorf("authenticate request: %w", err)
+		}
+
+		return next(w, r.WithContext(ctx))
+	}
 }
 
 // errHandleFunc is like a http.Handler, but has a error as return value.
@@ -114,26 +128,34 @@ type errHandleFunc func(w http.ResponseWriter, r *http.Request) error
 
 func (f errHandleFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := f(w, r); err != nil {
-		var noStatusErr noStatusCodeError
-		status := true
-		if errors.As(err, &noStatusErr) {
-			status = false
-		}
-
 		var closing interface {
 			Closing()
 		}
-		if errors.As(err, &closing) || errors.Is(err, context.Canceled) {
-			// Shutdown or connection closed.
+		if errors.As(err, &closing) {
+			// Server is closing.
 			return
 		}
 
-		var derr DefinedError
-		if errors.As(err, &derr) {
+		if errors.Is(err, context.Canceled) {
+			// Client closed connection.
+			return
+		}
+
+		var noStatusErr interface {
+			NoStatus()
+		}
+		var status bool
+		if !errors.As(err, &noStatusErr) {
+			status = true
+		}
+
+		var errClient ClientError
+		if errors.As(err, &errClient) {
 			if status {
 				w.WriteHeader(http.StatusBadRequest)
 			}
-			fmt.Fprintf(w, `{"error": {"type": "%s", "msg": "%s"}}`, derr.Type(), quote(derr.Error()))
+
+			fmt.Fprintf(w, `{"error": {"type": "%s", "msg": "%s"}}`, errClient.Type(), quote(errClient.Error()))
 			return
 		}
 
@@ -173,20 +195,18 @@ func sendData(w io.Writer, data map[string]json.RawMessage) error {
 	return nil
 }
 
-func validRequest(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func validRequest(next errHandleFunc) errHandleFunc {
+	return errHandleFunc(func(w http.ResponseWriter, r *http.Request) error {
 		// Only allow http2 requests.
 		if !r.ProtoAtLeast(2, 0) {
-			http.Error(w, "Only http2 is supported", http.StatusBadRequest)
-			return
+			return invalidRequestError{fmt.Errorf("Only http2 is supported")}
 		}
 
 		// Only allow GET or POST requests.
 		if !(r.Method == http.MethodPost || r.Method == http.MethodGet) {
-			http.Error(w, "Only GET or POST requests are supported", http.StatusMethodNotAllowed)
-			return
+			return invalidRequestError{fmt.Errorf("Only GET or POST requests are supported")}
 		}
 
-		h.ServeHTTP(w, r)
+		return next(w, r)
 	})
 }

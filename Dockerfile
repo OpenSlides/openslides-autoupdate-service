@@ -30,6 +30,7 @@ RUN ["go", "get", "github.com/githubnemo/CompileDaemon"]
 EXPOSE 9012
 ENV DATASTORE service
 ENV MESSAGING redis
+ENV AUTH ticket
 
 CMD CompileDaemon -log-prefix=false -build="go build ./cmd/autoupdate" -command="./autoupdate"
 
@@ -42,5 +43,6 @@ COPY --from=builder /root/autoupdate .
 EXPOSE 9012
 ENV DATASTORE service
 ENV MESSAGING redis
+ENV AUTH ticket
 
 CMD ./autoupdate

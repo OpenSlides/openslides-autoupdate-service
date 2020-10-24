@@ -29,7 +29,7 @@ func TestStream(t *testing.T) {
 		t.Fatalf("Data is invalid json: %v", err)
 	}
 
-	id, retData, err := stream(data, nil)
+	id, retData, err := autoupdateStream(data, nil)
 	if err != nil {
 		t.Errorf("Returned unexpected error %v", err)
 	}
@@ -76,7 +76,7 @@ func TestStreamInvalidData(t *testing.T) {
 				t.Fatalf("Data is invalid json: %v", err)
 			}
 
-			_, _, err = stream(data, nil)
+			_, _, err = autoupdateStream(data, nil)
 			if err == nil {
 				t.Fatalf("Expected an error, got none")
 			}

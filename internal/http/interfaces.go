@@ -5,14 +5,14 @@ import (
 	"net/http"
 )
 
-// Authenticator gives an user id for an request.
-// returns 0 for anonymous.
+// Authenticator gives an user id for an request. Returns 0 for anonymous.
 type Authenticator interface {
-	Authenticate(context.Context, *http.Request) (int, error)
+	Authenticate(http.ResponseWriter, *http.Request) (context.Context, error)
+	FromContext(context.Context) int
 }
 
-// DefinedError is an expected error that are returned to the client.
-type DefinedError interface {
+// ClientError is an expected error that are returned to the client.
+type ClientError interface {
 	Type() string
 	Error() string
 }

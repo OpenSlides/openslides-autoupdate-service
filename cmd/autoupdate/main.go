@@ -12,6 +12,7 @@ import (
 	"path"
 	"syscall"
 
+	"github.com/openslides/openslides-autoupdate-service/internal/auth"
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
 	autoupdateHttp "github.com/openslides/openslides-autoupdate-service/internal/http"
@@ -27,6 +28,11 @@ const (
 	specialKeyName  = "autoupdate-key.pem"
 )
 
+type receiver interface {
+	datastore.Updater
+	auth.LogoutEventer
+}
+
 func main() {
 	closed := make(chan struct{})
 
@@ -34,8 +40,15 @@ func main() {
 		log.Printf("Error: %v", err)
 	}
 
+	var f *faker
+
+	r, err := buildReceiver(f)
+	if err != nil {
+		log.Fatalf("Can not create message receiver: %v", err)
+	}
+
 	// Datastore Service.
-	datastoreService, err := buildDatastore(closed, errHandler)
+	datastoreService, err := buildDatastore(f, r, closed, errHandler)
 	if err != nil {
 		log.Fatalf("Can not create datastore service: %v", err)
 	}
@@ -51,7 +64,10 @@ func main() {
 	service := autoupdate.New(datastoreService, restricter, closed)
 
 	// Auth Service.
-	authService := buildAuth()
+	authService, err := buildAuth(r, closed, errHandler)
+	if err != nil {
+		log.Fatalf("Can not create auth method: %v", err)
+	}
 
 	// HTTP Hanlder.
 	handler := autoupdateHttp.New(service, authService)
@@ -152,8 +168,7 @@ func waitForShutdown() {
 // buildDatastore builds the datastore implementation needed by the autoupdate
 // service. It uses environment variables to make the decission. Per default, a
 // fake server is started and its url is used.
-func buildDatastore(closed <-chan struct{}, errHandler func(error)) (autoupdate.Datastore, error) {
-	var f *faker
+func buildDatastore(f *faker, receiver datastore.Updater, closed <-chan struct{}, errHandler func(error)) (autoupdate.Datastore, error) {
 	var url string
 	dsService := getEnv("DATASTORE", "fake")
 	switch dsService {
@@ -173,18 +188,15 @@ func buildDatastore(closed <-chan struct{}, errHandler func(error)) (autoupdate.
 	}
 
 	fmt.Println("Datastore URL:", url)
-	receiver, err := buildReceiver(f)
-	if err != nil {
-		return nil, fmt.Errorf("build receiver: %w", err)
-	}
+
 	return datastore.New(url, closed, errHandler, receiver), nil
 }
 
 // buildReceiver builds the receiver needed by the datastore service. It uses
 // environment variables to make the decission. Per default, the given faker is
 // used.
-func buildReceiver(f *faker) (datastore.Updater, error) {
-	var receiver datastore.Updater
+func buildReceiver(f *faker) (receiver, error) {
+	var r receiver
 	serviceName := getEnv("MESSAGING", "fake")
 	switch serviceName {
 	case "redis":
@@ -195,10 +207,10 @@ func buildReceiver(f *faker) (datastore.Updater, error) {
 				return nil, fmt.Errorf("connect to redis: %w", err)
 			}
 		}
-		receiver = &redis.Service{Conn: conn}
+		r = &redis.Service{Conn: conn}
 
 	case "fake":
-		receiver = f
+		r = f
 		if f == nil {
 			serviceName = "none"
 		}
@@ -207,14 +219,35 @@ func buildReceiver(f *faker) (datastore.Updater, error) {
 	}
 
 	fmt.Printf("Messaging Service: %s\n", serviceName)
-	return receiver, nil
+	return r, nil
 }
 
 // buildAuth returns the auth service needed by the http server.
-//
-// Currently, there is only the fakeAuth service.
-func buildAuth() autoupdateHttp.Authenticator {
-	return fakeAuth(1)
+func buildAuth(receiver auth.LogoutEventer, closed <-chan struct{}, errHandler func(error)) (autoupdateHttp.Authenticator, error) {
+	method := getEnv("AUTH", "fake")
+	switch method {
+	case "ticket":
+		fmt.Println("Auth Method: token")
+		const debugKey = "auth-dev-key"
+		tokenKey := getEnv("AUTH_KEY_TOKEN", debugKey)
+		cookieKey := getEnv("AUTH_KEY_COOKIE", debugKey)
+		if tokenKey == debugKey || cookieKey == debugKey {
+			fmt.Println("Auth with debug key")
+		}
+
+		protocol := getEnv("AUTH_SERIVCE_PROTOCOL", "http")
+		host := getEnv("AUTH_SERIVCE_HOST", "localhost")
+		port := getEnv("AUTH_SERIVCE_PORT", "9004")
+		url := protocol + "://" + host + ":" + port
+
+		fmt.Printf("Auth Service: %s\n", url)
+		return auth.New(url, receiver, closed, errHandler, []byte(tokenKey), []byte(cookieKey))
+	case "fake":
+		fmt.Println("Auth Method: FakeAuth (User ID 1 for all requests)")
+		return fakeAuth(1), nil
+	default:
+		return nil, fmt.Errorf("unknown auth method %s", method)
+	}
 }
 
 // getEnv returns the value of the environment variable env. If it is empty, the

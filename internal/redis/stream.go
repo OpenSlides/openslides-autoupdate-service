@@ -9,11 +9,7 @@ import (
 
 var errNil = errors.New("nil returned")
 
-// stream parses a redis stream object to an autoupdate.KeyChanges object.
-//
-// The first return value is the redis stream id. The second one is the data and
-// the third is an error.
-func stream(reply interface{}, err error) (string, map[string]json.RawMessage, error) {
+func stream(reply interface{}, err error) (string, map[string][]byte, error) {
 	if err != nil {
 		return "", nil, err
 	}
@@ -39,7 +35,7 @@ func stream(reply interface{}, err error) (string, map[string]json.RawMessage, e
 		return "", nil, fmt.Errorf("invalid input. Stream data has to be a list, got %T", stream1[1])
 	}
 	var id string
-	retData := make(map[string]json.RawMessage)
+	retData := make(map[string][]byte)
 	for _, v := range data {
 		element, ok := v.([]interface{})
 		if !ok {
@@ -64,18 +60,58 @@ func stream(reply interface{}, err error) (string, map[string]json.RawMessage, e
 			if !ok {
 				return "", nil, fmt.Errorf("invalid input. Key has to be a string, got %T", kv[i])
 			}
-			if strings.Count(key, "/") != 2 {
-				return "", nil, fmt.Errorf("invalid key %s", key)
-			}
-			value, ok := tostr(kv[i+1])
+
+			value, ok := toByte(kv[i+1])
 			if !ok {
-				return "", nil, fmt.Errorf("invalid input. Values has to be a string, got %T", kv[i+1])
+				return "", nil, fmt.Errorf("invalid input. Value has to be []byte, got %T", kv[i+1])
 			}
 
-			retData[key] = json.RawMessage(value)
+			retData[key] = value
 		}
 	}
 	return id, retData, nil
+}
+
+// autoupdateStream parses a redis autoupdateStream object to an autoupdate.KeyChanges object.
+//
+// The first return value is the redis autoupdateStream id. The second one is the data and
+// the third is an error.
+func autoupdateStream(reply interface{}, err error) (string, map[string]json.RawMessage, error) {
+	id, data, err := stream(reply, err)
+	if err != nil {
+		return "", nil, err
+	}
+
+	converted := make(map[string]json.RawMessage, len(data))
+	for key, value := range data {
+		if strings.Count(key, "/") != 2 {
+			return "", nil, fmt.Errorf("invalid key %s", key)
+		}
+
+		converted[key] = json.RawMessage(value)
+	}
+	return id, converted, nil
+}
+
+// logoutStream parses a redis logoutStream object to an list of sessionsIDs.
+//
+// The first return value is the redis autoupdateStream id. The second one is the data and
+// the third is an error.
+func logoutStream(reply interface{}, err error) (string, []string, error) {
+	id, data, err := stream(reply, err)
+	if err != nil {
+		return "", nil, err
+	}
+
+	var sessionIDs []string
+	for key, value := range data {
+		if key != "sessionId" {
+			continue
+		}
+
+		sessionIDs = append(sessionIDs, string(value))
+	}
+	return id, sessionIDs, nil
 }
 
 // tostr converts an interface with value string or []byte to string this is an
@@ -89,5 +125,19 @@ func tostr(i interface{}) (string, bool) {
 		return string(rid), true
 	default:
 		return "", false
+	}
+}
+
+// toByte converts an interface with value string or []byte to []byte this is an
+// helper, because the test-code generates strings but the redis code generates
+// []bytes.
+func toByte(i interface{}) ([]byte, bool) {
+	switch rid := i.(type) {
+	case string:
+		return []byte(rid), true
+	case []byte:
+		return rid, true
+	default:
+		return nil, false
 	}
 }
