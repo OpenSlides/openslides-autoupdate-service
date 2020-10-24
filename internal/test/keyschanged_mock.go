@@ -25,12 +25,14 @@ func NewUpdaterMock() *UpdaterMock {
 
 // Update returnes keys that have changed. Blocks until keys are send with
 // the Send-method.
-func (m *UpdaterMock) Update() (map[string]json.RawMessage, error) {
+func (m *UpdaterMock) Update(closing <-chan struct{}) (map[string]json.RawMessage, error) {
 	select {
 	case v := <-m.c:
 		return v, nil
 	case <-m.t.C:
 		return nil, nil
+	case <-closing:
+		return nil, closingError{}
 	}
 }
 
@@ -43,3 +45,8 @@ func (m *UpdaterMock) Send(values map[string]json.RawMessage) {
 func (m *UpdaterMock) Close() {
 	m.t.Stop()
 }
+
+type closingError struct{}
+
+func (e closingError) Closing()      {}
+func (e closingError) Error() string { return "closing" }

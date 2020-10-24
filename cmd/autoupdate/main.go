@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -70,7 +71,13 @@ func run() error {
 	env := defaultEnv()
 	closed := make(chan struct{})
 	errHandler := func(err error) {
-		log.Printf("Error: %v", err)
+		// If an error happend, we just close the session.
+		var closing interface {
+			Closing()
+		}
+		if !errors.As(err, &closing) {
+			log.Printf("Error: %v", err)
+		}
 	}
 
 	// Receiver for datastore and logout events.

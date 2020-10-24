@@ -27,6 +27,7 @@ type Auth struct {
 	logoutEventer    LogoutEventer
 	logedoutSessions *topic.Topic
 	closed           <-chan struct{}
+	errHandler       func(error)
 
 	authServiceURL string
 
@@ -38,6 +39,7 @@ type Auth struct {
 func New(authServiceURL string, logoutEventer LogoutEventer, closed <-chan struct{}, errHandler func(error), tokenKey, cookieKey []byte) (*Auth, error) {
 	a := &Auth{
 		closed:           closed,
+		errHandler:       errHandler,
 		logoutEventer:    logoutEventer,
 		logedoutSessions: topic.New(topic.WithClosed(closed)),
 		authServiceURL:   authServiceURL,
@@ -71,19 +73,19 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (ctx context
 	ctx, cancelCtx := context.WithCancel(context.WithValue(r.Context(), userIDType, p.UserID))
 
 	go func() {
+		defer cancelCtx()
+
 		var cid uint64
 		var sessionIDs []string
 		var err error
 		for {
 			cid, sessionIDs, err = a.logedoutSessions.Receive(ctx, cid)
 			if err != nil {
-				// TODO: Do something with the error.
 				return
 			}
 
 			for _, sid := range sessionIDs {
 				if sid == p.SessionID {
-					cancelCtx()
 					return
 				}
 			}
@@ -116,7 +118,7 @@ func (a *Auth) receiveLogoutEvent(errHandler func(error)) {
 		default:
 		}
 
-		data, err := a.logoutEventer.LogoutEvent()
+		data, err := a.logoutEventer.LogoutEvent(a.closed)
 		if err != nil {
 			// TODO: handle closing error
 			errHandler(fmt.Errorf("receiving logout event: %w", err))
