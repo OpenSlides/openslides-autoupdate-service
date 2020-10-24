@@ -1,5 +1,5 @@
 name: Check Commands in README.md
-on: [push, pull_request]
+on: [pull_request]
 jobs:
   readme:
     name: Readme
