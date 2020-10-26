@@ -30,13 +30,13 @@ func New(s *autoupdate.Autoupdate, auth Authenticater) *Handler {
 		auth: auth,
 	}
 
-	middlewares := func(next errHandleFunc) http.Handler {
+	middlewares := func(next http.Handler) http.Handler {
 		return validRequest(h.authMiddleware(next))
 	}
 
 	h.mux.Handle("/system/autoupdate", middlewares(h.autoupdate(h.complex)))
 	h.mux.Handle("/system/autoupdate/keys", middlewares(h.autoupdate(h.simple)))
-	h.mux.Handle("/system/autoupdate/health", middlewares(h.health))
+	h.mux.Handle("/system/autoupdate/health", middlewares(h.health()))
 	return h
 }
 
@@ -45,8 +45,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // autoupdate creates a Handler for a specific Keysbuilder.
-func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilder, error)) errHandleFunc {
-	return func(w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilder, error)) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 
 		uid := h.auth.FromContext(r.Context())
@@ -57,14 +57,16 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 
 		kb, err := kbg(r, uid)
 		if err != nil {
-			return fmt.Errorf("build keysbuilder: %w", err)
+			handleError(w, fmt.Errorf("build keysbuilder: %w", err), true)
+			return
 		}
 
 		defer func() {
 			// After this line, it is not allowed for the handler to set a
 			// status error.
 			if err != nil {
-				err = noStatusCodeError{err}
+				handleError(w, err, false)
+				return
 			}
 		}()
 
@@ -75,14 +77,16 @@ func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilde
 			// or the server is closed.
 			data, err := connection.Next(r.Context())
 			if err != nil {
-				return err
+				handleError(w, err, false)
+				return
 			}
 
 			if err := sendData(w, data); err != nil {
-				return err
+				handleError(w, err, false)
+				return
 			}
 		}
-	}
+	})
 }
 
 // complex builds a keysbuilder from the body of a request. The body has to be
@@ -103,68 +107,58 @@ func (h *Handler) simple(r *http.Request, uid int) (autoupdate.KeysBuilder, erro
 	return kb, nil
 }
 
-func (h *Handler) health(w http.ResponseWriter, r *http.Request) error {
-	fmt.Fprintln(w, `{"healthy": true}`)
-	return nil
+func (h *Handler) health() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, `{"healthy": true}`)
+	})
 }
 
-func (h *Handler) authMiddleware(next errHandleFunc) errHandleFunc {
-	return func(w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, err := h.auth.Authenticate(w, r)
 		if err != nil {
-			return fmt.Errorf("authenticate request: %w", err)
+			handleError(w, fmt.Errorf("authenticate request: %w", err), true)
+			return
 		}
 
-		return next(w, r.WithContext(ctx))
-	}
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
-// errHandleFunc is like a http.Handler, but has a error as return value.
+// handleError interprets the given error and writes a corresponding message to
+// the client and/or stdout.
 //
-// If the returned error implements the DefinedError interface, then the error
-// message is sent to the client. In other cases the error is interpredet as an
-// internal error and logged to stdout.
-type errHandleFunc func(w http.ResponseWriter, r *http.Request) error
-
-func (f errHandleFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if err := f(w, r); err != nil {
-		var closing interface {
-			Closing()
-		}
-		if errors.As(err, &closing) {
-			// Server is closing.
-			return
-		}
-
-		if errors.Is(err, context.Canceled) {
-			// Client closed connection.
-			return
-		}
-
-		var noStatusErr interface {
-			NoStatus()
-		}
-		var status bool
-		if !errors.As(err, &noStatusErr) {
-			status = true
-		}
-
-		var errClient ClientError
-		if errors.As(err, &errClient) {
-			if status {
-				w.WriteHeader(http.StatusBadRequest)
-			}
-
-			fmt.Fprintf(w, `{"error": {"type": "%s", "msg": "%s"}}`, errClient.Type(), quote(errClient.Error()))
-			return
-		}
-
-		if status {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-		log.Printf("Internal Error: %v", err)
-		fmt.Fprintln(w, `{"error": {"type": "InternalError", "msg": "Ups, something went wrong!"}}`)
+// If the handler already started to write the body then it is not allowed to
+// set the http-status-code. In this case, writeStatusCode has to be fales.
+func handleError(w http.ResponseWriter, err error, writeStatusCode bool) {
+	var closing interface {
+		Closing()
 	}
+	if errors.As(err, &closing) {
+		// Server is closing.
+		return
+	}
+
+	if errors.Is(err, context.Canceled) {
+		// Client closed connection.
+		return
+	}
+
+	var errClient ClientError
+	if errors.As(err, &errClient) {
+		if writeStatusCode {
+			w.WriteHeader(http.StatusBadRequest)
+		}
+
+		fmt.Fprintf(w, `{"error": {"type": "%s", "msg": "%s"}}`, errClient.Type(), quote(errClient.Error()))
+		return
+	}
+
+	if writeStatusCode {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	log.Printf("Internal Error: %v", err)
+	fmt.Fprintln(w, `{"error": {"type": "InternalError", "msg": "Ups, something went wrong!"}}`)
 }
 
 // quote decodes changes quotation marks with a backslash to make sure, they are
@@ -195,18 +189,20 @@ func sendData(w io.Writer, data map[string]json.RawMessage) error {
 	return nil
 }
 
-func validRequest(next errHandleFunc) errHandleFunc {
-	return errHandleFunc(func(w http.ResponseWriter, r *http.Request) error {
+func validRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Only allow http2 requests.
 		if !r.ProtoAtLeast(2, 0) {
-			return invalidRequestError{fmt.Errorf("Only http2 is supported")}
+			handleError(w, invalidRequestError{fmt.Errorf("Only http2 is supported")}, true)
+			return
 		}
 
 		// Only allow GET or POST requests.
 		if !(r.Method == http.MethodPost || r.Method == http.MethodGet) {
-			return invalidRequestError{fmt.Errorf("Only GET or POST requests are supported")}
+			handleError(w, invalidRequestError{fmt.Errorf("Only GET or POST requests are supported")}, true)
+			return
 		}
 
-		return next(w, r)
+		next.ServeHTTP(w, r)
 	})
 }
