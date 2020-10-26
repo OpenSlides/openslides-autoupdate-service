@@ -55,12 +55,11 @@ func New(datastore Datastore, restricter Restricter, closed <-chan struct{}) *Au
 // returns a Connection object, that can be used to receive the data.
 //
 // There is no need to "close" the Connection object.
-func (a *Autoupdate) Connect(userID int, kb KeysBuilder, tid uint64) *Connection {
+func (a *Autoupdate) Connect(userID int, kb KeysBuilder) *Connection {
 	return &Connection{
 		autoupdate: a,
 		uid:        userID,
 		kb:         kb,
-		tid:        tid,
 	}
 }
 

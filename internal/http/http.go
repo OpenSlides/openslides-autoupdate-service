@@ -15,105 +15,111 @@ import (
 	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
 )
 
-// Handler is an http handler for the autoupdate service.
-type Handler struct {
-	s    *autoupdate.Autoupdate
+// handler holds the state for the handlers.
+type handler struct {
+	au   *autoupdate.Autoupdate
 	mux  *http.ServeMux
 	auth Authenticater
+
+	prefix string
 }
 
 // New create a new Handler with the correct urls.
-func New(s *autoupdate.Autoupdate, auth Authenticater) *Handler {
-	h := &Handler{
-		s:    s,
-		mux:  http.NewServeMux(),
-		auth: auth,
+func New(au *autoupdate.Autoupdate, auth Authenticater) http.Handler {
+	h := &handler{
+		au:     au,
+		mux:    http.NewServeMux(),
+		auth:   auth,
+		prefix: "/system/autoupdate",
 	}
 
-	middlewares := func(next http.Handler) http.Handler {
-		return validRequest(h.authMiddleware(next))
-	}
+	mux := http.NewServeMux()
 
-	h.mux.Handle("/system/autoupdate", middlewares(h.autoupdate(h.complex)))
-	h.mux.Handle("/system/autoupdate/keys", middlewares(h.autoupdate(h.simple)))
-	h.mux.Handle("/system/autoupdate/health", middlewares(h.health()))
-	return h
+	h.complexAutoupdate(mux)
+	h.simpleAutoupdate(mux)
+	h.health(mux)
+
+	return mux
 }
 
-func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.mux.ServeHTTP(w, r)
+func (h *handler) middlewares(next http.Handler) http.Handler {
+	return validRequest(h.authMiddleware(next))
 }
 
-// autoupdate creates a Handler for a specific Keysbuilder.
-func (h *Handler) autoupdate(kbg func(*http.Request, int) (autoupdate.KeysBuilder, error)) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/octet-stream")
-
+// complex builds the requested keys from the body of a request. The body has to
+// be in the format specified in the keysbuilder package.
+func (h *handler) complexAutoupdate(mux *http.ServeMux) {
+	url := h.prefix
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		uid := h.auth.FromContext(r.Context())
 
-		// Save tid before the keybuilder is generated. If the datastore gets an
-		// update, the update can be handeled.
-		tid := h.s.LastID()
-
-		kb, err := kbg(r, uid)
+		kb, err := keysbuilder.ManyFromJSON(r.Context(), r.Body, h.au, uid)
 		if err != nil {
-			handleError(w, fmt.Errorf("build keysbuilder: %w", err), true)
+			handleError(w, err, true)
 			return
 		}
 
-		defer func() {
-			// After this line, it is not allowed for the handler to set a
-			// status error.
-			if err != nil {
-				handleError(w, err, false)
-				return
-			}
-		}()
-
-		connection := h.s.Connect(uid, kb, tid)
-
-		for {
-			// connection.Next() blocks, until there is new data or the client context
-			// or the server is closed.
-			data, err := connection.Next(r.Context())
-			if err != nil {
-				handleError(w, err, false)
-				return
-			}
-
-			if err := sendData(w, data); err != nil {
-				handleError(w, err, false)
-				return
-			}
-		}
+		h.autoupdate(w, r, kb)
 	})
+
+	mux.Handle(url, h.middlewares(handler))
 }
 
-// complex builds a keysbuilder from the body of a request. The body has to be
-// in the format specified in the keysbuilder package.
-func (h *Handler) complex(r *http.Request, uid int) (autoupdate.KeysBuilder, error) {
-	defer r.Body.Close()
-	return keysbuilder.ManyFromJSON(r.Context(), r.Body, h.s, uid)
+// simpleAutoupdate builds a keysbuilder from the url query. It expects a comma
+// separated list of keysname.
+func (h *handler) simpleAutoupdate(mux *http.ServeMux) {
+	url := h.prefix + "/keys"
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		keys := strings.Split(r.URL.RawQuery, ",")
+		kb := &keysbuilder.Simple{K: keys}
+		if err := kb.Validate(); err != nil {
+			handleError(w, err, true)
+			return
+		}
+
+		h.autoupdate(w, r, kb)
+	})
+
+	mux.Handle(url, h.middlewares(handler))
 }
 
-// simple builds a keysbuilder from the url query. It expects a comma separated
-// list of keysname.
-func (h *Handler) simple(r *http.Request, uid int) (autoupdate.KeysBuilder, error) {
-	keys := strings.Split(r.URL.RawQuery, ",")
-	kb := &keysbuilder.Simple{K: keys}
-	if err := kb.Validate(); err != nil {
-		return nil, err
-	}
-	return kb, nil
-}
-
-func (h *Handler) health() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// health tells, if the service is running.
+func (h *handler) health(mux *http.ServeMux) {
+	url := h.prefix + "/health"
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/octet-stream")
 		fmt.Fprintln(w, `{"healthy": true}`)
 	})
+
+	mux.Handle(url, handler)
 }
 
-func (h *Handler) authMiddleware(next http.Handler) http.Handler {
+// autoupdate returns the values for the keys specified by the given
+// KeysBuilder.
+func (h *handler) autoupdate(w http.ResponseWriter, r *http.Request, kb autoupdate.KeysBuilder) {
+	w.Header().Set("Content-Type", "application/octet-stream")
+
+	uid := h.auth.FromContext(r.Context())
+	connection := h.au.Connect(uid, kb)
+
+	for {
+		// connection.Next() blocks, until there is new data or the client context
+		// or the server is closed.
+		data, err := connection.Next(r.Context())
+		if err != nil {
+			handleError(w, err, false)
+			return
+		}
+
+		if err := sendData(w, data); err != nil {
+			handleError(w, err, false)
+			return
+		}
+	}
+}
+
+func (h *handler) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, err := h.auth.Authenticate(w, r)
 		if err != nil {
@@ -131,6 +137,10 @@ func (h *Handler) authMiddleware(next http.Handler) http.Handler {
 // If the handler already started to write the body then it is not allowed to
 // set the http-status-code. In this case, writeStatusCode has to be fales.
 func handleError(w http.ResponseWriter, err error, writeStatusCode bool) {
+	if writeStatusCode {
+		w.Header().Set("Content-Type", "application/octet-stream")
+	}
+
 	var closing interface {
 		Closing()
 	}

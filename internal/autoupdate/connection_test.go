@@ -91,7 +91,7 @@ func TestConnectionEmptyData(t *testing.T) {
 	kb := mockKeysBuilder{keys: test.Str(doesExistKey, doesNotExistKey)}
 
 	t.Run("First responce", func(t *testing.T) {
-		c := s.Connect(1, kb, 0)
+		c := s.Connect(1, kb)
 
 		data, err := c.Next(context.Background())
 
@@ -138,7 +138,7 @@ func TestConnectionEmptyData(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			c := s.Connect(1, kb, 0)
+			c := s.Connect(1, kb)
 			if _, err := c.Next(context.Background()); err != nil {
 				t.Errorf("c.Next() returned an error: %v", err)
 			}
@@ -161,7 +161,7 @@ func TestConnectionEmptyData(t *testing.T) {
 	}
 
 	t.Run("exit->not exist-> not exist", func(t *testing.T) {
-		c := s.Connect(1, kb, 0)
+		c := s.Connect(1, kb)
 		if _, err := c.Next(context.Background()); err != nil {
 			t.Errorf("c.Next() returned an error: %v", err)
 		}
@@ -191,7 +191,7 @@ func TestConnectionFilterData(t *testing.T) {
 	defer close(closed)
 	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
 	kb := mockKeysBuilder{keys: test.Str("user/1/name")}
-	c := s.Connect(1, kb, 0)
+	c := s.Connect(1, kb)
 	if _, err := c.Next(context.Background()); err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
@@ -216,7 +216,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	close(closed)
 	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
 	kb := mockKeysBuilder{keys: test.Str("user/1/name")}
-	c := s.Connect(1, kb, 0)
+	c := s.Connect(1, kb)
 	if _, err := c.Next(context.Background()); err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
@@ -253,7 +253,7 @@ func BenchmarkFilterChanging(b *testing.B) {
 	kb := mockKeysBuilder{keys: keys}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	c := s.Connect(1, kb, 0)
+	c := s.Connect(1, kb)
 
 	b.ResetTimer()
 
@@ -280,7 +280,7 @@ func BenchmarkFilterNotChanging(b *testing.B) {
 	kb := mockKeysBuilder{keys: keys}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	c := s.Connect(1, kb, 0)
+	c := s.Connect(1, kb)
 
 	b.ResetTimer()
 
