@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +15,25 @@ import (
 	ahttp "github.com/openslides/openslides-autoupdate-service/internal/http"
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
+
+type liverMock struct{}
+
+func (m *liverMock) Live(context.Context, int, io.Writer, autoupdate.KeysBuilder) error {
+	return nil
+}
+
+func TestSimpleHandler(t *testing.T) {
+	mux := http.NewServeMux()
+	liver := new(liverMock)
+	ahttp.Simple(mux, test.Auth(1), liver)
+
+	req := httptest.NewRequest("GET", "/system/autoupdate/keys?foo,bar", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	res := rec.Result()
+
+}
 
 func TestHandlerTestURLs(t *testing.T) {
 	closed := make(chan struct{})

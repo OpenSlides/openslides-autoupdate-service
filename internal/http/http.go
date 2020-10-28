@@ -3,74 +3,48 @@ package http
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"strings"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
 )
 
-// handler holds the state for the handlers.
-type handler struct {
-	au   *autoupdate.Autoupdate
-	mux  *http.ServeMux
-	auth Authenticater
+const prefix = "/system/autoupdate"
 
-	prefix string
-}
-
-// New create a new Handler with the correct urls.
-func New(au *autoupdate.Autoupdate, auth Authenticater) http.Handler {
-	h := &handler{
-		au:     au,
-		mux:    http.NewServeMux(),
-		auth:   auth,
-		prefix: "/system/autoupdate",
-	}
-
-	mux := http.NewServeMux()
-
-	h.complexAutoupdate(mux)
-	h.simpleAutoupdate(mux)
-	h.health(mux)
-
-	return mux
-}
-
-func (h *handler) middlewares(next http.Handler) http.Handler {
-	return validRequest(h.authMiddleware(next))
-}
-
-// complex builds the requested keys from the body of a request. The body has to
-// be in the format specified in the keysbuilder package.
-func (h *handler) complexAutoupdate(mux *http.ServeMux) {
-	url := h.prefix
+// Complex builds the requested keys from the body of a request. The
+// body has to be in the format specified in the keysbuilder package.
+func Complex(mux *http.ServeMux, auth Authenticater, db keysbuilder.DataProvider, liver Liver) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-		uid := h.auth.FromContext(r.Context())
+		w.Header().Set("Content-Type", "application/octet-stream")
 
-		kb, err := keysbuilder.ManyFromJSON(r.Context(), r.Body, h.au, uid)
+		defer r.Body.Close()
+		uid := auth.FromContext(r.Context())
+
+		kb, err := keysbuilder.ManyFromJSON(r.Context(), r.Body, db, uid)
 		if err != nil {
 			handleError(w, err, true)
 			return
 		}
 
-		h.autoupdate(w, r, kb)
+		// This blocks until the request is done.
+		if err := liver.Live(r.Context(), uid, w, kb); err != nil {
+			handleError(w, err, false)
+		}
 	})
 
-	mux.Handle(url, h.middlewares(handler))
+	mux.Handle(prefix, validRequest(authMiddleware(handler, auth)))
 }
 
-// simpleAutoupdate builds a keysbuilder from the url query. It expects a comma
+// Simple builds a keysbuilder from the url query. It expects a comma
 // separated list of keysname.
-func (h *handler) simpleAutoupdate(mux *http.ServeMux) {
-	url := h.prefix + "/keys"
+func Simple(mux *http.ServeMux, auth Authenticater, liver Liver) {
+	url := prefix + "/keys"
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/octet-stream")
+
 		keys := strings.Split(r.URL.RawQuery, ",")
 		kb := &keysbuilder.Simple{K: keys}
 		if err := kb.Validate(); err != nil {
@@ -78,15 +52,20 @@ func (h *handler) simpleAutoupdate(mux *http.ServeMux) {
 			return
 		}
 
-		h.autoupdate(w, r, kb)
+		uid := auth.FromContext(r.Context())
+
+		// This blocks until the request is done.
+		if err := liver.Live(r.Context(), uid, w, kb); err != nil {
+			handleError(w, err, false)
+		}
 	})
 
-	mux.Handle(url, h.middlewares(handler))
+	mux.Handle(url, validRequest(authMiddleware(handler, auth)))
 }
 
-// health tells, if the service is running.
-func (h *handler) health(mux *http.ServeMux) {
-	url := h.prefix + "/health"
+// Health tells, if the service is running.
+func Health(mux *http.ServeMux) {
+	url := prefix + "/health"
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		fmt.Fprintln(w, `{"healthy": true}`)
@@ -95,33 +74,9 @@ func (h *handler) health(mux *http.ServeMux) {
 	mux.Handle(url, handler)
 }
 
-// autoupdate returns the values for the keys specified by the given
-// KeysBuilder.
-func (h *handler) autoupdate(w http.ResponseWriter, r *http.Request, kb autoupdate.KeysBuilder) {
-	w.Header().Set("Content-Type", "application/octet-stream")
-
-	uid := h.auth.FromContext(r.Context())
-	connection := h.au.Connect(uid, kb)
-
-	for {
-		// connection.Next() blocks, until there is new data or the client context
-		// or the server is closed.
-		data, err := connection.Next(r.Context())
-		if err != nil {
-			handleError(w, err, false)
-			return
-		}
-
-		if err := sendData(w, data); err != nil {
-			handleError(w, err, false)
-			return
-		}
-	}
-}
-
-func (h *handler) authMiddleware(next http.Handler) http.Handler {
+func authMiddleware(next http.Handler, auth Authenticater) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, err := h.auth.Authenticate(w, r)
+		ctx, err := auth.Authenticate(w, r)
 		if err != nil {
 			handleError(w, fmt.Errorf("authenticate request: %w", err), true)
 			return
@@ -175,28 +130,6 @@ func handleError(w http.ResponseWriter, err error, writeStatusCode bool) {
 // valid json.
 func quote(s string) string {
 	return strings.ReplaceAll(s, `"`, `\"`)
-}
-
-func sendData(w io.Writer, data map[string]json.RawMessage) error {
-	// TODO: Handle errors
-	first := true
-	w.Write([]byte("{"))
-	for key, value := range data {
-		if !first {
-			w.Write([]byte{','})
-		}
-		first = false
-		w.Write([]byte{'"'})
-		w.Write([]byte(key))
-		w.Write([]byte{'"', ':'})
-		if value == nil {
-			value = []byte("null")
-		}
-		w.Write(value)
-	}
-	w.Write([]byte("}\n"))
-	w.(http.Flusher).Flush()
-	return nil
 }
 
 func validRequest(next http.Handler) http.Handler {

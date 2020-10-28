@@ -2,7 +2,10 @@ package http
 
 import (
 	"context"
+	"io"
 	"net/http"
+
+	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 )
 
 // Authenticater gives an user id for an request. Returns 0 for anonymous.
@@ -15,4 +18,9 @@ type Authenticater interface {
 type ClientError interface {
 	Type() string
 	Error() string
+}
+
+// Liver provides a Live method, that writes continues data to the given writer.
+type Liver interface {
+	Live(context.Context, int, io.Writer, autoupdate.KeysBuilder) error
 }
