@@ -87,6 +87,8 @@ func (d *DatastoreValues) Value(key string) (json.RawMessage, bool, error) {
 	switch {
 	case strings.HasPrefix(key, "error"):
 		return nil, true, fmt.Errorf("mock datastore error")
+	case strings.Contains(key, "$_"):
+		return json.RawMessage(`"1","2"`), true, nil
 	case strings.HasSuffix(key, "_id"):
 		return json.RawMessage(`1`), true, nil
 	case strings.HasSuffix(key, "_ids"):

@@ -1,6 +1,6 @@
 package restrict
 
-//go:generate  sh -c "go run gendef/*.go > def.go && go fmt def.go"
+//go:generate  sh -c "go run gendef/main.go > def.go && go fmt def.go"
 import (
 	"encoding/json"
 	"fmt"
@@ -78,7 +78,7 @@ type genericRelationList struct {
 func (g *genericRelationList) Check(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
 	var fqids []string
 	if err := json.Unmarshal(value, &fqids); err != nil {
-		return nil, fmt.Errorf("decoding %s: %w", key, err)
+		return nil, fmt.Errorf("decoding %s=%s: %w", key, value, err)
 	}
 
 	keys := make([]string, len(fqids))
@@ -112,7 +112,7 @@ type templateField struct {
 func (s *templateField) Check(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
 	var replacments []string
 	if err := json.Unmarshal(value, &replacments); err != nil {
-		return nil, fmt.Errorf("decoding key %s: %w", key, err)
+		return nil, fmt.Errorf("decoding key %s=%s: %w", key, value, err)
 	}
 
 	keys := make([]string, len(replacments))
