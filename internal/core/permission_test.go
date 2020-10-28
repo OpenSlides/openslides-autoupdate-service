@@ -7,7 +7,7 @@ import (
 	"github.com/OpenSlides/openslides-permission-service/internal/core"
 )
 
-func DummyAllowed(ctx *allowed.IsAllowedContext) (bool, map[string]interface{}, error) {
+func DummyAllowed(params *allowed.IsAllowedParams) (bool, map[string]interface{}, error) {
 	return true, nil, nil
 }
 

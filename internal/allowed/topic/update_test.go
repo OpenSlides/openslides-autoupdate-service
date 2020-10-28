@@ -11,8 +11,8 @@ import (
 	"github.com/OpenSlides/openslides-permission-service/internal/tests"
 )
 
-func assertUpdateFailWithError(t *testing.T, ctx *allowed.IsAllowedContext) {
-	allowed, addition, err := topic.Update(ctx)
+func assertUpdateFailWithError(t *testing.T, params *allowed.IsAllowedParams) {
+	allowed, addition, err := topic.Update(params)
 	if nil != addition {
 		t.Errorf("Expected to fail without an addition: %s", addition)
 	}
@@ -25,8 +25,8 @@ func assertUpdateFailWithError(t *testing.T, ctx *allowed.IsAllowedContext) {
 	}
 }
 
-func assertUpdateIsNotAllowed(t *testing.T, ctx *allowed.IsAllowedContext) {
-	allowed, addition, err := topic.Update(ctx)
+func assertUpdateIsNotAllowed(t *testing.T, params *allowed.IsAllowedParams) {
+	allowed, addition, err := topic.Update(params)
 	if nil != addition {
 		t.Errorf("Expected to fail without an addition: %s", addition)
 	}
@@ -39,8 +39,8 @@ func assertUpdateIsNotAllowed(t *testing.T, ctx *allowed.IsAllowedContext) {
 	}
 }
 
-func assertUpdateIsAllowed(t *testing.T, ctx *allowed.IsAllowedContext) {
-	allowed, addition, err := topic.Update(ctx)
+func assertUpdateIsAllowed(t *testing.T, params *allowed.IsAllowedParams) {
+	allowed, addition, err := topic.Update(params)
 	if nil != addition {
 		t.Errorf("Expected to fail without an addition: %s", addition)
 	}
@@ -58,27 +58,27 @@ func TestUpdateUnknownUser(t *testing.T) {
 	data := definitions.FqfieldData{
 		"id": "1",
 	}
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateFailWithError(t, ctx)
+	assertUpdateFailWithError(t, params)
 }
 
 func TestUpdateSuperadminRole(t *testing.T) {
 	dp := tests.NewTestDataProvider()
 	data := definitions.FqfieldData{} // No meeting id needed, it is always possible.
 	dp.AddUserWithSuperadminRole(1)
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateIsAllowed(t, ctx)
+	assertUpdateIsAllowed(t, params)
 }
 
 func TestUpdateNoId(t *testing.T) {
 	dp := tests.NewTestDataProvider()
 	data := definitions.FqfieldData{}
 	dp.AddUserWithAdminGroupToMeeting(1, 1)
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateFailWithError(t, ctx)
+	assertUpdateFailWithError(t, params)
 }
 
 func TestUpdateUserNotInMeeting(t *testing.T) {
@@ -88,9 +88,9 @@ func TestUpdateUserNotInMeeting(t *testing.T) {
 		"id": "1",
 	}
 	dp.AddUser(1)
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateIsNotAllowed(t, ctx)
+	assertUpdateIsNotAllowed(t, params)
 }
 
 func TestUpdateAdminUser(t *testing.T) {
@@ -100,9 +100,9 @@ func TestUpdateAdminUser(t *testing.T) {
 		"id": "1",
 	}
 	dp.AddUserWithAdminGroupToMeeting(1, 1)
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateIsAllowed(t, ctx)
+	assertUpdateIsAllowed(t, params)
 }
 
 func TestUpdateUser(t *testing.T) {
@@ -113,9 +113,9 @@ func TestUpdateUser(t *testing.T) {
 	}
 	dp.AddUserToMeeting(1, 1)
 	dp.AddPermissionToGroup(1, "agenda.can_manage")
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateIsAllowed(t, ctx)
+	assertUpdateIsAllowed(t, params)
 }
 
 func TestUpdateUserNoPermissions(t *testing.T) {
@@ -125,9 +125,9 @@ func TestUpdateUserNoPermissions(t *testing.T) {
 		"id": "1",
 	}
 	dp.AddUserToMeeting(1, 1)
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateIsNotAllowed(t, ctx)
+	assertUpdateIsNotAllowed(t, params)
 }
 
 func TestUpdateInvaldFields(t *testing.T) {
@@ -136,9 +136,9 @@ func TestUpdateInvaldFields(t *testing.T) {
 	data := definitions.FqfieldData{
 		"not_allowed": "some value",
 	}
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateFailWithError(t, ctx)
+	assertUpdateFailWithError(t, params)
 }
 
 func TestUpdateDisabledAnonymous(t *testing.T) {
@@ -147,9 +147,9 @@ func TestUpdateDisabledAnonymous(t *testing.T) {
 	data := definitions.FqfieldData{
 		"id": "1",
 	}
-	ctx := &allowed.IsAllowedContext{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateIsNotAllowed(t, ctx)
+	assertUpdateIsNotAllowed(t, params)
 }
 
 func TestUpdateEnabledAnonymous(t *testing.T) {
@@ -159,9 +159,9 @@ func TestUpdateEnabledAnonymous(t *testing.T) {
 	data := definitions.FqfieldData{
 		"id": "1",
 	}
-	ctx := &allowed.IsAllowedContext{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateIsNotAllowed(t, ctx)
+	assertUpdateIsNotAllowed(t, params)
 }
 
 func TestUpdateEnabledAnonymousWithPermissions(t *testing.T) {
@@ -172,7 +172,7 @@ func TestUpdateEnabledAnonymousWithPermissions(t *testing.T) {
 	data := definitions.FqfieldData{
 		"id": "1",
 	}
-	ctx := &allowed.IsAllowedContext{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateIsAllowed(t, ctx)
+	assertUpdateIsAllowed(t, params)
 }

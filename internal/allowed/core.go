@@ -5,10 +5,10 @@ import (
 	"github.com/OpenSlides/openslides-permission-service/pkg/definitions"
 )
 
-type IsAllowedContext struct {
+type IsAllowedParams struct {
 	UserId       int
 	Data         definitions.FqfieldData
 	DataProvider dataprovider.DataProvider
 }
 
-type IsAllowed = func(ctx *IsAllowedContext) (bool, map[string]interface{}, error)
+type IsAllowed = func(params *IsAllowedParams) (bool, map[string]interface{}, error)

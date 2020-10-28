@@ -5,36 +5,37 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
 	"github.com/OpenSlides/openslides-permission-service/pkg/definitions"
 )
 
 // do not check, if anonymous is enabled but always returns true, if the id is 0!
-func DoesUserExists(userId int, ctx *IsAllowedContext) bool {
+func DoesUserExists(userId int, dp dataprovider.DataProvider) bool {
 	if userId == 0 {
 		return true
 	}
 	fqfield := "user/" + strconv.Itoa(userId) + "/id"
-	return ctx.DataProvider.Exists(fqfield)
+	return dp.Exists(fqfield)
 }
 
-func HasUserSuperadminRole(userId int, ctx *IsAllowedContext) (bool, error) {
+func HasUserSuperadminRole(userId int, dp dataprovider.DataProvider) (bool, error) {
 	// The anonymous is never a superadmin
 	if userId == 0 {
 		return false, nil
 	}
 
 	// get superadmin role id
-	superadminRoleId, err := ctx.DataProvider.GetInt("organisation/1/superadmin_role_id")
+	superadminRoleId, err := dp.GetInt("organisation/1/superadmin_role_id")
 	if err != nil {
 		return false, err
 	}
 
 	// Get users role id
 	fqfield := "user/" + strconv.Itoa(userId) + "/role_id"
-	if !ctx.DataProvider.Exists(fqfield) {
+	if !dp.Exists(fqfield) {
 		return false, nil // the user has no role
 	}
-	userRoleId, err := ctx.DataProvider.GetInt(fqfield)
+	userRoleId, err := dp.GetInt(fqfield)
 	if err != nil {
 		return false, fmt.Errorf("Error getting role_id: %v", err)
 	}
@@ -42,17 +43,17 @@ func HasUserSuperadminRole(userId int, ctx *IsAllowedContext) (bool, error) {
 	return superadminRoleId == userRoleId, nil
 }
 
-func CanUserSeeMeeting(userId, meetingId int, ctx *IsAllowedContext) (bool, error) {
+func CanUserSeeMeeting(userId, meetingId int, dp dataprovider.DataProvider) (bool, error) {
 	// userId in meeting/id/user_ids OR (userId==0 and meeting/id/enable_anonymous is true)
 
 	if userId == 0 {
-		enableAnonymous, err := ctx.DataProvider.GetBoolWithDefault("meeting/"+strconv.Itoa(meetingId)+"/enable_anonymous", false)
+		enableAnonymous, err := dp.GetBoolWithDefault("meeting/"+strconv.Itoa(meetingId)+"/enable_anonymous", false)
 		if err != nil {
 			return false, err
 		}
 		return enableAnonymous, nil
 	} else {
-		userIds, err := ctx.DataProvider.GetIntArrayWithDefault("meeting/"+strconv.Itoa(meetingId)+"/user_ids", []int{})
+		userIds, err := dp.GetIntArrayWithDefault("meeting/"+strconv.Itoa(meetingId)+"/user_ids", []int{})
 		if err != nil {
 			return false, err
 		}
@@ -72,17 +73,17 @@ type Permissions struct {
 }
 
 // Assumes, that the user is part of the meeting! (If not, it has no groups and will have the permissions of the default group)
-func GetPermissionsForUserInMeeting(userId, meetingId int, ctx *IsAllowedContext) (*Permissions, error) {
+func GetPermissionsForUserInMeeting(userId, meetingId int, dp dataprovider.DataProvider) (*Permissions, error) {
 	// Fetch user group ids for the meeting
 	userGroupIdsFqfield := "user/" + strconv.Itoa(userId) + "/group_" + strconv.Itoa(meetingId) + "_ids"
-	userGroupIds, err := ctx.DataProvider.GetIntArrayWithDefault(userGroupIdsFqfield, []int{})
+	userGroupIds, err := dp.GetIntArrayWithDefault(userGroupIdsFqfield, []int{})
 	if err != nil {
 		return nil, err
 	}
 
 	// get superadmin_group_id
 	superadminGroupFqfield := "meeting/" + strconv.Itoa(meetingId) + "/superadmin_group_id"
-	superadminGroupId, err := ctx.DataProvider.GetInt(superadminGroupFqfield)
+	superadminGroupId, err := dp.GetInt(superadminGroupFqfield)
 	if err != nil {
 		return nil, err
 	}
@@ -96,14 +97,14 @@ func GetPermissionsForUserInMeeting(userId, meetingId int, ctx *IsAllowedContext
 
 	// get default group id
 	defaultGroupFqfield := "meeting/" + strconv.Itoa(meetingId) + "/default_group_id"
-	defaultGroupId, err := ctx.DataProvider.GetInt(defaultGroupFqfield)
+	defaultGroupId, err := dp.GetInt(defaultGroupFqfield)
 	if err != nil {
 		return nil, err
 	}
 
 	// get group ids
 	groupIdsFqfield := "meeting/" + strconv.Itoa(meetingId) + "/group_ids"
-	groupIds, err := ctx.DataProvider.GetIntArray(groupIdsFqfield)
+	groupIds, err := dp.GetIntArray(groupIdsFqfield)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +113,7 @@ func GetPermissionsForUserInMeeting(userId, meetingId int, ctx *IsAllowedContext
 	groupPermissions := make(map[int][]string)
 	for _, id := range groupIds {
 		fqfield := "group/" + strconv.Itoa(id) + "/permissions"
-		singleGroupPermissions, err := ctx.DataProvider.GetStringArrayWithDefault(fqfield, []string{})
+		singleGroupPermissions, err := dp.GetStringArrayWithDefault(fqfield, []string{})
 		if nil != err {
 			return nil, err
 		}
@@ -156,6 +157,6 @@ func GetInt(data definitions.FqfieldData, property string) (int, error) {
 	}
 }
 
-func GetMeetingIdFromModel(fqid definitions.Fqid, ctx *IsAllowedContext) (int, error) {
-	return ctx.DataProvider.GetInt(fqid + "/meeting_id")
+func GetMeetingIdFromModel(fqid definitions.Fqid, dp dataprovider.DataProvider) (int, error) {
+	return dp.GetInt(fqid + "/meeting_id")
 }

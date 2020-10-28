@@ -11,8 +11,8 @@ import (
 	"github.com/OpenSlides/openslides-permission-service/internal/tests"
 )
 
-func assertCreateFailWithError(t *testing.T, ctx *allowed.IsAllowedContext) {
-	allowed, addition, err := topic.Create(ctx)
+func assertCreateFailWithError(t *testing.T, params *allowed.IsAllowedParams) {
+	allowed, addition, err := topic.Create(params)
 	if nil != addition {
 		t.Errorf("Expected to fail without an addition: %s", addition)
 	}
@@ -25,8 +25,8 @@ func assertCreateFailWithError(t *testing.T, ctx *allowed.IsAllowedContext) {
 	}
 }
 
-func assertCreateIsNotAllowed(t *testing.T, ctx *allowed.IsAllowedContext) {
-	allowed, addition, err := topic.Create(ctx)
+func assertCreateIsNotAllowed(t *testing.T, params *allowed.IsAllowedParams) {
+	allowed, addition, err := topic.Create(params)
 	if nil != addition {
 		t.Errorf("Expected to fail without an addition: %s", addition)
 	}
@@ -39,8 +39,8 @@ func assertCreateIsNotAllowed(t *testing.T, ctx *allowed.IsAllowedContext) {
 	}
 }
 
-func assertCreateIsAllowed(t *testing.T, ctx *allowed.IsAllowedContext) {
-	allowed, addition, err := topic.Create(ctx)
+func assertCreateIsAllowed(t *testing.T, params *allowed.IsAllowedParams) {
+	allowed, addition, err := topic.Create(params)
 	if nil != addition {
 		t.Errorf("Expected to fail without an addition: %s", addition)
 	}
@@ -58,27 +58,27 @@ func TestCreateUnknownUser(t *testing.T) {
 	data := definitions.FqfieldData{
 		"meeting_id": "1",
 	}
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertCreateFailWithError(t, ctx)
+	assertCreateFailWithError(t, params)
 }
 
 func TestCreateSuperadminRole(t *testing.T) {
 	dp := tests.NewTestDataProvider()
 	data := definitions.FqfieldData{} // No meeting id needed, it is always possible.
 	dp.AddUserWithSuperadminRole(1)
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertCreateIsAllowed(t, ctx)
+	assertCreateIsAllowed(t, params)
 }
 
 func TestCreateNoMeetingId(t *testing.T) {
 	dp := tests.NewTestDataProvider()
 	data := definitions.FqfieldData{}
 	dp.AddUserWithAdminGroupToMeeting(1, 1)
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertCreateFailWithError(t, ctx)
+	assertCreateFailWithError(t, params)
 }
 
 func TestCreateUserNotInMeeting(t *testing.T) {
@@ -87,9 +87,9 @@ func TestCreateUserNotInMeeting(t *testing.T) {
 		"meeting_id": "1",
 	}
 	dp.AddUser(1)
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertCreateIsNotAllowed(t, ctx)
+	assertCreateIsNotAllowed(t, params)
 }
 
 func TestCreateAdminUser(t *testing.T) {
@@ -98,9 +98,9 @@ func TestCreateAdminUser(t *testing.T) {
 		"meeting_id": "1",
 	}
 	dp.AddUserWithAdminGroupToMeeting(1, 1)
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertCreateIsAllowed(t, ctx)
+	assertCreateIsAllowed(t, params)
 }
 
 func TestCreateUser(t *testing.T) {
@@ -110,9 +110,9 @@ func TestCreateUser(t *testing.T) {
 	}
 	dp.AddUserToMeeting(1, 1)
 	dp.AddPermissionToGroup(1, "agenda.can_manage")
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertCreateIsAllowed(t, ctx)
+	assertCreateIsAllowed(t, params)
 }
 
 func TestCreateUserNoPermissions(t *testing.T) {
@@ -121,9 +121,9 @@ func TestCreateUserNoPermissions(t *testing.T) {
 		"meeting_id": "1",
 	}
 	dp.AddUserToMeeting(1, 1)
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertCreateIsNotAllowed(t, ctx)
+	assertCreateIsNotAllowed(t, params)
 }
 
 func TestCreateInvaldFields(t *testing.T) {
@@ -132,9 +132,9 @@ func TestCreateInvaldFields(t *testing.T) {
 	data := definitions.FqfieldData{
 		"not_allowed": "some value",
 	}
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertCreateFailWithError(t, ctx)
+	assertCreateFailWithError(t, params)
 }
 
 func TestCreateDisabledAnonymous(t *testing.T) {
@@ -142,9 +142,9 @@ func TestCreateDisabledAnonymous(t *testing.T) {
 	data := definitions.FqfieldData{
 		"meeting_id": "1",
 	}
-	ctx := &allowed.IsAllowedContext{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertCreateIsNotAllowed(t, ctx)
+	assertCreateIsNotAllowed(t, params)
 }
 
 func TestCreateEnabledAnonymous(t *testing.T) {
@@ -153,9 +153,9 @@ func TestCreateEnabledAnonymous(t *testing.T) {
 	data := definitions.FqfieldData{
 		"meeting_id": "1",
 	}
-	ctx := &allowed.IsAllowedContext{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertCreateIsNotAllowed(t, ctx)
+	assertCreateIsNotAllowed(t, params)
 }
 
 func TestCreateEnabledAnonymousWithPermissions(t *testing.T) {
@@ -165,7 +165,7 @@ func TestCreateEnabledAnonymousWithPermissions(t *testing.T) {
 	data := definitions.FqfieldData{
 		"meeting_id": "1",
 	}
-	ctx := &allowed.IsAllowedContext{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertCreateIsAllowed(t, ctx)
+	assertCreateIsAllowed(t, params)
 }

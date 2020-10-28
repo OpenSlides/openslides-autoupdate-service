@@ -22,16 +22,16 @@ var createFields = allowed.MakeSet([]string{
 	"agenda_weight",
 })
 
-func Create(ctx *allowed.IsAllowedContext) (bool, map[string]interface{}, error) {
-	if err := allowed.ValidateFields(ctx.Data, createFields); err != nil {
+func Create(params *allowed.IsAllowedParams) (bool, map[string]interface{}, error) {
+	if err := allowed.ValidateFields(params.Data, createFields); err != nil {
 		return false, nil, err
 	}
 
-	if !allowed.DoesUserExists(ctx.UserId, ctx) {
-		return false, nil, fmt.Errorf("The user with id " + strconv.Itoa(ctx.UserId) + " does not exist!")
+	if !allowed.DoesUserExists(params.UserId, params.DataProvider) {
+		return false, nil, fmt.Errorf("The user with id " + strconv.Itoa(params.UserId) + " does not exist!")
 	}
 
-	superadmin, err := allowed.HasUserSuperadminRole(ctx.UserId, ctx)
+	superadmin, err := allowed.HasUserSuperadminRole(params.UserId, params.DataProvider)
 	if err != nil {
 		return false, nil, err
 	}
@@ -39,17 +39,17 @@ func Create(ctx *allowed.IsAllowedContext) (bool, map[string]interface{}, error)
 		return true, nil, nil
 	}
 
-	meetingId, err := allowed.GetInt(ctx.Data, "meeting_id")
+	meetingId, err := allowed.GetInt(params.Data, "meeting_id")
 	if err != nil {
 		return false, nil, err
 	}
 
-	canSeeMeeting, err := allowed.CanUserSeeMeeting(ctx.UserId, meetingId, ctx)
+	canSeeMeeting, err := allowed.CanUserSeeMeeting(params.UserId, meetingId, params.DataProvider)
 	if err != nil || !canSeeMeeting {
 		return false, nil, err
 	}
 
-	perms, err := allowed.GetPermissionsForUserInMeeting(ctx.UserId, meetingId, ctx)
+	perms, err := allowed.GetPermissionsForUserInMeeting(params.UserId, meetingId, params.DataProvider)
 	if err != nil {
 		return false, nil, err
 	}

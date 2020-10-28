@@ -20,18 +20,19 @@ func NewPermissionService(externalDataprovider definitions.ExternalDataProvider)
 
 func (permissionService permissionService) IsAllowed(name string, userId int, data definitions.FqfieldData) (bool, map[string]interface{}, error) {
 	if val, ok := Queries[name]; ok {
-		context := &allowed.IsAllowedContext{UserId: userId, Data: data, DataProvider: permissionService.dataprovider}
+		context := &allowed.IsAllowedParams{UserId: userId, Data: data, DataProvider: permissionService.dataprovider}
 		return val(context)
 	} else {
 		return false, nil, fmt.Errorf("no such query: \"%s\"", name)
 	}
 }
 
+// TODO: These are just stubs...
 func (permissionService permissionService) RestrictFqIds(fqids map[definitions.Fqid]bool, userId int) (map[definitions.Fqid]bool, error) {
 	return fqids, nil
 }
 
-func (permissionService permissionService) RestrictFqields(fqfields map[definitions.Fqfield]bool, userId int) (map[definitions.Fqfield]bool, error) {
+func (permissionService permissionService) RestrictFqfields(fqfields map[definitions.Fqfield]bool, userId int) (map[definitions.Fqfield]bool, error) {
 	return fqfields, nil
 }
 

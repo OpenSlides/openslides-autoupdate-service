@@ -11,8 +11,8 @@ import (
 	"github.com/OpenSlides/openslides-permission-service/internal/tests"
 )
 
-func assertDeleteFailWithError(t *testing.T, ctx *allowed.IsAllowedContext) {
-	allowed, addition, err := topic.Delete(ctx)
+func assertDeleteFailWithError(t *testing.T, params *allowed.IsAllowedParams) {
+	allowed, addition, err := topic.Delete(params)
 	if nil != addition {
 		t.Errorf("Expected to fail without an addition: %s", addition)
 	}
@@ -25,8 +25,8 @@ func assertDeleteFailWithError(t *testing.T, ctx *allowed.IsAllowedContext) {
 	}
 }
 
-func assertDeleteIsNotAllowed(t *testing.T, ctx *allowed.IsAllowedContext) {
-	allowed, addition, err := topic.Delete(ctx)
+func assertDeleteIsNotAllowed(t *testing.T, params *allowed.IsAllowedParams) {
+	allowed, addition, err := topic.Delete(params)
 	if nil != addition {
 		t.Errorf("Expected to fail without an addition: %s", addition)
 	}
@@ -39,8 +39,8 @@ func assertDeleteIsNotAllowed(t *testing.T, ctx *allowed.IsAllowedContext) {
 	}
 }
 
-func assertDeleteIsAllowed(t *testing.T, ctx *allowed.IsAllowedContext) {
-	allowed, addition, err := topic.Delete(ctx)
+func assertDeleteIsAllowed(t *testing.T, params *allowed.IsAllowedParams) {
+	allowed, addition, err := topic.Delete(params)
 	if nil != addition {
 		t.Errorf("Expected to fail without an addition: %s", addition)
 	}
@@ -58,27 +58,27 @@ func TestDeleteUnknownUser(t *testing.T) {
 	data := definitions.FqfieldData{
 		"id": "1",
 	}
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertDeleteFailWithError(t, ctx)
+	assertDeleteFailWithError(t, params)
 }
 
 func TestDeleteSuperadminRole(t *testing.T) {
 	dp := tests.NewTestDataProvider()
 	data := definitions.FqfieldData{} // No meeting id needed, it is always possible.
 	dp.AddUserWithSuperadminRole(1)
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertDeleteIsAllowed(t, ctx)
+	assertDeleteIsAllowed(t, params)
 }
 
 func TestDeleteNoId(t *testing.T) {
 	dp := tests.NewTestDataProvider()
 	data := definitions.FqfieldData{}
 	dp.AddUserWithAdminGroupToMeeting(1, 1)
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertDeleteFailWithError(t, ctx)
+	assertDeleteFailWithError(t, params)
 }
 
 func addBasicTopic(dp *tests.TestDataProvider) {
@@ -94,9 +94,9 @@ func TestDeleteUserNotInMeeting(t *testing.T) {
 		"id": "1",
 	}
 	dp.AddUser(1)
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertDeleteIsNotAllowed(t, ctx)
+	assertDeleteIsNotAllowed(t, params)
 }
 
 func TestDeleteAdminUser(t *testing.T) {
@@ -106,9 +106,9 @@ func TestDeleteAdminUser(t *testing.T) {
 		"id": "1",
 	}
 	dp.AddUserWithAdminGroupToMeeting(1, 1)
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertDeleteIsAllowed(t, ctx)
+	assertDeleteIsAllowed(t, params)
 }
 
 func TestDeleteUser(t *testing.T) {
@@ -119,9 +119,9 @@ func TestDeleteUser(t *testing.T) {
 	}
 	dp.AddUserToMeeting(1, 1)
 	dp.AddPermissionToGroup(1, "agenda.can_manage")
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertDeleteIsAllowed(t, ctx)
+	assertDeleteIsAllowed(t, params)
 }
 
 func TestDeleteUserNoPermissions(t *testing.T) {
@@ -131,9 +131,9 @@ func TestDeleteUserNoPermissions(t *testing.T) {
 		"id": "1",
 	}
 	dp.AddUserToMeeting(1, 1)
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertDeleteIsNotAllowed(t, ctx)
+	assertDeleteIsNotAllowed(t, params)
 }
 
 func TestDeleteInvaldFields(t *testing.T) {
@@ -142,9 +142,9 @@ func TestDeleteInvaldFields(t *testing.T) {
 	data := definitions.FqfieldData{
 		"not_allowed": "some value",
 	}
-	ctx := &allowed.IsAllowedContext{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertDeleteFailWithError(t, ctx)
+	assertDeleteFailWithError(t, params)
 }
 
 func TestDeleteDisabledAnonymous(t *testing.T) {
@@ -153,9 +153,9 @@ func TestDeleteDisabledAnonymous(t *testing.T) {
 	data := definitions.FqfieldData{
 		"id": "1",
 	}
-	ctx := &allowed.IsAllowedContext{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertDeleteIsNotAllowed(t, ctx)
+	assertDeleteIsNotAllowed(t, params)
 }
 
 func TestDeleteEnabledAnonymous(t *testing.T) {
@@ -165,9 +165,9 @@ func TestDeleteEnabledAnonymous(t *testing.T) {
 	data := definitions.FqfieldData{
 		"id": "1",
 	}
-	ctx := &allowed.IsAllowedContext{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertDeleteIsNotAllowed(t, ctx)
+	assertDeleteIsNotAllowed(t, params)
 }
 
 func TestDeleteEnabledAnonymousWithPermissions(t *testing.T) {
@@ -178,7 +178,7 @@ func TestDeleteEnabledAnonymousWithPermissions(t *testing.T) {
 	data := definitions.FqfieldData{
 		"id": "1",
 	}
-	ctx := &allowed.IsAllowedContext{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertDeleteIsAllowed(t, ctx)
+	assertDeleteIsAllowed(t, params)
 }
