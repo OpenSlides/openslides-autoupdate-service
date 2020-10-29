@@ -180,7 +180,9 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 		return authError{"Can not find auth token", nil}
 	}
 
-	_, err = jwt.Parse(cookie.Value, jwt.KnownKeyfunc(jwt.SigningMethodHS256, a.cookieKey))
+	encodedCookie := strings.TrimPrefix(cookie.Value, "bearer%20")
+
+	_, err = jwt.Parse(encodedCookie, jwt.KnownKeyfunc(jwt.SigningMethodHS256, a.cookieKey))
 	if err != nil {
 		var invalid *jwt.InvalidSignatureError
 		if errors.As(err, &invalid) {
@@ -201,7 +203,7 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 			return fmt.Errorf("validating auth token: %w", err)
 		}
 
-		token, err := a.refreshToken(encodedToken, cookie.Value)
+		token, err := a.refreshToken(encodedToken, encodedCookie)
 		if err != nil {
 			return fmt.Errorf("refreshing token: %w", err)
 		}

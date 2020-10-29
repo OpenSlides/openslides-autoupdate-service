@@ -54,7 +54,7 @@ func defaultEnv() map[string]string {
 		"AUTH_KEY_TOKEN":        "auth-dev-key",
 		"AUTH_KEY_COOKIE":       "auth-dev-key",
 		"AUTH_SERIVCE_PROTOCOL": "http",
-		"AUTH_SERIVCE_HOST":     "localhost",
+		"AUTH_SERVICE_HOST":     "localhost",
 		"AUTH_SERVICE_PORT":     "9004",
 	}
 
@@ -278,7 +278,7 @@ func buildAuth(env map[string]string, receiver auth.LogoutEventer, closed <-chan
 	method := env["AUTH"]
 	switch method {
 	case "ticket":
-		fmt.Println("Auth Method: token")
+		fmt.Println("Auth Method: ticket")
 		const debugKey = "auth-dev-key"
 		tokenKey := env["AUTH_KEY_TOKEN"]
 		cookieKey := env["AUTH_KEY_COOKIE"]
@@ -286,9 +286,9 @@ func buildAuth(env map[string]string, receiver auth.LogoutEventer, closed <-chan
 			fmt.Println("Auth with debug key")
 		}
 
-		protocol := env["AUTH_SERIVCE_PROTOCOL"]
-		host := env["AUTH_SERIVCE_HOST"]
-		port := env["AUTH_SERIVCE_PORT"]
+		protocol := env["AUTH_SERVICE_PROTOCOL"]
+		host := env["AUTH_SERVICE_HOST"]
+		port := env["AUTH_SERVICE_PORT"]
 		url := protocol + "://" + host + ":" + port
 
 		fmt.Printf("Auth Service: %s\n", url)
