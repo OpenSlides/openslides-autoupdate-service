@@ -56,6 +56,12 @@ func (b *body) UnmarshalJSON(data []byte) error {
 	if len(field.IDs) == 0 {
 		return InvalidError{msg: "no ids"}
 	}
+	for _, id := range field.IDs {
+		if id <= 0 {
+			return InvalidError{msg: "id has to be a positve number"}
+		}
+	}
+
 	if field.Collection == "" {
 		return InvalidError{msg: "no collection"}
 	}

@@ -40,6 +40,24 @@ func TestJSONInvalid(t *testing.T) {
 	}
 }
 
+func TestJSONIDNull(t *testing.T) {
+	json := strings.NewReader(`
+	{
+		"ids": [null],
+		"collection": "user",
+		"fields": {"name": null}
+	}
+	`)
+	_, err := keysbuilder.FromJSON(context.Background(), json, &mockDataProvider{}, 1)
+	if err == nil {
+		t.Errorf("Expected an error, got none")
+	}
+	var errInvalid keysbuilder.InvalidError
+	if !errors.As(err, &errInvalid) {
+		t.Errorf("Expected error to be of type ErrJSON, got: %v", err)
+	}
+}
+
 func TestJSONSingleID(t *testing.T) {
 	json := strings.NewReader(`
 	{
