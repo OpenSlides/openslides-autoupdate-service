@@ -27,7 +27,7 @@ func TestAuth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Can not sign cookie token: %v", err)
 	}
-	validCookie = cookieName + "=" + validCookie
+	validCookie = cookieName + "=bearer%20" + validCookie
 
 	validHeader, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId":    1,
@@ -54,7 +54,7 @@ func TestAuth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Can not sign cookie token: %v", err)
 	}
-	invalidCookie = cookieName + "=" + invalidCookie
+	invalidCookie = cookieName + "=bearer%20" + invalidCookie
 
 	invalidHeader, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId":    1,
