@@ -1,9 +1,9 @@
 package http_test
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -15,136 +15,95 @@ import (
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
-func TestHandlerTestURLs(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	s := autoupdate.New(new(test.MockDatastore), new(test.MockRestricter), closed)
-	srv := httptest.NewUnstartedServer(ahttp.New(s, test.Auth(1)))
-	srv.EnableHTTP2 = true
-	srv.StartTLS()
-	defer srv.Close()
+type liverMock struct {
+	content io.Reader
+}
 
-	tc := []struct {
-		url    string
-		status int
-	}{
-		{"", http.StatusNotFound},
-		{"/system/autoupdate", http.StatusBadRequest},
-		{"/system/autoupdate/keys?user/1/name", http.StatusOK},
-		{"/system/autoupdate/health", http.StatusOK},
+func (m *liverMock) Live(ctx context.Context, uid int, w io.Writer, kb autoupdate.KeysBuilder) error {
+	io.Copy(w, m.content)
+	return nil
+}
+
+func TestSimpleHandler(t *testing.T) {
+	mux := http.NewServeMux()
+	liver := &liverMock{
+		content: strings.NewReader("content"),
+	}
+	ahttp.Simple(mux, test.Auth(1), liver)
+
+	req, _ := http.NewRequest("GET", "/system/autoupdate/keys?user/1/name,user/2/name", nil)
+	req.ProtoMajor = 2
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	res := rec.Result()
+
+	if res.StatusCode != 200 {
+		t.Errorf("Got status %s, expected %s", res.Status, http.StatusText(200))
 	}
 
-	for _, tt := range tc {
-		t.Run(tt.url, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.URL+tt.url, nil)
-			if err != nil {
-				t.Fatalf("Can not create request: %v", err)
-			}
-			resp, err := srv.Client().Do(req)
-			if err != nil {
-				t.Fatalf("Can not send request: %v", err)
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode != tt.status {
-				body, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					body = nil
-				}
-				body = bytes.TrimSpace(body)
-
-				t.Errorf("Handler returned %s: %s, expected %d, %s", resp.Status, body, tt.status, http.StatusText(tt.status))
-			}
-		})
+	expect := "content"
+	got, _ := ioutil.ReadAll(res.Body)
+	if string(got) != expect {
+		t.Errorf("Got content `%s`, expected `%s`", got, expect)
 	}
 }
 
-func TestSimple(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	s := autoupdate.New(new(test.MockDatastore), new(test.MockRestricter), closed)
-	srv := httptest.NewUnstartedServer(ahttp.New(s, test.Auth(1)))
-	srv.EnableHTTP2 = true
-	srv.StartTLS()
-	defer srv.Close()
+func TestComplexHandler(t *testing.T) {
+	mux := http.NewServeMux()
+	liver := &liverMock{
+		content: strings.NewReader("content"),
+	}
+	ahttp.Complex(mux, test.Auth(1), new(test.DataProvider), liver)
 
-	tc := []struct {
-		query  string
-		keys   []string
-		status int
-		errMsg string
-	}{
-		{"user/1/name", keys("user/1/name"), http.StatusOK, ""},
-		{"user/1/name,user/2/name", keys("user/1/name", "user/2/name"), http.StatusOK, ""},
-		{"key1,key2", keys("key1", "key2"), http.StatusBadRequest, "Invalid keys"},
+	req, _ := http.NewRequest("GET", "/system/autoupdate", strings.NewReader(`[{"ids":[1],"collection":"user","fields":{"name":null}}]`))
+	req.ProtoMajor = 2
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	res := rec.Result()
+
+	if res.StatusCode != 200 {
+		t.Errorf("Got status %s, expected %s", res.Status, http.StatusText(200))
 	}
 
-	for _, tt := range tc {
-		t.Run("?"+tt.query, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.URL+"/system/autoupdate/keys?"+tt.query, nil)
-			if err != nil {
-				t.Fatalf("Can not create request: %v", err)
-			}
-			resp, err := srv.Client().Do(req)
-			if err != nil {
-				t.Fatalf("Can not send request: %v", err)
-			}
-			defer resp.Body.Close()
+	expect := "content"
+	got, _ := ioutil.ReadAll(res.Body)
+	if string(got) != expect {
+		t.Errorf("Got `%s`, expected `%s`", got, expect)
+	}
+}
 
-			if resp.StatusCode != tt.status {
-				t.Errorf("Expected status %s, got %s", http.StatusText(tt.status), resp.Status)
-			}
+func TestHealth(t *testing.T) {
+	mux := http.NewServeMux()
+	ahttp.Health(mux)
 
-			expected := "application/octet-stream"
-			if got := resp.Header.Get("Content-Type"); got != expected {
-				t.Errorf("Got content-type %s, expected: %s", got, expected)
-			}
+	req := httptest.NewRequest("", "/system/autoupdate/health", nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
 
-			if tt.errMsg != "" {
-				var body map[string]map[string]string
-				if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-					t.Errorf("Got invalid json: %v", err)
-				}
+	if rec.Result().StatusCode != 200 {
+		t.Errorf("Got status %s, expected %s", rec.Result().Status, http.StatusText(200))
+	}
 
-				if v := body["error"]["msg"]; v != tt.errMsg {
-					t.Errorf("Got error message `%s`, expected `%s`", v, tt.errMsg)
-				}
-				return
-			}
-
-			var body map[string]json.RawMessage
-			if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-				t.Errorf("Got invalid json: %v", err)
-			}
-
-			if v, ok := body["error"]; ok {
-				t.Errorf("Error: %v", v)
-			}
-
-			got := make([]string, 0, len(body))
-			for key := range body {
-				got = append(got, key)
-			}
-
-			if !cmpSlice(got, tt.keys) {
-				t.Errorf("Got keys %v, expected %v", got, tt.keys)
-			}
-		})
+	got, _ := ioutil.ReadAll(rec.Body)
+	expect := `{"healthy": true}` + "\n"
+	if string(got) != expect {
+		t.Errorf("Got %s, expected %s", got, expect)
 	}
 }
 
 func TestErrors(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	s := autoupdate.New(new(test.MockDatastore), new(test.MockRestricter), closed)
-	srv := httptest.NewUnstartedServer(ahttp.New(s, test.Auth(1)))
-	srv.EnableHTTP2 = true
-	srv.StartTLS()
-	defer srv.Close()
+	mux := http.NewServeMux()
+	liver := &liverMock{
+		content: strings.NewReader(`"content"`),
+	}
+	db := &test.DataProvider{
+		Data: map[string]json.RawMessage{
+			"foo/1/name": []byte(`"hugo"`),
+		},
+	}
+	ahttp.Complex(mux, test.Auth(1), db, liver)
 
 	for _, tt := range []struct {
 		name    string
@@ -155,110 +114,81 @@ func TestErrors(t *testing.T) {
 	}{
 		{
 			"No Body",
-			mustRequest(http.NewRequest(
-				"GET",
-				srv.URL+"/system/autoupdate",
+			httptest.NewRequest(
+				"",
+				"/system/autoupdate",
 				nil,
-			)),
+			),
 			400,
 			`SyntaxError`,
 			`No data`,
 		},
 		{
 			"Empty List",
-			mustRequest(http.NewRequest(
-				"GET",
-				srv.URL+"/system/autoupdate",
+			httptest.NewRequest(
+				"",
+				"/system/autoupdate",
 				strings.NewReader("[]"),
-			)),
+			),
 			400,
 			`SyntaxError`,
 			`No data`,
 		},
 		{
 			"Invalid json",
-			mustRequest(http.NewRequest(
+			httptest.NewRequest(
 				"GET",
-				srv.URL+"/system/autoupdate",
+				"/system/autoupdate",
 				strings.NewReader("{5"),
-			)),
+			),
 			400,
 			`JsonError`,
 			`invalid character '5' looking for beginning of object key string`,
 		},
 		{
 			"Invalid KeyRequest",
-			mustRequest(http.NewRequest(
+			httptest.NewRequest(
 				"GET",
-				srv.URL+"/system/autoupdate",
+				"/system/autoupdate",
 				strings.NewReader(`[{"ids":[123]}]`),
-			)),
+			),
 			400,
 			`SyntaxError`,
 			`no collection`,
 		},
 		{
 			"No list",
-			mustRequest(http.NewRequest(
+			httptest.NewRequest(
 				"GET",
-				srv.URL+"/system/autoupdate",
+				"/system/autoupdate",
 				strings.NewReader(`{"ids":[1],"collection":"foo","fields":{}}`),
-			)),
+			),
 			400,
 			`SyntaxError`,
 			"wrong type at field ``. Got object, expected list",
 		},
 		{
 			"String ID",
-			mustRequest(http.NewRequest(
+			httptest.NewRequest(
 				"GET",
-				srv.URL+"/system/autoupdate",
+				"/system/autoupdate",
 				strings.NewReader(`[{"ids":["1"],"collection":"foo","fields":{}}]`),
-			)),
+			),
 			400,
 			`SyntaxError`,
 			"wrong type at field `ids`. Got string, expected number",
 		},
-		{
-			"Wrong field value",
-			mustRequest(http.NewRequest(
-				"GET",
-				srv.URL+"/system/autoupdate",
-				strings.NewReader(`
-				[{
-					"ids": [1],
-					"collection": "foo",
-					"fields": {
-						"name": {
-							"type": "relation",
-							"collection": "bar",
-							"fields": {}
-						}
-					}
-				}]`),
-			)),
-			400,
-			`ValueError`,
-			`invalid value in key foo/1/name. Got string, expected int`,
-		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			resp, err := srv.Client().Do(tt.request.WithContext(ctx))
-			if err != nil {
-				t.Fatalf("Can not send request: %v", err)
-			}
-			defer resp.Body.Close()
+			tt.request.ProtoMajor = 2
+			req := httptest.NewRecorder()
+			mux.ServeHTTP(req, tt.request)
 
-			if resp.StatusCode != tt.status {
-				t.Errorf("Expected status %d %s, got %s", tt.status, http.StatusText(tt.status), resp.Status)
+			if req.Result().StatusCode != tt.status {
+				t.Errorf("Got status %s, expected %s", req.Result().Status, http.StatusText(tt.status))
 			}
 
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				t.Fatalf("Can not read body: %v", err)
-			}
+			body, _ := ioutil.ReadAll(req.Body)
 
 			var data struct {
 				Error struct {

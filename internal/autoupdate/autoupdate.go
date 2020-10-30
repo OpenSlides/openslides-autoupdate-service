@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/ostcar/topic"
@@ -55,18 +56,43 @@ func New(datastore Datastore, restricter Restricter, closed <-chan struct{}) *Au
 // returns a Connection object, that can be used to receive the data.
 //
 // There is no need to "close" the Connection object.
-func (a *Autoupdate) Connect(userID int, kb KeysBuilder, tid uint64) *Connection {
+func (a *Autoupdate) Connect(userID int, kb KeysBuilder) *Connection {
 	return &Connection{
 		autoupdate: a,
 		uid:        userID,
 		kb:         kb,
-		tid:        tid,
 	}
 }
 
 // LastID returns the last id of the last data update.
 func (a *Autoupdate) LastID() uint64 {
 	return a.topic.LastID()
+}
+
+// Live writes data in json-format to the given writer until it closes. It
+// flushes after each message.
+func (a *Autoupdate) Live(ctx context.Context, userID int, w io.Writer, kb KeysBuilder) error {
+	conn := a.Connect(userID, kb)
+	encoder := json.NewEncoder(w)
+
+	for {
+		// connection.Next() blocks, until there is new data or the client context
+		// or the server is closed.
+		data, err := conn.Next(ctx)
+		if err != nil {
+			return err
+		}
+
+		if err := encoder.Encode(data); err != nil {
+			return err
+		}
+
+		w.(flusher).Flush()
+	}
+}
+
+type flusher interface {
+	Flush()
 }
 
 // pruneTopic removes old data from the topic. Blocks until the service is

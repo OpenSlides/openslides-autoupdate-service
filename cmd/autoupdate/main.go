@@ -109,14 +109,18 @@ func run() error {
 	}
 
 	// Create tls http2 server.
-	handler := autoupdateHttp.New(service, authService)
+	mux := http.NewServeMux()
+	autoupdateHttp.Complex(mux, authService, service, service)
+	autoupdateHttp.Simple(mux, authService, service)
+	autoupdateHttp.Health(mux)
+
 	listenAddr := env["AUTOUPDATE_HOST"] + ":" + env["AUTOUPDATE_PORT"]
-	ln, err := buildHTTPListener(env, listenAddr, handler)
+	ln, err := buildHTTPListener(env, listenAddr)
 	if err != nil {
 		return fmt.Errorf("creating http listener: %w", err)
 	}
 	defer ln.Close()
-	srv := &http.Server{Addr: listenAddr, Handler: handler}
+	srv := &http.Server{Addr: listenAddr, Handler: mux}
 
 	// Shutdown logic in separate goroutine.
 	shutdownDone := make(chan struct{})
@@ -137,7 +141,7 @@ func run() error {
 	return nil
 }
 
-func buildHTTPListener(env map[string]string, addr string, handler http.Handler) (net.Listener, error) {
+func buildHTTPListener(env map[string]string, addr string) (net.Listener, error) {
 	cert, err := getCert(env)
 	if err != nil {
 		return nil, fmt.Errorf("getting http certs: %w", err)
