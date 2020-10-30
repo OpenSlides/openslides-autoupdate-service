@@ -4,38 +4,47 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
+	"github.com/OpenSlides/openslides-permission-service/internal/definitions"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed"
-	"github.com/OpenSlides/openslides-permission-service/pkg/definitions"
 )
 
-type permissionService struct {
+// PermissionService impelements the permission.Permission interface.
+type PermissionService struct {
 	dataprovider dataprovider.DataProvider
 }
 
-func NewPermissionService(externalDataprovider definitions.ExternalDataProvider) definitions.Permission {
+// NewPermissionService returns a new permission service.
+func NewPermissionService(externalDataprovider dataprovider.ExternalDataProvider) *PermissionService {
 	dp := dataprovider.NewDataProvider(externalDataprovider)
-	return &permissionService{dp}
+	return &PermissionService{dp}
 }
 
-func (permissionService permissionService) IsAllowed(name string, userId int, data definitions.FqfieldData) (bool, map[string]interface{}, error) {
+// IsAllowed tells, if something is allowed.
+func (permissionService PermissionService) IsAllowed(name string, userID int, data definitions.FqfieldData) (bool, map[string]interface{}, error) {
 	if val, ok := Queries[name]; ok {
-		context := &allowed.IsAllowedParams{UserId: userId, Data: data, DataProvider: permissionService.dataprovider}
+		context := &allowed.IsAllowedParams{UserID: userID, Data: data, DataProvider: permissionService.dataprovider}
 		return val(context)
-	} else {
-		return false, nil, fmt.Errorf("no such query: \"%s\"", name)
 	}
+
+	return false, nil, fmt.Errorf("no such query: \"%s\"", name)
 }
 
-// TODO: These are just stubs...
-func (permissionService permissionService) RestrictFqIds(fqids map[definitions.Fqid]bool, userId int) (map[definitions.Fqid]bool, error) {
-	return fqids, nil
+// RestrictFQIDs does currently nothing.
+func (permissionService PermissionService) RestrictFQIDs(userID int, fqids []definitions.Fqid) (map[definitions.Fqid]bool, error) {
+	r := make(map[definitions.Fqid]bool, len(fqids))
+	for _, v := range fqids {
+		r[v] = true
+	}
+	return r, nil
 }
 
-func (permissionService permissionService) RestrictFqfields(fqfields map[definitions.Fqfield]bool, userId int) (map[definitions.Fqfield]bool, error) {
-	return fqfields, nil
+// RestrictFQFields does currently nothing.
+func (permissionService PermissionService) RestrictFQFields(userID int, fqfields []definitions.Fqfield) (map[definitions.Fqfield]bool, error) {
+	return permissionService.RestrictFQIDs(userID, fqfields)
 }
 
-func (permissionService permissionService) AdditionalUpdate(updated definitions.FqfieldData) ([]definitions.Id, error) {
+// AdditionalUpdate does ...
+func (permissionService PermissionService) AdditionalUpdate(updated definitions.FqfieldData) ([]definitions.Id, error) {
 	return []definitions.Id{}, nil
 }

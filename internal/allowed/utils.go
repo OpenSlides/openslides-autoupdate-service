@@ -3,9 +3,10 @@ package allowed
 import (
 	"fmt"
 
-	"github.com/OpenSlides/openslides-permission-service/pkg/definitions"
+	"github.com/OpenSlides/openslides-permission-service/internal/definitions"
 )
 
+// MakeSet does ...
 func MakeSet(fields []definitions.Field) map[definitions.Field]bool {
 	fieldMap := make(map[definitions.Field]bool)
 	for _, field := range fields {
@@ -14,10 +15,11 @@ func MakeSet(fields []definitions.Field) map[definitions.Field]bool {
 	return fieldMap
 }
 
-// Returns an error, if there are fields in data, that are not in allowedFields.
+// ValidateFields returns an error, if there are fields in data, that are not in
+// allowedFields.
 func ValidateFields(data definitions.FqfieldData, allowedFields map[definitions.Field]bool) error {
 	invalidFields := make([]definitions.Field, 0)
-	for field, _ := range data {
+	for field := range data {
 		if !allowedFields[field] {
 			invalidFields = append(invalidFields, field)
 		}

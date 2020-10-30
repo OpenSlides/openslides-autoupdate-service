@@ -1,44 +1,49 @@
 package tests
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
 
-	"github.com/OpenSlides/openslides-permission-service/pkg/definitions"
+	"github.com/OpenSlides/openslides-permission-service/internal/definitions"
 )
 
-func addIntToJsonArray(arrayJson string, value int) string {
+func addIntToJSONArray(arrayJSON string, value int) string {
 	var array []int
-	_ = json.Unmarshal([]byte(arrayJson), &array)
+	_ = json.Unmarshal([]byte(arrayJSON), &array)
 	array = append(array, value)
-	newArrayJson, _ := json.Marshal(array)
-	return string(newArrayJson)
+	newArrayJSON, _ := json.Marshal(array)
+	return string(newArrayJSON)
 }
 
-func addStringToJsonArray(arrayJson string, value string) string {
+func addStringToJSONArray(arrayJSON string, value string) string {
 	var array []string
-	_ = json.Unmarshal([]byte(arrayJson), &array)
+	_ = json.Unmarshal([]byte(arrayJSON), &array)
 	array = append(array, value)
-	newArrayJson, _ := json.Marshal(array)
-	return string(newArrayJson)
+	newArrayJSON, _ := json.Marshal(array)
+	return string(newArrayJSON)
 }
 
+// TestDataProvider does ...
 type TestDataProvider struct {
 	Data definitions.FqfieldData
 }
 
+// NewTestDataProvider does ...
 func NewTestDataProvider() *TestDataProvider {
 	var testDataProvider = &TestDataProvider{Data: nil}
 	testDataProvider.SetDefault()
 	return testDataProvider
 }
 
+// GetDataprovider does ...
 func (t *TestDataProvider) GetDataprovider() dataprovider.DataProvider {
 	return dataprovider.NewDataProvider(t)
 }
 
+// SetDefault does ....
 // Create organisation (1), committe(1) and superadminrole(1)
 // Creates meeting 1 with groups:
 // - 1: Default
@@ -110,56 +115,64 @@ func (t *TestDataProvider) SetDefault() {
 	}
 }
 
+// EnableAnonymous does ...
 func (t *TestDataProvider) EnableAnonymous() {
 	t.Data["meeting/1/enable_anonymous"] = "true"
 }
 
+// AddUser does ...
 func (t *TestDataProvider) AddUser(id int) {
 	t.Data["user/"+strconv.Itoa(id)+"/id"] = strconv.Itoa(id)
 }
 
-func (t *TestDataProvider) AddUserToMeeting(userId, meetingId int) {
-	t.Data["user/"+strconv.Itoa(userId)+"/id"] = strconv.Itoa(userId)
-	meetingField := "meeting/" + strconv.Itoa(meetingId) + "/user_ids"
-	t.Data[meetingField] = addIntToJsonArray(t.getFieldWithDefault(meetingField, "[]"), userId)
+// AddUserToMeeting does ...
+func (t *TestDataProvider) AddUserToMeeting(userID, meetingID int) {
+	t.Data["user/"+strconv.Itoa(userID)+"/id"] = strconv.Itoa(userID)
+	meetingField := "meeting/" + strconv.Itoa(meetingID) + "/user_ids"
+	t.Data[meetingField] = addIntToJSONArray(t.getFieldWithDefault(meetingField, "[]"), userID)
 }
 
+// AddUserWithSuperadminRole does ...
 func (t *TestDataProvider) AddUserWithSuperadminRole(id int) {
-	t.Data["role/1/user_ids"] = addIntToJsonArray(t.getFieldWithDefault("role/1/user_ids", "[]"), id)
+	t.Data["role/1/user_ids"] = addIntToJSONArray(t.getFieldWithDefault("role/1/user_ids", "[]"), id)
 	t.Data["user/"+strconv.Itoa(id)+"/id"] = strconv.Itoa(id)
 	t.Data["user/"+strconv.Itoa(id)+"/role_id"] = "1"
 }
 
-func (t *TestDataProvider) AddUserWithAdminGroupToMeeting(userId, meetingId int) {
-	t.AddUserToMeeting(userId, meetingId)
-	t.Data["group/3/user_ids"] = addIntToJsonArray(t.getFieldWithDefault("group/3/user_ids", "[]"), userId)
-	t.Data["user/"+strconv.Itoa(userId)+"/group_"+strconv.Itoa(meetingId)+"_ids"] = "[3]"
+// AddUserWithAdminGroupToMeeting does ...
+func (t *TestDataProvider) AddUserWithAdminGroupToMeeting(userID, meetingID int) {
+	t.AddUserToMeeting(userID, meetingID)
+	t.Data["group/3/user_ids"] = addIntToJSONArray(t.getFieldWithDefault("group/3/user_ids", "[]"), userID)
+	t.Data["user/"+strconv.Itoa(userID)+"/group_"+strconv.Itoa(meetingID)+"_ids"] = "[3]"
 }
 
-func (t *TestDataProvider) AddPermissionToGroup(groupId int, permission string) {
-	fqfield := "group/" + strconv.Itoa(groupId) + "/permissions"
-	t.Data[fqfield] = addStringToJsonArray(t.getFieldWithDefault(fqfield, "[]"), permission)
+// AddPermissionToGroup does ...
+func (t *TestDataProvider) AddPermissionToGroup(groupID int, permission string) {
+	fqfield := "group/" + strconv.Itoa(groupID) + "/permissions"
+	t.Data[fqfield] = addStringToJSONArray(t.getFieldWithDefault(fqfield, "[]"), permission)
 }
 
 func (t *TestDataProvider) getFieldWithDefault(fqfield definitions.Fqfield, defaultValue definitions.Value) string {
 	if value, ok := t.Data[fqfield]; ok {
 		return value
-	} else {
-		return defaultValue
 	}
+
+	return defaultValue
 }
 
+// Set does ...
 func (t *TestDataProvider) Set(fqfield definitions.Fqfield, value definitions.Value) {
 	t.Data[fqfield] = value
 }
 
-func (t TestDataProvider) Get(fqfields []definitions.Fqfield) definitions.FqfieldData {
-	data := make(definitions.FqfieldData)
+// Get does ...
+func (t TestDataProvider) Get(ctx context.Context, fqfields ...definitions.Fqfield) (map[string]json.RawMessage, error) {
+	data := make(map[string]json.RawMessage, len(fqfields))
 	for _, field := range fqfields {
 		value, ok := t.Data[field]
 		if ok {
-			data[field] = value
+			data[field] = json.RawMessage(value)
 		}
 	}
-	return data
+	return data, nil
 }

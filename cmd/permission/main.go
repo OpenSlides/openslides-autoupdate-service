@@ -1,20 +1,23 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"strconv"
 
-	"github.com/OpenSlides/openslides-permission-service/pkg/definitions"
+	"github.com/OpenSlides/openslides-permission-service/internal/definitions"
 	"github.com/OpenSlides/openslides-permission-service/pkg/permission"
 )
 
 type fakeDataProvider struct{}
 
-func (dp fakeDataProvider) Get(fqfields []definitions.Fqfield) map[definitions.Fqfield]definitions.Value {
-	m := make(map[definitions.Fqfield]definitions.Value)
+func (dp fakeDataProvider) Get(ctx context.Context, fqfields ...definitions.Fqfield) (map[definitions.Fqfield]json.RawMessage, error) {
+	m := make(map[definitions.Fqfield]json.RawMessage)
 	for i, val := range fqfields {
-		m[val] = string(i)
+		m[val] = json.RawMessage(strconv.Itoa(i))
 	}
-	return m
+	return m, nil
 }
 
 func main() {

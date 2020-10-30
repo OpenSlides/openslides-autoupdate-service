@@ -1,7 +1,0 @@
-Build and run:
-
-go build ./cmd/permission/ && ./permission
-
-Test:
-
-go test ./...

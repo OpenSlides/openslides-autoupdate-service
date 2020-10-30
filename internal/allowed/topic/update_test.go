@@ -3,7 +3,7 @@ package topic_test
 import (
 	"testing"
 
-	"github.com/OpenSlides/openslides-permission-service/pkg/definitions"
+	"github.com/OpenSlides/openslides-permission-service/internal/definitions"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed"
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed/topic"
@@ -58,7 +58,7 @@ func TestUpdateUnknownUser(t *testing.T) {
 	data := definitions.FqfieldData{
 		"id": "1",
 	}
-	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertUpdateFailWithError(t, params)
 }
@@ -67,7 +67,7 @@ func TestUpdateSuperadminRole(t *testing.T) {
 	dp := tests.NewTestDataProvider()
 	data := definitions.FqfieldData{} // No meeting id needed, it is always possible.
 	dp.AddUserWithSuperadminRole(1)
-	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertUpdateIsAllowed(t, params)
 }
@@ -76,7 +76,7 @@ func TestUpdateNoId(t *testing.T) {
 	dp := tests.NewTestDataProvider()
 	data := definitions.FqfieldData{}
 	dp.AddUserWithAdminGroupToMeeting(1, 1)
-	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertUpdateFailWithError(t, params)
 }
@@ -88,7 +88,7 @@ func TestUpdateUserNotInMeeting(t *testing.T) {
 		"id": "1",
 	}
 	dp.AddUser(1)
-	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertUpdateIsNotAllowed(t, params)
 }
@@ -100,7 +100,7 @@ func TestUpdateAdminUser(t *testing.T) {
 		"id": "1",
 	}
 	dp.AddUserWithAdminGroupToMeeting(1, 1)
-	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertUpdateIsAllowed(t, params)
 }
@@ -113,7 +113,7 @@ func TestUpdateUser(t *testing.T) {
 	}
 	dp.AddUserToMeeting(1, 1)
 	dp.AddPermissionToGroup(1, "agenda.can_manage")
-	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertUpdateIsAllowed(t, params)
 }
@@ -125,7 +125,7 @@ func TestUpdateUserNoPermissions(t *testing.T) {
 		"id": "1",
 	}
 	dp.AddUserToMeeting(1, 1)
-	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertUpdateIsNotAllowed(t, params)
 }
@@ -136,7 +136,7 @@ func TestUpdateInvaldFields(t *testing.T) {
 	data := definitions.FqfieldData{
 		"not_allowed": "some value",
 	}
-	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertUpdateFailWithError(t, params)
 }
@@ -147,7 +147,7 @@ func TestUpdateDisabledAnonymous(t *testing.T) {
 	data := definitions.FqfieldData{
 		"id": "1",
 	}
-	params := &allowed.IsAllowedParams{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertUpdateIsNotAllowed(t, params)
 }
@@ -159,7 +159,7 @@ func TestUpdateEnabledAnonymous(t *testing.T) {
 	data := definitions.FqfieldData{
 		"id": "1",
 	}
-	params := &allowed.IsAllowedParams{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertUpdateIsNotAllowed(t, params)
 }
@@ -172,7 +172,7 @@ func TestUpdateEnabledAnonymousWithPermissions(t *testing.T) {
 	data := definitions.FqfieldData{
 		"id": "1",
 	}
-	params := &allowed.IsAllowedParams{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertUpdateIsAllowed(t, params)
 }

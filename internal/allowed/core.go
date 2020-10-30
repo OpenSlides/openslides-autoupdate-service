@@ -2,13 +2,15 @@ package allowed
 
 import (
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
-	"github.com/OpenSlides/openslides-permission-service/pkg/definitions"
+	"github.com/OpenSlides/openslides-permission-service/internal/definitions"
 )
 
+// IsAllowedParams does ...
 type IsAllowedParams struct {
-	UserId       int
+	UserID       int
 	Data         definitions.FqfieldData
 	DataProvider dataprovider.DataProvider
 }
 
+// IsAllowed does ...
 type IsAllowed = func(params *IsAllowedParams) (bool, map[string]interface{}, error)

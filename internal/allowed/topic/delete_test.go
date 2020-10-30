@@ -3,7 +3,7 @@ package topic_test
 import (
 	"testing"
 
-	"github.com/OpenSlides/openslides-permission-service/pkg/definitions"
+	"github.com/OpenSlides/openslides-permission-service/internal/definitions"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed"
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed/topic"
@@ -58,7 +58,7 @@ func TestDeleteUnknownUser(t *testing.T) {
 	data := definitions.FqfieldData{
 		"id": "1",
 	}
-	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertDeleteFailWithError(t, params)
 }
@@ -67,7 +67,7 @@ func TestDeleteSuperadminRole(t *testing.T) {
 	dp := tests.NewTestDataProvider()
 	data := definitions.FqfieldData{} // No meeting id needed, it is always possible.
 	dp.AddUserWithSuperadminRole(1)
-	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertDeleteIsAllowed(t, params)
 }
@@ -76,7 +76,7 @@ func TestDeleteNoId(t *testing.T) {
 	dp := tests.NewTestDataProvider()
 	data := definitions.FqfieldData{}
 	dp.AddUserWithAdminGroupToMeeting(1, 1)
-	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertDeleteFailWithError(t, params)
 }
@@ -94,7 +94,7 @@ func TestDeleteUserNotInMeeting(t *testing.T) {
 		"id": "1",
 	}
 	dp.AddUser(1)
-	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertDeleteIsNotAllowed(t, params)
 }
@@ -106,7 +106,7 @@ func TestDeleteAdminUser(t *testing.T) {
 		"id": "1",
 	}
 	dp.AddUserWithAdminGroupToMeeting(1, 1)
-	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertDeleteIsAllowed(t, params)
 }
@@ -119,7 +119,7 @@ func TestDeleteUser(t *testing.T) {
 	}
 	dp.AddUserToMeeting(1, 1)
 	dp.AddPermissionToGroup(1, "agenda.can_manage")
-	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertDeleteIsAllowed(t, params)
 }
@@ -131,7 +131,7 @@ func TestDeleteUserNoPermissions(t *testing.T) {
 		"id": "1",
 	}
 	dp.AddUserToMeeting(1, 1)
-	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertDeleteIsNotAllowed(t, params)
 }
@@ -142,7 +142,7 @@ func TestDeleteInvaldFields(t *testing.T) {
 	data := definitions.FqfieldData{
 		"not_allowed": "some value",
 	}
-	params := &allowed.IsAllowedParams{UserId: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertDeleteFailWithError(t, params)
 }
@@ -153,7 +153,7 @@ func TestDeleteDisabledAnonymous(t *testing.T) {
 	data := definitions.FqfieldData{
 		"id": "1",
 	}
-	params := &allowed.IsAllowedParams{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertDeleteIsNotAllowed(t, params)
 }
@@ -165,7 +165,7 @@ func TestDeleteEnabledAnonymous(t *testing.T) {
 	data := definitions.FqfieldData{
 		"id": "1",
 	}
-	params := &allowed.IsAllowedParams{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertDeleteIsNotAllowed(t, params)
 }
@@ -178,7 +178,7 @@ func TestDeleteEnabledAnonymousWithPermissions(t *testing.T) {
 	data := definitions.FqfieldData{
 		"id": "1",
 	}
-	params := &allowed.IsAllowedParams{UserId: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	params := &allowed.IsAllowedParams{UserID: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
 	assertDeleteIsAllowed(t, params)
 }

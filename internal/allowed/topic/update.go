@@ -20,11 +20,11 @@ func Update(params *allowed.IsAllowedParams) (bool, map[string]interface{}, erro
 		return false, nil, err
 	}
 
-	if !allowed.DoesUserExists(params.UserId, params.DataProvider) {
-		return false, nil, fmt.Errorf("The user with id " + strconv.Itoa(params.UserId) + " does not exist!")
+	if !allowed.DoesUserExists(params.UserID, params.DataProvider) {
+		return false, nil, fmt.Errorf("The user with id " + strconv.Itoa(params.UserID) + " does not exist!")
 	}
 
-	superadmin, err := allowed.HasUserSuperadminRole(params.UserId, params.DataProvider)
+	superadmin, err := allowed.HasUserSuperadminRole(params.UserID, params.DataProvider)
 	if err != nil {
 		return false, nil, err
 	}
@@ -37,17 +37,17 @@ func Update(params *allowed.IsAllowedParams) (bool, map[string]interface{}, erro
 		return false, nil, err
 	}
 
-	meetingId, err := allowed.GetMeetingIdFromModel("topic/"+strconv.Itoa(id), params.DataProvider)
+	meetingId, err := allowed.GetMeetingIDFromModel("topic/"+strconv.Itoa(id), params.DataProvider)
 	if err != nil {
 		return false, nil, err
 	}
 
-	canSeeMeeting, err := allowed.CanUserSeeMeeting(params.UserId, meetingId, params.DataProvider)
+	canSeeMeeting, err := allowed.CanUserSeeMeeting(params.UserID, meetingId, params.DataProvider)
 	if err != nil || !canSeeMeeting {
 		return false, nil, err
 	}
 
-	perms, err := allowed.GetPermissionsForUserInMeeting(params.UserId, meetingId, params.DataProvider)
+	perms, err := allowed.GetPermissionsForUserInMeeting(params.UserID, meetingId, params.DataProvider)
 	if err != nil {
 		return false, nil, err
 	}
