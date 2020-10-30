@@ -73,6 +73,7 @@ func (a *Autoupdate) LastID() uint64 {
 // flushes after each message.
 func (a *Autoupdate) Live(ctx context.Context, userID int, w io.Writer, kb KeysBuilder) error {
 	conn := a.Connect(userID, kb)
+	encoder := json.NewEncoder(w)
 
 	for {
 		// connection.Next() blocks, until there is new data or the client context
@@ -82,7 +83,7 @@ func (a *Autoupdate) Live(ctx context.Context, userID int, w io.Writer, kb KeysB
 			return err
 		}
 
-		if err := toJSON(w, data); err != nil {
+		if err := encoder.Encode(data); err != nil {
 			return err
 		}
 
@@ -128,26 +129,4 @@ func (a *Autoupdate) RestrictedData(ctx context.Context, uid int, keys ...string
 		return nil, fmt.Errorf("restrict data: %w", err)
 	}
 	return data, nil
-}
-
-// toJSON converts the data to json and writes it to the io.Writer.
-func toJSON(w io.Writer, data map[string]json.RawMessage) error {
-	// TODO: Handle errors
-	first := true
-	w.Write([]byte("{"))
-	for key, value := range data {
-		if !first {
-			w.Write([]byte{','})
-		}
-		first = false
-		w.Write([]byte{'"'})
-		w.Write([]byte(key))
-		w.Write([]byte{'"', ':'})
-		if value == nil {
-			value = []byte("null")
-		}
-		w.Write(value)
-	}
-	w.Write([]byte("}\n"))
-	return nil
 }
