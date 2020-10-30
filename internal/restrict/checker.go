@@ -52,7 +52,7 @@ func (r *relationList) Check(uid int, key string, value json.RawMessage) (json.R
 		keyToID[keys[i]] = id
 	}
 
-	allowed, err := r.permer.CheckFQIDs(uid, keys)
+	allowed, err := r.permer.RestrictFQIDs(uid, keys)
 	if err != nil {
 		return nil, fmt.Errorf("check fqids: %w", err)
 	}
@@ -86,7 +86,7 @@ func (g *genericRelationList) Check(uid int, key string, value json.RawMessage) 
 		keys[i] = fqid
 	}
 
-	allowed, err := g.permer.CheckFQIDs(uid, keys)
+	allowed, err := g.permer.RestrictFQIDs(uid, keys)
 	if err != nil {
 		return nil, fmt.Errorf("check fqids: %w", err)
 	}
@@ -122,7 +122,7 @@ func (s *templateField) Check(uid int, key string, value json.RawMessage) (json.
 		keyToReplacement[keys[i]] = r
 	}
 
-	allowed, err := s.permer.CheckFQFields(uid, keys)
+	allowed, err := s.permer.RestrictFQFields(uid, keys)
 	if err != nil {
 		return nil, fmt.Errorf("check generated structured fields: %w", err)
 	}

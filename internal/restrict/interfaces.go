@@ -7,8 +7,8 @@ import (
 
 // Permissioner tells the restricter, if a user has the required permissions.
 type Permissioner interface {
-	CheckFQIDs(uid int, fqids []string) (map[string]bool, error)
-	CheckFQFields(uid int, fqfields []string) (map[string]bool, error)
+	RestrictFQIDs(uid int, fqids []string) (map[string]bool, error)
+	RestrictFQFields(uid int, fqfields []string) (map[string]bool, error)
 }
 
 // Datastore informs the restricter about changed data.

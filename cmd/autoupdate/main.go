@@ -13,6 +13,7 @@ import (
 	"path"
 	"syscall"
 
+	"github.com/OpenSlides/openslides-permission-service/pkg/permission"
 	"github.com/openslides/openslides-autoupdate-service/internal/auth"
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
@@ -93,8 +94,7 @@ func run() error {
 	}
 
 	// Perm Service.
-	perms := &test.MockPermission{}
-	perms.Default = true
+	perms := permission.New(datastoreService)
 
 	// Restricter Service.
 	restricter := restrict.New(perms, restrict.RelationChecker(restrict.RelationLists, perms))

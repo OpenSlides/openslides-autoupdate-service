@@ -36,7 +36,7 @@ func (r *Restricter) Restrict(uid int, data map[string]json.RawMessage) error {
 	for k := range data {
 		keys = append(keys, k)
 	}
-	allowed, err := r.permer.CheckFQFields(uid, keys)
+	allowed, err := r.permer.RestrictFQFields(uid, keys)
 	if err != nil {
 		return fmt.Errorf("check permissions: %w", err)
 	}
