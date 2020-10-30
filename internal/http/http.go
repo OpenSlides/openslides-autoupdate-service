@@ -32,6 +32,7 @@ func Complex(mux *http.ServeMux, auth Authenticater, db keysbuilder.DataProvider
 		// This blocks until the request is done.
 		if err := liver.Live(r.Context(), uid, w, kb); err != nil {
 			handleError(w, err, false)
+			return
 		}
 	})
 
@@ -57,6 +58,7 @@ func Simple(mux *http.ServeMux, auth Authenticater, liver Liver) {
 		// This blocks until the request is done.
 		if err := liver.Live(r.Context(), uid, w, kb); err != nil {
 			handleError(w, err, false)
+			return
 		}
 	})
 

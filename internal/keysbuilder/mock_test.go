@@ -1,39 +1,8 @@
 package keysbuilder_test
 
 import (
-	"context"
-	"encoding/json"
 	"sort"
-	"time"
 )
-
-type mockDataProvider struct {
-	err          error
-	data         map[string]json.RawMessage
-	sleep        time.Duration
-	requestCount int
-}
-
-func (r *mockDataProvider) RestrictedData(ctx context.Context, uid int, keys ...string) (map[string]json.RawMessage, error) {
-	time.Sleep(r.sleep)
-	if r.err != nil {
-		return nil, r.err
-	}
-
-	r.requestCount++
-
-	data := make(map[string]json.RawMessage, len(keys))
-	for _, key := range keys {
-		v, ok := r.data[key]
-		if !ok {
-			data[key] = nil
-			continue
-		}
-		data[key] = v
-	}
-
-	return data, nil
-}
 
 func cmpSlice(one, two []string) bool {
 	if len(one) != len(two) {

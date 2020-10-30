@@ -88,7 +88,7 @@ func TestConnectionEmptyData(t *testing.T) {
 
 	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
 
-	kb := mockKeysBuilder{keys: test.Str(doesExistKey, doesNotExistKey)}
+	kb := test.KeysBuilder{K: test.Str(doesExistKey, doesNotExistKey)}
 
 	t.Run("First responce", func(t *testing.T) {
 		c := s.Connect(1, kb)
@@ -190,7 +190,7 @@ func TestConnectionFilterData(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
-	kb := mockKeysBuilder{keys: test.Str("user/1/name")}
+	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 	c := s.Connect(1, kb)
 	if _, err := c.Next(context.Background()); err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
@@ -215,7 +215,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	closed := make(chan struct{})
 	close(closed)
 	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
-	kb := mockKeysBuilder{keys: test.Str("user/1/name")}
+	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 	c := s.Connect(1, kb)
 	if _, err := c.Next(context.Background()); err != nil {
 		t.Errorf("c.Next() returned an error: %v", err)
@@ -250,7 +250,7 @@ func BenchmarkFilterChanging(b *testing.B) {
 	for i := 0; i < keyCount; i++ {
 		keys = append(keys, fmt.Sprintf("user/%d/name", i))
 	}
-	kb := mockKeysBuilder{keys: keys}
+	kb := test.KeysBuilder{K: keys}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	c := s.Connect(1, kb)
@@ -277,7 +277,7 @@ func BenchmarkFilterNotChanging(b *testing.B) {
 	for i := 0; i < keyCount; i++ {
 		keys = append(keys, fmt.Sprintf("user/%d/name", i))
 	}
-	kb := mockKeysBuilder{keys: keys}
+	kb := test.KeysBuilder{K: keys}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	c := s.Connect(1, kb)

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
+	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
 func TestKeys(t *testing.T) {
@@ -262,7 +263,7 @@ func TestKeys(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			dataProvider := &mockDataProvider{data: tt.data}
+			dataProvider := &test.DataProvider{Data: tt.data}
 			b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.request), dataProvider, 1)
 			if err != nil {
 				t.Fatalf("FromJSON returned the unexpected error: %v", err)
@@ -428,12 +429,12 @@ func TestUpdate(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			dataProvider := &mockDataProvider{data: tt.data}
+			dataProvider := &test.DataProvider{Data: tt.data}
 			b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.request), dataProvider, 1)
 			if err != nil {
 				t.Fatalf("FromJSON() returned an unexpected error: %v", err)
 			}
-			dataProvider.data = tt.newData
+			dataProvider.Data = tt.newData
 
 			if err := b.Update(context.Background()); err != nil {
 				t.Errorf("Update() returned an unexpect error: %v", err)
@@ -473,7 +474,7 @@ func TestConcurency(t *testing.T) {
 		"group/1/perm_ids": []byte("[1,2]"),
 		"group/2/perm_ids": []byte("[1,2]"),
 	}
-	dataProvider := &mockDataProvider{data: data, sleep: 10 * time.Millisecond}
+	dataProvider := &test.DataProvider{Data: data, Sleep: 10 * time.Millisecond}
 	start := time.Now()
 	b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(jsonData), dataProvider, 1)
 	if err != nil {
@@ -523,7 +524,7 @@ func TestManyRequests(t *testing.T) {
 		"user/1/note_id": []byte("1"),
 		"user/2/note_id": []byte("1"),
 	}
-	dataProvider := &mockDataProvider{data: data, sleep: 10 * time.Millisecond}
+	dataProvider := &test.DataProvider{Data: data, Sleep: 10 * time.Millisecond}
 	start := time.Now()
 	b, err := keysbuilder.ManyFromJSON(context.Background(), strings.NewReader(jsonData), dataProvider, 1)
 	if err != nil {
@@ -554,7 +555,7 @@ func TestError(t *testing.T) {
 			}
 		}
 	}`
-	dataProvider := &mockDataProvider{err: errors.New("Some Error"), sleep: 10 * time.Millisecond}
+	dataProvider := &test.DataProvider{Err: errors.New("Some Error"), Sleep: 10 * time.Millisecond}
 
 	start := time.Now()
 	_, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(json), dataProvider, 1)
@@ -569,7 +570,7 @@ func TestError(t *testing.T) {
 }
 
 func TestRequestCount(t *testing.T) {
-	dataProvider := new(mockDataProvider)
+	dataProvider := new(test.DataProvider)
 	json := `{
 		"ids": [1],
 		"collection": "user",
@@ -599,7 +600,7 @@ func TestRequestCount(t *testing.T) {
 		t.Fatalf("FromJSON returned unexpected error: %v", err)
 	}
 
-	if dataProvider.requestCount != 1 {
-		t.Errorf("Updated() did %d requests, expected 1", dataProvider.requestCount)
+	if dataProvider.RequestCount != 1 {
+		t.Errorf("Updated() did %d requests, expected 1", dataProvider.RequestCount)
 	}
 }

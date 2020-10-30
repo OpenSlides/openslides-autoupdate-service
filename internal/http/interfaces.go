@@ -22,5 +22,5 @@ type ClientError interface {
 
 // Liver provides a Live method, that writes continues data to the given writer.
 type Liver interface {
-	Live(context.Context, int, io.Writer, autoupdate.KeysBuilder) error
+	Live(ctx context.Context, uid int, w io.Writer, kb autoupdate.KeysBuilder) error
 }
