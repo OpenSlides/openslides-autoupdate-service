@@ -178,28 +178,6 @@ func TestErrors(t *testing.T) {
 			`SyntaxError`,
 			"wrong type at field `ids`. Got string, expected number",
 		},
-		{
-			"Wrong field value",
-			httptest.NewRequest(
-				"GET",
-				"/system/autoupdate",
-				strings.NewReader(`
-				[{
-					"ids": [1],
-					"collection": "foo",
-					"fields": {
-						"name": {
-							"type": "relation",
-							"collection": "bar",
-							"fields": {}
-						}
-					}
-				}]`),
-			),
-			400,
-			`ValueError`,
-			`invalid value in key foo/1/name. Got string, expected int`,
-		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.request.ProtoMajor = 2

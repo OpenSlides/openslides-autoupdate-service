@@ -24,19 +24,6 @@ type Builder struct {
 	keys         []string
 }
 
-// newBuilder creates a new Builder instance from one or more bodies.
-func newBuilder(ctx context.Context, dataProvider DataProvider, uid int, bodys ...body) (*Builder, error) {
-	b := &Builder{
-		dataProvider: dataProvider,
-		uid:          uid,
-		bodies:       bodys,
-	}
-	if err := b.Update(ctx); err != nil {
-		return nil, fmt.Errorf("build keys for the first time: %w", err)
-	}
-	return b, nil
-}
-
 // Update triggers a key update. It generates the list of keys, that can be
 // requested with the Keys() method. It travels the KeysRequests object like a
 // tree.
@@ -113,6 +100,8 @@ func (b *Builder) Update(ctx context.Context) (err error) {
 }
 
 // Keys returns the keys.
+//
+// Make sure to call Update() or Keys() will return an empty list.
 func (b *Builder) Keys() []string {
 	return append(b.keys[:0:0], b.keys...)
 }

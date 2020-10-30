@@ -23,7 +23,7 @@ func Complex(mux *http.ServeMux, auth Authenticater, db keysbuilder.DataProvider
 		defer r.Body.Close()
 		uid := auth.FromContext(r.Context())
 
-		kb, err := keysbuilder.ManyFromJSON(r.Context(), r.Body, db, uid)
+		kb, err := keysbuilder.ManyFromJSON(r.Body, db, uid)
 		if err != nil {
 			handleError(w, err, true)
 			return

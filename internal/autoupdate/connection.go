@@ -28,6 +28,10 @@ func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, erro
 			c.tid = c.autoupdate.topic.LastID()
 		}
 
+		if err := c.kb.Update(ctx); err != nil {
+			return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
+		}
+
 		data, err := c.autoupdate.RestrictedData(ctx, c.uid, c.kb.Keys()...)
 		if err != nil {
 			return nil, fmt.Errorf("get first time restricted data: %w", err)

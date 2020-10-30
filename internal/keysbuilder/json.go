@@ -1,7 +1,6 @@
 package keysbuilder
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,7 +8,7 @@ import (
 )
 
 // FromJSON creates a Keysbuilder from json.
-func FromJSON(ctx context.Context, r io.Reader, dataProvider DataProvider, uid int) (*Builder, error) {
+func FromJSON(r io.Reader, dataProvider DataProvider, uid int) (*Builder, error) {
 	var b body
 	if err := json.NewDecoder(r).Decode(&b); err != nil {
 		if err == io.EOF {
@@ -21,15 +20,16 @@ func FromJSON(ctx context.Context, r io.Reader, dataProvider DataProvider, uid i
 		return nil, JSONError{err}
 	}
 
-	kb, err := newBuilder(ctx, dataProvider, uid, b)
-	if err != nil {
-		return nil, fmt.Errorf("build keys: %w", err)
+	kb := &Builder{
+		dataProvider: dataProvider,
+		uid:          uid,
+		bodies:       []body{b},
 	}
 	return kb, nil
 }
 
 // ManyFromJSON creates a list of Keysbuilder objects from a json list.
-func ManyFromJSON(ctx context.Context, r io.Reader, dataProvider DataProvider, uid int) (*Builder, error) {
+func ManyFromJSON(r io.Reader, dataProvider DataProvider, uid int) (*Builder, error) {
 	var bs []body
 	if err := json.NewDecoder(r).Decode(&bs); err != nil {
 		if err == io.EOF {
@@ -63,9 +63,10 @@ func ManyFromJSON(ctx context.Context, r io.Reader, dataProvider DataProvider, u
 		return nil, InvalidError{msg: "No data"}
 	}
 
-	kb, err := newBuilder(ctx, dataProvider, uid, bs...)
-	if err != nil {
-		return nil, fmt.Errorf("build keys: %w", err)
+	kb := &Builder{
+		dataProvider: dataProvider,
+		uid:          uid,
+		bodies:       bs,
 	}
 	return kb, nil
 }

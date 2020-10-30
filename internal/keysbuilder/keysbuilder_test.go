@@ -264,9 +264,13 @@ func TestKeys(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			dataProvider := &test.DataProvider{Data: tt.data}
-			b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.request), dataProvider, 1)
+			b, err := keysbuilder.FromJSON(strings.NewReader(tt.request), dataProvider, 1)
 			if err != nil {
 				t.Fatalf("FromJSON returned the unexpected error: %v", err)
+			}
+
+			if err := b.Update(context.Background()); err != nil {
+				t.Fatalf("Building keys: %v", err)
 			}
 
 			keys := b.Keys()
@@ -430,7 +434,7 @@ func TestUpdate(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			dataProvider := &test.DataProvider{Data: tt.data}
-			b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.request), dataProvider, 1)
+			b, err := keysbuilder.FromJSON(strings.NewReader(tt.request), dataProvider, 1)
 			if err != nil {
 				t.Fatalf("FromJSON() returned an unexpected error: %v", err)
 			}
@@ -476,10 +480,14 @@ func TestConcurency(t *testing.T) {
 	}
 	dataProvider := &test.DataProvider{Data: data, Sleep: 10 * time.Millisecond}
 	start := time.Now()
-	b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(jsonData), dataProvider, 1)
+	b, err := keysbuilder.FromJSON(strings.NewReader(jsonData), dataProvider, 1)
 	if err != nil {
 		t.Fatalf("Expected FromJSON() not to return an error, got: %v", err)
 	}
+	if err := b.Update(context.Background()); err != nil {
+		t.Fatalf("Building keys: %v", err)
+	}
+
 	finished := time.Since(start)
 
 	if finished > 30*time.Millisecond {
@@ -526,9 +534,12 @@ func TestManyRequests(t *testing.T) {
 	}
 	dataProvider := &test.DataProvider{Data: data, Sleep: 10 * time.Millisecond}
 	start := time.Now()
-	b, err := keysbuilder.ManyFromJSON(context.Background(), strings.NewReader(jsonData), dataProvider, 1)
+	b, err := keysbuilder.ManyFromJSON(strings.NewReader(jsonData), dataProvider, 1)
 	if err != nil {
 		t.Fatalf("FromJSON() returned an unexpected error: %v", err)
+	}
+	if err := b.Update(context.Background()); err != nil {
+		t.Fatalf("Building keys: %v", err)
 	}
 
 	finished := time.Since(start)
@@ -558,9 +569,13 @@ func TestError(t *testing.T) {
 	dataProvider := &test.DataProvider{Err: errors.New("Some Error"), Sleep: 10 * time.Millisecond}
 
 	start := time.Now()
-	_, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(json), dataProvider, 1)
-	if err == nil {
-		t.Fatalf("Expected FromJSON() to return an error, got none")
+	b, err := keysbuilder.FromJSON(strings.NewReader(json), dataProvider, 1)
+	if err != nil {
+		t.Fatalf("Got unexpected error: %v", err)
+
+	}
+	if err := b.Update(context.Background()); err == nil {
+		t.Fatalf("Expected Update() to return an error, got none")
 	}
 	finished := time.Since(start)
 
@@ -595,12 +610,53 @@ func TestRequestCount(t *testing.T) {
 			}
 		}
 	}`
-	_, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(json), dataProvider, 1)
+	b, err := keysbuilder.FromJSON(strings.NewReader(json), dataProvider, 1)
 	if err != nil {
 		t.Fatalf("FromJSON returned unexpected error: %v", err)
+	}
+	if err := b.Update(context.Background()); err != nil {
+		t.Fatalf("Building keys: %v", err)
 	}
 
 	if dataProvider.RequestCount != 1 {
 		t.Errorf("Updated() did %d requests, expected 1", dataProvider.RequestCount)
+	}
+}
+
+func TestLazy(t *testing.T) {
+	dataProvider := new(test.DataProvider)
+	dataProvider.Data = map[string]json.RawMessage{
+		"user/1/note_id": []byte("1"),
+	}
+
+	jsonData := `{
+		"ids": [1],
+		"collection": "user",
+		"fields": {
+			"note_id": {
+				"type": "relation",
+				"collection": "note",
+				"fields": {"important": null}
+			}
+		}
+	}`
+
+	b, err := keysbuilder.FromJSON(strings.NewReader(jsonData), dataProvider, 1)
+	if err != nil {
+		t.Fatalf("Got unexpected error: %v", err)
+	}
+
+	// Change data after kb was created
+	dataProvider.Data = map[string]json.RawMessage{
+		"user/1/note_id": []byte("2"),
+	}
+
+	if err := b.Update(context.Background()); err != nil {
+		t.Fatalf("Building keys: %v", err)
+	}
+
+	expect := "note/2/important"
+	if got := b.Keys()[1]; got != expect {
+		t.Errorf("Got %s, expected %s", got, expect)
 	}
 }

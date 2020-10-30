@@ -302,7 +302,7 @@ func TestFeatures(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			b, err := keysbuilder.FromJSON(context.Background(), strings.NewReader(tt.request), s, 1)
+			b, err := keysbuilder.FromJSON(strings.NewReader(tt.request), s, 1)
 			if err != nil {
 				t.Fatalf("FromJSON() returned an unexpected error: %v", err)
 			}
