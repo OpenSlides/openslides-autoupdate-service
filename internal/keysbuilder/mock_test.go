@@ -54,4 +54,3 @@ func mapKeys(m map[string][]int) []string {
 }
 
 func strs(str ...string) []string { return str }
-func ids(ids ...int) []int        { return ids }
