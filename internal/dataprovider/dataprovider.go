@@ -13,7 +13,7 @@ import (
 // required by the permission service.
 type ExternalDataProvider interface {
 	// If a field does not exist, it is not returned.
-	Get(ctx context.Context, keys ...string) (map[string]json.RawMessage, error)
+	Get(ctx context.Context, keys ...string) ([]json.RawMessage, error)
 }
 
 // DataProvider is a wrapper around permission.ExternalDataProvider that
@@ -34,11 +34,11 @@ func (dp DataProvider) GetString(fqfield definitions.Fqfield) (string, error) {
 		return "", err
 	}
 
-	value, ok := fields[fqfield]
-	if !ok {
+	if fields[0] == nil {
 		return "", fmt.Errorf("No " + fqfield + " key")
 	}
-	return string(value), nil
+
+	return string(fields[0]), nil
 }
 
 // GetStringWithDefault returns a string value but returns a default value, if
@@ -50,8 +50,8 @@ func (dp DataProvider) GetStringWithDefault(fqfield definitions.Fqfield, default
 	if err != nil {
 		return ""
 	}
-	value, ok := fields[fqfield]
-	if !ok {
+	value := fields[0]
+	if value == nil {
 		return defaultValue
 	}
 	return string(value)
@@ -64,8 +64,8 @@ func (dp DataProvider) GetStringArrayWithDefault(fqfield definitions.Fqfield, de
 		return nil, err
 	}
 
-	value, ok := fields[fqfield]
-	if !ok {
+	value := fields[0]
+	if value == nil {
 		return defaultValue, nil
 	}
 
@@ -84,8 +84,8 @@ func (dp DataProvider) GetMany(fqfields []definitions.Fqfield) map[definitions.F
 	}
 
 	converted := make(map[definitions.Fqfield]definitions.Value, len(result))
-	for k, v := range result {
-		converted[k] = string(v)
+	for i, v := range result {
+		converted[fqfields[i]] = string(v)
 	}
 	return converted
 }
@@ -99,8 +99,7 @@ func (dp DataProvider) Exists(fqfield definitions.Fqfield) bool {
 		return false
 	}
 
-	_, ok := fields[fqfield]
-	return ok
+	return fields[0] != nil
 }
 
 // GetInt returns an int value.
@@ -110,8 +109,8 @@ func (dp DataProvider) GetInt(fqfield definitions.Fqfield) (int, error) {
 		return 0, err
 	}
 
-	value, ok := fields[fqfield]
-	if !ok {
+	value := fields[0]
+	if value == nil {
 		return 0, fmt.Errorf("No " + fqfield + " key")
 	}
 
@@ -125,8 +124,12 @@ func (dp DataProvider) GetInt(fqfield definitions.Fqfield) (int, error) {
 // GetIntWithDefault returns a int value or the default value.
 func (dp DataProvider) GetIntWithDefault(fqfield definitions.Fqfield, defaultValue int) (int, error) {
 	fields, err := dp.externalDataprovider.Get(context.TODO(), fqfield)
-	value, ok := fields[fqfield]
-	if !ok {
+	if err != nil {
+		return 0, err
+	}
+
+	value := fields[0]
+	if value == nil {
 		return defaultValue, nil
 	}
 
@@ -143,8 +146,8 @@ func (dp DataProvider) GetIntArray(fqfield definitions.Fqfield) ([]int, error) {
 	if err != nil {
 		return nil, err
 	}
-	value, ok := fields[fqfield]
-	if !ok {
+	value := fields[0]
+	if value == nil {
 		return nil, fmt.Errorf("No " + fqfield + " key")
 	}
 
@@ -161,8 +164,8 @@ func (dp DataProvider) GetIntArrayWithDefault(fqfield definitions.Fqfield, defau
 	if err != nil {
 		return nil, err
 	}
-	value, ok := fields[fqfield]
-	if !ok {
+	value := fields[0]
+	if value == nil {
 		return defaultValue, nil
 	}
 
@@ -180,8 +183,8 @@ func (dp DataProvider) GetBoolWithDefault(fqfield definitions.Fqfield, defaultVa
 		return false, err
 	}
 
-	value, ok := fields[fqfield]
-	if !ok {
+	value := fields[0]
+	if value == nil {
 		return defaultValue, nil
 	}
 	var parsedValue bool

@@ -12,10 +12,10 @@ import (
 
 type fakeDataProvider struct{}
 
-func (dp fakeDataProvider) Get(ctx context.Context, fqfields ...definitions.Fqfield) (map[definitions.Fqfield]json.RawMessage, error) {
-	m := make(map[definitions.Fqfield]json.RawMessage)
-	for i, val := range fqfields {
-		m[val] = json.RawMessage(strconv.Itoa(i))
+func (dp fakeDataProvider) Get(ctx context.Context, fqfields ...definitions.Fqfield) ([]json.RawMessage, error) {
+	m := make([]json.RawMessage, len(fqfields))
+	for i := range fqfields {
+		m[i] = json.RawMessage(strconv.Itoa(i))
 	}
 	return m, nil
 }

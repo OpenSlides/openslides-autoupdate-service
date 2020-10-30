@@ -166,13 +166,16 @@ func (t *TestDataProvider) Set(fqfield definitions.Fqfield, value definitions.Va
 }
 
 // Get does ...
-func (t TestDataProvider) Get(ctx context.Context, fqfields ...definitions.Fqfield) (map[string]json.RawMessage, error) {
-	data := make(map[string]json.RawMessage, len(fqfields))
-	for _, field := range fqfields {
+func (t TestDataProvider) Get(ctx context.Context, fqfields ...definitions.Fqfield) ([]json.RawMessage, error) {
+	data := make([]json.RawMessage, len(fqfields))
+	for i, field := range fqfields {
 		value, ok := t.Data[field]
-		if ok {
-			data[field] = json.RawMessage(value)
+		if !ok {
+			data[i] = nil
+			continue
 		}
+
+		data[i] = json.RawMessage(value)
 	}
 	return data, nil
 }
