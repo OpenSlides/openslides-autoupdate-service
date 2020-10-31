@@ -22,33 +22,7 @@ type Connection struct {
 // this case, nil is returned.
 func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, error) {
 	if c.filter == nil {
-		// First time called
-		c.filter = new(filter)
-		if c.tid == 0 {
-			c.tid = c.autoupdate.topic.LastID()
-		}
-
-		if err := c.kb.Update(ctx); err != nil {
-			return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
-		}
-
-		data, err := c.autoupdate.RestrictedData(ctx, c.uid, c.kb.Keys()...)
-		if err != nil {
-			return nil, fmt.Errorf("get first time restricted data: %w", err)
-		}
-
-		// Delete empty values in first responce.
-		for k, v := range data {
-			if len(v) == 0 {
-				delete(data, k)
-			}
-		}
-
-		if err := c.filter.filter(data); err != nil {
-			return nil, fmt.Errorf("filter data for the first time: %w", err)
-		}
-
-		return data, nil
+		return c.allData(ctx)
 	}
 
 	var err error
@@ -60,6 +34,21 @@ func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, erro
 		return nil, fmt.Errorf("get updated keys: %w", err)
 	}
 
+	changedSlice := make(map[string]bool, len(changedKeys))
+	for _, key := range changedKeys {
+		var uid int
+		if _, err := fmt.Sscanf(key, fullUpdateFormat, &uid); err == nil {
+			// The key is a fullUpdate key. Do not use it, excpect of a full
+			// update.
+			if uid == c.uid {
+				return c.allData(ctx)
+			}
+			continue
+		}
+
+		changedSlice[key] = true
+	}
+
 	oldKeys := c.kb.Keys()
 
 	// Update keysbuilder get new list of keys
@@ -69,11 +58,6 @@ func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, erro
 
 	// Start with keys hat are new for the user
 	keys := keysDiff(oldKeys, c.kb.Keys())
-
-	changedSlice := make(map[string]bool, len(changedKeys))
-	for _, key := range changedKeys {
-		changedSlice[key] = true
-	}
 
 	// Append keys that are old but have been changed.
 	for _, key := range oldKeys {
@@ -102,6 +86,36 @@ func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, erro
 
 	if err := c.filter.filter(data); err != nil {
 		return nil, fmt.Errorf("filter data: %w", err)
+	}
+
+	return data, nil
+}
+
+func (c *Connection) allData(ctx context.Context) (map[string]json.RawMessage, error) {
+	// First time called
+	c.filter = new(filter)
+	if c.tid == 0 {
+		c.tid = c.autoupdate.topic.LastID()
+	}
+
+	if err := c.kb.Update(ctx); err != nil {
+		return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
+	}
+
+	data, err := c.autoupdate.RestrictedData(ctx, c.uid, c.kb.Keys()...)
+	if err != nil {
+		return nil, fmt.Errorf("get first time restricted data: %w", err)
+	}
+
+	// Delete empty values in first responce.
+	for k, v := range data {
+		if len(v) == 0 {
+			delete(data, k)
+		}
+	}
+
+	if err := c.filter.filter(data); err != nil {
+		return nil, fmt.Errorf("filter data for the first time: %w", err)
 	}
 
 	return data, nil

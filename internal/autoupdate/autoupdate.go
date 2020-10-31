@@ -21,6 +21,11 @@ import (
 // value means, that more memory is used.
 const pruneTime = 10 * time.Minute
 
+// Format of keys in the topic that shows, that a full update is necessary. It
+// is in the same namespace then model names. So make sure, there is no model
+// with this name.
+const fullUpdateFormat = "fullupdate/%d"
+
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
 // with autoupdate.New().
 type Autoupdate struct {
@@ -30,7 +35,7 @@ type Autoupdate struct {
 }
 
 // New creates a new autoupdate service.
-func New(datastore Datastore, restricter Restricter, closed <-chan struct{}) *Autoupdate {
+func New(datastore Datastore, restricter Restricter, userUdater UserUpdater, closed <-chan struct{}) *Autoupdate {
 	a := &Autoupdate{
 		datastore:  datastore,
 		restricter: restricter,
@@ -40,9 +45,21 @@ func New(datastore Datastore, restricter Restricter, closed <-chan struct{}) *Au
 	// Update the topic when an data update is received.
 	a.datastore.RegisterChangeListener(func(data map[string]json.RawMessage) error {
 		keys := make([]string, 0, len(data))
+		converted := make(map[string]string, len(data))
 		for k := range data {
 			keys = append(keys, k)
+			converted[k] = string(data[k])
 		}
+
+		uids, err := userUdater.AdditionalUpdate(converted)
+		if err != nil {
+			return fmt.Errorf("getting addition user ids: %w", err)
+		}
+
+		for _, uid := range uids {
+			keys = append(keys, fmt.Sprintf(fullUpdateFormat, uid))
+		}
+
 		a.topic.Publish(keys...)
 		return nil
 	})

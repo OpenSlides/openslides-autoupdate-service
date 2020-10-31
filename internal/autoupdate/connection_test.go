@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
@@ -86,7 +87,7 @@ func TestConnectionEmptyData(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
+	s := autoupdate.New(datastore, new(test.MockRestricter), mockUserUpdater{}, closed)
 
 	kb := test.KeysBuilder{K: test.Str(doesExistKey, doesNotExistKey)}
 
@@ -189,7 +190,7 @@ func TestConnectionFilterData(t *testing.T) {
 
 	closed := make(chan struct{})
 	defer close(closed)
-	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
+	s := autoupdate.New(datastore, new(test.MockRestricter), mockUserUpdater{}, closed)
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 	c := s.Connect(1, kb)
 	if _, err := c.Next(context.Background()); err != nil {
@@ -214,7 +215,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	datastore := new(test.MockDatastore)
 	closed := make(chan struct{})
 	close(closed)
-	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
+	s := autoupdate.New(datastore, new(test.MockRestricter), mockUserUpdater{}, closed)
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 	c := s.Connect(1, kb)
 	if _, err := c.Next(context.Background()); err != nil {
@@ -239,12 +240,102 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	}
 }
 
+func TestFullUpdate(t *testing.T) {
+	datastore := new(test.MockDatastore)
+	closed := make(chan struct{})
+	defer close(closed)
+	userUpdater := new(mockUserUpdater)
+	s := autoupdate.New(datastore, new(test.MockRestricter), userUpdater, closed)
+	kb := test.KeysBuilder{K: test.Str("user/1/name")}
+
+	t.Run("other user", func(t *testing.T) {
+		c := s.Connect(1, kb)
+		if _, err := c.Next(context.Background()); err != nil {
+			t.Errorf("c.Next() returned an error: %v", err)
+		}
+
+		// send fulldata for other user
+		userUpdater.userIDs = []int{2}
+		datastore.Send(test.Str("some/5/data"))
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		var data map[string]json.RawMessage
+		var err error
+		isBlocking := blocking(func() {
+			data, err = c.Next(ctx)
+		})
+
+		if !isBlocking {
+			t.Fatalf("fulldataupdate did not block")
+		}
+
+		if err != nil {
+			t.Errorf("Got unexpected error: %v", err)
+		}
+
+		if len(data) != 0 {
+			t.Errorf("Got %v, expected no key update", data)
+		}
+	})
+
+	t.Run("same user", func(t *testing.T) {
+		c := s.Connect(1, kb)
+		if _, err := c.Next(context.Background()); err != nil {
+			t.Errorf("c.Next() returned an error: %v", err)
+		}
+
+		// Send fulldata for same user.
+		userUpdater.userIDs = []int{1}
+		datastore.Send(test.Str("some/5/data"))
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		var data map[string]json.RawMessage
+		var err error
+		isBlocking := blocking(func() {
+			data, err = c.Next(ctx)
+		})
+
+		if isBlocking {
+			t.Fatalf("fulldataupdate did block")
+		}
+
+		if err != nil {
+			t.Errorf("Got unexpected error: %v", err)
+		}
+
+		if len(data) != 1 || string(data["user/1/name"]) != `"Hello World"` {
+			t.Errorf("Got %v, expected [user/1/name: Hello World]", data)
+		}
+	})
+}
+
+func blocking(f func()) bool {
+	done := make(chan struct{})
+	go func() {
+		f()
+		close(done)
+	}()
+
+	timer := time.NewTimer(time.Millisecond)
+	defer timer.Stop()
+	select {
+	case <-done:
+		return false
+	case <-timer.C:
+		return true
+	}
+}
+
 func BenchmarkFilterChanging(b *testing.B) {
 	const keyCount = 100
 	datastore := new(test.MockDatastore)
 	closed := make(chan struct{})
 	defer close(closed)
-	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
+	s := autoupdate.New(datastore, new(test.MockRestricter), mockUserUpdater{}, closed)
 
 	keys := make([]string, 0, keyCount)
 	for i := 0; i < keyCount; i++ {
@@ -271,7 +362,7 @@ func BenchmarkFilterNotChanging(b *testing.B) {
 	datastore := new(test.MockDatastore)
 	closed := make(chan struct{})
 	defer close(closed)
-	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
+	s := autoupdate.New(datastore, new(test.MockRestricter), mockUserUpdater{}, closed)
 
 	keys := make([]string, 0, keyCount)
 	for i := 0; i < keyCount; i++ {

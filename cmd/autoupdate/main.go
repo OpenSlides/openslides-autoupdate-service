@@ -100,7 +100,7 @@ func run() error {
 	restricter := restrict.New(perms, restrict.RelationChecker(restrict.RelationLists, perms))
 
 	// Autoupdate Service.
-	service := autoupdate.New(datastoreService, restricter, closed)
+	service := autoupdate.New(datastoreService, restricter, perms, closed)
 
 	// Auth Service.
 	authService, err := buildAuth(env, r, closed, errHandler)
