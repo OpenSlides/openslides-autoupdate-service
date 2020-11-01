@@ -56,7 +56,7 @@ func (t *TestDataProvider) SetDefault() {
 		"organisation/1/superadmin_role_id": "1",
 
 		// Role
-		"role/1/name":                                "Superadmin role",
+		"role/1/name":                                `"Superadmin role"`,
 		"role/1/permissions":                         "[]",
 		"role/1/organisation_id":                     "1",
 		"role/1/superadmin_role_for_organisation_id": "1",

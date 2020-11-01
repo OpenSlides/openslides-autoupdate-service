@@ -1,0 +1,23 @@
+name: Permission
+on: [pull_request]
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go 1.15
+      uses: actions/setup-go@v2.1.3
+      with:
+        go-version: 1.15
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: go fmt
+      run: test -z $(gofmt -l .)
+
+    - name: go vet
+      run: go vet ./...
+
+    - name: test
+      run: go test -timeout 10s ./...
