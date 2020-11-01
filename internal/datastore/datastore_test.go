@@ -31,3 +31,23 @@ func TestDatastore(t *testing.T) {
 		t.Errorf("Got second value `%s`, expected nil", result[1])
 	}
 }
+
+func TestDataStoreNull(t *testing.T) {
+	dbServer := tests.NewDatastoreServer()
+	defer dbServer.TS.Close()
+
+	db := &datastore.Datastore{Addr: dbServer.TS.URL}
+
+	result, err := db.Get(context.Background(), "group/1/superadmin_group_for_meeting_id")
+	if err != nil {
+		t.Fatalf("Got unexpected error: %v", err)
+	}
+
+	if len(result) != 1 {
+		t.Fatalf("Got %d values, expected 1", len(result))
+	}
+
+	if result[0] != nil {
+		t.Errorf("Got first value `%s`, expected nil", result[0])
+	}
+}

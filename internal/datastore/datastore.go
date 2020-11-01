@@ -39,6 +39,11 @@ func (db *Datastore) Get(ctx context.Context, fqfields ...string) ([]json.RawMes
 			continue
 		}
 
+		if bytes.Equal(v, []byte("null")) {
+			values[i] = nil
+			continue
+		}
+
 		values[i] = v
 	}
 	return values, nil
