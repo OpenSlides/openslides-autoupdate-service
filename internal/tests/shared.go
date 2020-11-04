@@ -52,35 +52,35 @@ func (t *TestDataProvider) GetDataprovider() dataprovider.DataProvider {
 // - 2: Delegates
 // - 3: Admin
 func (t *TestDataProvider) SetDefault() {
-	t.Data = definitions.FqfieldData{
-		"organisation/1/committee_ids":      []byte("[1]"),
-		"organisation/1/role_ids":           []byte("[1]"),
-		"organisation/1/superadmin_role_id": []byte("1"),
+	data := map[string]string{
+		"organisation/1/committee_ids":      "[1]",
+		"organisation/1/role_ids":           "[1]",
+		"organisation/1/superadmin_role_id": "1",
 
 		// Role
-		"role/1/name":                                []byte(`"Superadmin role"`),
-		"role/1/permissions":                         []byte("[]"),
-		"role/1/organisation_id":                     []byte("1"),
-		"role/1/superadmin_role_for_organisation_id": []byte("1"),
+		"role/1/name":                                `"Superadmin role"`,
+		"role/1/permissions":                         "[]",
+		"role/1/organisation_id":                     "1",
+		"role/1/superadmin_role_for_organisation_id": "1",
 
 		// Committee
-		"committee/1/meeting_ids":        []byte("[1]"),
-		"committee/1/default_meeting_id": []byte("1"),
-		"committee/1/member_ids":         []byte("[]"),
-		"committee/1/manager_ids":        []byte("[]"),
-		"committee/1/organisation_id":    []byte("1"),
+		"committee/1/meeting_ids":        "[1]",
+		"committee/1/default_meeting_id": "1",
+		"committee/1/member_ids":         "[]",
+		"committee/1/manager_ids":        "[]",
+		"committee/1/organisation_id":    "1",
 
 		// Meeting
-		"meeting/1/enable_anonymous":    []byte("false"),
-		"meeting/1/group_ids":           []byte("[1, 2, 3]"),
-		"meeting/1/committee_id":        []byte("1"),
-		"meeting/1/default_group_id":    []byte("1"),
-		"meeting/1/superadmin_group_id": []byte("3"),
+		"meeting/1/enable_anonymous":    "false",
+		"meeting/1/group_ids":           "[1, 2, 3]",
+		"meeting/1/committee_id":        "1",
+		"meeting/1/default_group_id":    "1",
+		"meeting/1/superadmin_group_id": "3",
 
 		// Group 1: Default
-		"group/1/superadmin_group_for_meeting_id": []byte("null"),
-		"group/1/default_group_for_meeting_id":    []byte("1"),
-		"group/1/permissions": []byte(`[
+		"group/1/superadmin_group_for_meeting_id": "null",
+		"group/1/default_group_for_meeting_id":    "1",
+		"group/1/permissions": `[
             "agenda.can_see",
             "agenda.can_see_internal_items",
             "assignments.can_see",
@@ -89,11 +89,11 @@ func (t *TestDataProvider) SetDefault() {
             "mediafiles.can_see",
             "motions.can_see",
             "users.can_see_name"
-        ]`),
-		"group/1/meeting_id": []byte("1"),
+        ]`,
+		"group/1/meeting_id": "1",
 
 		// Group 2: Delegate
-		"group/2/permissions": []byte(`[
+		"group/2/permissions": `[
 			"agenda.can_see",
             "agenda.can_see_internal_items",
             "agenda.can_be_speaker",
@@ -108,12 +108,17 @@ func (t *TestDataProvider) SetDefault() {
             "motions.can_see",
             "motions.can_support",
             "users.can_see_name"
-        ]`),
-		"group/2/meeting_id": []byte("1"),
+        ]`,
+		"group/2/meeting_id": "1",
 
 		// Group 3: Superadmin
-		"group/3/superadmin_group_for_meeting_id": []byte("1"),
-		"group/3/meeting_id":                      []byte("1"),
+		"group/3/superadmin_group_for_meeting_id": "1",
+		"group/3/meeting_id":                      "1",
+	}
+
+	t.Data = make(map[string]definitions.Value)
+	for k, v := range data {
+		t.Data[k] = []byte(v)
 	}
 }
 
