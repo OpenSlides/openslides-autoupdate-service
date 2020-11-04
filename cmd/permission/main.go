@@ -47,20 +47,20 @@ func run() error {
 	env := defaultEnv()
 
 	// Select ExternalDataProvider.
-	var db permission.ExternalDataProvider
+	var edp permission.ExternalDataProvider
 	switch env["DATASTORE"] {
 	case "fake":
-		db = fakeDataProvider{}
+		edp = fakeDataProvider{}
 		fmt.Println("Use fake datastore")
 	case "service":
 		addr := fmt.Sprintf("%s://%s:%s", env["DATASTORE_READER_PROTOCOL"], env["DATASTORE_READER_HOST"], env["DATASTORE_READER_PORT"])
-		db = &datastore.Datastore{Addr: addr}
+		edp = &datastore.Datastore{Addr: addr}
 		fmt.Printf("Use datastore reader on %s\n", addr)
 	default:
 		return fmt.Errorf("Unknown datastore type %s", env["DATASTORE"])
 	}
 
-	ps := permission.New(db)
+	ps := permission.New(edp)
 
 	// Register handlers.
 	mux := http.NewServeMux()

@@ -1,6 +1,8 @@
 package http_test
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -113,7 +115,7 @@ type IsAllowedMock struct {
 	err      error
 }
 
-func (a *IsAllowedMock) IsAllowed(name string, userID int, data map[string]string) (bool, map[string]interface{}, error) {
+func (a *IsAllowedMock) IsAllowed(ctx context.Context, name string, userID int, data map[string]json.RawMessage) (bool, map[string]interface{}, error) {
 	return a.allowed, a.addition, a.err
 }
 

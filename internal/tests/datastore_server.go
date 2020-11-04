@@ -19,15 +19,14 @@ type getManyRequest struct {
 type DatastoreServer struct {
 	TS           *httptest.Server
 	RequestCount int
-	testData     *TestDataProvider
 }
 
 // NewDatastoreServer creates a new DatastoreServer.
 func NewDatastoreServer() *DatastoreServer {
 	ts := new(DatastoreServer)
-	ts.testData = NewTestDataProvider()
 
 	ts.TS = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		testData := NewTestDataProvider(r.Context())
 		var requestData getManyRequest
 		if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 			http.Error(w, fmt.Sprintf("Invalid json input: %v", err), http.StatusBadRequest)
@@ -37,7 +36,7 @@ func NewDatastoreServer() *DatastoreServer {
 
 		responceData := make(map[string]map[string]map[string]json.RawMessage)
 		for _, key := range requestData.Keys {
-			result, err := ts.testData.Get(r.Context(), key)
+			result, err := testData.Get(r.Context(), key)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return

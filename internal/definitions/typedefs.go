@@ -1,8 +1,10 @@
 package definitions
 
+import "encoding/json"
+
 type Id = int
 type Fqid = string
 type Fqfield = string
-type Value = string
+type Value = json.RawMessage
 type Field = string
 type FqfieldData = map[Fqfield]Value

@@ -95,7 +95,7 @@ func (db *Datastore) requestKeys(ctx context.Context, keys []string) (map[string
 	return responseData, nil
 }
 
-// keysToGetManyRequest a json envoding of the get_many request.
+// keysToGetManyRequest a json encoding of the get_many request.
 func keysToGetManyRequest(keys []string) (json.RawMessage, error) {
 	request := struct {
 		Requests []string `json:"requests"`
@@ -103,7 +103,7 @@ func keysToGetManyRequest(keys []string) (json.RawMessage, error) {
 	return json.Marshal(request)
 }
 
-// getManyResponceToKeyValue reads the responce from the getMany request and
+// getManyResponceToKeyValue reads the response from the getMany request and
 // returns the content as key-values.
 func getManyResponceToKeyValue(r io.Reader) (map[string]json.RawMessage, error) {
 	var data map[string]map[string]map[string]json.RawMessage

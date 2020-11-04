@@ -3,6 +3,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,7 +15,7 @@ const prefix = "/internal/permission"
 
 // IsAlloweder provides the IsAllowed method.
 type IsAlloweder interface {
-	IsAllowed(name string, userID int, data map[string]string) (bool, map[string]interface{}, error)
+	IsAllowed(ctx context.Context, name string, userID int, data map[string]json.RawMessage) (bool, map[string]interface{}, error)
 }
 
 // IsAllowed registers a handler, to connect to the IsAllowed method.
@@ -24,16 +25,16 @@ func IsAllowed(mux *http.ServeMux, provider IsAlloweder) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 
 		var requestData struct {
-			Name   string            `json:"name"`
-			UserID int               `json:"user_id"`
-			Data   map[string]string `json:"data"`
+			Name   string                     `json:"name"`
+			UserID int                        `json:"user_id"`
+			Data   map[string]json.RawMessage `json:"data"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 			handleError(w, jsonError{"Can not decode request body", err})
 			return
 		}
 
-		allowed, addition, err := provider.IsAllowed(requestData.Name, requestData.UserID, requestData.Data)
+		allowed, addition, err := provider.IsAllowed(context.TODO(), requestData.Name, requestData.UserID, requestData.Data)
 		if err != nil {
 			handleError(w, fmt.Errorf("calling IsAllowed: %w", err))
 			return

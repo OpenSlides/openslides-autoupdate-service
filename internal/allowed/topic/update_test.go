@@ -1,6 +1,7 @@
 package topic_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/definitions"
@@ -53,126 +54,128 @@ func assertUpdateIsAllowed(t *testing.T, params *allowed.IsAllowedParams) {
 	}
 }
 
-func TestUpdateUnknownUser(t *testing.T) {
-	dp := tests.NewTestDataProvider()
-	data := definitions.FqfieldData{
-		"id": "1",
-	}
-	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
+func TestUpdate(t *testing.T) {
+	t.Run("UnknownUser", func(t *testing.T) {
+		dp := tests.NewTestDataProvider(context.TODO())
+		data := definitions.FqfieldData{
+			"id": []byte("1"),
+		}
+		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateFailWithError(t, params)
-}
+		assertUpdateFailWithError(t, params)
+	})
 
-func TestUpdateSuperadminRole(t *testing.T) {
-	dp := tests.NewTestDataProvider()
-	data := definitions.FqfieldData{} // No meeting id needed, it is always possible.
-	dp.AddUserWithSuperadminRole(1)
-	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	t.Run("SuperadminRole", func(t *testing.T) {
+		dp := tests.NewTestDataProvider(context.TODO())
+		data := definitions.FqfieldData{} // No meeting id needed, it is always possible.
+		dp.AddUserWithSuperadminRole(1)
+		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateIsAllowed(t, params)
-}
+		assertUpdateIsAllowed(t, params)
+	})
 
-func TestUpdateNoId(t *testing.T) {
-	dp := tests.NewTestDataProvider()
-	data := definitions.FqfieldData{}
-	dp.AddUserWithAdminGroupToMeeting(1, 1)
-	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	t.Run("NoId", func(t *testing.T) {
+		dp := tests.NewTestDataProvider(context.TODO())
+		data := definitions.FqfieldData{}
+		dp.AddUserWithAdminGroupToMeeting(1, 1)
+		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateFailWithError(t, params)
-}
+		assertUpdateFailWithError(t, params)
+	})
 
-func TestUpdateUserNotInMeeting(t *testing.T) {
-	dp := tests.NewTestDataProvider()
-	addBasicTopic(dp)
-	data := definitions.FqfieldData{
-		"id": "1",
-	}
-	dp.AddUser(1)
-	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	t.Run("UserNotInMeeting", func(t *testing.T) {
+		dp := tests.NewTestDataProvider(context.TODO())
+		addBasicTopic(dp)
+		data := definitions.FqfieldData{
+			"id": []byte("1"),
+		}
+		dp.AddUser(1)
+		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateIsNotAllowed(t, params)
-}
+		assertUpdateIsNotAllowed(t, params)
+	})
 
-func TestUpdateAdminUser(t *testing.T) {
-	dp := tests.NewTestDataProvider()
-	addBasicTopic(dp)
-	data := definitions.FqfieldData{
-		"id": "1",
-	}
-	dp.AddUserWithAdminGroupToMeeting(1, 1)
-	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	t.Run("AdminUser", func(t *testing.T) {
+		dp := tests.NewTestDataProvider(context.TODO())
+		addBasicTopic(dp)
+		data := definitions.FqfieldData{
+			"id": []byte("1"),
+		}
+		dp.AddUserWithAdminGroupToMeeting(1, 1)
+		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateIsAllowed(t, params)
-}
+		assertUpdateIsAllowed(t, params)
+	})
 
-func TestUpdateUser(t *testing.T) {
-	dp := tests.NewTestDataProvider()
-	addBasicTopic(dp)
-	data := definitions.FqfieldData{
-		"id": "1",
-	}
-	dp.AddUserToMeeting(1, 1)
-	dp.AddPermissionToGroup(1, "agenda.can_manage")
-	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	t.Run("User", func(t *testing.T) {
+		dp := tests.NewTestDataProvider(context.TODO())
+		addBasicTopic(dp)
+		data := definitions.FqfieldData{
+			"id": []byte("1"),
+		}
+		dp.AddUserToMeeting(1, 1)
+		dp.AddPermissionToGroup(1, "agenda.can_manage")
+		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateIsAllowed(t, params)
-}
+		assertUpdateIsAllowed(t, params)
+	})
 
-func TestUpdateUserNoPermissions(t *testing.T) {
-	dp := tests.NewTestDataProvider()
-	addBasicTopic(dp)
-	data := definitions.FqfieldData{
-		"id": "1",
-	}
-	dp.AddUserToMeeting(1, 1)
-	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	t.Run("UserNoPermissions", func(t *testing.T) {
+		dp := tests.NewTestDataProvider(context.TODO())
+		addBasicTopic(dp)
+		data := definitions.FqfieldData{
+			"id": []byte("1"),
+		}
+		dp.AddUserToMeeting(1, 1)
+		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateIsNotAllowed(t, params)
-}
+		assertUpdateIsNotAllowed(t, params)
+	})
 
-func TestUpdateInvaldFields(t *testing.T) {
-	dp := tests.NewTestDataProvider()
-	dp.AddUserWithSuperadminRole(1)
-	data := definitions.FqfieldData{
-		"not_allowed": "some value",
-	}
-	params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
+	t.Run("InvaldFields", func(t *testing.T) {
+		dp := tests.NewTestDataProvider(context.TODO())
+		dp.AddUserWithSuperadminRole(1)
+		data := definitions.FqfieldData{
+			"not_allowed": []byte("some value"),
+		}
+		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateFailWithError(t, params)
-}
+		assertUpdateFailWithError(t, params)
+	})
 
-func TestUpdateDisabledAnonymous(t *testing.T) {
-	dp := tests.NewTestDataProvider()
-	addBasicTopic(dp)
-	data := definitions.FqfieldData{
-		"id": "1",
-	}
-	params := &allowed.IsAllowedParams{UserID: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	t.Run("DisabledAnonymous", func(t *testing.T) {
+		dp := tests.NewTestDataProvider(context.TODO())
+		addBasicTopic(dp)
+		data := definitions.FqfieldData{
+			"id": []byte("1"),
+		}
+		params := &allowed.IsAllowedParams{UserID: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateIsNotAllowed(t, params)
-}
+		assertUpdateIsNotAllowed(t, params)
+	})
 
-func TestUpdateEnabledAnonymous(t *testing.T) {
-	dp := tests.NewTestDataProvider()
-	addBasicTopic(dp)
-	dp.EnableAnonymous()
-	data := definitions.FqfieldData{
-		"id": "1",
-	}
-	params := &allowed.IsAllowedParams{UserID: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	t.Run("EnabledAnonymous", func(t *testing.T) {
+		dp := tests.NewTestDataProvider(context.TODO())
+		addBasicTopic(dp)
+		dp.EnableAnonymous()
+		data := definitions.FqfieldData{
+			"id": []byte("1"),
+		}
+		params := &allowed.IsAllowedParams{UserID: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateIsNotAllowed(t, params)
-}
+		assertUpdateIsNotAllowed(t, params)
+	})
 
-func TestUpdateEnabledAnonymousWithPermissions(t *testing.T) {
-	dp := tests.NewTestDataProvider()
-	addBasicTopic(dp)
-	dp.EnableAnonymous()
-	dp.AddPermissionToGroup(1, "agenda.can_manage")
-	data := definitions.FqfieldData{
-		"id": "1",
-	}
-	params := &allowed.IsAllowedParams{UserID: 0, Data: data, DataProvider: dp.GetDataprovider()}
+	t.Run("EnabledAnonymousWithPermissions", func(t *testing.T) {
+		dp := tests.NewTestDataProvider(context.TODO())
+		addBasicTopic(dp)
+		dp.EnableAnonymous()
+		dp.AddPermissionToGroup(1, "agenda.can_manage")
+		data := definitions.FqfieldData{
+			"id": []byte("1"),
+		}
+		params := &allowed.IsAllowedParams{UserID: 0, Data: data, DataProvider: dp.GetDataprovider()}
 
-	assertUpdateIsAllowed(t, params)
+		assertUpdateIsAllowed(t, params)
+	})
 }

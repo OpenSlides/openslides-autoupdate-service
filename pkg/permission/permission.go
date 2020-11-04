@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/OpenSlides/openslides-permission-service/internal/definitions"
+
 	"github.com/OpenSlides/openslides-permission-service/internal/core"
 )
 
@@ -23,8 +25,8 @@ type ExternalDataProvider interface {
 //
 // See https://github.com/FinnStutzenstein/OpenSlides/blob/permissionService/docs/interfaces/permission-service.txt
 type Permission interface {
-	IsAllowed(name string, userID int, data map[string]string) (bool, map[string]interface{}, error)
-	RestrictFQIDs(userID int, fqids []string) (map[string]bool, error)
-	RestrictFQFields(userID int, fqfields []string) (map[string]bool, error)
-	AdditionalUpdate(updated map[string]string) ([]int, error)
+	IsAllowed(ctx context.Context, name string, userID definitions.Id, data definitions.FqfieldData) (bool, map[string]interface{}, error)
+	RestrictFQIDs(ctx context.Context, userID definitions.Id, fqids []definitions.Fqid) (map[definitions.Fqid]bool, error)
+	RestrictFQFields(ctx context.Context, userID definitions.Id, fqfields []definitions.Fqfield) (map[definitions.Fqfield]bool, error)
+	AdditionalUpdate(ctx context.Context, updated definitions.FqfieldData) ([]definitions.Id, error)
 }

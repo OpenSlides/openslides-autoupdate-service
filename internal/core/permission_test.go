@@ -18,7 +18,7 @@ var Queries = map[string]allowed.IsAllowed{
 func TestDispatchNotFound(t *testing.T) {
 	core.Queries = Queries
 	p := core.NewPermissionService(nil)
-	result, addition, err := p.IsAllowed("", 0, nil)
+	result, addition, err := p.IsAllowed(nil, "", 0, nil)
 	if err == nil || addition != nil || result == true {
 		t.Errorf("Fail")
 	}
@@ -27,7 +27,7 @@ func TestDispatchNotFound(t *testing.T) {
 func TestDispatch(t *testing.T) {
 	core.Queries = Queries
 	p := core.NewPermissionService(nil)
-	result, addition, err := p.IsAllowed("dummy", 0, nil)
+	result, addition, err := p.IsAllowed(nil, "dummy", 0, nil)
 	if err != nil || addition != nil || result != true {
 		t.Errorf("Fail")
 	}
