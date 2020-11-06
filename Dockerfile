@@ -1,6 +1,6 @@
 FROM golang:1.15.3-alpine3.12 as basis
 LABEL maintainer="OpenSlides Team <info@openslides.com>"
-WORKDIR /root/
+WORKDIR /app/
 
 RUN apk add git
 
@@ -17,7 +17,7 @@ RUN go build ./cmd/permission
 
 
 # Test build.
-From basis as testing
+FROM basis as testing
 
 RUN apk add build-base
 
@@ -36,9 +36,9 @@ CMD CompileDaemon -log-prefix=false -build="go build ./cmd/permission" -command=
 
 # Productive build
 FROM alpine:3.12.1
-WORKDIR /root/
+WORKDIR /app/
 
-COPY --from=builder /root/permission .
+COPY --from=builder /app/permission .
 EXPOSE 9012
 ENV DATASTORE service
 
