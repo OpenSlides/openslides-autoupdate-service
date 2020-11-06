@@ -13,4 +13,4 @@ type IsAllowedParams struct {
 }
 
 // IsAllowed does ...
-type IsAllowed = func(params *IsAllowedParams) (bool, map[string]interface{}, error)
+type IsAllowed = func(params *IsAllowedParams) (map[string]interface{}, error)

@@ -10,13 +10,17 @@ import (
 )
 
 // DoesUserExists does not check, if anonymous is enabled but always returns true, if the id is 0!
-func DoesUserExists(userID int, dp dataprovider.DataProvider) bool {
+func DoesUserExists(userID int, dp dataprovider.DataProvider) (bool, error) {
 	if userID == 0 {
-		return true
+		return true, nil
 	}
 
 	fqfield := "user/" + strconv.Itoa(userID) + "/id"
-	return dp.Exists(fqfield)
+	exists, err := dp.Exists(fqfield)
+	if err != nil {
+		err = fmt.Errorf("DoesUserExists: %w", err)
+	}
+	return exists, err
 }
 
 // HasUserSuperadminRole does ....
@@ -29,17 +33,17 @@ func HasUserSuperadminRole(userID int, dp dataprovider.DataProvider) (bool, erro
 	// get superadmin role id
 	superadminRoleID, err := dp.GetInt("organisation/1/superadmin_role_id")
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("HasUserSuperadminRole: %w", err)
 	}
 
 	// Get users role id
 	fqfield := "user/" + strconv.Itoa(userID) + "/role_id"
-	if !dp.Exists(fqfield) {
-		return false, nil // the user has no role
+	if exists, err := dp.Exists(fqfield); !exists || err != nil {
+		return false, err // the user has no role
 	}
 	userRoleID, err := dp.GetInt(fqfield)
 	if err != nil {
-		return false, fmt.Errorf("Error getting role_id: %v", err)
+		return false, fmt.Errorf("Error getting role_id: %w", err)
 	}
 
 	return superadminRoleID == userRoleID, nil
@@ -52,13 +56,13 @@ func CanUserSeeMeeting(userID, meetingID int, dp dataprovider.DataProvider) (boo
 	if userID == 0 {
 		enableAnonymous, err := dp.GetBoolWithDefault("meeting/"+strconv.Itoa(meetingID)+"/enable_anonymous", false)
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("CanUserSeeMeeting: %w", err)
 		}
 		return enableAnonymous, nil
 	} else {
 		userIds, err := dp.GetIntArrayWithDefault("meeting/"+strconv.Itoa(meetingID)+"/user_ids", []int{})
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("CanUserSeeMeeting: %w", err)
 		}
 		for _, id := range userIds {
 			if id == userID {
@@ -83,14 +87,14 @@ func GetPermissionsForUserInMeeting(userID, meetingID int, dp dataprovider.DataP
 	userGroupIdsFqfield := "user/" + strconv.Itoa(userID) + "/group_" + strconv.Itoa(meetingID) + "_ids"
 	userGroupIds, err := dp.GetIntArrayWithDefault(userGroupIdsFqfield, []int{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetPermissionsForUserInMeeting: %w", err)
 	}
 
 	// get superadmin_group_id
 	superadminGroupFqfield := "meeting/" + strconv.Itoa(meetingID) + "/superadmin_group_id"
 	superadminGroupID, err := dp.GetInt(superadminGroupFqfield)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetPermissionsForUserInMeeting: %w", err)
 	}
 
 	// direct check: is the user a superadmin?
@@ -104,14 +108,14 @@ func GetPermissionsForUserInMeeting(userID, meetingID int, dp dataprovider.DataP
 	defaultGroupFqfield := "meeting/" + strconv.Itoa(meetingID) + "/default_group_id"
 	defaultGroupID, err := dp.GetInt(defaultGroupFqfield)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetPermissionsForUserInMeeting: %w", err)
 	}
 
 	// get group ids
 	groupIdsFqfield := "meeting/" + strconv.Itoa(meetingID) + "/group_ids"
 	groupIds, err := dp.GetIntArray(groupIdsFqfield)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetPermissionsForUserInMeeting: %w", err)
 	}
 
 	// Fetch group permissions: A map from group id <-> permission array
@@ -120,7 +124,7 @@ func GetPermissionsForUserInMeeting(userID, meetingID int, dp dataprovider.DataP
 		fqfield := "group/" + strconv.Itoa(id) + "/permissions"
 		singleGroupPermissions, err := dp.GetStringArrayWithDefault(fqfield, []string{})
 		if nil != err {
-			return nil, err
+			return nil, fmt.Errorf("GetPermissionsForUserInMeeting: %w", err)
 		}
 		groupPermissions[id] = singleGroupPermissions
 	}
@@ -150,21 +154,25 @@ func (p *Permissions) HasPerm(perm string) bool {
 }
 
 // GetInt does ...
-func GetInt(data definitions.FqfieldData, property string) (int, error) {
+func GetInt(data definitions.FqfieldData, property definitions.Field) (int, error) {
 	if val, ok := data[property]; ok {
 		var value int
 		err := json.Unmarshal([]byte(val), &value)
 
 		if nil != err {
-			return 0, fmt.Errorf(property + " is not an int")
+			return 0, NotAllowedf("'%s' is not an int", property)
 		}
 		return value, nil
 	}
 
-	return 0, fmt.Errorf(property + " is not in data")
+	return 0, NotAllowedf("'%s' is not in data", property)
 }
 
 // GetMeetingIDFromModel does ...
 func GetMeetingIDFromModel(FQID definitions.Fqid, dp dataprovider.DataProvider) (int, error) {
-	return dp.GetInt(FQID + "/meeting_id")
+	id, err := dp.GetInt(FQID + "/meeting_id")
+	if err != nil {
+		err = fmt.Errorf("GetMeetingIDFromModel: %w", err)
+	}
+	return id, err
 }

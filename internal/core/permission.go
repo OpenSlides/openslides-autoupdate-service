@@ -22,14 +22,24 @@ func NewPermissionService(externalDataprovider dataprovider.ExternalDataProvider
 
 // IsAllowed tells, if something is allowed.
 func (permissionService PermissionService) IsAllowed(ctx context.Context, name string, userID int, data definitions.FqfieldData) (bool, map[string]interface{}, error) {
-	dp := dataprovider.NewDataProvider(ctx, permissionService.externalDataprovider)
-
-	if val, ok := Queries[name]; ok {
-		context := &allowed.IsAllowedParams{UserID: userID, Data: data, DataProvider: dp}
-		return val(context)
+	var handler func(*allowed.IsAllowedParams) (map[string]interface{}, error)
+	var ok bool
+	if handler, ok = Queries[name]; !ok {
+		return false, nil, clientError{fmt.Sprintf("no such query: \"%s\"", name)}
 	}
 
-	return false, nil, fmt.Errorf("no such query: \"%s\"", name)
+	dp := dataprovider.NewDataProvider(ctx, permissionService.externalDataprovider)
+	params := &allowed.IsAllowedParams{UserID: userID, Data: data, DataProvider: dp}
+	addition, err := handler(params)
+
+	isAllowed := err == nil
+
+	// Wrap the query name around the error
+	if err != nil {
+		err = fmt.Errorf("%s: %w", name, err)
+	}
+
+	return isAllowed, addition, err
 }
 
 // RestrictFQIDs does currently nothing.

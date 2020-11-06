@@ -29,9 +29,6 @@ func NewDataProvider(ctx context.Context, externalDataprovider ExternalDataProvi
 }
 
 func (dp DataProvider) externalGet(fields ...definitions.Fqfield) ([]json.RawMessage, error) {
-	if dp.ctx == nil {
-		return nil, fmt.Errorf("the context is not set")
-	}
 	return dp.externalDataprovider.Get(dp.ctx, fields...)
 }
 
@@ -39,11 +36,11 @@ func (dp DataProvider) externalGet(fields ...definitions.Fqfield) ([]json.RawMes
 func (dp DataProvider) GetString(fqfield definitions.Fqfield) (string, error) {
 	fields, err := dp.externalGet(fqfield)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("GetString: %w", err)
 	}
 
 	if fields[0] == nil {
-		return "", fmt.Errorf("No " + fqfield + " key")
+		return "", fmt.Errorf("No fqfield '%s'", fqfield)
 	}
 
 	return string(fields[0]), nil
@@ -51,25 +48,23 @@ func (dp DataProvider) GetString(fqfield definitions.Fqfield) (string, error) {
 
 // GetStringWithDefault returns a string value but returns a default value, if
 // the fqfield does not exist.
-//
-// If an error happens, an empty string is returned.
-func (dp DataProvider) GetStringWithDefault(fqfield definitions.Fqfield, defaultValue string) string {
+func (dp DataProvider) GetStringWithDefault(fqfield definitions.Fqfield, defaultValue string) (string, error) {
 	fields, err := dp.externalGet(fqfield)
 	if err != nil {
-		return ""
+		return "", fmt.Errorf("GetStringWithDefault: %w", err)
 	}
 	value := fields[0]
 	if value == nil {
-		return defaultValue
+		return defaultValue, nil
 	}
-	return string(value)
+	return string(value), nil
 }
 
 // GetStringArrayWithDefault returns a value, that conatins a list of strings.
 func (dp DataProvider) GetStringArrayWithDefault(fqfield definitions.Fqfield, defaultValue []string) ([]string, error) {
 	fields, err := dp.externalGet(fqfield)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetStringArrayWithDefault: %w", err)
 	}
 
 	value := fields[0]
@@ -79,7 +74,7 @@ func (dp DataProvider) GetStringArrayWithDefault(fqfield definitions.Fqfield, de
 
 	var parsedValue []string
 	if err := json.Unmarshal(value, &parsedValue); nil != err {
-		return nil, fmt.Errorf("The key "+fqfield+" is not an array of strings: %v", err)
+		return nil, fmt.Errorf("The fqfield '%s' is not an array of strings: %w", fqfield, err)
 	}
 	return parsedValue, nil
 }
@@ -88,7 +83,7 @@ func (dp DataProvider) GetStringArrayWithDefault(fqfield definitions.Fqfield, de
 func (dp DataProvider) GetMany(fqfields []definitions.Fqfield) (definitions.FqfieldData, error) {
 	result, err := dp.externalGet(fqfields...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetMany: %w", err)
 	}
 
 	converted := make(map[definitions.Fqfield]definitions.Value, len(result))
@@ -101,30 +96,29 @@ func (dp DataProvider) GetMany(fqfields []definitions.Fqfield) (definitions.Fqfi
 // Exists tells, if a fqfield exist.
 //
 // If an error happens, it returns false.
-func (dp DataProvider) Exists(fqfield definitions.Fqfield) bool {
+func (dp DataProvider) Exists(fqfield definitions.Fqfield) (bool, error) {
 	fields, err := dp.externalGet(fqfield)
 	if err != nil {
-		return false
+		return false, fmt.Errorf("Exists: %w", err)
 	}
 
-	return fields[0] != nil
+	return fields[0] != nil, nil
 }
 
 // GetInt returns an int value.
 func (dp DataProvider) GetInt(fqfield definitions.Fqfield) (int, error) {
 	fields, err := dp.externalGet(fqfield)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("GetInt: %w", err)
 	}
 
 	value := fields[0]
 	if value == nil {
-		return 0, fmt.Errorf("No " + fqfield + " key")
 	}
 
 	parsedValue, err := strconv.Atoi(string(value))
 	if err != nil {
-		return 0, fmt.Errorf(fqfield+" is not an integer: %v", err)
+		return 0, fmt.Errorf("'%s' of field '%s' is not an integer: %w", string(value), fqfield, err)
 	}
 	return parsedValue, nil
 }
@@ -133,7 +127,7 @@ func (dp DataProvider) GetInt(fqfield definitions.Fqfield) (int, error) {
 func (dp DataProvider) GetIntWithDefault(fqfield definitions.Fqfield, defaultValue int) (int, error) {
 	fields, err := dp.externalGet(fqfield)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("GetIntWithDefault: %w", err)
 	}
 
 	value := fields[0]
@@ -143,7 +137,7 @@ func (dp DataProvider) GetIntWithDefault(fqfield definitions.Fqfield, defaultVal
 
 	parsedValue, err := strconv.Atoi(string(value))
 	if err != nil {
-		return 0, fmt.Errorf(fqfield+" is not an integer: %v", err)
+		return 0, fmt.Errorf("'%s' of field '%s' is not an integer: %w", string(value), fqfield, err)
 	}
 	return parsedValue, nil
 }
@@ -152,16 +146,16 @@ func (dp DataProvider) GetIntWithDefault(fqfield definitions.Fqfield, defaultVal
 func (dp DataProvider) GetIntArray(fqfield definitions.Fqfield) ([]int, error) {
 	fields, err := dp.externalGet(fqfield)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetIntArray: %w", err)
 	}
 	value := fields[0]
 	if value == nil {
-		return nil, fmt.Errorf("No " + fqfield + " key")
+		return nil, fmt.Errorf("No '%s' fqfield", fqfield)
 	}
 
 	var parsedValue []int
 	if err := json.Unmarshal(value, &parsedValue); nil != err {
-		return nil, fmt.Errorf(fqfield + " is not an integer array")
+		return nil, fmt.Errorf("'%s' of field '%s' is not an integer array: %w", string(value), fqfield, err)
 	}
 	return parsedValue, nil
 }
@@ -170,7 +164,7 @@ func (dp DataProvider) GetIntArray(fqfield definitions.Fqfield) ([]int, error) {
 func (dp DataProvider) GetIntArrayWithDefault(fqfield definitions.Fqfield, defaultValue []int) ([]int, error) {
 	fields, err := dp.externalGet(fqfield)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetIntArrayWithDefault: %w", err)
 	}
 	value := fields[0]
 	if value == nil {
@@ -179,7 +173,7 @@ func (dp DataProvider) GetIntArrayWithDefault(fqfield definitions.Fqfield, defau
 
 	var parsedValue []int
 	if err := json.Unmarshal(value, &parsedValue); nil != err {
-		return nil, fmt.Errorf(fqfield + " is not an integer array")
+		return nil, fmt.Errorf("'%s' of field '%s' is not an integer array: %w", string(value), fqfield, err)
 	}
 	return parsedValue, nil
 }
@@ -188,7 +182,7 @@ func (dp DataProvider) GetIntArrayWithDefault(fqfield definitions.Fqfield, defau
 func (dp DataProvider) GetBoolWithDefault(fqfield definitions.Fqfield, defaultValue bool) (bool, error) {
 	fields, err := dp.externalGet(fqfield)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("GetBoolWithDefault: %w", err)
 	}
 
 	value := fields[0]
@@ -197,7 +191,7 @@ func (dp DataProvider) GetBoolWithDefault(fqfield definitions.Fqfield, defaultVa
 	}
 	var parsedValue bool
 	if err := json.Unmarshal(value, &parsedValue); nil != err {
-		return false, fmt.Errorf(fqfield + " is not an boolean")
+		return false, fmt.Errorf("'%s' of field '%s' is not a boolean: %w", string(value), fqfield, err)
 	}
 	return parsedValue, nil
 }

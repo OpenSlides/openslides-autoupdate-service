@@ -89,7 +89,7 @@ func (db *Datastore) requestKeys(ctx context.Context, keys []string) (map[string
 
 	responseData, err := getManyResponceToKeyValue(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("parse responce: %w", err)
+		return nil, fmt.Errorf("parse response: %w", err)
 	}
 
 	return responseData, nil
@@ -108,7 +108,7 @@ func keysToGetManyRequest(keys []string) (json.RawMessage, error) {
 func getManyResponceToKeyValue(r io.Reader) (map[string]json.RawMessage, error) {
 	var data map[string]map[string]map[string]json.RawMessage
 	if err := json.NewDecoder(r).Decode(&data); err != nil {
-		return nil, fmt.Errorf("decoding responce: %w", err)
+		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 
 	keyValue := make(map[string]json.RawMessage)

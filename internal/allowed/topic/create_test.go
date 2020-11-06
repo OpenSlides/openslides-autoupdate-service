@@ -2,6 +2,7 @@ package topic_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/definitions"
@@ -12,45 +13,31 @@ import (
 	"github.com/OpenSlides/openslides-permission-service/internal/tests"
 )
 
-func assertCreateFailWithError(t *testing.T, params *allowed.IsAllowedParams) {
-	allowed, addition, err := topic.Create(params)
-	if nil != addition {
-		t.Errorf("Expected to fail without an addition: %s", addition)
-	}
-	if nil == err {
-		t.Errorf("Expected to fail with an error")
-	}
-
-	if allowed {
-		t.Errorf("Expected to fail with allowed=false")
-	}
-}
-
 func assertCreateIsNotAllowed(t *testing.T, params *allowed.IsAllowedParams) {
-	allowed, addition, err := topic.Create(params)
+	addition, err := topic.Create(params)
 	if nil != addition {
 		t.Errorf("Expected to fail without an addition: %s", addition)
 	}
-	if nil != err {
-		t.Errorf("Expected to fail without an error (error: %s)", err)
-	}
 
-	if allowed {
-		t.Errorf("Expected to fail with allowed=false")
+	if nil == err {
+		t.Errorf("Expected to fail (reason must be set).")
+	} else {
+		var clientError interface {
+			Type() string
+		}
+		if !errors.As(err, &clientError) || clientError.Type() != "ClientError" {
+			t.Errorf("Expected to fail with a client error, not %v", err)
+		}
 	}
 }
 
 func assertCreateIsAllowed(t *testing.T, params *allowed.IsAllowedParams) {
-	allowed, addition, err := topic.Create(params)
+	addition, err := topic.Create(params)
 	if nil != addition {
 		t.Errorf("Expected to fail without an addition: %s", addition)
 	}
 	if nil != err {
 		t.Errorf("Expected to fail without an error (error: %s)", err)
-	}
-
-	if !allowed {
-		t.Errorf("Expected to be allowed")
 	}
 }
 
@@ -62,17 +49,7 @@ func TestCreate(t *testing.T) {
 		}
 		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-		assertCreateFailWithError(t, params)
-	})
-
-	t.Run("UnknownUser", func(t *testing.T) {
-		dp := tests.NewTestDataProvider(context.TODO())
-		data := definitions.FqfieldData{
-			"meeting_id": []byte("1"),
-		}
-		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
-
-		assertCreateFailWithError(t, params)
+		assertCreateIsNotAllowed(t, params)
 	})
 
 	t.Run("SuperadminRole", func(t *testing.T) {
@@ -90,7 +67,7 @@ func TestCreate(t *testing.T) {
 		dp.AddUserWithAdminGroupToMeeting(1, 1)
 		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-		assertCreateFailWithError(t, params)
+		assertCreateIsNotAllowed(t, params)
 	})
 
 	t.Run("UserNotInMeeting", func(t *testing.T) {
@@ -146,7 +123,7 @@ func TestCreate(t *testing.T) {
 		}
 		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-		assertCreateFailWithError(t, params)
+		assertCreateIsNotAllowed(t, params)
 	})
 
 	t.Run("DisabledAnonymous", func(t *testing.T) {

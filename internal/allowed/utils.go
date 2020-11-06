@@ -1,8 +1,6 @@
 package allowed
 
 import (
-	"fmt"
-
 	"github.com/OpenSlides/openslides-permission-service/internal/definitions"
 )
 
@@ -26,7 +24,7 @@ func ValidateFields(data definitions.FqfieldData, allowedFields map[definitions.
 	}
 
 	if len(invalidFields) > 0 {
-		return fmt.Errorf("Invalid fields: %v", invalidFields)
+		return NotAllowedf("Invalid fields: %v", invalidFields)
 	}
 	return nil
 }

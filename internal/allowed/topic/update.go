@@ -1,7 +1,6 @@
 package topic
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed"
@@ -15,41 +14,52 @@ var updateFields = allowed.MakeSet([]string{
 	"tag_ids",
 })
 
-func Update(params *allowed.IsAllowedParams) (bool, map[string]interface{}, error) {
+func Update(params *allowed.IsAllowedParams) (map[string]interface{}, error) {
 	if err := allowed.ValidateFields(params.Data, updateFields); err != nil {
-		return false, nil, err
+		return nil, err
 	}
 
-	if !allowed.DoesUserExists(params.UserID, params.DataProvider) {
-		return false, nil, fmt.Errorf("The user with id " + strconv.Itoa(params.UserID) + " does not exist!")
+	exists, err := allowed.DoesUserExists(params.UserID, params.DataProvider)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, allowed.NotAllowed("The user with id " + strconv.Itoa(params.UserID) + " does not exist!")
 	}
 
 	superadmin, err := allowed.HasUserSuperadminRole(params.UserID, params.DataProvider)
 	if err != nil {
-		return false, nil, err
+		return nil, err
 	}
 	if superadmin {
-		return true, nil, nil
+		return nil, nil
 	}
 
 	id, err := allowed.GetInt(params.Data, "id")
 	if err != nil {
-		return false, nil, err
+		return nil, err
 	}
 
-	meetingId, err := allowed.GetMeetingIDFromModel("topic/"+strconv.Itoa(id), params.DataProvider)
+	meetingID, err := allowed.GetMeetingIDFromModel("topic/"+strconv.Itoa(id), params.DataProvider)
 	if err != nil {
-		return false, nil, err
+		return nil, err
 	}
 
-	canSeeMeeting, err := allowed.CanUserSeeMeeting(params.UserID, meetingId, params.DataProvider)
-	if err != nil || !canSeeMeeting {
-		return false, nil, err
-	}
-
-	perms, err := allowed.GetPermissionsForUserInMeeting(params.UserID, meetingId, params.DataProvider)
+	canSeeMeeting, err := allowed.CanUserSeeMeeting(params.UserID, meetingID, params.DataProvider)
 	if err != nil {
-		return false, nil, err
+		return nil, err
 	}
-	return perms.HasPerm("agenda.can_manage"), nil, nil
+	if !canSeeMeeting {
+		return nil, allowed.NotAllowedf("User %d is not in meeting %d", params.UserID, meetingID)
+	}
+
+	perms, err := allowed.GetPermissionsForUserInMeeting(params.UserID, meetingID, params.DataProvider)
+	if err != nil {
+		return nil, err
+	}
+	if !perms.HasPerm("agenda.can_manage") {
+		return nil, allowed.NotAllowedf("User %d has not agenda.can_manage in meeting %d", params.UserID, meetingID)
+	}
+
+	return nil, nil
 }

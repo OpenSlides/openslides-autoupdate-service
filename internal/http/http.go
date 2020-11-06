@@ -34,17 +34,29 @@ func IsAllowed(mux *http.ServeMux, provider IsAlloweder) {
 			return
 		}
 
-		allowed, addition, err := provider.IsAllowed(context.TODO(), requestData.Name, requestData.UserID, requestData.Data)
+		allowed, addition, err := provider.IsAllowed(r.Context(), requestData.Name, requestData.UserID, requestData.Data)
+
+		// get reason from ClientError
+		reason := ""
 		if err != nil {
-			handleError(w, fmt.Errorf("calling IsAllowed: %w", err))
-			return
+			var clientError interface {
+				Type() string
+			}
+			if errors.As(err, &clientError) && clientError.Type() == "ClientError" {
+				reason = err.Error()
+			} else {
+				handleError(w, fmt.Errorf("calling IsAllowed: %w", err))
+				return
+			}
 		}
 
 		responseData := struct {
 			Allowed  bool                   `json:"allowed"`
+			Reason   string                 `json:"reason"`
 			Addition map[string]interface{} `json:"addition"`
 		}{
 			allowed,
+			reason,
 			addition,
 		}
 		if err := json.NewEncoder(w).Encode(responseData); err != nil {

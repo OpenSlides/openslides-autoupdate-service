@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,7 +13,7 @@ import (
 	permHTTP "github.com/OpenSlides/openslides-permission-service/internal/http"
 )
 
-func TestIsAllowed(t *testing.T) {
+func TestHttpIsAllowed(t *testing.T) {
 	mux := http.NewServeMux()
 	allowed := new(IsAllowedMock)
 	permHTTP.IsAllowed(mux, allowed)
@@ -34,7 +35,7 @@ func TestIsAllowed(t *testing.T) {
 
 			allowed: true,
 
-			expectResponse:    `{"allowed":true}`,
+			expectResponse:    `{"allowed":true,"reason":"","addition":null}`,
 			expectStatuseCode: 200,
 		},
 
@@ -44,18 +45,29 @@ func TestIsAllowed(t *testing.T) {
 
 			allowed: false,
 
-			expectResponse:    `{"allowed":false}`,
+			expectResponse:    `{"allowed":false,"reason":"","addition":null}`,
 			expectStatuseCode: 200,
 		},
 
 		{
-			name:    "Without addition",
+			name:    "Not Allowed with reason",
+			reqBody: `{"name": "everything", "user_id": 1}`,
+
+			allowed: false,
+			err:     clientError{errType: "ClientError", msg: "This explains why"},
+
+			expectResponse:    `{"allowed":false,"reason":"This explains why","addition":null}`,
+			expectStatuseCode: 200,
+		},
+
+		{
+			name:    "With addition",
 			reqBody: `{"name": "everything", "user_id": 1}`,
 
 			allowed:  true,
 			addition: map[string]interface{}{"with_addition": 5},
 
-			expectResponse:    `{"allowed":true,"addition":{"with_addition":5}}`,
+			expectResponse:    `{"allowed":true,"reason":"","addition":{"with_addition":5}}`,
 			expectStatuseCode: 200,
 		},
 
@@ -70,12 +82,12 @@ func TestIsAllowed(t *testing.T) {
 		},
 
 		{
-			name:    "Client Error",
+			name:    "Custom Error",
 			reqBody: `{"name": "everything", "user_id": 1}`,
 
 			err: clientError{errType: "SomethingError", msg: "This explains why"},
 
-			expectResponse:    `{"error": {"type": "SomethingError", "msg": "This explains why"}}`,
+			expectResponse:    `{"error": {"type": "SomethingError", "msg": "calling IsAllowed: This explains why"}}`,
 			expectStatuseCode: 400,
 		},
 
@@ -85,7 +97,7 @@ func TestIsAllowed(t *testing.T) {
 
 			err: clientError{errType: "JSONError", msg: "Can not decode request body"},
 
-			expectResponse:    `{"error": {"type": "SomethingError", "msg": "This explains why"}}`,
+			expectResponse:    `{"error": {"type": "JSONError", "msg": "Can not decode request body"}}`,
 			expectStatuseCode: 400,
 		},
 	} {
@@ -104,6 +116,15 @@ func TestIsAllowed(t *testing.T) {
 
 			if resp.Result().StatusCode != tt.expectStatuseCode {
 				t.Errorf("Got status %s, expected %s", resp.Result().Status, http.StatusText(tt.expectStatuseCode))
+			}
+
+			bodyBytes, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				t.Fatalf("Cannot read response: %v", err)
+			}
+			body := strings.TrimSpace(string(bodyBytes))
+			if body != tt.expectResponse {
+				t.Errorf("Got '%s', expected '%s'", body, tt.expectResponse)
 			}
 		})
 	}
