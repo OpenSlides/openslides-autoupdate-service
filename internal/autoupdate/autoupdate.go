@@ -45,13 +45,11 @@ func New(datastore Datastore, restricter Restricter, userUdater UserUpdater, clo
 	// Update the topic when an data update is received.
 	a.datastore.RegisterChangeListener(func(data map[string]json.RawMessage) error {
 		keys := make([]string, 0, len(data))
-		converted := make(map[string]string, len(data))
 		for k := range data {
 			keys = append(keys, k)
-			converted[k] = string(data[k])
 		}
 
-		uids, err := userUdater.AdditionalUpdate(converted)
+		uids, err := userUdater.AdditionalUpdate(context.TODO(), data)
 		if err != nil {
 			return fmt.Errorf("getting addition user ids: %w", err)
 		}

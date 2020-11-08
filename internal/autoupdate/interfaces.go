@@ -25,5 +25,5 @@ type KeysBuilder interface {
 
 // UserUpdater has a function to get user_ids, that should get a full update.
 type UserUpdater interface {
-	AdditionalUpdate(updated map[string]string) ([]int, error)
+	AdditionalUpdate(ctx context.Context, updated map[string]json.RawMessage) ([]int, error)
 }

@@ -1,6 +1,9 @@
 package autoupdate_test
 
 import (
+	"context"
+	"encoding/json"
+
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
@@ -18,6 +21,6 @@ type mockUserUpdater struct {
 	userIDs []int
 }
 
-func (u mockUserUpdater) AdditionalUpdate(updated map[string]string) ([]int, error) {
+func (u mockUserUpdater) AdditionalUpdate(ctx context.Context, updated map[string]json.RawMessage) ([]int, error) {
 	return u.userIDs, nil
 }

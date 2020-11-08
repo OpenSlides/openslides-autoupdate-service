@@ -2,6 +2,7 @@ package restrict
 
 //go:generate  sh -c "go run gendef/main.go > def.go && go fmt def.go"
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -52,7 +53,7 @@ func (r *relationList) Check(uid int, key string, value json.RawMessage) (json.R
 		keyToID[keys[i]] = id
 	}
 
-	allowed, err := r.permer.RestrictFQIDs(uid, keys)
+	allowed, err := r.permer.RestrictFQIDs(context.TODO(), uid, keys)
 	if err != nil {
 		return nil, fmt.Errorf("check fqids: %w", err)
 	}
@@ -86,7 +87,7 @@ func (g *genericRelationList) Check(uid int, key string, value json.RawMessage) 
 		keys[i] = fqid
 	}
 
-	allowed, err := g.permer.RestrictFQIDs(uid, keys)
+	allowed, err := g.permer.RestrictFQIDs(context.TODO(), uid, keys)
 	if err != nil {
 		return nil, fmt.Errorf("check fqids: %w", err)
 	}
@@ -122,7 +123,7 @@ func (s *templateField) Check(uid int, key string, value json.RawMessage) (json.
 		keyToReplacement[keys[i]] = r
 	}
 
-	allowed, err := s.permer.RestrictFQFields(uid, keys)
+	allowed, err := s.permer.RestrictFQFields(context.TODO(), uid, keys)
 	if err != nil {
 		return nil, fmt.Errorf("check generated structured fields: %w", err)
 	}

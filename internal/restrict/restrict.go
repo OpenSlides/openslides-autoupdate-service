@@ -3,6 +3,7 @@
 package restrict
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -36,7 +37,7 @@ func (r *Restricter) Restrict(uid int, data map[string]json.RawMessage) error {
 	for k := range data {
 		keys = append(keys, k)
 	}
-	allowed, err := r.permer.RestrictFQFields(uid, keys)
+	allowed, err := r.permer.RestrictFQFields(context.TODO(), uid, keys)
 	if err != nil {
 		return fmt.Errorf("check permissions: %w", err)
 	}
