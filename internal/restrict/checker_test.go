@@ -1,6 +1,7 @@
 package restrict_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
@@ -45,7 +46,7 @@ func TestRelationChecker(t *testing.T) {
 			"otherModel/2": false,
 		}
 
-		v, err := checker["model/relation_ids"].Check(1, "model/1/relation_ids", []byte("[1,2]"))
+		v, err := checker["model/relation_ids"].Check(context.Background(), 1, "model/1/relation_ids", []byte("[1,2]"))
 
 		if err != nil {
 			t.Fatalf("Check returned an error: %v", err)
@@ -62,7 +63,7 @@ func TestRelationChecker(t *testing.T) {
 			"other_foo/2": false,
 		}
 
-		v, err := checker["model/generic_relation_ids"].Check(1, "model/1/generic_relation_ids", []byte(`["foo/1","other_foo/2"]`))
+		v, err := checker["model/generic_relation_ids"].Check(context.Background(), 1, "model/1/generic_relation_ids", []byte(`["foo/1","other_foo/2"]`))
 
 		if err != nil {
 			t.Errorf("Check returned an error: %v", err)
@@ -79,7 +80,7 @@ func TestRelationChecker(t *testing.T) {
 			"model/1/template_$2_ids": false,
 		}
 
-		v, err := checker["model/template_$_ids"].Check(1, "model/1/template_$_ids", []byte(`["1","2"]`))
+		v, err := checker["model/template_$_ids"].Check(context.Background(), 1, "model/1/template_$_ids", []byte(`["1","2"]`))
 
 		if err != nil {
 			t.Errorf("Check returned an error: %v", err)
@@ -96,7 +97,7 @@ func TestRelationChecker(t *testing.T) {
 			"otherModel/2": false,
 		}
 
-		v, err := checker["model/template_"].Check(1, "model/1/template_$1_ids", []byte(`[1,2]`))
+		v, err := checker["model/template_"].Check(context.Background(), 1, "model/1/template_$1_ids", []byte(`[1,2]`))
 
 		if err != nil {
 			t.Errorf("Check returned an error: %v", err)
@@ -113,7 +114,7 @@ func TestRelationChecker(t *testing.T) {
 			"other_foo/2": false,
 		}
 
-		v, err := checker["model/generic_template_"].Check(1, "model/1/generic_template_$1_ids", []byte(`["foo/1","other_foo/2"]`))
+		v, err := checker["model/generic_template_"].Check(context.Background(), 1, "model/1/generic_template_$1_ids", []byte(`["foo/1","other_foo/2"]`))
 
 		if err != nil {
 			t.Errorf("Check returned an error: %v", err)

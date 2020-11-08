@@ -1,6 +1,7 @@
 package restrict_test
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -19,7 +20,7 @@ func TestRestrict(t *testing.T) {
 		"user/1/name":     []byte("uwe"),
 		"user/1/password": []byte("easy"),
 	}
-	if err := r.Restrict(1, data); err != nil {
+	if err := r.Restrict(context.Background(), 1, data); err != nil {
 		t.Errorf("Restrict returned unexpected error: %v", err)
 	}
 
@@ -42,15 +43,15 @@ func TestChecker(t *testing.T) {
 
 	called := make(map[string]bool)
 	checker := map[string]restrict.Checker{
-		"user/name": restrict.CheckerFunc(func(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
+		"user/name": restrict.CheckerFunc(func(ctx context.Context, uid int, key string, value json.RawMessage) (json.RawMessage, error) {
 			called[key] = true
 			return []byte("touched"), nil
 		}),
-		"user/password": restrict.CheckerFunc(func(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
+		"user/password": restrict.CheckerFunc(func(ctx context.Context, uid int, key string, value json.RawMessage) (json.RawMessage, error) {
 			called[key] = true
 			return []byte("touched"), nil
 		}),
-		"user/first_name": restrict.CheckerFunc(func(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
+		"user/first_name": restrict.CheckerFunc(func(ctx context.Context, uid int, key string, value json.RawMessage) (json.RawMessage, error) {
 			called[key] = true
 			return []byte("touched"), nil
 		}),
@@ -62,7 +63,7 @@ func TestChecker(t *testing.T) {
 		"user/1/password":   []byte("easy"),
 		"user/1/first_name": nil,
 	}
-	if err := r.Restrict(1, data); err != nil {
+	if err := r.Restrict(context.Background(), 1, data); err != nil {
 		t.Errorf("Restrict returned unexpected error: %v", err)
 	}
 

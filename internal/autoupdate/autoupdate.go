@@ -140,7 +140,7 @@ func (a *Autoupdate) RestrictedData(ctx context.Context, uid int, keys ...string
 		data[key] = values[i]
 	}
 
-	if err := a.restricter.Restrict(uid, data); err != nil {
+	if err := a.restricter.Restrict(ctx, uid, data); err != nil {
 		return nil, fmt.Errorf("restrict data: %w", err)
 	}
 	return data, nil

@@ -32,12 +32,12 @@ func New(permer Permissioner, checker map[string]Checker) *Restricter {
 // replaced with a new value. If the user does not have the permission to see
 // one key, it is not allowed to remove that key, the value has to be set to
 // nil.
-func (r *Restricter) Restrict(uid int, data map[string]json.RawMessage) error {
+func (r *Restricter) Restrict(ctx context.Context, uid int, data map[string]json.RawMessage) error {
 	keys := make([]string, 0, len(data))
 	for k := range data {
 		keys = append(keys, k)
 	}
-	allowed, err := r.permer.RestrictFQFields(context.TODO(), uid, keys)
+	allowed, err := r.permer.RestrictFQFields(ctx, uid, keys)
 	if err != nil {
 		return fmt.Errorf("check permissions: %w", err)
 	}
@@ -57,7 +57,7 @@ func (r *Restricter) Restrict(uid int, data map[string]json.RawMessage) error {
 			continue
 		}
 
-		nv, err := checker.Check(uid, k, v)
+		nv, err := checker.Check(ctx, uid, k, v)
 		if err != nil {
 			return fmt.Errorf("checker for key %s: %w", k, err)
 		}
