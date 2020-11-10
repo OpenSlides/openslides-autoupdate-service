@@ -49,7 +49,7 @@ func addBasicTopic(dp *tests.TestDataProvider) {
 
 func TestDelete(t *testing.T) {
 	t.Run("UnknownUser", func(t *testing.T) {
-		dp := tests.NewTestDataProvider(context.TODO())
+		dp := tests.NewTestDataProvider(context.Background())
 		data := definitions.FqfieldData{
 			"id": []byte("1"),
 		}
@@ -59,7 +59,7 @@ func TestDelete(t *testing.T) {
 	})
 
 	t.Run("SuperadminRole", func(t *testing.T) {
-		dp := tests.NewTestDataProvider(context.TODO())
+		dp := tests.NewTestDataProvider(context.Background())
 		data := definitions.FqfieldData{} // No meeting id needed, it is always possible.
 		dp.AddUserWithSuperadminRole(1)
 		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
@@ -68,7 +68,7 @@ func TestDelete(t *testing.T) {
 	})
 
 	t.Run("NoId", func(t *testing.T) {
-		dp := tests.NewTestDataProvider(context.TODO())
+		dp := tests.NewTestDataProvider(context.Background())
 		data := definitions.FqfieldData{}
 		dp.AddUserWithAdminGroupToMeeting(1, 1)
 		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
@@ -77,7 +77,7 @@ func TestDelete(t *testing.T) {
 	})
 
 	t.Run("UserNotInMeeting", func(t *testing.T) {
-		dp := tests.NewTestDataProvider(context.TODO())
+		dp := tests.NewTestDataProvider(context.Background())
 		addBasicTopic(dp)
 		data := definitions.FqfieldData{
 			"id": []byte("1"),
@@ -89,7 +89,7 @@ func TestDelete(t *testing.T) {
 	})
 
 	t.Run("AdminUser", func(t *testing.T) {
-		dp := tests.NewTestDataProvider(context.TODO())
+		dp := tests.NewTestDataProvider(context.Background())
 		addBasicTopic(dp)
 		data := definitions.FqfieldData{
 			"id": []byte("1"),
@@ -101,7 +101,7 @@ func TestDelete(t *testing.T) {
 	})
 
 	t.Run("User", func(t *testing.T) {
-		dp := tests.NewTestDataProvider(context.TODO())
+		dp := tests.NewTestDataProvider(context.Background())
 		addBasicTopic(dp)
 		data := definitions.FqfieldData{
 			"id": []byte("1"),
@@ -114,7 +114,7 @@ func TestDelete(t *testing.T) {
 	})
 
 	t.Run("UserNoPermissions", func(t *testing.T) {
-		dp := tests.NewTestDataProvider(context.TODO())
+		dp := tests.NewTestDataProvider(context.Background())
 		addBasicTopic(dp)
 		data := definitions.FqfieldData{
 			"id": []byte("1"),
@@ -126,7 +126,7 @@ func TestDelete(t *testing.T) {
 	})
 
 	t.Run("InvaldFields", func(t *testing.T) {
-		dp := tests.NewTestDataProvider(context.TODO())
+		dp := tests.NewTestDataProvider(context.Background())
 		dp.AddUserWithSuperadminRole(1)
 		data := definitions.FqfieldData{
 			"not_allowed": []byte("some value"),
@@ -137,7 +137,7 @@ func TestDelete(t *testing.T) {
 	})
 
 	t.Run("DisabledAnonymous", func(t *testing.T) {
-		dp := tests.NewTestDataProvider(context.TODO())
+		dp := tests.NewTestDataProvider(context.Background())
 		addBasicTopic(dp)
 		data := definitions.FqfieldData{
 			"id": []byte("1"),
@@ -148,7 +148,7 @@ func TestDelete(t *testing.T) {
 	})
 
 	t.Run("EnabledAnonymous", func(t *testing.T) {
-		dp := tests.NewTestDataProvider(context.TODO())
+		dp := tests.NewTestDataProvider(context.Background())
 		addBasicTopic(dp)
 		dp.EnableAnonymous()
 		data := definitions.FqfieldData{
@@ -160,7 +160,7 @@ func TestDelete(t *testing.T) {
 	})
 
 	t.Run("EnabledAnonymousWithPermissions", func(t *testing.T) {
-		dp := tests.NewTestDataProvider(context.TODO())
+		dp := tests.NewTestDataProvider(context.Background())
 		addBasicTopic(dp)
 		dp.EnableAnonymous()
 		dp.AddPermissionToGroup(1, "agenda.can_manage")

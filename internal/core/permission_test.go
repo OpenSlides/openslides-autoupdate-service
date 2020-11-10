@@ -1,6 +1,7 @@
 package core_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed"
@@ -23,7 +24,7 @@ var Queries = map[string]allowed.IsAllowed{
 func TestDispatchNotFound(t *testing.T) {
 	core.Queries = Queries
 	p := core.NewPermissionService(nil)
-	result, addition, err := p.IsAllowed(nil, "", 0, nil)
+	result, addition, err := p.IsAllowed(context.Background(), "", 0, nil)
 	if err == nil || addition != nil || result == true {
 		t.Errorf("Fail")
 	}
@@ -32,7 +33,7 @@ func TestDispatchNotFound(t *testing.T) {
 func TestDispatchAllowed(t *testing.T) {
 	core.Queries = Queries
 	p := core.NewPermissionService(nil)
-	isAllowed, addition, err := p.IsAllowed(nil, "dummy_allowed", 0, nil)
+	isAllowed, addition, err := p.IsAllowed(context.Background(), "dummy_allowed", 0, nil)
 	if err != nil || addition != nil || !isAllowed {
 		t.Errorf("Fail")
 	}
@@ -41,7 +42,7 @@ func TestDispatchAllowed(t *testing.T) {
 func TestDispatchNotAllowed(t *testing.T) {
 	core.Queries = Queries
 	p := core.NewPermissionService(nil)
-	isAllowed, addition, err := p.IsAllowed(nil, "dummy_not_allowed", 0, nil)
+	isAllowed, addition, err := p.IsAllowed(context.Background(), "dummy_not_allowed", 0, nil)
 	if err == nil || addition != nil || isAllowed {
 		t.Errorf("Fail")
 	}
