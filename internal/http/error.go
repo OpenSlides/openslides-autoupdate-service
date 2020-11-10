@@ -1,5 +1,9 @@
 package http
 
+import (
+	"fmt"
+)
+
 type jsonError struct {
 	msg string
 	err error
@@ -10,7 +14,7 @@ func (e jsonError) Type() string {
 }
 
 func (e jsonError) Error() string {
-	return e.msg
+	return fmt.Sprintf("%s: %v", e.msg, e.err)
 }
 
 func (e jsonError) Unwrap() error {

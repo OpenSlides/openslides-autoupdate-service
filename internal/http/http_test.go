@@ -22,8 +22,7 @@ func TestHttpIsAllowed(t *testing.T) {
 		name string
 
 		reqBody  string
-		allowed  bool
-		addition map[string]interface{}
+		addition [](map[string]interface{})
 		err      error
 
 		expectResponse    string
@@ -33,76 +32,56 @@ func TestHttpIsAllowed(t *testing.T) {
 			name:    "Allowed",
 			reqBody: `{"name": "everything", "user_id": 1}`,
 
-			allowed: true,
-
-			expectResponse:    `{"allowed":true,"reason":"","addition":null}`,
+			expectResponse:    `{"allowed":true,"additions":null}`,
 			expectStatuseCode: 200,
 		},
-
-		{
-			name:    "Not Allowed",
-			reqBody: `{"name": "everything", "user_id": 1}`,
-
-			allowed: false,
-
-			expectResponse:    `{"allowed":false,"reason":"","addition":null}`,
-			expectStatuseCode: 200,
-		},
-
 		{
 			name:    "Not Allowed with reason",
 			reqBody: `{"name": "everything", "user_id": 1}`,
 
-			allowed: false,
-			err:     clientError{errType: "ClientError", msg: "This explains why"},
+			err: clientError{errType: "ClientError", msg: "This explains why"},
 
-			expectResponse:    `{"allowed":false,"reason":"This explains why","addition":null}`,
+			expectResponse:    `{"allowed":false,"reason":"This explains why","error_index":0}`,
 			expectStatuseCode: 200,
 		},
-
 		{
 			name:    "With addition",
 			reqBody: `{"name": "everything", "user_id": 1}`,
 
-			allowed:  true,
-			addition: map[string]interface{}{"with_addition": 5},
+			addition: [](map[string]interface{}){map[string]interface{}{"with_addition": 5}},
 
-			expectResponse:    `{"allowed":true,"reason":"","addition":{"with_addition":5}}`,
+			expectResponse:    `{"allowed":true,"additions":[{"with_addition":5}]}`,
 			expectStatuseCode: 200,
 		},
-
 		{
 			name:    "Internal Error",
 			reqBody: `{"name": "everything", "user_id": 1}`,
 
 			err: fmt.Errorf("something happend :("),
 
-			expectResponse:    `{"error": {"type": "InternalError", "msg": "Ups, something went wrong!"}}`,
+			expectResponse:    `{"error":{"type":"InternalError","msg":"Ups, something went wrong!"}}`,
 			expectStatuseCode: 500,
 		},
-
 		{
 			name:    "Custom Error",
 			reqBody: `{"name": "everything", "user_id": 1}`,
 
 			err: clientError{errType: "SomethingError", msg: "This explains why"},
 
-			expectResponse:    `{"error": {"type": "SomethingError", "msg": "calling IsAllowed: This explains why"}}`,
+			expectResponse:    `{"error":{"type":"SomethingError","msg":"calling IsAllowed: This explains why"}}`,
 			expectStatuseCode: 400,
 		},
-
 		{
 			name:    "Invalid JSON",
 			reqBody: `{"name": "ever`,
 
 			err: clientError{errType: "JSONError", msg: "Can not decode request body"},
 
-			expectResponse:    `{"error": {"type": "JSONError", "msg": "Can not decode request body"}}`,
+			expectResponse:    `{"error":{"type":"JSONError","msg":"Can not decode request body '{\"name\": \"ever': unexpected end of JSON input"}}`,
 			expectStatuseCode: 400,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			allowed.allowed = tt.allowed
 			allowed.addition = tt.addition
 			allowed.err = tt.err
 
@@ -131,13 +110,13 @@ func TestHttpIsAllowed(t *testing.T) {
 }
 
 type IsAllowedMock struct {
-	allowed  bool
-	addition map[string]interface{}
+	addition [](map[string]interface{})
 	err      error
+	index    int
 }
 
-func (a *IsAllowedMock) IsAllowed(ctx context.Context, name string, userID int, data map[string]json.RawMessage) (bool, map[string]interface{}, error) {
-	return a.allowed, a.addition, a.err
+func (a *IsAllowedMock) IsAllowed(ctx context.Context, name string, userID int, data [](map[string]json.RawMessage)) ([](map[string]interface{}), error, int) {
+	return a.addition, a.err, a.index
 }
 
 type clientError struct {

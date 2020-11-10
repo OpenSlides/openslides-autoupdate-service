@@ -8,3 +8,4 @@ type Fqfield = string
 type Value = json.RawMessage
 type Field = string
 type FqfieldData = map[Fqfield]Value
+type Addition = map[string]interface{}

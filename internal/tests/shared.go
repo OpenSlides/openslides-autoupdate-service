@@ -134,9 +134,18 @@ func (t *TestDataProvider) AddUser(id int) {
 
 // AddUserToMeeting does ...
 func (t *TestDataProvider) AddUserToMeeting(userID, meetingID int) {
-	t.Data["user/"+strconv.Itoa(userID)+"/id"] = []byte(strconv.Itoa(userID))
+	t.AddUser(userID)
 	meetingField := "meeting/" + strconv.Itoa(meetingID) + "/user_ids"
 	t.Data[meetingField] = addIntToJSONArray(t.getFieldWithDefault(meetingField, "[]"), userID)
+}
+
+// AddUserToCommitteeAsManager does ...
+func (t *TestDataProvider) AddUserToCommitteeAsManager(userID, committeeID int) {
+	t.AddUser(userID)
+	userField := "user/" + strconv.Itoa(userID) + "/committee_as_manager_ids"
+	t.Data[userField] = addIntToJSONArray(t.getFieldWithDefault(userField, "[]"), committeeID)
+	committeeField := "committee/" + strconv.Itoa(committeeID) + "/manager_ids"
+	t.Data[committeeField] = addIntToJSONArray(t.getFieldWithDefault(committeeField, "[]"), userID)
 }
 
 // AddUserWithSuperadminRole does ...

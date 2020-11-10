@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/OpenSlides/openslides-permission-service/internal/definitions"
+
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed"
 	"github.com/OpenSlides/openslides-permission-service/internal/core"
 )
@@ -24,8 +26,8 @@ var Queries = map[string]allowed.IsAllowed{
 func TestDispatchNotFound(t *testing.T) {
 	core.Queries = Queries
 	p := core.NewPermissionService(nil)
-	result, addition, err := p.IsAllowed(context.Background(), "", 0, nil)
-	if err == nil || addition != nil || result == true {
+	additions, err, index := p.IsAllowed(context.Background(), "", 0, nil)
+	if additions != nil || err == nil || index != -1 {
 		t.Errorf("Fail")
 	}
 }
@@ -33,8 +35,8 @@ func TestDispatchNotFound(t *testing.T) {
 func TestDispatchAllowed(t *testing.T) {
 	core.Queries = Queries
 	p := core.NewPermissionService(nil)
-	isAllowed, addition, err := p.IsAllowed(context.Background(), "dummy_allowed", 0, nil)
-	if err != nil || addition != nil || !isAllowed {
+	additions, err, index := p.IsAllowed(context.Background(), "dummy_allowed", 0, []definitions.FqfieldData{nil})
+	if err != nil || additions == nil || index != -1 {
 		t.Errorf("Fail")
 	}
 }
@@ -42,8 +44,26 @@ func TestDispatchAllowed(t *testing.T) {
 func TestDispatchNotAllowed(t *testing.T) {
 	core.Queries = Queries
 	p := core.NewPermissionService(nil)
-	isAllowed, addition, err := p.IsAllowed(context.Background(), "dummy_not_allowed", 0, nil)
-	if err == nil || addition != nil || isAllowed {
+	additions, err, index := p.IsAllowed(context.Background(), "dummy_not_allowed", 0, []definitions.FqfieldData{nil})
+	if err == nil || additions != nil || index != 0 {
+		t.Errorf("Fail")
+	}
+}
+
+func TestDispatchEmptyDataAllowed(t *testing.T) {
+	core.Queries = Queries
+	p := core.NewPermissionService(nil)
+	additions, err, index := p.IsAllowed(context.Background(), "dummy_allowed", 0, []definitions.FqfieldData{})
+	if err != nil || len(additions) != 0 || index != -1 {
+		t.Errorf("Fail")
+	}
+}
+
+func TestDispatchEmptyDataNotAllowed(t *testing.T) {
+	core.Queries = Queries
+	p := core.NewPermissionService(nil)
+	additions, err, index := p.IsAllowed(context.Background(), "dummy_not_allowed", 0, []definitions.FqfieldData{})
+	if err != nil || len(additions) != 0 || index != -1 {
 		t.Errorf("Fail")
 	}
 }

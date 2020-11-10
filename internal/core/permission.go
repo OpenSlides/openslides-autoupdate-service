@@ -21,25 +21,29 @@ func NewPermissionService(edp dataprovider.ExternalDataProvider) *PermissionServ
 }
 
 // IsAllowed tells, if something is allowed.
-func (ps PermissionService) IsAllowed(ctx context.Context, name string, userID int, data definitions.FqfieldData) (bool, map[string]interface{}, error) {
-	var handler func(*allowed.IsAllowedParams) (map[string]interface{}, error)
+func (ps PermissionService) IsAllowed(ctx context.Context, name string, userID int, dataList []definitions.FqfieldData) ([]definitions.Addition, error, int) {
+	var handler func(*allowed.IsAllowedParams) (definitions.Addition, error)
 	var ok bool
 	if handler, ok = Queries[name]; !ok {
-		return false, nil, clientError{fmt.Sprintf("no such query: \"%s\"", name)}
+		return nil, clientError{fmt.Sprintf("no such query: \"%s\"", name)}, -1
 	}
 
 	dp := dataprovider.NewDataProvider(ctx, ps.externalDataprovider)
-	params := &allowed.IsAllowedParams{UserID: userID, Data: data, DataProvider: dp}
-	addition, err := handler(params)
 
-	isAllowed := err == nil
+	additions := make([]definitions.Addition, len(dataList))
+	for i, data := range dataList {
+		params := &allowed.IsAllowedParams{UserID: userID, Data: data, DataProvider: dp}
+		addition, err := handler(params)
 
-	// Wrap the query name around the error
-	if err != nil {
-		err = fmt.Errorf("%s: %w", name, err)
+		if err != nil {
+			err = fmt.Errorf("%s: %w", name, err)
+			return nil, err, i
+		}
+
+		additions[i] = addition
 	}
 
-	return isAllowed, addition, err
+	return additions, nil, -1
 }
 
 // RestrictFQIDs does currently nothing.

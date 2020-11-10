@@ -9,16 +9,53 @@ import (
 	"github.com/OpenSlides/openslides-permission-service/internal/definitions"
 )
 
+// MakeSet does ...
+func MakeSet(fields []definitions.Field) map[definitions.Field]bool {
+	fieldMap := make(map[definitions.Field]bool)
+	for _, field := range fields {
+		fieldMap[field] = true
+	}
+	return fieldMap
+}
+
+// ValidateFields returns an error, if there are fields in data, that are not in
+// allowedFields.
+func ValidateFields(data definitions.FqfieldData, allowedFields map[definitions.Field]bool) error {
+	invalidFields := make([]definitions.Field, 0)
+	for field := range data {
+		if !allowedFields[field] {
+			invalidFields = append(invalidFields, field)
+		}
+	}
+
+	if len(invalidFields) > 0 {
+		return NotAllowedf("Invalid fields: %v", invalidFields)
+	}
+	return nil
+}
+
 // DoesUserExists does not check, if anonymous is enabled but always returns true, if the id is 0!
 func DoesUserExists(userID int, dp dataprovider.DataProvider) (bool, error) {
 	if userID == 0 {
 		return true, nil
 	}
 
-	fqfield := "user/" + strconv.Itoa(userID) + "/id"
-	exists, err := dp.Exists(fqfield)
+	exists, err := DoesModelExists("user", userID, dp)
 	if err != nil {
 		err = fmt.Errorf("DoesUserExists: %w", err)
+	}
+	return exists, err
+}
+
+func DoesModelExists(collection string, id int, dp dataprovider.DataProvider) (bool, error) {
+	if id <= 0 {
+		return false, nil
+	}
+
+	fqfield := collection + "/" + strconv.Itoa(id) + "/id"
+	exists, err := dp.Exists(fqfield)
+	if err != nil {
+		err = fmt.Errorf("DoesModelExists: %w", err)
 	}
 	return exists, err
 }
@@ -47,6 +84,34 @@ func HasUserSuperadminRole(userID int, dp dataprovider.DataProvider) (bool, erro
 	}
 
 	return superadminRoleID == userRoleID, nil
+}
+
+func GetCommitteeIdFromMeeting(meetingID int, dp dataprovider.DataProvider) (int, error) {
+	committeeID, err := dp.GetInt("meeting/" + strconv.Itoa(meetingID) + "/committee_id")
+	if err != nil {
+		return 0, fmt.Errorf("GetCommitteeIdFromMeeting: %w", err)
+	}
+	return committeeID, nil
+}
+
+func IsUserCommitteeManager(userID, committeeID int, dp dataprovider.DataProvider) (bool, error) {
+	// The anonymous is never a manager
+	if userID == 0 {
+		return false, nil
+	}
+
+	// get committee manager_ids
+	managerIDs, err := dp.GetIntArrayWithDefault("committee/"+strconv.Itoa(committeeID)+"/manager_ids", []int{})
+	if err != nil {
+		return false, fmt.Errorf("IsUserCommitteeManager: %w", err)
+	}
+
+	for _, id := range managerIDs {
+		if userID == id {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // CanUserSeeMeeting does ...
@@ -145,12 +210,17 @@ func GetPermissionsForUserInMeeting(userID, meetingID int, dp dataprovider.DataP
 	return &Permissions{isSuperadmin: false, groupIds: userGroupIds, permissions: permissions}, nil
 }
 
-// HasPerm does ...
-func (p *Permissions) HasPerm(perm string) bool {
+// HasAllPerms does ...
+func (p *Permissions) HasAllPerms(permissions ...string) (bool, string) {
 	if p.isSuperadmin {
-		return true
+		return true, ""
 	}
-	return p.permissions[perm]
+	for _, perm := range permissions {
+		if !p.permissions[perm] {
+			return false, perm
+		}
+	}
+	return true, ""
 }
 
 // GetInt does ...
