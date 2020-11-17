@@ -3,15 +3,7 @@ package allowed
 import (
 	"errors"
 	"testing"
-
-	"github.com/OpenSlides/openslides-permission-service/internal/tests"
 )
-
-func AddBasicModel(collection string, dp *tests.TestDataProvider) {
-	dp.Set(collection+"/1/id", "1")
-	dp.Set(collection+"/1/meeting_id", "1")
-	dp.Set("meeting/1/"+collection+"_ids", "[1]")
-}
 
 func AssertIsNotAllowed(t *testing.T, isAllowed IsAllowed, params *IsAllowedParams) {
 	addition, err := isAllowed(params)

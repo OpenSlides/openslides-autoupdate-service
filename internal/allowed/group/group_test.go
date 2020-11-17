@@ -63,7 +63,7 @@ func TestCreate(t *testing.T) {
 func TestSetPermission(t *testing.T) {
 	t.Run("ValidPermission", func(t *testing.T) {
 		dp := tests.NewTestDataProvider(context.Background())
-		allowed.AddBasicModel("group", dp)
+		dp.AddBasicModel("group", 1)
 		data := definitions.FqfieldData{
 			"id":         []byte("1"),
 			"permission": []byte(`"motions.can_manage"`),
@@ -76,7 +76,7 @@ func TestSetPermission(t *testing.T) {
 	})
 	t.Run("EmptyPermission", func(t *testing.T) {
 		dp := tests.NewTestDataProvider(context.Background())
-		allowed.AddBasicModel("group", dp)
+		dp.AddBasicModel("group", 1)
 		data := definitions.FqfieldData{
 			"id": []byte("1"),
 		}
@@ -88,7 +88,7 @@ func TestSetPermission(t *testing.T) {
 	})
 	t.Run("InvalidPermission", func(t *testing.T) {
 		dp := tests.NewTestDataProvider(context.Background())
-		allowed.AddBasicModel("group", dp)
+		dp.AddBasicModel("group", 1)
 		data := definitions.FqfieldData{
 			"id":         []byte("1"),
 			"permission": []byte("agenda.not_valid"),
@@ -101,7 +101,7 @@ func TestSetPermission(t *testing.T) {
 	})
 	t.Run("InvalidJson", func(t *testing.T) {
 		dp := tests.NewTestDataProvider(context.Background())
-		allowed.AddBasicModel("group", dp)
+		dp.AddBasicModel("group", 1)
 		data := definitions.FqfieldData{
 			"id":          []byte("1"),
 			"permissions": []byte(`{"key": 123}`),

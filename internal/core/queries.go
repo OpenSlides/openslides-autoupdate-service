@@ -4,6 +4,7 @@ import (
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed"
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed/agenda_item"
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed/assignment"
+	"github.com/OpenSlides/openslides-permission-service/internal/allowed/assignment_candidate"
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed/group"
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed/list_of_speakers"
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed/motion_block"
@@ -26,7 +27,10 @@ var Queries = map[string]allowed.IsAllowed{
 	"assignment.update": assignment.Update,
 	"assignment.delete": assignment.Delete,
 
-	// TODO: assignment_candidate
+	"assignment_candidate.create": assignment_candidate.Create,
+	"assignment_candidate.sort":   assignment_candidate.Sort,
+	"assignment_candidate.delete": assignment_candidate.Delete,
+
 	// TODO: assignment_poll
 	// TODO: committee
 

@@ -40,19 +40,15 @@ func DoesUserExists(userID int, dp dataprovider.DataProvider) (bool, error) {
 		return true, nil
 	}
 
-	exists, err := DoesModelExists("user", userID, dp)
+	exists, err := DoesModelExists(definitions.FqidFromCollectionAndId("user", userID), dp)
 	if err != nil {
 		err = fmt.Errorf("DoesUserExists: %w", err)
 	}
 	return exists, err
 }
 
-func DoesModelExists(collection string, id int, dp dataprovider.DataProvider) (bool, error) {
-	if id <= 0 {
-		return false, nil
-	}
-
-	fqfield := collection + "/" + strconv.Itoa(id) + "/id"
+func DoesModelExists(fqid definitions.Fqid, dp dataprovider.DataProvider) (bool, error) {
+	fqfield := definitions.FqfieldFromFqidAndField(fqid, "id")
 	exists, err := dp.Exists(fqfield)
 	if err != nil {
 		err = fmt.Errorf("DoesModelExists: %w", err)
@@ -224,18 +220,34 @@ func (p *Permissions) HasAllPerms(permissions ...string) (bool, string) {
 }
 
 // GetInt does ...
-func GetInt(data definitions.FqfieldData, property definitions.Field) (int, error) {
+func GetId(data definitions.FqfieldData, property definitions.Field) (definitions.Id, error) {
 	if val, ok := data[property]; ok {
 		var value int
-		err := json.Unmarshal([]byte(val), &value)
-
-		if nil != err {
+		if err := json.Unmarshal([]byte(val), &value); nil != err {
 			return 0, NotAllowedf("'%s' is not an int", property)
+		}
+		if err := definitions.IsValidId(value); err != nil {
+			return 0, NotAllowed(err.Error())
 		}
 		return value, nil
 	}
 
 	return 0, NotAllowedf("'%s' is not in data", property)
+}
+
+func GetFqid(data definitions.FqfieldData, property definitions.Field) (definitions.Fqid, error) {
+	if val, ok := data[property]; ok {
+		var value string
+		if err := json.Unmarshal([]byte(val), &value); nil != err {
+			return "", NotAllowedf("'%s' is not a string", property)
+		}
+		if err := definitions.IsValidFqid(value); err != nil {
+			return "", NotAllowed(err.Error())
+		}
+		return value, nil
+	}
+
+	return "", NotAllowedf("'%s' is not in data", property)
 }
 
 // GetMeetingIDFromModel does ...
