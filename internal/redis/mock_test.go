@@ -49,7 +49,7 @@ var testData = map[string]string{
 	]`,
 }
 
-func (c mockConn) XREAD(count, block, stream, lastID string) (interface{}, error) {
+func (c mockConn) XREAD(count, stream, lastID string) (interface{}, error) {
 	if c.err != nil {
 		return nil, c.err
 	}
