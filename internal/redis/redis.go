@@ -13,10 +13,6 @@ const (
 	// maxMessages desides how many messages are read at once from the stream.
 	maxMessages = "10"
 
-	// blockTimeout is the time in miliseconds, how long the xread command will
-	// block.
-	blockTimeout = "3600000" // One Hour
-
 	// fieldChangedTopic is the redis key name of the autoupdate stream.
 	fieldChangedTopic = "ModifiedFields"
 
@@ -43,7 +39,7 @@ func (s *Service) Update(closing <-chan struct{}) (map[string]json.RawMessage, e
 
 	var data map[string]json.RawMessage
 	err := closingFunc(closing, func() error {
-		newID, d, err := autoupdateStream(s.Conn.XREAD(maxMessages, blockTimeout, fieldChangedTopic, id))
+		newID, d, err := autoupdateStream(s.Conn.XREAD(maxMessages, fieldChangedTopic, id))
 		if err != nil {
 			return err
 		}
@@ -75,7 +71,7 @@ func (s *Service) LogoutEvent(closing <-chan struct{}) ([]string, error) {
 
 	var sessionIDs []string
 	err := closingFunc(closing, func() error {
-		newID, sIDs, err := logoutStream(s.Conn.XREAD(maxMessages, blockTimeout, logoutTopic, id))
+		newID, sIDs, err := logoutStream(s.Conn.XREAD(maxMessages, logoutTopic, id))
 		if err != nil {
 			return err
 		}

@@ -38,16 +38,16 @@ func (s *Pool) TestConn() error {
 }
 
 // XREAD reads new messages from one stream.
-func (s *Pool) XREAD(count, block, stream, id string) (interface{}, error) {
+func (s *Pool) XREAD(count, stream, id string) (interface{}, error) {
 	conn := s.pool.Get()
 	defer conn.Close()
-	return conn.Do("XREAD", "COUNT", count, "BLOCK", block, "STREAMS", stream, id)
+	return conn.Do("XREAD", "COUNT", count, "BLOCK", "0", "STREAMS", stream, id)
 }
 
 // BlockingConn implements the redis.Conn interface but does nothing.
 type BlockingConn struct{}
 
 // XREAD blocks forever.
-func (BlockingConn) XREAD(count, block, stream, id string) (interface{}, error) {
+func (BlockingConn) XREAD(count, stream, id string) (interface{}, error) {
 	select {}
 }
