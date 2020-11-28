@@ -21,6 +21,11 @@ import (
 // value means, that more memory is used.
 const pruneTime = 10 * time.Minute
 
+// Format of keys in the topic that shows, that a full update is necessary. It
+// is in the same namespace then model names. So make sure, there is no model
+// with this name.
+const fullUpdateFormat = "fullupdate/%d"
+
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
 // with autoupdate.New().
 type Autoupdate struct {
@@ -30,7 +35,7 @@ type Autoupdate struct {
 }
 
 // New creates a new autoupdate service.
-func New(datastore Datastore, restricter Restricter, closed <-chan struct{}) *Autoupdate {
+func New(datastore Datastore, restricter Restricter, userUdater UserUpdater, closed <-chan struct{}) *Autoupdate {
 	a := &Autoupdate{
 		datastore:  datastore,
 		restricter: restricter,
@@ -43,6 +48,16 @@ func New(datastore Datastore, restricter Restricter, closed <-chan struct{}) *Au
 		for k := range data {
 			keys = append(keys, k)
 		}
+
+		uids, err := userUdater.AdditionalUpdate(context.TODO(), data)
+		if err != nil {
+			return fmt.Errorf("getting addition user ids: %w", err)
+		}
+
+		for _, uid := range uids {
+			keys = append(keys, fmt.Sprintf(fullUpdateFormat, uid))
+		}
+
 		a.topic.Publish(keys...)
 		return nil
 	})
@@ -125,7 +140,7 @@ func (a *Autoupdate) RestrictedData(ctx context.Context, uid int, keys ...string
 		data[key] = values[i]
 	}
 
-	if err := a.restricter.Restrict(uid, data); err != nil {
+	if err := a.restricter.Restrict(ctx, uid, data); err != nil {
 		return nil, fmt.Errorf("restrict data: %w", err)
 	}
 	return data, nil

@@ -12,7 +12,7 @@ func TestLive(t *testing.T) {
 	datastore := new(test.MockDatastore)
 	closed := make(chan struct{})
 	defer close(closed)
-	s := autoupdate.New(datastore, new(test.MockRestricter), closed)
+	s := autoupdate.New(datastore, new(test.MockRestricter), mockUserUpdater{}, closed)
 	kb := test.KeysBuilder{K: []string{"foo", "bar"}}
 
 	ctx, cancel := context.WithCancel(context.Background())

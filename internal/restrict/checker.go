@@ -2,6 +2,7 @@ package restrict
 
 //go:generate  sh -c "go run gendef/main.go > def.go && go fmt def.go"
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -39,7 +40,7 @@ type relationList struct {
 	model  string
 }
 
-func (r *relationList) Check(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
+func (r *relationList) Check(ctx context.Context, uid int, key string, value json.RawMessage) (json.RawMessage, error) {
 	var ids []int
 	if err := json.Unmarshal(value, &ids); err != nil {
 		return nil, fmt.Errorf("decoding %s=%s: %w", key, value, err)
@@ -52,7 +53,7 @@ func (r *relationList) Check(uid int, key string, value json.RawMessage) (json.R
 		keyToID[keys[i]] = id
 	}
 
-	allowed, err := r.permer.CheckFQIDs(uid, keys)
+	allowed, err := r.permer.RestrictFQIDs(ctx, uid, keys)
 	if err != nil {
 		return nil, fmt.Errorf("check fqids: %w", err)
 	}
@@ -75,7 +76,7 @@ type genericRelationList struct {
 	permer Permissioner
 }
 
-func (g *genericRelationList) Check(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
+func (g *genericRelationList) Check(ctx context.Context, uid int, key string, value json.RawMessage) (json.RawMessage, error) {
 	var fqids []string
 	if err := json.Unmarshal(value, &fqids); err != nil {
 		return nil, fmt.Errorf("decoding %s=%s: %w", key, value, err)
@@ -86,7 +87,7 @@ func (g *genericRelationList) Check(uid int, key string, value json.RawMessage) 
 		keys[i] = fqid
 	}
 
-	allowed, err := g.permer.CheckFQIDs(uid, keys)
+	allowed, err := g.permer.RestrictFQIDs(ctx, uid, keys)
 	if err != nil {
 		return nil, fmt.Errorf("check fqids: %w", err)
 	}
@@ -109,7 +110,7 @@ type templateField struct {
 	permer Permissioner
 }
 
-func (s *templateField) Check(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
+func (s *templateField) Check(ctx context.Context, uid int, key string, value json.RawMessage) (json.RawMessage, error) {
 	var replacments []string
 	if err := json.Unmarshal(value, &replacments); err != nil {
 		return nil, fmt.Errorf("decoding key %s=%s: %w", key, value, err)
@@ -122,7 +123,7 @@ func (s *templateField) Check(uid int, key string, value json.RawMessage) (json.
 		keyToReplacement[keys[i]] = r
 	}
 
-	allowed, err := s.permer.CheckFQFields(uid, keys)
+	allowed, err := s.permer.RestrictFQFields(ctx, uid, keys)
 	if err != nil {
 		return nil, fmt.Errorf("check generated structured fields: %w", err)
 	}

@@ -7,8 +7,8 @@ import (
 
 // Permissioner tells the restricter, if a user has the required permissions.
 type Permissioner interface {
-	CheckFQIDs(uid int, fqids []string) (map[string]bool, error)
-	CheckFQFields(uid int, fqfields []string) (map[string]bool, error)
+	RestrictFQIDs(ctx context.Context, uid int, fqids []string) (map[string]bool, error)
+	RestrictFQFields(ctx context.Context, uid int, fqfields []string) (map[string]bool, error)
 }
 
 // Datastore informs the restricter about changed data.
@@ -21,13 +21,13 @@ type Datastore interface {
 // gets replaced with the returned value. Check has to return nil, if the user
 // is not allowed to see the key.
 type Checker interface {
-	Check(uid int, key string, value json.RawMessage) (json.RawMessage, error)
+	Check(ctx context.Context, uid int, key string, value json.RawMessage) (json.RawMessage, error)
 }
 
 // CheckerFunc is a function that implements the Checker interface.
-type CheckerFunc func(uid int, key string, value json.RawMessage) (json.RawMessage, error)
+type CheckerFunc func(ctx context.Context, uid int, key string, value json.RawMessage) (json.RawMessage, error)
 
 // Check calls the function.
-func (f CheckerFunc) Check(uid int, key string, value json.RawMessage) (json.RawMessage, error) {
-	return f(uid, key, value)
+func (f CheckerFunc) Check(ctx context.Context, uid int, key string, value json.RawMessage) (json.RawMessage, error) {
+	return f(ctx, uid, key, value)
 }

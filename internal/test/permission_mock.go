@@ -1,6 +1,9 @@
 package test
 
-import "sync"
+import (
+	"context"
+	"sync"
+)
 
 //MockPermission mocks the permission api.
 type MockPermission struct {
@@ -10,8 +13,8 @@ type MockPermission struct {
 	Default bool
 }
 
-// CheckFQIDs returns the fields where p.Data is true.
-func (p *MockPermission) CheckFQIDs(uid int, fqids []string) (map[string]bool, error) {
+// RestrictFQIDs returns the fields where p.Data is true.
+func (p *MockPermission) RestrictFQIDs(ctx context.Context, uid int, fqids []string) (map[string]bool, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -35,7 +38,7 @@ func (p *MockPermission) CheckFQIDs(uid int, fqids []string) (map[string]bool, e
 	return out, nil
 }
 
-// CheckFQFields calls CheckFQIDs.
-func (p *MockPermission) CheckFQFields(uid int, fqfields []string) (map[string]bool, error) {
-	return p.CheckFQIDs(uid, fqfields)
+// RestrictFQFields calls RestrictFQIDs.
+func (p *MockPermission) RestrictFQFields(ctx context.Context, uid int, fqfields []string) (map[string]bool, error) {
+	return p.RestrictFQIDs(ctx, uid, fqfields)
 }
