@@ -1,6 +1,9 @@
-package test
+package auth_test
 
 import (
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"time"
 )
 
@@ -43,4 +46,26 @@ func (m *LockoutEventMock) Send(values []string) {
 // Close cleans up after the Mock is used.
 func (m *LockoutEventMock) Close() {
 	m.t.Stop()
+}
+
+type closingError struct{}
+
+func (e closingError) Closing()      {}
+func (e closingError) Error() string { return "closing" }
+
+type mockAuth struct {
+	token string
+}
+
+func (m *mockAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	p := struct {
+		Message string `json:"message"`
+	}{
+		"test auth",
+	}
+	w.Header().Add("Authentication", m.token)
+
+	if err := json.NewEncoder(w).Encode(p); err != nil {
+		http.Error(w, fmt.Sprintf("Can not encode data: %v", err), 500)
+	}
 }

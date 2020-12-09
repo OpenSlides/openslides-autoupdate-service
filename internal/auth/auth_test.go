@@ -2,9 +2,7 @@ package auth_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,7 +10,6 @@ import (
 
 	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/openslides/openslides-autoupdate-service/internal/auth"
-	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
 func TestAuth(t *testing.T) {
@@ -236,7 +233,7 @@ func TestLogout(t *testing.T) {
 		lastErr = err
 	}
 
-	logouter := test.NewLockoutEventMock()
+	logouter := NewLockoutEventMock()
 	defer logouter.Close()
 
 	a, err := auth.New("", logouter, closing, errHandler, []byte(""), []byte(""))
@@ -305,33 +302,6 @@ func TestLogout(t *testing.T) {
 			t.Errorf("Got error on logout: %v", err)
 		}
 	})
-}
-
-type mockAuth struct {
-	token   string
-	message string
-}
-
-func (m *mockAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var payload struct {
-		Auth    string `json:"authentication"`
-		Cookies string `json:"cookies"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		http.Error(w, fmt.Sprintf("Can not decode body: %v", err), 500)
-		return
-	}
-
-	p := struct {
-		Token   string `json:"token"`
-		Message string `json:"message"`
-	}{
-		m.token,
-		m.message,
-	}
-	if err := json.NewEncoder(w).Encode(p); err != nil {
-		http.Error(w, fmt.Sprintf("Can not encode data: %v", err), 500)
-	}
 }
 
 func validSession(t *testing.T, opts ...validOption) (http.ResponseWriter, *http.Request) {
