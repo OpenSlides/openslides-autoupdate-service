@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -20,7 +19,7 @@ const pruneTime = 15 * time.Minute
 
 const cookieName = "refreshId"
 const authHeader = "Authentication"
-const authPath = "/service/auth/api/refresh"
+const authPath = "/internal/auth/api/authenticate"
 
 // Auth authenticates a request against the auth service.
 type Auth struct {
@@ -203,7 +202,7 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 			return fmt.Errorf("validating auth token: %w", err)
 		}
 
-		token, err := a.refreshToken(encodedToken, encodedCookie)
+		token, err := a.refreshToken(r.Context(), encodedToken, encodedCookie)
 		if err != nil {
 			return fmt.Errorf("refreshing token: %w", err)
 		}
@@ -213,41 +212,41 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 	return nil
 }
 
-func (a *Auth) refreshToken(token, cookie string) (string, error) {
-	payload := struct {
-		Auth    string `json:"authentication"`
-		Cookies string `json:"cookies"`
-	}{
-		token,
-		cookie,
-	}
-	enc, err := json.Marshal(payload)
+func (a *Auth) refreshToken(ctx context.Context, token, cookie string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, "POST", a.authServiceURL, nil)
 	if err != nil {
-		return "", fmt.Errorf("encoding payload to auth service: %w", err)
+		return "", fmt.Errorf("creating auth request: %w", err)
 	}
-	resp, err := http.Post(a.authServiceURL, "application/json", bytes.NewReader(enc))
+
+	req.Header.Add(authHeader, "bearer "+token)
+	req.AddCookie(&http.Cookie{Name: cookieName, Value: cookie})
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("asking auth-service for new token: %w", err)
+		return "", fmt.Errorf("send request to auth service: %v", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		return "", fmt.Errorf("auth-service returned status %s", resp.Status)
 	}
 
-	var rPayload struct {
-		Token   string `json:"token"`
-		Message string `json:"message"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&rPayload); err != nil {
-		return "", fmt.Errorf("decoding auth response: %w", err)
-	}
-	if rPayload.Token == "" {
+	newToken := resp.Header.Get(authHeader)
+	if newToken == "" {
+		var rPayload struct {
+			Message string `json:"message"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&rPayload); err != nil {
+			return "", fmt.Errorf("decoding auth response: %w", err)
+		}
 		if rPayload.Message == "" {
 			rPayload.Message = "Can not refresh token"
 		}
 		return "", authError{rPayload.Message, nil}
+
 	}
-	return rPayload.Token, nil
+
+	return newToken, nil
 }
 
 type authString string
