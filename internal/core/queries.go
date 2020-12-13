@@ -2,34 +2,34 @@ package core
 
 import (
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed"
-	"github.com/OpenSlides/openslides-permission-service/internal/allowed/agenda_item"
+	"github.com/OpenSlides/openslides-permission-service/internal/allowed/agenda"
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed/assignment"
-	"github.com/OpenSlides/openslides-permission-service/internal/allowed/assignment_candidate"
+	"github.com/OpenSlides/openslides-permission-service/internal/allowed/assignmentcandidate"
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed/group"
-	"github.com/OpenSlides/openslides-permission-service/internal/allowed/list_of_speakers"
-	"github.com/OpenSlides/openslides-permission-service/internal/allowed/motion_block"
-	"github.com/OpenSlides/openslides-permission-service/internal/allowed/motion_category"
-	"github.com/OpenSlides/openslides-permission-service/internal/allowed/motion_change_recommendation"
-	"github.com/OpenSlides/openslides-permission-service/internal/allowed/motion_comment_section"
-	"github.com/OpenSlides/openslides-permission-service/internal/allowed/motion_statute_paragraph"
-	"github.com/OpenSlides/openslides-permission-service/internal/allowed/motion_workflow"
+	"github.com/OpenSlides/openslides-permission-service/internal/allowed/listofspeakers"
+	"github.com/OpenSlides/openslides-permission-service/internal/allowed/motionblock"
+	"github.com/OpenSlides/openslides-permission-service/internal/allowed/motioncategory"
+	motion_change_recommendation "github.com/OpenSlides/openslides-permission-service/internal/allowed/motionchangerecommendation"
+	"github.com/OpenSlides/openslides-permission-service/internal/allowed/motioncommentsection"
+	motion_statute_paragraph "github.com/OpenSlides/openslides-permission-service/internal/allowed/motionstatuteparagraph"
+	"github.com/OpenSlides/openslides-permission-service/internal/allowed/motionworkflow"
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed/tag"
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed/topic"
 )
 
 // Queries is a list of all possible queries.
 var Queries = map[string]allowed.IsAllowed{
-	"agenda_item.update": agenda_item.Update,
-	"agenda_item.delete": agenda_item.Delete,
+	"agenda_item.update": agenda.Update,
+	"agenda_item.delete": agenda.Delete,
 	// TODO: create, assign, sort
 
 	"assignment.create": assignment.Create,
 	"assignment.update": assignment.Update,
 	"assignment.delete": assignment.Delete,
 
-	"assignment_candidate.create": assignment_candidate.Create,
-	"assignment_candidate.sort":   assignment_candidate.Sort,
-	"assignment_candidate.delete": assignment_candidate.Delete,
+	"assignment_candidate.create": assignmentcandidate.Create,
+	"assignment_candidate.sort":   assignmentcandidate.Sort,
+	"assignment_candidate.delete": assignmentcandidate.Delete,
 
 	// TODO: assignment_poll
 	// TODO: committee
@@ -39,24 +39,24 @@ var Queries = map[string]allowed.IsAllowed{
 	"group.delete":         group.Delete,
 	"group.set_permission": group.SetPermission,
 
-	"list_of_speakers.update":              list_of_speakers.Update,
-	"list_of_speakers.delete_all_speakers": list_of_speakers.DeleteAllSpeakers,
-	"list_of_speakers.re_add_last":         list_of_speakers.ReAddLast,
+	"list_of_speakers.update":              listofspeakers.Update,
+	"list_of_speakers.delete_all_speakers": listofspeakers.DeleteAllSpeakers,
+	"list_of_speakers.re_add_last":         listofspeakers.ReAddLast,
 
 	// TODO: mediafile
 	// TODO: meeting
 	// TODO: motion
 
-	"motion_block.create": motion_block.Create,
-	"motion_block.update": motion_block.Update,
-	"motion_block.delete": motion_block.Delete,
+	"motion_block.create": motionblock.Create,
+	"motion_block.update": motionblock.Update,
+	"motion_block.delete": motionblock.Delete,
 
-	"motion_category.create":                   motion_category.Create,
-	"motion_category.update":                   motion_category.Update,
-	"motion_category.delete":                   motion_category.Delete,
-	"motion_category.sort":                     motion_category.Sort,
-	"motion_category.sort_motions_in_category": motion_category.SortMotionsInCategory,
-	"motion_category.number_motions":           motion_category.NumberMotions,
+	"motion_category.create":                   motioncategory.Create,
+	"motion_category.update":                   motioncategory.Update,
+	"motion_category.delete":                   motioncategory.Delete,
+	"motion_category.sort":                     motioncategory.Sort,
+	"motion_category.sort_motions_in_category": motioncategory.SortMotionsInCategory,
+	"motion_category.number_motions":           motioncategory.NumberMotions,
 
 	"motion_change_recommendation.create": motion_change_recommendation.Create,
 	"motion_change_recommendation.update": motion_change_recommendation.Update,
@@ -64,9 +64,9 @@ var Queries = map[string]allowed.IsAllowed{
 
 	// TODO: motion_comment
 
-	"motion_comment_section.create": motion_comment_section.Create,
-	"motion_comment_section.update": motion_comment_section.Update,
-	"motion_comment_section.delete": motion_comment_section.Delete,
+	"motion_comment_section.create": motioncommentsection.Create,
+	"motion_comment_section.update": motioncommentsection.Update,
+	"motion_comment_section.delete": motioncommentsection.Delete,
 	// TODO: sort
 
 	// TODO: motion_poll
@@ -79,9 +79,9 @@ var Queries = map[string]allowed.IsAllowed{
 
 	// TODO: motion_submitter
 
-	"motion_workflow.create": motion_workflow.Create,
-	"motion_workflow.update": motion_workflow.Update,
-	"motion_workflow.delete": motion_workflow.Delete,
+	"motion_workflow.create": motionworkflow.Create,
+	"motion_workflow.update": motionworkflow.Update,
+	"motion_workflow.delete": motionworkflow.Delete,
 
 	// TODO: personal_note
 	// TODO: speaker

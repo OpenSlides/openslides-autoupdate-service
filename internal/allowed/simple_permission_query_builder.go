@@ -4,9 +4,9 @@ import (
 	"github.com/OpenSlides/openslides-permission-service/internal/definitions"
 )
 
-// returns an error, if it is not allowed due to invalid data
-// If the data is valid and the first return value is true, the user is
-// a superadmin and it is allowed.
+// CheckUser returns an error, if it is not allowed due to invalid data If the
+// data is valid and the first return value is true, the user is a superadmin
+// and it is allowed.
 func CheckUser(params *IsAllowedParams) (bool, error) {
 	exists, err := DoesUserExists(params.UserID, params.DataProvider)
 	if err != nil {
@@ -23,8 +23,9 @@ func CheckUser(params *IsAllowedParams) (bool, error) {
 	return superadmin, nil
 }
 
+// CheckCommitteeMeetingPermissions TODO
 func CheckCommitteeMeetingPermissions(params *IsAllowedParams, meetingID int, permissions ...string) error {
-	committeeID, err := GetCommitteeIdFromMeeting(meetingID, params.DataProvider)
+	committeeID, err := GetCommitteeIDFromMeeting(meetingID, params.DataProvider)
 	if err != nil {
 		return err
 	}
@@ -56,6 +57,7 @@ func CheckCommitteeMeetingPermissions(params *IsAllowedParams, meetingID int, pe
 	return nil
 }
 
+// BuildCreate TODO
 func BuildCreate(allowedFields []string, permissions ...string) IsAllowed {
 	allowedFieldsSet := MakeSet(allowedFields)
 	return func(params *IsAllowedParams) (map[string]interface{}, error) {
@@ -71,11 +73,11 @@ func BuildCreate(allowedFields []string, permissions ...string) IsAllowed {
 			return nil, nil
 		}
 
-		meetingID, err := GetId(params.Data, "meeting_id")
+		meetingID, err := GetID(params.Data, "meeting_id")
 		if err != nil {
 			return nil, err
 		}
-		exists, err := DoesModelExists(definitions.FqidFromCollectionAndId("meeting", meetingID), params.DataProvider)
+		exists, err := DoesModelExists(definitions.FqidFromCollectionAndID("meeting", meetingID), params.DataProvider)
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +93,8 @@ func BuildCreate(allowedFields []string, permissions ...string) IsAllowed {
 	}
 }
 
-func BuildCreateThroughId(allowedFields []string, throughCollection definitions.Collection, throughField definitions.Field, permissions ...string) IsAllowed {
+// BuildCreateThroughID TODO
+func BuildCreateThroughID(allowedFields []string, throughCollection definitions.Collection, throughField definitions.Field, permissions ...string) IsAllowed {
 	allowedFieldsSet := MakeSet(allowedFields)
 	return func(params *IsAllowedParams) (map[string]interface{}, error) {
 		if err := ValidateFields(params.Data, allowedFieldsSet); err != nil {
@@ -106,11 +109,11 @@ func BuildCreateThroughId(allowedFields []string, throughCollection definitions.
 			return nil, nil
 		}
 
-		throughID, err := GetId(params.Data, throughField)
+		throughID, err := GetID(params.Data, throughField)
 		if err != nil {
 			return nil, err
 		}
-		exists, err := DoesModelExists(definitions.FqidFromCollectionAndId(throughCollection, throughID), params.DataProvider)
+		exists, err := DoesModelExists(definitions.FqidFromCollectionAndID(throughCollection, throughID), params.DataProvider)
 		if err != nil {
 			return nil, err
 		}
@@ -118,7 +121,7 @@ func BuildCreateThroughId(allowedFields []string, throughCollection definitions.
 			return nil, NotAllowedf("The %s with id %d (field %s) does not exist", throughCollection, throughID, throughField)
 		}
 
-		meetingID, err := GetMeetingIDFromModel(definitions.FqidFromCollectionAndId(throughCollection, throughID), params.DataProvider)
+		meetingID, err := GetMeetingIDFromModel(definitions.FqidFromCollectionAndID(throughCollection, throughID), params.DataProvider)
 		if err != nil {
 			return nil, err
 		}
@@ -131,6 +134,7 @@ func BuildCreateThroughId(allowedFields []string, throughCollection definitions.
 	}
 }
 
+// BuildCreateThroughFqid TODO
 func BuildCreateThroughFqid(allowedFields []string, throughField definitions.Field, permissions ...string) IsAllowed {
 	allowedFieldsSet := MakeSet(allowedFields)
 	return func(params *IsAllowedParams) (map[string]interface{}, error) {
@@ -171,6 +175,7 @@ func BuildCreateThroughFqid(allowedFields []string, throughField definitions.Fie
 	}
 }
 
+// BuildModify TODO
 func BuildModify(allowedFields []string, collection definitions.Collection, permissions ...string) IsAllowed {
 	allowedFieldsSet := MakeSet(allowedFields)
 	return func(params *IsAllowedParams) (map[string]interface{}, error) {
@@ -186,11 +191,11 @@ func BuildModify(allowedFields []string, collection definitions.Collection, perm
 			return nil, nil
 		}
 
-		id, err := GetId(params.Data, "id")
+		id, err := GetID(params.Data, "id")
 		if err != nil {
 			return nil, err
 		}
-		exists, err := DoesModelExists(definitions.FqidFromCollectionAndId(collection, id), params.DataProvider)
+		exists, err := DoesModelExists(definitions.FqidFromCollectionAndID(collection, id), params.DataProvider)
 		if err != nil {
 			return nil, err
 		}
@@ -198,7 +203,7 @@ func BuildModify(allowedFields []string, collection definitions.Collection, perm
 			return nil, NotAllowedf("The %s with id %d does not exist", collection, id)
 		}
 
-		meetingID, err := GetMeetingIDFromModel(definitions.FqidFromCollectionAndId(collection, id), params.DataProvider)
+		meetingID, err := GetMeetingIDFromModel(definitions.FqidFromCollectionAndID(collection, id), params.DataProvider)
 		if err != nil {
 			return nil, err
 		}
@@ -211,7 +216,8 @@ func BuildModify(allowedFields []string, collection definitions.Collection, perm
 	}
 }
 
-func BuildModifyThroughId(allowedFields []string, collection definitions.Collection, throughCollection definitions.Collection, throughField definitions.Field, permissions ...string) IsAllowed {
+// BuildModifyThroughID TODO
+func BuildModifyThroughID(allowedFields []string, collection definitions.Collection, throughCollection definitions.Collection, throughField definitions.Field, permissions ...string) IsAllowed {
 	allowedFieldsSet := MakeSet(allowedFields)
 	return func(params *IsAllowedParams) (map[string]interface{}, error) {
 		if err := ValidateFields(params.Data, allowedFieldsSet); err != nil {
@@ -226,11 +232,11 @@ func BuildModifyThroughId(allowedFields []string, collection definitions.Collect
 			return nil, nil
 		}
 
-		throughID, err := GetId(params.Data, throughField)
+		throughID, err := GetID(params.Data, throughField)
 		if err != nil {
 			return nil, err
 		}
-		throughFqid := definitions.FqidFromCollectionAndId(throughCollection, throughID)
+		throughFqid := definitions.FqidFromCollectionAndID(throughCollection, throughID)
 		exists, err := DoesModelExists(throughFqid, params.DataProvider)
 		if err != nil {
 			return nil, err

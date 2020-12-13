@@ -130,7 +130,7 @@ func (t *TestDataProvider) SetDefault() {
 }
 
 // AddBasicModel does ...
-func (t *TestDataProvider) AddBasicModel(collection definitions.Collection, id definitions.Id) {
+func (t *TestDataProvider) AddBasicModel(collection definitions.Collection, id definitions.ID) {
 	t.Set(collection+"/"+strconv.Itoa(id)+"/id", strconv.Itoa(id))
 	t.Set(collection+"/"+strconv.Itoa(id)+"/meeting_id", "1")
 	t.Set("meeting/1/"+collection+"_ids", "["+strconv.Itoa(id)+"]")
@@ -142,19 +142,19 @@ func (t *TestDataProvider) EnableAnonymous() {
 }
 
 // AddUser does ...
-func (t *TestDataProvider) AddUser(id definitions.Id) {
+func (t *TestDataProvider) AddUser(id definitions.ID) {
 	t.Data["user/"+strconv.Itoa(id)+"/id"] = []byte(strconv.Itoa(id))
 }
 
 // AddUserToMeeting does ...
-func (t *TestDataProvider) AddUserToMeeting(userID, meetingID definitions.Id) {
+func (t *TestDataProvider) AddUserToMeeting(userID, meetingID definitions.ID) {
 	t.AddUser(userID)
 	meetingField := "meeting/" + strconv.Itoa(meetingID) + "/user_ids"
 	t.Data[meetingField] = addIntToJSONArray(t.getFieldWithDefault(meetingField, "[]"), userID)
 }
 
 // AddUserToCommitteeAsManager does ...
-func (t *TestDataProvider) AddUserToCommitteeAsManager(userID, committeeID definitions.Id) {
+func (t *TestDataProvider) AddUserToCommitteeAsManager(userID, committeeID definitions.ID) {
 	t.AddUser(userID)
 	userField := "user/" + strconv.Itoa(userID) + "/committee_as_manager_ids"
 	t.Data[userField] = addIntToJSONArray(t.getFieldWithDefault(userField, "[]"), committeeID)
@@ -163,21 +163,21 @@ func (t *TestDataProvider) AddUserToCommitteeAsManager(userID, committeeID defin
 }
 
 // AddUserWithSuperadminRole does ...
-func (t *TestDataProvider) AddUserWithSuperadminRole(id definitions.Id) {
+func (t *TestDataProvider) AddUserWithSuperadminRole(id definitions.ID) {
 	t.Data["role/1/user_ids"] = addIntToJSONArray(t.getFieldWithDefault("role/1/user_ids", "[]"), id)
 	t.Data["user/"+strconv.Itoa(id)+"/id"] = []byte(strconv.Itoa(id))
 	t.Data["user/"+strconv.Itoa(id)+"/role_id"] = []byte("1")
 }
 
 // AddUserWithAdminGroupToMeeting does ...
-func (t *TestDataProvider) AddUserWithAdminGroupToMeeting(userID, meetingID definitions.Id) {
+func (t *TestDataProvider) AddUserWithAdminGroupToMeeting(userID, meetingID definitions.ID) {
 	t.AddUserToMeeting(userID, meetingID)
 	t.Data["group/3/user_ids"] = addIntToJSONArray(t.getFieldWithDefault("group/3/user_ids", "[]"), userID)
 	t.Data["user/"+strconv.Itoa(userID)+"/group_"+strconv.Itoa(meetingID)+"_ids"] = []byte("[3]")
 }
 
 // AddPermissionToGroup does ...
-func (t *TestDataProvider) AddPermissionToGroup(groupID definitions.Id, permission string) {
+func (t *TestDataProvider) AddPermissionToGroup(groupID definitions.ID, permission string) {
 	fqfield := "group/" + strconv.Itoa(groupID) + "/permissions"
 	t.Data[fqfield] = addStringToJSONArray(t.getFieldWithDefault(fqfield, "[]"), permission)
 }

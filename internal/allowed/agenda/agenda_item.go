@@ -1,8 +1,8 @@
-package agenda_item
+package agenda
 
 import "github.com/OpenSlides/openslides-permission-service/internal/allowed"
 
-// TODO: This does not work due to the implicit meeting id via the content object
+// Create TODO: This does not work due to the implicit meeting id via the content object
 var Create = allowed.BuildCreate([]string{
 	"content_object_id",
 
@@ -16,6 +16,7 @@ var Create = allowed.BuildCreate([]string{
 	"tag_ids",
 }, "agenda.can_see_internal_items", "agenda.can_manage")
 
+// Update TODO
 var Update = allowed.BuildModify([]string{"id",
 	"item_number",
 	"comment",
@@ -25,6 +26,7 @@ var Update = allowed.BuildModify([]string{"id",
 	"weight",
 	"tag_ids"}, "agenda_item", "agenda.can_see_internal_items", "agenda.can_manage")
 
+// Delete TODO
 var Delete = allowed.BuildModify([]string{"id"}, "agenda_item", "agenda.can_see_internal_items", "agenda.can_manage")
 
 // TODO

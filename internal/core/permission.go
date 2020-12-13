@@ -21,11 +21,11 @@ func NewPermissionService(edp dataprovider.ExternalDataProvider) *PermissionServ
 }
 
 // IsAllowed tells, if something is allowed.
-func (ps PermissionService) IsAllowed(ctx context.Context, name string, userID int, dataList []definitions.FqfieldData) ([]definitions.Addition, error, int) {
+func (ps PermissionService) IsAllowed(ctx context.Context, name string, userID int, dataList []definitions.FqfieldData) ([]definitions.Addition, error) {
 	var handler func(*allowed.IsAllowedParams) (definitions.Addition, error)
 	var ok bool
 	if handler, ok = Queries[name]; !ok {
-		return nil, clientError{fmt.Sprintf("no such query: \"%s\"", name)}, -1
+		return nil, clientError{fmt.Sprintf("no such query: \"%s\"", name)}
 	}
 
 	dp := dataprovider.NewDataProvider(ctx, ps.externalDataprovider)
@@ -36,14 +36,13 @@ func (ps PermissionService) IsAllowed(ctx context.Context, name string, userID i
 		addition, err := handler(params)
 
 		if err != nil {
-			err = fmt.Errorf("%s: %w", name, err)
-			return nil, err, i
+			return nil, isAllowedError{name: name, index: i, err: err}
 		}
 
 		additions[i] = addition
 	}
 
-	return additions, nil, -1
+	return additions, nil
 }
 
 // RestrictFQIDs does currently nothing.
@@ -61,6 +60,6 @@ func (ps PermissionService) RestrictFQFields(ctx context.Context, userID int, fq
 }
 
 // AdditionalUpdate does ...
-func (ps PermissionService) AdditionalUpdate(ctx context.Context, updated definitions.FqfieldData) ([]definitions.Id, error) {
-	return []definitions.Id{}, nil
+func (ps PermissionService) AdditionalUpdate(ctx context.Context, updated definitions.FqfieldData) ([]definitions.ID, error) {
+	return []definitions.ID{}, nil
 }

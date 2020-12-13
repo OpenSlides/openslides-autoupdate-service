@@ -25,8 +25,8 @@ type ExternalDataProvider interface {
 //
 // See https://github.com/FinnStutzenstein/OpenSlides/blob/permissionService/docs/interfaces/permission-service.txt
 type Permission interface {
-	IsAllowed(ctx context.Context, name string, userID definitions.Id, dataList []definitions.FqfieldData) ([]definitions.Addition, error, int)
-	RestrictFQIDs(ctx context.Context, userID definitions.Id, fqids []definitions.Fqid) (map[definitions.Fqid]bool, error)
-	RestrictFQFields(ctx context.Context, userID definitions.Id, fqfields []definitions.Fqfield) (map[definitions.Fqfield]bool, error)
-	AdditionalUpdate(ctx context.Context, updated definitions.FqfieldData) ([]definitions.Id, error)
+	IsAllowed(ctx context.Context, name string, userID definitions.ID, dataList []definitions.FqfieldData) ([]definitions.Addition, error)
+	RestrictFQIDs(ctx context.Context, userID definitions.ID, fqids []definitions.Fqid) (map[definitions.Fqid]bool, error)
+	RestrictFQFields(ctx context.Context, userID definitions.ID, fqfields []definitions.Fqfield) (map[definitions.Fqfield]bool, error)
+	AdditionalUpdate(ctx context.Context, updated definitions.FqfieldData) ([]definitions.ID, error)
 }

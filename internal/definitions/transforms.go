@@ -8,7 +8,8 @@ import (
 
 var keyseparator = "/"
 
-func CollectionAndIdFromFqid(fqid Fqid) (Collection, Id, error) {
+// CollectionAndIDFromFqid TODO
+func CollectionAndIDFromFqid(fqid Fqid) (Collection, ID, error) {
 	parts := strings.Split(fqid, keyseparator)
 	if len(parts) != 2 {
 		return "", 0, fmt.Errorf("'%s' is not a valid fqid", fqid)
@@ -22,10 +23,12 @@ func CollectionAndIdFromFqid(fqid Fqid) (Collection, Id, error) {
 	return parts[0], id, nil
 }
 
-func FqidFromCollectionAndId(collection Collection, id Id) Fqid {
+// FqidFromCollectionAndID TODO
+func FqidFromCollectionAndID(collection Collection, id ID) Fqid {
 	return collection + keyseparator + strconv.Itoa(id)
 }
 
+// FqfieldFromFqidAndField TODO
 func FqfieldFromFqidAndField(fqid Fqid, field Field) Fqid {
 	return fqid + keyseparator + field
 }

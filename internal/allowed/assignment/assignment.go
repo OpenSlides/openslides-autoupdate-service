@@ -2,6 +2,7 @@ package assignment
 
 import "github.com/OpenSlides/openslides-permission-service/internal/allowed"
 
+// Create TODO
 var Create = allowed.BuildCreate([]string{
 	"title",
 	"meeting_id",
@@ -15,6 +16,7 @@ var Create = allowed.BuildCreate([]string{
 	"attachment_ids",
 }, "assignments.can_manage")
 
+// Update TODO
 var Update = allowed.BuildModify([]string{"id",
 	"title",
 	"description",
@@ -27,4 +29,5 @@ var Update = allowed.BuildModify([]string{"id",
 	"attachment_ids",
 }, "assignment", "assignments.can_manage")
 
+// Delete TODO
 var Delete = allowed.BuildModify([]string{"id"}, "assignment", "assignments.can_manage")

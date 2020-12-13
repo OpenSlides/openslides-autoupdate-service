@@ -1,11 +1,11 @@
-package assignment_candidate_test
+package assignmentcandidate_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed"
-	"github.com/OpenSlides/openslides-permission-service/internal/allowed/assignment_candidate"
+	"github.com/OpenSlides/openslides-permission-service/internal/allowed/assignmentcandidate"
 	"github.com/OpenSlides/openslides-permission-service/internal/definitions"
 	"github.com/OpenSlides/openslides-permission-service/internal/tests"
 )
@@ -22,7 +22,7 @@ func TestCreate(t *testing.T) {
 		dp.AddPermissionToGroup(1, "assignments.can_nominate_self")
 		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-		allowed.AssertIsAllowed(t, assignment_candidate.Create, params)
+		allowed.AssertIsAllowed(t, assignmentcandidate.Create, params)
 	})
 	t.Run("ValidPermissionOther", func(t *testing.T) {
 		dp := tests.NewTestDataProvider(context.Background())
@@ -35,7 +35,7 @@ func TestCreate(t *testing.T) {
 		dp.AddPermissionToGroup(1, "assignments.can_nominate_other")
 		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-		allowed.AssertIsAllowed(t, assignment_candidate.Create, params)
+		allowed.AssertIsAllowed(t, assignmentcandidate.Create, params)
 	})
 	t.Run("InvalidPermissionSelf", func(t *testing.T) {
 		dp := tests.NewTestDataProvider(context.Background())
@@ -48,7 +48,7 @@ func TestCreate(t *testing.T) {
 		dp.AddPermissionToGroup(1, "assignments.can_nominate_other") // the wrong permission
 		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-		allowed.AssertIsNotAllowed(t, assignment_candidate.Create, params)
+		allowed.AssertIsNotAllowed(t, assignmentcandidate.Create, params)
 	})
 	t.Run("InvalidPermissionOther", func(t *testing.T) {
 		dp := tests.NewTestDataProvider(context.Background())
@@ -61,7 +61,7 @@ func TestCreate(t *testing.T) {
 		dp.AddPermissionToGroup(1, "assignments.can_nominate_self") // the wrong permission
 		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-		allowed.AssertIsNotAllowed(t, assignment_candidate.Create, params)
+		allowed.AssertIsNotAllowed(t, assignmentcandidate.Create, params)
 	})
 	t.Run("NoUserId", func(t *testing.T) {
 		dp := tests.NewTestDataProvider(context.Background())
@@ -74,7 +74,7 @@ func TestCreate(t *testing.T) {
 		dp.AddPermissionToGroup(1, "assignments.can_nominate_other")
 		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-		allowed.AssertIsNotAllowed(t, assignment_candidate.Create, params)
+		allowed.AssertIsNotAllowed(t, assignmentcandidate.Create, params)
 	})
 }
 
@@ -90,7 +90,7 @@ func TestDelete(t *testing.T) {
 		dp.AddPermissionToGroup(1, "assignments.can_nominate_self")
 		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-		allowed.AssertIsAllowed(t, assignment_candidate.Delete, params)
+		allowed.AssertIsAllowed(t, assignmentcandidate.Delete, params)
 	})
 	t.Run("ValidPermissionOther", func(t *testing.T) {
 		dp := tests.NewTestDataProvider(context.Background())
@@ -103,7 +103,7 @@ func TestDelete(t *testing.T) {
 		dp.AddPermissionToGroup(1, "assignments.can_nominate_other")
 		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-		allowed.AssertIsAllowed(t, assignment_candidate.Delete, params)
+		allowed.AssertIsAllowed(t, assignmentcandidate.Delete, params)
 	})
 	t.Run("InvalidPermissionSelf", func(t *testing.T) {
 		dp := tests.NewTestDataProvider(context.Background())
@@ -116,7 +116,7 @@ func TestDelete(t *testing.T) {
 		dp.AddPermissionToGroup(1, "assignments.can_nominate_other") // wrong permission
 		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-		allowed.AssertIsNotAllowed(t, assignment_candidate.Delete, params)
+		allowed.AssertIsNotAllowed(t, assignmentcandidate.Delete, params)
 	})
 	t.Run("InvalidPermissionOther", func(t *testing.T) {
 		dp := tests.NewTestDataProvider(context.Background())
@@ -129,6 +129,6 @@ func TestDelete(t *testing.T) {
 		dp.AddPermissionToGroup(1, "assignments.can_nominate_self") // wrong permission
 		params := &allowed.IsAllowedParams{UserID: 1, Data: data, DataProvider: dp.GetDataprovider()}
 
-		allowed.AssertIsNotAllowed(t, assignment_candidate.Delete, params)
+		allowed.AssertIsNotAllowed(t, assignmentcandidate.Delete, params)
 	})
 }

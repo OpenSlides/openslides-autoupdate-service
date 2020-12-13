@@ -1,9 +1,10 @@
-package motion_block
+package motionblock
 
 import (
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed"
 )
 
+// Create TODO
 var Create = allowed.BuildCreate([]string{
 	"title",
 	"internal",
@@ -16,6 +17,7 @@ var Create = allowed.BuildCreate([]string{
 	"agenda_weight",
 }, "motions.can_manage")
 
+// Update TODO
 var Update = allowed.BuildModify([]string{
 	"id",
 	"title",
@@ -23,4 +25,5 @@ var Update = allowed.BuildModify([]string{
 	"motion_ids",
 }, "motion_block", "motions.can_manage")
 
+// Delete TODO
 var Delete = allowed.BuildModify([]string{"id"}, "motion_block", "motions.can_manage")

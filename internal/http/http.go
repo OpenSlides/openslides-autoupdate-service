@@ -16,7 +16,7 @@ const prefix = "/internal/permission"
 
 // IsAlloweder provides the IsAllowed method.
 type IsAlloweder interface {
-	IsAllowed(ctx context.Context, name string, userID int, dataList [](map[string]json.RawMessage)) ([](map[string]interface{}), error, int)
+	IsAllowed(ctx context.Context, name string, userID int, dataList [](map[string]json.RawMessage)) ([](map[string]interface{}), error)
 }
 
 // IsAllowed registers a handler, to connect to the IsAllowed method.
@@ -40,7 +40,7 @@ func IsAllowed(mux *http.ServeMux, provider IsAlloweder) {
 			return
 		}
 
-		additions, err, errorIndex := provider.IsAllowed(r.Context(), requestData.Name, requestData.UserID, requestData.DataList)
+		additions, err := provider.IsAllowed(r.Context(), requestData.Name, requestData.UserID, requestData.DataList)
 
 		// get reason from ClientError
 		reason := ""
@@ -54,6 +54,14 @@ func IsAllowed(mux *http.ServeMux, provider IsAlloweder) {
 			} else {
 				handleError(w, fmt.Errorf("calling IsAllowed: %w", err))
 				return
+			}
+
+			var indexError interface {
+				Index() int
+			}
+			var errorIndex int
+			if errors.As(err, &indexError) {
+				errorIndex = indexError.Index()
 			}
 
 			responseData = struct {

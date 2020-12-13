@@ -1,9 +1,10 @@
-package motion_change_recommendation
+package motionchangerecommendation
 
 import (
 	"github.com/OpenSlides/openslides-permission-service/internal/allowed"
 )
 
+// Create TODO
 var Create = allowed.BuildCreate([]string{
 	"line_from",
 	"line_to",
@@ -15,6 +16,7 @@ var Create = allowed.BuildCreate([]string{
 	"other_description",
 }, "motions.can_manage")
 
+// Update TODO
 var Update = allowed.BuildModify([]string{
 	"id",
 	"text",
@@ -24,4 +26,5 @@ var Update = allowed.BuildModify([]string{
 	"other_description",
 }, "motion_change_recommendation", "motions.can_manage")
 
+// Delete TODO
 var Delete = allowed.BuildModify([]string{"id"}, "motion_change_recommendation", "motions.can_manage")

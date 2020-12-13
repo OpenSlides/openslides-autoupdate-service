@@ -18,9 +18,9 @@ var throughCollection = "through"
 var throughField = "through_id"
 var throughId = 3
 var create = allowed.BuildCreate([]string{"meeting_id"}, permission)
-var createThroughId = allowed.BuildCreateThroughId([]string{throughField}, throughCollection, throughField, permission)
+var createThroughId = allowed.BuildCreateThroughID([]string{throughField}, throughCollection, throughField, permission)
 var modify = allowed.BuildModify([]string{"id"}, collection, permission)
-var modifyThroughId = allowed.BuildModifyThroughId([]string{throughField}, collection, throughCollection, throughField, permission)
+var modifyThroughId = allowed.BuildModifyThroughID([]string{throughField}, collection, throughCollection, throughField, permission)
 
 func TestModify(t *testing.T) {
 	t.Run("UnknownUser", func(t *testing.T) {

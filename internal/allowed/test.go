@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+// AssertIsNotAllowed TODO
 func AssertIsNotAllowed(t *testing.T, isAllowed IsAllowed, params *IsAllowedParams) {
 	addition, err := isAllowed(params)
 	if nil != addition {
@@ -23,6 +24,7 @@ func AssertIsNotAllowed(t *testing.T, isAllowed IsAllowed, params *IsAllowedPara
 	}
 }
 
+// AssertIsAllowed TODO
 func AssertIsAllowed(t *testing.T, isAllowed IsAllowed, params *IsAllowedParams) {
 	addition, err := isAllowed(params)
 	if nil != addition {

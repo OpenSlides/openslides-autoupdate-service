@@ -47,6 +47,7 @@ var preCreate = allowed.BuildCreate([]string{
 	"permissions",
 }, "users.can_manage")
 
+// Create TODO
 func Create(params *allowed.IsAllowedParams) (map[string]interface{}, error) {
 	addition, err := preCreate(params)
 
@@ -75,10 +76,12 @@ func Create(params *allowed.IsAllowedParams) (map[string]interface{}, error) {
 	return addition, nil
 }
 
+// Update TODO
 var Update = allowed.BuildModify([]string{"id",
 	"name",
 }, "group", "users.can_manage")
 
+// Delete TODO
 var Delete = allowed.BuildModify([]string{"id"}, "group", "users.can_manage")
 
 var preSetPermission = allowed.BuildModify([]string{"id",
@@ -86,6 +89,7 @@ var preSetPermission = allowed.BuildModify([]string{"id",
 	"set",
 }, "group", "users.can_manage")
 
+// SetPermission TODO
 func SetPermission(params *allowed.IsAllowedParams) (map[string]interface{}, error) {
 	addition, err := preSetPermission(params)
 

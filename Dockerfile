@@ -20,8 +20,9 @@ RUN go build ./cmd/permission
 FROM basis as testing
 
 RUN apk add build-base
+RUN go get -u golang.org/x/lint/golint
 
-CMD go vet ./... && go test ./...
+CMD go vet ./... && golint ./... && go test ./...
 
 
 # Development build.

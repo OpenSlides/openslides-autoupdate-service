@@ -112,11 +112,10 @@ func TestHttpIsAllowed(t *testing.T) {
 type IsAllowedMock struct {
 	addition [](map[string]interface{})
 	err      error
-	index    int
 }
 
-func (a *IsAllowedMock) IsAllowed(ctx context.Context, name string, userID int, data [](map[string]json.RawMessage)) ([](map[string]interface{}), error, int) {
-	return a.addition, a.err, a.index
+func (a *IsAllowedMock) IsAllowed(ctx context.Context, name string, userID int, data [](map[string]json.RawMessage)) ([](map[string]interface{}), error) {
+	return a.addition, a.err
 }
 
 type clientError struct {
