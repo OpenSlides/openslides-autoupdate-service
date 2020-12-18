@@ -1,32 +1,104 @@
+// Package permission provides tells, if a user has the permission to see or
+// write an object.
 package permission
 
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
 
-	"github.com/OpenSlides/openslides-permission-service/internal/definitions"
-
-	"github.com/OpenSlides/openslides-permission-service/internal/core"
+	"github.com/OpenSlides/openslides-permission-service/internal/collection"
 )
 
+// Permission impelements the permission.Permission interface.
+type Permission struct {
+	connecters   []collection.Connecter
+	writeHandler map[string]collection.WriteChecker
+	readHandler  map[string]collection.ReadeChecker
+}
+
 // New returns a new permission service.
-func New(dataprovider ExternalDataProvider) Permission {
-	return core.NewPermissionService(dataprovider)
+func New(dp DataProvider, os ...Option) *Permission {
+	p := &Permission{
+		writeHandler: make(map[string]collection.WriteChecker),
+		readHandler:  make(map[string]collection.ReadeChecker),
+	}
+
+	for _, o := range os {
+		o(p)
+	}
+
+	if p.connecters == nil {
+		p.connecters = openSlidesCollections(dp)
+	}
+
+	for _, con := range p.connecters {
+		con.Connect(p)
+	}
+
+	return p
 }
 
-// ExternalDataProvider is the connection to the datastore. It returns the data
-// required by the permission service.
-type ExternalDataProvider interface {
-	// If a field does not exist, it is not returned.
-	Get(ctx context.Context, fqfields ...string) ([]json.RawMessage, error)
+// IsAllowed tells, if something is allowed.
+func (ps *Permission) IsAllowed(ctx context.Context, name string, userID int, dataList []map[string]json.RawMessage) ([]map[string]interface{}, error) {
+	handler, ok := ps.writeHandler[name]
+	if !ok {
+		return nil, clientError{fmt.Sprintf("unknown collection: `%s`", name)}
+	}
+
+	additions := make([]map[string]interface{}, len(dataList))
+	for i, data := range dataList {
+		addition, err := handler.IsAllowed(ctx, userID, data)
+		if err != nil {
+			return nil, isAllowedError{name: name, index: i, err: err}
+		}
+
+		additions[i] = addition
+	}
+
+	return additions, nil
 }
 
-// Permission can tell, if a user has the permission for some data.
-//
-// See https://github.com/FinnStutzenstein/OpenSlides/blob/permissionService/docs/interfaces/permission-service.txt
-type Permission interface {
-	IsAllowed(ctx context.Context, name string, userID definitions.ID, dataList []definitions.FqfieldData) ([]definitions.Addition, error)
-	RestrictFQIDs(ctx context.Context, userID definitions.ID, fqids []definitions.Fqid) (map[definitions.Fqid]bool, error)
-	RestrictFQFields(ctx context.Context, userID definitions.ID, fqfields []definitions.Fqfield) (map[definitions.Fqfield]bool, error)
-	AdditionalUpdate(ctx context.Context, updated definitions.FqfieldData) ([]definitions.ID, error)
+// RestrictFQFields tells, if the given user can see the fqfields.
+func (ps Permission) RestrictFQFields(ctx context.Context, userID int, fqfields []string) (map[string]bool, error) {
+	grouped := groupFQFields(fqfields)
+
+	data := make(map[string]bool, len(fqfields))
+
+	for name, fqfields := range grouped {
+		handler, ok := ps.readHandler[name]
+		if !ok {
+			return nil, clientError{fmt.Sprintf("unknown collection: `%s`", name)}
+		}
+
+		if err := handler.RestrictFQFields(ctx, userID, fqfields, data); err != nil {
+			return nil, fmt.Errorf("restrict for collection %s: %w", name, err)
+		}
+	}
+	return data, nil
+}
+
+// AdditionalUpdate TODO
+func (ps *Permission) AdditionalUpdate(ctx context.Context, updated map[string]json.RawMessage) ([]int, error) {
+	return nil, nil
+}
+
+// RegisterReadHandler registers a reader.
+func (ps *Permission) RegisterReadHandler(name string, reader collection.ReadeChecker) {
+	ps.readHandler[name] = reader
+}
+
+// RegisterWriteHandler registers a writer.
+func (ps *Permission) RegisterWriteHandler(name string, writer collection.WriteChecker) {
+	ps.writeHandler[name] = writer
+}
+
+func groupFQFields(fqfields []string) map[string][]string {
+	grouped := make(map[string][]string)
+	for _, fqfield := range fqfields {
+		parts := strings.Split(fqfield, "/")
+		grouped[parts[0]] = append(grouped[parts[0]], fqfield)
+	}
+	return grouped
 }

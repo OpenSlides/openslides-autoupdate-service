@@ -12,7 +12,6 @@ import (
 	"syscall"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/datastore"
-	"github.com/OpenSlides/openslides-permission-service/internal/definitions"
 	permHTTP "github.com/OpenSlides/openslides-permission-service/internal/http"
 	"github.com/OpenSlides/openslides-permission-service/pkg/permission"
 )
@@ -47,7 +46,7 @@ func run() error {
 	env := defaultEnv()
 
 	// Select ExternalDataProvider.
-	var edp permission.ExternalDataProvider
+	var edp permission.DataProvider
 	switch env["DATASTORE"] {
 	case "fake":
 		edp = fakeDataProvider{}
@@ -113,7 +112,7 @@ func waitForShutdown() {
 
 type fakeDataProvider struct{}
 
-func (dp fakeDataProvider) Get(ctx context.Context, fqfields ...definitions.Fqfield) ([]json.RawMessage, error) {
+func (dp fakeDataProvider) Get(ctx context.Context, fqfields ...string) ([]json.RawMessage, error) {
 	m := make([]json.RawMessage, len(fqfields))
 	for i := range fqfields {
 		m[i] = json.RawMessage(strconv.Itoa(i))
