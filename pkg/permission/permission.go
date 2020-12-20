@@ -108,3 +108,16 @@ func groupFQFields(fqfields []string) map[string][]string {
 	}
 	return grouped
 }
+
+// AllRoutes returns the names of all read and write routes.
+func (ps *Permission) AllRoutes() (readRoutes []string, writeRoutes []string) {
+	rr := make([]string, 0, len(ps.readHandler))
+	for k := range ps.readHandler {
+		rr = append(rr, k)
+	}
+	wr := make([]string, 0, len(ps.writeHandler))
+	for k := range ps.writeHandler {
+		wr = append(wr, k)
+	}
+	return rr, wr
+}

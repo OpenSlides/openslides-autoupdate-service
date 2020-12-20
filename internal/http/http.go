@@ -92,12 +92,29 @@ func IsAllowed(mux *http.ServeMux, provider IsAlloweder) {
 	mux.Handle(url, handler)
 }
 
+type allrouter interface {
+	AllRoutes() ([]string, []string)
+}
+
 // Health registers a handler, that tells, if the service is running.
-func Health(mux *http.ServeMux) {
+func Health(mux *http.ServeMux, router allrouter) {
 	url := prefix + "/health"
+
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/octet-stream")
-		fmt.Fprintln(w, `{"healthy": true}`)
+		w.Header().Set("Content-Type", "application/json")
+		var rData struct {
+			Info struct {
+				Routes struct {
+					Read  []string `json:"read"`
+					Write []string `json:"write"`
+				} `json:"routes"`
+			} `json:"healthinfo"`
+		}
+		rData.Info.Routes.Read, rData.Info.Routes.Write = router.AllRoutes()
+		if err := json.NewEncoder(w).Encode(rData); err != nil {
+			http.Error(w, "Something went wrong", 500)
+			return
+		}
 	})
 
 	mux.Handle(url, handler)

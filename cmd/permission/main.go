@@ -63,7 +63,7 @@ func run() error {
 
 	// Register handlers.
 	mux := http.NewServeMux()
-	permHTTP.Health(mux)
+	permHTTP.Health(mux, ps)
 	permHTTP.IsAllowed(mux, ps)
 
 	// Create http server.
