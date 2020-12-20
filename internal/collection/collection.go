@@ -12,9 +12,9 @@ import (
 // Create checks for the mermission to create a new object.
 func Create(dp dataprovider.DataProvider, perm, collection string) WriteChecker {
 	return WriteCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error) {
-		meetingID, err := MettingIDFromPayload(ctx, payload)
-		if err != nil {
-			return nil, fmt.Errorf("getting meeting id for create action: %w", err)
+		var meetingID int
+		if err := json.Unmarshal(payload["meeting_id"], &meetingID); err != nil {
+			return nil, fmt.Errorf("no valid meeting id: %w", err)
 		}
 
 		return check(ctx, dp, perm, meetingID, userID, payload)
@@ -52,18 +52,6 @@ func check(ctx context.Context, dp dataprovider.DataProvider, managePerm string,
 		return nil, fmt.Errorf("ensure manage permission: %w", err)
 	}
 	return nil, nil
-}
-
-// MettingIDFromPayload returns the meeting_id from the payload.
-//
-// It expects, that a field with the name "meeting_id" is in the payload.
-func MettingIDFromPayload(ctx context.Context, payload map[string]json.RawMessage) (int, error) {
-	var id int
-	if err := json.Unmarshal(payload["meeting_id"], &id); err != nil {
-		return 0, fmt.Errorf("no valid meeting id: %w", err)
-	}
-
-	return id, nil
 }
 
 func modelID(data map[string]json.RawMessage) (int, error) {
