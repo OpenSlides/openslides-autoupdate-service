@@ -2,6 +2,7 @@ package permission
 
 import (
 	"github.com/OpenSlides/openslides-permission-service/internal/collection"
+	"github.com/OpenSlides/openslides-permission-service/internal/collection/agenda"
 	"github.com/OpenSlides/openslides-permission-service/internal/collection/assignment"
 	"github.com/OpenSlides/openslides-permission-service/internal/collection/autogen"
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
@@ -12,6 +13,8 @@ func openSlidesCollections(edp DataProvider) []collection.Connecter {
 
 	return []collection.Connecter{
 		autogen.NewAutogen(dp),
+
+		agenda.NewSpeaker(dp),
 
 		// TODO: Remove unneeded collections.
 
