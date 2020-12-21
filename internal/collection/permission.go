@@ -1,5 +1,7 @@
 package collection
 
+//go:generate  sh -c "go run gen_derivate/main.go > derivate.go && go fmt derivate.go"
+
 import (
 	"context"
 	"fmt"
@@ -73,6 +75,9 @@ func Perms(ctx context.Context, userID, meetingID int, dp dataprovider.DataProvi
 	for _, id := range effectiveGroupIds {
 		for _, perm := range groupPermissions[id] {
 			permissions[perm] = true
+			for _, p := range derivatePerms[perm] {
+				permissions[p] = true
+			}
 		}
 	}
 

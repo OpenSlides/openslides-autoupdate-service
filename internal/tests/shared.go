@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
@@ -82,34 +83,24 @@ func (t *TestDataProvider) SetDefault() {
 		"group/1/superadmin_group_for_meeting_id": "null",
 		"group/1/default_group_for_meeting_id":    "1",
 		"group/1/permissions": `[
-            "agenda.can_see",
             "agenda.can_see_internal_items",
-            "assignments.can_see",
-            "core.can_see_frontpage",
-            "core.can_see_projector",
-            "mediafiles.can_see",
-            "motions.can_see",
-            "users.can_see_name"
+            "assignment.can_see",
+            "mediafile.can_see",
+            "motion.can_see",
+            "user.can_see_name"
         ]`,
 		"group/1/meeting_id": "1",
 
 		// Group 2: Delegate
 		"group/2/id": "2",
 		"group/2/permissions": `[
-			"agenda.can_see",
             "agenda.can_see_internal_items",
             "agenda.can_be_speaker",
-            "assignments.can_nominate_other",
-            "assignments.can_nominate_self",
-            "assignments.can_see",
-            "core.can_see_frontpage",
-            "core.can_see_projector",
-            "mediafiles.can_see",
-            "motions.can_create",
-            "motions.can_manage",
-            "motions.can_see",
-            "motions.can_support",
-            "users.can_see_name"
+            "assignment.can_nominate_other",
+			"assignment.can_nominate_self",
+            "mediafile.can_see",
+            "motion.can_manage",
+            "user.can_see_name"
         ]`,
 		"group/2/meeting_id": "1",
 
@@ -149,6 +140,15 @@ func (t *TestDataProvider) AddUserToMeeting(userID, meetingID int) {
 	t.Data[meetingField] = addIntToJSONArray(t.getFieldWithDefault(meetingField, "[]"), userID)
 }
 
+// AddUserToGroup adds the user to the group in the given meeting.
+func (t *TestDataProvider) AddUserToGroup(userID, meetingID, groupID int) {
+	groupFQField := fmt.Sprintf("group/%d/user_ids", groupID)
+	t.Data[groupFQField] = addIntToJSONArray(t.getFieldWithDefault(groupFQField, "[]"), userID)
+
+	userFQField := fmt.Sprintf("user/%d/group_$%d_ids", userID, meetingID)
+	t.Data[userFQField] = addIntToJSONArray(t.getFieldWithDefault(userFQField, "[]"), groupID)
+}
+
 // AddUserToCommitteeAsManager does ...
 func (t *TestDataProvider) AddUserToCommitteeAsManager(userID, committeeID int) {
 	t.AddUser(userID)
@@ -169,7 +169,7 @@ func (t *TestDataProvider) AddUserWithSuperadminRole(id int) {
 func (t *TestDataProvider) AddUserWithAdminGroupToMeeting(userID, meetingID int) {
 	t.AddUserToMeeting(userID, meetingID)
 	t.Data["group/3/user_ids"] = addIntToJSONArray(t.getFieldWithDefault("group/3/user_ids", "[]"), userID)
-	t.Data["user/"+strconv.Itoa(userID)+"/group_"+strconv.Itoa(meetingID)+"_ids"] = []byte("[3]")
+	t.Data["user/"+strconv.Itoa(userID)+"/group_$"+strconv.Itoa(meetingID)+"_ids"] = []byte("[3]")
 }
 
 // AddPermissionToGroup does ...
