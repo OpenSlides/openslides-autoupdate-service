@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
+	"strconv"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
 )
@@ -65,24 +65,26 @@ func modelID(data map[string]json.RawMessage) (int, error) {
 // Restrict tells, if the user has the permission to see the requested
 // fields.
 func Restrict(dp dataprovider.DataProvider, perm, collection string) ReadeChecker {
-	return ReadeCheckerFunc(func(ctx context.Context, userID int, fqfields []string, result map[string]bool) error {
+	return ReadeCheckerFunc(func(ctx context.Context, userID int, fqfields []FQField, result map[string]bool) error {
 		if len(fqfields) == 0 {
 			return nil
 		}
 
-		parts := strings.Split(fqfields[0], "/")
-		meetingID, err := dp.MeetingFromModel(ctx, collection+"/"+parts[1])
-		if err != nil {
-			return fmt.Errorf("getting meeting from model: %w", err)
-		}
-
-		if err := EnsurePerms(ctx, dp, userID, meetingID, perm); err != nil {
-			return nil
-		}
-
 		for _, fqfield := range fqfields {
-			result[fqfield] = true
+			meetingID, err := dp.MeetingFromModel(ctx, collection+"/"+strconv.Itoa(fqfield.ID))
+			if err != nil {
+				return fmt.Errorf("getting meeting from model: %w", err)
+			}
+
+			if err := EnsurePerms(ctx, dp, userID, meetingID, perm); err != nil {
+				return nil
+			}
+
+			for _, fqfield := range fqfields {
+				result[fqfield.String()] = true
+			}
 		}
+
 		return nil
 	})
 }

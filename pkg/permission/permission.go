@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/collection"
 )
@@ -62,7 +61,10 @@ func (ps *Permission) IsAllowed(ctx context.Context, name string, userID int, da
 
 // RestrictFQFields tells, if the given user can see the fqfields.
 func (ps Permission) RestrictFQFields(ctx context.Context, userID int, fqfields []string) (map[string]bool, error) {
-	grouped := groupFQFields(fqfields)
+	grouped, err := groupFQFields(fqfields)
+	if err != nil {
+		return nil, fmt.Errorf("grouping fqfields: %w", err)
+	}
 
 	data := make(map[string]bool, len(fqfields))
 
@@ -100,13 +102,16 @@ func (ps *Permission) RegisterWriteHandler(name string, writer collection.WriteC
 	ps.writeHandler[name] = writer
 }
 
-func groupFQFields(fqfields []string) map[string][]string {
-	grouped := make(map[string][]string)
-	for _, fqfield := range fqfields {
-		parts := strings.Split(fqfield, "/")
-		grouped[parts[0]] = append(grouped[parts[0]], fqfield)
+func groupFQFields(fqfields []string) (map[string][]collection.FQField, error) {
+	grouped := make(map[string][]collection.FQField)
+	for _, f := range fqfields {
+		fqfield, err := collection.ParseFQField(f)
+		if err != nil {
+			return nil, fmt.Errorf("decoding fqfield: %w", err)
+		}
+		grouped[fqfield.Collection] = append(grouped[fqfield.Collection], fqfield)
 	}
-	return grouped
+	return grouped, nil
 }
 
 // AllRoutes returns the names of all read and write routes.

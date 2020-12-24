@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/collection"
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
@@ -117,23 +116,23 @@ func (c *Candidate) sort(ctx context.Context, userID int, payload map[string]jso
 }
 
 // RestrictFQFields restricts all fields for assignment_candidates.
-func (c *Candidate) RestrictFQFields(ctx context.Context, userID int, fqfields []string, result map[string]bool) error {
+func (c *Candidate) RestrictFQFields(ctx context.Context, userID int, fqfields []collection.FQField, result map[string]bool) error {
 	if len(fqfields) == 0 {
 		return nil
 	}
 
-	parts := strings.Split(fqfields[0], "/")
-	meetingID, err := c.dp.MeetingFromModel(ctx, "assignment_candidate/"+parts[1])
-	if err != nil {
-		return fmt.Errorf("getting meeting from assignment_candidate %s: %w", parts[1], err)
-	}
+	// TODO
+	// meetingID, err := c.dp.MeetingFromModel(ctx, "assignment_candidate/"+parts[1])
+	// if err != nil {
+	// 	return fmt.Errorf("getting meeting from assignment_candidate %s: %w", parts[1], err)
+	// }
 
-	if err := collection.EnsurePerms(ctx, c.dp, userID, meetingID, "assignment.can_see"); err != nil {
-		return nil
-	}
+	// if err := collection.EnsurePerms(ctx, c.dp, userID, meetingID, "assignment.can_see"); err != nil {
+	// 	return nil
+	// }
 
-	for _, fqfield := range fqfields {
-		result[fqfield] = true
-	}
+	// for _, fqfield := range fqfields {
+	// 	result[fqfield] = true
+	// }
 	return nil
 }
