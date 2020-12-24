@@ -7,21 +7,21 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-permission-service/internal/collection"
+	"github.com/OpenSlides/openslides-permission-service/internal/perm"
 )
 
 // Permission impelements the permission.Permission interface.
 type Permission struct {
-	connecters   []collection.Connecter
-	writeHandler map[string]collection.WriteChecker
-	readHandler  map[string]collection.ReadeChecker
+	connecters   []perm.Connecter
+	writeHandler map[string]perm.WriteChecker
+	readHandler  map[string]perm.ReadeChecker
 }
 
 // New returns a new permission service.
 func New(dp DataProvider, os ...Option) *Permission {
 	p := &Permission{
-		writeHandler: make(map[string]collection.WriteChecker),
-		readHandler:  make(map[string]collection.ReadeChecker),
+		writeHandler: make(map[string]perm.WriteChecker),
+		readHandler:  make(map[string]perm.ReadeChecker),
 	}
 
 	for _, o := range os {
@@ -87,7 +87,7 @@ func (ps *Permission) AdditionalUpdate(ctx context.Context, updated map[string]j
 }
 
 // RegisterReadHandler registers a reader.
-func (ps *Permission) RegisterReadHandler(name string, reader collection.ReadeChecker) {
+func (ps *Permission) RegisterReadHandler(name string, reader perm.ReadeChecker) {
 	if _, ok := ps.readHandler[name]; ok {
 		panic(fmt.Sprintf("Read handler with name `%s` allready exists", name))
 	}
@@ -95,17 +95,17 @@ func (ps *Permission) RegisterReadHandler(name string, reader collection.ReadeCh
 }
 
 // RegisterWriteHandler registers a writer.
-func (ps *Permission) RegisterWriteHandler(name string, writer collection.WriteChecker) {
+func (ps *Permission) RegisterWriteHandler(name string, writer perm.WriteChecker) {
 	if _, ok := ps.writeHandler[name]; ok {
 		panic(fmt.Sprintf("Write handler with name `%s` allready exists", name))
 	}
 	ps.writeHandler[name] = writer
 }
 
-func groupFQFields(fqfields []string) (map[string][]collection.FQField, error) {
-	grouped := make(map[string][]collection.FQField)
+func groupFQFields(fqfields []string) (map[string][]perm.FQField, error) {
+	grouped := make(map[string][]perm.FQField)
 	for _, f := range fqfields {
-		fqfield, err := collection.ParseFQField(f)
+		fqfield, err := perm.ParseFQField(f)
 		if err != nil {
 			return nil, fmt.Errorf("decoding fqfield: %w", err)
 		}

@@ -1,12 +1,12 @@
-package user
+package collection
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-permission-service/internal/collection"
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
+	"github.com/OpenSlides/openslides-permission-service/internal/perm"
 )
 
 // PersonalNote handels permissions for personal notes.
@@ -22,10 +22,10 @@ func NewPersonalNote(dp dataprovider.DataProvider) *PersonalNote {
 }
 
 // Connect creates the routes.
-func (p *PersonalNote) Connect(s collection.HandlerStore) {
-	s.RegisterWriteHandler("personal_note.create", collection.WriteCheckerFunc(p.create))
-	s.RegisterWriteHandler("personal_note.update", collection.WriteCheckerFunc(p.modify))
-	s.RegisterWriteHandler("personal_note.delete", collection.WriteCheckerFunc(p.modify))
+func (p *PersonalNote) Connect(s perm.HandlerStore) {
+	s.RegisterWriteHandler("personal_note.create", perm.WriteCheckerFunc(p.create))
+	s.RegisterWriteHandler("personal_note.update", perm.WriteCheckerFunc(p.modify))
+	s.RegisterWriteHandler("personal_note.delete", perm.WriteCheckerFunc(p.modify))
 
 	s.RegisterReadHandler("personal_note", p)
 }
@@ -38,20 +38,20 @@ func (p PersonalNote) modify(ctx context.Context, userID int, payload map[string
 	}
 
 	if noteUserID != userID {
-		return nil, collection.NotAllowedf("Not your note")
+		return nil, perm.NotAllowedf("Not your note")
 	}
 	return nil, nil
 }
 
 func (p PersonalNote) create(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error) {
 	if userID == 0 {
-		collection.NotAllowedf("Anonymous can not create personal notes.")
+		perm.NotAllowedf("Anonymous can not create personal notes.")
 	}
 	return nil, nil
 }
 
 // RestrictFQFields checks for read permissions.
-func (p PersonalNote) RestrictFQFields(ctx context.Context, userID int, fqfields []collection.FQField, result map[string]bool) error {
+func (p PersonalNote) RestrictFQFields(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 	var noteUserID int
 	var lastID int
 	for _, fqfield := range fqfields {

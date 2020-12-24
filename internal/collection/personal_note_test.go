@@ -1,13 +1,13 @@
-package user_test
+package collection_test
 
 import (
 	"context"
 	"encoding/json"
 	"testing"
 
-	"github.com/OpenSlides/openslides-permission-service/internal/collection"
-	"github.com/OpenSlides/openslides-permission-service/internal/collection/user"
+	user "github.com/OpenSlides/openslides-permission-service/internal/collection"
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
+	"github.com/OpenSlides/openslides-permission-service/internal/perm"
 	"github.com/OpenSlides/openslides-permission-service/internal/tests"
 )
 
@@ -90,11 +90,11 @@ func TestPersonalNote(t *testing.T) {
 	})
 }
 
-func mustFQfields(fqfields ...string) []collection.FQField {
-	out := make([]collection.FQField, len(fqfields))
+func mustFQfields(fqfields ...string) []perm.FQField {
+	out := make([]perm.FQField, len(fqfields))
 	var err error
 	for i, fqfield := range fqfields {
-		out[i], err = collection.ParseFQField(fqfield)
+		out[i], err = perm.ParseFQField(fqfield)
 		if err != nil {
 			panic(err)
 		}

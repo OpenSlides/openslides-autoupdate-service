@@ -1,4 +1,4 @@
-package collection
+package perm
 
 import "fmt"
 

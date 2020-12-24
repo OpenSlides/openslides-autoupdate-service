@@ -1,9 +1,9 @@
 // Code generated with autogen.gen DO NOT EDIT.
-package collection
+package perm
 
 var derivatePerms = map[string][]string{
 	"agenda.can_be_speaker":              {"agenda.can_see"},
-	"agenda.can_manage":                  {"agenda.can_manage_list_of_speakers", "agenda.can_see_list_of_speakers", "agenda.can_see", "agenda.can_be_speaker", "agenda.can_see", "agenda.can_see_internal_items", "agenda.can_see"},
+	"agenda.can_manage":                  {"agenda.can_be_speaker", "agenda.can_see", "agenda.can_see_internal_items", "agenda.can_see", "agenda.can_manage_list_of_speakers", "agenda.can_see_list_of_speakers", "agenda.can_see"},
 	"agenda.can_manage_list_of_speakers": {"agenda.can_see_list_of_speakers", "agenda.can_see"},
 	"agenda.can_see":                     {},
 	"agenda.can_see_internal_items":      {"agenda.can_see"},

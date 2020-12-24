@@ -63,7 +63,7 @@ type action struct {
 }
 
 const tpl = `// Code generated with autogen.gen DO NOT EDIT.
-package autogen
+package collection
 
 var autogenDef = map[string]string{
 	{{- range $key, $value := .Def}}

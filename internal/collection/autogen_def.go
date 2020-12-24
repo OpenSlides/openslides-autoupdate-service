@@ -1,5 +1,5 @@
 // Code generated with autogen.gen DO NOT EDIT.
-package autogen
+package collection
 
 var autogenDef = map[string]string{
 	"agenda_item.assign":                       "agenda.can_manage",
@@ -15,7 +15,6 @@ var autogenDef = map[string]string{
 	"group.delete":                             "user.can_manage",
 	"group.set_permission":                     "user.can_manage",
 	"group.update":                             "user.can_manage",
-	"list_of_speakers.delete":                  "TODO",
 	"list_of_speakers.delete_all_speakers":     "agenda.can_manage_list_of_speakers",
 	"list_of_speakers.re_add_last":             "agenda.can_manage_list_of_speakers",
 	"list_of_speakers.update":                  "agenda.can_manage_list_of_speakers",

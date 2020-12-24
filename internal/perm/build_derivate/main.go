@@ -72,7 +72,7 @@ func (p permission) subPerms(collection string) []string {
 }
 
 const tpl = `// Code generated with autogen.gen DO NOT EDIT.
-package collection
+package perm
 
 var derivatePerms = map[string][]string{
 	{{- range $key, $value := .Def}}

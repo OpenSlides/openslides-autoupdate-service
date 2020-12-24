@@ -1,6 +1,6 @@
-package autogen
+package collection
 
-//go:generate  sh -c "go run gen/main.go > def.go && go fmt def.go"
+//go:generate  sh -c "go run build_autogen_def/main.go > autogen_def.go && go fmt autogen_def.go"
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/OpenSlides/openslides-permission-service/internal/collection"
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
+	"github.com/OpenSlides/openslides-permission-service/internal/perm"
 )
 
 // Autogen adds routs for all simple permission cases.
@@ -26,7 +26,7 @@ func NewAutogen(dp dataprovider.DataProvider) *Autogen {
 }
 
 // Connect connects the simple routes.
-func (a *Autogen) Connect(s collection.HandlerStore) {
+func (a *Autogen) Connect(s perm.HandlerStore) {
 	for route, perm := range autogenDef {
 		parts := strings.Split(route, ".")
 		if len(parts) != 2 {
@@ -36,8 +36,8 @@ func (a *Autogen) Connect(s collection.HandlerStore) {
 	}
 }
 
-func writeChecker(dp dataprovider.DataProvider, collName, perm string) collection.WriteChecker {
-	return collection.WriteCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error) {
+func writeChecker(dp dataprovider.DataProvider, collName, permission string) perm.WriteChecker {
+	return perm.WriteCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error) {
 		// Find meetingID
 		var meetingID int
 		if err := json.Unmarshal(payload["meeting_id"], &meetingID); err != nil {
@@ -53,7 +53,7 @@ func writeChecker(dp dataprovider.DataProvider, collName, perm string) collectio
 			}
 		}
 
-		if err := collection.EnsurePerms(ctx, dp, userID, meetingID, perm); err != nil {
+		if err := perm.EnsurePerms(ctx, dp, userID, meetingID, permission); err != nil {
 			return nil, fmt.Errorf("ensuring permission: %w", err)
 		}
 

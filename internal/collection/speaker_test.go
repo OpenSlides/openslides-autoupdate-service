@@ -1,11 +1,11 @@
-package agenda_test
+package collection_test
 
 import (
 	"context"
 	"encoding/json"
 	"testing"
 
-	"github.com/OpenSlides/openslides-permission-service/internal/collection/agenda"
+	"github.com/OpenSlides/openslides-permission-service/internal/collection"
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
 	"github.com/OpenSlides/openslides-permission-service/internal/tests"
 )
@@ -18,7 +18,7 @@ func TestSpeakerDelete(t *testing.T) {
 	tdp.AddUserToMeeting(3, 1) // Unprivileg user
 
 	dp := dataprovider.DataProvider{External: tdp}
-	s := agenda.NewSpeaker(dp)
+	s := collection.NewSpeaker(dp)
 	hs := new(tests.HandlerStoreMock)
 	s.Connect(hs)
 	delete := hs.WriteHandler["speaker.delete"]
