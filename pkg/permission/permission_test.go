@@ -9,13 +9,14 @@ import (
 	"github.com/OpenSlides/openslides-permission-service/pkg/permission"
 )
 
-func TestDispatchNotFound(t *testing.T) {
-	p := permission.New(nil, permission.WithCollections(fakeCollections()))
-	_, err := p.IsAllowed(context.Background(), "", 0, nil)
-	if err == nil {
-		t.Errorf("Got no error, expected one")
-	}
-}
+// TODO Activate after developer-mode is removed.
+// func TestDispatchNotFound(t *testing.T) {
+// 	p := permission.New(nil, permission.WithCollections(fakeCollections()))
+// 	_, err := p.IsAllowed(context.Background(), "", 0, nil)
+// 	if err == nil {
+// 		t.Errorf("Got no error, expected one")
+// 	}
+// }
 
 func TestDispatchAllowed(t *testing.T) {
 	p := permission.New(nil, permission.WithCollections(fakeCollections()))
