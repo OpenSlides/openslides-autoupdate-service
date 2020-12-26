@@ -5,6 +5,7 @@ package permission
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/perm"
@@ -50,7 +51,11 @@ func (ps *Permission) IsAllowed(ctx context.Context, name string, userID int, da
 	for i, data := range dataList {
 		addition, err := handler.IsAllowed(ctx, userID, data)
 		if err != nil {
-			return nil, isAllowedError{name: name, index: i, err: err}
+			var errNotAllowed perm.NotAllowedError
+			if errors.As(err, &errNotAllowed) {
+				return nil, indexError{name: name, index: i, err: err}
+			}
+			return nil, fmt.Errorf("action %d: %w", i, err)
 		}
 
 		additions[i] = addition

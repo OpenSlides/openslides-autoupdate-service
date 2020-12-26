@@ -14,7 +14,9 @@ func openSlidesCollections(edp DataProvider) []perm.Connecter {
 
 		collection.NewSpeaker(dp),
 		collection.NewPersonalNote(dp),
-
-		//assignment.NewCandidate(dp),
+		collection.NewGroup(dp),
+		collection.NewSimpleRead(dp, "list_of_speakers", "agenda.can_see_list_of_speakers"),
+		collection.NewSimpleRead(dp, "assignment", "assingment.can_see"),
+		collection.NewSimpleRead(dp, "assignment_candidate", "assingment.can_see"),
 	}
 }

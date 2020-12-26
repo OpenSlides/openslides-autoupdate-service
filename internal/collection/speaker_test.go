@@ -10,7 +10,7 @@ import (
 	"github.com/OpenSlides/openslides-permission-service/internal/tests"
 )
 
-func TestSpeakerDelete(t *testing.T) {
+func TestSpeaker(t *testing.T) {
 	tdp := tests.NewTestDataProvider()
 	tdp.AddUserToMeeting(1, 1) // Speaker user
 	tdp.AddUserToMeeting(2, 1) // Manager user
@@ -22,6 +22,7 @@ func TestSpeakerDelete(t *testing.T) {
 	hs := new(tests.HandlerStoreMock)
 	s.Connect(hs)
 	delete := hs.WriteHandler["speaker.delete"]
+	read := hs.ReadHandler["speaker"]
 
 	t.Run("delete self", func(t *testing.T) {
 		tdp.AddBasicModel("speaker", 1)
@@ -60,5 +61,24 @@ func TestSpeakerDelete(t *testing.T) {
 		if _, err := delete.IsAllowed(context.Background(), 3, payload); err == nil {
 			t.Errorf("Expected error, got non")
 		}
+	})
+
+	t.Run("read", func(t *testing.T) {
+		tdp.AddBasicModel("speaker", 1)
+		tdp.Set("speaker/1/user_id", "1")
+		tdp.Set("speaker/1/meeting_id", "1")
+		tdp.AddPermissionToGroup(1, "agenda.can_see_list_of_speakers")
+		fqfields := mustFQfields(
+			"speaker/1/id",
+			"speaker/1/user_id",
+			"speaker/2/id",
+			"speaker/2/user_id",
+		)
+
+		result := make(map[string]bool)
+		if err := read.RestrictFQFields(context.Background(), 1, fqfields, result); err != nil {
+			t.Fatalf("Got unexpected error: %v", err)
+		}
+		checkRead(t, result, "speaker/1/id", "speaker/1/user_id")
 	})
 }

@@ -33,7 +33,7 @@ func (dp *DataProvider) Get(ctx context.Context, fqfield string, value interface
 	}
 
 	if fields[0] == nil {
-		return doesNotExistError(fqfield)
+		return DoesNotExistError(fqfield)
 	}
 
 	if err := json.Unmarshal(fields[0], value); err != nil {
@@ -46,7 +46,7 @@ func (dp *DataProvider) Get(ctx context.Context, fqfield string, value interface
 // not exist.
 func (dp *DataProvider) GetIfExist(ctx context.Context, fqfield string, value interface{}) error {
 	if err := dp.Get(ctx, fqfield, value); err != nil {
-		var errDoesNotExist doesNotExistError
+		var errDoesNotExist DoesNotExistError
 		if !errors.As(err, &errDoesNotExist) {
 			return err
 		}
@@ -74,7 +74,7 @@ func (dp *DataProvider) IsSuperuser(ctx context.Context, userID int) (bool, erro
 		return false, fmt.Errorf("check if user exist: %w", err)
 	}
 	if !exists {
-		return false, doesNotExistError(fmt.Sprintf("user with id %d does not exist", userID))
+		return false, DoesNotExistError(fmt.Sprintf("user with id %d does not exist", userID))
 	}
 
 	superadmin, err := dp.HasUserSuperadminRole(ctx, userID)

@@ -138,7 +138,7 @@ func check(ctx context.Context, dp dataprovider.DataProvider, managePerm string,
 		return nil, nil
 	}
 
-	if err := EnsurePerms(ctx, dp, userID, meetingID, managePerm); err != nil {
+	if err := EnsurePerm(ctx, dp, userID, meetingID, managePerm); err != nil {
 		return nil, fmt.Errorf("ensure manage permission: %w", err)
 	}
 	return nil, nil
@@ -166,7 +166,7 @@ func Restrict(dp dataprovider.DataProvider, perm, collection string) ReadeChecke
 				return fmt.Errorf("getting meeting from model: %w", err)
 			}
 
-			if err := EnsurePerms(ctx, dp, userID, meetingID, perm); err != nil {
+			if err := EnsurePerm(ctx, dp, userID, meetingID, perm); err != nil {
 				return nil
 			}
 
@@ -179,8 +179,14 @@ func Restrict(dp dataprovider.DataProvider, perm, collection string) ReadeChecke
 	})
 }
 
-// EnsurePerms makes sure the user has at least one of the given permissions.
-func EnsurePerms(ctx context.Context, dp dataprovider.DataProvider, userID int, meetingID int, permissions ...string) error {
+// EnsurePerm makes sure the user has at the given permission.
+//
+// If the user has the permission, EnsurePerm does not return an error.
+//
+// If the returned error object is unwrapped to type NotAllowedError, it means,
+// that the user does not have the permission. Other errors means, that a reald
+// error happend.
+func EnsurePerm(ctx context.Context, dp dataprovider.DataProvider, userID int, meetingID int, permission string) error {
 	committeeID, err := dp.CommitteeID(ctx, meetingID)
 	if err != nil {
 		return fmt.Errorf("getting committee id for meeting: %w", err)
@@ -194,11 +200,11 @@ func EnsurePerms(ctx context.Context, dp dataprovider.DataProvider, userID int, 
 		return nil
 	}
 
-	canSeeMeeting, err := dp.InMeeting(ctx, userID, meetingID)
+	isMeeting, err := dp.InMeeting(ctx, userID, meetingID)
 	if err != nil {
-		return err
+		return fmt.Errorf("Looking for user %d in meeting %d: %w", userID, meetingID, err)
 	}
-	if !canSeeMeeting {
+	if !isMeeting {
 		return NotAllowedf("User %d is not in meeting %d", userID, meetingID)
 	}
 
@@ -207,10 +213,32 @@ func EnsurePerms(ctx context.Context, dp dataprovider.DataProvider, userID int, 
 		return fmt.Errorf("getting user permissions: %w", err)
 	}
 
-	hasPerms := perms.HasOne(permissions...)
+	hasPerms := perms.HasOne(permission)
 	if !hasPerms {
-		return NotAllowedf("User %d has not the required permission in meeting %d", userID, meetingID)
+		return NotAllowedf("User %d does not have the permission %s int meeting %d", userID, permission, meetingID)
 	}
 
+	return nil
+}
+
+// AllFields checks all fqfields by the given function f.
+//
+// It asumes, that if a user can see one field of the object, he can see all
+// fields. So the check is only called once per fqid.
+func AllFields(fqfields []FQField, result map[string]bool, f func(FQField) (bool, error)) error {
+	var hasPerm bool
+	var lastID int
+	var err error
+	for _, fqfield := range fqfields {
+		if lastID != fqfield.ID {
+			hasPerm, err = f(fqfield)
+			if err != nil {
+				return fmt.Errorf("checking %s: %w", fqfield, err)
+			}
+		}
+		if hasPerm {
+			result[fqfield.String()] = true
+		}
+	}
 	return nil
 }

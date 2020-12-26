@@ -38,7 +38,7 @@ func (p PersonalNote) modify(ctx context.Context, userID int, payload map[string
 	}
 
 	if noteUserID != userID {
-		return nil, perm.NotAllowedf("Not your note")
+		return nil, perm.NotAllowedf("Note belongs to a different user.")
 	}
 	return nil, nil
 }
@@ -56,9 +56,9 @@ func (p PersonalNote) RestrictFQFields(ctx context.Context, userID int, fqfields
 	var lastID int
 	for _, fqfield := range fqfields {
 		if lastID != fqfield.ID {
-			f := fmt.Sprintf("personal_note/%d/user_id", fqfield.ID)
-			if err := p.dp.Get(ctx, f, &noteUserID); err != nil {
-				return fmt.Errorf("getting %s from datastore: %w", f, err)
+			key := fmt.Sprintf("personal_note/%d/user_id", fqfield.ID)
+			if err := p.dp.Get(ctx, key, &noteUserID); err != nil {
+				return fmt.Errorf("getting %s from datastore: %w", key, err)
 			}
 			lastID = fqfield.ID
 		}

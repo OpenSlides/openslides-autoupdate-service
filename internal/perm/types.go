@@ -10,9 +10,15 @@ import (
 
 // WriteChecker is an object with the method IsAllowed.
 type WriteChecker interface {
-	// IsAllowed returns an error, if the given user does not have the required
-	// permission for the object. If it is allowed, it can also optionaly return
-	// additional data as first return parameter.
+	// IsAllowed tells, if the user has the permission for the object this
+	// method is called on.
+	//
+	// If the user has the permission, the returned error is nil.
+	//
+	// If the returned error unwrapps to an NotAllowedError it means, the user
+	// does not have the permission. In other case, a "real" error happend.
+	//
+	// The first return argument are additional data for the client.
 	IsAllowed(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error)
 }
 

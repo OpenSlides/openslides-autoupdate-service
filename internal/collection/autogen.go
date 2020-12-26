@@ -38,7 +38,6 @@ func (a *Autogen) Connect(s perm.HandlerStore) {
 
 func writeChecker(dp dataprovider.DataProvider, collName, permission string) perm.WriteChecker {
 	return perm.WriteCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error) {
-		// Find meetingID
 		var meetingID int
 		if err := json.Unmarshal(payload["meeting_id"], &meetingID); err != nil {
 			var id int
@@ -53,7 +52,7 @@ func writeChecker(dp dataprovider.DataProvider, collName, permission string) per
 			}
 		}
 
-		if err := perm.EnsurePerms(ctx, dp, userID, meetingID, permission); err != nil {
+		if err := perm.EnsurePerm(ctx, dp, userID, meetingID, permission); err != nil {
 			return nil, fmt.Errorf("ensuring permission: %w", err)
 		}
 
