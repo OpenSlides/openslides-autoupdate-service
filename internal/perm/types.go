@@ -84,3 +84,8 @@ func ParseFQField(fqfield string) (FQField, error) {
 func (fqfield FQField) String() string {
 	return fmt.Sprintf("%s/%d/%s", fqfield.Collection, fqfield.ID, fqfield.Field)
 }
+
+// FQID returns the fqid representation of the fqfiedl.
+func (fqfield FQField) FQID() string {
+	return fmt.Sprintf("%s/%d", fqfield.Collection, fqfield.ID)
+}

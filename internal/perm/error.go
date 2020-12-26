@@ -33,7 +33,7 @@ func IsAllowed(err error) (bool, error) {
 	}
 
 	var errNotAllowed NotAllowedError
-	if errors.Is(err, &errNotAllowed) {
+	if errors.As(err, &errNotAllowed) {
 		return false, nil
 	}
 	return false, err

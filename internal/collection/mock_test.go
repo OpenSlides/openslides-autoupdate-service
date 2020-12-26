@@ -24,7 +24,12 @@ func checkRead(t *testing.T, r map[string]bool, allowed ...string) {
 			t.Errorf("fqfield %s not in allowed", a)
 		}
 	}
+
 	if len(allowed) != len(r) {
-		t.Errorf("got %v, expected %v", r, allowed)
+		keys := make([]string, 0, len(r))
+		for k := range r {
+			keys = append(keys, k)
+		}
+		t.Errorf("got %v, expected %v", keys, allowed)
 	}
 }
