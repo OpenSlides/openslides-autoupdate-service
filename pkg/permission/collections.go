@@ -19,6 +19,7 @@ func openSlidesCollections(edp DataProvider) []perm.Connecter {
 		collection.ReadPerm(dp, "agenda.can_see_list_of_speakers", "list_of_speakers"),
 		collection.ReadPerm(dp, "assingment.can_see", "assignment", "assignment_candidate"),
 		collection.ReadInMeeting(dp, "tag", "meeting"),
+		collection.ReadPerm(dp, "agenda.can_see", "topic"),
 		collection.ReadPerm(
 			dp,
 			"meeting.can_see_projector",
@@ -36,6 +37,8 @@ func openSlidesCollections(edp DataProvider) []perm.Connecter {
 			"motion_state",
 			"motion_statute_paragraph",
 		),
+
+		collection.Mediafile(dp),
 
 		collection.NewMotion(dp),
 	}

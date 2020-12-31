@@ -46,7 +46,11 @@ def implemented() -> tuple[set[str], set[str]]:
 
 
 if __name__ == "__main__":
-    implemented_read, impelemented_write = implemented()
+    try:
+        implemented_read, impelemented_write = implemented()
+    except requests.exceptions.ConnectionError:
+        print("Can not connect to the permission service. Run:\n\n\tgo build ./cmd/permission && ./permission\n\n")
+        sys.exit(2)
 
     missing_write = actions() - impelemented_write
     if missing_write:
