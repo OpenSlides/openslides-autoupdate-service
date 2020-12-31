@@ -49,6 +49,14 @@ type Connecter interface {
 	Connect(store HandlerStore)
 }
 
+// ConnecterFunc is a function that implements the Connecter interface.
+type ConnecterFunc func(store HandlerStore)
+
+// Connect calls itself.
+func (f ConnecterFunc) Connect(store HandlerStore) {
+	f(store)
+}
+
 // HandlerStore can hold handlers for Readers and Writers.
 type HandlerStore interface {
 	RegisterReadHandler(name string, reader ReadeChecker)
