@@ -27,6 +27,11 @@ func (m *Motion) Connect(s perm.HandlerStore) {
 	s.RegisterWriteHandler("motion.delete", m.modify("motion.can_manage"))
 	s.RegisterWriteHandler("motion.set_state", m.modify("motion.can_manage_metadata"))
 	s.RegisterWriteHandler("motion.create", m.create())
+
+	s.RegisterReadHandler("motion", perm.ReadeCheckerFunc(m.readMotion))
+	s.RegisterReadHandler("motion_submitter", perm.ReadeCheckerFunc(m.readMotionSubmitter))
+	s.RegisterReadHandler("motion_block", m.readInternalField("motion_block"))
+	s.RegisterReadHandler("motion_change_recommendation", m.readInternalField("motion_change_recommendation"))
 }
 
 func (m *Motion) create() perm.WriteCheckerFunc {
@@ -135,5 +140,158 @@ func (m *Motion) modify(managePerm string) perm.WriteCheckerFunc {
 		}
 
 		return nil, nil
+	}
+}
+
+func (m *Motion) canSeeMotion(ctx context.Context, userID int, motionID int) (bool, error) {
+	motionFQID := fmt.Sprintf("motion/%d", motionID)
+	meetingID, err := m.dp.MeetingFromModel(ctx, motionFQID)
+	if err != nil {
+		return false, fmt.Errorf("getting meetingID from model %s: %w", motionFQID, err)
+	}
+
+	committeeID, err := m.dp.CommitteeID(ctx, meetingID)
+	if err != nil {
+		return false, fmt.Errorf("getting committee id for meeting: %w", err)
+	}
+
+	committeeManager, err := m.dp.IsManager(ctx, userID, committeeID)
+	if err != nil {
+		return false, fmt.Errorf("check for manager: %w", err)
+	}
+	if committeeManager {
+		return true, nil
+	}
+
+	isMeeting, err := m.dp.InMeeting(ctx, userID, meetingID)
+	if err != nil {
+		return false, fmt.Errorf("Looking for user %d in meeting %d: %w", userID, meetingID, err)
+	}
+	if !isMeeting {
+		return false, nil
+	}
+
+	perms, err := perm.Perms(ctx, userID, meetingID, m.dp)
+	if err != nil {
+		return false, fmt.Errorf("getting user permissions: %w", err)
+	}
+
+	if perms.HasOne("motion.can_manage") {
+		return true, nil
+	}
+
+	if !perms.HasOne("motion.can_see") {
+		return false, nil
+	}
+
+	var stateID int
+	if err := m.dp.Get(ctx, motionFQID+"/state_id", &stateID); err != nil {
+		return false, fmt.Errorf("getting field %s/state_id: %w", motionFQID, err)
+	}
+
+	var restriction []string
+	field := fmt.Sprintf("motion_state/%d/restrictions", stateID)
+	if err := m.dp.Get(ctx, field, &restriction); err != nil {
+		return false, fmt.Errorf("getting field %s: %w", field, err)
+	}
+
+	if len(restriction) == 0 {
+		return true, nil
+	}
+
+	for _, r := range restriction {
+		switch r {
+		case "motion.can_see_internal", "motion.can_manage_metadata", "motion.can_manage":
+			if perms.HasOne(r) {
+				return true, nil
+			}
+
+		case "is_submitter":
+			var submitterIDs []int
+			if err := m.dp.Get(ctx, motionFQID+"/submitter_ids", &submitterIDs); err != nil {
+				return false, fmt.Errorf("getting field %s/submitter_ids: %w", motionFQID, err)
+			}
+
+			for _, sid := range submitterIDs {
+				var uid int
+				f := fmt.Sprintf("motion_submitter/%d/user_id", sid)
+				if err := m.dp.Get(ctx, f, &uid); err != nil {
+					return false, fmt.Errorf("getting field %s: %w", f, err)
+				}
+				if uid == userID {
+					return true, nil
+				}
+			}
+		}
+	}
+	return false, nil
+}
+
+func (m *Motion) readMotion(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
+	return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
+		return m.canSeeMotion(ctx, userID, fqfield.ID)
+	})
+}
+
+func (m *Motion) readMotionSubmitter(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
+	return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
+		var motionID int
+		if err := m.dp.Get(ctx, fmt.Sprintf("motion_submitter/%d/motion_id", fqfield.ID), &motionID); err != nil {
+			return false, fmt.Errorf("getting motionID: %w", err)
+		}
+		return m.canSeeMotion(ctx, userID, motionID)
+	})
+}
+
+func (m *Motion) readInternalField(collection string) perm.ReadeCheckerFunc {
+	return func(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
+		return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
+			fqid := fmt.Sprintf("%s/%d", collection, fqfield.ID)
+			meetingID, err := m.dp.MeetingFromModel(ctx, fqid)
+			if err != nil {
+				return false, fmt.Errorf("getting meetingID from model %s: %w", fqid, err)
+			}
+
+			committeeID, err := m.dp.CommitteeID(ctx, meetingID)
+			if err != nil {
+				return false, fmt.Errorf("getting committee id for meeting: %w", err)
+			}
+
+			committeeManager, err := m.dp.IsManager(ctx, userID, committeeID)
+			if err != nil {
+				return false, fmt.Errorf("check for manager: %w", err)
+			}
+			if committeeManager {
+				return true, nil
+			}
+
+			isMeeting, err := m.dp.InMeeting(ctx, userID, meetingID)
+			if err != nil {
+				return false, fmt.Errorf("Looking for user %d in meeting %d: %w", userID, meetingID, err)
+			}
+			if !isMeeting {
+				return false, nil
+			}
+
+			perms, err := perm.Perms(ctx, userID, meetingID, m.dp)
+			if err != nil {
+				return false, fmt.Errorf("getting user permissions: %w", err)
+			}
+
+			if perms.HasOne("motion.can_manage") {
+				return true, nil
+			}
+
+			if !perms.HasOne("motion.can_see") {
+				return false, nil
+			}
+
+			var internal bool
+			if err := m.dp.Get(ctx, fqid+"/internal", &internal); err != nil {
+				return false, fmt.Errorf("get /internal: %w", err)
+			}
+
+			return !internal, nil
+		})
 	}
 }
