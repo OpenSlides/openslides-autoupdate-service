@@ -11,92 +11,92 @@ import (
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
 )
 
-// Permissions holds the information which permissions and groups a user has.
-type Permissions struct {
-	isSuperadmin bool
-	groupIds     []int
-	permissions  map[string]bool
+// Permission holds the information which permissions and groups a user has.
+type Permission struct {
+	admin       bool
+	groupIDs    []int
+	permissions map[string]bool
 }
 
-// Perms returns a Permissions object for an user in a meeting.
-func Perms(ctx context.Context, userID, meetingID int, dp dataprovider.DataProvider) (*Permissions, error) {
-	// Fetch user group ids for the meeting.
-	userGroupIDs := []int{}
-	userGroupIdsFqfield := "user/" + strconv.Itoa(userID) + "/group_$" + strconv.Itoa(meetingID) + "_ids"
-	if err := dp.GetIfExist(ctx, userGroupIdsFqfield, &userGroupIDs); err != nil {
+// New creates a new Permission object for a user in a specific meeting.
+func New(ctx context.Context, dp dataprovider.DataProvider, userID, meetingID int) (*Permission, error) {
+	// TODO: With this code, a Committe-Manager is superadmin in the meeting.
+	// Discuss if we should do it like this.
+	committeeID, err := dp.CommitteeID(ctx, meetingID)
+	if err != nil {
+		return nil, fmt.Errorf("getting committee id for meeting %d: %w", meetingID, err)
+	}
+
+	committeeManager, err := dp.IsManager(ctx, userID, committeeID)
+	if err != nil {
+		return nil, fmt.Errorf("check for manager in committee %d: %w", committeeID, err)
+	}
+	if committeeManager {
+		return &Permission{admin: true}, nil
+	}
+
+	isMeeting, err := dp.InMeeting(ctx, userID, meetingID)
+	if err != nil {
+		return nil, fmt.Errorf("Looking for user %d in meeting %d: %w", userID, meetingID, err)
+	}
+	if !isMeeting {
+		return new(Permission), nil
+	}
+
+	groupIDs := []int{}
+	if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/group_$%d_ids", userID, meetingID), &groupIDs); err != nil {
 		return nil, fmt.Errorf("get group ids: %w", err)
 	}
 
 	// Get superadmin_group_id.
 	var superadminGroupID int
-	fqfield := "meeting/" + strconv.Itoa(meetingID) + "/superadmin_group_id"
+	fqfield := fmt.Sprintf("meeting/%d/superadmin_group_id", meetingID)
 	if err := dp.Get(ctx, fqfield, &superadminGroupID); err != nil {
 		return nil, fmt.Errorf("check for superadmin group: %w", err)
 	}
 
-	// Direct check: is the user a superadmin?
-	for _, id := range userGroupIDs {
+	for _, id := range groupIDs {
 		if id == superadminGroupID {
-			return &Permissions{isSuperadmin: true, groupIds: userGroupIDs, permissions: map[string]bool{}}, nil
+			return &Permission{admin: true}, nil
 		}
 	}
 
-	// Get default group id.
-	var defaultGroupID int
-	fqfield = "meeting/" + strconv.Itoa(meetingID) + "/default_group_id"
-	if err := dp.Get(ctx, fqfield, &defaultGroupID); err != nil {
-		return nil, fmt.Errorf("getting default group: %w", err)
+	// effectiveGroupIDs are all ids the user is in. If the user is in no group,
+	// it is the id of the default group.
+	effectiveGroupIDs := groupIDs
+	if len(effectiveGroupIDs) == 0 {
+		var defaultGroupID int
+		fqfield := fmt.Sprintf("meeting/%d/default_group_id", meetingID)
+		if err := dp.Get(ctx, fqfield, &defaultGroupID); err != nil {
+			return nil, fmt.Errorf("getting default group: %w", err)
+		}
+		effectiveGroupIDs = []int{defaultGroupID}
 	}
 
-	// Get group ids.
-	var groupIDs []int
-	fqfield = "meeting/" + strconv.Itoa(meetingID) + "/group_ids"
-	if err := dp.Get(ctx, fqfield, &groupIDs); err != nil {
-		return nil, fmt.Errorf("getting group ids: %w", err)
-	}
-
-	// Fetch group permissions: A map from group id <-> permission array.
-	groupPermissions := make(map[int][]string)
-	for _, id := range groupIDs {
-		fqfield := "group/" + strconv.Itoa(id) + "/permissions"
-		singleGroupPermissions := []string{}
-		if err := dp.GetIfExist(ctx, fqfield, &singleGroupPermissions); err != nil {
+	permissions := make(map[string]bool)
+	for _, gid := range effectiveGroupIDs {
+		fqfield := fmt.Sprintf("group/%d/permissions", gid)
+		var perms []string
+		if err := dp.Get(ctx, fqfield, &perms); err != nil {
 			return nil, fmt.Errorf("getting %s: %w", fqfield, err)
 		}
-		groupPermissions[id] = singleGroupPermissions
-	}
-
-	// Collect perms for the user.
-	effectiveGroupIds := userGroupIDs
-	if len(effectiveGroupIds) == 0 {
-		effectiveGroupIds = []int{defaultGroupID}
-	}
-
-	permissions := make(map[string]bool, len(effectiveGroupIds))
-	for _, id := range effectiveGroupIds {
-		for _, perm := range groupPermissions[id] {
+		for _, perm := range perms {
 			permissions[perm] = true
 			for _, p := range derivatePerms[perm] {
 				permissions[p] = true
 			}
 		}
 	}
-
-	return &Permissions{isSuperadmin: false, groupIds: userGroupIDs, permissions: permissions}, nil
+	return &Permission{groupIDs: groupIDs, permissions: permissions}, nil
 }
 
-// HasOne returns true, if the permission object contains at least one of the given permissions.
-func (p *Permissions) HasOne(perms ...string) bool {
-	if p.isSuperadmin {
+// Has returns true, if the permission object contains the given permissions.
+func (p *Permission) Has(perm string) bool {
+	if p.admin {
 		return true
 	}
 
-	for _, perm := range perms {
-		if p.permissions[perm] {
-			return true
-		}
-	}
-	return false
+	return p.permissions[perm]
 }
 
 // Create checks for the mermission to create a new object.
@@ -187,33 +187,12 @@ func Restrict(dp dataprovider.DataProvider, perm, collection string) ReadeChecke
 // that the user does not have the permission. Other errors means, that a reald
 // error happend.
 func EnsurePerm(ctx context.Context, dp dataprovider.DataProvider, userID int, meetingID int, permission string) error {
-	committeeID, err := dp.CommitteeID(ctx, meetingID)
+	perm, err := New(ctx, dp, userID, meetingID)
 	if err != nil {
-		return fmt.Errorf("getting committee id for meeting: %w", err)
+		return fmt.Errorf("collecting perms: %w", err)
 	}
 
-	committeeManager, err := dp.IsManager(ctx, userID, committeeID)
-	if err != nil {
-		return fmt.Errorf("check for manager: %w", err)
-	}
-	if committeeManager {
-		return nil
-	}
-
-	isMeeting, err := dp.InMeeting(ctx, userID, meetingID)
-	if err != nil {
-		return fmt.Errorf("Looking for user %d in meeting %d: %w", userID, meetingID, err)
-	}
-	if !isMeeting {
-		return NotAllowedf("User %d is not in meeting %d", userID, meetingID)
-	}
-
-	perms, err := Perms(ctx, userID, meetingID, dp)
-	if err != nil {
-		return fmt.Errorf("getting user permissions: %w", err)
-	}
-
-	hasPerms := perms.HasOne(permission)
+	hasPerms := perm.Has(permission)
 	if !hasPerms {
 		return NotAllowedf("User %d does not have the permission %s int meeting %d", userID, permission, meetingID)
 	}

@@ -55,7 +55,7 @@ func (a *AgendaItem) read(ctx context.Context, userID int, fqfields []perm.FQFie
 					requiredPerm = "agenda.can_manage"
 				}
 				hasPerm = false
-				if g.perm.HasOne(requiredPerm) {
+				if g.perm.Has(requiredPerm) {
 					hasPerm = true
 				}
 			}
@@ -64,11 +64,11 @@ func (a *AgendaItem) read(ctx context.Context, userID int, fqfields []perm.FQFie
 				continue
 			}
 
-			if fqfield.Field == "duration" && !g.perm.HasOne("agenda.can_see_internal_items") {
+			if fqfield.Field == "duration" && !g.perm.Has("agenda.can_see_internal_items") {
 				continue
 			}
 
-			if fqfield.Field == "comment" && !g.perm.HasOne("agenda.can_manage") {
+			if fqfield.Field == "comment" && !g.perm.Has("agenda.can_manage") {
 				continue
 			}
 
@@ -81,7 +81,7 @@ func (a *AgendaItem) read(ctx context.Context, userID int, fqfields []perm.FQFie
 
 type meetingFields struct {
 	meetingID int
-	perm      *perm.Permissions
+	perm      *perm.Permission
 	fqfields  []perm.FQField
 }
 
@@ -97,7 +97,7 @@ func groupByMeeting(ctx context.Context, dp dataprovider.DataProvider, userID in
 				return nil, fmt.Errorf("getting meeting id for %s: %w", fqfield.String(), err)
 			}
 
-			p, err := perm.Perms(ctx, userID, meetingID, dp)
+			p, err := perm.New(ctx, dp, userID, meetingID)
 			if err != nil {
 				return nil, fmt.Errorf("getting perms for meeting %d: %w", meetingID, err)
 			}

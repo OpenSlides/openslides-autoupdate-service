@@ -57,12 +57,12 @@ func (m *Motion) create() perm.WriteCheckerFunc {
 	return func(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error) {
 		meetingID, _ := strconv.Atoi(string(payload["meeting_id"]))
 
-		perms, err := perm.Perms(ctx, userID, meetingID, m.dp)
+		perms, err := perm.New(ctx, m.dp, userID, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("fetching perms: %w", err)
 		}
 
-		if perms.HasOne("motion.can_manage") {
+		if perms.Has("motion.can_manage") {
 			return nil, nil
 		}
 
@@ -73,7 +73,7 @@ func (m *Motion) create() perm.WriteCheckerFunc {
 			aList = allowListAmendment
 		}
 
-		if !perms.HasOne(requiredPerm) {
+		if !perms.Has(requiredPerm) {
 			return nil, perm.NotAllowedf("User %d does not have permission %s", userID, requiredPerm)
 		}
 
@@ -150,37 +150,16 @@ func (m *Motion) canSeeMotion(ctx context.Context, userID int, motionID int) (bo
 		return false, fmt.Errorf("getting meetingID from model %s: %w", motionFQID, err)
 	}
 
-	committeeID, err := m.dp.CommitteeID(ctx, meetingID)
-	if err != nil {
-		return false, fmt.Errorf("getting committee id for meeting: %w", err)
-	}
-
-	committeeManager, err := m.dp.IsManager(ctx, userID, committeeID)
-	if err != nil {
-		return false, fmt.Errorf("check for manager: %w", err)
-	}
-	if committeeManager {
-		return true, nil
-	}
-
-	isMeeting, err := m.dp.InMeeting(ctx, userID, meetingID)
-	if err != nil {
-		return false, fmt.Errorf("Looking for user %d in meeting %d: %w", userID, meetingID, err)
-	}
-	if !isMeeting {
-		return false, nil
-	}
-
-	perms, err := perm.Perms(ctx, userID, meetingID, m.dp)
+	perms, err := perm.New(ctx, m.dp, userID, meetingID)
 	if err != nil {
 		return false, fmt.Errorf("getting user permissions: %w", err)
 	}
 
-	if perms.HasOne("motion.can_manage") {
+	if perms.Has("motion.can_manage") {
 		return true, nil
 	}
 
-	if !perms.HasOne("motion.can_see") {
+	if !perms.Has("motion.can_see") {
 		return false, nil
 	}
 
@@ -202,7 +181,7 @@ func (m *Motion) canSeeMotion(ctx context.Context, userID int, motionID int) (bo
 	for _, r := range restriction {
 		switch r {
 		case "motion.can_see_internal", "motion.can_manage_metadata", "motion.can_manage":
-			if perms.HasOne(r) {
+			if perms.Has(r) {
 				return true, nil
 			}
 
@@ -252,37 +231,16 @@ func (m *Motion) readInternalField(collection string) perm.ReadeCheckerFunc {
 				return false, fmt.Errorf("getting meetingID from model %s: %w", fqid, err)
 			}
 
-			committeeID, err := m.dp.CommitteeID(ctx, meetingID)
-			if err != nil {
-				return false, fmt.Errorf("getting committee id for meeting: %w", err)
-			}
-
-			committeeManager, err := m.dp.IsManager(ctx, userID, committeeID)
-			if err != nil {
-				return false, fmt.Errorf("check for manager: %w", err)
-			}
-			if committeeManager {
-				return true, nil
-			}
-
-			isMeeting, err := m.dp.InMeeting(ctx, userID, meetingID)
-			if err != nil {
-				return false, fmt.Errorf("Looking for user %d in meeting %d: %w", userID, meetingID, err)
-			}
-			if !isMeeting {
-				return false, nil
-			}
-
-			perms, err := perm.Perms(ctx, userID, meetingID, m.dp)
+			perms, err := perm.New(ctx, m.dp, userID, meetingID)
 			if err != nil {
 				return false, fmt.Errorf("getting user permissions: %w", err)
 			}
 
-			if perms.HasOne("motion.can_manage") {
+			if perms.Has("motion.can_manage") {
 				return true, nil
 			}
 
-			if !perms.HasOne("motion.can_see") {
+			if !perms.Has("motion.can_see") {
 				return false, nil
 			}
 

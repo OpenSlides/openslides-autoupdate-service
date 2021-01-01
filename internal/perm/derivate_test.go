@@ -16,12 +16,12 @@ func TestDerivatePerm(t *testing.T) {
 	tdp.AddUserToGroup(1, 1, 2)
 	dp := dataprovider.DataProvider{External: tdp}
 
-	p, err := perm.Perms(context.Background(), 1, 1, dp)
+	p, err := perm.New(context.Background(), dp, 1, 1)
 
 	if err != nil {
 		t.Fatalf("Got unexpected error: %v", err)
 	}
-	if !p.HasOne("motion.can_see") {
+	if !p.Has("motion.can_see") {
 		t.Errorf("User does not have can_see permission")
 	}
 }

@@ -23,39 +23,15 @@ func Mediafile(dp dataprovider.DataProvider) perm.ConnecterFunc {
 				return false, fmt.Errorf("getting meetingID from model %s: %w", fqid, err)
 			}
 
-			// TODO: The following code is the same as EnsurePerm but keeps the perms object.
-			//////////////////////////////////////////////////
-			committeeID, err := dp.CommitteeID(ctx, meetingID)
-			if err != nil {
-				return false, fmt.Errorf("getting committee id for meeting: %w", err)
-			}
-
-			committeeManager, err := dp.IsManager(ctx, userID, committeeID)
-			if err != nil {
-				return false, fmt.Errorf("check for manager: %w", err)
-			}
-			if committeeManager {
-				return true, nil
-			}
-
-			isMeeting, err := dp.InMeeting(ctx, userID, meetingID)
-			if err != nil {
-				return false, fmt.Errorf("Looking for user %d in meeting %d: %w", userID, meetingID, err)
-			}
-			if !isMeeting {
-				return false, nil
-			}
-
-			perms, err := perm.Perms(ctx, userID, meetingID, dp)
+			perms, err := perm.New(ctx, dp, userID, meetingID)
 			if err != nil {
 				return false, fmt.Errorf("getting user permissions: %w", err)
 			}
 
-			hasPerms := perms.HasOne("mediafile.can_manage")
+			hasPerms := perms.Has("mediafile.can_manage")
 			if hasPerms {
 				return true, nil
 			}
-			//////////////////////////////////////////////////
 
 			var isPublic bool
 			field := fqid + "/is_public"
@@ -67,7 +43,7 @@ func Mediafile(dp dataprovider.DataProvider) perm.ConnecterFunc {
 				return false, nil
 			}
 
-			return perms.HasOne("mediafile.can_see"), nil
+			return perms.Has("mediafile.can_see"), nil
 		})
 	}
 
