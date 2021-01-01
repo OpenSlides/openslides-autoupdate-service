@@ -52,7 +52,12 @@ if __name__ == "__main__":
         print("Can not connect to the permission service. Run:\n\n\tgo build ./cmd/permission && ./permission\n\n")
         sys.exit(2)
 
-    missing_write = actions() - impelemented_write
+    try:
+        missing_write = actions() - impelemented_write
+    except requests.exceptions.ConnectionError:
+        print("Can not connect to the backend. Go to the backend repo and Run:\n\n\tmake run-prod\n\n")
+        sys.exit(2)
+
     if missing_write:
         print("Missing write:")
         for mw in sorted(missing_write):
