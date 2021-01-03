@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
 	"github.com/OpenSlides/openslides-permission-service/internal/perm"
 )
 
@@ -16,6 +17,8 @@ type Permission struct {
 	connecters   []perm.Connecter
 	writeHandler map[string]perm.WriteChecker
 	readHandler  map[string]perm.ReadeChecker
+
+	dp dataprovider.DataProvider
 }
 
 // New returns a new permission service.
@@ -23,6 +26,7 @@ func New(dp DataProvider, os ...Option) *Permission {
 	p := &Permission{
 		writeHandler: make(map[string]perm.WriteChecker),
 		readHandler:  make(map[string]perm.ReadeChecker),
+		dp:           dataprovider.DataProvider{External: dp},
 	}
 
 	for _, o := range os {
@@ -30,7 +34,7 @@ func New(dp DataProvider, os ...Option) *Permission {
 	}
 
 	if p.connecters == nil {
-		p.connecters = openSlidesCollections(dp)
+		p.connecters = openSlidesCollections(p.dp)
 	}
 
 	for _, con := range p.connecters {
@@ -42,12 +46,17 @@ func New(dp DataProvider, os ...Option) *Permission {
 
 // IsAllowed tells, if something is allowed.
 func (ps *Permission) IsAllowed(ctx context.Context, name string, userID int, dataList []map[string]json.RawMessage) ([]map[string]interface{}, error) {
+	superUser, err := ps.dp.IsSuperuser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("checking for superuser: %w", err)
+	}
+	if superUser {
+		return nil, nil
+	}
+
+	// TODO: after all handlers are implemented. Move this code above the superUser check.
 	handler, ok := ps.writeHandler[name]
 	if !ok {
-		if developmentMode := true; developmentMode {
-			return nil, nil
-		}
-
 		return nil, clientError{fmt.Sprintf("unknown collection: `%s`", name)}
 	}
 
@@ -70,12 +79,23 @@ func (ps *Permission) IsAllowed(ctx context.Context, name string, userID int, da
 
 // RestrictFQFields tells, if the given user can see the fqfields.
 func (ps Permission) RestrictFQFields(ctx context.Context, userID int, fqfields []string) (map[string]bool, error) {
+	data := make(map[string]bool, len(fqfields))
+
+	superUser, err := ps.dp.IsSuperuser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("checking for superuser: %w", err)
+	}
+	if superUser {
+		for _, k := range fqfields {
+			data[k] = true
+		}
+		return data, nil
+	}
+
 	grouped, err := groupFQFields(fqfields)
 	if err != nil {
 		return nil, fmt.Errorf("grouping fqfields: %w", err)
 	}
-
-	data := make(map[string]bool, len(fqfields))
 
 	for name, fqfields := range grouped {
 		handler, ok := ps.readHandler[name]
@@ -84,7 +104,7 @@ func (ps Permission) RestrictFQFields(ctx context.Context, userID int, fqfields 
 				for _, k := range fqfields {
 					data[k.String()] = true
 				}
-				return nil, nil
+				return data, nil
 			}
 			return nil, clientError{fmt.Sprintf("unknown collection: `%s`", name)}
 		}

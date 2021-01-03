@@ -100,19 +100,23 @@ func (p *Permission) Has(perm string) bool {
 }
 
 // Create checks for the mermission to create a new object.
-func Create(dp dataprovider.DataProvider, perm, collection string) WriteChecker {
+func Create(dp dataprovider.DataProvider, managePerm, collection string) WriteChecker {
 	return WriteCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error) {
 		var meetingID int
 		if err := json.Unmarshal(payload["meeting_id"], &meetingID); err != nil {
 			return nil, fmt.Errorf("no valid meeting id: %w", err)
 		}
 
-		return check(ctx, dp, perm, meetingID, userID, payload)
+		if err := EnsurePerm(ctx, dp, userID, meetingID, managePerm); err != nil {
+			return nil, fmt.Errorf("ensure manage permission: %w", err)
+		}
+
+		return nil, nil
 	})
 }
 
 // Modify checks for the permissions to alter an existing object.
-func Modify(dp dataprovider.DataProvider, perm, collection string) WriteChecker {
+func Modify(dp dataprovider.DataProvider, managePerm, collection string) WriteChecker {
 	return WriteCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error) {
 		id, err := modelID(payload)
 		if err != nil {
@@ -125,23 +129,12 @@ func Modify(dp dataprovider.DataProvider, perm, collection string) WriteChecker 
 			return nil, fmt.Errorf("getting meeting id for model %s: %w", fqid, err)
 		}
 
-		return check(ctx, dp, perm, meetingID, userID, payload)
-	})
-}
+		if err := EnsurePerm(ctx, dp, userID, meetingID, managePerm); err != nil {
+			return nil, fmt.Errorf("ensure manage permission: %w", err)
+		}
 
-func check(ctx context.Context, dp dataprovider.DataProvider, managePerm string, meetingID int, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error) {
-	superUser, err := dp.IsSuperuser(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-	if superUser {
 		return nil, nil
-	}
-
-	if err := EnsurePerm(ctx, dp, userID, meetingID, managePerm); err != nil {
-		return nil, fmt.Errorf("ensure manage permission: %w", err)
-	}
-	return nil, nil
+	})
 }
 
 func modelID(data map[string]json.RawMessage) (int, error) {

@@ -6,9 +6,7 @@ import (
 	"github.com/OpenSlides/openslides-permission-service/internal/perm"
 )
 
-func openSlidesCollections(edp DataProvider) []perm.Connecter {
-	dp := dataprovider.DataProvider{External: edp}
-
+func openSlidesCollections(dp dataprovider.DataProvider) []perm.Connecter {
 	return []perm.Connecter{
 		collection.NewAutogen(dp),
 

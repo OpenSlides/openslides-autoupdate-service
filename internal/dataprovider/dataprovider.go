@@ -66,24 +66,6 @@ func (dp *DataProvider) Exists(ctx context.Context, fqfield string) (bool, error
 	return fields[0] != nil, nil
 }
 
-// IsSuperuser returns true, if the user is a superuser. If the user does not
-// exist at all, an error is returned.
-func (dp *DataProvider) IsSuperuser(ctx context.Context, userID int) (bool, error) {
-	exists, err := dp.DoesUserExists(ctx, userID)
-	if err != nil {
-		return false, fmt.Errorf("check if user exist: %w", err)
-	}
-	if !exists {
-		return false, DoesNotExistError(fmt.Sprintf("user with id %d does not exist", userID))
-	}
-
-	superadmin, err := dp.HasUserSuperadminRole(ctx, userID)
-	if err != nil {
-		return false, fmt.Errorf("check for super user role: %w", err)
-	}
-	return superadmin, nil
-}
-
 // DoesUserExists returns true, if an user exist. Returns allways true for
 // userID 0.
 func (dp *DataProvider) DoesUserExists(ctx context.Context, userID int) (bool, error) {
@@ -107,8 +89,8 @@ func (dp *DataProvider) DoesModelExists(ctx context.Context, fqid string) (bool,
 	return exists, nil
 }
 
-// HasUserSuperadminRole returns true, if the user is in the superuser group.
-func (dp *DataProvider) HasUserSuperadminRole(ctx context.Context, userID int) (bool, error) {
+// IsSuperuser returns true, if the user is in the superuser group.
+func (dp *DataProvider) IsSuperuser(ctx context.Context, userID int) (bool, error) {
 	// The anonymous is never a superadmin.
 	if userID == 0 {
 		return false, nil
@@ -121,14 +103,9 @@ func (dp *DataProvider) HasUserSuperadminRole(ctx context.Context, userID int) (
 	}
 
 	// Get users role id.
-	fqfield := "user/" + strconv.Itoa(userID) + "/role_id"
-	if exists, err := dp.Exists(ctx, fqfield); !exists || err != nil {
-		// The user has no role.
-		return false, err
-	}
-
+	fqfield := fmt.Sprintf("user/%d/role_id", userID)
 	var userRoleID int
-	if err := dp.Get(ctx, fqfield, &userRoleID); err != nil {
+	if err := dp.GetIfExist(ctx, fqfield, &userRoleID); err != nil {
 		return false, fmt.Errorf("getting role_id: %w", err)
 	}
 
