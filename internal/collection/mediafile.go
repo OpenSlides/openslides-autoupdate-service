@@ -48,6 +48,6 @@ func Mediafile(dp dataprovider.DataProvider) perm.ConnecterFunc {
 	}
 
 	return func(s perm.HandlerStore) {
-		s.RegisterReadHandler("mediafile", perm.ReadeCheckerFunc(read))
+		s.RegisterReadHandler("mediafile", perm.ReadCheckerFunc(read))
 	}
 }

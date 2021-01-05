@@ -24,10 +24,13 @@ meeting:
 motion:
     can_manage:
         can_manage_metadata:
-            can_support:
-                can_see:
-        can_see_internal:
-            can_see:
+            can_see_internal:
+                can_support:
+                    can_see:
+        can_manage_polls:
+            can_see_internal:
+                can_support:
+                    can_see:
         can_create:
             can_see:
         can_create_amendments:

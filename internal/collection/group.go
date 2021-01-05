@@ -22,7 +22,7 @@ func NewGroup(dp dataprovider.DataProvider) *Group {
 
 // Connect creates the routes.
 func (g *Group) Connect(s perm.HandlerStore) {
-	s.RegisterReadHandler("group", perm.ReadeCheckerFunc(g.read))
+	s.RegisterReadHandler("group", perm.ReadCheckerFunc(g.read))
 }
 
 func (g *Group) read(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {

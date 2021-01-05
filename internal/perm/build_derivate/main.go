@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"sort"
 	"text/template"
 
 	"gopkg.in/yaml.v3"
@@ -41,6 +42,10 @@ func (p permFile) derivate() map[string][]string {
 
 	for k, v := range map[string]permission(p) {
 		v.derivate(out, k)
+	}
+
+	for k := range out {
+		sort.Strings(out[k])
 	}
 	return out
 }

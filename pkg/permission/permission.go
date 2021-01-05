@@ -16,7 +16,7 @@ import (
 type Permission struct {
 	connecters   []perm.Connecter
 	writeHandler map[string]perm.WriteChecker
-	readHandler  map[string]perm.ReadeChecker
+	readHandler  map[string]perm.ReadChecker
 
 	dp dataprovider.DataProvider
 }
@@ -25,7 +25,7 @@ type Permission struct {
 func New(dp DataProvider, os ...Option) *Permission {
 	p := &Permission{
 		writeHandler: make(map[string]perm.WriteChecker),
-		readHandler:  make(map[string]perm.ReadeChecker),
+		readHandler:  make(map[string]perm.ReadChecker),
 		dp:           dataprovider.DataProvider{External: dp},
 	}
 
@@ -122,7 +122,7 @@ func (ps *Permission) AdditionalUpdate(ctx context.Context, updated map[string]j
 }
 
 // RegisterReadHandler registers a reader.
-func (ps *Permission) RegisterReadHandler(name string, reader perm.ReadeChecker) {
+func (ps *Permission) RegisterReadHandler(name string, reader perm.ReadChecker) {
 	if _, ok := ps.readHandler[name]; ok {
 		panic(fmt.Sprintf("Read handler with name `%s` allready exists", name))
 	}

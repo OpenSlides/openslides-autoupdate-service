@@ -30,16 +30,16 @@ func (f WriteCheckerFunc) IsAllowed(ctx context.Context, userID int, payload map
 	return f(ctx, userID, payload)
 }
 
-// ReadeChecker is an object with a method to restrict fqfields.
-type ReadeChecker interface {
+// ReadChecker is an object with a method to restrict fqfields.
+type ReadChecker interface {
 	RestrictFQFields(ctx context.Context, userID int, fqfields []FQField, result map[string]bool) error
 }
 
-// ReadeCheckerFunc is a function with the IsAllowed signature.
-type ReadeCheckerFunc func(ctx context.Context, userID int, fqfields []FQField, result map[string]bool) error
+// ReadCheckerFunc is a function with the IsAllowed signature.
+type ReadCheckerFunc func(ctx context.Context, userID int, fqfields []FQField, result map[string]bool) error
 
 // RestrictFQFields calls the function.
-func (f ReadeCheckerFunc) RestrictFQFields(ctx context.Context, userID int, fqfields []FQField, result map[string]bool) error {
+func (f ReadCheckerFunc) RestrictFQFields(ctx context.Context, userID int, fqfields []FQField, result map[string]bool) error {
 	return f(ctx, userID, fqfields, result)
 }
 
@@ -59,7 +59,7 @@ func (f ConnecterFunc) Connect(store HandlerStore) {
 
 // HandlerStore can hold handlers for Readers and Writers.
 type HandlerStore interface {
-	RegisterReadHandler(name string, reader ReadeChecker)
+	RegisterReadHandler(name string, reader ReadChecker)
 	RegisterWriteHandler(name string, writer WriteChecker)
 }
 

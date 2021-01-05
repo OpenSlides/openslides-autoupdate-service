@@ -25,7 +25,7 @@ func NewSpeaker(dp dataprovider.DataProvider) *Speaker {
 // Connect connects the list_of_speakers routes.
 func (sp *Speaker) Connect(s perm.HandlerStore) {
 	s.RegisterWriteHandler("speaker.delete", perm.WriteCheckerFunc(sp.delete))
-	s.RegisterReadHandler("speaker", perm.ReadeCheckerFunc(sp.read))
+	s.RegisterReadHandler("speaker", perm.ReadCheckerFunc(sp.read))
 
 }
 

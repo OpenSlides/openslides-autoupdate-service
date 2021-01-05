@@ -15,7 +15,7 @@ import (
 func ReadPerm(dp dataprovider.DataProvider, permission string, collections ...string) perm.ConnecterFunc {
 	return func(s perm.HandlerStore) {
 		for _, coll := range collections {
-			s.RegisterReadHandler(coll, perm.ReadeCheckerFunc(func(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
+			s.RegisterReadHandler(coll, perm.ReadCheckerFunc(func(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 				return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
 					fqid := fmt.Sprintf("%s/%d", coll, fqfield.ID)
 					meetingID, err := dp.MeetingFromModel(ctx, fqid)
@@ -39,7 +39,7 @@ func ReadPerm(dp dataprovider.DataProvider, permission string, collections ...st
 func ReadInMeeting(dp dataprovider.DataProvider, collections ...string) perm.ConnecterFunc {
 	return func(s perm.HandlerStore) {
 		for _, coll := range collections {
-			s.RegisterReadHandler(coll, perm.ReadeCheckerFunc(func(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
+			s.RegisterReadHandler(coll, perm.ReadCheckerFunc(func(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 				return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
 					fqid := fmt.Sprintf("%s/%d", coll, fqfield.ID)
 					meetingID, err := dp.MeetingFromModel(ctx, fqid)

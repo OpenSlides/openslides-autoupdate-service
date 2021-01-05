@@ -19,6 +19,7 @@ func openSlidesCollections(dp dataprovider.DataProvider) []perm.Connecter {
 		collection.Mediafile(dp),
 
 		collection.NewMotion(dp),
+		collection.Poll(dp),
 
 		collection.NewPersonalNote(dp),
 		collection.NewGroup(dp),

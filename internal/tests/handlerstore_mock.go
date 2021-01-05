@@ -5,13 +5,13 @@ import "github.com/OpenSlides/openslides-permission-service/internal/perm"
 // HandlerStoreMock implements the collection.HandlerStore interface.
 type HandlerStoreMock struct {
 	WriteHandler map[string]perm.WriteChecker
-	ReadHandler  map[string]perm.ReadeChecker
+	ReadHandler  map[string]perm.ReadChecker
 }
 
 // RegisterReadHandler registers a read handler.
-func (m *HandlerStoreMock) RegisterReadHandler(name string, reader perm.ReadeChecker) {
+func (m *HandlerStoreMock) RegisterReadHandler(name string, reader perm.ReadChecker) {
 	if m.ReadHandler == nil {
-		m.ReadHandler = make(map[string]perm.ReadeChecker)
+		m.ReadHandler = make(map[string]perm.ReadChecker)
 	}
 	m.ReadHandler[name] = reader
 }
