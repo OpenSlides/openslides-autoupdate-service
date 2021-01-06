@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	models "github.com/OpenSlides/openslides-models-to-go"
 	"github.com/gomodule/redigo/redis"
 )
 
@@ -55,7 +56,7 @@ func updater(r io.Reader) {
 		args := []interface{}{redisKey, "*"}
 		for key, value := range data {
 			args = append(args, key, string(value))
-			exampleData[key] = value
+			models.ExampleData[key] = value
 		}
 
 		if _, err := conn.Do("XADD", args...); err != nil {
@@ -79,7 +80,7 @@ func exampleHandler(w http.ResponseWriter, r *http.Request) {
 
 	responceData := make(map[string]map[string]map[string]json.RawMessage)
 	for _, key := range data.Keys {
-		value, ok := exampleData[key]
+		value, ok := models.ExampleData[key]
 
 		if !ok {
 			continue
