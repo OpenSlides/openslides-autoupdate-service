@@ -93,7 +93,7 @@ func run() error {
 		return fmt.Errorf("creating datastore adapter: %w", err)
 	}
 
-	// Perm Service.
+	// Permission Service.
 	perms := permission.New(datastoreService)
 
 	// Restricter Service.
