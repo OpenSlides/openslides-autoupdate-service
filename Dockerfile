@@ -36,7 +36,7 @@ CMD CompileDaemon -log-prefix=false -build="go build ./cmd/autoupdate" -command=
 
 
 # Productive build
-FROM alpine:3.12.2
+FROM alpine:3.12.3
 WORKDIR /root/
 
 COPY --from=builder /root/autoupdate .
