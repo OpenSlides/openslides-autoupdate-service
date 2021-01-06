@@ -219,7 +219,7 @@ func (a *Auth) refreshToken(ctx context.Context, token, cookie string) (string, 
 	}
 
 	req.Header.Add(authHeader, "bearer "+token)
-	req.AddCookie(&http.Cookie{Name: cookieName, Value: cookie})
+	req.AddCookie(&http.Cookie{Name: cookieName, Value: "bearer " + cookie})
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
