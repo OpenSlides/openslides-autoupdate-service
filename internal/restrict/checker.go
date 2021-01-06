@@ -143,3 +143,14 @@ func (s *templateField) Check(ctx context.Context, uid int, key string, value js
 
 	return v, nil
 }
+
+// KeyRemover is a restrict.CheckerFunc that removes the given key from all
+// output.
+//
+// Is is used for keys, that not even the superadmin is allowed to see.
+// user/password is one example.
+func KeyRemover() CheckerFunc {
+	return func(ctx context.Context, uid int, key string, value json.RawMessage) (json.RawMessage, error) {
+		return nil, nil
+	}
+}

@@ -97,7 +97,9 @@ func run() error {
 	perms := permission.New(datastoreService)
 
 	// Restricter Service.
-	restricter := restrict.New(perms, restrict.RelationChecker(restrict.RelationLists, perms))
+	checker := restrict.RelationChecker(restrict.RelationLists, perms)
+	checker["user/password"] = restrict.KeyRemover()
+	restricter := restrict.New(perms, checker)
 
 	// Autoupdate Service.
 	service := autoupdate.New(datastoreService, restricter, perms, closed)
