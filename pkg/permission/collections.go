@@ -12,7 +12,6 @@ func openSlidesCollections(dp dataprovider.DataProvider) []perm.Connecter {
 
 		collection.NewAgendaItem(dp),
 		collection.ListOfSpeaker(dp),
-		collection.NewSpeaker(dp),
 
 		collection.Assignment(dp),
 
@@ -24,7 +23,6 @@ func openSlidesCollections(dp dataprovider.DataProvider) []perm.Connecter {
 		collection.NewPersonalNote(dp),
 		collection.NewGroup(dp),
 
-		collection.ReadPerm(dp, "agenda.can_see_list_of_speakers", "list_of_speakers"),
 		collection.ReadPerm(dp, "assingment.can_see", "assignment", "assignment_candidate"),
 		collection.ReadInMeeting(dp, "tag", "meeting"),
 		collection.ReadPerm(dp, "agenda.can_see", "topic"),
