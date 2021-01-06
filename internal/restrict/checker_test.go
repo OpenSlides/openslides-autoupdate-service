@@ -42,8 +42,8 @@ func TestRelationChecker(t *testing.T) {
 
 	t.Run("relation list", func(t *testing.T) {
 		permer.Data = map[string]bool{
-			"otherModel/1": true,
-			"otherModel/2": false,
+			"otherModel/1/id": true,
+			"otherModel/2/id": false,
 		}
 
 		v, err := checker["model/relation_ids"].Check(context.Background(), 1, "model/1/relation_ids", []byte("[1,2]"))
@@ -59,8 +59,8 @@ func TestRelationChecker(t *testing.T) {
 
 	t.Run("generic relation list", func(t *testing.T) {
 		permer.Data = map[string]bool{
-			"foo/1":       true,
-			"other_foo/2": false,
+			"foo/1/id":       true,
+			"other_foo/2/id": false,
 		}
 
 		v, err := checker["model/generic_relation_ids"].Check(context.Background(), 1, "model/1/generic_relation_ids", []byte(`["foo/1","other_foo/2"]`))
@@ -93,8 +93,8 @@ func TestRelationChecker(t *testing.T) {
 
 	t.Run("template containing relation field", func(t *testing.T) {
 		permer.Data = map[string]bool{
-			"otherModel/1": true,
-			"otherModel/2": false,
+			"otherModel/1/id": true,
+			"otherModel/2/id": false,
 		}
 
 		v, err := checker["model/template_"].Check(context.Background(), 1, "model/1/template_$1_ids", []byte(`[1,2]`))
@@ -110,8 +110,8 @@ func TestRelationChecker(t *testing.T) {
 
 	t.Run("template containing generic relation field", func(t *testing.T) {
 		permer.Data = map[string]bool{
-			"foo/1":       true,
-			"other_foo/2": false,
+			"foo/1/id":       true,
+			"other_foo/2/id": false,
 		}
 
 		v, err := checker["model/generic_template_"].Check(context.Background(), 1, "model/1/generic_template_$1_ids", []byte(`["foo/1","other_foo/2"]`))

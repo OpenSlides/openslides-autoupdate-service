@@ -95,7 +95,7 @@ func (g *genericRelationList) Check(ctx context.Context, uid int, key string, va
 	allowedFQIDs := make([]string, 0, len(fqids))
 	for fqid, a := range allowed {
 		if a {
-			allowedFQIDs = append(allowedFQIDs, fqid)
+			allowedFQIDs = append(allowedFQIDs, fqid[:len(fqid)-3]) // fqfield - /id
 		}
 	}
 
