@@ -49,11 +49,11 @@ func (r *relationList) Check(ctx context.Context, uid int, key string, value jso
 	keys := make([]string, len(ids))
 	keyToID := make(map[string]int)
 	for i, id := range ids {
-		keys[i] = fmt.Sprintf("%s/%d", r.model, id)
+		keys[i] = fmt.Sprintf("%s/%d/id", r.model, id)
 		keyToID[keys[i]] = id
 	}
 
-	allowed, err := r.permer.RestrictFQIDs(ctx, uid, keys)
+	allowed, err := r.permer.RestrictFQFields(ctx, uid, keys)
 	if err != nil {
 		return nil, fmt.Errorf("check fqids: %w", err)
 	}
@@ -84,10 +84,10 @@ func (g *genericRelationList) Check(ctx context.Context, uid int, key string, va
 
 	keys := make([]string, len(fqids))
 	for i, fqid := range fqids {
-		keys[i] = fqid
+		keys[i] = fqid + "/id"
 	}
 
-	allowed, err := g.permer.RestrictFQIDs(ctx, uid, keys)
+	allowed, err := g.permer.RestrictFQFields(ctx, uid, keys)
 	if err != nil {
 		return nil, fmt.Errorf("check fqids: %w", err)
 	}
