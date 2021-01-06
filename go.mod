@@ -3,7 +3,7 @@ module github.com/openslides/openslides-autoupdate-service
 go 1.15
 
 require (
-	github.com/OpenSlides/openslides-models-to-go v0.2.0
+	github.com/OpenSlides/openslides-models-to-go v0.3.0
 	github.com/OpenSlides/openslides-permission-service v0.0.0-20210106080854-c5a7c48d3328
 	github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 	github.com/gomodule/redigo v1.8.3
