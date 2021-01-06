@@ -1,5 +1,5 @@
-github.com/OpenSlides/openslides-models-to-go v0.1.1-0.20201023163752-f3a92dde2a27 h1:hKpGuicCgWOrbDHU6+1vsPJgzbzX1Y1el5XaeIUZMFY=
-github.com/OpenSlides/openslides-models-to-go v0.1.1-0.20201023163752-f3a92dde2a27/go.mod h1:CriCefW5smTixhFfVLiuA8NgyMX4PAU5e3YpJHnaZx8=
+github.com/OpenSlides/openslides-models-to-go v0.2.0 h1:1D+rD94GcUZAvmHLRyzJCIj7wklU+JBkoYifwtHH08s=
+github.com/OpenSlides/openslides-models-to-go v0.2.0/go.mod h1:CriCefW5smTixhFfVLiuA8NgyMX4PAU5e3YpJHnaZx8=
 github.com/OpenSlides/openslides-permission-service v0.0.0-20210106080854-c5a7c48d3328 h1:wUL+sF+5Lolz6Y87s87x3wf0ptXzhVT8r4DpiGIixUk=
 github.com/OpenSlides/openslides-permission-service v0.0.0-20210106080854-c5a7c48d3328/go.mod h1:0zxxIWgc4QDKZv8RXnjaQjITXCe14iXVMDVIu/8EXoM=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=

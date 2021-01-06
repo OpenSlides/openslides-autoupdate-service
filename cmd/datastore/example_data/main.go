@@ -9,13 +9,13 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"text/template"
 )
 
 const (
 	exampleDataURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/example-data.json"
 	outFile        = "example-data.json.go"
+	packageName    = "main"
 )
 
 func main() {
@@ -79,7 +79,7 @@ func decode(r io.Reader) (map[string]string, error) {
 }
 
 const tpl = `// Code generated with example-data.json DO NOT EDIT.
-package main
+package {{ .pkg }}
 
 import "encoding/json"
 
@@ -98,6 +98,7 @@ func writeFile(w io.Writer, eData map[string]string) error {
 	}
 
 	data := map[string]interface{}{
+		"pkg":    packageName,
 		"Escape": string(escape),
 		"Data":   eData,
 	}
@@ -124,12 +125,4 @@ func (r replacer) Write(p []byte) (n int, err error) {
 		}
 	}
 	return r.w.Write(p)
-}
-
-func intsToStr(ints []int) string {
-	var s string
-	for _, i := range ints {
-		s += fmt.Sprintf("%d,", i)
-	}
-	return strings.TrimSuffix(s, ",")
 }

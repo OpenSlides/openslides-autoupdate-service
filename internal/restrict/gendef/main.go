@@ -53,18 +53,19 @@ func parse(r io.Reader) (map[string]string, error) {
 
 	outData := make(map[string]string)
 	for modelName, model := range inData {
-		for attrName, attr := range model.Attributes {
-			r := attr.Relation()
+		for fieldName, field := range model.Fields {
+			r := field.Relation()
 
 			if r == nil || !r.List() {
 				continue
 			}
 
-			to := r.ToCollection()
-			if len(to) != 1 {
-				to[0] = "*"
+			collection := "*"
+			if _, ok := r.(*models.AttributeRelation); ok {
+				collection = r.ToCollections()[0].Collection
 			}
-			outData[fmt.Sprintf("%s/%s", modelName, attrName)] = to[0]
+
+			outData[fmt.Sprintf("%s/%s", modelName, fieldName)] = collection
 		}
 	}
 
