@@ -57,6 +57,8 @@ func defaultEnv() map[string]string {
 		"AUTH_SERIVCE_PROTOCOL": "http",
 		"AUTH_SERVICE_HOST":     "localhost",
 		"AUTH_SERVICE_PORT":     "9004",
+
+		"DEACTIVATE_PERMISSION": "false",
 	}
 
 	for k := range defaults {
@@ -94,7 +96,14 @@ func run() error {
 	}
 
 	// Permission Service.
-	perms := permission.New(datastoreService)
+	var perms restrict.Permissioner = new(test.MockPermission)
+	var updater autoupdate.UserUpdater
+	if env["DEACTIVATE_PERMISSION"] != "false" {
+		fmt.Println("Permission-Service: fake")
+		p := permission.New(datastoreService)
+		perms = p
+		updater = p
+	}
 
 	// Restricter Service.
 	checker := restrict.RelationChecker(restrict.RelationLists, perms)
@@ -102,7 +111,7 @@ func run() error {
 	restricter := restrict.New(perms, checker)
 
 	// Autoupdate Service.
-	service := autoupdate.New(datastoreService, restricter, perms, closed)
+	service := autoupdate.New(datastoreService, restricter, updater, closed)
 
 	// Auth Service.
 	authService, err := buildAuth(env, r, closed, errHandler)
