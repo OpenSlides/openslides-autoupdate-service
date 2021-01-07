@@ -38,12 +38,12 @@ func (a *AgendaItem) read(ctx context.Context, userID int, fqfields []perm.FQFie
 			if lastID != fqfield.ID {
 				fqid := fmt.Sprintf("agenda_item/%d", fqfield.ID)
 				var isInternal bool
-				if err := a.dp.Get(ctx, fqid+"/is_internal", &isInternal); err != nil {
+				if err := a.dp.GetIfExist(ctx, fqid+"/is_internal", &isInternal); err != nil {
 					return fmt.Errorf("getting is_internal field: %w", err)
 				}
 
 				var isHidden bool
-				if err := a.dp.Get(ctx, fqid+"/is_hidden", &isHidden); err != nil {
+				if err := a.dp.GetIfExist(ctx, fqid+"/is_hidden", &isHidden); err != nil {
 					return fmt.Errorf("getting is_hidden field: %w", err)
 				}
 

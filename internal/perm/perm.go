@@ -36,13 +36,15 @@ func New(ctx context.Context, dp dataprovider.DataProvider, userID, meetingID in
 	// Get superadmin_group_id.
 	var superadminGroupID int
 	fqfield := fmt.Sprintf("meeting/%d/superadmin_group_id", meetingID)
-	if err := dp.Get(ctx, fqfield, &superadminGroupID); err != nil {
+	if err := dp.GetIfExist(ctx, fqfield, &superadminGroupID); err != nil {
 		return nil, fmt.Errorf("check for superadmin group: %w", err)
 	}
 
-	for _, id := range groupIDs {
-		if id == superadminGroupID {
-			return &Permission{admin: true}, nil
+	if superadminGroupID != 0 {
+		for _, id := range groupIDs {
+			if id == superadminGroupID {
+				return &Permission{admin: true}, nil
+			}
 		}
 	}
 
@@ -52,17 +54,19 @@ func New(ctx context.Context, dp dataprovider.DataProvider, userID, meetingID in
 	if len(effectiveGroupIDs) == 0 {
 		var defaultGroupID int
 		fqfield := fmt.Sprintf("meeting/%d/default_group_id", meetingID)
-		if err := dp.Get(ctx, fqfield, &defaultGroupID); err != nil {
+		if err := dp.GetIfExist(ctx, fqfield, &defaultGroupID); err != nil {
 			return nil, fmt.Errorf("getting default group: %w", err)
 		}
-		effectiveGroupIDs = []int{defaultGroupID}
+		if defaultGroupID != 0 {
+			effectiveGroupIDs = []int{defaultGroupID}
+		}
 	}
 
 	permissions := make(map[string]bool)
 	for _, gid := range effectiveGroupIDs {
 		fqfield := fmt.Sprintf("group/%d/permissions", gid)
 		var perms []string
-		if err := dp.Get(ctx, fqfield, &perms); err != nil {
+		if err := dp.GetIfExist(ctx, fqfield, &perms); err != nil {
 			return nil, fmt.Errorf("getting %s: %w", fqfield, err)
 		}
 		for _, perm := range perms {

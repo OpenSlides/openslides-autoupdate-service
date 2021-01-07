@@ -98,8 +98,11 @@ func (dp *DataProvider) IsSuperuser(ctx context.Context, userID int) (bool, erro
 
 	// Get superadmin role id.
 	var superadminRoleID int
-	if err := dp.Get(ctx, "organisation/1/superadmin_role_id", &superadminRoleID); err != nil {
+	if err := dp.GetIfExist(ctx, "organisation/1/superadmin_role_id", &superadminRoleID); err != nil {
 		return false, fmt.Errorf("getting superadmin role id: %w", err)
+	}
+	if superadminRoleID == 0 {
+		return false, nil
 	}
 
 	// Get users role id.

@@ -109,7 +109,7 @@ func (p *poll) pollPerm(ctx context.Context, userID, pollID int) (int, error) {
 	}
 
 	var contentObjectID string
-	if err := p.dp.Get(ctx, fmt.Sprintf("poll/%d/content_object_id", pollID), &contentObjectID); err != nil {
+	if err := p.dp.GetIfExist(ctx, fmt.Sprintf("poll/%d/content_object_id", pollID), &contentObjectID); err != nil {
 		return 0, fmt.Errorf("getting content object id: %w", err)
 	}
 	collection := strings.Split(contentObjectID, "/")[0]
@@ -145,8 +145,10 @@ func (p *poll) pollPerm(ctx context.Context, userID, pollID int) (int, error) {
 func (p *poll) canSee(ctx context.Context, perms *perm.Permission, userID int, objectID string) (bool, error) {
 	var collection string
 	var id int
-	if _, err := fmt.Sscanf(objectID, "%s/%d", &collection, &id); err != nil {
-		return false, fmt.Errorf("invalid fqid %s", objectID)
+	if objectID != "" {
+		if _, err := fmt.Sscanf(objectID, "%s/%d", &collection, &id); err != nil {
+			return false, fmt.Errorf("invalid fqid %s", objectID)
+		}
 	}
 
 	if collection == "motion" {

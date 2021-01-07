@@ -35,7 +35,7 @@ func Mediafile(dp dataprovider.DataProvider) perm.ConnecterFunc {
 
 			var isPublic bool
 			field := fqid + "/is_public"
-			if err := dp.Get(ctx, field, &isPublic); err != nil {
+			if err := dp.GetIfExist(ctx, field, &isPublic); err != nil {
 				return false, fmt.Errorf("get %s: %w", field, err)
 			}
 

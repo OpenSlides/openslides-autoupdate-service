@@ -107,7 +107,7 @@ func (m *Motion) modify(managePerm string) perm.WriteCheckerFunc {
 		}
 
 		var submitterIDs []int
-		if err := m.dp.Get(ctx, motionFQID+"/submitter_ids", &submitterIDs); err != nil {
+		if err := m.dp.GetIfExist(ctx, motionFQID+"/submitter_ids", &submitterIDs); err != nil {
 			return nil, fmt.Errorf("getting submitter ids: %w", err)
 		}
 
@@ -133,7 +133,7 @@ func (m *Motion) modify(managePerm string) perm.WriteCheckerFunc {
 		}
 
 		var allowSubmitterEdit bool
-		if err := m.dp.Get(ctx, fmt.Sprintf("motion_state/%d/allow_submitter_edit", stateID), &allowSubmitterEdit); err != nil {
+		if err := m.dp.GetIfExist(ctx, fmt.Sprintf("motion_state/%d/allow_submitter_edit", stateID), &allowSubmitterEdit); err != nil {
 			return nil, fmt.Errorf("getting allow_submitter_edit: %w", err)
 		}
 
@@ -172,7 +172,7 @@ func canSeeMotion(ctx context.Context, dp dataprovider.DataProvider, userID int,
 
 	var restriction []string
 	field := fmt.Sprintf("motion_state/%d/restrictions", stateID)
-	if err := dp.Get(ctx, field, &restriction); err != nil {
+	if err := dp.GetIfExist(ctx, field, &restriction); err != nil {
 		return false, fmt.Errorf("getting field %s: %w", field, err)
 	}
 
@@ -189,7 +189,7 @@ func canSeeMotion(ctx context.Context, dp dataprovider.DataProvider, userID int,
 
 		case "is_submitter":
 			var submitterIDs []int
-			if err := dp.Get(ctx, motionFQID+"/submitter_ids", &submitterIDs); err != nil {
+			if err := dp.GetIfExist(ctx, motionFQID+"/submitter_ids", &submitterIDs); err != nil {
 				return false, fmt.Errorf("getting field %s/submitter_ids: %w", motionFQID, err)
 			}
 
@@ -247,7 +247,7 @@ func (m *Motion) readInternalField(collection string) perm.ReadCheckerFunc {
 			}
 
 			var internal bool
-			if err := m.dp.Get(ctx, fqid+"/internal", &internal); err != nil {
+			if err := m.dp.GetIfExist(ctx, fqid+"/internal", &internal); err != nil {
 				return false, fmt.Errorf("get /internal: %w", err)
 			}
 
@@ -277,7 +277,7 @@ func (m *Motion) canSeeComment(ctx context.Context, userID, id int) (bool, error
 	}
 
 	var readGroupIDs []int
-	if err := m.dp.Get(ctx, fqid+"/read_group_ids", &readGroupIDs); err != nil {
+	if err := m.dp.GetIfExist(ctx, fqid+"/read_group_ids", &readGroupIDs); err != nil {
 		return false, fmt.Errorf("getting read groups: %w", err)
 	}
 	for _, uid := range readGroupIDs {

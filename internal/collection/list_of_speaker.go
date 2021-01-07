@@ -121,7 +121,7 @@ func (l *listOfSpeaker) readList(ctx context.Context, userID int, fqfields []per
 
 		// If the request user is a speaker in the list of speakers, he can see the list.
 		var sids []int
-		if err := l.dp.Get(ctx, fqid+"/speaker_ids", &sids); err != nil {
+		if err := l.dp.GetIfExist(ctx, fqid+"/speaker_ids", &sids); err != nil {
 			return false, fmt.Errorf("getting speaker object ids: %w", err)
 		}
 
