@@ -35,7 +35,7 @@ type Autoupdate struct {
 }
 
 // New creates a new autoupdate service.
-func New(datastore Datastore, restricter Restricter, userUdater UserUpdater, closed <-chan struct{}) *Autoupdate {
+func New(datastore Datastore, restricter Restricter, userUpater UserUpdater, closed <-chan struct{}) *Autoupdate {
 	a := &Autoupdate{
 		datastore:  datastore,
 		restricter: restricter,
@@ -49,7 +49,7 @@ func New(datastore Datastore, restricter Restricter, userUdater UserUpdater, clo
 			keys = append(keys, k)
 		}
 
-		uids, err := userUdater.AdditionalUpdate(context.TODO(), data)
+		uids, err := userUpater.AdditionalUpdate(context.TODO(), data)
 		if err != nil {
 			return fmt.Errorf("getting addition user ids: %w", err)
 		}

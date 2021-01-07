@@ -98,12 +98,14 @@ func run() error {
 	// Permission Service.
 	var perms restrict.Permissioner = new(test.MockPermission)
 	var updater autoupdate.UserUpdater
-	if env["DEACTIVATE_PERMISSION"] != "false" {
-		fmt.Println("Permission-Service: fake")
+	permService := "fake"
+	if env["DEACTIVATE_PERMISSION"] == "false" {
+		permService = "permission"
 		p := permission.New(datastoreService)
 		perms = p
 		updater = p
 	}
+	fmt.Println("Permission-Service: " + permService)
 
 	// Restricter Service.
 	checker := restrict.RelationChecker(restrict.RelationLists, perms)
