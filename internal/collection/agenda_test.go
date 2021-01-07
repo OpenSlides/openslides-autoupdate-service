@@ -60,7 +60,7 @@ func TestAgendaRead(t *testing.T) {
 	})
 
 	t.Run("can_see", func(t *testing.T) {
-		tdp.Set("group/1/permissions", `["agenda.can_see"]`)
+		tdp.Set("group/1/permissions", `["agenda_item.can_see"]`)
 		r := make(map[string]bool)
 
 		if err := read.RestrictFQFields(context.Background(), 1, fqfields, r); err != nil {
@@ -71,7 +71,7 @@ func TestAgendaRead(t *testing.T) {
 	})
 
 	t.Run("can_see_internal", func(t *testing.T) {
-		tdp.Set("group/1/permissions", `["agenda.can_see_internal_items"]`)
+		tdp.Set("group/1/permissions", `["agenda_item.can_see_internal"]`)
 		r := make(map[string]bool)
 
 		if err := read.RestrictFQFields(context.Background(), 1, fqfields, r); err != nil {
@@ -82,7 +82,7 @@ func TestAgendaRead(t *testing.T) {
 	})
 
 	t.Run("can_manage", func(t *testing.T) {
-		tdp.Set("group/1/permissions", `["agenda.can_manage"]`)
+		tdp.Set("group/1/permissions", `["agenda_item.can_manage"]`)
 		r := make(map[string]bool)
 
 		if err := read.RestrictFQFields(context.Background(), 1, fqfields, r); err != nil {

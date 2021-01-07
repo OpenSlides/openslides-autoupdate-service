@@ -83,7 +83,7 @@ func (t *TestDataProvider) SetDefault() {
 		"group/1/superadmin_group_for_meeting_id": "null",
 		"group/1/default_group_for_meeting_id":    "1",
 		"group/1/permissions": `[
-            "agenda.can_see_internal_items",
+            "agenda_item.can_see_internal",
             "assignment.can_see",
             "mediafile.can_see",
             "motion.can_see",
@@ -94,8 +94,8 @@ func (t *TestDataProvider) SetDefault() {
 		// Group 2: Delegate
 		"group/2/id": "2",
 		"group/2/permissions": `[
-            "agenda.can_see_internal_items",
-            "agenda.can_be_speaker",
+            "agenda_item.can_see_internal",
+            "agenda_item.can_be_speaker",
             "assignment.can_nominate_other",
 			"assignment.can_nominate_self",
             "mediafile.can_see",

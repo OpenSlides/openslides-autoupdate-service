@@ -155,7 +155,7 @@ func (p *poll) canSee(ctx context.Context, perms *perm.Permission, userID int, o
 		return canSeeMotion(ctx, p.dp, userID, id)
 	}
 
-	perm := "agenda.can_see"
+	perm := "agenda_item.can_see"
 	if collection == "assignment" {
 		perm = "assignment.can_see"
 	}
@@ -169,5 +169,5 @@ func (p *poll) canManage(collection string) string {
 	if collection == "assignment" {
 		return "assignment.can_manage"
 	}
-	return "agenda.can_manage"
+	return "agenda_item.can_manage"
 }
