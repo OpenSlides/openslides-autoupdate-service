@@ -29,6 +29,9 @@ func Complex(mux *http.ServeMux, auth Authenticater, db keysbuilder.DataProvider
 			return
 		}
 
+		// TODO: This should not be run here. This is only for development
+		kb.Update(r.Context())
+
 		// This blocks until the request is done.
 		if err := liver.Live(r.Context(), uid, w, kb); err != nil {
 			handleError(w, err, false)
