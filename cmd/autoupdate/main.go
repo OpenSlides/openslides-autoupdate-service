@@ -51,12 +51,12 @@ func defaultEnv() map[string]string {
 		"MESSAGE_BUS_PORT": "6379",
 		"REDIS_TEST_CONN":  "true",
 
-		"AUTH":                  "fake",
-		"AUTH_KEY_TOKEN":        "auth-dev-key",
-		"AUTH_KEY_COOKIE":       "auth-dev-key",
-		"AUTH_SERVICE_PROTOCOL": "http",
-		"AUTH_SERVICE_HOST":     "localhost",
-		"AUTH_SERVICE_PORT":     "9004",
+		"AUTH":            "fake",
+		"AUTH_KEY_TOKEN":  "auth-dev-key",
+		"AUTH_KEY_COOKIE": "auth-dev-key",
+		"AUTH_PROTOCOL":   "http",
+		"AUTH_HOST":       "localhost",
+		"AUTH_PORT":       "9004",
 
 		"DEACTIVATE_PERMISSION": "false",
 	}
@@ -303,9 +303,9 @@ func buildAuth(env map[string]string, receiver auth.LogoutEventer, closed <-chan
 			fmt.Println("Auth with debug key")
 		}
 
-		protocol := env["AUTH_SERVICE_PROTOCOL"]
-		host := env["AUTH_SERVICE_HOST"]
-		port := env["AUTH_SERVICE_PORT"]
+		protocol := env["AUTH_PROTOCOL"]
+		host := env["AUTH_HOST"]
+		port := env["AUTH_PORT"]
 		url := protocol + "://" + host + ":" + port
 
 		fmt.Printf("Auth Service: %s\n", url)

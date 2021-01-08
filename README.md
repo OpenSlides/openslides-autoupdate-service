@@ -163,8 +163,8 @@ The Service uses the following environment variables:
 * `AUTH`: Sets the type of the auth service. `fake` (default) or `ticket`.
 * `AUTH_KEY_TOKEN`: Key to sign the JWT auth tocken. Default `auth-dev-key`.
 * `AUTH_KEY_COOKIE`: Key to sign the JWT auth cookie. Default `auth-dev-key`.
-* `AUTH_SERVICE_HOST`: Host of the auth service. The default is `localhost`.
-* `AUTH_SERVICE_PORT`: Port of the auth service. The default is `9004`.
-* `AUTH_SERVICE_PROTOCOL`: Protocol of the auth servicer. The default is `http`.
+* `AUTH_HOST`: Host of the auth service. The default is `localhost`.
+* `AUTH_PORT`: Port of the auth service. The default is `9004`.
+* `AUTH_PROTOCOL`: Protocol of the auth servicer. The default is `http`.
 * `DEACTIVATE_PERMISSION`: Deactivate requests to the permission service. The
   result is, that every user can see everything (Defaullt: `false`)
