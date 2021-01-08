@@ -19,7 +19,7 @@ const pruneTime = 15 * time.Minute
 
 const cookieName = "refreshId"
 const authHeader = "Authentication"
-const authPath = "/internal/auth/api/authenticate"
+const authPath = "/internal/auth/authenticate"
 
 // Auth authenticates a request against the auth service.
 type Auth struct {
@@ -213,7 +213,7 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 }
 
 func (a *Auth) refreshToken(ctx context.Context, token, cookie string) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, "POST", a.authServiceURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "POST", a.authServiceURL+authPath, nil)
 	if err != nil {
 		return "", fmt.Errorf("creating auth request: %w", err)
 	}
