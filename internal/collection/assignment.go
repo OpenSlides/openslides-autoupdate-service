@@ -22,33 +22,34 @@ type assignment struct {
 	dp dataprovider.DataProvider
 }
 
-func (a *assignment) candidateCreate(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error) {
+func (a *assignment) candidateCreate(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 	meetingID, err := a.dp.MeetingIDFromPayload(ctx, payload, "assignment", "assignment_id")
 	if err != nil {
-		return nil, fmt.Errorf("getting meetingID: %w", err)
+		return false, fmt.Errorf("getting meetingID: %w", err)
 	}
 
 	permissions, err := perm.New(ctx, a.dp, userID, meetingID)
 	if err != nil {
-		return nil, fmt.Errorf("collecting permissions for user %d in meeting %d: %w", userID, meetingID, err)
+		return false, fmt.Errorf("collecting permissions for user %d in meeting %d: %w", userID, meetingID, err)
 	}
 
 	if permissions.Has("assignment.can_manage") {
-		return nil, nil
+		return true, nil
 	}
 
 	var phase int
 	if err := a.dp.Get(ctx, fmt.Sprintf("assignment/%s/phase", payload["assignment_id"]), &phase); err != nil {
-		return nil, fmt.Errorf("getting phase of assignment: %w", err)
+		return false, fmt.Errorf("getting phase of assignment: %w", err)
 	}
 
 	if phase != 0 {
-		return nil, perm.NotAllowedf("Assignment is already in phase %d. No new candidates allowed.", phase)
+		perm.LogNotAllowedf("Assignment is already in phase %d. No new candidates allowed.", phase)
+		return false, nil
 	}
 
 	var cid int
 	if err := json.Unmarshal(payload["user_id"], &cid); err != nil {
-		return nil, fmt.Errorf("getting user_id from payload: %w", err)
+		return false, fmt.Errorf("getting user_id from payload: %w", err)
 	}
 
 	requiredPerm := "assignment.can_nominate_other"
@@ -57,44 +58,47 @@ func (a *assignment) candidateCreate(ctx context.Context, userID int, payload ma
 	}
 
 	if permissions.Has(requiredPerm) {
-		return nil, nil
+		return true, nil
 	}
 
-	return nil, perm.NotAllowedf("User %d does not have the permission %s", userID, requiredPerm)
+	perm.LogNotAllowedf("User %d does not have the permission %s", userID, requiredPerm)
+	return false, nil
 }
 
-func (a *assignment) candidateDelete(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error) {
+func (a *assignment) candidateDelete(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 	meetingID, err := a.dp.MeetingIDFromPayload(ctx, payload, "assignment", "assignment_id")
 	if err != nil {
-		return nil, fmt.Errorf("getting meetingID: %w", err)
+		return false, fmt.Errorf("getting meetingID: %w", err)
 	}
 
 	permissions, err := perm.New(ctx, a.dp, userID, meetingID)
 	if err != nil {
-		return nil, fmt.Errorf("collecting permissions for user %d in meeting %d: %w", userID, meetingID, err)
+		return false, fmt.Errorf("collecting permissions for user %d in meeting %d: %w", userID, meetingID, err)
 	}
 
 	if permissions.Has("assignment.can_manage") {
-		return nil, nil
+		return true, nil
 	}
 
 	var phase int
 	if err := a.dp.Get(ctx, fmt.Sprintf("assignment/%s/phase", payload["assignment_id"]), &phase); err != nil {
-		return nil, fmt.Errorf("getting phase of assignment: %w", err)
+		return false, fmt.Errorf("getting phase of assignment: %w", err)
 	}
 
 	if phase != 0 {
-		return nil, perm.NotAllowedf("Assignment is already in phase %d. You can not remove yourself anymore.", phase)
+		perm.LogNotAllowedf("Assignment is already in phase %d. You can not remove yourself anymore.", phase)
+		return false, nil
 	}
 
 	var cid int
 	if err := json.Unmarshal(payload["user_id"], &cid); err != nil {
-		return nil, fmt.Errorf("getting user_id from payload: %w", err)
+		return false, fmt.Errorf("getting user_id from payload: %w", err)
 	}
 
 	if userID == cid && permissions.Has("assignment.can_nominate_self") {
-		return nil, nil
+		return true, nil
 	}
 
-	return nil, perm.NotAllowedf("Bad boy")
+	perm.LogNotAllowedf("Bad boy")
+	return false, nil
 }

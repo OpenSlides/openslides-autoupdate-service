@@ -12,21 +12,14 @@ import (
 type WriteChecker interface {
 	// IsAllowed tells, if the user has the permission for the object this
 	// method is called on.
-	//
-	// If the user has the permission, the returned error is nil.
-	//
-	// If the returned error unwrapps to an NotAllowedError it means, the user
-	// does not have the permission. In other case, a "real" error happend.
-	//
-	// The first return argument are additional data for the client.
-	IsAllowed(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error)
+	IsAllowed(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error)
 }
 
 // WriteCheckerFunc is a function with the IsAllowed signature.
-type WriteCheckerFunc func(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error)
+type WriteCheckerFunc func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error)
 
 // IsAllowed calls the function.
-func (f WriteCheckerFunc) IsAllowed(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error) {
+func (f WriteCheckerFunc) IsAllowed(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 	return f(ctx, userID, payload)
 }
 

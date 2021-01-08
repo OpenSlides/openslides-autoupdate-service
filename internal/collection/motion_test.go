@@ -42,23 +42,36 @@ func TestMotionSetState(t *testing.T) {
 	t.Run("correct state", func(t *testing.T) {
 		tdp.Set("motion_state/1/allow_submitter_edit", "true")
 
-		if _, err := setState.IsAllowed(context.Background(), 1, payload); err != nil {
-			t.Errorf("Got unexpected error: %v", err)
+		allowed, err := setState.IsAllowed(context.Background(), 1, payload)
+		if err != nil {
+			t.Fatalf("Got unexpected error: %v", err)
+		}
+		if !allowed {
+			t.Errorf("Got false, expected true")
 		}
 	})
 
 	t.Run("wrong state", func(t *testing.T) {
 		tdp.Set("motion_state/1/allow_submitter_edit", "false")
-		_, err := setState.IsAllowed(context.Background(), 1, payload)
-		assertNotAllowed(t, err)
+		allowed, err := setState.IsAllowed(context.Background(), 1, payload)
+		if err != nil {
+			t.Fatalf("Got unexpected error: %v", err)
+		}
+		if allowed {
+			t.Errorf("Got true, expected false")
+		}
 	})
 
 	t.Run("manager", func(t *testing.T) {
 		tdp.Set("motion_state/1/allow_submitter_edit", "false")
 		tdp.AddPermissionToGroup(1, "motion.can_manage_metadata")
 
-		if _, err := setState.IsAllowed(context.Background(), 1, payload); err != nil {
-			t.Errorf("Got unexpected error: %v", err)
+		allowed, err := setState.IsAllowed(context.Background(), 1, payload)
+		if err != nil {
+			t.Fatalf("Got unexpected error: %v", err)
+		}
+		if allowed {
+			t.Errorf("Got true, expected false")
 		}
 	})
 }
@@ -102,8 +115,13 @@ func TestMotionDelete(t *testing.T) {
 
 	t.Run("wrong state", func(t *testing.T) {
 		tdp.Set("motion_state/1/allow_submitter_edit", "false")
-		_, err := delete.IsAllowed(context.Background(), 1, payload)
-		assertNotAllowed(t, err)
+		allowed, err := delete.IsAllowed(context.Background(), 1, payload)
+		if err != nil {
+			t.Fatalf("Got unexpected error: %v", err)
+		}
+		if allowed {
+			t.Errorf("Got true, expected false")
+		}
 	})
 
 	t.Run("manager", func(t *testing.T) {
@@ -135,8 +153,13 @@ func TestMotionCreate(t *testing.T) {
 			"meeting_id": []byte("1"),
 		}
 
-		_, err := create.IsAllowed(context.Background(), 1, payload)
-		assertNotAllowed(t, err)
+		allowed, err := create.IsAllowed(context.Background(), 1, payload)
+		if err != nil {
+			t.Fatalf("Got unexpected error: %v", err)
+		}
+		if allowed {
+			t.Errorf("Got true, expected false")
+		}
 
 	})
 
@@ -158,8 +181,13 @@ func TestMotionCreate(t *testing.T) {
 			"parent_id":  []byte("1"),
 		}
 
-		_, err := create.IsAllowed(context.Background(), 1, payload)
-		assertNotAllowed(t, err)
+		allowed, err := create.IsAllowed(context.Background(), 1, payload)
+		if err != nil {
+			t.Fatalf("Got unexpected error: %v", err)
+		}
+		if allowed {
+			t.Errorf("Got true, expected false")
+		}
 
 	})
 
@@ -182,8 +210,13 @@ func TestMotionCreate(t *testing.T) {
 			"agenda_create": []byte("true"),
 		}
 
-		_, err := create.IsAllowed(context.Background(), 1, payload)
-		assertNotAllowed(t, err)
+		allowed, err := create.IsAllowed(context.Background(), 1, payload)
+		if err != nil {
+			t.Fatalf("Got unexpected error: %v", err)
+		}
+		if allowed {
+			t.Errorf("Got true, expected false")
+		}
 
 	})
 

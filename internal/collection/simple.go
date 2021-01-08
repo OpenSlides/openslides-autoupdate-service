@@ -23,7 +23,7 @@ func ReadPerm(dp dataprovider.DataProvider, permission string, collections ...st
 						return false, fmt.Errorf("getting meetingID from model %s: %w", fqid, err)
 					}
 
-					allowed, err := perm.IsAllowed(perm.EnsurePerm(ctx, dp, userID, meetingID, permission))
+					allowed, err := perm.HasPerm(ctx, dp, userID, meetingID, permission)
 					if err != nil {
 						return false, fmt.Errorf("ensuring perm %w", err)
 					}

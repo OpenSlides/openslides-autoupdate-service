@@ -6,7 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
+	"log"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
 )
@@ -90,39 +90,41 @@ func (p *Permission) Has(perm string) bool {
 
 // Create checks for the mermission to create a new object.
 func Create(dp dataprovider.DataProvider, managePerm, collection string) WriteChecker {
-	return WriteCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error) {
+	return WriteCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 		var meetingID int
 		if err := json.Unmarshal(payload["meeting_id"], &meetingID); err != nil {
-			return nil, fmt.Errorf("no valid meeting id: %w", err)
+			return false, fmt.Errorf("no valid meeting id: %w", err)
 		}
 
-		if err := EnsurePerm(ctx, dp, userID, meetingID, managePerm); err != nil {
-			return nil, fmt.Errorf("ensure manage permission: %w", err)
+		ok, err := HasPerm(ctx, dp, userID, meetingID, managePerm)
+		if err != nil {
+			return false, fmt.Errorf("ensure manage permission: %w", err)
 		}
 
-		return nil, nil
+		return ok, nil
 	})
 }
 
 // Modify checks for the permissions to alter an existing object.
 func Modify(dp dataprovider.DataProvider, managePerm, collection string) WriteChecker {
-	return WriteCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error) {
+	return WriteCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 		id, err := modelID(payload)
 		if err != nil {
-			return nil, fmt.Errorf("getting model id from payload: %w", err)
+			return false, fmt.Errorf("getting model id from payload: %w", err)
 		}
 
 		fqid := fmt.Sprintf("%s/%d", collection, id)
 		meetingID, err := dp.MeetingFromModel(ctx, fqid)
 		if err != nil {
-			return nil, fmt.Errorf("getting meeting id for model %s: %w", fqid, err)
+			return false, fmt.Errorf("getting meeting id for model %s: %w", fqid, err)
 		}
 
-		if err := EnsurePerm(ctx, dp, userID, meetingID, managePerm); err != nil {
-			return nil, fmt.Errorf("ensure manage permission: %w", err)
+		ok, err := HasPerm(ctx, dp, userID, meetingID, managePerm)
+		if err != nil {
+			return false, fmt.Errorf("ensure manage permission: %w", err)
 		}
 
-		return nil, nil
+		return ok, nil
 	})
 }
 
@@ -134,52 +136,20 @@ func modelID(data map[string]json.RawMessage) (int, error) {
 	return id, nil
 }
 
-// Restrict tells, if the user has the permission to see the requested
-// fields.
-func Restrict(dp dataprovider.DataProvider, perm, collection string) ReadChecker {
-	return ReadCheckerFunc(func(ctx context.Context, userID int, fqfields []FQField, result map[string]bool) error {
-		if len(fqfields) == 0 {
-			return nil
-		}
-
-		for _, fqfield := range fqfields {
-			meetingID, err := dp.MeetingFromModel(ctx, collection+"/"+strconv.Itoa(fqfield.ID))
-			if err != nil {
-				return fmt.Errorf("getting meeting from model: %w", err)
-			}
-
-			if err := EnsurePerm(ctx, dp, userID, meetingID, perm); err != nil {
-				return nil
-			}
-
-			for _, fqfield := range fqfields {
-				result[fqfield.String()] = true
-			}
-		}
-
-		return nil
-	})
-}
-
-// EnsurePerm makes sure the user has at the given permission.
-//
-// If the user has the permission, EnsurePerm does not return an error.
-//
-// If the returned error object is unwrapped to type NotAllowedError, it means,
-// that the user does not have the permission. Other errors means, that a reald
-// error happend.
-func EnsurePerm(ctx context.Context, dp dataprovider.DataProvider, userID int, meetingID int, permission string) error {
+// HasPerm returns, if the user has the permission in the meeting.
+func HasPerm(ctx context.Context, dp dataprovider.DataProvider, userID int, meetingID int, permission string) (bool, error) {
 	perm, err := New(ctx, dp, userID, meetingID)
 	if err != nil {
-		return fmt.Errorf("collecting perms: %w", err)
+		return false, fmt.Errorf("collecting perms: %w", err)
 	}
 
 	hasPerms := perm.Has(permission)
 	if !hasPerms {
-		return NotAllowedf("User %d does not have the permission %s int meeting %d", userID, permission, meetingID)
+		LogNotAllowedf("User %d does not have the permission %s in meeting %d", userID, permission, meetingID)
+		return false, nil
 	}
 
-	return nil
+	return true, nil
 }
 
 // AllFields checks all fqfields by the given function f.
@@ -202,4 +172,9 @@ func AllFields(fqfields []FQField, result map[string]bool, f func(FQField) (bool
 		}
 	}
 	return nil
+}
+
+// LogNotAllowedf logs the permission failer.
+func LogNotAllowedf(format string, a ...interface{}) {
+	log.Printf(format, a...)
 }

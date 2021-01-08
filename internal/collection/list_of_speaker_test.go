@@ -32,8 +32,13 @@ func TestSpeaker(t *testing.T) {
 			"id": []byte("1"),
 		}
 
-		if _, err := delete.IsAllowed(context.Background(), 1, payload); err != nil {
-			t.Errorf("Got unexpected error %v", err)
+		allowed, err := delete.IsAllowed(context.Background(), 1, payload)
+		if err != nil {
+			t.Fatalf("Got unexpected error %v", err)
+		}
+
+		if !allowed {
+			t.Errorf("Got false, expected true")
 		}
 	})
 
@@ -45,8 +50,13 @@ func TestSpeaker(t *testing.T) {
 			"id": []byte("1"),
 		}
 
-		if _, err := delete.IsAllowed(context.Background(), 2, payload); err != nil {
+		allowed, err := delete.IsAllowed(context.Background(), 2, payload)
+		if err != nil {
 			t.Errorf("Got unexpected error %v", err)
+		}
+
+		if !allowed {
+			t.Errorf("Got false, expected true")
 		}
 	})
 
@@ -57,9 +67,13 @@ func TestSpeaker(t *testing.T) {
 		payload := map[string]json.RawMessage{
 			"id": []byte("1"),
 		}
+		allowed, err := delete.IsAllowed(context.Background(), 3, payload)
+		if err != nil {
+			t.Fatalf("Got unexpected error: %v", err)
+		}
 
-		if _, err := delete.IsAllowed(context.Background(), 3, payload); err == nil {
-			t.Errorf("Expected error, got non")
+		if allowed {
+			t.Errorf("Got true, expected false")
 		}
 	})
 
@@ -68,7 +82,7 @@ func TestSpeaker(t *testing.T) {
 		tdp.Set("speaker/1/user_id", "1")
 		tdp.Set("speaker/1/meeting_id", "1")
 		tdp.Set("speaker/2/user_id", "999")
-		tdp.AddPermissionToGroup(1, "agenda_item.can_see_list_of_speakers")
+		tdp.AddPermissionToGroup(1, "list_of_speakers.can_see")
 		fqfields := mustFQfields(
 			"speaker/1/id",
 			"speaker/1/user_id",

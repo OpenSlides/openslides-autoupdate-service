@@ -5,7 +5,6 @@ package permission
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
@@ -45,36 +44,32 @@ func New(dp DataProvider, os ...Option) *Permission {
 }
 
 // IsAllowed tells, if something is allowed.
-func (ps *Permission) IsAllowed(ctx context.Context, name string, userID int, dataList []map[string]json.RawMessage) ([]map[string]interface{}, error) {
+func (ps *Permission) IsAllowed(ctx context.Context, name string, userID int, dataList []map[string]json.RawMessage) (bool, error) {
 	superUser, err := ps.dp.IsSuperuser(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("checking for superuser: %w", err)
+		return false, fmt.Errorf("checking for superuser: %w", err)
 	}
 	if superUser {
-		return nil, nil
+		return true, nil
 	}
 
 	// TODO: after all handlers are implemented. Move this code above the superUser check.
 	handler, ok := ps.writeHandler[name]
 	if !ok {
-		return nil, clientError{fmt.Sprintf("unknown collection: `%s`", name)}
+		return false, fmt.Errorf("unknown collection: `%s`", name)
 	}
 
-	additions := make([]map[string]interface{}, len(dataList))
 	for i, data := range dataList {
-		addition, err := handler.IsAllowed(ctx, userID, data)
+		allowed, err := handler.IsAllowed(ctx, userID, data)
 		if err != nil {
-			var errNotAllowed perm.NotAllowedError
-			if errors.As(err, &errNotAllowed) {
-				return nil, indexError{name: name, index: i, err: err}
-			}
-			return nil, fmt.Errorf("action %d: %w", i, err)
+			return false, fmt.Errorf("action %d: %w", i, err)
 		}
-
-		additions[i] = addition
+		if !allowed {
+			return false, nil
+		}
 	}
 
-	return additions, nil
+	return true, nil
 }
 
 // RestrictFQFields tells, if the given user can see the fqfields.
@@ -85,12 +80,6 @@ func (ps Permission) RestrictFQFields(ctx context.Context, userID int, fqfields 
 	if err != nil {
 		return nil, fmt.Errorf("checking for superuser: %w", err)
 	}
-	if superUser {
-		for _, k := range fqfields {
-			data[k] = true
-		}
-		return data, nil
-	}
 
 	grouped, err := groupFQFields(fqfields)
 	if err != nil {
@@ -98,6 +87,13 @@ func (ps Permission) RestrictFQFields(ctx context.Context, userID int, fqfields 
 	}
 
 	for name, fqfields := range grouped {
+		if superUser && name != "personal_note" {
+			for _, k := range fqfields {
+				data[k.String()] = true
+			}
+			continue
+		}
+
 		handler, ok := ps.readHandler[name]
 		if !ok {
 			if developmentMode := true; developmentMode {
@@ -106,7 +102,7 @@ func (ps Permission) RestrictFQFields(ctx context.Context, userID int, fqfields 
 				}
 				return data, nil
 			}
-			return nil, clientError{fmt.Sprintf("unknown collection: `%s`", name)}
+			return nil, fmt.Errorf("unknown collection: `%s`", name)
 		}
 
 		if err := handler.RestrictFQFields(ctx, userID, fqfields, data); err != nil {

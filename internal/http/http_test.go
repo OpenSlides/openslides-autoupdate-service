@@ -21,36 +21,26 @@ func TestHttpIsAllowed(t *testing.T) {
 	for _, tt := range []struct {
 		name string
 
-		reqBody  string
-		addition [](map[string]interface{})
-		err      error
+		reqBody string
+		allowed bool
+		err     error
 
 		expectResponse    string
 		expectStatuseCode int
 	}{
 		{
 			name:    "Allowed",
+			allowed: true,
 			reqBody: `{"name": "everything", "user_id": 1}`,
 
-			expectResponse:    `{"allowed":true,"additions":null}`,
+			expectResponse:    `true`,
 			expectStatuseCode: 200,
 		},
 		{
-			name:    "Not Allowed with reason",
+			name:    "Not Allowed",
 			reqBody: `{"name": "everything", "user_id": 1}`,
 
-			err: clientError{errType: "ClientError", msg: "This explains why"},
-
-			expectResponse:    `{"allowed":false,"reason":"This explains why","error_index":0}`,
-			expectStatuseCode: 200,
-		},
-		{
-			name:    "With addition",
-			reqBody: `{"name": "everything", "user_id": 1}`,
-
-			addition: [](map[string]interface{}){map[string]interface{}{"with_addition": 5}},
-
-			expectResponse:    `{"allowed":true,"additions":[{"with_addition":5}]}`,
+			expectResponse:    `false`,
 			expectStatuseCode: 200,
 		},
 		{
@@ -59,30 +49,12 @@ func TestHttpIsAllowed(t *testing.T) {
 
 			err: fmt.Errorf("something happend :("),
 
-			expectResponse:    `{"error":{"type":"InternalError","msg":"Ups, something went wrong!"}}`,
+			expectResponse:    `"Internal Error. Norman, Do not sent it to client: something happend :("`,
 			expectStatuseCode: 500,
-		},
-		{
-			name:    "Custom Error",
-			reqBody: `{"name": "everything", "user_id": 1}`,
-
-			err: clientError{errType: "SomethingError", msg: "This explains why"},
-
-			expectResponse:    `{"error":{"type":"SomethingError","msg":"calling IsAllowed: This explains why"}}`,
-			expectStatuseCode: 400,
-		},
-		{
-			name:    "Invalid JSON",
-			reqBody: `{"name": "ever`,
-
-			err: clientError{errType: "JSONError", msg: "Can not decode request body"},
-
-			expectResponse:    `{"error":{"type":"JSONError","msg":"Can not decode request body '{\"name\": \"ever': unexpected end of JSON input"}}`,
-			expectStatuseCode: 400,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			allowed.addition = tt.addition
+			allowed.allowed = tt.allowed
 			allowed.err = tt.err
 
 			req, err := http.NewRequest("POST", "/internal/permission/is_allowed", strings.NewReader(tt.reqBody))
@@ -110,23 +82,10 @@ func TestHttpIsAllowed(t *testing.T) {
 }
 
 type IsAllowedMock struct {
-	addition [](map[string]interface{})
-	err      error
+	allowed bool
+	err     error
 }
 
-func (a *IsAllowedMock) IsAllowed(ctx context.Context, name string, userID int, data [](map[string]json.RawMessage)) ([](map[string]interface{}), error) {
-	return a.addition, a.err
-}
-
-type clientError struct {
-	errType string
-	msg     string
-}
-
-func (e clientError) Error() string {
-	return e.msg
-}
-
-func (e clientError) Type() string {
-	return e.errType
+func (a *IsAllowedMock) IsAllowed(ctx context.Context, name string, userID int, data [](map[string]json.RawMessage)) (bool, error) {
+	return a.allowed, a.err
 }

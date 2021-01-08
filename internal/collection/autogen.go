@@ -35,26 +35,27 @@ func (a *Autogen) Connect(s perm.HandlerStore) {
 }
 
 func writeChecker(dp dataprovider.DataProvider, collName, permission string) perm.WriteChecker {
-	return perm.WriteCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error) {
+	return perm.WriteCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 		var meetingID int
 		if err := json.Unmarshal(payload["meeting_id"], &meetingID); err != nil {
 			var id int
 			if err := json.Unmarshal(payload["id"], &id); err != nil {
-				return nil, fmt.Errorf("no valid meeting_id or id in payload")
+				return false, fmt.Errorf("no valid meeting_id or id in payload")
 			}
 
 			fqid := collName + "/" + strconv.Itoa(id)
 			meetingID, err = dp.MeetingFromModel(ctx, fqid)
 			if err != nil {
-				return nil, fmt.Errorf("getting meeting id for %s: %w", fqid, err)
+				return false, fmt.Errorf("getting meeting id for %s: %w", fqid, err)
 			}
 		}
 
-		if err := perm.EnsurePerm(ctx, dp, userID, meetingID, permission); err != nil {
-			return nil, fmt.Errorf("ensuring permission: %w", err)
+		ok, err := perm.HasPerm(ctx, dp, userID, meetingID, permission)
+		if err != nil {
+			return false, fmt.Errorf("checking permission: %w", err)
 		}
 
-		return nil, nil
+		return ok, nil
 	})
 }
 
@@ -72,15 +73,15 @@ var autogenDef = map[string]string{
 	"group.delete":                             "user.can_manage",
 	"group.set_permission":                     "user.can_manage",
 	"group.update":                             "user.can_manage",
-	"list_of_speakers.delete_all_speakers":     "agenda_item.can_manage_list_of_speakers",
-	"list_of_speakers.re_add_last":             "agenda_item.can_manage_list_of_speakers",
-	"list_of_speakers.update":                  "agenda_item.can_manage_list_of_speakers",
+	"list_of_speakers.delete_all_speakers":     "list_of_speakers.can_manage",
+	"list_of_speakers.re_add_last":             "list_of_speakers.can_manage",
+	"list_of_speakers.update":                  "list_of_speakers.can_manage",
 	"mediafile.create_directory":               "mediafile.can_manage",
 	"mediafile.delete":                         "mediafile.can_manage",
 	"mediafile.move":                           "mediafile.can_manage",
 	"mediafile.update":                         "mediafile.can_manage",
 	"mediafile.upload":                         "mediafile.can_manage",
-	"meeting.delete_all_speakers_of_all_lists": "agenda_item.can_manage_list_of_speakers",
+	"meeting.delete_all_speakers_of_all_lists": "list_of_speakers.can_manage",
 	"meeting.set_font":                         "meeting.can_manage_logos_and_fonts",
 	"meeting.set_logo":                         "meeting.can_manage_logos_and_fonts",
 	"meeting.unset_font":                       "meeting.can_manage_logos_and_fonts",
@@ -119,10 +120,10 @@ var autogenDef = map[string]string{
 	"motion_workflow.create":                   "motion.can_manage",
 	"motion_workflow.delete":                   "motion.can_manage",
 	"motion_workflow.update":                   "motion.can_manage",
-	"speaker.end_speech":                       "agenda_item.can_manage_list_of_speakers",
-	"speaker.sort":                             "agenda_item.can_manage_list_of_speakers",
-	"speaker.speak":                            "agenda_item.can_manage_list_of_speakers",
-	"speaker.update":                           "agenda_item.can_manage_list_of_speakers",
+	"speaker.end_speech":                       "list_of_speakers.can_manage",
+	"speaker.sort":                             "list_of_speakers.can_manage",
+	"speaker.speak":                            "list_of_speakers.can_manage",
+	"speaker.update":                           "list_of_speakers.can_manage",
 	"tag.create":                               "tag.can_manage",
 	"tag.delete":                               "tag.can_manage",
 	"tag.update":                               "tag.can_manage",

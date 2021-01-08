@@ -95,7 +95,7 @@ func (t *TestDataProvider) SetDefault() {
 		"group/2/id": "2",
 		"group/2/permissions": `[
             "agenda_item.can_see_internal",
-            "agenda_item.can_be_speaker",
+            "list_of_speakers.can_be_speaker",
             "assignment.can_nominate_other",
 			"assignment.can_nominate_self",
             "mediafile.can_see",

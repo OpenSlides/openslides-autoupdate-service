@@ -33,8 +33,13 @@ func TestPersonalNote(t *testing.T) {
 			"id": []byte("1"),
 		}
 
-		if _, err := update.IsAllowed(context.Background(), 1, payload); err != nil {
-			t.Errorf("Got unexpected error %v", err)
+		allowed, err := update.IsAllowed(context.Background(), 1, payload)
+		if err != nil {
+			t.Fatalf("Got unexpected error %v", err)
+		}
+
+		if !allowed {
+			t.Errorf("Got false, expected true")
 		}
 	})
 
@@ -43,8 +48,13 @@ func TestPersonalNote(t *testing.T) {
 			"id": []byte("1"),
 		}
 
-		if _, err := update.IsAllowed(context.Background(), 2, payload); err == nil {
-			t.Errorf("Expected an error")
+		allowed, err := update.IsAllowed(context.Background(), 2, payload)
+		if err != nil {
+			t.Fatalf("Got unexpected error: %v", err)
+		}
+
+		if allowed {
+			t.Errorf("Got true, expected false")
 		}
 	})
 
@@ -55,8 +65,13 @@ func TestPersonalNote(t *testing.T) {
 			"id": []byte("1"),
 		}
 
-		if _, err := delete.IsAllowed(context.Background(), 1, payload); err != nil {
-			t.Errorf("Got unexpected error %v", err)
+		allowed, err := delete.IsAllowed(context.Background(), 1, payload)
+		if err != nil {
+			t.Fatalf("Got unexpected error %v", err)
+		}
+
+		if !allowed {
+			t.Errorf("Got false, expected true")
 		}
 	})
 
@@ -65,8 +80,13 @@ func TestPersonalNote(t *testing.T) {
 			"id": []byte("1"),
 		}
 
-		if _, err := delete.IsAllowed(context.Background(), 2, payload); err == nil {
-			t.Errorf("Expected an error")
+		allowed, err := delete.IsAllowed(context.Background(), 2, payload)
+		if err != nil {
+			t.Fatalf("Expected an error")
+		}
+
+		if allowed {
+			t.Errorf("Got true, expected false")
 		}
 	})
 

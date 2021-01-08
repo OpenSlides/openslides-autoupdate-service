@@ -24,11 +24,8 @@ func (c collectionMock) Connect(s perm.HandlerStore) {
 
 type allowedMock bool
 
-func (a allowedMock) IsAllowed(ctx context.Context, userID int, data map[string]json.RawMessage) (map[string]interface{}, error) {
-	if !a {
-		return nil, perm.NotAllowedf("Some reason here")
-	}
-	return nil, nil
+func (a allowedMock) IsAllowed(ctx context.Context, userID int, data map[string]json.RawMessage) (bool, error) {
+	return bool(a), nil
 }
 
 func (a allowedMock) RestrictFQFields(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {

@@ -56,16 +56,16 @@ func (m *Motion) create() perm.WriteCheckerFunc {
 		allowListAmendment[k] = true
 	}
 
-	return func(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error) {
+	return func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 		meetingID, _ := strconv.Atoi(string(payload["meeting_id"]))
 
 		perms, err := perm.New(ctx, m.dp, userID, meetingID)
 		if err != nil {
-			return nil, fmt.Errorf("fetching perms: %w", err)
+			return false, fmt.Errorf("fetching perms: %w", err)
 		}
 
 		if perms.Has("motion.can_manage") {
-			return nil, nil
+			return false, nil
 		}
 
 		requiredPerm := "motion.can_create"
@@ -76,46 +76,48 @@ func (m *Motion) create() perm.WriteCheckerFunc {
 		}
 
 		if !perms.Has(requiredPerm) {
-			return nil, perm.NotAllowedf("User %d does not have permission %s", userID, requiredPerm)
+			perm.LogNotAllowedf("User %d does not have permission %s", userID, requiredPerm)
+			return false, nil
 		}
 
 		for e := range payload {
 			if !aList[string(e)] {
-				return nil, perm.NotAllowedf("Field `%s` is forbidden for non manager.", e)
+				perm.LogNotAllowedf("Field `%s` is forbidden for non manager.", e)
+				return false, nil
 			}
 		}
 
-		return nil, nil
+		return true, nil
 	}
 }
 
 func (m *Motion) modify(managePerm string) perm.WriteCheckerFunc {
-	return func(ctx context.Context, userID int, payload map[string]json.RawMessage) (map[string]interface{}, error) {
+	return func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 		motionFQID := fmt.Sprintf("motion/%s", payload["id"])
 		meetingID, err := m.dp.MeetingFromModel(ctx, motionFQID)
 		if err != nil {
-			return nil, fmt.Errorf("getting meeting for %s: %w", motionFQID, err)
+			return false, fmt.Errorf("getting meeting for %s: %w", motionFQID, err)
 		}
 
-		isManager, err := perm.IsAllowed(perm.EnsurePerm(ctx, m.dp, userID, meetingID, managePerm))
+		isManager, err := perm.HasPerm(ctx, m.dp, userID, meetingID, managePerm)
 		if err != nil {
-			return nil, fmt.Errorf("checking meta manager permission: %w", err)
+			return false, fmt.Errorf("checking meta manager permission: %w", err)
 		}
 
 		if isManager {
-			return nil, nil
+			return false, nil
 		}
 
 		var submitterIDs []int
 		if err := m.dp.GetIfExist(ctx, motionFQID+"/submitter_ids", &submitterIDs); err != nil {
-			return nil, fmt.Errorf("getting submitter ids: %w", err)
+			return false, fmt.Errorf("getting submitter ids: %w", err)
 		}
 
 		var isSubmitter bool
 		for _, sid := range submitterIDs {
 			var sUserID int
 			if err := m.dp.Get(ctx, fmt.Sprintf("motion_submitter/%d/user_id", sid), &sUserID); err != nil {
-				return nil, fmt.Errorf("getting userid of sumitter %d: %w", sid, err)
+				return false, fmt.Errorf("getting userid of sumitter %d: %w", sid, err)
 			}
 			if sUserID == userID {
 				isSubmitter = true
@@ -124,24 +126,26 @@ func (m *Motion) modify(managePerm string) perm.WriteCheckerFunc {
 		}
 
 		if !isSubmitter {
-			return nil, perm.NotAllowedf("User %d is not a manager and not a submitter of %s", userID, motionFQID)
+			perm.LogNotAllowedf("User %d is not a manager and not a submitter of %s", userID, motionFQID)
+			return false, nil
 		}
 
 		var stateID int
 		if err := m.dp.Get(ctx, motionFQID+"/state_id", &stateID); err != nil {
-			return nil, fmt.Errorf("getting stateID: %w", err)
+			return false, fmt.Errorf("getting stateID: %w", err)
 		}
 
 		var allowSubmitterEdit bool
 		if err := m.dp.GetIfExist(ctx, fmt.Sprintf("motion_state/%d/allow_submitter_edit", stateID), &allowSubmitterEdit); err != nil {
-			return nil, fmt.Errorf("getting allow_submitter_edit: %w", err)
+			return false, fmt.Errorf("getting allow_submitter_edit: %w", err)
 		}
 
 		if !allowSubmitterEdit {
-			return nil, perm.NotAllowedf("Motion state does not allow submitter edites")
+			perm.LogNotAllowedf("Motion state does not allow submitter edites")
+			return false, nil
 		}
 
-		return nil, nil
+		return true, nil
 	}
 }
 

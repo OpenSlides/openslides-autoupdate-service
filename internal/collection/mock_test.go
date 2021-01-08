@@ -1,7 +1,6 @@
 package collection_test
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/perm"
@@ -32,17 +31,5 @@ func checkRead(t *testing.T, r map[string]bool, allowed ...string) {
 			keys = append(keys, k)
 		}
 		t.Errorf("got %v, expected %v", keys, allowed)
-	}
-}
-
-func assertNotAllowed(t *testing.T, err error) {
-	if err == nil {
-		t.Errorf("Got no error, expected not allowed")
-		return
-	}
-
-	var errNotAllowed perm.NotAllowedError
-	if !errors.As(err, &errNotAllowed) {
-		t.Errorf("Got undexpected error: %v", err)
 	}
 }
