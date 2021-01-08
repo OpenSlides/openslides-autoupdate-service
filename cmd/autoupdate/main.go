@@ -54,7 +54,7 @@ func defaultEnv() map[string]string {
 		"AUTH":                  "fake",
 		"AUTH_KEY_TOKEN":        "auth-dev-key",
 		"AUTH_KEY_COOKIE":       "auth-dev-key",
-		"AUTH_SERIVCE_PROTOCOL": "http",
+		"AUTH_SERVICE_PROTOCOL": "http",
 		"AUTH_SERVICE_HOST":     "localhost",
 		"AUTH_SERVICE_PORT":     "9004",
 
