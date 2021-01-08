@@ -15,8 +15,6 @@ import (
 	"github.com/gomodule/redigo/redis"
 )
 
-//go:generate sh -c "go run example_data/main.go && go fmt example-data.json.go"
-
 const (
 	listenAddr = ":9010"
 	redisAddr  = "localhost:6379"
