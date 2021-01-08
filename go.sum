@@ -1,7 +1,7 @@
 github.com/OpenSlides/openslides-models-to-go v0.3.1-0.20210108100717-a090f94578fc h1:OIebqgk8GmgK12iKv4geh+A9jeHhis/sNHUYTqj3A8M=
 github.com/OpenSlides/openslides-models-to-go v0.3.1-0.20210108100717-a090f94578fc/go.mod h1:CriCefW5smTixhFfVLiuA8NgyMX4PAU5e3YpJHnaZx8=
-github.com/OpenSlides/openslides-permission-service v0.0.0-20210108094537-55d5c676a770 h1:kdvpyAU5wO/NsdPDcJUD5JD3aa2oWrnbDBdS0Q/ednI=
-github.com/OpenSlides/openslides-permission-service v0.0.0-20210108094537-55d5c676a770/go.mod h1:0zxxIWgc4QDKZv8RXnjaQjITXCe14iXVMDVIu/8EXoM=
+github.com/OpenSlides/openslides-permission-service v0.0.0-20210108111245-30d64b58008b h1:bq40P9C1kjzUE2i8JzXlH34XoyLCrkgVH+RVje0pN4I=
+github.com/OpenSlides/openslides-permission-service v0.0.0-20210108111245-30d64b58008b/go.mod h1:0zxxIWgc4QDKZv8RXnjaQjITXCe14iXVMDVIu/8EXoM=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1 h1:CaO/zOnF8VvUfEbhRatPcwKVWamvbYd8tQGRWacE9kU=
