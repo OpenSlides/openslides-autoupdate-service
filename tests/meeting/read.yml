@@ -1,0 +1,40 @@
+---
+fqfields:
+- meeting/1/id
+- meeting/1/name
+- meeting/1/enable_anonymous
+- meeting/1/welcome_title
+- meeting/1/welcome_text
+- meeting/1/conference_stream_url
+- meeting/1/conference_stream_poster_url
+
+cases:
+- name: everyone
+  user_id: 0
+  can_see:
+  - meeting/1/id
+  - meeting/1/enable_anonymous
+
+- name: member
+  can_see:
+  - meeting/1/id
+  - meeting/1/name
+  - meeting/1/enable_anonymous
+
+- name: can_see_frontpage
+  permission: meeting.can_see_frontpage
+  can_see:
+  - meeting/1/id
+  - meeting/1/name
+  - meeting/1/enable_anonymous
+  - meeting/1/welcome_title
+  - meeting/1/welcome_text
+
+- name: can_see_livestream
+  permission: meeting.can_see_livestream
+  can_see:
+  - meeting/1/id
+  - meeting/1/name
+  - meeting/1/enable_anonymous
+  - meeting/1/conference_stream_url
+  - meeting/1/conference_stream_poster_url

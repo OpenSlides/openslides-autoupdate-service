@@ -106,6 +106,7 @@ func (p *poll) fields(fqfields []perm.FQField, result map[string]bool, restricte
 	var lastID int
 	for _, fqfield := range fqfields {
 		if lastID != fqfield.ID {
+			lastID = fqfield.ID
 			var err error
 			hasPerm, err = f(fqfield)
 			if err != nil {

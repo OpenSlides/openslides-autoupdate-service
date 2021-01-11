@@ -36,6 +36,7 @@ func (a *AgendaItem) read(ctx context.Context, userID int, fqfields []perm.FQFie
 	for _, g := range grouped {
 		for _, fqfield := range g.fqfields {
 			if lastID != fqfield.ID {
+				lastID = fqfield.ID
 				fqid := fmt.Sprintf("agenda_item/%d", fqfield.ID)
 				var isInternal bool
 				if err := a.dp.GetIfExist(ctx, fqid+"/is_internal", &isInternal); err != nil {
@@ -92,6 +93,7 @@ func groupByMeeting(ctx context.Context, dp dataprovider.DataProvider, userID in
 	var err error
 	for _, fqfield := range fqfields {
 		if lastID != fqfield.ID {
+			lastID = fqfield.ID
 			meetingID, err = dp.MeetingFromModel(ctx, fqfield.FQID())
 			if err != nil {
 				return nil, fmt.Errorf("getting meeting id for %s: %w", fqfield.String(), err)

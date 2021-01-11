@@ -2,7 +2,10 @@ package collection
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
 	"github.com/OpenSlides/openslides-permission-service/internal/perm"
@@ -28,6 +31,22 @@ func ReadInMeeting(dp dataprovider.DataProvider, collections ...string) perm.Con
 			s.RegisterReadHandler(coll, isInMeeting(dp, coll))
 		}
 	}
+}
+
+// Public can be seen by everyone.
+func Public(dp dataprovider.DataProvider, collections ...string) perm.ConnecterFunc {
+	return func(s perm.HandlerStore) {
+		for _, c := range collections {
+			s.RegisterReadHandler(c, perm.ReadCheckerFunc(isPublic))
+		}
+	}
+}
+
+func isPublic(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
+	for _, field := range fqfields {
+		result[field.String()] = true
+	}
+	return nil
 }
 
 func isInMeeting(dp dataprovider.DataProvider, collection string) perm.ReadCheckerFunc {
@@ -64,4 +83,42 @@ func hasPerm(dp dataprovider.DataProvider, permission, collection string) perm.R
 			return allowed, nil
 		})
 	}
+}
+
+// WritePerm initializes actions, that only need one permission
+func WritePerm(dp dataprovider.DataProvider, def map[string]string) perm.ConnecterFunc {
+	return func(s perm.HandlerStore) {
+		for route, perm := range def {
+			parts := strings.Split(route, ".")
+			if len(parts) != 2 {
+				panic("Invalid WritePerm action: " + route)
+			}
+			s.RegisterWriteHandler(route, (writeChecker(dp, parts[1], perm)))
+		}
+	}
+}
+
+func writeChecker(dp dataprovider.DataProvider, collName, permission string) perm.WriteChecker {
+	return perm.WriteCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
+		var meetingID int
+		if err := json.Unmarshal(payload["meeting_id"], &meetingID); err != nil {
+			var id int
+			if err := json.Unmarshal(payload["id"], &id); err != nil {
+				return false, fmt.Errorf("no valid meeting_id or id in payload")
+			}
+
+			fqid := collName + "/" + strconv.Itoa(id)
+			meetingID, err = dp.MeetingFromModel(ctx, fqid)
+			if err != nil {
+				return false, fmt.Errorf("getting meeting id for %s: %w", fqid, err)
+			}
+		}
+
+		ok, err := perm.HasPerm(ctx, dp, userID, meetingID, permission)
+		if err != nil {
+			return false, fmt.Errorf("checking permission: %w", err)
+		}
+
+		return ok, nil
+	})
 }

@@ -1,0 +1,6 @@
+---
+fqfields:
+- resource/1/id
+
+can_see:
+- resource/1/id

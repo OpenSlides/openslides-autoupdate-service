@@ -1,0 +1,33 @@
+---
+db:
+  committee/1:
+    member_ids: [1]
+    manager_ids: []
+
+user_id: 1
+fqfields:
+- committee/1/id
+
+cases:
+- name: unprivileged
+  can_see: []
+
+- name: superuser
+  db:
+    user/1/organisation_management_level: superuser
+  can_see: [committee/1/id]
+
+- name: orga manager
+  db:
+    user/1/organisation_management_level: can_manage_organisation
+  can_see: [committee/1/id]
+
+- name: commitee manager
+  db:
+    user/1/committee_as_manager_ids: [1]
+  can_see: [committee/1/id]
+
+- name: commitee member
+  db:
+    user/1/committee_as_member_ids: [1]
+  can_see: [committee/1/id]

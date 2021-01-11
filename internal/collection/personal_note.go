@@ -58,11 +58,11 @@ func (p PersonalNote) RestrictFQFields(ctx context.Context, userID int, fqfields
 	var lastID int
 	for _, fqfield := range fqfields {
 		if lastID != fqfield.ID {
+			lastID = fqfield.ID
 			key := fmt.Sprintf("personal_note/%d/user_id", fqfield.ID)
 			if err := p.dp.Get(ctx, key, &noteUserID); err != nil {
 				return fmt.Errorf("getting %s from datastore: %w", key, err)
 			}
-			lastID = fqfield.ID
 		}
 
 		if noteUserID != userID {

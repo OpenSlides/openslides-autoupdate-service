@@ -96,23 +96,14 @@ func (dp *DataProvider) IsSuperuser(ctx context.Context, userID int) (bool, erro
 		return false, nil
 	}
 
-	// Get superadmin role id.
-	var superadminRoleID int
-	if err := dp.GetIfExist(ctx, "organisation/1/superadmin_role_id", &superadminRoleID); err != nil {
-		return false, fmt.Errorf("getting superadmin role id: %w", err)
+	var orgaLevel string
+	if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/organisation_management_level", userID), &orgaLevel); err != nil {
+		return false, fmt.Errorf("getting organisation level: %w", err)
 	}
-	if superadminRoleID == 0 {
-		return false, nil
+	if orgaLevel == "superuser" {
+		return true, nil
 	}
-
-	// Get users role id.
-	fqfield := fmt.Sprintf("user/%d/role_id", userID)
-	var userRoleID int
-	if err := dp.GetIfExist(ctx, fqfield, &userRoleID); err != nil {
-		return false, fmt.Errorf("getting role_id: %w", err)
-	}
-
-	return superadminRoleID == userRoleID, nil
+	return false, nil
 }
 
 // CommitteeID returns the id of a committee from an meeting id.

@@ -18,13 +18,15 @@ type Permission struct {
 }
 
 // New creates a new Permission object for a user in a specific meeting.
+//
+// If the user is not a member of the meeting, it returns nil.
 func New(ctx context.Context, dp dataprovider.DataProvider, userID, meetingID int) (*Permission, error) {
 	isMeeting, err := dp.InMeeting(ctx, userID, meetingID)
 	if err != nil {
 		return nil, fmt.Errorf("Looking for user %d in meeting %d: %w", userID, meetingID, err)
 	}
 	if !isMeeting {
-		return new(Permission), nil
+		return nil, nil
 	}
 
 	groupIDs := []int{}
@@ -80,6 +82,10 @@ func New(ctx context.Context, dp dataprovider.DataProvider, userID, meetingID in
 
 // Has returns true, if the permission object contains the given permissions.
 func (p *Permission) Has(perm string) bool {
+	if p == nil {
+		return false
+	}
+
 	if p.admin {
 		return true
 	}
@@ -158,9 +164,10 @@ func HasPerm(ctx context.Context, dp dataprovider.DataProvider, userID int, meet
 func AllFields(fqfields []FQField, result map[string]bool, f func(FQField) (bool, error)) error {
 	var hasPerm bool
 	var lastID int
-	var err error
 	for _, fqfield := range fqfields {
 		if lastID != fqfield.ID {
+			lastID = fqfield.ID
+			var err error
 			hasPerm, err = f(fqfield)
 			if err != nil {
 				return fmt.Errorf("checking %s: %w", fqfield, err)

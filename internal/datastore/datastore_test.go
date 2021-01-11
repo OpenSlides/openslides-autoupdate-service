@@ -11,14 +11,14 @@ import (
 
 func TestDatastore(t *testing.T) {
 	data := map[string]json.RawMessage{
-		"role/1/name": []byte(`"admins"`),
+		"collection/1/name": []byte(`"value"`),
 	}
 	dbServer := tests.NewDatastoreServer(data)
 	defer dbServer.TS.Close()
 
 	db := &datastore.Datastore{Addr: dbServer.TS.URL}
 
-	result, err := db.Get(context.Background(), "role/1/name", "unknown/2/field")
+	result, err := db.Get(context.Background(), "collection/1/name", "unknown/2/field")
 	if err != nil {
 		t.Fatalf("Got unexpected error: %v", err)
 	}
@@ -27,8 +27,8 @@ func TestDatastore(t *testing.T) {
 		t.Fatalf("Got %d values, expected 2", len(result))
 	}
 
-	if string(result[0]) != `"admins"` {
-		t.Errorf("Got first value `%s`, expected `\"admins\"`", result[0])
+	if string(result[0]) != `"value"` {
+		t.Errorf("Got first value `%s`, expected `\"value\"`", result[0])
 	}
 
 	if result[1] != nil {
