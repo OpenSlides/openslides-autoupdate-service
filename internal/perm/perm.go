@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
 )
@@ -176,5 +175,5 @@ func AllFields(fqfields []FQField, result map[string]bool, f func(FQField) (bool
 
 // LogNotAllowedf logs the permission failer.
 func LogNotAllowedf(format string, a ...interface{}) {
-	log.Printf(format, a...)
+	// log.Printf(format, a...)
 }

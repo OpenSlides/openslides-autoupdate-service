@@ -22,11 +22,11 @@ type DatastoreServer struct {
 }
 
 // NewDatastoreServer creates a new DatastoreServer.
-func NewDatastoreServer() *DatastoreServer {
+func NewDatastoreServer(data map[string]json.RawMessage) *DatastoreServer {
 	ts := new(DatastoreServer)
 
 	ts.TS = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		testData := NewTestDataProvider()
+		testData := dataProvider{data: data}
 		var requestData getManyRequest
 		if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 			http.Error(w, fmt.Sprintf("Invalid json input: %v", err), http.StatusBadRequest)

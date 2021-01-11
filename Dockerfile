@@ -22,6 +22,8 @@ FROM basis as testing
 RUN apk add build-base
 RUN go get -u golang.org/x/lint/golint
 
+COPY tests tests
+
 CMD go vet ./... && golint ./... && go test ./...
 
 

@@ -2,7 +2,6 @@ package collection
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
@@ -16,10 +15,6 @@ func Mediafile(dp dataprovider.DataProvider) perm.ConnecterFunc {
 			fqid := fmt.Sprintf("mediafile/%d", fqfield.ID)
 			meetingID, err := dp.MeetingFromModel(ctx, fqid)
 			if err != nil {
-				var errDoesNotExist dataprovider.DoesNotExistError
-				if errors.As(err, &errDoesNotExist) {
-					return false, nil
-				}
 				return false, fmt.Errorf("getting meetingID from model %s: %w", fqid, err)
 			}
 

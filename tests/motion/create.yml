@@ -1,0 +1,41 @@
+---
+action: motion.create
+payload:
+  meeting_id: 1
+
+
+cases:
+- name: without perm
+  is_allowed: false
+
+- name: with perm
+  permission: motion.can_create
+  is_allowed: true
+
+- name: create amentment with wrong perm
+  permission: motion.can_create
+  payload:
+    meeting_id: 1
+    parent_id: 1
+  is_allowed: false
+
+- name: create amentment correct perm
+  permission: motion.can_create_amendment
+  payload:
+    meeting_id: 1
+    parent_id: 1
+  is_allowed: true
+
+- name: create privileged fields wrong perm
+  permission: motion.can_create
+  payload:
+    meeting_id: 1
+    agenda_create: true
+  is_allowed: false
+
+- name: create privileged fields correct perm
+  permission: motion.can_manage
+  payload:
+    meeting_id: 1
+    agenda_create: true
+  is_allowed: true

@@ -3,6 +3,7 @@ package collection
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
@@ -76,7 +77,27 @@ func (p *poll) readVote(ctx context.Context, userID int, fqfields []perm.FQField
 		if perms == 0 {
 			return false, nil
 		}
-		return true, nil
+
+		if perms == 1 {
+			return true, nil
+		}
+
+		var voteUserID int
+		if err := p.dp.Get(ctx, fmt.Sprintf("vote/%d/user_id", fqfield.ID), &voteUserID); err != nil {
+			return false, fmt.Errorf("getting vote user id: %w", err)
+		}
+		if voteUserID == userID {
+			return true, nil
+		}
+
+		if err := p.dp.GetIfExist(ctx, fmt.Sprintf("vote/%d/delegated_user_id", fqfield.ID), &voteUserID); err != nil {
+			return false, fmt.Errorf("getting vote delegated user id: %w", err)
+		}
+		if voteUserID == userID {
+			return true, nil
+		}
+
+		return false, nil
 	})
 }
 
@@ -131,12 +152,12 @@ func (p *poll) pollPerm(ctx context.Context, userID, pollID int) (int, error) {
 		return 0, nil
 	}
 
-	var state int
+	var state string
 	if err := p.dp.Get(ctx, fmt.Sprintf("poll/%d/state", pollID), &state); err != nil {
 		return 0, fmt.Errorf("getting poll state: %w", err)
 	}
 
-	if state == 4 {
+	if state == "published" {
 		return 1, nil
 	}
 	return 2, nil
@@ -146,8 +167,12 @@ func (p *poll) canSee(ctx context.Context, perms *perm.Permission, userID int, o
 	var collection string
 	var id int
 	if objectID != "" {
-		if _, err := fmt.Sscanf(objectID, "%s/%d", &collection, &id); err != nil {
-			return false, fmt.Errorf("invalid fqid %s", objectID)
+		parts := strings.Split(objectID, "/")
+		collection = parts[0]
+		var err error
+		id, err = strconv.Atoi(parts[1])
+		if err != nil {
+			return false, fmt.Errorf("invalid object id: %w", err)
 		}
 	}
 

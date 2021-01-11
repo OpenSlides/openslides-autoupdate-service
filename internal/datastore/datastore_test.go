@@ -2,6 +2,7 @@ package datastore_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/datastore"
@@ -9,7 +10,10 @@ import (
 )
 
 func TestDatastore(t *testing.T) {
-	dbServer := tests.NewDatastoreServer()
+	data := map[string]json.RawMessage{
+		"role/1/name": []byte(`"admins"`),
+	}
+	dbServer := tests.NewDatastoreServer(data)
 	defer dbServer.TS.Close()
 
 	db := &datastore.Datastore{Addr: dbServer.TS.URL}
@@ -23,8 +27,8 @@ func TestDatastore(t *testing.T) {
 		t.Fatalf("Got %d values, expected 2", len(result))
 	}
 
-	if string(result[0]) != `"Superadmin role"` {
-		t.Errorf("Got first value `%s`, expected `\"Superadmin role\"`", result[0])
+	if string(result[0]) != `"admins"` {
+		t.Errorf("Got first value `%s`, expected `\"admins\"`", result[0])
 	}
 
 	if result[1] != nil {
@@ -33,7 +37,8 @@ func TestDatastore(t *testing.T) {
 }
 
 func TestDataStoreNull(t *testing.T) {
-	dbServer := tests.NewDatastoreServer()
+	data := map[string]json.RawMessage{}
+	dbServer := tests.NewDatastoreServer(data)
 	defer dbServer.TS.Close()
 
 	db := &datastore.Datastore{Addr: dbServer.TS.URL}

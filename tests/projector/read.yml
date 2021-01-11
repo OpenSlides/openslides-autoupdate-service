@@ -1,0 +1,38 @@
+---
+db:
+  projector/1/meeting_id: 1
+  projection/1/meeting_id: 1
+  projectiondefault/1/meeting_id: 1
+  projector_message/1/meeting_id: 1
+  projector_countdown/1/meeting_id: 1
+
+  projector/2/meeting_id: 2
+  projection/2/meeting_id: 2
+  projectiondefault/2/meeting_id: 2
+  projector_message/2/meeting_id: 2
+  projector_countdown/2/meeting_id: 2
+
+fqfields:
+- projector/1/id
+- projection/1/id
+- projectiondefault/1/id
+- projector_message/1/id
+- projector_countdown/1/id
+- projector/2/id
+- projection/2/id
+- projectiondefault/2/id
+- projector_message/2/id
+- projector_countdown/2/id
+
+casses:
+- name: with_perm
+  permission: projector.can_see
+  can_see:
+  - projector/1/id
+  - projection/1/id
+  - projectiondefault/1/id
+  - projector_message/1/id
+  - projector_countdown/1/id
+
+- name: without_perm
+  can_see: []
