@@ -27,13 +27,10 @@ type poll struct {
 
 func (p *poll) readPoll(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 	restricted := map[string]bool{
-		"votesvalid":     true,
-		"votesinvalid":   true,
-		"votescast":      true,
-		"voted_ids":      true,
-		"global_yes":     true,
-		"global_no":      true,
-		"global_abstain": true,
+		"votesvalid":   true,
+		"votesinvalid": true,
+		"votescast":    true,
+		"voted_ids":    true,
 	}
 
 	return p.fields(fqfields, result, restricted, func(fqfield perm.FQField) (int, error) {
@@ -43,9 +40,10 @@ func (p *poll) readPoll(ctx context.Context, userID int, fqfields []perm.FQField
 
 func (p *poll) readOption(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 	restricted := map[string]bool{
-		"yes":     true,
-		"no":      true,
-		"abstain": true,
+		"yes":      true,
+		"no":       true,
+		"abstain":  true,
+		"vote_ids": true,
 	}
 
 	return p.fields(fqfields, result, restricted, func(fqfield perm.FQField) (int, error) {

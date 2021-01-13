@@ -75,12 +75,15 @@ fqfields:
 
 cases:
 - name: no perm
-  can_see: []
+  can_see:
 
 - name: can_see
   permission: motion.can_see
   can_see:
   - poll/1/id
+  - poll/1/global_yes
+  - poll/1/global_no
+  - poll/1/global_abstain
   - poll/2/id
   - poll/2/votesvalid
   - poll/2/votesinvalid
