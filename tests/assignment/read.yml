@@ -3,9 +3,9 @@ db:
   assignment_candidate/1/meeting_id: 1
   assignment/1/meeting_id: 1
 
-fqfields:
-- assignment/1/id
-- assignment_candidate/1/id
+fqids:
+- assignment/1
+- assignment_candidate/1
 
 cases:
 - name: Without perm
@@ -14,5 +14,5 @@ cases:
 - name: With perm
   permission: assignment.can_see
   can_see:
-  - assignment/1/id
-  - assignment_candidate/1/id
+  - assignment/1
+  - assignment_candidate/1

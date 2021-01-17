@@ -45,15 +45,9 @@ cases:
     is_allowed: false
 
 - name: read
-  fqfields:
-  - personal_note/1/id
-  - personal_note/1/name
-  - personal_note/1/user_id
-  - personal_note/2/id
-  - personal_note/2/name
-  - personal_note/2/user_id
+  fqids:
+  - personal_note/1
+  - personal_note/2
   user_id: 1
   can_see:
-  - personal_note/1/id
-  - personal_note/1/name
-  - personal_note/1/user_id
+  - personal_note/1

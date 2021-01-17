@@ -1,15 +1,9 @@
 ---
-fqfields:
-- meeting/1/id
-- meeting/1/name
-- meeting/1/enable_anonymous
-- meeting/1/welcome_title
-- meeting/1/welcome_text
-- meeting/1/conference_stream_url
-- meeting/1/conference_stream_poster_url
+fqids:
+- meeting/1
 
 cases:
-- name: everyone 1
+- name: anonymous not enabled
   db:
     meeting/1/enable_anonymous: false
   user_id: 0
@@ -17,35 +11,33 @@ cases:
   - meeting/1/id
   - meeting/1/enable_anonymous
 
-- name: everyone 2
+
+- name: anonymous enabled
   db:
     meeting/1/enable_anonymous: true
   user_id: 0
-  can_see:
-  - meeting/1/id
-  - meeting/1/enable_anonymous
-  - meeting/1/name
+  can_not_see:
+  - meeting/1/welcome_title
+  - meeting/1/welcome_text
+  - meeting/1/conference_stream_url
+  - meeting/1/conference_stream_poster_url
 
 - name: member
-  can_see:
-  - meeting/1/id
-  - meeting/1/name
-  - meeting/1/enable_anonymous
+  can_not_see:
+  - meeting/1/welcome_title
+  - meeting/1/welcome_text
+  - meeting/1/conference_stream_url
+  - meeting/1/conference_stream_poster_url
+
 
 - name: can_see_frontpage
   permission: meeting.can_see_frontpage
-  can_see:
-  - meeting/1/id
-  - meeting/1/name
-  - meeting/1/enable_anonymous
-  - meeting/1/welcome_title
-  - meeting/1/welcome_text
+  can_not_see:
+  - meeting/1/conference_stream_url
+  - meeting/1/conference_stream_poster_url
 
 - name: can_see_livestream
   permission: meeting.can_see_livestream
-  can_see:
-  - meeting/1/id
-  - meeting/1/name
-  - meeting/1/enable_anonymous
-  - meeting/1/conference_stream_url
-  - meeting/1/conference_stream_poster_url
+  can_not_see:
+  - meeting/1/welcome_title
+  - meeting/1/welcome_text

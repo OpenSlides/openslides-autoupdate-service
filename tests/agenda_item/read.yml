@@ -1,7 +1,5 @@
 ---
 db:
-  meeting/1/agenda_item_ids: [1,2,3,4]
-
   agenda_item:
     1:
       is_hidden: false
@@ -23,14 +21,11 @@ db:
       is_internal: true
       meeting_id: 1
 
-
-fqfields:
-  - agenda_item/1/id
-  - agenda_item/1/duration
-  - agenda_item/1/comment
-  - agenda_item/2/id
-  - agenda_item/3/id
-  - agenda_item/4/id
+fqids:
+- agenda_item/1
+- agenda_item/2
+- agenda_item/3
+- agenda_item/4
 
 cases:
 - name: unprivileged user
@@ -38,22 +33,25 @@ cases:
 
 - name: can_see
   permission: agenda_item.can_see
-  can_see:
-  - agenda_item/1/id
+  can_not_see:
+  - agenda_item/1/duration
+  - agenda_item/1/comment
+  - agenda_item/2
+  - agenda_item/3
+  - agenda_item/4
 
 - name: can_see_internal
   permission: agenda_item.can_see_internal
-  can_see:
-  - agenda_item/1/id
-  - agenda_item/1/duration
-  - agenda_item/3/id
+  can_not_see:
+  - agenda_item/1/comment
+  - agenda_item/2
+  - agenda_item/3/comment
+  - agenda_item/4
 
 - name: can_manage
   permission: agenda_item.can_manage
   can_see:
-  - agenda_item/1/id
-  - agenda_item/1/duration
-  - agenda_item/1/comment
-  - agenda_item/2/id
-  - agenda_item/3/id
-  - agenda_item/4/id
+  - agenda_item/1
+  - agenda_item/2
+  - agenda_item/3
+  - agenda_item/4

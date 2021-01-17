@@ -59,17 +59,17 @@ db:
       restrictions:
       - is_submitter
 
-fqfields:
-- motion/1/id
-- motion/2/id
-- motion/3/id
-- motion/4/id
-- motion/5/id
-- motion_submitter/1/id
-- motion_submitter/2/id
-- motion_submitter/3/id
-- motion_submitter/4/id
-- motion_submitter/5/id
+fqids:
+- motion/1
+- motion/2
+- motion/3
+- motion/4
+- motion/5
+- motion_submitter/1
+- motion_submitter/2
+- motion_submitter/3
+- motion_submitter/4
+- motion_submitter/5
 
 cases:
 - name: no perm
@@ -78,38 +78,38 @@ cases:
 - name: can_see
   permission: motion.can_see
   can_see:
-  - motion/1/id
-  - motion_submitter/1/id
+  - motion/1
+  - motion_submitter/1
 
 - name: can_see_internal
   permission: motion.can_see_internal
   can_see:
-  - motion/1/id
-  - motion/2/id
-  - motion_submitter/1/id
-  - motion_submitter/2/id
+  - motion/1
+  - motion/2
+  - motion_submitter/1
+  - motion_submitter/2
 
 - name: can_manage_metadata
   permission: motion.can_manage_metadata
   can_see:
-  - motion/1/id
-  - motion/3/id
-  - motion_submitter/1/id
-  - motion_submitter/3/id
+  - motion/1
+  - motion/3
+  - motion_submitter/1
+  - motion_submitter/3
 
 - name: can_manage
   permission: motion.can_manage
   can_see:
-  - motion/1/id
-  - motion/2/id
-  - motion/3/id
-  - motion/4/id
-  - motion/5/id
-  - motion_submitter/1/id
-  - motion_submitter/2/id
-  - motion_submitter/3/id
-  - motion_submitter/4/id
-  - motion_submitter/5/id
+  - motion/1
+  - motion/2
+  - motion/3
+  - motion/4
+  - motion/5
+  - motion_submitter/1
+  - motion_submitter/2
+  - motion_submitter/3
+  - motion_submitter/4
+  - motion_submitter/5
 
 - name: submitter no perm
   user_id: 1
@@ -119,7 +119,7 @@ cases:
   permission: motion.can_see
   user_id: 1
   can_see:
-  - motion/1/id
-  - motion/5/id
-  - motion_submitter/1/id
-  - motion_submitter/5/id
+  - motion/1
+  - motion/5
+  - motion_submitter/1
+  - motion_submitter/5

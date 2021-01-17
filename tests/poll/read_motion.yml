@@ -43,92 +43,41 @@ db:
     state_id: 1
 
 user_id: 1
-fqfields:
-- poll/1/id
-- poll/1/votesvalid
-- poll/1/votesinvalid
-- poll/1/votescast
-- poll/1/voted_ids
-- poll/1/global_yes
-- poll/1/global_no
-- poll/1/global_abstain
-- poll/2/id
-- poll/2/votesvalid
-- poll/2/votesinvalid
-- poll/2/votescast
-- poll/2/voted_ids
-- poll/2/global_yes
-- poll/2/global_no
-- poll/2/global_abstain
-- option/1/id
-- option/1/yes
-- option/1/no
-- option/1/abstain
-- option/2/id
-- option/2/yes
-- option/2/no
-- option/2/abstain
-- vote/1/id
-- vote/2/id
-- vote/3/id
-- vote/4/id
+fqids:
+- poll/1
+- poll/2
+- option/1
+- option/2
+- vote/1
+- vote/2
+- vote/3
+- vote/4
 
 cases:
 - name: no perm
-  can_see:
+  can_see: []
 
 - name: can_see
   permission: motion.can_see
-  can_see:
-  - poll/1/id
-  - poll/1/global_yes
-  - poll/1/global_no
-  - poll/1/global_abstain
-  - poll/2/id
-  - poll/2/votesvalid
-  - poll/2/votesinvalid
-  - poll/2/votescast
-  - poll/2/voted_ids
-  - poll/2/global_yes
-  - poll/2/global_no
-  - poll/2/global_abstain
-  - option/1/id
-  - option/2/id
-  - option/2/yes
-  - option/2/no
-  - option/2/abstain
-  - vote/1/id
-  - vote/2/id
-  - vote/4/id
-
-- name: can_manage
-  permission: motion.can_manage
-  can_see:
-  - poll/1/id
+  can_not_see:
   - poll/1/votesvalid
   - poll/1/votesinvalid
   - poll/1/votescast
   - poll/1/voted_ids
-  - poll/1/global_yes
-  - poll/1/global_no
-  - poll/1/global_abstain
-  - poll/2/id
-  - poll/2/votesvalid
-  - poll/2/votesinvalid
-  - poll/2/votescast
-  - poll/2/voted_ids
-  - poll/2/global_yes
-  - poll/2/global_no
-  - poll/2/global_abstain
-  - option/1/id
   - option/1/yes
   - option/1/no
   - option/1/abstain
-  - option/2/id
-  - option/2/yes
-  - option/2/no
-  - option/2/abstain
-  - vote/1/id
-  - vote/2/id
-  - vote/3/id
-  - vote/4/id
+  - option/1/vote_ids
+  - vote/3
+
+- name: can_manage
+  permission: motion.can_manage
+  can_see:
+  - poll/1
+  - poll/2
+  - option/1
+  - option/2
+  - vote/1
+  - vote/2
+  - vote/3
+  - vote/4

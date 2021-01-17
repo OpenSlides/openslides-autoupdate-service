@@ -3,9 +3,9 @@ db:
   tag/1/meeting_id: 1
   tag/2/meeting_id: 2
 
-fqfields:
-- tag/1/id
-- tag/2/id
+fqids:
+- tag/1
+- tag/2
 
 can_see:
-- tag/1/id
+- tag/1

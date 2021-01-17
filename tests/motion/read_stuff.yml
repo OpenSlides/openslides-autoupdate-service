@@ -5,21 +5,21 @@ db:
   motion_state/1/meeting_id: 1
   motion_statute_paragraph/1/meeting_id: 1
 
-fqfields:
-- motion_workflow/1/id
-- motion_category/1/id
-- motion_state/1/id
-- motion_statute_paragraph/1/id
+fqids:
+- motion_workflow/1
+- motion_category/1
+- motion_state/1
+- motion_statute_paragraph/1
 
 
 casses:
 - name: with_perm
   permission: motion.can_see
   can_see:
-  - motion_workflow/1/id
-  - motion_category/1/id
-  - motion_state/1/id
-  - motion_statute_paragraph/1/id
+  - motion_workflow/1
+  - motion_category/1
+  - motion_state/1
+  - motion_statute_paragraph/1
 
 - name: without_perm
   can_see: []

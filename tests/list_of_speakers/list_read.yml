@@ -5,8 +5,8 @@ db:
     speaker_ids: [1]
   speaker/1/user_id: 1
 
-fqfields:
-  - list_of_speakers/1/id
+fqids:
+  - list_of_speakers/1
 
 cases:
 - name: without perm
@@ -15,10 +15,10 @@ cases:
 - name: with perm
   permission: list_of_speakers.can_see
   can_see:
-  - list_of_speakers/1/id
+  - list_of_speakers/1
 
 - name: speaker without perm
   user_id: 1
   can_see:
-    - list_of_speakers/1/id
+    - list_of_speakers/1
 

@@ -1,6 +1,6 @@
 ---
-fqfields:
-- organisation/1/id
+fqids:
+- organisation/1
 
 can_see:
-- organisation/1/id
+- organisation/1

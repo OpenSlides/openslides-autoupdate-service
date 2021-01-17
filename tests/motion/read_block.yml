@@ -8,9 +8,9 @@ db:
       meeting_id: 1
       internal: true
 
-fqfields:
-- motion_block/1/id
-- motion_block/2/id
+fqids:
+- motion_block/1
+- motion_block/2
 
 cases:
 - name: no perm
@@ -19,10 +19,10 @@ cases:
 - name: can_see
   permission: motion.can_see
   can_see:
-  - motion_block/1/id
+  - motion_block/1
 
 - name: can_manage
   permission: motion.can_manage
   can_see:
-  - motion_block/1/id
-  - motion_block/2/id
+  - motion_block/1
+  - motion_block/2

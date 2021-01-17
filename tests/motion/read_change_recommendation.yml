@@ -28,11 +28,11 @@ db:
   motion_state/1/restrictions: []
   motion_state/2/restrictions: [motion.can_see_internal]
 
-fqfields:
-- motion_change_recommendation/1/id
-- motion_change_recommendation/2/id
-- motion_change_recommendation/3/id
-- motion_change_recommendation/4/id
+fqids:
+- motion_change_recommendation/1
+- motion_change_recommendation/2
+- motion_change_recommendation/3
+- motion_change_recommendation/4
 
 cases:
 - name: no perm
@@ -41,18 +41,18 @@ cases:
 - name: can_see
   permission: motion.can_see
   can_see:
-  - motion_change_recommendation/1/id
+  - motion_change_recommendation/1
 
 - name: can_see_internal
   permission: motion.can_see_internal
   can_see:
-  - motion_change_recommendation/1/id
-  - motion_change_recommendation/3/id
+  - motion_change_recommendation/1
+  - motion_change_recommendation/3
 
 - name: can_manage
   permission: motion.can_manage
   can_see:
-  - motion_change_recommendation/1/id
-  - motion_change_recommendation/2/id
-  - motion_change_recommendation/3/id
-  - motion_change_recommendation/4/id
+  - motion_change_recommendation/1
+  - motion_change_recommendation/2
+  - motion_change_recommendation/3
+  - motion_change_recommendation/4

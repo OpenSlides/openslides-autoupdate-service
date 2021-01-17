@@ -38,13 +38,13 @@ db:
 
 user_id: 1
 
-fqfields:
-- motion_comment_section/1/id
-- motion_comment_section/2/id
-- motion_comment_section/3/id
-- motion_comment/1/id
-- motion_comment/2/id
-- motion_comment/3/id
+fqids:
+- motion_comment_section/1
+- motion_comment_section/2
+- motion_comment_section/3
+- motion_comment/1
+- motion_comment/2
+- motion_comment/3
 
 cases:
 - name: no perm
@@ -53,23 +53,23 @@ cases:
 - name: can_see
   permission: motion.can_see
   can_see:
-  - motion_comment_section/1/id
-  - motion_comment/1/id
+  - motion_comment_section/1
+  - motion_comment/1
 
 - name: can_see_internal
   permission: motion.can_see_internal
   can_see:
-  - motion_comment_section/1/id
-  - motion_comment_section/3/id
-  - motion_comment/1/id
-  - motion_comment/3/id
+  - motion_comment_section/1
+  - motion_comment_section/3
+  - motion_comment/1
+  - motion_comment/3
 
 - name: can_manage
   permission: motion.can_manage
   can_see:
-  - motion_comment_section/1/id
-  - motion_comment_section/2/id
-  - motion_comment_section/3/id
-  - motion_comment/1/id
-  - motion_comment/2/id
-  - motion_comment/3/id
+  - motion_comment_section/1
+  - motion_comment_section/2
+  - motion_comment_section/3
+  - motion_comment/1
+  - motion_comment/2
+  - motion_comment/3
