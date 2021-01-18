@@ -109,7 +109,6 @@ func run() error {
 
 	// Restricter Service.
 	checker := restrict.RelationChecker(restrict.RelationLists, perms)
-	checker["user/password"] = restrict.KeyRemover()
 	restricter := restrict.New(perms, checker)
 
 	// Autoupdate Service.
