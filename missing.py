@@ -46,6 +46,8 @@ def implemented() -> tuple[set[str], set[str]]:
 
 
 if __name__ == "__main__":
+    printed = False
+
     try:
         implemented_read, impelemented_write = implemented()
     except requests.exceptions.ConnectionError:
@@ -53,25 +55,47 @@ if __name__ == "__main__":
         sys.exit(2)
 
     try:
-        missing_write = actions() - impelemented_write
+        actions = actions()
     except requests.exceptions.ConnectionError:
         print("Can not connect to the backend. Go to the backend repo and Run:\n\n\tmake run-prod\n\n")
         sys.exit(2)
 
+    collections = collections()
+
+    missing_write = actions - impelemented_write
     if missing_write:
+        printed = True
         print("Missing write:")
         for mw in sorted(missing_write):
             print(f"* {mw}")
 
-    missing_read = collections() - implemented_read
-    if missing_read:
-        if missing_write:
+    unknown_write = impelemented_write - actions
+    if unknown_write:
+        if printed:
             print()
+        printed = True
+        print("Unknown actions:")
+        for mw in sorted(unknown_write):
+            print(f"* {mw}")
 
-        print("Missing read")
+    missing_read = collections - implemented_read
+    if missing_read:
+        if printed:
+            print()
+        printed = True
+
+        print("Missing read:")
         for mr in sorted(missing_read):
             print(f"* {mr}")
 
+    unknown_read = implemented_read - collections
+    if unknown_read:
+        if printed:
+            print()
+
+        print("Unknown Collections:")
+        for mr in sorted(unknown_read):
+            print(f"* {mr}")
 
     if missing_write or missing_read:
         sys.exit(1)

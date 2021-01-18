@@ -1,0 +1,147 @@
+---
+db:
+  user/1/group_$_ids: ["1"]
+
+fqids:
+- user/1
+
+cases:
+- name: no perm
+  can_see: []
+
+- name: can see
+  permission: user.can_see
+  can_see:
+  - user/1/id
+  - user/1/username
+  - user/1/title
+  - user/1/first_name
+  - user/1/last_name
+  - user/1/is_physical_person
+  - user/1/gender
+  - user/1/default_number
+  - user/1/default_structure_level
+  - user/1/is_demo_user
+  - user/1/is_present_in_meeting_ids
+  - user/1/number_$
+  - user/1/structure_level_$
+  - user/1/about_me_$
+  - user/1/vote_weight_$
+
+  - user/1/group_$_ids
+  - user/1/speaker_$_ids
+  - user/1/supported_motion_$_ids
+  - user/1/submitted_motion_$_ids
+  - user/1/poll_voted_$_ids
+  - user/1/option_$_ids
+  - user/1/vote_$_ids
+  - user/1/vote_delegated_vote_$_ids
+  - user/1/assignment_candidate_$_ids
+  - user/1/projection_$_ids
+  - user/1/current_projector_$_ids
+
+- name: can see extra
+  permission: user.can_see_extra_data
+  can_see:
+  # Fields from can_see
+  - user/1/id
+  - user/1/username
+  - user/1/title
+  - user/1/first_name
+  - user/1/last_name
+  - user/1/is_physical_person
+  - user/1/gender
+  - user/1/default_number
+  - user/1/default_structure_level
+  - user/1/is_demo_user
+  - user/1/is_present_in_meeting_ids
+  - user/1/number_$
+  - user/1/structure_level_$
+  - user/1/about_me_$
+  - user/1/vote_weight_$
+  - user/1/group_$_ids
+  - user/1/speaker_$_ids
+  - user/1/supported_motion_$_ids
+  - user/1/submitted_motion_$_ids
+  - user/1/poll_voted_$_ids
+  - user/1/option_$_ids
+  - user/1/vote_$_ids
+  - user/1/vote_delegated_vote_$_ids
+  - user/1/assignment_candidate_$_ids
+  - user/1/projection_$_ids
+  - user/1/current_projector_$_ids
+
+  # Fields new in this level
+  - user/1/is_active
+  - user/1/email
+  - user/1/last_email_send
+  - user/1/meeting_id
+  - user/1/guest_meeting_ids
+  - user/1/comment_$
+  - user/1/vote_delegated_$_to_id
+  - user/1/vote_delegations_$_from_ids
+
+
+- name: can manage
+  permission: user.can_manage
+  can_not_see:
+  - user/1/password
+  - user/1/organisation_management_level
+  - user/1/committee_as_member_ids
+  - user/1/committee_as_manager_ids
+  - user/1/personal_note_$_ids
+
+- name: Orga level user manager
+  db:
+    user/1337/organisation_management_level: can_manage_users
+  can_not_see:
+  - user/1/password
+  - user/1/personal_note_$_ids
+  - user/1/is_present_in_meeting_ids
+  - user/1/meeting_id
+  - user/1/comment_$
+  - user/1/about_me_$
+  - user/1/group_$_ids
+  - user/1/speaker_$_ids
+  - user/1/supported_motion_$_ids
+  - user/1/submitted_motion_$_ids
+  - user/1/poll_voted_$_ids
+  - user/1/option_$_ids
+  - user/1/vote_$_ids
+  - user/1/vote_delegated_vote_$_ids
+  - user/1/assignment_candidate_$_ids
+  - user/1/projection_$_ids
+  - user/1/current_projector_$_ids
+  - user/1/vote_delegated_$_to_id
+  - user/1/vote_delegations_$_from_ids
+
+- name: Orga level manager
+  db:
+    user/1337/organisation_management_level: can_manage_organisation
+  can_not_see:
+  - user/1/password
+  - user/1/personal_note_$_ids
+  - user/1/is_present_in_meeting_ids
+  - user/1/meeting_id
+  - user/1/comment_$
+  - user/1/about_me_$
+  - user/1/group_$_ids
+  - user/1/speaker_$_ids
+  - user/1/supported_motion_$_ids
+  - user/1/submitted_motion_$_ids
+  - user/1/poll_voted_$_ids
+  - user/1/option_$_ids
+  - user/1/vote_$_ids
+  - user/1/vote_delegated_vote_$_ids
+  - user/1/assignment_candidate_$_ids
+  - user/1/projection_$_ids
+  - user/1/current_projector_$_ids
+  - user/1/vote_delegated_$_to_id
+  - user/1/vote_delegations_$_from_ids
+
+- name: can see own user
+  user_id: 1
+
+  can_not_see:
+  - user/1/password
+  # TODO: Restrict user/1/comment_$ in restricter and can_not_see user/1/comment_$X if can_see_extra X or manager in X

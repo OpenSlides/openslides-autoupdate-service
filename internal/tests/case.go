@@ -145,12 +145,14 @@ func (c *Case) service() (*permission.Permission, error) {
 		// Make sure, the user is in the meeting.
 		meetingFQID := fmt.Sprintf("meeting/%d", c.MeetingID)
 		data[meetingFQID+"/user_ids"] = jsonAddInt(data[meetingFQID+"/user_ids"], c.userID)
+		f := userFQID + fmt.Sprintf("/group_$_ids")
+		data[f] = jsonAddStr(data[f], strconv.Itoa(c.MeetingID))
 
 		// Create group with the user and the given permissions.
 		data["group/1337/id"] = []byte("1337")
 		data[meetingFQID+"/group_ids"] = []byte("[1337]")
 		data["group/1337/user_ids"] = []byte(fmt.Sprintf("[%d]", c.userID))
-		f := fmt.Sprintf("user/%d/group_$%d_ids", c.userID, c.MeetingID)
+		f = userFQID + fmt.Sprintf("/group_$%d_ids", c.MeetingID)
 		data[f] = jsonAddInt(data[f], 1337)
 		data["group/1337/meeting_id"] = []byte(strconv.Itoa(c.MeetingID))
 		if c.Permission != "" {
@@ -223,7 +225,7 @@ func (c *Case) readTestResult(t *testing.T, got map[string]bool, canSee, canNotS
 
 	for _, f := range canSee {
 		if !got[f] {
-			t.Errorf("Got field %s", f)
+			t.Errorf("Did not get field %s", f)
 		}
 	}
 
@@ -235,7 +237,7 @@ func (c *Case) readTestResult(t *testing.T, got map[string]bool, canSee, canNotS
 
 	for _, f := range canNotSee {
 		if !set[f] {
-			t.Errorf("Did not get field %s", f)
+			t.Errorf("Got field %s", f)
 		}
 	}
 }
@@ -347,6 +349,24 @@ func defaultInt(value int, d int) int {
 // If the value exists in the list, the list is returned unchanged.
 func jsonAddInt(list json.RawMessage, value int) json.RawMessage {
 	var decoded []int
+	if list != nil {
+		json.Unmarshal(list, &decoded)
+	}
+
+	for _, i := range decoded {
+		if i == value {
+			return list
+		}
+	}
+
+	decoded = append(decoded, value)
+	list, _ = json.Marshal(decoded)
+	return list
+}
+
+// jsonAddStr is like jsonAddInt but with string.
+func jsonAddStr(list json.RawMessage, value string) json.RawMessage {
+	var decoded []string
 	if list != nil {
 		json.Unmarshal(list, &decoded)
 	}

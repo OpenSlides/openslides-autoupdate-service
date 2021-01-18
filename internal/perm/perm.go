@@ -21,50 +21,49 @@ type Permission struct {
 //
 // If the user is not a member of the meeting, it returns nil.
 func New(ctx context.Context, dp dataprovider.DataProvider, userID, meetingID int) (*Permission, error) {
-	isMeeting, err := dp.InMeeting(ctx, userID, meetingID)
-	if err != nil {
-		return nil, fmt.Errorf("Looking for user %d in meeting %d: %w", userID, meetingID, err)
-	}
-	if !isMeeting {
-		return nil, nil
-	}
+	var groupIDs []int
 
-	groupIDs := []int{}
-	if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/group_$%d_ids", userID, meetingID), &groupIDs); err != nil {
-		return nil, fmt.Errorf("get group ids: %w", err)
-	}
-
-	// Get superadmin_group_id.
-	var superadminGroupID int
-	fqfield := fmt.Sprintf("meeting/%d/superadmin_group_id", meetingID)
-	if err := dp.GetIfExist(ctx, fqfield, &superadminGroupID); err != nil {
-		return nil, fmt.Errorf("check for superadmin group: %w", err)
-	}
-
-	if superadminGroupID != 0 {
-		for _, id := range groupIDs {
-			if id == superadminGroupID {
-				return &Permission{admin: true}, nil
-			}
+	if userID == 0 {
+		var enableAnonymous bool
+		fqfield := fmt.Sprintf("meeting/%d/enable_anonymous", meetingID)
+		if err := dp.GetIfExist(ctx, fqfield, &enableAnonymous); err != nil {
+			return nil, fmt.Errorf("checking anonymous enabled: %w", err)
 		}
-	}
+		if !enableAnonymous {
+			return nil, nil
+		}
 
-	// effectiveGroupIDs are all ids the user is in. If the user is in no group,
-	// it is the id of the default group.
-	effectiveGroupIDs := groupIDs
-	if len(effectiveGroupIDs) == 0 {
 		var defaultGroupID int
-		fqfield := fmt.Sprintf("meeting/%d/default_group_id", meetingID)
+		fqfield = fmt.Sprintf("meeting/%d/default_group_id", meetingID)
 		if err := dp.GetIfExist(ctx, fqfield, &defaultGroupID); err != nil {
 			return nil, fmt.Errorf("getting default group: %w", err)
 		}
 		if defaultGroupID != 0 {
-			effectiveGroupIDs = []int{defaultGroupID}
+			groupIDs = append(groupIDs, defaultGroupID)
+		}
+	} else {
+		if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/group_$%d_ids", userID, meetingID), &groupIDs); err != nil {
+			return nil, fmt.Errorf("get group ids: %w", err)
+		}
+
+		// Get superadmin_group_id.
+		var adminGroupID int
+		fqfield := fmt.Sprintf("meeting/%d/admin_group_id", meetingID)
+		if err := dp.GetIfExist(ctx, fqfield, &adminGroupID); err != nil {
+			return nil, fmt.Errorf("check for admin group: %w", err)
+		}
+
+		if adminGroupID != 0 {
+			for _, id := range groupIDs {
+				if id == adminGroupID {
+					return &Permission{admin: true}, nil
+				}
+			}
 		}
 	}
 
 	permissions := make(map[string]bool)
-	for _, gid := range effectiveGroupIDs {
+	for _, gid := range groupIDs {
 		fqfield := fmt.Sprintf("group/%d/permissions", gid)
 		var perms []string
 		if err := dp.GetIfExist(ctx, fqfield, &perms); err != nil {

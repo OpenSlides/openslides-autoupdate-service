@@ -98,10 +98,6 @@ func (l *listOfSpeaker) readSpeaker(ctx context.Context, userID int, fqfields []
 
 		meetingID, err := l.dp.MeetingFromModel(ctx, fqid)
 		if err != nil {
-			var errDoesNotExist dataprovider.DoesNotExistError
-			if errors.As(err, &errDoesNotExist) {
-				return false, nil
-			}
 			return false, fmt.Errorf("getting meetingID from model %s: %w", fqid, err)
 		}
 

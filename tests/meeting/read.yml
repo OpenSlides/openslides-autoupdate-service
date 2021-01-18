@@ -21,6 +21,7 @@ cases:
   - meeting/1/welcome_text
   - meeting/1/conference_stream_url
   - meeting/1/conference_stream_poster_url
+  - meeting/1/present_user_ids
 
 - name: member
   can_not_see:
@@ -28,6 +29,7 @@ cases:
   - meeting/1/welcome_text
   - meeting/1/conference_stream_url
   - meeting/1/conference_stream_poster_url
+  - meeting/1/present_user_ids
 
 
 - name: can_see_frontpage
@@ -35,9 +37,19 @@ cases:
   can_not_see:
   - meeting/1/conference_stream_url
   - meeting/1/conference_stream_poster_url
+  - meeting/1/present_user_ids
 
 - name: can_see_livestream
   permission: meeting.can_see_livestream
   can_not_see:
   - meeting/1/welcome_title
   - meeting/1/welcome_text
+  - meeting/1/present_user_ids
+
+- name: can see user list
+  permission: user.can_see
+  can_not_see:
+  - meeting/1/welcome_title
+  - meeting/1/welcome_text
+  - meeting/1/conference_stream_url
+  - meeting/1/conference_stream_poster_url

@@ -160,14 +160,14 @@ func (dp *DataProvider) InMeeting(ctx context.Context, userID, meetingID int) (b
 		return enableAnonymous, nil
 	}
 
-	userIDs := []int{}
-	fqfield := "meeting/" + strconv.Itoa(meetingID) + "/user_ids"
-	if err := dp.GetIfExist(ctx, fqfield, &userIDs); err != nil {
-		return false, fmt.Errorf("getting meeting/user_ids: %w", err)
+	fqfield := fmt.Sprintf("user/%d/group_$_ids", userID)
+	var meetingIDs []string
+	if err := dp.GetIfExist(ctx, fqfield, &meetingIDs); err != nil {
+		return false, fmt.Errorf("getting meeting ids: %w", err)
 	}
 
-	for _, id := range userIDs {
-		if id == userID {
+	for _, id := range meetingIDs {
+		if id == strconv.Itoa(meetingID) {
 			return true, nil
 		}
 	}

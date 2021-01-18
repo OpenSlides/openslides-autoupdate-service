@@ -42,6 +42,10 @@ func (m *meeting) read(ctx context.Context, userID int, fqfields []perm.FQField,
 			if !perms.Has("meeting.can_see_livestream") {
 				continue
 			}
+		case "present_user_ids":
+			if !perms.Has("user.can_see") {
+				continue
+			}
 		default:
 			if perms == nil {
 				continue

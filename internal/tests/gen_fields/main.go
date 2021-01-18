@@ -12,7 +12,9 @@ import (
 	models "github.com/OpenSlides/openslides-models-to-go"
 )
 
-const defURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/models.yml"
+// TODO unkomment after this is merged: https://github.com/OpenSlides/OpenSlides/pull/5802
+// const defURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/models.yml"
+const defURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/7847a90f22e04f563618e4bc7dab894e517bd9e3/docs/models.yml"
 
 func main() {
 	r, err := loadDefition()
