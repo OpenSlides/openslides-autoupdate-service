@@ -27,7 +27,7 @@ jobs:
         DOCKER_BUILDKIT: 1
 
     - name: Start autoupdate
-      run: docker run -d --network host --env DATASTORE=fake openslides-autoupdate
+      run: docker run -d --network host --env DATASTORE=fake --env AUTH=fake openslides-autoupdate
 
     - name: Build performance
       run: go build ./cmd/performance
