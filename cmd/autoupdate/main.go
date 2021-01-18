@@ -97,7 +97,7 @@ func run() error {
 
 	// Permission Service.
 	var perms restrict.Permissioner = new(test.MockPermission)
-	var updater autoupdate.UserUpdater
+	var updater autoupdate.UserUpdater = new(test.UserUpdater)
 	permService := "fake"
 	if env["DEACTIVATE_PERMISSION"] == "false" {
 		permService = "permission"
