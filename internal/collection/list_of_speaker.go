@@ -151,3 +151,7 @@ func (l *listOfSpeaker) readList(ctx context.Context, userID int, fqfields []per
 		return allowed, nil
 	})
 }
+
+func canSeeSpeaker(p *perm.Permission) bool {
+	return p.Has("list_of_speakers.can_see")
+}

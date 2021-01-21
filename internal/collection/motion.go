@@ -152,18 +152,7 @@ func (m *Motion) modify(managePerm string) perm.WriteCheckerFunc {
 	}
 }
 
-func canSeeMotion(ctx context.Context, dp dataprovider.DataProvider, userID int, motionID int) (bool, error) {
-	motionFQID := fmt.Sprintf("motion/%d", motionID)
-	meetingID, err := dp.MeetingFromModel(ctx, motionFQID)
-	if err != nil {
-		return false, fmt.Errorf("getting meetingID from model %s: %w", motionFQID, err)
-	}
-
-	perms, err := perm.New(ctx, dp, userID, meetingID)
-	if err != nil {
-		return false, fmt.Errorf("getting user permissions: %w", err)
-	}
-
+func canSeeMotion(ctx context.Context, dp dataprovider.DataProvider, userID int, motionID int, perms *perm.Permission) (bool, error) {
 	if perms.Has("motion.can_manage") {
 		return true, nil
 	}
@@ -172,9 +161,11 @@ func canSeeMotion(ctx context.Context, dp dataprovider.DataProvider, userID int,
 		return false, nil
 	}
 
+	motionFQID := fmt.Sprintf("motion/%d", motionID)
+
 	var stateID int
 	if err := dp.Get(ctx, motionFQID+"/state_id", &stateID); err != nil {
-		return false, fmt.Errorf("getting field %s/state_id: %w", motionFQID, err)
+		return false, fmt.Errorf("getting motion state: %w", err)
 	}
 
 	var restriction []string
@@ -217,7 +208,17 @@ func canSeeMotion(ctx context.Context, dp dataprovider.DataProvider, userID int,
 
 func (m *Motion) readMotion(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 	return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
-		return canSeeMotion(ctx, m.dp, userID, fqfield.ID)
+		meetingID, err := m.dp.MeetingFromModel(ctx, fmt.Sprintf("motion/%d", fqfield.ID))
+		if err != nil {
+			return false, fmt.Errorf("getting meetingID from motion: %w", err)
+		}
+
+		perms, err := perm.New(ctx, m.dp, userID, meetingID)
+		if err != nil {
+			return false, fmt.Errorf("getting user permissions: %w", err)
+		}
+
+		return canSeeMotion(ctx, m.dp, userID, fqfield.ID, perms)
 	})
 }
 
@@ -227,7 +228,17 @@ func (m *Motion) readSubmitter(ctx context.Context, userID int, fqfields []perm.
 		if err := m.dp.Get(ctx, fmt.Sprintf("motion_submitter/%d/motion_id", fqfield.ID), &motionID); err != nil {
 			return false, fmt.Errorf("getting motionID: %w", err)
 		}
-		return canSeeMotion(ctx, m.dp, userID, motionID)
+
+		meetingID, err := m.dp.MeetingFromModel(ctx, fmt.Sprintf("motion/%d", motionID))
+		if err != nil {
+			return false, fmt.Errorf("getting meetingID from motion: %w", err)
+		}
+
+		perms, err := perm.New(ctx, m.dp, userID, meetingID)
+		if err != nil {
+			return false, fmt.Errorf("getting user permissions: %w", err)
+		}
+		return canSeeMotion(ctx, m.dp, userID, motionID, perms)
 	})
 }
 
@@ -290,7 +301,7 @@ func (m *Motion) readChangeRecommendation() perm.ReadCheckerFunc {
 				return false, fmt.Errorf("getting motion id: %w", err)
 			}
 
-			motionOK, err := canSeeMotion(ctx, m.dp, userID, motionID)
+			motionOK, err := canSeeMotion(ctx, m.dp, userID, motionID, perms)
 			if err != nil {
 				return false, fmt.Errorf("checking permission for motion: %w", err)
 			}
@@ -333,7 +344,7 @@ func (m *Motion) canSeeCommentSection(ctx context.Context, userID, id int) (bool
 		return false, fmt.Errorf("getting motion id: %w", err)
 	}
 
-	motionOK, err := canSeeMotion(ctx, m.dp, userID, motionID)
+	motionOK, err := canSeeMotion(ctx, m.dp, userID, motionID, perms)
 	if err != nil {
 		return false, fmt.Errorf("checking permission for motion: %w", err)
 	}
@@ -367,4 +378,35 @@ func (m *Motion) readComment(ctx context.Context, userID int, fqfields []perm.FQ
 		}
 		return m.canSeeCommentSection(ctx, userID, sectionID)
 	})
+}
+
+func canSeeMotionSupporter(ctx context.Context, dp dataprovider.DataProvider, userID int, p *perm.Permission, ids []int) (bool, error) {
+	for _, id := range ids {
+		b, err := canSeeMotion(ctx, dp, userID, id, p)
+		if err != nil {
+			return false, err
+		}
+		if b {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func canSeeMotionSubmitter(ctx context.Context, dp dataprovider.DataProvider, userID int, p *perm.Permission, ids []int) (bool, error) {
+	for _, id := range ids {
+		var motionID int
+		if err := dp.Get(ctx, fmt.Sprintf("motion_submitter/%d/motion_id", id), &motionID); err != nil {
+			return false, fmt.Errorf("getting motion id: %w", err)
+		}
+
+		b, err := canSeeMotion(ctx, dp, userID, id, p)
+		if err != nil {
+			return false, fmt.Errorf("can see motion %d: %w", motionID, err)
+		}
+		if b {
+			return true, nil
+		}
+	}
+	return false, nil
 }

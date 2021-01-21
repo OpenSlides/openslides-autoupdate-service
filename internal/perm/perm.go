@@ -46,6 +46,10 @@ func New(ctx context.Context, dp dataprovider.DataProvider, userID, meetingID in
 			return nil, fmt.Errorf("get group ids: %w", err)
 		}
 
+		if len(groupIDs) == 0 {
+			return nil, nil
+		}
+
 		// Get superadmin_group_id.
 		var adminGroupID int
 		fqfield := fmt.Sprintf("meeting/%d/admin_group_id", meetingID)

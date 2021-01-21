@@ -102,3 +102,7 @@ func (a *assignment) candidateDelete(ctx context.Context, userID int, payload ma
 	perm.LogNotAllowedf("Bad boy")
 	return false, nil
 }
+
+func canSeeAssignmentCandidate(p *perm.Permission) bool {
+	return p.Has("assignment.can_see")
+}

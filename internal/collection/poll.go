@@ -143,7 +143,7 @@ func (p *poll) pollPerm(ctx context.Context, userID, pollID int) (int, error) {
 		return 1, nil
 	}
 
-	canSee, err := p.canSee(ctx, perms, userID, contentObjectID)
+	canSee, err := canSeePoll(ctx, p.dp, perms, userID, contentObjectID)
 	if err != nil {
 		return 0, fmt.Errorf("getting can see perm: %w", err)
 	}
@@ -162,7 +162,7 @@ func (p *poll) pollPerm(ctx context.Context, userID, pollID int) (int, error) {
 	return 2, nil
 }
 
-func (p *poll) canSee(ctx context.Context, perms *perm.Permission, userID int, objectID string) (bool, error) {
+func canSeePoll(ctx context.Context, dp dataprovider.DataProvider, perms *perm.Permission, userID int, objectID string) (bool, error) {
 	var collection string
 	var id int
 	if objectID != "" {
@@ -176,7 +176,17 @@ func (p *poll) canSee(ctx context.Context, perms *perm.Permission, userID int, o
 	}
 
 	if collection == "motion" {
-		return canSeeMotion(ctx, p.dp, userID, id)
+		meetingID, err := dp.MeetingFromModel(ctx, fmt.Sprintf("motion/%d", id))
+		if err != nil {
+			return false, fmt.Errorf("getting meetingID from motion: %w", err)
+		}
+
+		perms, err := perm.New(ctx, dp, userID, meetingID)
+		if err != nil {
+			return false, fmt.Errorf("getting user permissions: %w", err)
+		}
+
+		return canSeeMotion(ctx, dp, userID, id, perms)
 	}
 
 	perm := "agenda_item.can_see"
@@ -194,4 +204,45 @@ func (p *poll) canManage(collection string) string {
 		return "assignment.can_manage"
 	}
 	return "agenda_item.can_manage"
+}
+
+func canSeePolls(ctx context.Context, dp dataprovider.DataProvider, perms *perm.Permission, userID int, ids []int) (bool, error) {
+	for _, id := range ids {
+		var contentObject string
+		if err := dp.GetIfExist(ctx, fmt.Sprintf("poll/%d/content_object_id", id), &contentObject); err != nil {
+			return false, fmt.Errorf("getting motion id: %w", err)
+		}
+
+		b, err := canSeePoll(ctx, dp, perms, userID, contentObject)
+		if err != nil {
+			return false, fmt.Errorf("can see poll %d: %w", id, err)
+		}
+		if b {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func canSeePollOptions(ctx context.Context, dp dataprovider.DataProvider, perms *perm.Permission, userID int, ids []int) (bool, error) {
+	for _, id := range ids {
+		var pollID int
+		if err := dp.Get(ctx, fmt.Sprintf("option/%d/poll_id", id), &pollID); err != nil {
+			return false, fmt.Errorf("getting poll id: %w", err)
+		}
+
+		var contentObject string
+		if err := dp.GetIfExist(ctx, fmt.Sprintf("poll/%d/content_object_id", pollID), &contentObject); err != nil {
+			return false, fmt.Errorf("getting motion id: %w", err)
+		}
+
+		b, err := canSeePoll(ctx, dp, perms, userID, contentObject)
+		if err != nil {
+			return false, fmt.Errorf("can see poll %d: %w", id, err)
+		}
+		if b {
+			return true, nil
+		}
+	}
+	return false, nil
 }
