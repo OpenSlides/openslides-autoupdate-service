@@ -7,6 +7,8 @@ db:
   motion_submitter/1/user_id: 1
 
 action: motion.delete
+user_id: 1
+permission: motion.can_see
 payload:
   id: 1
 
@@ -14,24 +16,20 @@ cases:
 - name: correct state
   db:
     motion_state/1/allow_submitter_edit: true
-  user_id: 1
   is_allowed: true
 
 - name: wrong state
   db:
     motion_state/1/allow_submitter_edit: false
-  user_id: 1
   is_allowed: false
 
 - name: manager
-  user_id: 1
   db:
     motion_state/1/allow_submitter_edit: false
   permission: motion.can_manage
   is_allowed: true
 
 - name: meta manager
-  user_id: 1
   db:
     motion_state/1/allow_submitter_edit: false
   permission: motion.can_manage_metadata
@@ -41,3 +39,12 @@ cases:
   user_id: 2
   permission: motion.can_manage
   is_allowed: true
+
+- name: correct state but without see perm
+  db:
+    motion_state/1:
+      allow_submitter_edit: true
+      restrictions:
+      - motion.can_see_internal
+  permission: motion.can_see
+  is_allowed: false

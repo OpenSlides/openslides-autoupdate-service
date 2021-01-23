@@ -102,13 +102,27 @@ func (m *Motion) modify(managePerm string) perm.ActionCheckerFunc {
 			return false, fmt.Errorf("getting meeting for %s: %w", motionFQID, err)
 		}
 
-		isManager, err := perm.HasPerm(ctx, m.dp, userID, meetingID, managePerm)
+		perms, err := perm.New(ctx, m.dp, userID, meetingID)
 		if err != nil {
-			return false, fmt.Errorf("checking meta manager permission: %w", err)
+			return false, fmt.Errorf("getting perms: %w", err)
 		}
 
-		if isManager {
+		if perms.Has(managePerm) {
 			return true, nil
+		}
+
+		motionID, err := strconv.Atoi(string(payload["id"]))
+		if err != nil {
+			return false, fmt.Errorf("invalid payload: %w", err)
+		}
+
+		b, err := canSeeMotion(ctx, m.dp, userID, motionID, perms)
+		if err != nil {
+			return false, fmt.Errorf("getting canSee: %w", err)
+		}
+
+		if !b {
+			return false, nil
 		}
 
 		var submitterIDs []int

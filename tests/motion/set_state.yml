@@ -12,9 +12,10 @@ payload:
   id: 1
 
 cases:
-- name: correct state
+- name: correct states
   db:
     motion_state/1/allow_submitter_edit: true
+  permission: motion.can_see
   is_allowed: true
 
 - name: wrong state
@@ -28,3 +29,11 @@ cases:
   permission: motion.can_manage_metadata
   is_allowed: true
 
+- name: correct state but without see perm
+  db:
+    motion_state/1:
+      allow_submitter_edit: true
+      restrictions:
+      - motion.can_see_internal
+  permission: motion.can_see
+  is_allowed: false
