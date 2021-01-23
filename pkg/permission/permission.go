@@ -119,11 +119,6 @@ func (ps Permission) RestrictFQFields(ctx context.Context, userID int, fqfields 
 	return data, nil
 }
 
-// AdditionalUpdate TODO
-func (ps *Permission) AdditionalUpdate(ctx context.Context, updated map[string]json.RawMessage) ([]int, error) {
-	return nil, nil
-}
-
 // RegisterReadHandler registers a reader.
 func (ps *Permission) RegisterReadHandler(name string, reader perm.ReadChecker) {
 	if _, ok := ps.readHandler[name]; ok {

@@ -80,6 +80,7 @@ cases:
   - user/1/comment_$
   - user/1/vote_delegated_$_to_id
   - user/1/vote_delegations_$_from_ids
+  - user/1/default_vote_weight
 
 
 - name: can manage

@@ -1,0 +1,28 @@
+---
+action: user.delete
+user_id: 1
+
+cases:
+- name: superuser
+  db:
+    user/1/organisation_management_level: superuser
+  is_allowed: true
+
+- name: orga manager
+  db:
+    user/1/organisation_management_level: can_manage_organisation
+  is_allowed: true
+
+- name: orga user manager
+  db:
+    user/1/organisation_management_level: can_manage_users
+  is_allowed: true
+
+- name: meeting manager
+  permission: user.can_manage
+  payload:
+    id: 2
+  db:
+    user/2/group_$_ids: ["1"]
+
+  is_allowed: false
