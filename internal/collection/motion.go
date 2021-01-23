@@ -356,8 +356,8 @@ func (m *Motion) canSeeCommentSection(ctx context.Context, userID, id int) (bool
 	if err := m.dp.GetIfExist(ctx, fqid+"/read_group_ids", &readGroupIDs); err != nil {
 		return false, fmt.Errorf("getting read groups: %w", err)
 	}
-	for _, uid := range readGroupIDs {
-		if uid == userID {
+	for _, gid := range readGroupIDs {
+		if perms.InGroup(gid) {
 			return true, nil
 		}
 	}
