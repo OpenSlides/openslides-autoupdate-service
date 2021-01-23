@@ -12,7 +12,7 @@ import (
 func Meeting(dp dataprovider.DataProvider) perm.ConnecterFunc {
 	m := &meeting{dp: dp}
 	return func(s perm.HandlerStore) {
-		s.RegisterReadHandler("meeting", perm.ReadCheckerFunc(m.read))
+		s.RegisterRestricter("meeting", perm.RestricterCheckerFunc(m.read))
 	}
 }
 

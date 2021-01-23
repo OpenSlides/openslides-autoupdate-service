@@ -96,9 +96,24 @@ func (p *Permission) Has(perm string) bool {
 	return p.permissions[perm]
 }
 
+// IsAdmin returns true, if the user is a meeting admin.
+func (p *Permission) IsAdmin() bool {
+	return p.admin
+}
+
+// InGroup returns true, if the user is in the given group (by group_id).
+func (p *Permission) InGroup(gid int) bool {
+	for _, id := range p.groupIDs {
+		if id == gid {
+			return true
+		}
+	}
+	return false
+}
+
 // Create checks for the mermission to create a new object.
-func Create(dp dataprovider.DataProvider, managePerm, collection string) WriteChecker {
-	return WriteCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
+func Create(dp dataprovider.DataProvider, managePerm, collection string) ActionChecker {
+	return ActionCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 		var meetingID int
 		if err := json.Unmarshal(payload["meeting_id"], &meetingID); err != nil {
 			return false, fmt.Errorf("no valid meeting id: %w", err)
@@ -114,8 +129,8 @@ func Create(dp dataprovider.DataProvider, managePerm, collection string) WriteCh
 }
 
 // Modify checks for the permissions to alter an existing object.
-func Modify(dp dataprovider.DataProvider, managePerm, collection string) WriteChecker {
-	return WriteCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
+func Modify(dp dataprovider.DataProvider, managePerm, collection string) ActionChecker {
+	return ActionCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 		id, err := modelID(payload)
 		if err != nil {
 			return false, fmt.Errorf("getting model id from payload: %w", err)

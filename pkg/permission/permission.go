@@ -14,8 +14,8 @@ import (
 // Permission impelements the permission.Permission interface.
 type Permission struct {
 	connecters   []perm.Connecter
-	writeHandler map[string]perm.WriteChecker
-	readHandler  map[string]perm.ReadChecker
+	writeHandler map[string]perm.ActionChecker
+	readHandler  map[string]perm.RestricterChecker
 
 	dp dataprovider.DataProvider
 }
@@ -23,8 +23,8 @@ type Permission struct {
 // New returns a new permission service.
 func New(dp DataProvider, os ...Option) *Permission {
 	p := &Permission{
-		writeHandler: make(map[string]perm.WriteChecker),
-		readHandler:  make(map[string]perm.ReadChecker),
+		writeHandler: make(map[string]perm.ActionChecker),
+		readHandler:  make(map[string]perm.RestricterChecker),
 		dp:           dataprovider.DataProvider{External: dp},
 	}
 
@@ -119,16 +119,16 @@ func (ps Permission) RestrictFQFields(ctx context.Context, userID int, fqfields 
 	return data, nil
 }
 
-// RegisterReadHandler registers a reader.
-func (ps *Permission) RegisterReadHandler(name string, reader perm.ReadChecker) {
+// RegisterRestricter registers a reader.
+func (ps *Permission) RegisterRestricter(name string, reader perm.RestricterChecker) {
 	if _, ok := ps.readHandler[name]; ok {
 		panic(fmt.Sprintf("Read handler with name `%s` allready exists", name))
 	}
 	ps.readHandler[name] = reader
 }
 
-// RegisterWriteHandler registers a writer.
-func (ps *Permission) RegisterWriteHandler(name string, writer perm.WriteChecker) {
+// RegisterAction registers a writer.
+func (ps *Permission) RegisterAction(name string, writer perm.ActionChecker) {
 	if _, ok := ps.writeHandler[name]; ok {
 		panic(fmt.Sprintf("Write handler with name `%s` allready exists", name))
 	}

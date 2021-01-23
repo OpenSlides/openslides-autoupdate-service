@@ -16,12 +16,12 @@ func ListOfSpeaker(dp dataprovider.DataProvider) perm.ConnecterFunc {
 		dp: dp,
 	}
 	return func(s perm.HandlerStore) {
-		s.RegisterWriteHandler("speaker.create", perm.WriteCheckerFunc(l.createSpeaker))
-		s.RegisterWriteHandler("speaker.delete", perm.WriteCheckerFunc(l.deleteSpeaker))
-		s.RegisterReadHandler("speaker", perm.ReadCheckerFunc(l.readSpeaker))
+		s.RegisterAction("speaker.create", perm.ActionCheckerFunc(l.createSpeaker))
+		s.RegisterAction("speaker.delete", perm.ActionCheckerFunc(l.deleteSpeaker))
+		s.RegisterRestricter("speaker", perm.RestricterCheckerFunc(l.readSpeaker))
 
-		s.RegisterWriteHandler("list_of_speakers.delete", perm.WriteCheckerFunc(l.deleteList))
-		s.RegisterReadHandler("list_of_speakers", perm.ReadCheckerFunc(l.readList))
+		s.RegisterAction("list_of_speakers.delete", perm.ActionCheckerFunc(l.deleteList))
+		s.RegisterRestricter("list_of_speakers", perm.RestricterCheckerFunc(l.readList))
 	}
 }
 

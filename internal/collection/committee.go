@@ -12,7 +12,7 @@ import (
 func Committee(dp dataprovider.DataProvider) perm.ConnecterFunc {
 	c := &committee{dp: dp}
 	return func(s perm.HandlerStore) {
-		s.RegisterReadHandler("committee", perm.ReadCheckerFunc(c.read))
+		s.RegisterRestricter("committee", perm.RestricterCheckerFunc(c.read))
 	}
 }
 

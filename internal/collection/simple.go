@@ -18,7 +18,7 @@ import (
 func ReadPerm(dp dataprovider.DataProvider, permission string, collections ...string) perm.ConnecterFunc {
 	return func(s perm.HandlerStore) {
 		for _, coll := range collections {
-			s.RegisterReadHandler(coll, hasPerm(dp, permission, coll))
+			s.RegisterRestricter(coll, hasPerm(dp, permission, coll))
 		}
 
 	}
@@ -28,7 +28,7 @@ func ReadPerm(dp dataprovider.DataProvider, permission string, collections ...st
 func ReadInMeeting(dp dataprovider.DataProvider, collections ...string) perm.ConnecterFunc {
 	return func(s perm.HandlerStore) {
 		for _, coll := range collections {
-			s.RegisterReadHandler(coll, isInMeeting(dp, coll))
+			s.RegisterRestricter(coll, isInMeeting(dp, coll))
 		}
 	}
 }
@@ -37,7 +37,7 @@ func ReadInMeeting(dp dataprovider.DataProvider, collections ...string) perm.Con
 func Public(dp dataprovider.DataProvider, collections ...string) perm.ConnecterFunc {
 	return func(s perm.HandlerStore) {
 		for _, c := range collections {
-			s.RegisterReadHandler(c, perm.ReadCheckerFunc(isPublic))
+			s.RegisterRestricter(c, perm.RestricterCheckerFunc(isPublic))
 		}
 	}
 }
@@ -49,7 +49,7 @@ func isPublic(ctx context.Context, userID int, fqfields []perm.FQField, result m
 	return nil
 }
 
-func isInMeeting(dp dataprovider.DataProvider, collection string) perm.ReadCheckerFunc {
+func isInMeeting(dp dataprovider.DataProvider, collection string) perm.RestricterCheckerFunc {
 	return func(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 		return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
 			fqid := fmt.Sprintf("%s/%d", collection, fqfield.ID)
@@ -67,7 +67,7 @@ func isInMeeting(dp dataprovider.DataProvider, collection string) perm.ReadCheck
 	}
 }
 
-func hasPerm(dp dataprovider.DataProvider, permission, collection string) perm.ReadCheckerFunc {
+func hasPerm(dp dataprovider.DataProvider, permission, collection string) perm.RestricterCheckerFunc {
 	return func(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 		return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
 			fqid := fmt.Sprintf("%s/%d", collection, fqfield.ID)
@@ -93,13 +93,13 @@ func WritePerm(dp dataprovider.DataProvider, def map[string]string) perm.Connect
 			if len(parts) != 2 {
 				panic("Invalid WritePerm action: " + route)
 			}
-			s.RegisterWriteHandler(route, (writeChecker(dp, parts[0], perm)))
+			s.RegisterAction(route, (writeChecker(dp, parts[1], perm)))
 		}
 	}
 }
 
-func writeChecker(dp dataprovider.DataProvider, collName, permission string) perm.WriteChecker {
-	return perm.WriteCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
+func writeChecker(dp dataprovider.DataProvider, collName, permission string) perm.ActionChecker {
+	return perm.ActionCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 		var meetingID int
 		if err := json.Unmarshal(payload["meeting_id"], &meetingID); err != nil {
 			var id int

@@ -16,10 +16,10 @@ func fakeCollections() []perm.Connecter {
 type collectionMock struct{}
 
 func (c collectionMock) Connect(s perm.HandlerStore) {
-	s.RegisterWriteHandler("dummy_allowed", allowedMock(true))
-	s.RegisterWriteHandler("dummy_not_allowed", allowedMock(false))
+	s.RegisterAction("dummy_allowed", allowedMock(true))
+	s.RegisterAction("dummy_not_allowed", allowedMock(false))
 
-	s.RegisterReadHandler("dummy", allowedMock(false))
+	s.RegisterRestricter("dummy", allowedMock(false))
 }
 
 type allowedMock bool

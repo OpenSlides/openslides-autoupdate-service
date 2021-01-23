@@ -23,11 +23,11 @@ func NewPersonalNote(dp dataprovider.DataProvider) *PersonalNote {
 
 // Connect creates the routes.
 func (p *PersonalNote) Connect(s perm.HandlerStore) {
-	s.RegisterWriteHandler("personal_note.create", perm.WriteCheckerFunc(p.create))
-	s.RegisterWriteHandler("personal_note.update", perm.WriteCheckerFunc(p.modify))
-	s.RegisterWriteHandler("personal_note.delete", perm.WriteCheckerFunc(p.modify))
+	s.RegisterAction("personal_note.create", perm.ActionCheckerFunc(p.create))
+	s.RegisterAction("personal_note.update", perm.ActionCheckerFunc(p.modify))
+	s.RegisterAction("personal_note.delete", perm.ActionCheckerFunc(p.modify))
 
-	s.RegisterReadHandler("personal_note", p)
+	s.RegisterRestricter("personal_note", p)
 }
 
 func (p PersonalNote) create(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {

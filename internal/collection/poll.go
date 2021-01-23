@@ -14,9 +14,9 @@ import (
 func Poll(dp dataprovider.DataProvider) perm.ConnecterFunc {
 	p := &poll{dp}
 	return func(s perm.HandlerStore) {
-		s.RegisterReadHandler("poll", perm.ReadCheckerFunc(p.readPoll))
-		s.RegisterReadHandler("option", perm.ReadCheckerFunc(p.readOption))
-		s.RegisterReadHandler("vote", perm.ReadCheckerFunc(p.readVote))
+		s.RegisterRestricter("poll", perm.RestricterCheckerFunc(p.readPoll))
+		s.RegisterRestricter("option", perm.RestricterCheckerFunc(p.readOption))
+		s.RegisterRestricter("vote", perm.RestricterCheckerFunc(p.readVote))
 
 	}
 }

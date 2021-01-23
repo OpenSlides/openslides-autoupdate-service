@@ -13,8 +13,8 @@ import (
 func Assignment(dp dataprovider.DataProvider) perm.ConnecterFunc {
 	a := &assignment{dp}
 	return func(s perm.HandlerStore) {
-		s.RegisterWriteHandler("assignment_candidate.create", perm.WriteCheckerFunc(a.candidateCreate))
-		s.RegisterWriteHandler("assignment_candidate.delete", perm.WriteCheckerFunc(a.candidateDelete))
+		s.RegisterAction("assignment_candidate.create", perm.ActionCheckerFunc(a.candidateCreate))
+		s.RegisterAction("assignment_candidate.delete", perm.ActionCheckerFunc(a.candidateDelete))
 	}
 }
 
