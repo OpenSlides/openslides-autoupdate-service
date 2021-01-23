@@ -27,6 +27,7 @@ func (m *Motion) Connect(s perm.HandlerStore) {
 	s.RegisterAction("motion.delete", m.modify("motion.can_manage"))
 	s.RegisterAction("motion.set_state", m.modify("motion.can_manage_metadata"))
 	s.RegisterAction("motion.create", m.create())
+	s.RegisterAction("motion_submitter.create", m.submitterCreate())
 
 	s.RegisterRestricter("motion", perm.RestricterCheckerFunc(m.readMotion))
 	s.RegisterRestricter("motion_submitter", perm.RestricterCheckerFunc(m.readSubmitter))
@@ -234,6 +235,22 @@ func (m *Motion) readMotion(ctx context.Context, userID int, fqfields []perm.FQF
 
 		return canSeeMotion(ctx, m.dp, userID, fqfield.ID, perms)
 	})
+}
+
+func (m *Motion) submitterCreate() perm.ActionCheckerFunc {
+	return func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
+		motionFQID := fmt.Sprintf("motion/%s", payload["motion_id"])
+		meetingID, err := m.dp.MeetingFromModel(ctx, motionFQID)
+		if err != nil {
+			return false, fmt.Errorf("getting meeting for %s: %w", motionFQID, err)
+		}
+
+		p, err := perm.HasPerm(ctx, m.dp, userID, meetingID, "motion.can_manage_metadata")
+		if err != nil {
+			return false, fmt.Errorf("getting perm: %w", err)
+		}
+		return p, nil
+	}
 }
 
 func (m *Motion) readSubmitter(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
