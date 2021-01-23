@@ -1,7 +1,9 @@
 ---
 db:
-  speaker/1/user_id: 1
-  speaker/1/meeting_id: 1
+  speaker/1:
+    user_id: 1
+    meeting_id: 1
+  list_of_speakers/1/meeting_id: 1
 
 cases:
 - name: speaker.delete
@@ -23,3 +25,27 @@ cases:
     user_id: 2
     permission: list_of_speakers.can_manage
     is_allowed: true
+
+- name: speaker.create
+  action: speaker.create
+
+  payload:
+    list_of_speakers_id: 1
+    user_id: 1
+
+  cases:
+  - name: speak self with perm
+    permission: list_of_speakers.can_be_speaker
+    user_id: 1
+    is_allowed: true
+
+  - name: speak self without perm
+    user_id: 1
+    is_allowed: false
+
+  - name: speak other with perm
+    permission: list_of_speakers.can_manage
+    is_allowed: true
+
+  - name: speak other without perm
+    is_allowed: false

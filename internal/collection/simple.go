@@ -93,7 +93,7 @@ func WritePerm(dp dataprovider.DataProvider, def map[string]string) perm.Connect
 			if len(parts) != 2 {
 				panic("Invalid WritePerm action: " + route)
 			}
-			s.RegisterAction(route, (writeChecker(dp, parts[1], perm)))
+			s.RegisterAction(route, (writeChecker(dp, parts[0], perm)))
 		}
 	}
 }

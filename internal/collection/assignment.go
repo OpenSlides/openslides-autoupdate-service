@@ -37,13 +37,13 @@ func (a *assignment) candidateCreate(ctx context.Context, userID int, payload ma
 		return true, nil
 	}
 
-	var phase int
+	var phase string
 	if err := a.dp.Get(ctx, fmt.Sprintf("assignment/%s/phase", payload["assignment_id"]), &phase); err != nil {
 		return false, fmt.Errorf("getting phase of assignment: %w", err)
 	}
 
-	if phase != 0 {
-		perm.LogNotAllowedf("Assignment is already in phase %d. No new candidates allowed.", phase)
+	if phase != "search" {
+		perm.LogNotAllowedf("Assignment is already in phase %s. No new candidates allowed.", phase)
 		return false, nil
 	}
 
@@ -80,13 +80,13 @@ func (a *assignment) candidateDelete(ctx context.Context, userID int, payload ma
 		return true, nil
 	}
 
-	var phase int
+	var phase string
 	if err := a.dp.Get(ctx, fmt.Sprintf("assignment/%s/phase", payload["assignment_id"]), &phase); err != nil {
 		return false, fmt.Errorf("getting phase of assignment: %w", err)
 	}
 
-	if phase != 0 {
-		perm.LogNotAllowedf("Assignment is already in phase %d. You can not remove yourself anymore.", phase)
+	if phase != "search" {
+		perm.LogNotAllowedf("Assignment is already in phase %S. You can not remove yourself anymore.", phase)
 		return false, nil
 	}
 
@@ -99,7 +99,6 @@ func (a *assignment) candidateDelete(ctx context.Context, userID int, payload ma
 		return true, nil
 	}
 
-	perm.LogNotAllowedf("Bad boy")
 	return false, nil
 }
 

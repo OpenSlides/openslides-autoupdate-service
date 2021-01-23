@@ -2,7 +2,9 @@ package collection
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
 	"github.com/OpenSlides/openslides-permission-service/internal/perm"
@@ -13,11 +15,33 @@ func Meeting(dp dataprovider.DataProvider) perm.ConnecterFunc {
 	m := &meeting{dp: dp}
 	return func(s perm.HandlerStore) {
 		s.RegisterRestricter("meeting", perm.RestricterCheckerFunc(m.read))
+		s.RegisterAction("meeting.create", perm.ActionCheckerFunc(m.update))
+		s.RegisterAction("meeting.update", perm.ActionCheckerFunc(m.update))
+		s.RegisterAction("meeting.delete", perm.ActionCheckerFunc(m.update))
 	}
 }
 
 type meeting struct {
 	dp dataprovider.DataProvider
+}
+
+func (m *meeting) update(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
+	committeeID, err := strconv.Atoi(string(payload["committee_id"]))
+	if err != nil {
+		return false, fmt.Errorf("invalid payload: %w", err)
+	}
+
+	var managerIDs []int
+	if err := m.dp.GetIfExist(ctx, fmt.Sprintf("user/%d/committee_as_manager_ids", userID), &managerIDs); err != nil {
+		return false, fmt.Errorf("getting users committee manager field: %w", err)
+	}
+
+	for _, id := range managerIDs {
+		if id == committeeID {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (m *meeting) read(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
 	"github.com/OpenSlides/openslides-permission-service/internal/perm"
@@ -40,8 +41,8 @@ func (l *listOfSpeaker) createSpeaker(ctx context.Context, userID int, payload m
 		return false, fmt.Errorf("getting permissions: %w", err)
 	}
 
-	var puid int
-	if err := json.Unmarshal(payload["user_id"], &puid); err != nil {
+	puid, err := strconv.Atoi(string(payload["user_id"]))
+	if err != nil {
 		return false, fmt.Errorf("invalid value in payload['user_id']: %s", payload["user_id"])
 	}
 
