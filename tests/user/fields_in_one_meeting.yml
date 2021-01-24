@@ -99,7 +99,6 @@ cases:
   - user/1/password
   - user/1/personal_note_$_ids
   - user/1/is_present_in_meeting_ids
-  - user/1/meeting_id
   - user/1/comment_$
   - user/1/about_me_$
   - user/1/group_$_ids
@@ -123,7 +122,6 @@ cases:
   - user/1/password
   - user/1/personal_note_$_ids
   - user/1/is_present_in_meeting_ids
-  - user/1/meeting_id
   - user/1/comment_$
   - user/1/about_me_$
   - user/1/group_$_ids

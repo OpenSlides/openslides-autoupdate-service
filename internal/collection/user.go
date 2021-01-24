@@ -391,6 +391,7 @@ var canSeeFields = [...][]string{
 		"guest_meeting_ids",
 		"default_password",
 		"default_vote_weight",
+		"meeting_id",
 	},
 	{ // own user
 		"id",
