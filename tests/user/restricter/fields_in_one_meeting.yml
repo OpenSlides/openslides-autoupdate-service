@@ -138,6 +138,26 @@ cases:
   - user/1/vote_delegated_$_to_id
   - user/1/vote_delegations_$_from_ids
 
+- name: Committee manager
+  db:
+    user/1337/committee_as_manager_ids: [5]
+    committee/5/member_ids: [1]
+  can_see:
+  - user/1/id
+  - user/1/username
+  - user/1/title
+  - user/1/first_name
+  - user/1/last_name
+  - user/1/is_active
+  - user/1/is_physical_person
+  - user/1/gender
+  - user/1/email
+  - user/1/last_email_send
+  - user/1/is_demo_user
+  - user/1/organisation_management_level
+  - user/1/committee_as_member_ids
+  - user/1/committee_as_manager_ids
+
 - name: can see own user
   user_id: 1
 

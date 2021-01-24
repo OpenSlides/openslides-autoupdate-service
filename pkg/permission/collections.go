@@ -46,6 +46,15 @@ func openSlidesCollections(dp dataprovider.DataProvider) []perm.Connecter {
 			"motion_statute_paragraph",
 		),
 
+		collection.OrgaManager(
+			dp,
+			"resource.delete",
+			"organisation.update",
+			"committee.create",
+			"committee.update",
+			"committee.delete",
+		),
+
 		collection.WritePerm(dp, map[string]string{
 			"agenda_item.assign":                       "agenda_item.can_manage",
 			"agenda_item.create":                       "agenda_item.can_manage",

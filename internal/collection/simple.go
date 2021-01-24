@@ -122,3 +122,24 @@ func writeChecker(dp dataprovider.DataProvider, collName, permission string) per
 		return ok, nil
 	})
 }
+
+// OrgaManager registers actions, that can be accessed by orga managers.
+func OrgaManager(dp dataprovider.DataProvider, actions ...string) perm.ConnecterFunc {
+	return func(s perm.HandlerStore) {
+		for _, action := range actions {
+			s.RegisterAction(action, perm.ActionCheckerFunc(
+				func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
+					var orgaLevel string
+					if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/organisation_management_level", userID), &orgaLevel); err != nil {
+						return false, fmt.Errorf("getting organisation level: %w", err)
+					}
+
+					if orgaLevel == "can_manage_organisation" {
+						return true, nil
+					}
+					return false, nil
+				},
+			))
+		}
+	}
+}

@@ -26,3 +26,16 @@ cases:
     user/2/group_$_ids: ["1"]
 
   is_allowed: false
+
+- name: Temporary user
+  db:
+    user/2/meeting_id: 1
+  payload:
+    id: 2
+  cases:
+  - name: with manage perm
+    permission: user.can_manage
+    is_allowed: true
+
+  - name: Temporary user without manage perm
+    is_allowed: false
