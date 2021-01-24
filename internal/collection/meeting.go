@@ -14,10 +14,10 @@ import (
 func Meeting(dp dataprovider.DataProvider) perm.ConnecterFunc {
 	m := &meeting{dp: dp}
 	return func(s perm.HandlerStore) {
-		s.RegisterRestricter("meeting", perm.RestricterCheckerFunc(m.read))
-		s.RegisterAction("meeting.create", perm.ActionCheckerFunc(m.update))
-		s.RegisterAction("meeting.update", perm.ActionCheckerFunc(m.update))
-		s.RegisterAction("meeting.delete", perm.ActionCheckerFunc(m.update))
+		s.RegisterRestricter("meeting", perm.CollectionFunc(m.read))
+		s.RegisterAction("meeting.create", perm.ActionFunc(m.update))
+		s.RegisterAction("meeting.update", perm.ActionFunc(m.update))
+		s.RegisterAction("meeting.delete", perm.ActionFunc(m.update))
 	}
 }
 

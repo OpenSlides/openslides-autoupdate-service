@@ -9,28 +9,23 @@ import (
 	"github.com/OpenSlides/openslides-permission-service/internal/perm"
 )
 
-// PersonalNote handels permissions for personal notes.
-type PersonalNote struct {
-	dp dataprovider.DataProvider
-}
+// PersonalNote initializes a personal note.
+func PersonalNote(dp dataprovider.DataProvider) perm.ConnecterFunc {
+	p := &personalNote{dp}
+	return func(s perm.HandlerStore) {
+		s.RegisterAction("personal_note.create", perm.ActionFunc(p.create))
+		s.RegisterAction("personal_note.update", perm.ActionFunc(p.modify))
+		s.RegisterAction("personal_note.delete", perm.ActionFunc(p.modify))
 
-// NewPersonalNote initializes a personal note.
-func NewPersonalNote(dp dataprovider.DataProvider) *PersonalNote {
-	return &PersonalNote{
-		dp: dp,
+		s.RegisterRestricter("personal_note", p)
 	}
 }
 
-// Connect creates the routes.
-func (p *PersonalNote) Connect(s perm.HandlerStore) {
-	s.RegisterAction("personal_note.create", perm.ActionCheckerFunc(p.create))
-	s.RegisterAction("personal_note.update", perm.ActionCheckerFunc(p.modify))
-	s.RegisterAction("personal_note.delete", perm.ActionCheckerFunc(p.modify))
-
-	s.RegisterRestricter("personal_note", p)
+type personalNote struct {
+	dp dataprovider.DataProvider
 }
 
-func (p PersonalNote) create(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
+func (p personalNote) create(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 	if userID == 0 {
 		perm.LogNotAllowedf("Anonymous can not create personal notes.")
 		return false, nil
@@ -38,7 +33,7 @@ func (p PersonalNote) create(ctx context.Context, userID int, payload map[string
 	return true, nil
 }
 
-func (p PersonalNote) modify(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
+func (p personalNote) modify(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 	fqfield := fmt.Sprintf("personal_note/%s/user_id", payload["id"])
 	var noteUserID int
 	if err := p.dp.Get(ctx, fqfield, &noteUserID); err != nil {
@@ -53,7 +48,7 @@ func (p PersonalNote) modify(ctx context.Context, userID int, payload map[string
 }
 
 // RestrictFQFields checks for read permissions.
-func (p PersonalNote) RestrictFQFields(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
+func (p personalNote) RestrictFQFields(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 	var noteUserID int
 	var lastID int
 	for _, fqfield := range fqfields {

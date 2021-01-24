@@ -15,9 +15,9 @@ func Mediafile(dp dataprovider.DataProvider) perm.ConnecterFunc {
 	m := &mediafile{dp: dp}
 
 	return func(s perm.HandlerStore) {
-		s.RegisterRestricter("mediafile", perm.RestricterCheckerFunc(m.read))
+		s.RegisterRestricter("mediafile", perm.CollectionFunc(m.read))
 
-		s.RegisterAction("mediafile.can_see_mediafile", perm.ActionCheckerFunc(m.canSeeAction))
+		s.RegisterAction("mediafile.can_see_mediafile", perm.ActionFunc(m.canSeeAction))
 	}
 }
 

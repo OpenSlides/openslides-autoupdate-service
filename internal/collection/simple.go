@@ -37,7 +37,7 @@ func ReadInMeeting(dp dataprovider.DataProvider, collections ...string) perm.Con
 func Public(dp dataprovider.DataProvider, collections ...string) perm.ConnecterFunc {
 	return func(s perm.HandlerStore) {
 		for _, c := range collections {
-			s.RegisterRestricter(c, perm.RestricterCheckerFunc(isPublic))
+			s.RegisterRestricter(c, perm.CollectionFunc(isPublic))
 		}
 	}
 }
@@ -49,7 +49,7 @@ func isPublic(ctx context.Context, userID int, fqfields []perm.FQField, result m
 	return nil
 }
 
-func isInMeeting(dp dataprovider.DataProvider, collection string) perm.RestricterCheckerFunc {
+func isInMeeting(dp dataprovider.DataProvider, collection string) perm.CollectionFunc {
 	return func(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 		return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
 			fqid := fmt.Sprintf("%s/%d", collection, fqfield.ID)
@@ -67,7 +67,7 @@ func isInMeeting(dp dataprovider.DataProvider, collection string) perm.Restricte
 	}
 }
 
-func hasPerm(dp dataprovider.DataProvider, permission, collection string) perm.RestricterCheckerFunc {
+func hasPerm(dp dataprovider.DataProvider, permission, collection string) perm.CollectionFunc {
 	return func(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 		return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
 			fqid := fmt.Sprintf("%s/%d", collection, fqfield.ID)
@@ -98,8 +98,8 @@ func WritePerm(dp dataprovider.DataProvider, def map[string]string) perm.Connect
 	}
 }
 
-func writeChecker(dp dataprovider.DataProvider, collName, permission string) perm.ActionChecker {
-	return perm.ActionCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
+func writeChecker(dp dataprovider.DataProvider, collName, permission string) perm.Action {
+	return perm.ActionFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 		var meetingID int
 		if err := json.Unmarshal(payload["meeting_id"], &meetingID); err != nil {
 			var id int
@@ -127,7 +127,7 @@ func writeChecker(dp dataprovider.DataProvider, collName, permission string) per
 func OrgaManager(dp dataprovider.DataProvider, actions ...string) perm.ConnecterFunc {
 	return func(s perm.HandlerStore) {
 		for _, action := range actions {
-			s.RegisterAction(action, perm.ActionCheckerFunc(
+			s.RegisterAction(action, perm.ActionFunc(
 				func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 					var orgaLevel string
 					if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/organisation_management_level", userID), &orgaLevel); err != nil {

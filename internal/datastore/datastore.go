@@ -50,9 +50,9 @@ func (db *Datastore) Get(ctx context.Context, fqfields ...string) ([]json.RawMes
 }
 
 func (db *Datastore) url() string {
-	addr := "http://localhost:9010"
-	if db.Addr != "" {
-		addr = db.Addr
+	addr := db.Addr
+	if addr == "" {
+		addr = "http://localhost:9010"
 	}
 
 	return addr + urlPath

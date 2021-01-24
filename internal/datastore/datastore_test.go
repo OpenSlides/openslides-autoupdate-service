@@ -43,7 +43,7 @@ func TestDataStoreNull(t *testing.T) {
 
 	db := &datastore.Datastore{Addr: dbServer.TS.URL}
 
-	result, err := db.Get(context.Background(), "group/1/superadmin_group_for_meeting_id")
+	result, err := db.Get(context.Background(), "group/1/admin_group_for_meeting_id")
 	if err != nil {
 		t.Fatalf("Got unexpected error: %v", err)
 	}

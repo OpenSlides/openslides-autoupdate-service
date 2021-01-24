@@ -37,19 +37,19 @@ def collections() -> set[str]:
 
 def implemented() -> tuple[set[str], set[str]]:
     """
-    implemented returns the read and write routes the permission-service has
-    implemented.
+    implemented returns the collection- and action-routes the permission-service
+    has implemented.
     """
 
     routes = requests.get(PERMISSION_URL).json()["healthinfo"]["routes"]
-    return set(routes["read"]), set(routes["write"])
+    return set(routes["collections"]), set(routes["actions"])
 
 
 if __name__ == "__main__":
     printed = False
 
     try:
-        implemented_read, impelemented_write = implemented()
+        implemented_collections, impelemented_actions = implemented()
     except requests.exceptions.ConnectionError:
         print("Can not connect to the permission service. Run:\n\n\tgo build ./cmd/permission && ./permission\n\n")
         sys.exit(2)
@@ -62,40 +62,40 @@ if __name__ == "__main__":
 
     collections = collections()
 
-    missing_write = actions - impelemented_write
-    if missing_write:
+    missing_actions = actions - impelemented_actions
+    if missing_actions:
         printed = True
-        print("Missing write:")
-        for mw in sorted(missing_write):
+        print("Missing Actions:")
+        for mw in sorted(missing_actions):
             print(f"* {mw}")
 
-    unknown_write = impelemented_write - actions
-    if unknown_write:
+    unknown_actions = impelemented_actions - actions
+    if unknown_actions:
         if printed:
             print()
         printed = True
-        print("Unknown actions:")
-        for mw in sorted(unknown_write):
+        print("Unknown Actions:")
+        for mw in sorted(unknown_actions):
             print(f"* {mw}")
 
-    missing_read = collections - implemented_read
-    if missing_read:
+    missing_collections = collections - implemented_collections
+    if missing_collections:
         if printed:
             print()
         printed = True
 
-        print("Missing read:")
-        for mr in sorted(missing_read):
+        print("Missing Collections:")
+        for mr in sorted(missing_collections):
             print(f"* {mr}")
 
-    unknown_read = implemented_read - collections
-    if unknown_read:
+    unknown_collections = implemented_collections - collections
+    if unknown_collections:
         if printed:
             print()
 
         print("Unknown Collections:")
-        for mr in sorted(unknown_read):
+        for mr in sorted(unknown_collections):
             print(f"* {mr}")
 
-    if missing_write or missing_read:
+    if missing_actions or missing_collections:
         sys.exit(1)

@@ -54,44 +54,9 @@ func (dp *DataProvider) GetIfExist(ctx context.Context, fqfield string, value in
 	return nil
 }
 
-// Exists tells, if a fqfield exist.
-//
-// If an error happens, it returns false.
-func (dp *DataProvider) Exists(ctx context.Context, fqfield string) (bool, error) {
-	fields, err := dp.externalGet(ctx, fqfield)
-	if err != nil {
-		return false, fmt.Errorf("getting fqfield: %w", err)
-	}
-
-	return fields[0] != nil, nil
-}
-
-// DoesUserExists returns true, if an user exist. Returns allways true for
-// userID 0.
-func (dp *DataProvider) DoesUserExists(ctx context.Context, userID int) (bool, error) {
-	if userID == 0 {
-		return true, nil
-	}
-
-	exists, err := dp.DoesModelExists(ctx, "user/"+strconv.Itoa(userID))
-	if err != nil {
-		return false, fmt.Errorf("lockup user: %w", err)
-	}
-	return exists, nil
-}
-
-// DoesModelExists returns true, if an object exists in the datastore.
-func (dp *DataProvider) DoesModelExists(ctx context.Context, fqid string) (bool, error) {
-	exists, err := dp.Exists(ctx, fqid+"/"+"id")
-	if err != nil {
-		return false, fmt.Errorf("checking for model existing: %w", err)
-	}
-	return exists, nil
-}
-
-// IsSuperuser returns true, if the user is in the superuser group.
+// IsSuperuser returns true, if the user is a super user.
 func (dp *DataProvider) IsSuperuser(ctx context.Context, userID int) (bool, error) {
-	// The anonymous is never a superadmin.
+	// The anonymous is never a superuser.
 	if userID == 0 {
 		return false, nil
 	}
@@ -100,41 +65,7 @@ func (dp *DataProvider) IsSuperuser(ctx context.Context, userID int) (bool, erro
 	if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/organisation_management_level", userID), &orgaLevel); err != nil {
 		return false, fmt.Errorf("getting organisation level: %w", err)
 	}
-	if orgaLevel == "superuser" {
-		return true, nil
-	}
-	return false, nil
-}
-
-// CommitteeID returns the id of a committee from an meeting id.
-func (dp *DataProvider) CommitteeID(ctx context.Context, meetingID int) (int, error) {
-	var committeeID int
-	if err := dp.Get(ctx, "meeting/"+strconv.Itoa(meetingID)+"/committee_id", &committeeID); err != nil {
-		return 0, fmt.Errorf("getting committee id: %w", err)
-	}
-	return committeeID, nil
-}
-
-// IsManager returns true, if the user is a manager in the committee.
-func (dp *DataProvider) IsManager(ctx context.Context, userID, committeeID int) (bool, error) {
-	// The anonymous is never a manager.
-	if userID == 0 {
-		return false, nil
-	}
-
-	// Get committee manager_ids.
-	managerIDs := []int{}
-	fqfield := "committee/" + strconv.Itoa(committeeID) + "/manager_ids"
-	if err := dp.GetIfExist(ctx, fqfield, &managerIDs); err != nil {
-		return false, fmt.Errorf("getting committee ids: %w", err)
-	}
-
-	for _, id := range managerIDs {
-		if userID == id {
-			return true, nil
-		}
-	}
-	return false, nil
+	return orgaLevel == "superuser", nil
 }
 
 // MeetingIDFromPayload returns the id of a meeting from the payload.
@@ -149,7 +80,9 @@ func (dp *DataProvider) MeetingIDFromPayload(ctx context.Context, payload map[st
 	return meetingID, nil
 }
 
-// InMeeting returns true, if the user is in the user_ids list or anonymous.
+// InMeeting returns true, if the user is part of a meeting.
+//
+// Anonymous is part of a meeting, if anonymous is enabled.
 func (dp *DataProvider) InMeeting(ctx context.Context, userID, meetingID int) (bool, error) {
 	if userID == 0 {
 		var enableAnonymous bool
@@ -160,18 +93,12 @@ func (dp *DataProvider) InMeeting(ctx context.Context, userID, meetingID int) (b
 		return enableAnonymous, nil
 	}
 
-	fqfield := fmt.Sprintf("user/%d/group_$_ids", userID)
-	var meetingIDs []string
-	if err := dp.GetIfExist(ctx, fqfield, &meetingIDs); err != nil {
-		return false, fmt.Errorf("getting meeting ids: %w", err)
+	fqfield := fmt.Sprintf("user/%d/group_$%d_ids", userID, meetingID)
+	var groupIDs []int
+	if err := dp.GetIfExist(ctx, fqfield, &groupIDs); err != nil {
+		return false, fmt.Errorf("getting group ids of the meeting: %w", err)
 	}
-
-	for _, id := range meetingIDs {
-		if id == strconv.Itoa(meetingID) {
-			return true, nil
-		}
-	}
-	return false, nil
+	return len(groupIDs) != 0, nil
 }
 
 // MeetingFromModel returns the meeting id for an model.

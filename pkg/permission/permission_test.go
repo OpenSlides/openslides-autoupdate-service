@@ -1,11 +1,9 @@
-package permission_test
+package permission
 
 import (
 	"context"
 	"encoding/json"
 	"testing"
-
-	"github.com/OpenSlides/openslides-permission-service/pkg/permission"
 )
 
 // TODO Activate after developer-mode is removed.
@@ -18,7 +16,7 @@ import (
 // }
 
 func TestDispatchAllowed(t *testing.T) {
-	p := permission.New(nil, permission.WithCollections(fakeCollections()))
+	p := NewTestPermission()
 	allowed, err := p.IsAllowed(context.Background(), "dummy_allowed", 0, []map[string]json.RawMessage{nil})
 	if err != nil {
 		t.Fatalf("Got unexpected error: %v", err)
@@ -29,7 +27,7 @@ func TestDispatchAllowed(t *testing.T) {
 }
 
 func TestDispatchNotAllowed(t *testing.T) {
-	p := permission.New(nil, permission.WithCollections(fakeCollections()))
+	p := NewTestPermission()
 	allowed, err := p.IsAllowed(context.Background(), "dummy_not_allowed", 0, []map[string]json.RawMessage{nil})
 	if err != nil {
 		t.Fatalf("Got unexpected error: %v", err)

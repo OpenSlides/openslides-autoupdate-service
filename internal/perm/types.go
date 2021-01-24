@@ -8,36 +8,35 @@ import (
 	"strings"
 )
 
-// ActionChecker is an object with the method IsAllowed.
-type ActionChecker interface {
+// Action is an object with the method IsAllowed.
+type Action interface {
 	// IsAllowed tells, if the user has the permission for the object this
 	// method is called on.
 	IsAllowed(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error)
 }
 
-// ActionCheckerFunc is a function with the IsAllowed signature.
-type ActionCheckerFunc func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error)
+// ActionFunc is a function with the IsAllowed signature.
+type ActionFunc func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error)
 
 // IsAllowed calls the function.
-func (f ActionCheckerFunc) IsAllowed(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
+func (f ActionFunc) IsAllowed(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 	return f(ctx, userID, payload)
 }
 
-// RestricterChecker is an object with a method to restrict fqfields.
-type RestricterChecker interface {
+// Collection is an object with a method to restrict fqfields.
+type Collection interface {
 	RestrictFQFields(ctx context.Context, userID int, fqfields []FQField, result map[string]bool) error
 }
 
-// RestricterCheckerFunc is a function with the IsAllowed signature.
-type RestricterCheckerFunc func(ctx context.Context, userID int, fqfields []FQField, result map[string]bool) error
+// CollectionFunc is a function with the Collection.RestrictFQFields signature.
+type CollectionFunc func(ctx context.Context, userID int, fqfields []FQField, result map[string]bool) error
 
 // RestrictFQFields calls the function.
-func (f RestricterCheckerFunc) RestrictFQFields(ctx context.Context, userID int, fqfields []FQField, result map[string]bool) error {
+func (f CollectionFunc) RestrictFQFields(ctx context.Context, userID int, fqfields []FQField, result map[string]bool) error {
 	return f(ctx, userID, fqfields, result)
 }
 
-// Connecter can connect collection.Reader and collection.Writer to the permission
-// service.
+// Connecter can connect Actions and Collections to a HandlerStore.
 type Connecter interface {
 	Connect(store HandlerStore)
 }
@@ -50,10 +49,10 @@ func (f ConnecterFunc) Connect(store HandlerStore) {
 	f(store)
 }
 
-// HandlerStore can hold handlers for Readers and Writers.
+// HandlerStore holds collections and actions.
 type HandlerStore interface {
-	RegisterRestricter(name string, reader RestricterChecker)
-	RegisterAction(name string, writer ActionChecker)
+	RegisterRestricter(name string, collection Collection)
+	RegisterAction(name string, action Action)
 }
 
 // FQField contains all parts of a fqfield.

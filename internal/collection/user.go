@@ -15,16 +15,16 @@ import (
 func User(dp dataprovider.DataProvider) perm.ConnecterFunc {
 	u := &user{dp: dp}
 	return func(s perm.HandlerStore) {
-		s.RegisterAction("user.create", perm.ActionCheckerFunc(u.create))
-		s.RegisterAction("user.update_self", perm.ActionCheckerFunc(u.updateSelf))
-		s.RegisterAction("user.update", perm.ActionCheckerFunc(u.update))
-		s.RegisterAction("user.set_password_self", perm.ActionCheckerFunc(u.passwordSelf))
-		s.RegisterAction("user.reset_password_to_default", perm.ActionCheckerFunc(u.update))
-		s.RegisterAction("user.generate_new_password", perm.ActionCheckerFunc(u.update))
-		s.RegisterAction("user.set_password", perm.ActionCheckerFunc(u.update))
-		s.RegisterAction("user.delete", perm.ActionCheckerFunc(u.update))
+		s.RegisterAction("user.create", perm.ActionFunc(u.create))
+		s.RegisterAction("user.update_self", perm.ActionFunc(u.updateSelf))
+		s.RegisterAction("user.update", perm.ActionFunc(u.update))
+		s.RegisterAction("user.set_password_self", perm.ActionFunc(u.passwordSelf))
+		s.RegisterAction("user.reset_password_to_default", perm.ActionFunc(u.update))
+		s.RegisterAction("user.generate_new_password", perm.ActionFunc(u.update))
+		s.RegisterAction("user.set_password", perm.ActionFunc(u.update))
+		s.RegisterAction("user.delete", perm.ActionFunc(u.update))
 
-		s.RegisterRestricter("user", perm.RestricterCheckerFunc(u.read))
+		s.RegisterRestricter("user", perm.CollectionFunc(u.read))
 	}
 }
 

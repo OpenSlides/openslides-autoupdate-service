@@ -10,34 +10,29 @@ import (
 	"github.com/OpenSlides/openslides-permission-service/internal/perm"
 )
 
-// Motion handels permissions of motions objects.
-type Motion struct {
-	dp dataprovider.DataProvider
-}
+// Motion initializes a motion.
+func Motion(dp dataprovider.DataProvider) perm.ConnecterFunc {
+	m := &motion{dp}
+	return func(s perm.HandlerStore) {
+		s.RegisterAction("motion.delete", m.modify("motion.can_manage"))
+		s.RegisterAction("motion.set_state", m.modify("motion.can_manage_metadata"))
+		s.RegisterAction("motion.create", m.create())
+		s.RegisterAction("motion_submitter.create", m.submitterCreate())
 
-// NewMotion initializes a motion.
-func NewMotion(dp dataprovider.DataProvider) *Motion {
-	return &Motion{
-		dp: dp,
+		s.RegisterRestricter("motion", perm.CollectionFunc(m.readMotion))
+		s.RegisterRestricter("motion_submitter", perm.CollectionFunc(m.readSubmitter))
+		s.RegisterRestricter("motion_block", m.readBlock())
+		s.RegisterRestricter("motion_change_recommendation", m.readChangeRecommendation())
+		s.RegisterRestricter("motion_comment_section", perm.CollectionFunc(m.readCommentSection))
+		s.RegisterRestricter("motion_comment", perm.CollectionFunc(m.readComment))
 	}
 }
 
-// Connect registers the Motion handlers.
-func (m *Motion) Connect(s perm.HandlerStore) {
-	s.RegisterAction("motion.delete", m.modify("motion.can_manage"))
-	s.RegisterAction("motion.set_state", m.modify("motion.can_manage_metadata"))
-	s.RegisterAction("motion.create", m.create())
-	s.RegisterAction("motion_submitter.create", m.submitterCreate())
-
-	s.RegisterRestricter("motion", perm.RestricterCheckerFunc(m.readMotion))
-	s.RegisterRestricter("motion_submitter", perm.RestricterCheckerFunc(m.readSubmitter))
-	s.RegisterRestricter("motion_block", m.readBlock())
-	s.RegisterRestricter("motion_change_recommendation", m.readChangeRecommendation())
-	s.RegisterRestricter("motion_comment_section", perm.RestricterCheckerFunc(m.readCommentSection))
-	s.RegisterRestricter("motion_comment", perm.RestricterCheckerFunc(m.readComment))
+type motion struct {
+	dp dataprovider.DataProvider
 }
 
-func (m *Motion) create() perm.ActionCheckerFunc {
+func (m *motion) create() perm.ActionFunc {
 	allowList := map[string]bool{
 		"title":                true,
 		"text":                 true,
@@ -95,7 +90,7 @@ func (m *Motion) create() perm.ActionCheckerFunc {
 	}
 }
 
-func (m *Motion) modify(managePerm string) perm.ActionCheckerFunc {
+func (m *motion) modify(managePerm string) perm.ActionFunc {
 	return func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 		motionFQID := fmt.Sprintf("motion/%s", payload["id"])
 		meetingID, err := m.dp.MeetingFromModel(ctx, motionFQID)
@@ -221,7 +216,7 @@ func canSeeMotion(ctx context.Context, dp dataprovider.DataProvider, userID int,
 	return false, nil
 }
 
-func (m *Motion) readMotion(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
+func (m *motion) readMotion(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 	return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
 		meetingID, err := m.dp.MeetingFromModel(ctx, fmt.Sprintf("motion/%d", fqfield.ID))
 		if err != nil {
@@ -237,7 +232,7 @@ func (m *Motion) readMotion(ctx context.Context, userID int, fqfields []perm.FQF
 	})
 }
 
-func (m *Motion) submitterCreate() perm.ActionCheckerFunc {
+func (m *motion) submitterCreate() perm.ActionFunc {
 	return func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 		motionFQID := fmt.Sprintf("motion/%s", payload["motion_id"])
 		meetingID, err := m.dp.MeetingFromModel(ctx, motionFQID)
@@ -253,7 +248,7 @@ func (m *Motion) submitterCreate() perm.ActionCheckerFunc {
 	}
 }
 
-func (m *Motion) readSubmitter(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
+func (m *motion) readSubmitter(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 	return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
 		var motionID int
 		if err := m.dp.Get(ctx, fmt.Sprintf("motion_submitter/%d/motion_id", fqfield.ID), &motionID); err != nil {
@@ -273,7 +268,7 @@ func (m *Motion) readSubmitter(ctx context.Context, userID int, fqfields []perm.
 	})
 }
 
-func (m *Motion) readBlock() perm.RestricterCheckerFunc {
+func (m *motion) readBlock() perm.CollectionFunc {
 	return func(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 		return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
 			fqid := fmt.Sprintf("motion_block/%d", fqfield.ID)
@@ -309,7 +304,7 @@ func (m *Motion) readBlock() perm.RestricterCheckerFunc {
 	}
 }
 
-func (m *Motion) readChangeRecommendation() perm.RestricterCheckerFunc {
+func (m *motion) readChangeRecommendation() perm.CollectionFunc {
 	return func(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 		return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
 			fqid := fmt.Sprintf("motion_change_recommendation/%d", fqfield.ID)
@@ -354,7 +349,7 @@ func (m *Motion) readChangeRecommendation() perm.RestricterCheckerFunc {
 	}
 }
 
-func (m *Motion) canSeeCommentSection(ctx context.Context, userID, id int) (bool, error) {
+func (m *motion) canSeeCommentSection(ctx context.Context, userID, id int) (bool, error) {
 	fqid := fmt.Sprintf("motion_comment_section/%d", id)
 	meetingID, err := m.dp.MeetingFromModel(ctx, fqid)
 	if err != nil {
@@ -395,13 +390,13 @@ func (m *Motion) canSeeCommentSection(ctx context.Context, userID, id int) (bool
 	return false, nil
 }
 
-func (m *Motion) readCommentSection(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
+func (m *motion) readCommentSection(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 	return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
 		return m.canSeeCommentSection(ctx, userID, fqfield.ID)
 	})
 }
 
-func (m *Motion) readComment(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
+func (m *motion) readComment(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 	return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
 		var sectionID int
 		if err := m.dp.Get(ctx, fmt.Sprintf("motion_comment/%d/section_id", fqfield.ID), &sectionID); err != nil {

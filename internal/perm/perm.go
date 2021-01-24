@@ -4,7 +4,6 @@ package perm
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
@@ -19,53 +18,80 @@ type Permission struct {
 
 // New creates a new Permission object for a user in a specific meeting.
 //
-// If the user is not a member of the meeting, it returns nil.
+// If the user is not a member of the meeting, nil is returned.
 func New(ctx context.Context, dp dataprovider.DataProvider, userID, meetingID int) (*Permission, error) {
-	var groupIDs []int
-
 	if userID == 0 {
-		var enableAnonymous bool
-		fqfield := fmt.Sprintf("meeting/%d/enable_anonymous", meetingID)
-		if err := dp.GetIfExist(ctx, fqfield, &enableAnonymous); err != nil {
-			return nil, fmt.Errorf("checking anonymous enabled: %w", err)
-		}
-		if !enableAnonymous {
-			return nil, nil
-		}
+		return newAnonymous(ctx, dp, meetingID)
+	}
 
-		var defaultGroupID int
-		fqfield = fmt.Sprintf("meeting/%d/default_group_id", meetingID)
-		if err := dp.GetIfExist(ctx, fqfield, &defaultGroupID); err != nil {
-			return nil, fmt.Errorf("getting default group: %w", err)
-		}
-		if defaultGroupID != 0 {
-			groupIDs = append(groupIDs, defaultGroupID)
-		}
-	} else {
-		if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/group_$%d_ids", userID, meetingID), &groupIDs); err != nil {
-			return nil, fmt.Errorf("get group ids: %w", err)
-		}
+	var groupIDs []int
+	if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/group_$%d_ids", userID, meetingID), &groupIDs); err != nil {
+		return nil, fmt.Errorf("get group ids: %w", err)
+	}
 
-		if len(groupIDs) == 0 {
-			return nil, nil
-		}
+	if len(groupIDs) == 0 {
+		// User is not in the meeting
+		return nil, nil
+	}
 
-		// Get superadmin_group_id.
-		var adminGroupID int
-		fqfield := fmt.Sprintf("meeting/%d/admin_group_id", meetingID)
-		if err := dp.GetIfExist(ctx, fqfield, &adminGroupID); err != nil {
-			return nil, fmt.Errorf("check for admin group: %w", err)
-		}
+	admin, err := isAdmin(ctx, dp, meetingID, groupIDs)
+	if err != nil {
+		return nil, fmt.Errorf("checking if user is admin: %w", err)
+	}
+	if admin {
+		return &Permission{admin: true}, nil
+	}
 
-		if adminGroupID != 0 {
-			for _, id := range groupIDs {
-				if id == adminGroupID {
-					return &Permission{admin: true}, nil
-				}
+	perms, err := permissionsFromGroups(ctx, dp, groupIDs...)
+	if err != nil {
+		return nil, fmt.Errorf("getting permissions from all groups: %w", err)
+	}
+
+	return &Permission{groupIDs: groupIDs, permissions: perms}, nil
+}
+
+func newAnonymous(ctx context.Context, dp dataprovider.DataProvider, meetingID int) (*Permission, error) {
+	var enableAnonymous bool
+	fqfield := fmt.Sprintf("meeting/%d/enable_anonymous", meetingID)
+	if err := dp.GetIfExist(ctx, fqfield, &enableAnonymous); err != nil {
+		return nil, fmt.Errorf("checking anonymous enabled: %w", err)
+	}
+	if !enableAnonymous {
+		return nil, nil
+	}
+
+	var defaultGroupID int
+	fqfield = fmt.Sprintf("meeting/%d/default_group_id", meetingID)
+	if err := dp.GetIfExist(ctx, fqfield, &defaultGroupID); err != nil {
+		return nil, fmt.Errorf("getting default group: %w", err)
+	}
+
+	perms, err := permissionsFromGroups(ctx, dp, defaultGroupID)
+	if err != nil {
+		return nil, fmt.Errorf("getting permissions of default group: %w", err)
+	}
+
+	return &Permission{groupIDs: []int{defaultGroupID}, permissions: perms}, nil
+}
+
+func isAdmin(ctx context.Context, dp dataprovider.DataProvider, meetingID int, groupIDs []int) (bool, error) {
+	var adminGroupID int
+	fqfield := fmt.Sprintf("meeting/%d/admin_group_id", meetingID)
+	if err := dp.GetIfExist(ctx, fqfield, &adminGroupID); err != nil {
+		return false, fmt.Errorf("check for admin group: %w", err)
+	}
+
+	if adminGroupID != 0 {
+		for _, id := range groupIDs {
+			if id == adminGroupID {
+				return true, nil
 			}
 		}
 	}
+	return false, nil
+}
 
+func permissionsFromGroups(ctx context.Context, dp dataprovider.DataProvider, groupIDs ...int) (map[string]bool, error) {
 	permissions := make(map[string]bool)
 	for _, gid := range groupIDs {
 		fqfield := fmt.Sprintf("group/%d/permissions", gid)
@@ -80,7 +106,7 @@ func New(ctx context.Context, dp dataprovider.DataProvider, userID, meetingID in
 			}
 		}
 	}
-	return &Permission{groupIDs: groupIDs, permissions: permissions}, nil
+	return permissions, nil
 }
 
 // Has returns true, if the permission object contains the given permissions.
@@ -111,55 +137,9 @@ func (p *Permission) InGroup(gid int) bool {
 	return false
 }
 
-// Create checks for the mermission to create a new object.
-func Create(dp dataprovider.DataProvider, managePerm, collection string) ActionChecker {
-	return ActionCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
-		var meetingID int
-		if err := json.Unmarshal(payload["meeting_id"], &meetingID); err != nil {
-			return false, fmt.Errorf("no valid meeting id: %w", err)
-		}
-
-		ok, err := HasPerm(ctx, dp, userID, meetingID, managePerm)
-		if err != nil {
-			return false, fmt.Errorf("ensure manage permission: %w", err)
-		}
-
-		return ok, nil
-	})
-}
-
-// Modify checks for the permissions to alter an existing object.
-func Modify(dp dataprovider.DataProvider, managePerm, collection string) ActionChecker {
-	return ActionCheckerFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
-		id, err := modelID(payload)
-		if err != nil {
-			return false, fmt.Errorf("getting model id from payload: %w", err)
-		}
-
-		fqid := fmt.Sprintf("%s/%d", collection, id)
-		meetingID, err := dp.MeetingFromModel(ctx, fqid)
-		if err != nil {
-			return false, fmt.Errorf("getting meeting id for model %s: %w", fqid, err)
-		}
-
-		ok, err := HasPerm(ctx, dp, userID, meetingID, managePerm)
-		if err != nil {
-			return false, fmt.Errorf("ensure manage permission: %w", err)
-		}
-
-		return ok, nil
-	})
-}
-
-func modelID(data map[string]json.RawMessage) (int, error) {
-	var id int
-	if err := json.Unmarshal(data["id"], &id); err != nil {
-		return 0, fmt.Errorf("no valid meeting id: %w", err)
-	}
-	return id, nil
-}
-
-// HasPerm returns, if the user has the permission in the meeting.
+// HasPerm tells if the given user has a speficic permission in the meeting.
+//
+// It is a shortcut for calling p := perm.New(...);p.Has(...).
 func HasPerm(ctx context.Context, dp dataprovider.DataProvider, userID int, meetingID int, permission string) (bool, error) {
 	perm, err := New(ctx, dp, userID, meetingID)
 	if err != nil {

@@ -8,24 +8,19 @@ import (
 	"github.com/OpenSlides/openslides-permission-service/internal/perm"
 )
 
-// AgendaItem handels the permission of agenda_item objects.
-type AgendaItem struct {
-	dp dataprovider.DataProvider
-}
-
-// NewAgendaItem initializes an AgendaItem.
-func NewAgendaItem(dp dataprovider.DataProvider) *AgendaItem {
-	return &AgendaItem{
-		dp: dp,
+// AgendaItem handels the permissions of agenda_item objects.
+func AgendaItem(dp dataprovider.DataProvider) perm.ConnecterFunc {
+	a := &agendaItem{dp}
+	return func(s perm.HandlerStore) {
+		s.RegisterRestricter("agenda_item", perm.CollectionFunc(a.read))
 	}
 }
 
-// Connect registers the AgendaItem.
-func (a *AgendaItem) Connect(s perm.HandlerStore) {
-	s.RegisterRestricter("agenda_item", perm.RestricterCheckerFunc(a.read))
+type agendaItem struct {
+	dp dataprovider.DataProvider
 }
 
-func (a *AgendaItem) read(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
+func (a *agendaItem) read(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 	grouped, err := groupByMeeting(ctx, a.dp, userID, fqfields)
 	if err != nil {
 		return fmt.Errorf("grouping fqfields: %w", err)

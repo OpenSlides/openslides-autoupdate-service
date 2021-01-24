@@ -18,9 +18,12 @@ type IsAlloweder interface {
 }
 
 // IsAllowed registers a handler, to connect to the IsAllowed method.
+//
+// It returns the string `true` or `false` that can be encoded as json.
+//
+// If an error happens, a json-error-string is returned with status code 500.
 func IsAllowed(mux *http.ServeMux, provider IsAlloweder) {
-	url := prefix + "/is_allowed"
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle(prefix+"/is_allowed", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
 		b, err := ioutil.ReadAll(r.Body)
@@ -44,7 +47,6 @@ func IsAllowed(mux *http.ServeMux, provider IsAlloweder) {
 		if err != nil {
 			jsonError(w, err.Error())
 			return
-
 		}
 
 		value := "false"
@@ -52,9 +54,7 @@ func IsAllowed(mux *http.ServeMux, provider IsAlloweder) {
 			value = "true"
 		}
 		fmt.Fprintln(w, value)
-	})
-
-	mux.Handle(url, handler)
+	}))
 }
 
 type allrouter interface {
@@ -62,29 +62,29 @@ type allrouter interface {
 }
 
 // Health registers a handler, that tells, if the service is running.
+//
+// It also returns all known collections and actions.
 func Health(mux *http.ServeMux, router allrouter) {
-	url := prefix + "/health"
-
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle(prefix+"/health", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+
 		var rData struct {
 			Info struct {
 				Routes struct {
-					Read  []string `json:"read"`
-					Write []string `json:"write"`
+					Collections []string `json:"collections"`
+					Actions     []string `json:"actions"`
 				} `json:"routes"`
 			} `json:"healthinfo"`
 		}
-		rData.Info.Routes.Read, rData.Info.Routes.Write = router.AllRoutes()
+		rData.Info.Routes.Collections, rData.Info.Routes.Actions = router.AllRoutes()
 		if err := json.NewEncoder(w).Encode(rData); err != nil {
-			http.Error(w, "Something went wrong", 500)
+			jsonError(w, "Something went wrong")
 			return
 		}
-	})
-
-	mux.Handle(url, handler)
+	}))
 }
 
+// jsonError writes an error to the client as json object.
 func jsonError(w http.ResponseWriter, msg string) {
 	b, err := json.Marshal("Internal Error. Norman, Do not sent it to client: " + msg)
 	if err != nil {

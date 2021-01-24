@@ -1,4 +1,4 @@
-package permission_test
+package permission
 
 import (
 	"context"
@@ -6,6 +6,18 @@ import (
 
 	"github.com/OpenSlides/openslides-permission-service/internal/perm"
 )
+
+func NewTestPermission() *Permission {
+	p := &Permission{
+		hs: newHandlerStore(),
+	}
+
+	for _, con := range fakeCollections() {
+		con.Connect(p.hs)
+	}
+
+	return p
+}
 
 func fakeCollections() []perm.Connecter {
 	return []perm.Connecter{
