@@ -28,8 +28,11 @@ cases:
 - name: speaker.create
   action: speaker.create
 
+  db:
+    list_of_speakers/5/meeting_id: 1
+
   payload:
-    list_of_speakers_id: 1
+    list_of_speakers_id: 5
     user_id: 1
 
   cases:

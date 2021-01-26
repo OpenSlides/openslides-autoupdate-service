@@ -32,7 +32,7 @@ type listOfSpeaker struct {
 
 func (l *listOfSpeaker) speakerCreate(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 	var meetingID int
-	if err := l.dp.Get(ctx, fmt.Sprintf("speaker/%s/meeting_id", payload["list_of_speakers_id"]), &meetingID); err != nil {
+	if err := l.dp.Get(ctx, fmt.Sprintf("list_of_speakers/%s/meeting_id", payload["list_of_speakers_id"]), &meetingID); err != nil {
 		return false, fmt.Errorf("getting meeting id: %w", err)
 	}
 
