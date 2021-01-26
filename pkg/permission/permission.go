@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
 	"github.com/OpenSlides/openslides-permission-service/internal/perm"
@@ -46,7 +47,10 @@ func New(dp DataProvider) *Permission {
 func (ps *Permission) IsAllowed(ctx context.Context, action string, userID int, payloadList []map[string]json.RawMessage) (bool, error) {
 	superadmin, err := ps.dp.IsSuperadmin(ctx, userID)
 	if err != nil {
-		return false, fmt.Errorf("checking for superadmin: %w", err)
+		// TODO: Change after development is over
+		log.Printf("DEVELOPMENT ERROR PLEASE OPEN ISSUE: %v", err)
+		return true, nil
+		// return false, fmt.Errorf("checking for superadmin: %w", err)
 	}
 	if superadmin {
 		return true, nil
@@ -58,10 +62,13 @@ func (ps *Permission) IsAllowed(ctx context.Context, action string, userID int, 
 		return false, fmt.Errorf("unknown collection: `%s`", action)
 	}
 
-	for i, payload := range payloadList {
+	for _, payload := range payloadList {
 		allowed, err := handler.IsAllowed(ctx, userID, payload)
 		if err != nil {
-			return false, fmt.Errorf("payload %d: %w", i, err)
+			// TODO: Change after development is over
+			log.Printf("DEVELOPMENT ERROR PLEASE OPEN ISSUE: %v", err)
+			return true, nil
+			//return false, fmt.Errorf("payload %d: %w", i, err)
 		}
 		if !allowed {
 			return false, nil
@@ -98,28 +105,28 @@ func (ps Permission) RestrictFQFields(ctx context.Context, userID int, fqfields 
 
 	superadmin, err := ps.dp.IsSuperadmin(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("checking for superadmin: %w", err)
+		return todoDevelopmentRestricterError(fmt.Errorf("checking for superadmin: %w", err), fqfields)
 	}
 
 	grouped, err := groupFQFields(fqfields)
 	if err != nil {
-		return nil, fmt.Errorf("grouping fqfields: %w", err)
+		return todoDevelopmentRestricterError(fmt.Errorf("grouping fqfields: %w", err), fqfields)
 	}
 
-	for name, fqfields := range grouped {
+	for name, groupedFields := range grouped {
 		if superadmin {
-			if superadminFields(allowedFields, name, fqfields) {
+			if superadminFields(allowedFields, name, groupedFields) {
 				continue
 			}
 		}
 
 		handler, ok := ps.hs.collections[name]
 		if !ok {
-			return nil, fmt.Errorf("unknown collection: `%s`", name)
+			return todoDevelopmentRestricterError(fmt.Errorf("unknown collection: `%s`", name), fqfields)
 		}
 
-		if err := handler.RestrictFQFields(ctx, userID, fqfields, allowedFields); err != nil {
-			return nil, fmt.Errorf("restrict for collection %s: %w", name, err)
+		if err := handler.RestrictFQFields(ctx, userID, groupedFields, allowedFields); err != nil {
+			return todoDevelopmentRestricterError(fmt.Errorf("restrict for collection %s: %w", name, err), fqfields)
 		}
 	}
 	return allowedFields, nil
@@ -188,4 +195,14 @@ func (hs *handlerStore) RegisterAction(name string, action perm.Action) {
 		panic(fmt.Sprintf("Action with name `%s` allready exists", name))
 	}
 	hs.actions[name] = action
+}
+
+// todoDevelopmentRestricterError is a temporary function that should be removed as soon as possible.
+func todoDevelopmentRestricterError(err error, fqfields []string) (map[string]bool, error) {
+	out := make(map[string]bool, len(fqfields))
+	for _, f := range fqfields {
+		out[f] = true
+	}
+	log.Printf("DEVELOPMENT ERROR PLEASE OPEN ISSUE: %v", err)
+	return out, nil
 }
