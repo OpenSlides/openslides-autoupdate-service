@@ -54,9 +54,9 @@ func (dp *DataProvider) GetIfExist(ctx context.Context, fqfield string, value in
 	return nil
 }
 
-// IsSuperuser returns true, if the user is a super user.
-func (dp *DataProvider) IsSuperuser(ctx context.Context, userID int) (bool, error) {
-	// The anonymous is never a superuser.
+// IsSuperadmin returns true, if the user is a super user.
+func (dp *DataProvider) IsSuperadmin(ctx context.Context, userID int) (bool, error) {
+	// The anonymous is never a superadmin.
 	if userID == 0 {
 		return false, nil
 	}
@@ -65,7 +65,7 @@ func (dp *DataProvider) IsSuperuser(ctx context.Context, userID int) (bool, erro
 	if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/organisation_management_level", userID), &orgaLevel); err != nil {
 		return false, fmt.Errorf("getting organisation level: %w", err)
 	}
-	return orgaLevel == "superuser", nil
+	return orgaLevel == "superadmin", nil
 }
 
 // MeetingIDFromPayload returns the id of a meeting from the payload.

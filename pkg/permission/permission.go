@@ -44,15 +44,15 @@ func New(dp DataProvider) *Permission {
 // action. The method returns true, if the user can the action for all of the
 // given payloads.
 func (ps *Permission) IsAllowed(ctx context.Context, action string, userID int, payloadList []map[string]json.RawMessage) (bool, error) {
-	superUser, err := ps.dp.IsSuperuser(ctx, userID)
+	superadmin, err := ps.dp.IsSuperadmin(ctx, userID)
 	if err != nil {
-		return false, fmt.Errorf("checking for superuser: %w", err)
+		return false, fmt.Errorf("checking for superadmin: %w", err)
 	}
-	if superUser {
+	if superadmin {
 		return true, nil
 	}
 
-	// TODO: after all handlers are implemented. Move this code above the superUser check.
+	// TODO: after all handlers are implemented. Move this code above the superadmin check.
 	handler, ok := ps.hs.actions[action]
 	if !ok {
 		return false, fmt.Errorf("unknown collection: `%s`", action)
@@ -71,10 +71,10 @@ func (ps *Permission) IsAllowed(ctx context.Context, action string, userID int, 
 	return true, nil
 }
 
-// superUserFields handles fields that the superuser is not allowed to see.
+// superadminFields handles fields that the superadmin is not allowed to see.
 //
 // Returns true, if the normal normal restricters should be skiped.
-func superUserFields(result map[string]bool, collection string, fqfields []perm.FQField) (skip bool) {
+func superadminFields(result map[string]bool, collection string, fqfields []perm.FQField) (skip bool) {
 	if collection == "personal_note" {
 		return false
 	}
@@ -96,9 +96,9 @@ func superUserFields(result map[string]bool, collection string, fqfields []perm.
 func (ps Permission) RestrictFQFields(ctx context.Context, userID int, fqfields []string) (map[string]bool, error) {
 	allowedFields := make(map[string]bool, len(fqfields))
 
-	superUser, err := ps.dp.IsSuperuser(ctx, userID)
+	superadmin, err := ps.dp.IsSuperadmin(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("checking for superuser: %w", err)
+		return nil, fmt.Errorf("checking for superadmin: %w", err)
 	}
 
 	grouped, err := groupFQFields(fqfields)
@@ -107,8 +107,8 @@ func (ps Permission) RestrictFQFields(ctx context.Context, userID int, fqfields 
 	}
 
 	for name, fqfields := range grouped {
-		if superUser {
-			if superUserFields(allowedFields, name, fqfields) {
+		if superadmin {
+			if superadminFields(allowedFields, name, fqfields) {
 				continue
 			}
 		}

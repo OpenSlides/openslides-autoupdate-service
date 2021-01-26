@@ -4,9 +4,9 @@ cases:
 - name: no perm
   is_allowed: false
 
-- name: superuser
+- name: superadmin
   db:
-    user/1/organisation_management_level: superuser
+    user/1/organisation_management_level: superadmin
   user_id: 1
   is_allowed: true
 

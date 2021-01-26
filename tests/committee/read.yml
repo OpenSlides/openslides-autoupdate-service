@@ -7,9 +7,9 @@ cases:
 - name: unprivileged
   can_see: []
 
-- name: superuser
+- name: superadmin
   db:
-    user/1/organisation_management_level: superuser
+    user/1/organisation_management_level: superadmin
   can_see:
     - committee/1
 

@@ -3,9 +3,9 @@ action: user.delete
 user_id: 1
 
 cases:
-- name: superuser
+- name: superadmin
   db:
-    user/1/organisation_management_level: superuser
+    user/1/organisation_management_level: superadmin
   is_allowed: true
 
 - name: orga manager

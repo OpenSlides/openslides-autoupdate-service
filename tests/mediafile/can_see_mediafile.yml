@@ -6,9 +6,9 @@ payload:
   id: 1
 
 cases:
-- name: is superuser
+- name: is superadmin
   db:
-    user/1/organisation_management_level: superuser
+    user/1/organisation_management_level: superadmin
   user_id: 1
 
   is_allowed: true
