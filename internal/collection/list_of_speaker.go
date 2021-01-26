@@ -17,12 +17,12 @@ func ListOfSpeaker(dp dataprovider.DataProvider) perm.ConnecterFunc {
 		dp: dp,
 	}
 	return func(s perm.HandlerStore) {
-		s.RegisterAction("speaker.create", perm.ActionFunc(l.createSpeaker))
-		s.RegisterAction("speaker.delete", perm.ActionFunc(l.deleteSpeaker))
-		s.RegisterRestricter("speaker", perm.CollectionFunc(l.readSpeaker))
+		s.RegisterAction("speaker.create", perm.ActionFunc(l.speakerCreate))
+		s.RegisterAction("speaker.delete", perm.ActionFunc(l.speakerDelete))
+		s.RegisterRestricter("speaker", perm.CollectionFunc(l.speakerRead))
 
-		s.RegisterAction("list_of_speakers.delete", perm.ActionFunc(l.deleteList))
-		s.RegisterRestricter("list_of_speakers", perm.CollectionFunc(l.readList))
+		s.RegisterAction("list_of_speakers.delete", perm.ActionFunc(l.listDelete))
+		s.RegisterRestricter("list_of_speakers", perm.CollectionFunc(l.listRead))
 	}
 }
 
@@ -30,9 +30,9 @@ type listOfSpeaker struct {
 	dp dataprovider.DataProvider
 }
 
-func (l *listOfSpeaker) createSpeaker(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
+func (l *listOfSpeaker) speakerCreate(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 	var meetingID int
-	if err := l.dp.Get(ctx, fmt.Sprintf("list_of_speakers/%s/meeting_id", payload["list_of_speakers_id"]), &meetingID); err != nil {
+	if err := l.dp.Get(ctx, fmt.Sprintf("speaker/%s/meeting_id", payload["list_of_speakers_id"]), &meetingID); err != nil {
 		return false, fmt.Errorf("getting meeting id: %w", err)
 	}
 
@@ -58,7 +58,7 @@ func (l *listOfSpeaker) createSpeaker(ctx context.Context, userID int, payload m
 	return false, nil
 }
 
-func (l *listOfSpeaker) deleteSpeaker(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
+func (l *listOfSpeaker) speakerDelete(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 	fqid := "speaker/" + string(payload["id"])
 	var sUserID int
 	if err := l.dp.Get(ctx, fqid+"/user_id", &sUserID); err != nil {
@@ -84,7 +84,7 @@ func (l *listOfSpeaker) deleteSpeaker(ctx context.Context, userID int, payload m
 	return ok, nil
 }
 
-func (l *listOfSpeaker) readSpeaker(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
+func (l *listOfSpeaker) speakerRead(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 	return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
 		fqid := fmt.Sprintf("speaker/%d", fqfield.ID)
 
@@ -110,12 +110,12 @@ func (l *listOfSpeaker) readSpeaker(ctx context.Context, userID int, fqfields []
 	})
 }
 
-func (l *listOfSpeaker) deleteList(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
+func (l *listOfSpeaker) listDelete(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 	perm.LogNotAllowedf("list_of_speaker.delete is an internal action.")
 	return false, nil
 }
 
-func (l *listOfSpeaker) readList(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
+func (l *listOfSpeaker) listRead(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 	return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
 		fqid := fmt.Sprintf("list_of_speakers/%d", fqfield.ID)
 
