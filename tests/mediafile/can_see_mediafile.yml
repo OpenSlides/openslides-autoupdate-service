@@ -19,6 +19,10 @@ cases:
 
   is_allowed: true
 
+- name: meeting manager
+  permission: mediafile.can_manage
+  is_allowed: true
+
 - name: user not in meeting
   meeting_id: 2
 

@@ -78,7 +78,7 @@ func (m *mediafile) canSeeAction(ctx context.Context, userID int, payload map[st
 		return false, nil
 	}
 
-	if perms.IsAdmin() {
+	if perms.Has("mediafile.can_manage") {
 		return true, nil
 	}
 
