@@ -18,6 +18,7 @@ func Motion(dp dataprovider.DataProvider) perm.ConnecterFunc {
 		s.RegisterAction("motion.set_state", m.modify("motion.can_manage_metadata"))
 		s.RegisterAction("motion.create", m.create())
 		s.RegisterAction("motion_submitter.create", m.submitterCreate())
+		s.RegisterAction("motion.update", m.modify("motion.can_manage"))
 
 		s.RegisterRestricter("motion", perm.CollectionFunc(m.readMotion))
 		s.RegisterRestricter("motion_submitter", perm.CollectionFunc(m.readSubmitter))
@@ -107,6 +108,17 @@ func (m *motion) modify(managePerm string) perm.ActionFunc {
 			return true, nil
 		}
 
+		// Non managers can only edit some fields
+		for k := range payload {
+			switch k {
+			case "id", "title", "text", "reason", "amendment_paragraphs":
+				continue
+			default:
+				perm.LogNotAllowedf("Non managers can not modify field %s", k)
+				return false, nil
+			}
+		}
+
 		motionID, err := strconv.Atoi(string(payload["id"]))
 		if err != nil {
 			return false, fmt.Errorf("invalid payload: %w", err)
@@ -118,6 +130,7 @@ func (m *motion) modify(managePerm string) perm.ActionFunc {
 		}
 
 		if !b {
+			perm.LogNotAllowedf("User %d can not see the motion", userID)
 			return false, nil
 		}
 

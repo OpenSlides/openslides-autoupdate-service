@@ -40,7 +40,7 @@ cases:
   permission: motion.can_manage
   is_allowed: true
 
-- name: correct state but without see perm
+- name: correct state but internal
   db:
     motion_state/1:
       allow_submitter_edit: true

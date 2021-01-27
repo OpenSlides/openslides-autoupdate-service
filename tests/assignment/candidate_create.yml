@@ -27,6 +27,11 @@ cases:
     user_id: 1
     is_allowed: false
 
+  - name: nominate self as manager
+    permission: assignment.can_manage
+    user_id: 1
+    is_allowed: true
+
   - name: nominate other with perm
     permission: assignment.can_nominate_other
     is_allowed: true
@@ -57,6 +62,11 @@ cases:
     user_id: 1
     is_allowed: false
 
+  - name: nominate self as manager
+    permission: assignment.can_manage
+    user_id: 1
+    is_allowed: true
+
   - name: nominate other with perm
     permission: assignment.can_nominate_other
     is_allowed: false
@@ -67,3 +77,7 @@ cases:
   - name: nominate other with wrong perm
     permission: assignment.can_nominate_self
     is_allowed: false
+
+  - name: nominate other as manager
+    permission: assignment.can_manage
+    is_allowed: true
