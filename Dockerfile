@@ -38,7 +38,7 @@ CMD CompileDaemon -log-prefix=false -build="go build ./cmd/permission" -command=
 
 
 # Productive build
-FROM alpine:3.13.0
+FROM alpine:3.13.1
 WORKDIR /app/
 
 COPY --from=builder /app/permission .
