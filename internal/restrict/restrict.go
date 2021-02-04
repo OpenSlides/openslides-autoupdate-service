@@ -34,7 +34,11 @@ func New(permer Permissioner, checker map[string]Checker) *Restricter {
 // nil.
 func (r *Restricter) Restrict(ctx context.Context, uid int, data map[string]json.RawMessage) error {
 	keys := make([]string, 0, len(data))
-	for k := range data {
+	for k, v := range data {
+		if v == nil {
+			// If the value is nil, there is no need to check it.
+			continue
+		}
 		keys = append(keys, k)
 	}
 	allowed, err := r.permer.RestrictFQFields(ctx, uid, keys)
