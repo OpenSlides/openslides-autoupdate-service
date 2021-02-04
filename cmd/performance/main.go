@@ -30,7 +30,7 @@ const (
 
 	// The name of the key that is requested by the clients and updated in
 	// redis.
-	keyName = "user/5/name"
+	keyName = "meeting/1/id"
 )
 
 func main() {

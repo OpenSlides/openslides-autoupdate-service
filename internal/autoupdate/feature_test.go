@@ -69,7 +69,7 @@ func TestFeatures(t *testing.T) {
 	datastore.OnlyData = true
 	closed := make(chan struct{})
 	defer close(closed)
-	s := autoupdate.New(datastore, new(test.MockRestricter), mockUserUpdater{}, closed)
+	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)
 
 	for _, tt := range []struct {
 		name string

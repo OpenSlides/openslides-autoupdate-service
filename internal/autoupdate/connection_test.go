@@ -87,7 +87,7 @@ func TestConnectionEmptyData(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	s := autoupdate.New(datastore, new(test.MockRestricter), mockUserUpdater{}, closed)
+	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)
 
 	kb := test.KeysBuilder{K: test.Str(doesExistKey, doesNotExistKey)}
 
@@ -190,7 +190,7 @@ func TestConnectionFilterData(t *testing.T) {
 
 	closed := make(chan struct{})
 	defer close(closed)
-	s := autoupdate.New(datastore, new(test.MockRestricter), mockUserUpdater{}, closed)
+	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 	c := s.Connect(1, kb)
 	if _, err := c.Next(context.Background()); err != nil {
@@ -215,7 +215,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	datastore := new(test.MockDatastore)
 	closed := make(chan struct{})
 	close(closed)
-	s := autoupdate.New(datastore, new(test.MockRestricter), mockUserUpdater{}, closed)
+	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 	c := s.Connect(1, kb)
 	if _, err := c.Next(context.Background()); err != nil {
@@ -244,7 +244,7 @@ func TestFullUpdate(t *testing.T) {
 	datastore := new(test.MockDatastore)
 	closed := make(chan struct{})
 	defer close(closed)
-	userUpdater := new(mockUserUpdater)
+	userUpdater := new(test.UserUpdater)
 	s := autoupdate.New(datastore, new(test.MockRestricter), userUpdater, closed)
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 
@@ -255,7 +255,7 @@ func TestFullUpdate(t *testing.T) {
 		}
 
 		// send fulldata for other user
-		userUpdater.userIDs = []int{2}
+		userUpdater.UserIDs = []int{2}
 		datastore.Send(test.Str("some/5/data"))
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -287,7 +287,7 @@ func TestFullUpdate(t *testing.T) {
 		}
 
 		// Send fulldata for same user.
-		userUpdater.userIDs = []int{1}
+		userUpdater.UserIDs = []int{1}
 		datastore.Send(test.Str("some/5/data"))
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -335,7 +335,7 @@ func BenchmarkFilterChanging(b *testing.B) {
 	datastore := new(test.MockDatastore)
 	closed := make(chan struct{})
 	defer close(closed)
-	s := autoupdate.New(datastore, new(test.MockRestricter), mockUserUpdater{}, closed)
+	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)
 
 	keys := make([]string, 0, keyCount)
 	for i := 0; i < keyCount; i++ {
@@ -362,7 +362,7 @@ func BenchmarkFilterNotChanging(b *testing.B) {
 	datastore := new(test.MockDatastore)
 	closed := make(chan struct{})
 	defer close(closed)
-	s := autoupdate.New(datastore, new(test.MockRestricter), mockUserUpdater{}, closed)
+	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)
 
 	keys := make([]string, 0, keyCount)
 	for i := 0; i < keyCount; i++ {

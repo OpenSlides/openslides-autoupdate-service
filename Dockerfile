@@ -1,4 +1,4 @@
-FROM golang:1.15.6-alpine3.12 as basis
+FROM golang:1.15.7-alpine3.12 as basis
 LABEL maintainer="OpenSlides Team <info@openslides.com>"
 WORKDIR /root/
 
@@ -36,7 +36,7 @@ CMD CompileDaemon -log-prefix=false -build="go build ./cmd/autoupdate" -command=
 
 
 # Productive build
-FROM alpine:3.13.0
+FROM alpine:3.13.1
 WORKDIR /root/
 
 COPY --from=builder /root/autoupdate .

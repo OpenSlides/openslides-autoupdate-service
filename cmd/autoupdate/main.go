@@ -97,7 +97,7 @@ func run() error {
 
 	// Permission Service.
 	var perms restrict.Permissioner = new(test.MockPermission)
-	var updater autoupdate.UserUpdater
+	var updater autoupdate.UserUpdater = new(test.UserUpdater)
 	permService := "fake"
 	if env["DEACTIVATE_PERMISSION"] == "false" {
 		permService = "permission"
@@ -109,7 +109,6 @@ func run() error {
 
 	// Restricter Service.
 	checker := restrict.RelationChecker(restrict.RelationLists, perms)
-	checker["user/password"] = restrict.KeyRemover()
 	restricter := restrict.New(perms, checker)
 
 	// Autoupdate Service.
