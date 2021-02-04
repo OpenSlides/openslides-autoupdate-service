@@ -33,6 +33,27 @@ func TestRestrict(t *testing.T) {
 	}
 }
 
+func TestRestrictDeletedFields(t *testing.T) {
+	perms := new(test.MockPermission)
+	perms.Default = true
+	r := restrict.New(perms, nil)
+	data := map[string]json.RawMessage{
+		"tag/1/name": nil,
+	}
+	if err := r.Restrict(context.Background(), 1, data); err != nil {
+		t.Errorf("Restrict returned unexpected error: %v", err)
+	}
+
+	if got := data["tag/1/name"]; got != nil {
+		t.Errorf("data[tag/1/name] = `%s`, expected nil", got)
+	}
+
+	if len(perms.Called) != 0 {
+		t.Errorf("Permission api was caled")
+	}
+
+}
+
 func TestChecker(t *testing.T) {
 	perms := new(test.MockPermission)
 	perms.Data = map[string]bool{
