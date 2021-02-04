@@ -43,12 +43,12 @@ func (a *agendaItem) read(ctx context.Context, userID int, fqfields []perm.FQFie
 					return fmt.Errorf("getting is_hidden field: %w", err)
 				}
 
-				requiredPerm := "agenda_item.can_see"
+				requiredPerm := perm.AgendaItemCanSee
 				if isInternal {
-					requiredPerm = "agenda_item.can_see_internal"
+					requiredPerm = perm.AgendaItemCanSeeInternal
 				}
 				if isHidden {
-					requiredPerm = "agenda_item.can_manage"
+					requiredPerm = perm.AgendaItemCanManage
 				}
 				hasPerm = false
 				if g.perm.Has(requiredPerm) {
@@ -60,11 +60,11 @@ func (a *agendaItem) read(ctx context.Context, userID int, fqfields []perm.FQFie
 				continue
 			}
 
-			if fqfield.Field == "duration" && !g.perm.Has("agenda_item.can_see_internal") {
+			if fqfield.Field == "duration" && !g.perm.Has(perm.AgendaItemCanSeeInternal) {
 				continue
 			}
 
-			if fqfield.Field == "comment" && !g.perm.Has("agenda_item.can_manage") {
+			if fqfield.Field == "comment" && !g.perm.Has(perm.AgendaItemCanManage) {
 				continue
 			}
 

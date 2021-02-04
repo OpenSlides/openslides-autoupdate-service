@@ -189,21 +189,21 @@ func canSeePoll(ctx context.Context, dp dataprovider.DataProvider, perms *perm.P
 		return canSeeMotion(ctx, dp, userID, id, perms)
 	}
 
-	perm := "agenda_item.can_see"
+	canSeePerm := perm.AgendaItemCanSee
 	if collection == "assignment" {
-		perm = "assignment.can_see"
+		canSeePerm = perm.AssignmentCanSee
 	}
-	return perms.Has(perm), nil
+	return perms.Has(canSeePerm), nil
 }
 
-func (p *poll) canManage(collection string) string {
+func (p *poll) canManage(collection string) perm.TPermission {
 	if collection == "motion" {
-		return "motion.can_manage_polls"
+		return perm.MotionCanManagePolls
 	}
 	if collection == "assignment" {
-		return "assignment.can_manage"
+		return perm.AssignmentCanManage
 	}
-	return "agenda_item.can_manage"
+	return perm.AgendaItemCanManage
 }
 
 func canSeePolls(ctx context.Context, dp dataprovider.DataProvider, perms *perm.Permission, userID int, ids []int) (bool, error) {

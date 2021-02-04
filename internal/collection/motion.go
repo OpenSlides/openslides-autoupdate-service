@@ -14,11 +14,11 @@ import (
 func Motion(dp dataprovider.DataProvider) perm.ConnecterFunc {
 	m := &motion{dp}
 	return func(s perm.HandlerStore) {
-		s.RegisterAction("motion.delete", m.modify("motion.can_manage"))
-		s.RegisterAction("motion.set_state", m.modify("motion.can_manage_metadata"))
+		s.RegisterAction("motion.delete", m.modify(perm.MotionCanManage))
+		s.RegisterAction("motion.set_state", m.modify(perm.MotionCanManageMetadata))
 		s.RegisterAction("motion.create", m.create())
 		s.RegisterAction("motion_submitter.create", m.submitterCreate())
-		s.RegisterAction("motion.update", m.modify("motion.can_manage"))
+		s.RegisterAction("motion.update", m.modify(perm.MotionCanManage))
 
 		s.RegisterRestricter("motion", perm.CollectionFunc(m.readMotion))
 		s.RegisterRestricter("motion_submitter", perm.CollectionFunc(m.readSubmitter))
@@ -64,14 +64,14 @@ func (m *motion) create() perm.ActionFunc {
 			return false, fmt.Errorf("fetching perms: %w", err)
 		}
 
-		if perms.Has("motion.can_manage") {
+		if perms.Has(perm.MotionCanManage) {
 			return true, nil
 		}
 
-		requiredPerm := "motion.can_create"
+		requiredPerm := perm.MotionCanCreate
 		aList := allowList
 		if _, ok := payload["parent_id"]; ok {
-			requiredPerm = "motion.can_create_amendment"
+			requiredPerm = perm.MotionCanCreateAmendments
 			aList = allowListAmendment
 		}
 
@@ -91,7 +91,7 @@ func (m *motion) create() perm.ActionFunc {
 	}
 }
 
-func (m *motion) modify(managePerm string) perm.ActionFunc {
+func (m *motion) modify(managePerm perm.TPermission) perm.ActionFunc {
 	return func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 		motionFQID := fmt.Sprintf("motion/%s", payload["id"])
 		meetingID, err := m.dp.MeetingFromModel(ctx, motionFQID)
@@ -176,11 +176,11 @@ func (m *motion) modify(managePerm string) perm.ActionFunc {
 }
 
 func canSeeMotion(ctx context.Context, dp dataprovider.DataProvider, userID int, motionID int, perms *perm.Permission) (bool, error) {
-	if perms.Has("motion.can_manage") {
+	if perms.Has(perm.MotionCanManage) {
 		return true, nil
 	}
 
-	if !perms.Has("motion.can_see") {
+	if !perms.Has(perm.MotionCanSee) {
 		return false, nil
 	}
 
@@ -204,7 +204,7 @@ func canSeeMotion(ctx context.Context, dp dataprovider.DataProvider, userID int,
 	for _, r := range restriction {
 		switch r {
 		case "motion.can_see_internal", "motion.can_manage_metadata", "motion.can_manage":
-			if perms.Has(r) {
+			if perms.Has(perm.TPermission(r)) {
 				return true, nil
 			}
 
@@ -253,7 +253,7 @@ func (m *motion) submitterCreate() perm.ActionFunc {
 			return false, fmt.Errorf("getting meeting for %s: %w", motionFQID, err)
 		}
 
-		p, err := perm.HasPerm(ctx, m.dp, userID, meetingID, "motion.can_manage_metadata")
+		p, err := perm.HasPerm(ctx, m.dp, userID, meetingID, perm.MotionCanManageMetadata)
 		if err != nil {
 			return false, fmt.Errorf("getting perm: %w", err)
 		}
@@ -295,11 +295,11 @@ func (m *motion) readBlock() perm.CollectionFunc {
 				return false, fmt.Errorf("getting user permissions: %w", err)
 			}
 
-			if perms.Has("motion.can_manage") {
+			if perms.Has(perm.MotionCanManage) {
 				return true, nil
 			}
 
-			if !perms.Has("motion.can_see") {
+			if !perms.Has(perm.MotionCanSee) {
 				return false, nil
 			}
 
@@ -331,7 +331,7 @@ func (m *motion) readChangeRecommendation() perm.CollectionFunc {
 				return false, fmt.Errorf("getting user permissions: %w", err)
 			}
 
-			if perms.Has("motion.can_manage") {
+			if perms.Has(perm.MotionCanManage) {
 				return true, nil
 			}
 
@@ -357,7 +357,7 @@ func (m *motion) readChangeRecommendation() perm.CollectionFunc {
 				return true, nil
 			}
 
-			return perms.Has("motion.can_manage"), nil
+			return perms.Has(perm.MotionCanManage), nil
 		})
 	}
 }
@@ -374,7 +374,7 @@ func (m *motion) canSeeCommentSection(ctx context.Context, userID, id int) (bool
 		return false, fmt.Errorf("getting user permissions: %w", err)
 	}
 
-	if perms.Has("motion.can_manage") {
+	if perms.Has(perm.MotionCanManage) {
 		return true, nil
 	}
 

@@ -1,6 +1,6 @@
 package perm
 
-//go:generate  sh -c "go run build_derivate/main.go > derivate.go && go fmt derivate.go"
+//go:generate  sh -c "go run generate/main.go > generated.go && go fmt generated.go"
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 type Permission struct {
 	admin       bool
 	groupIDs    []int
-	permissions map[string]bool
+	permissions map[TPermission]bool
 }
 
 // New creates a new Permission object for a user in a specific meeting.
@@ -91,8 +91,8 @@ func isAdmin(ctx context.Context, dp dataprovider.DataProvider, meetingID int, g
 	return false, nil
 }
 
-func permissionsFromGroups(ctx context.Context, dp dataprovider.DataProvider, groupIDs ...int) (map[string]bool, error) {
-	permissions := make(map[string]bool)
+func permissionsFromGroups(ctx context.Context, dp dataprovider.DataProvider, groupIDs ...int) (map[TPermission]bool, error) {
+	permissions := make(map[TPermission]bool)
 	for _, gid := range groupIDs {
 		fqfield := fmt.Sprintf("group/%d/permissions", gid)
 		var perms []string
@@ -100,8 +100,8 @@ func permissionsFromGroups(ctx context.Context, dp dataprovider.DataProvider, gr
 			return nil, fmt.Errorf("getting %s: %w", fqfield, err)
 		}
 		for _, perm := range perms {
-			permissions[perm] = true
-			for _, p := range derivatePerms[perm] {
+			permissions[TPermission(perm)] = true
+			for _, p := range derivatePerms[TPermission(perm)] {
 				permissions[p] = true
 			}
 		}
@@ -110,7 +110,7 @@ func permissionsFromGroups(ctx context.Context, dp dataprovider.DataProvider, gr
 }
 
 // Has returns true, if the permission object contains the given permissions.
-func (p *Permission) Has(perm string) bool {
+func (p *Permission) Has(perm TPermission) bool {
 	if p == nil {
 		return false
 	}
@@ -140,7 +140,7 @@ func (p *Permission) InGroup(gid int) bool {
 // HasPerm tells if the given user has a speficic permission in the meeting.
 //
 // It is a shortcut for calling p := perm.New(...);p.Has(...).
-func HasPerm(ctx context.Context, dp dataprovider.DataProvider, userID int, meetingID int, permission string) (bool, error) {
+func HasPerm(ctx context.Context, dp dataprovider.DataProvider, userID int, meetingID int, permission TPermission) (bool, error) {
 	perm, err := New(ctx, dp, userID, meetingID)
 	if err != nil {
 		return false, fmt.Errorf("collecting perms: %w", err)

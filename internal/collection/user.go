@@ -69,7 +69,7 @@ func (u *user) update(ctx context.Context, userID int, payload map[string]json.R
 		return false, nil
 	}
 
-	b, err := perm.HasPerm(ctx, u.dp, userID, meetingID, "user.can_manage")
+	b, err := perm.HasPerm(ctx, u.dp, userID, meetingID, perm.UserCanManage)
 	if err != nil {
 		return false, fmt.Errorf("checking manage perm: %w", err)
 	}
@@ -92,7 +92,7 @@ func (u *user) passwordSelf(ctx context.Context, userID int, payload map[string]
 		return true, nil
 	}
 
-	b, err := perm.HasPerm(ctx, u.dp, userID, meetingID, "user.can_change_own_password")
+	b, err := perm.HasPerm(ctx, u.dp, userID, meetingID, perm.UserCanChangeOwnPassword)
 	if err != nil {
 		return false, fmt.Errorf("getting perm: %w", err)
 	}
@@ -171,13 +171,13 @@ func (u *user) read(ctx context.Context, userID int, fqfields []perm.FQField, re
 				if err != nil {
 					return fmt.Errorf("getting perms for user %d in meeting %d: %w", userID, meetingID, err)
 				}
-				if perms.Has("user.can_see") {
+				if perms.Has(perm.UserCanSee) {
 					addSlice(fields, canSeeFields[0])
 				}
-				if perms.Has("user.can_see_extra_data") {
+				if perms.Has(perm.UserCanSeeExtraData) {
 					addSlice(fields, canSeeFields[1])
 				}
-				if perms.Has("user.can_manage") {
+				if perms.Has(perm.UserCanManage) {
 					addSlice(fields, canSeeFields[2])
 				}
 				meetingFields[meetingID] = fields

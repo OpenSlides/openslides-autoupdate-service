@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"text/template"
 
 	models "github.com/OpenSlides/openslides-models-to-go"
@@ -54,6 +55,10 @@ func parse(r io.Reader) (map[string][]string, error) {
 		for fieldName := range model.Fields {
 			outData[modelName] = append(outData[modelName], fieldName)
 		}
+	}
+
+	for k := range outData {
+		sort.Strings(outData[k])
 	}
 
 	return outData, nil

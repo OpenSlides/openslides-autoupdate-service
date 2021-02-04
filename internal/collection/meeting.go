@@ -59,15 +59,15 @@ func (m *meeting) read(ctx context.Context, userID int, fqfields []perm.FQField,
 		switch fqfield.Field {
 		case "enable_anonymous", "id":
 		case "welcome_title", "welcome_text":
-			if !perms.Has("meeting.can_see_frontpage") {
+			if !perms.Has(perm.MeetingCanSeeFrontpage) {
 				continue
 			}
 		case "conference_stream_url", "conference_stream_poster_url":
-			if !perms.Has("meeting.can_see_livestream") {
+			if !perms.Has(perm.MeetingCanSeeLivestream) {
 				continue
 			}
 		case "present_user_ids":
-			if !perms.Has("user.can_see") {
+			if !perms.Has(perm.UserCanSee) {
 				continue
 			}
 		default:

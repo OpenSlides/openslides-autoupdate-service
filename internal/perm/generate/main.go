@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"sort"
+	"strings"
 	"text/template"
 
 	"gopkg.in/yaml.v3"
@@ -32,7 +34,6 @@ func run() error {
 		return fmt.Errorf("writing data to stdout: %w", err)
 	}
 	return nil
-
 }
 
 type permFile map[string]permission
@@ -76,11 +77,32 @@ func (p permission) subPerms(collection string) []string {
 	return out
 }
 
-const tpl = `// Code generated with autogen.gen DO NOT EDIT.
+func constName(perm string) string {
+	bs := []byte(strings.ReplaceAll(perm, ".", "_"))
+
+	bs[0] -= 'a' - 'A'
+
+	for i := 1; i < len(bs); i++ {
+		if bs[i-1] == '_' {
+			bs[i] -= 'a' - 'A'
+		}
+	}
+
+	bs = bytes.ReplaceAll(bs, []byte("_"), []byte(""))
+	return string(bs)
+}
+
+const tpl = `// Code generated with generated/main.go DO NOT EDIT.
 package perm
 
-var derivatePerms = map[string][]string{
-	{{- range $key, $value := .Def}}
+const (
+	{{- range $key, $value := .Consts}}
+	{{$key}} TPermission = "{{$value}}"
+	{{- end}}
+)
+
+var derivatePerms = map[TPermission][]TPermission{
+	{{- range $key, $value := .Derivate}}
 	"{{$key}}": { {{range $perm := $value}} "{{$perm}}", {{end}} },
 	{{- end}}
 }
@@ -93,8 +115,16 @@ func write(w io.Writer, data permFile) error {
 		return fmt.Errorf("parsing template: %w", err)
 	}
 
+	derivate := data.derivate()
+
+	consts := make(map[string]string, len(derivate))
+	for k := range derivate {
+		consts[constName(k)] = k
+	}
+
 	tdata := map[string]interface{}{
-		"Def": data.derivate(),
+		"Derivate": derivate,
+		"Consts":   consts,
 	}
 
 	if err := t.Execute(w, tdata); err != nil {

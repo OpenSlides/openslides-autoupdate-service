@@ -33,7 +33,7 @@ func (a *assignment) candidateCreate(ctx context.Context, userID int, payload ma
 		return false, fmt.Errorf("collecting permissions for user %d in meeting %d: %w", userID, meetingID, err)
 	}
 
-	if permissions.Has("assignment.can_manage") {
+	if permissions.Has(perm.AssignmentCanManage) {
 		return true, nil
 	}
 
@@ -52,9 +52,9 @@ func (a *assignment) candidateCreate(ctx context.Context, userID int, payload ma
 		return false, fmt.Errorf("getting user_id from payload: %w", err)
 	}
 
-	requiredPerm := "assignment.can_nominate_other"
+	requiredPerm := perm.AssignmentCanNominateOther
 	if userID == cid {
-		requiredPerm = "assignment.can_nominate_self"
+		requiredPerm = perm.AssignmentCanNominateSelf
 	}
 
 	if permissions.Has(requiredPerm) {
@@ -76,7 +76,7 @@ func (a *assignment) candidateDelete(ctx context.Context, userID int, payload ma
 		return false, fmt.Errorf("collecting permissions for user %d in meeting %d: %w", userID, meetingID, err)
 	}
 
-	if permissions.Has("assignment.can_manage") {
+	if permissions.Has(perm.AssignmentCanManage) {
 		return true, nil
 	}
 
@@ -95,7 +95,7 @@ func (a *assignment) candidateDelete(ctx context.Context, userID int, payload ma
 		return false, fmt.Errorf("getting user_id from payload: %w", err)
 	}
 
-	if userID == cid && permissions.Has("assignment.can_nominate_self") {
+	if userID == cid && permissions.Has(perm.AssignmentCanNominateSelf) {
 		return true, nil
 	}
 
@@ -103,5 +103,5 @@ func (a *assignment) candidateDelete(ctx context.Context, userID int, payload ma
 }
 
 func canSeeAssignmentCandidate(p *perm.Permission) bool {
-	return p.Has("assignment.can_see")
+	return p.Has(perm.AssignmentCanSee)
 }

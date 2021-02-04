@@ -38,7 +38,7 @@ func (m *mediafile) read(ctx context.Context, userID int, fqfields []perm.FQFiel
 			return false, fmt.Errorf("getting user permissions: %w", err)
 		}
 
-		hasPerms := perms.Has("mediafile.can_manage")
+		hasPerms := perms.Has(perm.MediafileCanManage)
 		if hasPerms {
 			return true, nil
 		}
@@ -53,7 +53,7 @@ func (m *mediafile) read(ctx context.Context, userID int, fqfields []perm.FQFiel
 			return false, nil
 		}
 
-		return perms.Has("mediafile.can_see"), nil
+		return perms.Has(perm.MediafileCanSee), nil
 	})
 }
 
@@ -78,11 +78,11 @@ func (m *mediafile) canSeeAction(ctx context.Context, userID int, payload map[st
 		return false, nil
 	}
 
-	if perms.Has("mediafile.can_manage") {
+	if perms.Has(perm.MediafileCanManage) {
 		return true, nil
 	}
 
-	if perms.Has("mediafile.can_see") {
+	if perms.Has(perm.MediafileCanSee) {
 		var isPublic bool
 		if err := m.dp.GetIfExist(ctx, fqid+"/is_public", &isPublic); err != nil {
 			return false, fmt.Errorf("getting is public: %w", err)
@@ -119,7 +119,7 @@ func (m *mediafile) canSeeAction(ctx context.Context, userID int, payload map[st
 		return true, nil
 	}
 
-	if !perms.Has("projector.can_see") {
+	if !perms.Has(perm.ProjectorCanSee) {
 		return false, nil
 	}
 

@@ -20,7 +20,7 @@ cases:
   is_allowed: false
 
 - name: create amentment correct perm
-  permission: motion.can_create_amendment
+  permission: motion.can_create_amendments
   payload:
     meeting_id: 1
     parent_id: 1

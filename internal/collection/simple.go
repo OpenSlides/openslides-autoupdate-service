@@ -15,7 +15,7 @@ import (
 //
 // If the user has the permission, all fields of the given collection can be
 // seen.
-func ReadPerm(dp dataprovider.DataProvider, permission string, collections ...string) perm.ConnecterFunc {
+func ReadPerm(dp dataprovider.DataProvider, permission perm.TPermission, collections ...string) perm.ConnecterFunc {
 	return func(s perm.HandlerStore) {
 		for _, coll := range collections {
 			s.RegisterRestricter(coll, hasPerm(dp, permission, coll))
@@ -67,7 +67,7 @@ func isInMeeting(dp dataprovider.DataProvider, collection string) perm.Collectio
 	}
 }
 
-func hasPerm(dp dataprovider.DataProvider, permission, collection string) perm.CollectionFunc {
+func hasPerm(dp dataprovider.DataProvider, permission perm.TPermission, collection string) perm.CollectionFunc {
 	return func(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 		return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
 			fqid := fmt.Sprintf("%s/%d", collection, fqfield.ID)
@@ -86,7 +86,7 @@ func hasPerm(dp dataprovider.DataProvider, permission, collection string) perm.C
 }
 
 // WritePerm initializes actions, that only need one permission
-func WritePerm(dp dataprovider.DataProvider, def map[string]string) perm.ConnecterFunc {
+func WritePerm(dp dataprovider.DataProvider, def map[string]perm.TPermission) perm.ConnecterFunc {
 	return func(s perm.HandlerStore) {
 		for route, perm := range def {
 			parts := strings.Split(route, ".")
@@ -98,7 +98,7 @@ func WritePerm(dp dataprovider.DataProvider, def map[string]string) perm.Connect
 	}
 }
 
-func writeChecker(dp dataprovider.DataProvider, collName, permission string) perm.Action {
+func writeChecker(dp dataprovider.DataProvider, collName string, permission perm.TPermission) perm.Action {
 	return perm.ActionFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
 		var meetingID int
 		if err := json.Unmarshal(payload["meeting_id"], &meetingID); err != nil {

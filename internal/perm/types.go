@@ -89,3 +89,6 @@ func (fqfield FQField) String() string {
 func (fqfield FQField) FQID() string {
 	return fmt.Sprintf("%s/%d", fqfield.Collection, fqfield.ID)
 }
+
+// TPermission is a type of all valid permission strings.
+type TPermission string
