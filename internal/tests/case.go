@@ -260,10 +260,8 @@ func (c *Case) initSub() {
 		}
 		s.DB = db
 
-		if s.FQFields == nil {
+		if s.FQFields == nil && s.FQIDs == nil {
 			s.FQFields = c.FQFields
-		}
-		if s.FQIDs == nil {
 			s.FQIDs = c.FQIDs
 		}
 

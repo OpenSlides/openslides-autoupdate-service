@@ -22,6 +22,9 @@ cases:
   - meeting/1/conference_stream_url
   - meeting/1/conference_stream_poster_url
   - meeting/1/present_user_ids
+  - meeting/1/temporary_user_ids
+  - meeting/1/guest_ids
+  - meeting/1/user_ids
 
 - name: member
   can_not_see:
@@ -30,26 +33,46 @@ cases:
   - meeting/1/conference_stream_url
   - meeting/1/conference_stream_poster_url
   - meeting/1/present_user_ids
+  - meeting/1/temporary_user_ids
+  - meeting/1/guest_ids
+  - meeting/1/user_ids
 
 
 - name: can_see_frontpage
   permission: meeting.can_see_frontpage
-  can_not_see:
-  - meeting/1/conference_stream_url
-  - meeting/1/conference_stream_poster_url
-  - meeting/1/present_user_ids
+  fqfields:
+  - meeting/1/welcome_title
+  - meeting/1/welcome_text
+  can_see:
+  - meeting/1/welcome_title
+  - meeting/1/welcome_text
 
 - name: can_see_livestream
   permission: meeting.can_see_livestream
-  can_not_see:
-  - meeting/1/welcome_title
-  - meeting/1/welcome_text
-  - meeting/1/present_user_ids
+  fqfields:
+  - meeting/1/conference_stream_url
+  - meeting/1/conference_stream_poster_url
+  can_see:
+  - meeting/1/conference_stream_url
+  - meeting/1/conference_stream_poster_url
 
 - name: can see user list
   permission: user.can_see
+  fqfields:
+  - meeting/1/present_user_ids
+  - meeting/1/temporary_user_ids
+  - meeting/1/guest_ids
+  - meeting/1/user_ids
+  can_see:
+  - meeting/1/present_user_ids
+  - meeting/1/temporary_user_ids
+  - meeting/1/guest_ids
+  - meeting/1/user_ids
+
+- name: can manage config
+  permission: meeting.can_manage_settings
   can_not_see:
-  - meeting/1/welcome_title
-  - meeting/1/welcome_text
-  - meeting/1/conference_stream_url
-  - meeting/1/conference_stream_poster_url
+  - meeting/1/present_user_ids
+  - meeting/1/temporary_user_ids
+  - meeting/1/guest_ids
+  - meeting/1/user_ids
