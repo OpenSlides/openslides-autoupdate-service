@@ -1,4 +1,4 @@
-FROM golang:1.15.7-alpine3.12 as basis
+FROM golang:1.15.8-alpine3.12 as basis
 LABEL maintainer="OpenSlides Team <info@openslides.com>"
 WORKDIR /app/
 
