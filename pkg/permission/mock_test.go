@@ -3,6 +3,7 @@ package permission
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"github.com/OpenSlides/openslides-permission-service/internal/perm"
 )
@@ -30,6 +31,7 @@ type collectionMock struct{}
 func (c collectionMock) Connect(s perm.HandlerStore) {
 	s.RegisterAction("dummy_allowed", allowedMock(true))
 	s.RegisterAction("dummy_not_allowed", allowedMock(false))
+	s.RegisterAction("dummy_error", allowErrorMock{errors.New("original error message")})
 
 	s.RegisterRestricter("dummy", allowedMock(false))
 }
@@ -49,4 +51,12 @@ func (a allowedMock) RestrictFQFields(ctx context.Context, userID int, fqfields 
 		result[fqfield.String()] = true
 	}
 	return nil
+}
+
+type allowErrorMock struct {
+	err error
+}
+
+func (a allowErrorMock) IsAllowed(ctx context.Context, userID int, data map[string]json.RawMessage) (bool, error) {
+	return false, a.err
 }

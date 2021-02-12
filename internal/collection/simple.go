@@ -104,7 +104,7 @@ func writeChecker(dp dataprovider.DataProvider, collName string, permission perm
 		if err := json.Unmarshal(payload["meeting_id"], &meetingID); err != nil {
 			var id int
 			if err := json.Unmarshal(payload["id"], &id); err != nil {
-				return false, fmt.Errorf("no valid meeting_id or id in payload")
+				return false, fmt.Errorf("invalid payload. Action needs payload `meeting_id`<int> or `id`<int>")
 			}
 
 			fqid := collName + "/" + strconv.Itoa(id)
