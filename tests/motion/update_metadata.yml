@@ -1,0 +1,14 @@
+---
+action: motion.update_metadata
+payload:
+  id: 1
+db:
+  motion/1/meeting_id: 1
+
+cases:
+- name: Without perm
+  is_allowed: false
+
+- name: With perm
+  permission: motion.can_manage_metadata
+  is_allowed: true

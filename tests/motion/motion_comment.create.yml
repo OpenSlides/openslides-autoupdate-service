@@ -1,0 +1,41 @@
+---
+action: motion_comment.create
+db:
+  motion_comment_section/2/read_group_ids: [1,2]
+  motion_comment_section/2/write_group_ids: [2,3]
+  motion_comment_section/2/meeting_id: 1
+
+payload:
+  section_id: 2
+
+cases:
+- name: User not in section
+  is_allowed: false
+
+- name: Motion manager
+  permission: motion.can_manage
+  is_allowed: true
+
+- name: Only in read group
+  user_id: 1
+  db:
+    user/1/group_$1_ids: [1]
+  is_allowed: false
+
+- name: Only in write group
+  user_id: 1
+  db:
+    user/1/group_$1_ids: [3]
+  is_allowed: false
+
+- name: In both groups
+  user_id: 1
+  db:
+    user/1/group_$1_ids: [1,3]
+  is_allowed: true
+
+- name: In group that can both
+  user_id: 1
+  db:
+    user/1/group_$1_ids: [2]
+  is_allowed: true

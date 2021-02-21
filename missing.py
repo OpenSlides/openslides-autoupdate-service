@@ -18,13 +18,14 @@ import requests
 BACKEND_URL = "http://localhost:9002/health"
 PERMISSION_URL = "http://localhost:9005/internal/permission/health"
 MODELS_URL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/models.yml"
+ADDITIONAL_ACTIONS = set(["mediafile.can_see_mediafile"])
 
 
 def actions() -> set[str]:
     """
     actions returns all actions from the backend.
     """
-    return set(requests.get(BACKEND_URL).json()["healthinfo"]["actions"].keys())
+    return ADDITIONAL_ACTIONS | set(requests.get(BACKEND_URL).json()["healthinfo"]["actions"].keys())
 
 
 def collections() -> set[str]:

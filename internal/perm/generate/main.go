@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"sort"
 	"strings"
@@ -13,6 +14,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const permURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/permission.yml"
+
 func main() {
 	if err := run(); err != nil {
 		log.Fatalf("Error: %v", err)
@@ -20,10 +23,11 @@ func main() {
 }
 
 func run() error {
-	f, err := os.Open("../../permissions.yml")
+	f, err := loadPermissions()
 	if err != nil {
 		return fmt.Errorf("open permissions file: %w", err)
 	}
+	defer f.Close()
 
 	var d permFile
 	if err := yaml.NewDecoder(f).Decode(&d); err != nil {
@@ -34,6 +38,17 @@ func run() error {
 		return fmt.Errorf("writing data to stdout: %w", err)
 	}
 	return nil
+}
+
+func loadPermissions() (io.ReadCloser, error) {
+	r, err := http.Get(permURL)
+	if err != nil {
+		return nil, fmt.Errorf("request defition: %w", err)
+	}
+	if r.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request returned status %s", r.Status)
+	}
+	return r.Body, nil
 }
 
 type permFile map[string]permission

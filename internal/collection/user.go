@@ -22,7 +22,9 @@ func User(dp dataprovider.DataProvider) perm.ConnecterFunc {
 		s.RegisterAction("user.reset_password_to_default", perm.ActionFunc(u.update))
 		s.RegisterAction("user.generate_new_password", perm.ActionFunc(u.update))
 		s.RegisterAction("user.set_password", perm.ActionFunc(u.update))
+		s.RegisterAction("user.set_password_temporary", perm.ActionFunc(u.update))
 		s.RegisterAction("user.delete", perm.ActionFunc(u.update))
+		s.RegisterAction("user.set_present", perm.ActionFunc(u.setPresent))
 
 		s.RegisterRestricter("user", perm.CollectionFunc(u.read))
 	}
@@ -98,6 +100,19 @@ func (u *user) passwordSelf(ctx context.Context, userID int, payload map[string]
 	}
 
 	return b, nil
+}
+
+func (u *user) setPresent(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
+	var meetingID int
+	if err := json.Unmarshal(payload["meeting_id"], &meetingID); err != nil {
+		return false, fmt.Errorf("decoding meeting_id from payload: %w", err)
+	}
+
+	var allowSetPresent bool
+	if err := u.dp.GetIfExist(ctx, fmt.Sprintf("meeting/%d/users_allow_self_set_present", meetingID), &allowSetPresent); err != nil {
+		return false, fmt.Errorf("getting setting: %w", err)
+	}
+	return allowSetPresent, nil
 }
 
 // committeeManagerMembers returns all userIDs as a set that the userID can
