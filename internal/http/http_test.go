@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -43,7 +42,7 @@ func TestSimpleHandler(t *testing.T) {
 	}
 
 	expect := "content"
-	got, _ := ioutil.ReadAll(res.Body)
+	got, _ := io.ReadAll(res.Body)
 	if string(got) != expect {
 		t.Errorf("Got content `%s`, expected `%s`", got, expect)
 	}
@@ -68,7 +67,7 @@ func TestComplexHandler(t *testing.T) {
 	}
 
 	expect := "content"
-	got, _ := ioutil.ReadAll(res.Body)
+	got, _ := io.ReadAll(res.Body)
 	if string(got) != expect {
 		t.Errorf("Got `%s`, expected `%s`", got, expect)
 	}
@@ -86,7 +85,7 @@ func TestHealth(t *testing.T) {
 		t.Errorf("Got status %s, expected %s", rec.Result().Status, http.StatusText(200))
 	}
 
-	got, _ := ioutil.ReadAll(rec.Body)
+	got, _ := io.ReadAll(rec.Body)
 	expect := `{"healthy": true}` + "\n"
 	if string(got) != expect {
 		t.Errorf("Got %s, expected %s", got, expect)
@@ -188,7 +187,7 @@ func TestErrors(t *testing.T) {
 				t.Errorf("Got status %s, expected %s", req.Result().Status, http.StatusText(tt.status))
 			}
 
-			body, _ := ioutil.ReadAll(req.Body)
+			body, _ := io.ReadAll(req.Body)
 
 			var data struct {
 				Error struct {
