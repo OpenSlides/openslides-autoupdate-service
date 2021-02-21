@@ -45,7 +45,7 @@ To restart the service when ever a source file has shanged, the tool
 [CompileDaemon](https://github.com/githubnemo/CompileDaemon) can help.
 
 ```
-go get github.com/githubnemo/CompileDaemon
+go install github.com/githubnemo/CompileDaemon@latest
 CompileDaemon -log-prefix=false -build "go build ./cmd/autoupdate" -command "./autoupdate"
 ```
 
