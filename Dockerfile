@@ -1,4 +1,4 @@
-FROM golang:1.15.8-alpine3.12 as basis
+FROM golang:1.16.0-alpine3.12 as basis
 LABEL maintainer="OpenSlides Team <info@openslides.com>"
 WORKDIR /app/
 
@@ -30,7 +30,7 @@ CMD go vet ./... && golint ./... && go test ./...
 # Development build.
 FROM basis as development
 
-RUN ["go", "get", "github.com/githubnemo/CompileDaemon"]
+RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
 EXPOSE 9005
 ENV DATASTORE service
 
