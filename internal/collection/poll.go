@@ -51,9 +51,9 @@ func (p *poll) readOption(ctx context.Context, userID int, fqfields []perm.FQFie
 	}
 
 	return p.fields(fqfields, result, restricted, func(fqfield perm.FQField) (int, error) {
-		var pollID int
-		if err := p.dp.Get(ctx, fmt.Sprintf("option/%d/poll_id", fqfield.ID), &pollID); err != nil {
-			return 0, fmt.Errorf("getting poll id: %w", err)
+		pollID, err := pollIDFromOption(ctx, p.dp, fqfield.ID)
+		if err != nil {
+			return 0, fmt.Errorf("fetch poll id: %w", err)
 		}
 		return p.pollPerm(ctx, userID, pollID)
 	})
@@ -66,9 +66,9 @@ func (p *poll) readVote(ctx context.Context, userID int, fqfields []perm.FQField
 			return false, fmt.Errorf("getting option id: %w", err)
 		}
 
-		var pollID int
-		if err := p.dp.Get(ctx, fmt.Sprintf("option/%d/poll_id", optionID), &pollID); err != nil {
-			return false, fmt.Errorf("getting poll id: %w", err)
+		pollID, err := pollIDFromOption(ctx, p.dp, optionID)
+		if err != nil {
+			return false, fmt.Errorf("fetch poll id: %w", err)
 		}
 
 		perms, err := p.pollPerm(ctx, userID, pollID)
@@ -288,9 +288,9 @@ func canSeePolls(ctx context.Context, dp dataprovider.DataProvider, perms *perm.
 
 func canSeePollOptions(ctx context.Context, dp dataprovider.DataProvider, perms *perm.Permission, userID int, ids []int) (bool, error) {
 	for _, id := range ids {
-		var pollID int
-		if err := dp.Get(ctx, fmt.Sprintf("option/%d/poll_id", id), &pollID); err != nil {
-			return false, fmt.Errorf("getting poll id: %w", err)
+		pollID, err := pollIDFromOption(ctx, dp, id)
+		if err != nil {
+			return false, fmt.Errorf("fetch poll id: %w", err)
 		}
 
 		var contentObject string
@@ -307,4 +307,25 @@ func canSeePollOptions(ctx context.Context, dp dataprovider.DataProvider, perms 
 		}
 	}
 	return false, nil
+}
+
+// pollIDFromOption returns the poll id from an option.
+//
+// An option is linked to the poll via poll_id xor
+// used_as_global_option_in_poll_id.
+func pollIDFromOption(ctx context.Context, dp dataprovider.DataProvider, optionID int) (int, error) {
+	var pollID int
+	if err := dp.GetIfExist(ctx, fmt.Sprintf("option/%d/poll_id", optionID), &pollID); err != nil {
+		return 0, fmt.Errorf("poll id from field `poll_id`: %w", err)
+	}
+
+	if pollID != 0 {
+		// Option has the field `poll_id`
+		return pollID, nil
+	}
+
+	if err := dp.Get(ctx, fmt.Sprintf("option/%d/used_as_global_option_in_poll_id", optionID), &pollID); err != nil {
+		return 0, fmt.Errorf("poll id from field `used_as_global_option_in_poll_id`: %w", err)
+	}
+	return pollID, nil
 }
