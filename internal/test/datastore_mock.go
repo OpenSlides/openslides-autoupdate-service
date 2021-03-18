@@ -14,6 +14,20 @@ type MockDatastore struct {
 	DatastoreValues
 }
 
+// NewMockDatastore create a MockDatastore with data.
+func NewMockDatastore(data map[string]string) *MockDatastore {
+	conv := make(map[string]json.RawMessage)
+	for k, v := range data {
+		conv[k] = []byte(v)
+	}
+	return &MockDatastore{
+		DatastoreValues: DatastoreValues{
+			Data:     conv,
+			OnlyData: true,
+		},
+	}
+}
+
 // Get returnes the values for the given keys. If the keys exist in the Data
 // attribute, the values are returned.
 //
@@ -62,7 +76,10 @@ func (d *MockDatastore) Send(keys []string) {
 	}
 }
 
-// DatastoreValues returns data for the test.MockDatastore and the test.DatastoreServer.
+// DatastoreValues returns data for the test.MockDatastore and the
+// test.DatastoreServer.
+//
+// If OnlyData is false, fake data is generated.
 type DatastoreValues struct {
 	mu       sync.RWMutex
 	Data     map[string]json.RawMessage
