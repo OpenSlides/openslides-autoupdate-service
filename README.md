@@ -133,6 +133,13 @@ possible to update keys by sending the following command to redis:
 `xadd field_changed * updated user/1/username updated user/1/password`
 
 
+### Projector
+
+To get projector data, you can use:
+
+`curl -N localhost:9012/system/autoupdate/projector?projector_ids=1,2,3`
+
+
 ## Environment
 
 The Service uses the following environment variables:
