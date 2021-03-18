@@ -7,11 +7,9 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"time"
 )
 
@@ -20,7 +18,7 @@ const (
 	connections = 5000
 
 	// The url of the request.
-	url = "https://localhost:9012/system/autoupdate/keys?" + keyName
+	url = "http://localhost:9012/system/autoupdate/keys?" + keyName
 
 	// The addr of redis server.
 	redisAddr = "localhost:6379"
@@ -39,18 +37,10 @@ func main() {
 
 	pool := newPool(redisAddr)
 
-	// http client
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
-			ForceAttemptHTTP2: true,
-		},
-	}
-
 	// Create clients.
 	clients := make([]*client, connections)
 	for i := 0; i < connections; i++ {
-		clients[i] = &client{httpClient}
+		clients[i] = &client{}
 	}
 
 	// Connect test

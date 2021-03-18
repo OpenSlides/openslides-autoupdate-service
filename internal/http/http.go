@@ -139,12 +139,6 @@ func quote(s string) string {
 
 func validRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Only allow http2 requests.
-		if !r.ProtoAtLeast(2, 0) {
-			handleError(w, invalidRequestError{fmt.Errorf("Only http2 is supported")}, true)
-			return
-		}
-
 		// Only allow GET or POST requests.
 		if !(r.Method == http.MethodPost || r.Method == http.MethodGet) {
 			handleError(w, invalidRequestError{fmt.Errorf("Only GET or POST requests are supported")}, true)

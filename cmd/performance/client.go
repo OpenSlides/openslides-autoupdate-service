@@ -9,9 +9,7 @@ import (
 )
 
 // client holds one http connection to the autoupdate service.
-type client struct {
-	httpClient *http.Client
-}
+type client struct{}
 
 // connect creates a new connection to the autoupdate service. It returns the
 // responce of the server to the given keys-channel. The function blocks until
@@ -22,7 +20,7 @@ func (c *client) connect(ctx context.Context, keys chan<- string) error {
 		return fmt.Errorf("create request: %w", err)
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("send request: %w", err)
 	}
