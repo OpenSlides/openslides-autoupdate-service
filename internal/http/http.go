@@ -5,8 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
@@ -77,6 +79,49 @@ func Health(mux *http.ServeMux) {
 	})
 
 	mux.Handle(url, handler)
+}
+
+// ProjectorLiver returns the projector data.
+type ProjectorLiver interface {
+	Live(ctx context.Context, uid int, w io.Writer, pids []int) error
+}
+
+// Projector adds the projector route to the mutex.
+func Projector(mux *http.ServeMux, auth Authenticater, liver ProjectorLiver) {
+	url := prefix + "/projector"
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/octet-stream")
+
+		uid := auth.FromContext(r.Context())
+
+		projectorIDs, err := projectorIDs(r.URL.Query().Get("projector_ids"))
+		if err != nil {
+			handleError(w, err, false)
+			return
+		}
+
+		// This blocks until the request is done.
+		if err := liver.Live(r.Context(), uid, w, projectorIDs); err != nil {
+			handleError(w, err, false)
+			return
+		}
+	})
+
+	mux.Handle(url, handler)
+}
+
+func projectorIDs(raw string) ([]int, error) {
+	parts := strings.Split(raw, ",")
+	ids := make([]int, len(parts))
+	for i, rpid := range parts {
+		id, err := strconv.Atoi(rpid)
+		if err != nil {
+			return nil, invalidRequestError{fmt.Errorf("projector_ids has to be a list of ints not `%s`", raw)}
+		}
+
+		ids[i] = id
+	}
+	return ids, nil
 }
 
 func authMiddleware(next http.Handler, auth Authenticater) http.Handler {

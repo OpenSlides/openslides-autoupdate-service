@@ -15,6 +15,7 @@ import (
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
 	autoupdateHttp "github.com/openslides/openslides-autoupdate-service/internal/http"
+	"github.com/openslides/openslides-autoupdate-service/internal/projector"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
 	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
@@ -108,8 +109,9 @@ func run() error {
 	checker := restrict.RelationChecker(restrict.RelationLists, perms)
 	restricter := restrict.New(perms, checker)
 
-	// Autoupdate Service.
-	service := autoupdate.New(datastoreService, restricter, updater, closed)
+	// Create http mux to add urls.
+	mux := http.NewServeMux()
+	autoupdateHttp.Health(mux)
 
 	// Auth Service.
 	authService, err := buildAuth(env, r, closed, errHandler)
@@ -117,12 +119,16 @@ func run() error {
 		return fmt.Errorf("creating auth adapter: %w", err)
 	}
 
-	// Create http server.
-	mux := http.NewServeMux()
+	// Autoupdate Service.
+	service := autoupdate.New(datastoreService, restricter, updater, closed)
 	autoupdateHttp.Complex(mux, authService, service, service)
 	autoupdateHttp.Simple(mux, authService, service)
-	autoupdateHttp.Health(mux)
 
+	// Projector Service.
+	projectorService := projector.New(datastoreService, closed)
+	autoupdateHttp.Projector(mux, authService, projectorService)
+
+	// Create http server.
 	listenAddr := env["AUTOUPDATE_HOST"] + ":" + env["AUTOUPDATE_PORT"]
 	srv := &http.Server{Addr: listenAddr, Handler: mux}
 
