@@ -20,7 +20,7 @@ func TestLiveNonExistingProjector(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Microsecond)
 	defer cancel()
 
-	p := projector.New(test.NewMockDatastore(nil), closed)
+	p := projector.New(test.NewMockDatastore(nil), nil, closed)
 	buf := new(bytes.Buffer)
 
 	if err := p.Live(ctx, 1, firstLineWriter{wr: buf}, []int{1}); err != nil {
@@ -47,7 +47,7 @@ func TestLiveExistingProjector(t *testing.T) {
 		"projection/1/stable":                "true",
 		"projection/1/content_object_id":     `"test_model/1"`,
 	})
-	p := projector.New(ds, closed)
+	p := projector.New(ds, nil, closed)
 	buf := new(bytes.Buffer)
 
 	if err := p.Live(ctx, 1, firstLineWriter{wr: buf}, []int{1}); err != nil {

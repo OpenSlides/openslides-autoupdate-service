@@ -1,13 +1,15 @@
-package projector
+package datastore_test
 
 import (
 	"context"
 	"testing"
 
+	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
+	"github.com/stretchr/testify/require"
 )
 
-func TestDataGetObject(t *testing.T) {
+func TestGetObject(t *testing.T) {
 	ds := test.NewMockDatastore(map[string]string{
 		"testmodel/1/id":         "1",
 		"testmodel/1/text":       `"my text"`,
@@ -19,7 +21,7 @@ func TestDataGetObject(t *testing.T) {
 		Text    string `json:"text"`
 		Friends []int  `json:"friend_ids"`
 	}
-	if err := dataGetObject(context.Background(), ds, "testmodel/1", &testModel); err != nil {
+	if err := datastore.GetObject(context.Background(), ds, "testmodel/1", &testModel); err != nil {
 		t.Fatalf("dataGetObject returned unexpected error: %v", err)
 	}
 
@@ -34,7 +36,7 @@ func TestDataGetObject(t *testing.T) {
 	}
 }
 
-func TestDataGetObjectOtherFields(t *testing.T) {
+func TestGetObjectOtherFields(t *testing.T) {
 	ds := test.NewMockDatastore(map[string]string{
 		"testmodel/1/id": "1",
 	})
@@ -43,7 +45,7 @@ func TestDataGetObjectOtherFields(t *testing.T) {
 		ID    int `json:"id"`
 		Other string
 	}
-	if err := dataGetObject(context.Background(), ds, "testmodel/1", &testModel); err != nil {
+	if err := datastore.GetObject(context.Background(), ds, "testmodel/1", &testModel); err != nil {
 		t.Fatalf("dataGetObject returned unexpected error: %v", err)
 	}
 
@@ -55,7 +57,7 @@ func TestDataGetObjectOtherFields(t *testing.T) {
 	}
 }
 
-func TestDataGetObjectOptions(t *testing.T) {
+func TestGetObjectOptions(t *testing.T) {
 	ds := test.NewMockDatastore(map[string]string{
 		"testmodel/1/id": "1",
 	})
@@ -63,7 +65,7 @@ func TestDataGetObjectOptions(t *testing.T) {
 	var testModel struct {
 		ID int `json:"id,omitempty"`
 	}
-	if err := dataGetObject(context.Background(), ds, "testmodel/1", &testModel); err != nil {
+	if err := datastore.GetObject(context.Background(), ds, "testmodel/1", &testModel); err != nil {
 		t.Fatalf("dataGetObject returned unexpected error: %v", err)
 	}
 
@@ -72,17 +74,29 @@ func TestDataGetObjectOptions(t *testing.T) {
 	}
 }
 
-func TestDataGetObjectFieldDoesNotExist(t *testing.T) {
+func TestGetObjectFieldDoesNotExist(t *testing.T) {
 	ds := test.NewMockDatastore(map[string]string{})
 
 	var testModel struct {
 		ID int `json:"id"`
 	}
-	if err := dataGetObject(context.Background(), ds, "testmodel/1", &testModel); err != nil {
+	if err := datastore.GetObject(context.Background(), ds, "testmodel/1", &testModel); err != nil {
 		t.Fatalf("dataGetObject returned unexpected error: %v", err)
 	}
 
 	if testModel.ID != 0 {
 		t.Errorf("testModel.ID == %d, expected 0", testModel.ID)
 	}
+}
+
+func TestObjectKeys(t *testing.T) {
+	var testModel struct {
+		ID      int    `json:"id"`
+		Text    string `json:"text"`
+		Friends []int  `json:"friend_ids"`
+	}
+
+	keys := datastore.ObjectKeys("testmodel/1", &testModel)
+
+	require.ElementsMatch(t, keys, []string{"testmodel/1/id", "testmodel/1/text", "testmodel/1/friend_ids"})
 }
