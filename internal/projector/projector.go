@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
 )
@@ -44,7 +45,7 @@ func (p *Service) Live(ctx context.Context, uid int, w io.Writer, pids []int) er
 		pr, ok := p.projectors[pid]
 		if !ok {
 			var err error
-			pr, err = newProjector(ctx, p.ds, pid)
+			pr, err = newProjector(ctx, p.ds, p.slides, pid)
 			if err != nil {
 				return fmt.Errorf("create projector %d: %w", pid, err)
 			}
@@ -64,20 +65,22 @@ func (p *Service) Live(ctx context.Context, uid int, w io.Writer, pids []int) er
 }
 
 type projector struct {
-	buf []byte
-	ds  Datastore
-	id  int
+	buf    []byte
+	ds     Datastore
+	slides *SlideStore
+	id     int
 }
 
-func newProjector(ctx context.Context, ds Datastore, id int) (*projector, error) {
+func newProjector(ctx context.Context, ds Datastore, slides *SlideStore, id int) (*projector, error) {
 	var projectionIDs []int
 	if err := datastore.GetIfExist(ctx, ds, fmt.Sprintf("projector/%d/current_projection_ids", id), &projectionIDs); err != nil {
 		return nil, fmt.Errorf("get projections: %w", err)
 	}
 
 	pr := &projector{
-		id: id,
-		ds: ds,
+		id:     id,
+		ds:     ds,
+		slides: slides,
 	}
 
 	if err := pr.calc(ctx); err != nil {
@@ -105,7 +108,12 @@ func (pr *projector) calc(ctx context.Context) error {
 			return fmt.Errorf("fetch projection: %w", err)
 		}
 
-		bs, err := p7on.calc(ctx, pr.ds)
+		slide := pr.slides.Get(p7on.slideName())
+		if slide == nil {
+			return fmt.Errorf("unknown slide %s", p7on.slideName())
+		}
+
+		bs, err := p7on.calc(ctx, pr.ds, slide)
 		if err != nil {
 			return fmt.Errorf("calculate projection %d: %w", id, err)
 		}
@@ -133,14 +141,22 @@ type Projection struct {
 	ContentObjectID string          `json:"content_object_id"`
 }
 
-func (p *Projection) calc(ctx context.Context, ds Datastore) ([]byte, error) {
+func (p *Projection) slideName() string {
+	if p.Type != "" {
+		return p.Type
+	}
+	i := strings.Index(p.ContentObjectID, "/")
+	return p.ContentObjectID[:i]
+}
+
+func (p *Projection) calc(ctx context.Context, ds Datastore, slide Slider) ([]byte, error) {
 	var outProjection struct {
 		Projection
 		Data json.RawMessage `json:"data"`
 	}
 	outProjection.Projection = *p
 
-	slideData, err := slide(ctx, p)
+	slideData, _, err := slide.Slide(ctx, ds, p)
 	if err != nil {
 		return nil, fmt.Errorf("calculating slide %s: %w", "TODO-SLIDE-NAME", err)
 	}
@@ -151,8 +167,4 @@ func (p *Projection) calc(ctx context.Context, ds Datastore) ([]byte, error) {
 		return nil, fmt.Errorf("decoding calculated projection: %w", err)
 	}
 	return bs, nil
-}
-
-func slide(ctx context.Context, p7on *Projection) ([]byte, error) {
-	return []byte(`"abc"`), nil
 }
