@@ -48,7 +48,7 @@ func ListOfSpeaker(store *projector.SlideStore) {
 
 		var speakersWaiting []outputSpeaker
 		var speakersFinished []outputSpeaker
-		var currentSpeaker outputSpeaker
+		var currentSpeaker *outputSpeaker
 		for _, id := range los.SpeakerIDs {
 			var speaker dbSpeaker
 			if err := datastore.GetObject(ctx, ds, fmt.Sprintf("speaker/%d", id), &speaker); err != nil {
@@ -74,7 +74,7 @@ func ListOfSpeaker(store *projector.SlideStore) {
 			}
 
 			if speaker.EndTime == 0 {
-				currentSpeaker = s
+				currentSpeaker = &s
 				continue
 			}
 
@@ -87,7 +87,7 @@ func ListOfSpeaker(store *projector.SlideStore) {
 		slideData := struct {
 			Title                   string          `json:"title"`
 			Waiting                 []outputSpeaker `json:"waiting"`
-			Current                 outputSpeaker   `json:"current"`
+			Current                 *outputSpeaker  `json:"current,"`
 			Finished                []outputSpeaker `json:"finished"`
 			ContentObjectCollection string          `json:"content_object_collection"`
 			TitleInformation        string          `json:"title_information"`

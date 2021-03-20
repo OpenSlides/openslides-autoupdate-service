@@ -108,9 +108,13 @@ func (pr *projector) calc(ctx context.Context) error {
 			return fmt.Errorf("fetch projection: %w", err)
 		}
 
-		slide := pr.slides.Get(p7on.slideName())
+		slideName, err := p7on.slideName()
+		if err != nil {
+			return fmt.Errorf("getting slide name: %w", err)
+		}
+		slide := pr.slides.Get(slideName)
 		if slide == nil {
-			return fmt.Errorf("unknown slide %s", p7on.slideName())
+			return fmt.Errorf("unknown slide %s", slideName)
 		}
 
 		bs, err := p7on.calc(ctx, pr.ds, slide)
@@ -141,12 +145,15 @@ type Projection struct {
 	ContentObjectID string          `json:"content_object_id"`
 }
 
-func (p *Projection) slideName() string {
+func (p *Projection) slideName() (string, error) {
 	if p.Type != "" {
-		return p.Type
+		return p.Type, nil
 	}
 	i := strings.Index(p.ContentObjectID, "/")
-	return p.ContentObjectID[:i]
+	if i == -1 {
+		return "", fmt.Errorf("invalid content_object_id `%s`, expected one '/'", p.ContentObjectID)
+	}
+	return p.ContentObjectID[:i], nil
 }
 
 func (p *Projection) calc(ctx context.Context, ds Datastore, slide Slider) ([]byte, error) {
@@ -158,7 +165,7 @@ func (p *Projection) calc(ctx context.Context, ds Datastore, slide Slider) ([]by
 
 	slideData, _, err := slide.Slide(ctx, ds, p)
 	if err != nil {
-		return nil, fmt.Errorf("calculating slide %s: %w", "TODO-SLIDE-NAME", err)
+		return nil, fmt.Errorf("calculating slide: %w", err)
 	}
 	outProjection.Data = slideData
 
