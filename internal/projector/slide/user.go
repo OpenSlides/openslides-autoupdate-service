@@ -9,7 +9,7 @@ import (
 	"github.com/openslides/openslides-autoupdate-service/internal/projector"
 )
 
-type user struct {
+type dbUser struct {
 	Username  string `json:"username"`
 	Title     string `json:"title"`
 	FirstName string `json:"first_name"`
@@ -17,7 +17,7 @@ type user struct {
 	//Level     string `json:"structure_level"`
 }
 
-func (u user) String() string {
+func (u dbUser) String() string {
 	parts := func(sp ...string) []string {
 		var full []string
 		for _, s := range sp {
@@ -43,7 +43,7 @@ func (u user) String() string {
 // User renders the user slide.
 func User(store *projector.SlideStore) {
 	store.AddFunc("user", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		var u user
+		var u dbUser
 		if err := datastore.GetObject(ctx, ds, p7on.ContentObjectID, &u); err != nil {
 			return nil, nil, fmt.Errorf("getting user object: %w", err)
 		}

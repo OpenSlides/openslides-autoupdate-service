@@ -6,5 +6,6 @@ import "github.com/openslides/openslides-autoupdate-service/internal/projector"
 func Slides() *projector.SlideStore {
 	s := new(projector.SlideStore)
 	User(s)
+	ListOfSpeaker(s)
 	return s
 }
