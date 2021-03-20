@@ -137,7 +137,7 @@ possible to update keys by sending the following command to redis:
 
 To get projector data, you can use:
 
-`curl -N localhost:9012/system/autoupdate/projector?projector_ids=1,2,3`
+`curl -N localhost:9012/system/autoupdate/projector?ids=1,2,3`
 
 
 ## Environment

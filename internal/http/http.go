@@ -94,7 +94,7 @@ func Projector(mux *http.ServeMux, auth Authenticater, liver ProjectorLiver) {
 
 		uid := auth.FromContext(r.Context())
 
-		projectorIDs, err := projectorIDs(r.URL.Query().Get("projector_ids"))
+		projectorIDs, err := projectorIDs(r.URL.Query().Get("ids"))
 		if err != nil {
 			handleError(w, err, false)
 			return
