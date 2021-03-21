@@ -169,8 +169,9 @@ func (c *cache) fetchMissing(keys []string, set cacheSetFunc) error {
 	return nil
 }
 
-// SetIfExist updates each the cache with the value in the given map. But keys
-// that exists or are pending get an update.
+// SetIfExist updates the cache with the value in the given map.
+//
+// Only keys that exist or are pending are updated.
 func (c *cache) SetIfExist(data map[string]json.RawMessage) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

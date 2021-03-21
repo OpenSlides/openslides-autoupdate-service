@@ -2,6 +2,7 @@ package test
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -30,15 +31,19 @@ func (m *UpdaterMock) Update(closing <-chan struct{}) (map[string]json.RawMessag
 	case v := <-m.c:
 		return v, nil
 	case <-m.t.C:
-		return nil, nil
+		return nil, fmt.Errorf("Time is up")
 	case <-closing:
 		return nil, closingError{}
 	}
 }
 
 // Send sends keys to the mock that can be received with Update().
-func (m *UpdaterMock) Send(values map[string]json.RawMessage) {
-	m.c <- values
+func (m *UpdaterMock) Send(values map[string]string) {
+	conv := make(map[string]json.RawMessage)
+	for k, v := range values {
+		conv[k] = []byte(v)
+	}
+	m.c <- conv
 }
 
 // Close cleans up after the Mock is used.

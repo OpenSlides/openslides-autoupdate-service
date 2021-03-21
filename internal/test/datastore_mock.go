@@ -106,6 +106,7 @@ func NewMockDatastore(data map[string]string) *MockDatastore {
 	for k, v := range data {
 		conv[k] = []byte(v)
 	}
+
 	return &MockDatastore{
 		DatastoreValues: DatastoreValues{
 			Data: conv,
