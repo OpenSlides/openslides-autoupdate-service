@@ -15,12 +15,12 @@ func TestLive(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	ds := test.NewMockDatastore(map[string]string{
-		"foo": `"Foo Value"`,
-		"bar": `"Bar Value"`,
+	ds := test.NewMockDatastore(closed, map[string]string{
+		"collection/1/foo": `"Foo Value"`,
+		"collection/1/bar": `"Bar Value"`,
 	})
 	s := autoupdate.New(ds, new(test.MockRestricter), test.UserUpdater{}, closed)
-	kb := test.KeysBuilder{K: []string{"foo", "bar"}}
+	kb := test.KeysBuilder{K: []string{"collection/1/foo", "collection/1/bar"}}
 
 	buf := new(bytes.Buffer)
 	w := lineWriter{maxLines: 1, wr: buf}
@@ -30,7 +30,7 @@ func TestLive(t *testing.T) {
 		}
 	}
 
-	expect := `{"bar":"Bar Value","foo":"Foo Value"}` + "\n"
+	expect := `{"collection/1/bar":"Bar Value","collection/1/foo":"Foo Value"}` + "\n"
 	if buf.String() != expect {
 		t.Errorf("Got %s, expected %s", buf.String(), expect)
 	}

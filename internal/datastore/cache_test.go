@@ -1,13 +1,12 @@
 package datastore
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"testing"
 	"time"
-
-	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
 func TestCacheGetOrSet(t *testing.T) {
@@ -39,7 +38,7 @@ func TestCacheGetOrSetMissingKeys(t *testing.T) {
 		t.Errorf("GetOrSet() returned the unexpected error: %v", err)
 	}
 	expect := []json.RawMessage{[]byte("value"), nil}
-	if !test.CmpSliceBytes(got, expect) {
+	if !CmpSliceBytes(got, expect) {
 		t.Errorf("GetOrSet() returned `%s`, expected `%s`", got, expect)
 	}
 }
@@ -280,4 +279,18 @@ func TestCacheFailInOthetGetOrSetCall(t *testing.T) {
 	if string(data[0]) != "value" {
 		t.Errorf("second GetOrSet returned `%v`, expected `value`", data[0])
 	}
+}
+
+// CmpSliceBytes checks, if slice a and b holds the same values.
+func CmpSliceBytes(a, b []json.RawMessage) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		if !bytes.Equal(a[i], b[i]) {
+			return false
+		}
+	}
+	return true
 }

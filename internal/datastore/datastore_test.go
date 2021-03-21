@@ -15,11 +15,11 @@ import (
 func TestDataStoreGet(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	ds := test.NewMockDatastore(map[string]string{
+	ts := test.NewDatastoreServer(closed, map[string]string{
 		"collection/1/field": `"Hello World"`,
 	})
-	url := ds.StartServer(closed)
-	d := datastore.New(url, closed, func(error) {}, test.NewUpdaterMock())
+	url := ts.TS.URL
+	d := datastore.New(url, closed, func(error) {}, nil)
 
 	got, err := d.Get(context.Background(), "collection/1/field")
 	assert.NoError(t, err, "Get() returned an unexpected error")
@@ -33,31 +33,31 @@ func TestDataStoreGet(t *testing.T) {
 func TestDataStoreGetMultiValue(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	ds := test.NewMockDatastore(map[string]string{
-		"collection/1/field": `"Hello World"`,
-		"collection/2/field": `"Hello World"`,
+
+	ts := test.NewDatastoreServer(closed, map[string]string{
+		"collection/1/field": `"v1"`,
+		"collection/2/field": `"v2"`,
 	})
-	url := ds.StartServer(closed)
-	d := datastore.New(url, closed, func(error) {}, test.NewUpdaterMock())
+	d := datastore.New(ts.TS.URL, closed, func(error) {}, test.NewUpdaterMock())
 
 	got, err := d.Get(context.Background(), "collection/1/field", "collection/2/field")
 	assert.NoError(t, err, "Get() returned an unexpected error")
 
-	expect := test.Str(`"Hello World"`, `"Hello World"`)
+	expect := test.Str(`"v1"`, `"v2"`)
 	if len(got) != 2 || string(got[0]) != expect[0] || string(got[1]) != expect[1] {
 		t.Errorf("Get() returned %s, expected %s", got, expect)
 	}
 
-	if ds.CountGetCalled != 1 {
-		t.Errorf("Got %d requests to the datastore, expected 1", ds.CountGetCalled)
+	if ts.RequestCount != 1 {
+		t.Errorf("Got %d requests to the datastore, expected 1", ts.RequestCount)
 	}
 }
 
 func TestCalculdatedFields(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	dsmock := test.NewMockDatastore(nil)
-	url := dsmock.StartServer(closed)
+	ts := test.NewDatastoreServer(closed, nil)
+	url := ts.TS.URL
 	updater := test.NewUpdaterMock()
 	ds := datastore.New(url, closed, func(error) {}, updater)
 	ds.RegisterCalculatedField("collection/myfield", func(key string, changed map[string]json.RawMessage) ([]byte, error) {
@@ -73,20 +73,20 @@ func TestCalculdatedFields(t *testing.T) {
 		require.NoError(t, err, "Get returned unexpected error")
 		assert.Len(t, got, 1)
 		assert.Equal(t, "my value", string(got[0]))
-		assert.Equal(t, 1, dsmock.CountGetCalled)
+		assert.Equal(t, 1, ts.RequestCount)
 	})
 
 	t.Run("Fetch second time", func(t *testing.T) {
-		dsmock.CountGetCalled = 0
+		ts.RequestCount = 0
 		got, err := ds.Get(context.Background(), "collection/1/myfield")
 		require.NoError(t, err, "Get returned unexpected error")
 		assert.Len(t, got, 1)
 		assert.Equal(t, "my value", string(got[0]))
-		assert.Equal(t, 0, dsmock.CountGetCalled)
+		assert.Equal(t, 0, ts.RequestCount)
 	})
 
 	t.Run("Update some key", func(t *testing.T) {
-		dsmock.CountGetCalled = 0
+		ts.RequestCount = 0
 		done := make(chan struct{})
 		ds.RegisterChangeListener(func(map[string]json.RawMessage) error {
 			// Signal, that the data is updated.
@@ -103,6 +103,6 @@ func TestCalculdatedFields(t *testing.T) {
 		require.NoError(t, err, "Get returned unexpected error")
 		assert.Len(t, got, 1)
 		assert.Equal(t, "got 1 changed keys", string(got[0]))
-		assert.Equal(t, 0, dsmock.CountGetCalled)
+		assert.Equal(t, 0, ts.RequestCount)
 	})
 }

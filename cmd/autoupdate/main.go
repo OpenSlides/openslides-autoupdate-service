@@ -15,8 +15,6 @@ import (
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
 	autoupdateHttp "github.com/openslides/openslides-autoupdate-service/internal/http"
-	"github.com/openslides/openslides-autoupdate-service/internal/projector"
-	"github.com/openslides/openslides-autoupdate-service/internal/projector/slide"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
 	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
@@ -126,9 +124,8 @@ func run() error {
 	autoupdateHttp.Simple(mux, authService, service)
 
 	// Projector Service.
-
-	projectorService := projector.New(datastoreService, slide.Slides(), closed)
-	autoupdateHttp.Projector(mux, authService, projectorService)
+	//projectorService := projector.New(datastoreService, slide.Slides())
+	//autoupdateHttp.Projector(mux, authService, projectorService)
 
 	// Create http server.
 	listenAddr := env["AUTOUPDATE_HOST"] + ":" + env["AUTOUPDATE_PORT"]
@@ -175,14 +172,14 @@ func waitForShutdown() {
 // buildDatastore builds the datastore implementation needed by the autoupdate
 // service. It uses environment variables to make the decission. Per default, a
 // fake server is started and its url is used.
-func buildDatastore(env map[string]string, receiver datastore.Updater, closed <-chan struct{}, errHandler func(error)) (autoupdate.Datastore, error) {
+func buildDatastore(env map[string]string, receiver datastore.Updater, closed <-chan struct{}, errHandler func(error)) (*datastore.Datastore, error) {
 	var url string
 	dsService := env["DATASTORE"]
 	switch dsService {
 	case "fake":
+		ts := test.NewDatastoreServer(closed, nil)
+		url = ts.TS.URL
 		fmt.Println("Fake Datastore")
-		ds := new(test.MockDatastore)
-		url = ds.StartServer(closed)
 
 	case "service":
 		host := env["DATASTORE_READER_HOST"]

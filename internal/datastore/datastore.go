@@ -106,6 +106,10 @@ func (d *Datastore) splitCalculatedKeys(keys []string) (map[string]string, []str
 // receiveKeyChanges listens for updates and saves then into the topic. This
 // function blocks until the service is closed.
 func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
+	if d.keychanger == nil {
+		return
+	}
+
 	for {
 		select {
 		case <-d.closed:

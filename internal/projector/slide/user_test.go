@@ -72,7 +72,9 @@ func TestUser(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ds := test.NewMockDatastore(tt.data)
+			closed := make(chan struct{})
+			defer close(closed)
+			ds := test.NewMockDatastore(closed, tt.data)
 
 			p7on := &projector.Projection{
 				ContentObjectID: "user/1",

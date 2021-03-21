@@ -18,10 +18,10 @@ type UpdaterMock struct {
 
 // NewUpdaterMock creates a new UpdaterMock.
 func NewUpdaterMock() *UpdaterMock {
-	m := UpdaterMock{}
-	m.c = make(chan map[string]json.RawMessage, 1)
-	m.t = time.NewTicker(time.Second)
-	return &m
+	return &UpdaterMock{
+		c: make(chan map[string]json.RawMessage, 1),
+		t: time.NewTicker(time.Second),
+	}
 }
 
 // Update returnes keys that have changed. Blocks until keys are send with

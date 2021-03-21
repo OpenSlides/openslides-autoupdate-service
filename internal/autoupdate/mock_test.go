@@ -6,7 +6,7 @@ import (
 )
 
 func getConnection(closed <-chan struct{}) (*autoupdate.Connection, *test.MockDatastore) {
-	datastore := test.NewMockDatastore(map[string]string{
+	datastore := test.NewMockDatastore(closed, map[string]string{
 		"user/1/name": `"Hello World"`,
 	})
 	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)
