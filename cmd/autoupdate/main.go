@@ -181,7 +181,8 @@ func buildDatastore(env map[string]string, receiver datastore.Updater, closed <-
 	switch dsService {
 	case "fake":
 		fmt.Println("Fake Datastore")
-		url = test.NewDatastoreServer().TS.URL
+		ds := new(test.MockDatastore)
+		url = ds.StartServer(closed)
 
 	case "service":
 		host := env["DATASTORE_READER_HOST"]

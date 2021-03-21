@@ -62,6 +62,10 @@ func (d *Datastore) RegisterChangeListener(f func(map[string]json.RawMessage) er
 	d.changeListeners = append(d.changeListeners, f)
 }
 
+func (d *Datastore) RegisterCalculatedField(field string, f func(changed map[string]json.RawMessage) error) {
+	// TODO
+}
+
 // receiveKeyChanges listens for updates and saves then into the topic. This
 // function blocks until the service is closed.
 func (d *Datastore) receiveKeyChanges(errHandler func(error)) {

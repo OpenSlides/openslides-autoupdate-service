@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,6 +16,7 @@ import (
 // MockDatastore implements the autoupdate.Datastore interface.
 type MockDatastore struct {
 	changeListeners []func(map[string]json.RawMessage) error
+	CountGetCalled  int
 	DatastoreValues
 }
 
@@ -126,7 +129,7 @@ func NewMockDatastore(data map[string]string) *MockDatastore {
 func (d *MockDatastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage, error) {
 	data := make(map[string]json.RawMessage, len(keys))
 	for _, key := range keys {
-		value, _, err := d.DatastoreValues.Value(key)
+		value, err := d.DatastoreValues.Value(key)
 		if err != nil {
 			return nil, err
 		}
@@ -138,6 +141,7 @@ func (d *MockDatastore) Get(ctx context.Context, keys ...string) ([]json.RawMess
 	for i, key := range keys {
 		values[i] = data[key]
 	}
+	d.CountGetCalled++
 	return values, nil
 }
 
@@ -172,6 +176,51 @@ func (d *MockDatastore) SendValues(data map[string]string) {
 	d.Send(keys)
 }
 
+// StartServer starts a httptest.Server and returns the url.
+//
+// The server returns the Date from the MockDatastore as the real datastore
+// server would return them.
+func (d *MockDatastore) StartServer(closed <-chan struct{}) string {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var data struct {
+			Keys []string `json:"requests"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+			http.Error(w, fmt.Sprintf("Invalid json input: %v", err), http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		values, err := d.Get(r.Context(), data.Keys...)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		responceData := make(map[string]map[string]map[string]json.RawMessage)
+		for i, key := range data.Keys {
+			value := values[i]
+
+			if value == nil {
+				continue
+			}
+
+			keyParts := strings.SplitN(key, "/", 3)
+
+			if _, ok := responceData[keyParts[0]]; !ok {
+				responceData[keyParts[0]] = make(map[string]map[string]json.RawMessage)
+			}
+
+			if _, ok := responceData[keyParts[0]][keyParts[1]]; !ok {
+				responceData[keyParts[0]][keyParts[1]] = make(map[string]json.RawMessage)
+			}
+			responceData[keyParts[0]][keyParts[1]][keyParts[2]] = json.RawMessage(value)
+		}
+
+		json.NewEncoder(w).Encode(responceData)
+	}))
+	return ts.URL
+}
+
 // DatastoreValues returns data for the test.MockDatastore and the
 // test.DatastoreServer.
 //
@@ -184,30 +233,30 @@ type DatastoreValues struct {
 
 // Value returns a value for a key. If the value does not exist, the second
 // return value is false.
-func (d *DatastoreValues) Value(key string) (json.RawMessage, bool, error) {
+func (d *DatastoreValues) Value(key string) (json.RawMessage, error) {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
 	v, ok := d.Data[key]
 	if ok {
-		return v, true, nil
+		return v, nil
 	}
 
 	if d.OnlyData {
-		return nil, false, nil
+		return nil, nil
 	}
 
 	switch {
 	case strings.HasPrefix(key, "error"):
-		return nil, true, fmt.Errorf("mock datastore error")
+		return nil, fmt.Errorf("mock datastore error")
 	case strings.Contains(key, "$_"):
-		return json.RawMessage(`"1","2"`), true, nil
+		return json.RawMessage(`"1","2"`), nil
 	case strings.HasSuffix(key, "_id"):
-		return json.RawMessage(`1`), true, nil
+		return json.RawMessage(`1`), nil
 	case strings.HasSuffix(key, "_ids"):
-		return json.RawMessage(`[1,2]`), true, nil
+		return json.RawMessage(`[1,2]`), nil
 	default:
-		return json.RawMessage(`"Hello World"`), true, nil
+		return json.RawMessage(`"Hello World"`), nil
 	}
 }
 

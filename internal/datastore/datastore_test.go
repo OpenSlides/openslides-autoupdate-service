@@ -11,8 +11,9 @@ import (
 func TestDataStoreGet(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	ts := test.NewDatastoreServer()
-	d := datastore.New(ts.TS.URL, closed, func(error) {}, test.NewUpdaterMock())
+	ds := new(test.MockDatastore)
+	url := ds.StartServer(closed)
+	d := datastore.New(url, closed, func(error) {}, test.NewUpdaterMock())
 
 	got, err := d.Get(context.Background(), "collection/1/field")
 
@@ -29,8 +30,9 @@ func TestDataStoreGet(t *testing.T) {
 func TestDataStoreGetMultiValue(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	ts := test.NewDatastoreServer()
-	d := datastore.New(ts.TS.URL, closed, func(error) {}, test.NewUpdaterMock())
+	ds := new(test.MockDatastore)
+	url := ds.StartServer(closed)
+	d := datastore.New(url, closed, func(error) {}, test.NewUpdaterMock())
 
 	got, err := d.Get(context.Background(), "collection/1/field", "collection/2/field")
 
@@ -43,7 +45,15 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 		t.Errorf("Get() returned %v, expected %v", got, expect)
 	}
 
-	if ts.RequestCount != 1 {
-		t.Errorf("Got %d requests to the datastore, expected 1", ts.RequestCount)
+	if ds.CountGetCalled != 1 {
+		t.Errorf("Got %d requests to the datastore, expected 1", ds.CountGetCalled)
 	}
 }
+
+// func TestCalculdatedFields(t *testing.T) {
+// 	closed := make(chan struct{})
+// 	defer close(closed)
+// 	ts := test.NewDatastoreServer()
+// 	d := datastore.New(ts.TS.URL, closed, func(error) {}, test.NewUpdaterMock())
+// 	_ = d
+// }
