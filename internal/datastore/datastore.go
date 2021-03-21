@@ -124,6 +124,8 @@ func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 			continue
 		}
 
+		d.cache.SetIfExist(data)
+
 		for key, field := range d.calculatedKeys {
 			bs, err := d.calculatedFields[field](key, data)
 			if err != nil {
@@ -133,6 +135,10 @@ func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 			data[key] = bs
 		}
 
+		// This updates the cache for a second time. But this time, with the
+		// calculated fields. In most cases, there should not be many updated
+		// keys at the same time, so it is not necessary to create a separat
+		// map.
 		d.cache.SetIfExist(data)
 
 		for _, f := range d.changeListeners {

@@ -84,25 +84,73 @@ func TestCalculdatedFields(t *testing.T) {
 		assert.Equal(t, "my value", string(got[0]))
 		assert.Equal(t, 0, ts.RequestCount)
 	})
+}
 
-	t.Run("Update some key", func(t *testing.T) {
-		ts.RequestCount = 0
-		done := make(chan struct{})
-		ds.RegisterChangeListener(func(map[string]json.RawMessage) error {
-			// Signal, that the data is updated.
-			close(done)
-			return nil
-		})
-
-		updater.Send(map[string]string{
-			"some/1/field": "some value",
-		})
-		<-done
-
-		got, err := ds.Get(context.Background(), "collection/1/myfield")
-		require.NoError(t, err, "Get returned unexpected error")
-		assert.Len(t, got, 1)
-		assert.Equal(t, "got 1 changed keys", string(got[0]))
-		assert.Equal(t, 0, ts.RequestCount)
+func TestCalculdatedFieldsNewDataInReceiver(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+	ts := test.NewDatastoreServer(closed, map[string]string{
+		"collection/1/normal_field": `"original value"`,
 	})
+	url := ts.TS.URL
+	ds := datastore.New(url, closed, func(error) {}, ts)
+	ds.RegisterCalculatedField("collection/myfield", func(key string, changed map[string]json.RawMessage) ([]byte, error) {
+		fields, err := ds.Get(context.Background(), "collection/1/normal_field")
+		if err != nil {
+			return nil, err
+		}
+		return []byte(fmt.Sprintf(`"normal_field is %s"`, fields[0])), nil
+	})
+
+	done := make(chan struct{})
+	ds.RegisterChangeListener(func(map[string]json.RawMessage) error {
+		// Signal, that the data is updated.
+		close(done)
+		return nil
+	})
+
+	ts.Send(map[string]string{
+		"collection/1/normal_field": `"new value"`,
+	})
+	<-done
+
+	got, err := ds.Get(context.Background(), "collection/1/myfield")
+	require.NoError(t, err, "Get returned unexpected error")
+	assert.Equal(t, "\"normal_field is \"new value\"\"", string(got[0]))
+}
+
+func TestCalculdatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+	ts := test.NewDatastoreServer(closed, map[string]string{
+		"collection/1/normal_field": `"original value"`,
+	})
+	url := ts.TS.URL
+	ds := datastore.New(url, closed, func(error) {}, ts)
+	ds.RegisterCalculatedField("collection/myfield", func(key string, changed map[string]json.RawMessage) ([]byte, error) {
+		fields, err := ds.Get(context.Background(), "collection/1/normal_field")
+		if err != nil {
+			return nil, err
+		}
+		return []byte(fmt.Sprintf(`"normal_field is %s"`, fields[0])), nil
+	})
+
+	// Call Get once to fill the cache
+	ds.Get(context.Background(), "collection/1/myfield")
+
+	done := make(chan struct{})
+	ds.RegisterChangeListener(func(map[string]json.RawMessage) error {
+		// Signal, that the data is updated.
+		close(done)
+		return nil
+	})
+
+	ts.Send(map[string]string{
+		"collection/1/normal_field": `"new value"`,
+	})
+	<-done
+
+	got, err := ds.Get(context.Background(), "collection/1/myfield")
+	require.NoError(t, err, "Get returned unexpected error")
+	assert.Equal(t, "\"normal_field is \"new value\"\"", string(got[0]))
 }
