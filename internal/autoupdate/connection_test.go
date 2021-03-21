@@ -77,12 +77,9 @@ func TestConnectionEmptyData(t *testing.T) {
 		doesExistKey    = "user/1/name"
 	)
 
-	datastore := new(test.MockDatastore)
-
-	datastore.Data = map[string]json.RawMessage{
-		doesExistKey: []byte("exist"),
-	}
-	datastore.OnlyData = true
+	datastore := test.NewMockDatastore(map[string]string{
+		doesExistKey: `"Hello World"`,
+	})
 
 	closed := make(chan struct{})
 	defer close(closed)
@@ -186,7 +183,9 @@ func TestConnectionEmptyData(t *testing.T) {
 }
 
 func TestConnectionFilterData(t *testing.T) {
-	datastore := new(test.MockDatastore)
+	datastore := test.NewMockDatastore(map[string]string{
+		"user/1/name": `"Hello World"`,
+	})
 
 	closed := make(chan struct{})
 	defer close(closed)
@@ -212,7 +211,9 @@ func TestConnectionFilterData(t *testing.T) {
 }
 
 func TestConntectionFilterOnlyOneKey(t *testing.T) {
-	datastore := new(test.MockDatastore)
+	datastore := test.NewMockDatastore(map[string]string{
+		"user/1/name": `"Hello World"`,
+	})
 	closed := make(chan struct{})
 	close(closed)
 	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)
@@ -241,7 +242,9 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 }
 
 func TestFullUpdate(t *testing.T) {
-	datastore := new(test.MockDatastore)
+	datastore := test.NewMockDatastore(map[string]string{
+		"user/1/name": `"Hello World"`,
+	})
 	closed := make(chan struct{})
 	defer close(closed)
 	userUpdater := new(test.UserUpdater)
@@ -276,7 +279,7 @@ func TestFullUpdate(t *testing.T) {
 		}
 
 		if len(data) != 0 {
-			t.Errorf("Got %v, expected no key update", data)
+			t.Errorf("Got %s, expected no key update", data)
 		}
 	})
 
@@ -308,7 +311,7 @@ func TestFullUpdate(t *testing.T) {
 		}
 
 		if len(data) != 1 || string(data["user/1/name"]) != `"Hello World"` {
-			t.Errorf("Got %v, expected [user/1/name: Hello World]", data)
+			t.Errorf("Got %s, expected [user/1/name: Hello World]", data)
 		}
 	})
 }
@@ -332,7 +335,9 @@ func blocking(f func()) bool {
 
 func BenchmarkFilterChanging(b *testing.B) {
 	const keyCount = 100
-	datastore := new(test.MockDatastore)
+	datastore := test.NewMockDatastore(map[string]string{
+		"user/1/name": `"Hello World"`,
+	})
 	closed := make(chan struct{})
 	defer close(closed)
 	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)
@@ -359,7 +364,9 @@ func BenchmarkFilterChanging(b *testing.B) {
 
 func BenchmarkFilterNotChanging(b *testing.B) {
 	const keyCount = 100
-	datastore := new(test.MockDatastore)
+	datastore := test.NewMockDatastore(map[string]string{
+		"user/1/name": `"Hello World"`,
+	})
 	closed := make(chan struct{})
 	defer close(closed)
 	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)

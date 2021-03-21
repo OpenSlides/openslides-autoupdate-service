@@ -108,8 +108,7 @@ func NewMockDatastore(data map[string]string) *MockDatastore {
 	}
 	return &MockDatastore{
 		DatastoreValues: DatastoreValues{
-			Data:     conv,
-			OnlyData: true,
+			Data: conv,
 		},
 	}
 }
@@ -226,9 +225,8 @@ func (d *MockDatastore) StartServer(closed <-chan struct{}) string {
 //
 // If OnlyData is false, fake data is generated.
 type DatastoreValues struct {
-	mu       sync.RWMutex
-	Data     map[string]json.RawMessage
-	OnlyData bool
+	mu   sync.RWMutex
+	Data map[string]json.RawMessage
 }
 
 // Value returns a value for a key. If the value does not exist, the second
@@ -242,22 +240,7 @@ func (d *DatastoreValues) Value(key string) (json.RawMessage, error) {
 		return v, nil
 	}
 
-	if d.OnlyData {
-		return nil, nil
-	}
-
-	switch {
-	case strings.HasPrefix(key, "error"):
-		return nil, fmt.Errorf("mock datastore error")
-	case strings.Contains(key, "$_"):
-		return json.RawMessage(`"1","2"`), nil
-	case strings.HasSuffix(key, "_id"):
-		return json.RawMessage(`1`), nil
-	case strings.HasSuffix(key, "_ids"):
-		return json.RawMessage(`[1,2]`), nil
-	default:
-		return json.RawMessage(`"Hello World"`), nil
-	}
+	return nil, nil
 }
 
 // Update updates the values from the Datastore.

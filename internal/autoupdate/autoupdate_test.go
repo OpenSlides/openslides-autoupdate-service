@@ -1,7 +1,10 @@
 package autoupdate_test
 
 import (
+	"bytes"
 	"context"
+	"errors"
+	"io"
 	"testing"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
@@ -9,39 +12,53 @@ import (
 )
 
 func TestLive(t *testing.T) {
-	datastore := new(test.MockDatastore)
 	closed := make(chan struct{})
 	defer close(closed)
-	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)
+
+	ds := test.NewMockDatastore(map[string]string{
+		"foo": `"Foo Value"`,
+		"bar": `"Bar Value"`,
+	})
+	s := autoupdate.New(ds, new(test.MockRestricter), test.UserUpdater{}, closed)
 	kb := test.KeysBuilder{K: []string{"foo", "bar"}}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	w := new(mockWriter)
-	s.Live(ctx, 1, w, kb)
-
-	if len(w.lines) != 1 {
-		t.Fatalf("Got %d lines, expected 1", len(w.lines))
+	buf := new(bytes.Buffer)
+	w := lineWriter{maxLines: 1, wr: buf}
+	if err := s.Live(context.Background(), 1, w, kb); err != nil {
+		if !errors.Is(err, errWriterFull) {
+			t.Fatalf("Live returned unexpected error: %v", err)
+		}
 	}
 
-	expect := `{"bar":"Hello World","foo":"Hello World"}` + "\n"
-	if got := w.lines[0]; got != expect {
-		t.Errorf("Got %s, expected %s", got, expect)
+	expect := `{"bar":"Bar Value","foo":"Foo Value"}` + "\n"
+	if buf.String() != expect {
+		t.Errorf("Got %s, expected %s", buf.String(), expect)
 	}
 }
 
-type mockWriter struct {
-	lines []string
-	buf   []byte
+var errWriterFull = errors.New("first line full")
+
+// lineWriter fails after the first newline
+type lineWriter struct {
+	maxLines int
+	wr       io.Writer
+	count    int
 }
 
-func (w *mockWriter) Write(p []byte) (int, error) {
-	w.buf = append(w.buf, p...)
-	return len(p), nil
-}
+func (w lineWriter) Write(p []byte) (int, error) {
+	if w.count >= w.maxLines {
+		return 0, errWriterFull
+	}
 
-func (w *mockWriter) Flush() {
-	w.lines = append(w.lines, string(w.buf))
-	w.buf = nil
+	idx := bytes.IndexByte(p, '\n')
+	if idx != -1 {
+		w.count++
+		n, err := w.wr.Write(p[:idx+1])
+		if err != nil {
+			return n, err
+		}
+		return n, errWriterFull
+	}
+
+	return w.wr.Write(p)
 }
