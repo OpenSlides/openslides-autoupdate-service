@@ -64,9 +64,10 @@ var dataSet = map[string]string{
 }
 
 func TestFeatures(t *testing.T) {
-	datastore := test.NewMockDatastore(dataSet)
 	closed := make(chan struct{})
 	defer close(closed)
+
+	datastore := test.NewMockDatastore(closed, dataSet)
 	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)
 
 	for _, tt := range []struct {
