@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
+	"github.com/ostcar/topic"
 )
 
 // Datastore gets values for keys and informs, if they change.
@@ -21,54 +23,78 @@ type Datastore interface {
 type Service struct {
 	ds     Datastore
 	slides *SlideStore
-	closed <-chan struct{}
 
 	projectors map[int]*projector
+	top        *topic.Topic
 }
 
 // New initializes a new projector.
 func New(ds Datastore, slides *SlideStore, closed <-chan struct{}) *Service {
-	return &Service{
+	s := &Service{
 		ds:         ds,
 		slides:     slides,
-		closed:     closed,
 		projectors: make(map[int]*projector),
+		top:        topic.New(topic.WithClosed(closed)),
 	}
+
+	ds.RegisterChangeListener(func(data map[string]json.RawMessage) error {
+		for _, p := range s.projectors {
+			if err := p.update(data); err != nil {
+				log.Printf("Error updating projector %d: %v", p.id, err)
+			}
+			// TODO: check, if projector has changed, if so, save it into the topic.
+		}
+		return nil
+	})
+
+	return s
+
 }
 
 // Live writes all projector changes for the given projector ids on w.
 func (p *Service) Live(ctx context.Context, uid int, w io.Writer, pids []int) error {
 	out := make(map[int]json.RawMessage)
-	for _, pid := range pids {
-		// TODO: Check permission
+	encoder := json.NewEncoder(w)
 
-		pr, ok := p.projectors[pid]
-		if !ok {
-			var err error
-			pr, err = newProjector(ctx, p.ds, p.slides, pid)
-			if err != nil {
-				return fmt.Errorf("create projector %d: %w", pid, err)
+	for {
+		if ctx.Err() != nil {
+			break
+		}
+
+		for _, pid := range pids {
+			// TODO: Check permission
+
+			pr, ok := p.projectors[pid]
+			if !ok {
+				var err error
+				pr, err = newProjector(ctx, p.ds, p.slides, pid)
+				if err != nil {
+					return fmt.Errorf("create projector %d: %w", pid, err)
+				}
+				p.projectors[pid] = pr
 			}
+
+			bs, err := pr.Bytes()
+			if err != nil {
+				return fmt.Errorf("get data for projector %d: %w", pid, err)
+			}
+			out[pid] = bs
 		}
 
-		bs, err := pr.Bytes()
-		if err != nil {
-			return fmt.Errorf("get data for projector %d: %w", pid, err)
+		if err := encoder.Encode(out); err != nil {
+			return fmt.Errorf("encode and write projectors: %w", err)
 		}
-		out[pid] = bs
-	}
-
-	if err := json.NewEncoder(w).Encode(out); err != nil {
-		return fmt.Errorf("encode and write projectors: %w", err)
 	}
 	return nil
 }
 
 type projector struct {
-	buf    []byte
 	ds     Datastore
 	slides *SlideStore
 	id     int
+
+	listenKeys map[string]bool
+	buf        []byte
 }
 
 func newProjector(ctx context.Context, ds Datastore, slides *SlideStore, id int) (*projector, error) {
@@ -89,19 +115,42 @@ func newProjector(ctx context.Context, ds Datastore, slides *SlideStore, id int)
 	return pr, nil
 }
 
+func (pr *projector) Bytes() ([]byte, error) {
+	return pr.buf, nil
+}
+
+func (pr *projector) update(data map[string]json.RawMessage) error {
+	var needRerender bool
+	for k := range data {
+		if pr.listenKeys[k] {
+			needRerender = true
+			break
+		}
+	}
+	if !needRerender {
+		return nil
+	}
+
+	if err := pr.calc(context.TODO()); err != nil {
+		return fmt.Errorf("update projector %d: %w", pr.id, err)
+	}
+
+	return nil
+}
+
 func (pr *projector) calc(ctx context.Context) error {
 	var p7onIDs []int
 	if err := datastore.Get(ctx, pr.ds, fmt.Sprintf("projector/%d/current_projection_ids", pr.id), &p7onIDs); err != nil {
 		var errDoesNotExist datastore.DoesNotExistError
 		if errors.As(err, &errDoesNotExist) {
 			// Projector does not exist.
-			pr.buf = nil
 			return nil
 		}
 		return fmt.Errorf("get projections: %w", err)
 	}
 
 	projectionsData := make(map[int]json.RawMessage)
+	hotKeys := make(map[string]bool)
 	for _, id := range p7onIDs {
 		var p7on Projection
 		if err := datastore.GetObject(ctx, pr.ds, fmt.Sprintf("projection/%d", id), &p7on); err != nil {
@@ -112,29 +161,36 @@ func (pr *projector) calc(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("getting slide name: %w", err)
 		}
+
 		slide := pr.slides.Get(slideName)
 		if slide == nil {
 			return fmt.Errorf("unknown slide %s", slideName)
 		}
 
-		bs, err := p7on.calc(ctx, pr.ds, slide)
+		bs, keys, err := p7on.calc(ctx, pr.ds, slide)
 		if err != nil {
 			return fmt.Errorf("calculate projection %d: %w", id, err)
 		}
+
 		projectionsData[id] = bs
+		for _, k := range keys {
+			hotKeys[k] = true
+		}
+		for _, key := range []string{"option", "stable", "type", "content_object_id"} {
+			hotKeys[fmt.Sprintf("projection/%d/%s", id, key)] = true
+		}
 	}
 
 	bs, err := json.Marshal(projectionsData)
 	if err != nil {
 		return fmt.Errorf("encode projector %d: %w", pr.id, err)
 	}
+	pr.listenKeys = hotKeys
+	pr.listenKeys[fmt.Sprintf("projector/%d/current_projection_ids", pr.id)] = true
+	// TODO: check, if data has change
 	pr.buf = bs
 
 	return nil
-}
-
-func (pr *projector) Bytes() ([]byte, error) {
-	return pr.buf, nil
 }
 
 // Projection holds the meta data to render a projection on a projecter.
@@ -156,22 +212,23 @@ func (p *Projection) slideName() (string, error) {
 	return p.ContentObjectID[:i], nil
 }
 
-func (p *Projection) calc(ctx context.Context, ds Datastore, slide Slider) ([]byte, error) {
+func (p *Projection) calc(ctx context.Context, ds Datastore, slide Slider) ([]byte, []string, error) {
 	var outProjection struct {
 		Projection
 		Data json.RawMessage `json:"data"`
 	}
 	outProjection.Projection = *p
 
-	slideData, _, err := slide.Slide(ctx, ds, p)
+	slideData, keys, err := slide.Slide(ctx, ds, p)
 	if err != nil {
-		return nil, fmt.Errorf("calculating slide: %w", err)
+		return nil, nil, fmt.Errorf("calculating slide: %w", err)
 	}
 	outProjection.Data = slideData
 
 	bs, err := json.Marshal(outProjection)
 	if err != nil {
-		return nil, fmt.Errorf("decoding calculated projection: %w", err)
+		return nil, nil, fmt.Errorf("decoding calculated projection: %w", err)
 	}
-	return bs, nil
+
+	return bs, keys, nil
 }

@@ -159,6 +159,19 @@ func (d *MockDatastore) Send(keys []string) {
 	}
 }
 
+// SendValues updates the mock and calls Send afterwards.
+func (d *MockDatastore) SendValues(data map[string]string) {
+	conv := make(map[string]json.RawMessage, len(data))
+	keys := make([]string, 0, len(data))
+	for k, v := range data {
+		conv[k] = []byte(v)
+		keys = append(keys, k)
+	}
+
+	d.Update(conv)
+	d.Send(keys)
+}
+
 // DatastoreValues returns data for the test.MockDatastore and the
 // test.DatastoreServer.
 //
