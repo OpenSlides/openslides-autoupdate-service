@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
@@ -18,8 +17,25 @@ type Datastore interface {
 
 // Register initializes a new projector.
 func Register(ds Datastore, slides *SlideStore) {
+	hotKeys := make(map[string][]string)
 	ds.RegisterCalculatedField("projection/content", func(fqfield string, changed map[string]json.RawMessage) ([]byte, error) {
-		log.Println(fqfield)
+		if changed != nil {
+			var needUpdate bool
+			for _, k := range hotKeys[fqfield] {
+				if _, ok := changed[k]; ok {
+					needUpdate = true
+					break
+				}
+			}
+			if !needUpdate {
+				old, err := ds.Get(context.Background(), fqfield)
+				if err != nil {
+					return nil, fmt.Errorf("getting old value: %w", err)
+				}
+				return old[0], nil
+			}
+		}
+
 		parts := strings.SplitN(fqfield, "/", 3)
 		if len(parts) != 3 {
 			return nil, fmt.Errorf("invalid key %s, expected two '/'", fqfield)
@@ -49,7 +65,7 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("calculating slide: %w", err)
 		}
 
-		_ = keys // TODO
+		hotKeys[fqfield] = keys
 
 		return bs, nil
 	})
