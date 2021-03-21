@@ -4,16 +4,12 @@ The Autoupdate Service is part of the OpenSlides environment. It is a http
 endpoint where the clients can connect to get the actual data and also get
 updates, when the requested data changes.
 
+IMPORTANT: The data are sent via an open http-connection. All browsers limit the
+amount of open http1.1 connections to a domain. For this service to work, the
+browser has to connect to the service with http2 and therefore needs https.
+
 
 ## Start
-
-The service requires https and therefore needs https. If no certificat is given,
-the service creates and uses an inmemory self signed certificat. To create a
-valid certificat for development, the tool
-[mkcert](https://github.com/FiloSottile/mkcert) can be used. If `mkcert` is
-installed, the make target `make dev-cert` can be used to create a certivicate
-for the autoupdate-service on localhost.
-
 
 ### With Golang
 
@@ -78,8 +74,7 @@ make run-tests
 ## Examples
 
 Curl needs the flag `-N / --no-buffer` or it can happen, that the output is not
-printed immediately. With a self signed certificat (the default of the
-autoupdate-service) is also needs the flag `-k / --insecure`.
+printed immediately.
 
 
 ### Without redis
@@ -88,14 +83,14 @@ When the server is started, clients can listen for keys to do so, they have to
 send a keyrequest in the body of the request. Currently, all method-types (POST,
 GET, etc) are supported. An example request is:
 
-`curl -Nk  https://localhost:9012/system/autoupdate -d '[{"ids": [1], "collection": "user", "fields": {"username": null}}]'`
+`curl -N  localhost:9012/system/autoupdate -d '[{"ids": [1], "collection": "user", "fields": {"username": null}}]'`
 
 To see a list of possible json-strings see the file
 internal/autoupdate/keysbuilder/keysbuilder_test.go
 
 There is a simpler method to request keys:
 
-`curl -Nk https://localhost:9012/system/autoupdate/keys?user/1/username,user/2/username`
+`curl -N localhost:9012/system/autoupdate/keys?user/1/username,user/2/username`
 
 With this simpler method, it is not possible to request related keys.
 
@@ -146,8 +141,6 @@ The Service uses the following environment variables:
   `9012`.
 * `AUTOUPDATE_HOST`: The device where the service starts. The default is am
   empty string which starts the service on any device.
-* `CERT_DIR`: Path where the tls certificates and the keys are. If emtpy, the
-  server creates a self signed inmemory certificat. The default is empty.
 * `DATASTORE`: Sets the datastore service. `fake` (default) or `service`.
 * `DATASTORE_READER_HOST`: Host of the datastore reader. The default is
   `localhost`.
