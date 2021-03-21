@@ -135,9 +135,31 @@ possible to update keys by sending the following command to redis:
 
 ### Projector
 
-To get projector data, you can use:
+The data for a projector can be accessed with autoupdate requests. For example use:
 
-`curl -N localhost:9012/system/autoupdate/projector?ids=1,2,3`
+
+```
+curl -N localhost:9012/system/autoupdate -d '
+[
+  {
+    "ids": [1],
+    "collection": "projector",
+    "fields": {
+      "current_projection_ids": {
+        "type": "relation-list",
+        "collection": "projection",
+        "fields": {
+          "content": null,
+          "content_object_id": null,
+          "stable": null,
+          "type": null,
+          "options": null
+        }
+      }
+    }
+  }
+]'
+```
 
 
 ## Environment

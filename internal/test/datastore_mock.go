@@ -118,7 +118,10 @@ func (d *MockDatastore) SendValues(data map[string]string) {
 	conv := make(map[string]json.RawMessage, len(data))
 	keys := make([]string, 0, len(data))
 	for k, v := range data {
-		conv[k] = []byte(v)
+		conv[k] = nil
+		if v != "" {
+			conv[k] = []byte(v)
+		}
 		keys = append(keys, k)
 	}
 

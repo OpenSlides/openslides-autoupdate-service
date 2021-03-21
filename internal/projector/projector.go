@@ -3,6 +3,11 @@ package projector
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"log"
+	"strings"
+
+	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
 )
 
 // Datastore gets values for keys and informs, if they change.
@@ -11,122 +16,44 @@ type Datastore interface {
 	RegisterCalculatedField(field string, f func(key string, changed map[string]json.RawMessage) ([]byte, error))
 }
 
-// Service builds and shows the projector.
-type Service struct {
-	ds     Datastore
-	slides *SlideStore
-}
+// Register initializes a new projector.
+func Register(ds Datastore, slides *SlideStore) {
+	ds.RegisterCalculatedField("projection/content", func(fqfield string, changed map[string]json.RawMessage) ([]byte, error) {
+		log.Println(fqfield)
+		parts := strings.SplitN(fqfield, "/", 3)
+		if len(parts) != 3 {
+			return nil, fmt.Errorf("invalid key %s, expected two '/'", fqfield)
+		}
 
-// New initializes a new projector.
-func New(ds Datastore, slides *SlideStore) *Service {
-	s := &Service{
-		ds:     ds,
-		slides: slides,
-	}
+		var p7on Projection
+		if err := datastore.GetObject(context.Background(), ds, parts[0]+"/"+parts[1], &p7on); err != nil {
+			return nil, fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
+		}
 
-	ds.RegisterCalculatedField("projection/content", func(key string, changed map[string]json.RawMessage) ([]byte, error) {
-		// TODO
-		return nil, nil
+		if !p7on.exists() {
+			return nil, nil
+		}
+
+		slideName, err := p7on.slideName()
+		if err != nil {
+			return nil, fmt.Errorf("getting slide name: %w", err)
+		}
+
+		slider := slides.Get(slideName)
+		if slider == nil {
+			return nil, fmt.Errorf("unknown slide %s", slideName)
+		}
+
+		bs, keys, err := slider.Slide(context.Background(), ds, &p7on)
+		if err != nil {
+			return nil, fmt.Errorf("calculating slide: %w", err)
+		}
+
+		_ = keys // TODO
+
+		return bs, nil
 	})
-
-	return s
 }
-
-// func newProjector(ctx context.Context, ds Datastore, slides *SlideStore, id int) (*projector, error) {
-// 	var projectionIDs []int
-// 	if err := datastore.GetIfExist(ctx, ds, fmt.Sprintf("projector/%d/current_projection_ids", id), &projectionIDs); err != nil {
-// 		return nil, fmt.Errorf("get projections: %w", err)
-// 	}
-
-// 	pr := &projector{
-// 		id:     id,
-// 		ds:     ds,
-// 		slides: slides,
-// 	}
-
-// 	if err := pr.calc(ctx); err != nil {
-// 		return nil, fmt.Errorf("calculate projector for first time: %w", err)
-// 	}
-// 	return pr, nil
-// }
-
-// func (pr *projector) Bytes() ([]byte, error) {
-// 	return pr.buf, nil
-// }
-
-// func (pr *projector) update(data map[string]json.RawMessage) error {
-// 	var needRerender bool
-// 	for k := range data {
-// 		if pr.listenKeys[k] {
-// 			needRerender = true
-// 			break
-// 		}
-// 	}
-// 	if !needRerender {
-// 		return nil
-// 	}
-
-// 	if err := pr.calc(context.TODO()); err != nil {
-// 		return fmt.Errorf("update projector %d: %w", pr.id, err)
-// 	}
-
-// 	return nil
-// }
-
-// func (pr *projector) calc(ctx context.Context) error {
-// 	var p7onIDs []int
-// 	if err := datastore.Get(ctx, pr.ds, fmt.Sprintf("projector/%d/current_projection_ids", pr.id), &p7onIDs); err != nil {
-// 		var errDoesNotExist datastore.DoesNotExistError
-// 		if errors.As(err, &errDoesNotExist) {
-// 			// Projector does not exist.
-// 			return nil
-// 		}
-// 		return fmt.Errorf("get projections: %w", err)
-// 	}
-
-// 	projectionsData := make(map[int]json.RawMessage)
-// 	hotKeys := make(map[string]bool)
-// 	for _, id := range p7onIDs {
-// 		var p7on Projection
-// 		if err := datastore.GetObject(ctx, pr.ds, fmt.Sprintf("projection/%d", id), &p7on); err != nil {
-// 			return fmt.Errorf("fetch projection: %w", err)
-// 		}
-
-// 		slideName, err := p7on.slideName()
-// 		if err != nil {
-// 			return fmt.Errorf("getting slide name: %w", err)
-// 		}
-
-// 		slide := pr.slides.Get(slideName)
-// 		if slide == nil {
-// 			return fmt.Errorf("unknown slide %s", slideName)
-// 		}
-
-// 		bs, keys, err := p7on.calc(ctx, pr.ds, slide)
-// 		if err != nil {
-// 			return fmt.Errorf("calculate projection %d: %w", id, err)
-// 		}
-
-// 		projectionsData[id] = bs
-// 		for _, k := range keys {
-// 			hotKeys[k] = true
-// 		}
-// 		for _, key := range []string{"option", "stable", "type", "content_object_id"} {
-// 			hotKeys[fmt.Sprintf("projection/%d/%s", id, key)] = true
-// 		}
-// 	}
-
-// 	bs, err := json.Marshal(projectionsData)
-// 	if err != nil {
-// 		return fmt.Errorf("encode projector %d: %w", pr.id, err)
-// 	}
-// 	pr.listenKeys = hotKeys
-// 	pr.listenKeys[fmt.Sprintf("projector/%d/current_projection_ids", pr.id)] = true
-// 	// TODO: check, if data has change
-// 	pr.buf = bs
-
-// 	return nil
-// }
 
 // Projection holds the meta data to render a projection on a projecter.
 type Projection struct {
@@ -136,34 +63,17 @@ type Projection struct {
 	ContentObjectID string          `json:"content_object_id"`
 }
 
-// func (p *Projection) slideName() (string, error) {
-// 	if p.Type != "" {
-// 		return p.Type, nil
-// 	}
-// 	i := strings.Index(p.ContentObjectID, "/")
-// 	if i == -1 {
-// 		return "", fmt.Errorf("invalid content_object_id `%s`, expected one '/'", p.ContentObjectID)
-// 	}
-// 	return p.ContentObjectID[:i], nil
-// }
+func (p *Projection) exists() bool {
+	return p.Type != "" || p.ContentObjectID != ""
+}
 
-// func (p *Projection) calc(ctx context.Context, ds Datastore, slide Slider) ([]byte, []string, error) {
-// 	var outProjection struct {
-// 		Projection
-// 		Data json.RawMessage `json:"data"`
-// 	}
-// 	outProjection.Projection = *p
-
-// 	slideData, keys, err := slide.Slide(ctx, ds, p)
-// 	if err != nil {
-// 		return nil, nil, fmt.Errorf("calculating slide: %w", err)
-// 	}
-// 	outProjection.Data = slideData
-
-// 	bs, err := json.Marshal(outProjection)
-// 	if err != nil {
-// 		return nil, nil, fmt.Errorf("decoding calculated projection: %w", err)
-// 	}
-
-// 	return bs, keys, nil
-// }
+func (p *Projection) slideName() (string, error) {
+	if p.Type != "" {
+		return p.Type, nil
+	}
+	i := strings.Index(p.ContentObjectID, "/")
+	if i == -1 {
+		return "", fmt.Errorf("invalid content_object_id `%s`, expected one '/'", p.ContentObjectID)
+	}
+	return p.ContentObjectID[:i], nil
+}
