@@ -19,7 +19,7 @@ func TestDataStoreGet(t *testing.T) {
 		"collection/1/field": `"Hello World"`,
 	})
 	url := ts.TS.URL
-	d := datastore.New(url, closed, func(error) {}, nil)
+	d := datastore.New(url, closed, func(error) {}, ts)
 
 	got, err := d.Get(context.Background(), "collection/1/field")
 	assert.NoError(t, err, "Get() returned an unexpected error")
@@ -38,7 +38,7 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 		"collection/1/field": `"v1"`,
 		"collection/2/field": `"v2"`,
 	})
-	d := datastore.New(ts.TS.URL, closed, func(error) {}, test.NewUpdaterMock())
+	d := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
 
 	got, err := d.Get(context.Background(), "collection/1/field", "collection/2/field")
 	assert.NoError(t, err, "Get() returned an unexpected error")
@@ -58,8 +58,7 @@ func TestCalculdatedFields(t *testing.T) {
 	defer close(closed)
 	ts := test.NewDatastoreServer(closed, nil)
 	url := ts.TS.URL
-	updater := test.NewUpdaterMock()
-	ds := datastore.New(url, closed, func(error) {}, updater)
+	ds := datastore.New(url, closed, func(error) {}, ts)
 	ds.RegisterCalculatedField("collection/myfield", func(key string, changed map[string]json.RawMessage) ([]byte, error) {
 		if changed == nil {
 			return []byte("my value"), nil

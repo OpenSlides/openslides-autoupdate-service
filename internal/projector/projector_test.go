@@ -61,7 +61,7 @@ func TestProjectionUpdateData(t *testing.T) {
 	})
 	projector.Register(ds, testSlides())
 
-	ds.SendValues(map[string]string{
+	ds.Send(map[string]string{
 		"projection/1/type":              "",
 		"projection/1/content_object_id": `"test_model/1"`,
 	})

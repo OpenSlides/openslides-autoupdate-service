@@ -95,8 +95,6 @@ func YAMLData(input string) map[string]string {
 type MockDatastore struct {
 	*datastore.Datastore
 	server *DatastoreServer
-
-	update chan map[string]json.RawMessage
 }
 
 // NewMockDatastore create a MockDatastore with data.
@@ -104,39 +102,22 @@ func NewMockDatastore(closed <-chan struct{}, data map[string]string) *MockDatas
 	dsServer := NewDatastoreServer(closed, data)
 
 	s := &MockDatastore{
-		update: make(chan map[string]json.RawMessage),
 		server: dsServer,
 	}
 
-	s.Datastore = datastore.New(dsServer.TS.URL, closed, func(error) {}, s)
+	s.Datastore = datastore.New(dsServer.TS.URL, closed, func(error) {}, s.server)
 
 	return s
 }
 
-// SendValues updates the mock and calls Send afterwards.
-func (d *MockDatastore) SendValues(data map[string]string) {
-	conv := make(map[string]json.RawMessage, len(data))
-	keys := make([]string, 0, len(data))
-	for k, v := range data {
-		conv[k] = nil
-		if v != "" {
-			conv[k] = []byte(v)
-		}
-		keys = append(keys, k)
-	}
-
-	d.server.Values.Update(conv)
-	d.update <- conv
+// Send updates the mock and calls Send afterwards.
+func (d *MockDatastore) Send(data map[string]string) {
+	d.server.Send(data)
 }
 
 // Update implements the datastore.Updater interface.
 func (d *MockDatastore) Update(close <-chan struct{}) (map[string]json.RawMessage, error) {
-	select {
-	case <-close:
-		return nil, closingError{}
-	case data := <-d.update:
-		return data, nil
-	}
+	return d.server.Update(close)
 }
 
 // datastoreValues returns data for the test.MockDatastore and the

@@ -97,7 +97,11 @@ func (d *DatastoreServer) Update(closing <-chan struct{}) (map[string]json.RawMe
 func (d *DatastoreServer) Send(values map[string]string) {
 	conv := make(map[string]json.RawMessage)
 	for k, v := range values {
-		conv[k] = []byte(v)
+		conv[k] = nil
+		if v != "" {
+			conv[k] = []byte(v)
+		}
+
 	}
 	d.c <- conv
 }

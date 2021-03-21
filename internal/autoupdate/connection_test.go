@@ -55,7 +55,7 @@ func TestConnectionReadNewData(t *testing.T) {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	datastore.SendValues(map[string]string{"user/1/name": `"new value"`})
+	datastore.Send(map[string]string{"user/1/name": `"new value"`})
 	data, err := c.Next(context.Background())
 
 	if err != nil {
@@ -139,7 +139,7 @@ func TestConnectionEmptyData(t *testing.T) {
 				t.Errorf("c.Next() returned an error: %v", err)
 			}
 
-			datastore.SendValues(tt.update)
+			datastore.Send(tt.update)
 			data, err := c.Next(context.Background())
 
 			if err != nil {
@@ -162,11 +162,11 @@ func TestConnectionEmptyData(t *testing.T) {
 		}
 
 		// First time not exist
-		datastore.SendValues(map[string]string{doesExistKey: ""})
+		datastore.Send(map[string]string{doesExistKey: ""})
 		c.Next(context.Background())
 
 		// Second time not exist
-		datastore.SendValues(map[string]string{doesExistKey: ""})
+		datastore.Send(map[string]string{doesExistKey: ""})
 		data, err := c.Next(context.Background())
 
 		if err != nil {
@@ -194,7 +194,7 @@ func TestConnectionFilterData(t *testing.T) {
 	}
 
 	// send again, value did not change in restricter
-	datastore.SendValues(map[string]string{"user/1/name": `"Hello World"`})
+	datastore.Send(map[string]string{"user/1/name": `"Hello World"`})
 	data, err := c.Next(context.Background())
 
 	if err != nil {
@@ -223,7 +223,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	datastore.SendValues(map[string]string{"user/1/name": `"newname"`})
+	datastore.Send(map[string]string{"user/1/name": `"newname"`})
 	data, err := c.Next(context.Background())
 
 	if err != nil {
@@ -260,7 +260,7 @@ func TestFullUpdate(t *testing.T) {
 
 		// Send fulldata for other user.
 		userUpdater.UserIDs = []int{2}
-		datastore.SendValues(map[string]string{"some/5/data": "value"})
+		datastore.Send(map[string]string{"some/5/data": "value"})
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -292,7 +292,7 @@ func TestFullUpdate(t *testing.T) {
 
 		// Send fulldata for same user.
 		userUpdater.UserIDs = []int{1}
-		datastore.SendValues(map[string]string{"some/5/data": "value"})
+		datastore.Send(map[string]string{"some/5/data": "value"})
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
