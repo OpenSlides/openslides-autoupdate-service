@@ -73,7 +73,6 @@ func TestCalculatedFields(t *testing.T) {
 		require.NoError(t, err, "Get returned unexpected error")
 		assert.Len(t, got, 1)
 		assert.Equal(t, "my value", string(got[0]))
-		assert.Equal(t, 1, ts.RequestCount)
 	})
 
 	t.Run("Fetch second time", func(t *testing.T) {
@@ -82,7 +81,6 @@ func TestCalculatedFields(t *testing.T) {
 		require.NoError(t, err, "Get returned unexpected error")
 		assert.Len(t, got, 1)
 		assert.Equal(t, "my value", string(got[0]))
-		assert.Equal(t, 0, ts.RequestCount)
 	})
 }
 
@@ -173,4 +171,20 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 	defer cancel()
 	_, err := ds.Get(ctx, "collection/1/normal_field", "collection/1/myfield")
 	require.NoError(t, err, "Get returned unexpected error")
+}
+
+func TestCalculatedFieldsNoDBQuery(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+	ts := test.NewDatastoreServer(closed, nil)
+	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
+		return []byte("foobar"), nil
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+	_, err := ds.Get(ctx, "collection/1/myfield")
+	require.NoError(t, err, "Get returned unexpected error")
+	require.Equal(t, 0, ts.RequestCount)
 }

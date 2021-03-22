@@ -153,12 +153,14 @@ func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 
 func (d *Datastore) loadKeys(ctx context.Context, keys []string, set func(string, json.RawMessage)) error {
 	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
-	data, err := d.requestKeys(normalKeys)
-	if err != nil {
-		return fmt.Errorf("requiesting keys from datastore: %w", err)
-	}
-	for k, v := range data {
-		set(k, v)
+	if len(normalKeys) > 0 {
+		data, err := d.requestKeys(normalKeys)
+		if err != nil {
+			return fmt.Errorf("requiesting keys from datastore: %w", err)
+		}
+		for k, v := range data {
+			set(k, v)
+		}
 	}
 
 	for key, field := range calculatedKeys {
