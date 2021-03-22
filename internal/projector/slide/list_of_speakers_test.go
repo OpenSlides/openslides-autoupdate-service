@@ -131,9 +131,34 @@ func TestListOfSpeakers(t *testing.T) {
 				ContentObjectID: "list_of_speakers/1",
 			}
 
-			bs, _, err := losSlide.Slide(context.Background(), ds, p7on)
+			bs, keys, err := losSlide.Slide(context.Background(), ds, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
+			expectedKeys := []string{
+				"list_of_speakers/1/speaker_ids",
+				"list_of_speakers/1/content_object_id",
+				"list_of_speakers/1/closed",
+				"speaker/1/user_id",
+				"speaker/1/marked",
+				"speaker/1/point_of_order",
+				"speaker/1/weight",
+				"speaker/1/begin_time",
+				"speaker/1/end_time",
+				"speaker/2/user_id",
+				"speaker/2/marked",
+				"speaker/2/point_of_order",
+				"speaker/2/weight",
+				"speaker/2/begin_time",
+				"speaker/2/end_time",
+				"speaker/3/user_id",
+				"speaker/3/marked",
+				"speaker/3/point_of_order",
+				"speaker/3/weight",
+				"speaker/3/begin_time",
+				"speaker/3/end_time",
+			}
+			_, _ = keys, expectedKeys
+			//assert.ElementsMatch(t, expectedKeys, keys)
 		})
 	}
 }

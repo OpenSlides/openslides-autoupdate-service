@@ -80,9 +80,11 @@ func TestUser(t *testing.T) {
 				ContentObjectID: "user/1",
 			}
 
-			bs, _, err := userSlide.Slide(context.Background(), ds, p7on)
+			bs, keys, err := userSlide.Slide(context.Background(), ds, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
+			expectedKeys := []string{"user/1/username", "user/1/title", "user/1/first_name", "user/1/last_name"}
+			assert.ElementsMatch(t, keys, expectedKeys)
 		})
 	}
 }
