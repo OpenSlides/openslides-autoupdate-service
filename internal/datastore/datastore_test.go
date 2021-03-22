@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
@@ -53,13 +54,13 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 	}
 }
 
-func TestCalculdatedFields(t *testing.T) {
+func TestCalculatedFields(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 	ts := test.NewDatastoreServer(closed, nil)
 	url := ts.TS.URL
 	ds := datastore.New(url, closed, func(error) {}, ts)
-	ds.RegisterCalculatedField("collection/myfield", func(key string, changed map[string]json.RawMessage) ([]byte, error) {
+	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
 		if changed == nil {
 			return []byte("my value"), nil
 		}
@@ -85,7 +86,7 @@ func TestCalculdatedFields(t *testing.T) {
 	})
 }
 
-func TestCalculdatedFieldsNewDataInReceiver(t *testing.T) {
+func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 	ts := test.NewDatastoreServer(closed, map[string]string{
@@ -93,7 +94,7 @@ func TestCalculdatedFieldsNewDataInReceiver(t *testing.T) {
 	})
 	url := ts.TS.URL
 	ds := datastore.New(url, closed, func(error) {}, ts)
-	ds.RegisterCalculatedField("collection/myfield", func(key string, changed map[string]json.RawMessage) ([]byte, error) {
+	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
 		fields, err := ds.Get(context.Background(), "collection/1/normal_field")
 		if err != nil {
 			return nil, err
@@ -118,15 +119,14 @@ func TestCalculdatedFieldsNewDataInReceiver(t *testing.T) {
 	assert.Equal(t, "\"normal_field is \"new value\"\"", string(got[0]))
 }
 
-func TestCalculdatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
+func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 	ts := test.NewDatastoreServer(closed, map[string]string{
 		"collection/1/normal_field": `"original value"`,
 	})
-	url := ts.TS.URL
-	ds := datastore.New(url, closed, func(error) {}, ts)
-	ds.RegisterCalculatedField("collection/myfield", func(key string, changed map[string]json.RawMessage) ([]byte, error) {
+	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
 		fields, err := ds.Get(context.Background(), "collection/1/normal_field")
 		if err != nil {
 			return nil, err
@@ -152,4 +152,25 @@ func TestCalculdatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 	got, err := ds.Get(context.Background(), "collection/1/myfield")
 	require.NoError(t, err, "Get returned unexpected error")
 	assert.Equal(t, "\"normal_field is \"new value\"\"", string(got[0]))
+}
+
+func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+	ts := test.NewDatastoreServer(closed, map[string]string{
+		"collection/1/normal_field": `"original value"`,
+	})
+	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
+		field, err := ds.Get(ctx, "collection/1/normal_field")
+		if err != nil {
+			return nil, fmt.Errorf("getting normal field: %w", err)
+		}
+		return field[0], nil
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+	_, err := ds.Get(ctx, "collection/1/normal_field", "collection/1/myfield")
+	require.NoError(t, err, "Get returned unexpected error")
 }

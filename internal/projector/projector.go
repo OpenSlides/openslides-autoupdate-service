@@ -12,13 +12,13 @@ import (
 // Datastore gets values for keys and informs, if they change.
 type Datastore interface {
 	Get(ctx context.Context, keys ...string) ([]json.RawMessage, error)
-	RegisterCalculatedField(field string, f func(key string, changed map[string]json.RawMessage) ([]byte, error))
+	RegisterCalculatedField(field string, f func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error))
 }
 
 // Register initializes a new projector.
 func Register(ds Datastore, slides *SlideStore) {
 	hotKeys := make(map[string][]string)
-	ds.RegisterCalculatedField("projection/content", func(fqfield string, changed map[string]json.RawMessage) ([]byte, error) {
+	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield string, changed map[string]json.RawMessage) ([]byte, error) {
 		if changed != nil {
 			var needUpdate bool
 			for _, k := range hotKeys[fqfield] {
@@ -73,7 +73,7 @@ func Register(ds Datastore, slides *SlideStore) {
 
 // Projection holds the meta data to render a projection on a projecter.
 type Projection struct {
-	Option          json.RawMessage `json:"option,omitempty"`
+	Options         json.RawMessage `json:"options,omitempty"`
 	Stable          bool            `json:"stable"`
 	Type            string          `json:"type,omitempty"`
 	ContentObjectID string          `json:"content_object_id"`

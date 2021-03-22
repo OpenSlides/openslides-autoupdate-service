@@ -16,7 +16,7 @@ const (
 )
 
 // cacheSetFunc is a function to update cache keys.
-type cacheSetFunc func(keys []string) (map[string]json.RawMessage, error)
+type cacheSetFunc func(keys []string, set func(key string, value json.RawMessage)) error
 
 // cache stores the values to the datastore.
 //
@@ -133,7 +133,14 @@ func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) (
 //
 // Deletes the keys from the pending map, even when an error happens.
 func (c *cache) fetchMissing(keys []string, set cacheSetFunc) error {
-	data, err := set(keys)
+	err := set(keys, func(key string, value json.RawMessage) {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+
+		if c.keyState(key) == stPending {
+			c.set(key, value)
+		}
+	})
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -152,12 +159,6 @@ func (c *cache) fetchMissing(keys []string, set cacheSetFunc) error {
 
 	if err != nil {
 		return fmt.Errorf("fetching missing keys: %w", err)
-	}
-
-	for k, v := range data {
-		if c.keyState(k) == stPending {
-			c.set(k, v)
-		}
 	}
 
 	// Set all keys, that where not returned to not existing.

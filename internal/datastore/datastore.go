@@ -27,7 +27,7 @@ type Datastore struct {
 	cache            *cache
 	keychanger       Updater
 	changeListeners  []func(map[string]json.RawMessage) error
-	calculatedFields map[string]func(key string, changed map[string]json.RawMessage) ([]byte, error)
+	calculatedFields map[string]func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error)
 	calculatedKeys   map[string]string
 	closed           <-chan struct{}
 }
@@ -39,7 +39,7 @@ func New(url string, closed <-chan struct{}, errHandler func(error), keychanger 
 		url:              url + urlPath,
 		keychanger:       keychanger,
 		closed:           closed,
-		calculatedFields: make(map[string]func(key string, changed map[string]json.RawMessage) ([]byte, error)),
+		calculatedFields: make(map[string]func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error)),
 		calculatedKeys:   make(map[string]string),
 	}
 
@@ -52,8 +52,8 @@ func New(url string, closed <-chan struct{}, errHandler func(error), keychanger 
 //
 // If a key does not exist, the value nil is returned for that key.
 func (d *Datastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage, error) {
-	values, err := d.cache.GetOrSet(ctx, keys, func(keys []string) (map[string]json.RawMessage, error) {
-		return d.loadKeys(keys)
+	values, err := d.cache.GetOrSet(ctx, keys, func(keys []string, set func(key string, value json.RawMessage)) error {
+		return d.loadKeys(ctx, keys, set)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("getOrSet for keys `%s`: %w", keys, err)
@@ -76,7 +76,7 @@ func (d *Datastore) RegisterChangeListener(f func(map[string]json.RawMessage) er
 // When a fqfield, that matches the field, is fetched for the first time, then f
 // is called with `changed==nil`. On every ds-update, f is called again with the
 // data, that has changed.
-func (d *Datastore) RegisterCalculatedField(field string, f func(key string, changed map[string]json.RawMessage) ([]byte, error)) {
+func (d *Datastore) RegisterCalculatedField(field string, f func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error)) {
 	d.calculatedFields[field] = f
 }
 
@@ -126,8 +126,10 @@ func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 
 		d.cache.SetIfExist(data)
 
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
 		for key, field := range d.calculatedKeys {
-			bs, err := d.calculatedFields[field](key, data)
+			bs, err := d.calculatedFields[field](ctx, key, data)
 			if err != nil {
 				errHandler(fmt.Errorf("calculate key %s: %w", key, err))
 				continue
@@ -149,22 +151,25 @@ func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 	}
 }
 
-func (d *Datastore) loadKeys(keys []string) (map[string]json.RawMessage, error) {
+func (d *Datastore) loadKeys(ctx context.Context, keys []string, set func(string, json.RawMessage)) error {
 	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
 	data, err := d.requestKeys(normalKeys)
 	if err != nil {
-		return nil, fmt.Errorf("requiesting keys from datastore: %w", err)
+		return fmt.Errorf("requiesting keys from datastore: %w", err)
+	}
+	for k, v := range data {
+		set(k, v)
 	}
 
 	for key, field := range calculatedKeys {
-		calculated, err := d.calculatedFields[field](key, nil)
+		calculated, err := d.calculatedFields[field](ctx, key, nil)
 		if err != nil {
-			return nil, fmt.Errorf("calculating key %s: %w", key, err)
+			return fmt.Errorf("calculating key %s: %w", key, err)
 		}
 		d.calculatedKeys[key] = field
-		data[key] = calculated
+		set(key, calculated)
 	}
-	return data, nil
+	return nil
 }
 
 // requestKeys request a list of keys by the datastore. If an error happens, no
