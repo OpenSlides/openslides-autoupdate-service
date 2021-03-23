@@ -6,6 +6,7 @@ import (
 
 	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,19 +24,12 @@ func TestGetObject(t *testing.T) {
 		Text    string `json:"text"`
 		Friends []int  `json:"friend_ids"`
 	}
-	if err := datastore.GetObject(context.Background(), ds, "testmodel/1", &testModel); err != nil {
-		t.Fatalf("dataGetObject returned unexpected error: %v", err)
-	}
-
-	if testModel.ID != 1 {
-		t.Errorf("testModel.ID == %d, expected 1", testModel.ID)
-	}
-	if testModel.Text != "my text" {
-		t.Errorf("testModel.Text == `%s`, expected `my text`", testModel.Text)
-	}
-	if len(testModel.Friends) != 3 || testModel.Friends[0] != 1 || testModel.Friends[1] != 2 || testModel.Friends[2] != 3 {
-		t.Errorf("testModel.Friends == `%v`, expected `[1 2 3]`", testModel.Friends)
-	}
+	keys, err := datastore.GetObject(context.Background(), ds, "testmodel/1", &testModel)
+	require.NoError(t, err, "Get returned unexpected error")
+	assert.Equal(t, 1, testModel.ID, "testModel.ID")
+	assert.Equal(t, "my text", testModel.Text, "testModel.Text")
+	assert.Equal(t, []int{1, 2, 3}, testModel.Friends, "testModel.Friends")
+	assert.ElementsMatch(t, []string{"testmodel/1/id", "testmodel/1/text", "testmodel/1/friend_ids"}, keys)
 }
 
 func TestGetObjectOtherFields(t *testing.T) {
@@ -49,16 +43,11 @@ func TestGetObjectOtherFields(t *testing.T) {
 		ID    int `json:"id"`
 		Other string
 	}
-	if err := datastore.GetObject(context.Background(), ds, "testmodel/1", &testModel); err != nil {
-		t.Fatalf("dataGetObject returned unexpected error: %v", err)
-	}
-
-	if testModel.ID != 1 {
-		t.Errorf("testModel.ID == %d, expected 1", testModel.ID)
-	}
-	if testModel.Other != "" {
-		t.Errorf("testModel.Text == `%s`, expected ``", testModel.Other)
-	}
+	keys, err := datastore.GetObject(context.Background(), ds, "testmodel/1", &testModel)
+	require.NoError(t, err, "Get returned unexpected error")
+	assert.Equal(t, 1, testModel.ID, "testModel.ID")
+	assert.Equal(t, "", testModel.Other, "testModel.Other")
+	assert.ElementsMatch(t, []string{"testmodel/1/id"}, keys)
 }
 
 func TestGetObjectOptions(t *testing.T) {
@@ -71,13 +60,10 @@ func TestGetObjectOptions(t *testing.T) {
 	var testModel struct {
 		ID int `json:"id,omitempty"`
 	}
-	if err := datastore.GetObject(context.Background(), ds, "testmodel/1", &testModel); err != nil {
-		t.Fatalf("dataGetObject returned unexpected error: %v", err)
-	}
-
-	if testModel.ID != 1 {
-		t.Errorf("testModel.ID == %d, expected 1", testModel.ID)
-	}
+	keys, err := datastore.GetObject(context.Background(), ds, "testmodel/1", &testModel)
+	require.NoError(t, err, "Get returned unexpected error")
+	assert.Equal(t, 1, testModel.ID, "testModel.ID")
+	assert.ElementsMatch(t, []string{"testmodel/1/id"}, keys)
 }
 
 func TestGetObjectFieldDoesNotExist(t *testing.T) {
@@ -88,23 +74,8 @@ func TestGetObjectFieldDoesNotExist(t *testing.T) {
 	var testModel struct {
 		ID int `json:"id"`
 	}
-	if err := datastore.GetObject(context.Background(), ds, "testmodel/1", &testModel); err != nil {
-		t.Fatalf("dataGetObject returned unexpected error: %v", err)
-	}
-
-	if testModel.ID != 0 {
-		t.Errorf("testModel.ID == %d, expected 0", testModel.ID)
-	}
-}
-
-func TestObjectKeys(t *testing.T) {
-	var testModel struct {
-		ID      int    `json:"id"`
-		Text    string `json:"text"`
-		Friends []int  `json:"friend_ids"`
-	}
-
-	keys := datastore.ObjectKeys("testmodel/1", &testModel)
-
-	require.ElementsMatch(t, keys, []string{"testmodel/1/id", "testmodel/1/text", "testmodel/1/friend_ids"})
+	keys, err := datastore.GetObject(context.Background(), ds, "testmodel/1", &testModel)
+	require.NoError(t, err, "Get returned unexpected error")
+	assert.Equal(t, 0, testModel.ID, "testModel.ID")
+	assert.ElementsMatch(t, []string{"testmodel/1/id"}, keys)
 }

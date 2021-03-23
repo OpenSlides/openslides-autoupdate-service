@@ -60,9 +60,10 @@ func TestListOfSpeakers(t *testing.T) {
 	`)
 
 	for _, tt := range []struct {
-		name   string
-		data   map[string]string
-		expect string
+		name       string
+		data       map[string]string
+		expect     string
+		expectKeys []string
 	}{
 		{
 			"Starter",
@@ -93,6 +94,42 @@ func TestListOfSpeakers(t *testing.T) {
 				"title_information": "title_information for topic/1"
 			}
 			`,
+			[]string{
+				"list_of_speakers/1/speaker_ids",
+				"list_of_speakers/1/content_object_id",
+				"list_of_speakers/1/closed",
+				"topic/1/title",
+				"speaker/1/user_id",
+				"speaker/1/marked",
+				"speaker/1/point_of_order",
+				"speaker/1/weight",
+				"speaker/1/begin_time",
+				"speaker/1/end_time",
+				"speaker/2/user_id",
+				"speaker/2/marked",
+				"speaker/2/point_of_order",
+				"speaker/2/weight",
+				"speaker/2/begin_time",
+				"speaker/2/end_time",
+				"speaker/3/user_id",
+				"speaker/3/marked",
+				"speaker/3/point_of_order",
+				"speaker/3/weight",
+				"speaker/3/begin_time",
+				"speaker/3/end_time",
+				"user/10/username",
+				"user/10/title",
+				"user/10/first_name",
+				"user/10/last_name",
+				"user/20/username",
+				"user/20/title",
+				"user/20/first_name",
+				"user/20/last_name",
+				"user/30/username",
+				"user/30/title",
+				"user/30/first_name",
+				"user/30/last_name",
+			},
 		},
 		{
 			"No Current spaker",
@@ -120,6 +157,32 @@ func TestListOfSpeakers(t *testing.T) {
 				"title_information": "title_information for topic/1"
 			}
 			`,
+			[]string{
+				"list_of_speakers/1/speaker_ids",
+				"list_of_speakers/1/content_object_id",
+				"list_of_speakers/1/closed",
+				"topic/1/title",
+				"speaker/1/user_id",
+				"speaker/1/marked",
+				"speaker/1/point_of_order",
+				"speaker/1/weight",
+				"speaker/1/begin_time",
+				"speaker/1/end_time",
+				"speaker/3/user_id",
+				"speaker/3/marked",
+				"speaker/3/point_of_order",
+				"speaker/3/weight",
+				"speaker/3/begin_time",
+				"speaker/3/end_time",
+				"user/10/username",
+				"user/10/title",
+				"user/10/first_name",
+				"user/10/last_name",
+				"user/30/username",
+				"user/30/title",
+				"user/30/first_name",
+				"user/30/last_name",
+			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -134,31 +197,9 @@ func TestListOfSpeakers(t *testing.T) {
 			bs, keys, err := losSlide.Slide(context.Background(), ds, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
-			expectedKeys := []string{
-				"list_of_speakers/1/speaker_ids",
-				"list_of_speakers/1/content_object_id",
-				"list_of_speakers/1/closed",
-				"speaker/1/user_id",
-				"speaker/1/marked",
-				"speaker/1/point_of_order",
-				"speaker/1/weight",
-				"speaker/1/begin_time",
-				"speaker/1/end_time",
-				"speaker/2/user_id",
-				"speaker/2/marked",
-				"speaker/2/point_of_order",
-				"speaker/2/weight",
-				"speaker/2/begin_time",
-				"speaker/2/end_time",
-				"speaker/3/user_id",
-				"speaker/3/marked",
-				"speaker/3/point_of_order",
-				"speaker/3/weight",
-				"speaker/3/begin_time",
-				"speaker/3/end_time",
-			}
+			expectedKeys := tt.expectKeys
 			_, _ = keys, expectedKeys
-			//assert.ElementsMatch(t, expectedKeys, keys)
+			assert.ElementsMatch(t, expectedKeys, keys)
 		})
 	}
 }

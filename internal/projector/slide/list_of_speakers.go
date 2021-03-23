@@ -35,30 +35,37 @@ type dbSpeaker struct {
 
 // ListOfSpeaker renders current list of speaker slide.
 func ListOfSpeaker(store *projector.SlideStore) {
-	store.AddFunc("list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+	store.AddFunc("list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, hotkeys []string, err error) {
 		var los dbListOfSpeakers
-		if err := datastore.GetObject(ctx, ds, p7on.ContentObjectID, &los); err != nil {
+		keys, err := datastore.GetObject(ctx, ds, p7on.ContentObjectID, &los)
+		if err != nil {
 			return nil, nil, fmt.Errorf("fetch list of speakers: %w", err)
 		}
+		hotkeys = append(hotkeys, keys...)
 
 		var title string
 		if err := datastore.Get(ctx, ds, los.ContentObjectID+"/title", &title); err != nil {
 			return nil, nil, fmt.Errorf("fetch title from content object id: %w", err)
 		}
+		hotkeys = append(hotkeys, los.ContentObjectID+"/title")
 
 		var speakersWaiting []outputSpeaker
 		var speakersFinished []outputSpeaker
 		var currentSpeaker *outputSpeaker
 		for _, id := range los.SpeakerIDs {
 			var speaker dbSpeaker
-			if err := datastore.GetObject(ctx, ds, fmt.Sprintf("speaker/%d", id), &speaker); err != nil {
+			keys, err := datastore.GetObject(ctx, ds, fmt.Sprintf("speaker/%d", id), &speaker)
+			if err != nil {
 				return nil, nil, fmt.Errorf("fetch speaker object: %w", err)
 			}
+			hotkeys = append(hotkeys, keys...)
 
 			var user dbUser
-			if err := datastore.GetObject(ctx, ds, fmt.Sprintf("user/%d", speaker.UserID), &user); err != nil {
+			keys, err = datastore.GetObject(ctx, ds, fmt.Sprintf("user/%d", speaker.UserID), &user)
+			if err != nil {
 				return nil, nil, fmt.Errorf("fetch user for speaker %d: %w", id, err)
 			}
+			hotkeys = append(hotkeys, keys...)
 
 			s := outputSpeaker{
 				User:         user.String(),
@@ -105,6 +112,6 @@ func ListOfSpeaker(store *projector.SlideStore) {
 		if err != nil {
 			return nil, nil, fmt.Errorf("encoding outgoing data: %w", err)
 		}
-		return b, nil, nil
+		return b, hotkeys, nil
 	})
 }

@@ -44,10 +44,11 @@ func (u dbUser) String() string {
 func User(store *projector.SlideStore) {
 	store.AddFunc("user", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		var u dbUser
-		if err := datastore.GetObject(ctx, ds, p7on.ContentObjectID, &u); err != nil {
+		keys, err = datastore.GetObject(ctx, ds, p7on.ContentObjectID, &u)
+		if err != nil {
 			return nil, nil, fmt.Errorf("getting user object: %w", err)
 		}
 
-		return []byte(fmt.Sprintf(`{"user":"%s"}`, u.String())), datastore.ObjectKeys(p7on.ContentObjectID, &u), nil
+		return []byte(fmt.Sprintf(`{"user":"%s"}`, u.String())), keys, nil
 	})
 }

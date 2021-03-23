@@ -42,7 +42,7 @@ func Register(ds Datastore, slides *SlideStore) {
 		}
 
 		var p7on Projection
-		if err := datastore.GetObject(context.Background(), ds, parts[0]+"/"+parts[1], &p7on); err != nil {
+		if _, err := datastore.GetObject(context.Background(), ds, parts[0]+"/"+parts[1], &p7on); err != nil {
 			return nil, fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
 		}
 

@@ -49,7 +49,7 @@ func GetIfExist(ctx context.Context, ds Getter, fqfield string, value interface{
 //
 // The argument value has to be a struct. The json-tags have to be field from
 // the models.yml.
-func GetObject(ctx context.Context, ds Getter, fqid string, value interface{}) error {
+func GetObject(ctx context.Context, ds Getter, fqid string, value interface{}) ([]string, error) {
 	v := reflect.ValueOf(value).Elem()
 	t := reflect.TypeOf(v.Interface())
 	var keys []string
@@ -72,7 +72,7 @@ func GetObject(ctx context.Context, ds Getter, fqid string, value interface{}) e
 
 	fields, err := ds.Get(ctx, keys...)
 	if err != nil {
-		return fmt.Errorf("fetching data: %w", err)
+		return nil, fmt.Errorf("fetching data: %w", err)
 	}
 
 	for i := 0; i < v.NumField(); i++ {
@@ -87,31 +87,10 @@ func GetObject(ctx context.Context, ds Getter, fqid string, value interface{}) e
 		}
 
 		if err := json.Unmarshal(dbValue, v.Field(i).Addr().Interface()); err != nil {
-			return fmt.Errorf("decoding %dth field, fqfield `%s`, value `%s`: %w", i+1, keys[idToKey[i]], dbValue, err)
+			return nil, fmt.Errorf("decoding %dth field, fqfield `%s`, value `%s`: %w", i+1, keys[idToKey[i]], dbValue, err)
 		}
 	}
-	return nil
-}
-
-// ObjectKeys returns the datastore keys for an object.
-func ObjectKeys(fqid string, value interface{}) []string {
-	v := reflect.ValueOf(value).Elem()
-	t := reflect.TypeOf(v.Interface())
-	var keys []string
-	for i := 0; i < v.NumField(); i++ {
-		f := t.Field(i)
-		tag := f.Tag.Get("json")
-		if tag == "" {
-			continue
-		}
-
-		ci := strings.Index(tag, ",")
-		if ci >= 0 {
-			tag = tag[:ci]
-		}
-		keys = append(keys, fqid+"/"+tag)
-	}
-	return keys
+	return keys, nil
 }
 
 // DoesNotExistError is thowen when an field does not exist.
