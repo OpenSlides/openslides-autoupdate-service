@@ -28,7 +28,7 @@ func Register(ds Datastore, slides *SlideStore) {
 				}
 			}
 			if !needUpdate {
-				old, err := ds.Get(context.Background(), fqfield)
+				old, err := ds.Get(ctx, fqfield)
 				if err != nil {
 					return nil, fmt.Errorf("getting old value: %w", err)
 				}
@@ -42,7 +42,8 @@ func Register(ds Datastore, slides *SlideStore) {
 		}
 
 		var p7on Projection
-		if _, err := datastore.GetObject(context.Background(), ds, parts[0]+"/"+parts[1], &p7on); err != nil {
+		keys, err := datastore.GetObject(ctx, ds, parts[0]+"/"+parts[1], &p7on)
+		if err != nil {
 			return nil, fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
 		}
 
@@ -60,13 +61,12 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("unknown slide %s", slideName)
 		}
 
-		bs, keys, err := slider.Slide(context.Background(), ds, &p7on)
+		bs, slideKeys, err := slider.Slide(context.Background(), ds, &p7on)
 		if err != nil {
 			return nil, fmt.Errorf("calculating slide: %w", err)
 		}
-
+		keys = append(keys, slideKeys...)
 		hotKeys[fqfield] = keys
-
 		return bs, nil
 	})
 }

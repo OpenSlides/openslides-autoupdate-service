@@ -110,7 +110,10 @@ func NewMockDatastore(closed <-chan struct{}, data map[string]string) *MockDatas
 	return s
 }
 
-// Send updates the mock and calls Send afterwards.
+// Send updates the data.
+//
+// This method is unblocking. If you want to fetch data afterwards, make sure to
+// block until data is processed. For example with RegisterChanceListener.
 func (d *MockDatastore) Send(data map[string]string) {
 	d.server.Send(data)
 }

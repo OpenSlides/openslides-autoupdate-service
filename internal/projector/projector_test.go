@@ -63,14 +63,55 @@ func TestProjectionUpdateProjection(t *testing.T) {
 	})
 	projector.Register(ds, testSlides())
 
+	// Fetch data once to fill the test.
+	_, err := ds.Get(context.Background(), "projection/1/content")
+	require.NoError(t, err, "Get returned unexpected error")
+
+	done := make(chan struct{})
+	ds.RegisterChangeListener(func(map[string]json.RawMessage) error {
+		close(done)
+		return nil
+	})
+
 	ds.Send(map[string]string{
 		"projection/1/type":              "",
 		"projection/1/content_object_id": `"test_model/1"`,
 	})
+	<-done
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
 	expect := `"test_model"` + "\n"
+	assert.JSONEq(t, expect, string(fields[0]))
+}
+
+func TestProjectionUpdateProjectionMetaData(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+
+	ds := test.NewMockDatastore(closed, map[string]string{
+		"projection/1/type": `"projection"`,
+	})
+	projector.Register(ds, testSlides())
+
+	// Fetch data once to fill the test.
+	_, err := ds.Get(context.Background(), "projection/1/content")
+	require.NoError(t, err, "Get returned unexpected error")
+
+	done := make(chan struct{})
+	ds.RegisterChangeListener(func(map[string]json.RawMessage) error {
+		close(done)
+		return nil
+	})
+
+	ds.Send(map[string]string{
+		"projection/1/stable": "true",
+	})
+	<-done
+
+	fields, err := ds.Get(context.Background(), "projection/1/content")
+	require.NoError(t, err, "Get returned unexpected error")
+	expect := `{"stable": true, "content_object_id": "", "type":"projection"}` + "\n"
 	assert.JSONEq(t, expect, string(fields[0]))
 }
 
@@ -83,8 +124,9 @@ func TestProjectionUpdateSlide(t *testing.T) {
 	})
 	projector.Register(ds, testSlides())
 
-	// Call once to add field to cache.
-	ds.Get(context.Background(), "projection/1/content")
+	// Fetch data once to fill the test.
+	_, err := ds.Get(context.Background(), "projection/1/content")
+	require.NoError(t, err, "Get returned unexpected error")
 
 	// Register a listener that tells, when cache is updated.
 	done := make(chan struct{})
@@ -145,6 +187,10 @@ func testSlides() *projector.SlideStore {
 			return []byte(`"test_model"`), []string{"test_model/1/field"}, nil
 		}
 		return []byte(fmt.Sprintf(`"calculated with %s"`, string(field[0][1:len(field[0])-1]))), []string{"test_model/1/field"}, nil
+	})
+	s.AddFunc("projection", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+		bs, err := json.Marshal(p7on)
+		return bs, nil, err
 	})
 	return s
 }
