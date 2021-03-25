@@ -13,7 +13,7 @@ type Connection struct {
 	uid        int
 	kb         KeysBuilder
 	tid        uint64
-	filter     *filter
+	filter     filter
 }
 
 // Next returns the next data for the user.
@@ -21,7 +21,7 @@ type Connection struct {
 // Next blocks until there are new data or the context or the server closes. In
 // this case, nil is returned.
 func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, error) {
-	if c.filter == nil {
+	if c.filter.empty() {
 		return c.allData(ctx)
 	}
 
@@ -77,23 +77,13 @@ func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, erro
 		return nil, fmt.Errorf("restrict data: %w", err)
 	}
 
-	for k, v := range data {
-		// Filter empty values that where empty before.
-		if len(v) == 0 && c.filter.history[k] == 0 {
-			delete(data, k)
-		}
-	}
-
-	if err := c.filter.filter(data); err != nil {
-		return nil, fmt.Errorf("filter data: %w", err)
-	}
-
+	c.filter.filter(data)
 	return data, nil
 }
 
 func (c *Connection) allData(ctx context.Context) (map[string]json.RawMessage, error) {
+	c.filter.reset()
 	// First time called
-	c.filter = new(filter)
 	if c.tid == 0 {
 		c.tid = c.autoupdate.topic.LastID()
 	}
@@ -107,17 +97,7 @@ func (c *Connection) allData(ctx context.Context) (map[string]json.RawMessage, e
 		return nil, fmt.Errorf("get first time restricted data: %w", err)
 	}
 
-	// Delete empty values in first responce.
-	for k, v := range data {
-		if len(v) == 0 {
-			delete(data, k)
-		}
-	}
-
-	if err := c.filter.filter(data); err != nil {
-		return nil, fmt.Errorf("filter data for the first time: %w", err)
-	}
-
+	c.filter.filter(data)
 	return data, nil
 }
 

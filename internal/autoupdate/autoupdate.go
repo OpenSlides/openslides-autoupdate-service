@@ -79,7 +79,7 @@ func (a *Autoupdate) Connect(userID int, kb KeysBuilder) *Connection {
 	}
 }
 
-// LastID returns the last id of the last data update.
+// LastID returns the id of the last data update.
 func (a *Autoupdate) LastID() uint64 {
 	return a.topic.LastID()
 }
