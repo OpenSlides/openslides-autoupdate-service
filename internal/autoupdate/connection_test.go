@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConnect(t *testing.T) {
@@ -56,8 +57,7 @@ func TestConnectionReadNewData(t *testing.T) {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	datastore.Update(map[string]json.RawMessage{"user/1/name": []byte(`"new value"`)})
-	datastore.Send(test.Str("user/1/name"))
+	datastore.Send(map[string]string{"user/1/name": `"new value"`})
 	data, err := c.Next(context.Background())
 
 	if err != nil {
@@ -77,65 +77,53 @@ func TestConnectionEmptyData(t *testing.T) {
 		doesExistKey    = "user/1/name"
 	)
 
-	datastore := new(test.MockDatastore)
-
-	datastore.Data = map[string]json.RawMessage{
-		doesExistKey: []byte("exist"),
-	}
-	datastore.OnlyData = true
-
 	closed := make(chan struct{})
 	defer close(closed)
 
+	datastore := test.NewMockDatastore(closed, map[string]string{
+		doesExistKey: `"Hello World"`,
+	})
 	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)
-
 	kb := test.KeysBuilder{K: test.Str(doesExistKey, doesNotExistKey)}
 
 	t.Run("First responce", func(t *testing.T) {
 		c := s.Connect(1, kb)
 
 		data, err := c.Next(context.Background())
-
-		if err != nil {
-			t.Errorf("c.Next() returned an error: %v", err)
-		}
-		if _, ok := data[doesExistKey]; !ok {
-			t.Errorf("key %s not in first responce", doesExistKey)
-		}
-		if _, ok := data[doesNotExistKey]; ok {
-			t.Errorf("key %s is in first responce", doesNotExistKey)
-		}
+		require.NoError(t, err)
+		assert.Contains(t, data, doesExistKey, "c.Next() should return the existing key")
+		assert.NotContains(t, data, doesNotExistKey, "c.Next() should not return a non existing key")
 	})
 
 	for _, tt := range []struct {
 		name           string
-		update         map[string]json.RawMessage
+		update         map[string]string
+		expectBlocking bool
 		expectExist    bool
 		expectNotExist bool
 	}{
 		{
-			"not exist->not exist",
-			map[string]json.RawMessage{doesNotExistKey: nil},
-			false, // existing key gets filtered.
-			false,
+			name:           "not exist->not exist",
+			update:         map[string]string{doesNotExistKey: ""},
+			expectBlocking: true,
 		},
 		{
-			"not exist->exist",
-			map[string]json.RawMessage{doesNotExistKey: []byte("value")},
-			false, // existing key gets filtered.
-			true,
+			name:           "not exist->exist",
+			update:         map[string]string{doesNotExistKey: "value"},
+			expectExist:    false, // existing key gets filtered.
+			expectNotExist: true,
 		},
 		{
-			"exist->not exist",
-			map[string]json.RawMessage{doesExistKey: nil},
-			true,
-			false,
+			name:           "exist->not exist",
+			update:         map[string]string{doesExistKey: ""},
+			expectExist:    true,
+			expectNotExist: false,
 		},
 		{
-			"exist->exist",
-			map[string]json.RawMessage{doesExistKey: []byte("new value")},
-			true,
-			false,
+			name:           "exist->exist",
+			update:         map[string]string{doesExistKey: "new value"},
+			expectExist:    true,
+			expectNotExist: false,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -144,20 +132,32 @@ func TestConnectionEmptyData(t *testing.T) {
 				t.Errorf("c.Next() returned an error: %v", err)
 			}
 
-			datastore.Update(tt.update)
-			datastore.Send([]string{doesExistKey, doesNotExistKey})
-			data, err := c.Next(context.Background())
+			datastore.Send(tt.update)
 
-			if err != nil {
-				t.Fatalf("c.Next() returned an error: %v", err)
-			}
-			if _, ok := data[doesExistKey]; ok != tt.expectExist {
-				t.Errorf("key %s in second responce: %t, expect: %t", doesExistKey, ok, tt.expectExist)
-			}
-			if _, ok := data[doesNotExistKey]; ok != tt.expectNotExist {
-				t.Errorf("key %s in second responce: %t, expect: %t", doesNotExistKey, ok, tt.expectExist)
+			var data map[string]json.RawMessage
+			var err error
+			isBlocking := blocking(func() {
+				data, err = c.Next(context.Background())
+			})
+
+			require.NoError(t, err)
+			if tt.expectBlocking {
+				assert.True(t, isBlocking, "Expect c.Next() to block")
+			} else {
+				assert.False(t, isBlocking, "Expect c.Next() not to block.")
 			}
 
+			if tt.expectExist {
+				assert.Contains(t, data, doesExistKey)
+			} else {
+				assert.NotContains(t, data, doesExistKey)
+			}
+
+			if tt.expectNotExist {
+				assert.Contains(t, data, doesNotExistKey)
+			} else {
+				assert.NotContains(t, data, doesNotExistKey)
+			}
 		})
 	}
 
@@ -168,28 +168,34 @@ func TestConnectionEmptyData(t *testing.T) {
 		}
 
 		// First time not exist
-		datastore.Update(map[string]json.RawMessage{doesExistKey: nil})
-		datastore.Send([]string{doesExistKey})
-		c.Next(context.Background())
+		datastore.Send(map[string]string{doesExistKey: ""})
+
+		blocking(func() {
+			c.Next(context.Background())
+		})
 
 		// Second time not exist
-		datastore.Send([]string{doesExistKey})
-		data, err := c.Next(context.Background())
+		datastore.Send(map[string]string{doesExistKey: ""})
 
-		if err != nil {
-			t.Fatalf("c.Next() returned an error: %v", err)
-		}
-		if _, ok := data[doesExistKey]; ok {
-			t.Errorf("key %s in second responce: true, expect: false", doesExistKey)
-		}
+		var err error
+		isBlocking := blocking(func() {
+			_, err = c.Next(context.Background())
+		})
+
+		require.NoError(t, err)
+		assert.True(t, isBlocking, "second request should be blocking")
 	})
 }
 
 func TestConnectionFilterData(t *testing.T) {
-	datastore := new(test.MockDatastore)
-
+	t.Skipf("TODO")
 	closed := make(chan struct{})
 	defer close(closed)
+
+	datastore := test.NewMockDatastore(closed, map[string]string{
+		"user/1/name": `"Hello World"`,
+	})
+
 	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 	c := s.Connect(1, kb)
@@ -197,7 +203,8 @@ func TestConnectionFilterData(t *testing.T) {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	datastore.Send(test.Str("user/1/name")) // send again, value did not change in restricter
+	// send again, value did not change in restricter
+	datastore.Send(map[string]string{"user/1/name": `"Hello World"`})
 	data, err := c.Next(context.Background())
 
 	if err != nil {
@@ -212,9 +219,13 @@ func TestConnectionFilterData(t *testing.T) {
 }
 
 func TestConntectionFilterOnlyOneKey(t *testing.T) {
-	datastore := new(test.MockDatastore)
 	closed := make(chan struct{})
-	close(closed)
+	defer close(closed)
+
+	datastore := test.NewMockDatastore(closed, map[string]string{
+		"user/1/name": `"Hello World"`,
+	})
+
 	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 	c := s.Connect(1, kb)
@@ -222,8 +233,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 		t.Errorf("c.Next() returned an error: %v", err)
 	}
 
-	datastore.Update(map[string]json.RawMessage{"user/1/name": []byte(`"newname"`)}) // Only change user/1 not user/2
-	datastore.Send(test.Str("user/1/name", "user/2/name"))
+	datastore.Send(map[string]string{"user/1/name": `"newname"`})
 	data, err := c.Next(context.Background())
 
 	if err != nil {
@@ -241,9 +251,13 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 }
 
 func TestFullUpdate(t *testing.T) {
-	datastore := new(test.MockDatastore)
 	closed := make(chan struct{})
 	defer close(closed)
+
+	datastore := test.NewMockDatastore(closed, map[string]string{
+		"user/1/name": `"Hello World"`,
+	})
+
 	userUpdater := new(test.UserUpdater)
 	s := autoupdate.New(datastore, new(test.MockRestricter), userUpdater, closed)
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
@@ -254,9 +268,9 @@ func TestFullUpdate(t *testing.T) {
 			t.Errorf("c.Next() returned an error: %v", err)
 		}
 
-		// send fulldata for other user
+		// Send fulldata for other user.
 		userUpdater.UserIDs = []int{2}
-		datastore.Send(test.Str("some/5/data"))
+		datastore.Send(map[string]string{"some/5/data": "value"})
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -276,7 +290,7 @@ func TestFullUpdate(t *testing.T) {
 		}
 
 		if len(data) != 0 {
-			t.Errorf("Got %v, expected no key update", data)
+			t.Errorf("Got %s, expected no key update", data)
 		}
 	})
 
@@ -288,7 +302,7 @@ func TestFullUpdate(t *testing.T) {
 
 		// Send fulldata for same user.
 		userUpdater.UserIDs = []int{1}
-		datastore.Send(test.Str("some/5/data"))
+		datastore.Send(map[string]string{"some/5/data": "value"})
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -308,75 +322,73 @@ func TestFullUpdate(t *testing.T) {
 		}
 
 		if len(data) != 1 || string(data["user/1/name"]) != `"Hello World"` {
-			t.Errorf("Got %v, expected [user/1/name: Hello World]", data)
+			t.Errorf("Got %s, expected [user/1/name: Hello World]", data)
 		}
 	})
 }
 
+func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+
+	datastore := test.NewMockDatastore(closed, map[string]string{
+		"user/1/name": `"Hello World"`,
+	})
+
+	userUpdater := new(test.UserUpdater)
+	s := autoupdate.New(datastore, &test.MockRestricter{NoPermission: true}, userUpdater, closed)
+	kb := test.KeysBuilder{K: test.Str("user/1/name")}
+
+	c := s.Connect(1, kb)
+
+	t.Run("first call", func(t *testing.T) {
+		var data map[string]json.RawMessage
+		var err error
+		isBlocked := blocking(func() {
+			data, err = c.Next(context.Background())
+
+		})
+		require.NoError(t, err, "c.Next() returnd an error")
+		assert.Empty(t, data, "c.Next() returned no data.")
+		assert.False(t, isBlocked, "c.Next() did block")
+	})
+
+	t.Run("next call", func(t *testing.T) {
+		var data map[string]json.RawMessage
+		var err error
+		isBlocked := blocking(func() {
+			data, err = c.Next(context.Background())
+
+		})
+		require.NoError(t, err, "c.Next() returned an error")
+		assert.Empty(t, data, "c.Next() returned data")
+		assert.True(t, isBlocked, "c.Next() did not block")
+	})
+
+}
+
 func blocking(f func()) bool {
+	return blockingTime(10*time.Millisecond, f)
+}
+
+// blockingDebug can be used in debug sessions.
+func blockingDebug(f func()) bool {
+	return blockingTime(time.Hour, f)
+}
+
+func blockingTime(wait time.Duration, f func()) bool {
 	done := make(chan struct{})
 	go func() {
 		f()
 		close(done)
 	}()
 
-	timer := time.NewTimer(time.Millisecond)
+	timer := time.NewTimer(wait)
 	defer timer.Stop()
 	select {
 	case <-done:
 		return false
 	case <-timer.C:
 		return true
-	}
-}
-
-func BenchmarkFilterChanging(b *testing.B) {
-	const keyCount = 100
-	datastore := new(test.MockDatastore)
-	closed := make(chan struct{})
-	defer close(closed)
-	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)
-
-	keys := make([]string, 0, keyCount)
-	for i := 0; i < keyCount; i++ {
-		keys = append(keys, fmt.Sprintf("user/%d/name", i))
-	}
-	kb := test.KeysBuilder{K: keys}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	c := s.Connect(1, kb)
-
-	b.ResetTimer()
-
-	for n := 0; n < b.N; n++ {
-		c.Next(ctx)
-		for i := 0; i < keyCount; i++ {
-			datastore.Update(map[string]json.RawMessage{fmt.Sprintf("user/%d/name", i): []byte(fmt.Sprintf(`"value %d"`, n))})
-		}
-		datastore.Send(keys)
-	}
-}
-
-func BenchmarkFilterNotChanging(b *testing.B) {
-	const keyCount = 100
-	datastore := new(test.MockDatastore)
-	closed := make(chan struct{})
-	defer close(closed)
-	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)
-
-	keys := make([]string, 0, keyCount)
-	for i := 0; i < keyCount; i++ {
-		keys = append(keys, fmt.Sprintf("user/%d/name", i))
-	}
-	kb := test.KeysBuilder{K: keys}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	c := s.Connect(1, kb)
-
-	b.ResetTimer()
-
-	for n := 0; n < b.N; n++ {
-		c.Next(ctx)
-		datastore.Send(keys)
 	}
 }

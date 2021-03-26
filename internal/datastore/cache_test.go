@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/test"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCacheGetOrSet(t *testing.T) {
@@ -39,9 +39,7 @@ func TestCacheGetOrSetMissingKeys(t *testing.T) {
 		t.Errorf("GetOrSet() returned the unexpected error: %v", err)
 	}
 	expect := []json.RawMessage{[]byte("value"), nil}
-	if !test.CmpSliceBytes(got, expect) {
-		t.Errorf("GetOrSet() returned `%s`, expected `%s`", got, expect)
-	}
+	require.Equal(t, expect, got)
 }
 
 func TestCacheGetOrSetNoSecondCall(t *testing.T) {

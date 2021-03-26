@@ -19,13 +19,19 @@ type getManyRequest struct {
 type DatastoreServer struct {
 	TS           *httptest.Server
 	RequestCount int
-	DatastoreValues
+	Values       *datastoreValues
+
+	c chan map[string]json.RawMessage
 }
 
 // NewDatastoreServer creates a new DatastoreServer.
-func NewDatastoreServer() *DatastoreServer {
-	ts := new(DatastoreServer)
-	ts.TS = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func NewDatastoreServer(close <-chan struct{}, data map[string]string) *DatastoreServer {
+	d := &DatastoreServer{
+		Values: newDatastoreValues(data),
+		c:      make(chan map[string]json.RawMessage),
+	}
+
+	d.TS = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var data getManyRequest
 		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 			http.Error(w, fmt.Sprintf("Invalid json input: %v", err), http.StatusBadRequest)
@@ -35,17 +41,21 @@ func NewDatastoreServer() *DatastoreServer {
 
 		responceData := make(map[string]map[string]map[string]json.RawMessage)
 		for _, key := range data.Keys {
-			value, exist, err := ts.DatastoreValues.Value(key)
+			value, err := d.Values.Value(key)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 
-			if !exist {
+			if value == nil {
 				continue
 			}
 
 			keyParts := strings.SplitN(key, "/", 3)
+			if len(keyParts) != 3 {
+				http.Error(w, fmt.Sprintf("invalid key %s", key), 500)
+				return
+			}
 
 			if _, ok := responceData[keyParts[0]]; !ok {
 				responceData[keyParts[0]] = make(map[string]map[string]json.RawMessage)
@@ -57,8 +67,41 @@ func NewDatastoreServer() *DatastoreServer {
 			responceData[keyParts[0]][keyParts[1]][keyParts[2]] = json.RawMessage(value)
 		}
 
-		json.NewEncoder(w).Encode(responceData)
-		ts.RequestCount++
+		if err := json.NewEncoder(w).Encode(responceData); err != nil {
+			http.Error(w, fmt.Sprintf("Error encoding responceData `%s`: %v", responceData, err), 500)
+			return
+		}
+		d.RequestCount++
 	}))
-	return ts
+
+	go func() {
+		<-close
+		d.TS.Close()
+	}()
+	return d
+}
+
+// Update returnes keys that have changed. Blocks until keys are send with
+// the Send-method.
+func (d *DatastoreServer) Update(closing <-chan struct{}) (map[string]json.RawMessage, error) {
+	select {
+	case v := <-d.c:
+		d.Values.Update(v)
+		return v, nil
+	case <-closing:
+		return nil, closingError{}
+	}
+}
+
+// Send sends keys to the mock that can be received with Update().
+func (d *DatastoreServer) Send(values map[string]string) {
+	conv := make(map[string]json.RawMessage)
+	for k, v := range values {
+		conv[k] = nil
+		if v != "" {
+			conv[k] = []byte(v)
+		}
+
+	}
+	d.c <- conv
 }

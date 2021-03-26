@@ -10,10 +10,10 @@ type filter struct {
 	history map[string]uint64
 }
 
-// filter has to be called on a reader that contains a decoded json object.
-// Filter is called multiple times it removes values from the json object, that
-// did not chance. If the given error is not nil, it is returned immediately.
-func (f *filter) filter(data map[string]json.RawMessage) error {
+// filter has to be called on a reader that contains a decoded json object. It
+// removes nil values from a map. Filter is called multiple times it removes
+// values from the map, that did not chance.
+func (f *filter) filter(data map[string]json.RawMessage) {
 	if f.history == nil {
 		f.history = make(map[string]uint64)
 	}
@@ -21,6 +21,10 @@ func (f *filter) filter(data map[string]json.RawMessage) error {
 	for key, value := range data {
 		if len(value) == 0 {
 			// Delete empty data
+			if f.history[key] == 0 {
+				// Data was empty before
+				delete(data, key)
+			}
 			f.history[key] = 0
 			continue
 		}
@@ -34,5 +38,15 @@ func (f *filter) filter(data map[string]json.RawMessage) error {
 		}
 		f.history[key] = new
 	}
-	return nil
+	return
+}
+
+// empty returns true, if the filter was not called before.
+func (f *filter) empty() bool {
+	return f.history == nil
+}
+
+// reset sets the filter to its original state.
+func (f *filter) reset() {
+	f.history = nil
 }
