@@ -16,7 +16,7 @@ RUN go build ./cmd/autoupdate
 
 
 # Test build.
-From basis as testing
+FROM basis as testing
 
 RUN apk add build-base
 

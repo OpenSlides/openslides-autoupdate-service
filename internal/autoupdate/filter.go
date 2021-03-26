@@ -18,16 +18,13 @@ func (f *filter) filter(data map[string]json.RawMessage) {
 		f.history = make(map[string]uint64)
 	}
 
-	for k, v := range data {
-		// Filter empty values that where empty before.
-		if len(v) == 0 && f.history[k] == 0 {
-			delete(data, k)
-		}
-	}
-
 	for key, value := range data {
 		if len(value) == 0 {
 			// Delete empty data
+			if f.history[key] == 0 {
+				// Data was empty before
+				delete(data, key)
+			}
 			f.history[key] = 0
 			continue
 		}

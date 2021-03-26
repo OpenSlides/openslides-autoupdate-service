@@ -41,7 +41,7 @@ func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, erro
 		c.filter.filter(data)
 
 		if firstTime {
-			// On firstTime return the data, eben when it is empty.
+			// On firstTime return the data, even when it is empty.
 			return data, nil
 		}
 	}
@@ -94,7 +94,7 @@ func (c *Connection) nextKeys(ctx context.Context) ([]string, error) {
 		for _, key := range changedKeys {
 			var uid int
 			if _, err := fmt.Sscanf(key, fullUpdateFormat, &uid); err == nil {
-				// The key is a fullUpdate key. Do not use it, excpect of a full
+				// The key is a fullUpdate key. Do not use it, exept of a full
 				// update.
 				if uid == c.uid {
 					return c.allKeys(ctx)
@@ -107,12 +107,12 @@ func (c *Connection) nextKeys(ctx context.Context) ([]string, error) {
 
 		oldKeys := c.kb.Keys()
 
-		// Update keysbuilder get new list of keys
+		// Update keysbuilder get new list of keys.
 		if err := c.kb.Update(ctx); err != nil {
 			return nil, fmt.Errorf("update keysbuilder: %w", err)
 		}
 
-		// Start with keys hat are new for the user
+		// Start with keys hat are new for the user.
 		keys = keysDiff(oldKeys, c.kb.Keys())
 
 		// Append keys that are old but have been changed.
