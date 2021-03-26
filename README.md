@@ -80,10 +80,9 @@ printed immediately.
 ### Without redis
 
 When the server is started, clients can listen for keys to do so, they have to
-send a keyrequest in the body of the request. Currently, all method-types (POST,
-GET, etc) are supported. An example request is:
+send a keyrequest in the body of the request. An example request is:
 
-`curl -N  localhost:9012/system/autoupdate -d '[{"ids": [1], "collection": "user", "fields": {"username": null}}]'`
+`curl -N localhost:9012/system/autoupdate -d '[{"ids": [1], "collection": "user", "fields": {"username": null}}]'`
 
 To see a list of possible json-strings see the file
 internal/autoupdate/keysbuilder/keysbuilder_test.go
@@ -99,29 +98,6 @@ without a newline:
 ```
 {"user/1/name":"value","user/2/name":"value"}
 ```
-
-To "update" keys, you can send them to the server via stdin with a value or
-without a value in the form:
-
-```
-user/5/name
-user/6/name="Emanuel"
-user/1/group_ids=[1,2,3]
-user/1/name="foo" user/2/name="bar"
-```
-
-If the value is skipped, the current time is used as value. If you give a value,
-it has to be valid json without any spaces.
-
-All clients that listen for the keys get an update for that key.
-
-
-### With datastore-service
-
-To connect the autoupdate-service with the datastore service, the following
-environment variables can be used:
-
-`DATASTORE=service MESSAGING=redis ./autoupdate`
 
 
 ### With redis
@@ -141,7 +117,6 @@ The Service uses the following environment variables:
   `9012`.
 * `AUTOUPDATE_HOST`: The device where the service starts. The default is am
   empty string which starts the service on any device.
-* `DATASTORE`: Sets the datastore service. `fake` (default) or `service`.
 * `DATASTORE_READER_HOST`: Host of the datastore reader. The default is
   `localhost`.
 * `DATASTORE_READER_PORT`: Port of the datastore reader. The default is `9010`.

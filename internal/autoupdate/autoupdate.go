@@ -79,7 +79,7 @@ func (a *Autoupdate) Connect(userID int, kb KeysBuilder) *Connection {
 	}
 }
 
-// LastID returns the last id of the last data update.
+// LastID returns the id of the last data update.
 func (a *Autoupdate) LastID() uint64 {
 	return a.topic.LastID()
 }
@@ -91,8 +91,8 @@ func (a *Autoupdate) Live(ctx context.Context, userID int, w io.Writer, kb KeysB
 	encoder := json.NewEncoder(w)
 
 	for {
-		// connection.Next() blocks, until there is new data or the client context
-		// or the server is closed.
+		// connection.Next() blocks, until there is new data. It also unblocks,
+		// when the client context or the server is closed.
 		data, err := conn.Next(ctx)
 		if err != nil {
 			return err

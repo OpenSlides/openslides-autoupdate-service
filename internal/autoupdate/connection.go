@@ -13,87 +13,61 @@ type Connection struct {
 	uid        int
 	kb         KeysBuilder
 	tid        uint64
-	filter     *filter
+	filter     filter
 }
 
 // Next returns the next data for the user.
 //
-// Next blocks until there are new data or the context or the server closes. In
-// this case, nil is returned.
+// When Next is called for the first time, it does not block. In this case, it
+// is possible, that it returns an empty map.
+//
+// On every other call, it blocks until there is new data. In this case, the map
+// is never empty.
 func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, error) {
-	if c.filter == nil {
-		return c.allData(ctx)
-	}
+	firstTime := c.filter.empty()
+	var data map[string]json.RawMessage
 
-	var err error
-	var changedKeys []string
-
-	// Blocks until the topic is closed (on server exit) or the context is done.
-	c.tid, changedKeys, err = c.autoupdate.topic.Receive(ctx, c.tid)
-	if err != nil {
-		return nil, fmt.Errorf("get updated keys: %w", err)
-	}
-
-	changedSlice := make(map[string]bool, len(changedKeys))
-	for _, key := range changedKeys {
-		var uid int
-		if _, err := fmt.Sscanf(key, fullUpdateFormat, &uid); err == nil {
-			// The key is a fullUpdate key. Do not use it, excpect of a full
-			// update.
-			if uid == c.uid {
-				return c.allData(ctx)
-			}
-			continue
+	for len(data) == 0 {
+		keys, err := c.keys(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting keys: %w", err)
 		}
 
-		changedSlice[key] = true
-	}
-
-	oldKeys := c.kb.Keys()
-
-	// Update keysbuilder get new list of keys
-	if err := c.kb.Update(ctx); err != nil {
-		return nil, fmt.Errorf("update keysbuilder: %w", err)
-	}
-
-	// Start with keys hat are new for the user
-	keys := keysDiff(oldKeys, c.kb.Keys())
-
-	// Append keys that are old but have been changed.
-	for _, key := range oldKeys {
-		if !changedSlice[key] {
-			continue
+		data, err = c.autoupdate.RestrictedData(ctx, c.uid, keys...)
+		if err != nil {
+			return nil, fmt.Errorf("get first time restricted data: %w", err)
 		}
-		keys = append(keys, key)
-	}
 
-	if len(keys) == 0 {
-		// No data. Try again.
-		return c.Next(ctx)
-	}
+		c.filter.filter(data)
 
-	data, err := c.autoupdate.RestrictedData(ctx, c.uid, keys...)
-	if err != nil {
-		return nil, fmt.Errorf("restrict data: %w", err)
-	}
-
-	for k, v := range data {
-		// Filter empty values that where empty before.
-		if len(v) == 0 && c.filter.history[k] == 0 {
-			delete(data, k)
+		if firstTime {
+			// On firstTime return the data, eben when it is empty.
+			return data, nil
 		}
-	}
-
-	if err := c.filter.filter(data); err != nil {
-		return nil, fmt.Errorf("filter data: %w", err)
 	}
 
 	return data, nil
 }
 
-func (c *Connection) allData(ctx context.Context) (map[string]json.RawMessage, error) {
-	// First time called
-	c.filter = new(filter)
+func (c *Connection) keys(ctx context.Context) ([]string, error) {
+	if c.filter.empty() {
+		keys, err := c.allKeys(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("get all keys: %w", err)
+		}
+		return keys, nil
+	}
+
+	keys, err := c.nextKeys(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get next keys: %w", err)
+	}
+	return keys, nil
+}
+
+func (c *Connection) allKeys(ctx context.Context) ([]string, error) {
+	c.filter.reset()
+
 	if c.tid == 0 {
 		c.tid = c.autoupdate.topic.LastID()
 	}
@@ -102,23 +76,55 @@ func (c *Connection) allData(ctx context.Context) (map[string]json.RawMessage, e
 		return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
 	}
 
-	data, err := c.autoupdate.RestrictedData(ctx, c.uid, c.kb.Keys()...)
-	if err != nil {
-		return nil, fmt.Errorf("get first time restricted data: %w", err)
-	}
+	return c.kb.Keys(), nil
+}
 
-	// Delete empty values in first responce.
-	for k, v := range data {
-		if len(v) == 0 {
-			delete(data, k)
+// nextKeys blocks until there are new keys for the user.
+func (c *Connection) nextKeys(ctx context.Context) ([]string, error) {
+	var keys []string
+	for len(keys) == 0 {
+		// Blocks until the topic is closed (on server exit) or the context is done.
+		tid, changedKeys, err := c.autoupdate.topic.Receive(ctx, c.tid)
+		if err != nil {
+			return nil, fmt.Errorf("get updated keys: %w", err)
+		}
+		c.tid = tid
+
+		changedSlice := make(map[string]bool, len(changedKeys))
+		for _, key := range changedKeys {
+			var uid int
+			if _, err := fmt.Sscanf(key, fullUpdateFormat, &uid); err == nil {
+				// The key is a fullUpdate key. Do not use it, excpect of a full
+				// update.
+				if uid == c.uid {
+					return c.allKeys(ctx)
+				}
+				continue
+			}
+
+			changedSlice[key] = true
+		}
+
+		oldKeys := c.kb.Keys()
+
+		// Update keysbuilder get new list of keys
+		if err := c.kb.Update(ctx); err != nil {
+			return nil, fmt.Errorf("update keysbuilder: %w", err)
+		}
+
+		// Start with keys hat are new for the user
+		keys = keysDiff(oldKeys, c.kb.Keys())
+
+		// Append keys that are old but have been changed.
+		for _, key := range oldKeys {
+			if !changedSlice[key] {
+				continue
+			}
+			keys = append(keys, key)
 		}
 	}
 
-	if err := c.filter.filter(data); err != nil {
-		return nil, fmt.Errorf("filter data for the first time: %w", err)
-	}
-
-	return data, nil
+	return keys, nil
 }
 
 func keysDiff(old []string, new []string) []string {

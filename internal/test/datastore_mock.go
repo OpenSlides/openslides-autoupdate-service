@@ -1,107 +1,170 @@
 package test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
+	"gopkg.in/yaml.v3"
 )
+
+// YAMLData creates key values from a yaml object.
+//
+// It is expected, that the input is a constant string. So there can not be any
+// error at runtime. Therefore this function does not return an error but panics
+// to get the developer a fast feetback.
+func YAMLData(input string) map[string]string {
+	input = strings.ReplaceAll(input, "\t", "  ")
+
+	var db map[string]interface{}
+	if err := yaml.Unmarshal([]byte(input), &db); err != nil {
+		panic(err)
+	}
+
+	data := make(map[string]string)
+	for dbKey, dbValue := range db {
+		parts := strings.Split(dbKey, "/")
+		switch len(parts) {
+		case 1:
+			map1, ok := dbValue.(map[interface{}]interface{})
+			if !ok {
+				panic(fmt.Errorf("invalid type in db key %s: %T", dbKey, dbValue))
+			}
+			for rawID, rawObject := range map1 {
+				id, ok := rawID.(int)
+				if !ok {
+					panic(fmt.Errorf("invalid id type: got %T expected int", rawID))
+				}
+				field, ok := rawObject.(map[string]interface{})
+				if !ok {
+					panic(fmt.Errorf("invalid object type: got %T, expected map[string]interface{}", rawObject))
+				}
+
+				for fieldName, fieldValue := range field {
+					fqfield := fmt.Sprintf("%s/%d/%s", dbKey, id, fieldName)
+					bs, err := json.Marshal(fieldValue)
+					if err != nil {
+						panic(fmt.Errorf("creating test db. Key %s: %w", fqfield, err))
+					}
+					data[fqfield] = string(bs)
+				}
+
+				idField := fmt.Sprintf("%s/%d/id", dbKey, id)
+				data[idField] = strconv.Itoa(id)
+			}
+
+		case 2:
+			field, ok := dbValue.(map[string]interface{})
+			if !ok {
+				panic(fmt.Errorf("invalid object type: got %T, expected map[string]interface{}", dbValue))
+			}
+
+			for fieldName, fieldValue := range field {
+				fqfield := fmt.Sprintf("%s/%s/%s", parts[0], parts[1], fieldName)
+				bs, err := json.Marshal(fieldValue)
+				if err != nil {
+					panic(fmt.Errorf("creating test db. Key %s: %w", fqfield, err))
+				}
+				data[fqfield] = string(bs)
+			}
+
+			idField := fmt.Sprintf("%s/%s/id", parts[0], parts[1])
+			data[idField] = parts[1]
+
+		case 3:
+			bs, err := json.Marshal(dbValue)
+			if err != nil {
+				panic(fmt.Errorf("creating test db. Key %s: %w", dbKey, err))
+			}
+			data[dbKey] = string(bs)
+
+			idField := fmt.Sprintf("%s/%s/id", parts[0], parts[1])
+			data[idField] = parts[1]
+		default:
+			panic(fmt.Errorf("invalid db key %s", dbKey))
+		}
+	}
+
+	return data
+}
 
 // MockDatastore implements the autoupdate.Datastore interface.
 type MockDatastore struct {
-	changeListeners []func(map[string]json.RawMessage) error
-	DatastoreValues
+	*datastore.Datastore
+	server *DatastoreServer
 }
 
-// Get returnes the values for the given keys. If the keys exist in the Data
-// attribute, the values are returned.
-//
-// If a key is not present in Data, a default value is returned.
-//
-// If the key starts with "error", an error it thrown.
-//
-// If the key ends with "_id", "1" is returned.
-//
-// If the key ends with "_ids", "[1,2]" is returned.
-//
-// In any other case, "some value" is returned.
-func (d *MockDatastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage, error) {
-	data := make(map[string]json.RawMessage, len(keys))
-	for _, key := range keys {
-		value, _, err := d.DatastoreValues.Value(key)
-		if err != nil {
-			return nil, err
-		}
+// NewMockDatastore create a MockDatastore with data.
+func NewMockDatastore(closed <-chan struct{}, data map[string]string) *MockDatastore {
+	dsServer := NewDatastoreServer(closed, data)
 
-		data[key] = value
+	s := &MockDatastore{
+		server: dsServer,
 	}
 
-	values := make([]json.RawMessage, len(keys))
-	for i, key := range keys {
-		values[i] = data[key]
-	}
-	return values, nil
+	s.Datastore = datastore.New(dsServer.TS.URL, closed, func(error) {}, s.server)
+
+	return s
 }
 
-// RegisterChangeListener registers a change listener.
-func (d *MockDatastore) RegisterChangeListener(f func(map[string]json.RawMessage) error) {
-	d.changeListeners = append(d.changeListeners, f)
+// Send updates the data.
+//
+// This method is unblocking. If you want to fetch data afterwards, make sure to
+// block until data is processed. For example with RegisterChanceListener.
+func (d *MockDatastore) Send(data map[string]string) {
+	d.server.Send(data)
 }
 
-// Send sends keys to the mock that can be received with a listerer registered
-// by RegisterChangeListener().
-func (d *MockDatastore) Send(keys []string) {
-	data := make(map[string]json.RawMessage, len(keys))
-	for _, key := range keys {
-		data[key] = nil
-	}
-
-	for _, f := range d.changeListeners {
-		f(data)
-	}
+// Update implements the datastore.Updater interface.
+func (d *MockDatastore) Update(close <-chan struct{}) (map[string]json.RawMessage, error) {
+	return d.server.Update(close)
 }
 
-// DatastoreValues returns data for the test.MockDatastore and the test.DatastoreServer.
-type DatastoreValues struct {
-	mu       sync.RWMutex
-	Data     map[string]json.RawMessage
-	OnlyData bool
+// datastoreValues returns data for the test.MockDatastore and the
+// test.DatastoreServer.
+//
+// If OnlyData is false, fake data is generated.
+type datastoreValues struct {
+	mu   sync.RWMutex
+	Data map[string]json.RawMessage
+}
+
+func newDatastoreValues(data map[string]string) *datastoreValues {
+	conv := make(map[string]json.RawMessage)
+	for k, v := range data {
+		conv[k] = []byte(v)
+	}
+
+	return &datastoreValues{
+		Data: conv,
+	}
 }
 
 // Value returns a value for a key. If the value does not exist, the second
 // return value is false.
-func (d *DatastoreValues) Value(key string) (json.RawMessage, bool, error) {
+func (d *datastoreValues) Value(key string) (json.RawMessage, error) {
+	if d == nil {
+		return nil, nil
+	}
+
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
 	v, ok := d.Data[key]
 	if ok {
-		return v, true, nil
+		return v, nil
 	}
 
-	if d.OnlyData {
-		return nil, false, nil
-	}
-
-	switch {
-	case strings.HasPrefix(key, "error"):
-		return nil, true, fmt.Errorf("mock datastore error")
-	case strings.Contains(key, "$_"):
-		return json.RawMessage(`"1","2"`), true, nil
-	case strings.HasSuffix(key, "_id"):
-		return json.RawMessage(`1`), true, nil
-	case strings.HasSuffix(key, "_ids"):
-		return json.RawMessage(`[1,2]`), true, nil
-	default:
-		return json.RawMessage(`"Hello World"`), true, nil
-	}
+	return nil, nil
 }
 
 // Update updates the values from the Datastore.
 //
 // This does not send a signal to the listeners.
-func (d *DatastoreValues) Update(data map[string]json.RawMessage) {
+func (d *datastoreValues) Update(data map[string]json.RawMessage) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 

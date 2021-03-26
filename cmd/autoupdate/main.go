@@ -36,9 +36,6 @@ func defaultEnv() map[string]string {
 		"AUTOUPDATE_HOST": "",
 		"AUTOUPDATE_PORT": "9012",
 
-		"CERT_DIR": "",
-
-		"DATASTORE":                 "fake",
 		"DATASTORE_READER_HOST":     "localhost",
 		"DATASTORE_READER_PORT":     "9010",
 		"DATASTORE_READER_PROTOCOL": "http",
@@ -108,8 +105,9 @@ func run() error {
 	checker := restrict.RelationChecker(restrict.RelationLists, perms)
 	restricter := restrict.New(perms, checker)
 
-	// Autoupdate Service.
-	service := autoupdate.New(datastoreService, restricter, updater, closed)
+	// Create http mux to add urls.
+	mux := http.NewServeMux()
+	autoupdateHttp.Health(mux)
 
 	// Auth Service.
 	authService, err := buildAuth(env, r, closed, errHandler)
@@ -117,12 +115,12 @@ func run() error {
 		return fmt.Errorf("creating auth adapter: %w", err)
 	}
 
-	// Create http server.
-	mux := http.NewServeMux()
+	// Autoupdate Service.
+	service := autoupdate.New(datastoreService, restricter, updater, closed)
 	autoupdateHttp.Complex(mux, authService, service, service)
 	autoupdateHttp.Simple(mux, authService, service)
-	autoupdateHttp.Health(mux)
 
+	// Create http server.
 	listenAddr := env["AUTOUPDATE_HOST"] + ":" + env["AUTOUPDATE_PORT"]
 	srv := &http.Server{Addr: listenAddr, Handler: mux}
 
@@ -164,29 +162,12 @@ func waitForShutdown() {
 	}()
 }
 
-// buildDatastore builds the datastore implementation needed by the autoupdate
-// service. It uses environment variables to make the decission. Per default, a
-// fake server is started and its url is used.
-func buildDatastore(env map[string]string, receiver datastore.Updater, closed <-chan struct{}, errHandler func(error)) (autoupdate.Datastore, error) {
-	var url string
-	dsService := env["DATASTORE"]
-	switch dsService {
-	case "fake":
-		fmt.Println("Fake Datastore")
-		url = test.NewDatastoreServer().TS.URL
-
-	case "service":
-		host := env["DATASTORE_READER_HOST"]
-		port := env["DATASTORE_READER_PORT"]
-		protocol := env["DATASTORE_READER_PROTOCOL"]
-		url = protocol + "://" + host + ":" + port
-
-	default:
-		return nil, fmt.Errorf("unknown datastore %s", dsService)
-	}
-
-	fmt.Println("Datastore URL:", url)
-
+// buildDatastore configures the datastore service.
+func buildDatastore(env map[string]string, receiver datastore.Updater, closed <-chan struct{}, errHandler func(error)) (*datastore.Datastore, error) {
+	protocol := env["DATASTORE_READER_PROTOCOL"]
+	host := env["DATASTORE_READER_HOST"]
+	port := env["DATASTORE_READER_PORT"]
+	url := protocol + "://" + host + ":" + port
 	return datastore.New(url, closed, errHandler, receiver), nil
 }
 
