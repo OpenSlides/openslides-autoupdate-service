@@ -1,7 +1,6 @@
 package datastore
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
