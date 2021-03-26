@@ -28,7 +28,6 @@ FROM basis as development
 
 RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
 EXPOSE 9012
-ENV DATASTORE service
 ENV MESSAGING redis
 ENV AUTH ticket
 
@@ -41,7 +40,6 @@ WORKDIR /root/
 
 COPY --from=builder /root/autoupdate .
 EXPOSE 9012
-ENV DATASTORE service
 ENV MESSAGING redis
 ENV AUTH ticket
 
