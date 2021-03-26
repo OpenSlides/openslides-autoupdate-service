@@ -28,6 +28,10 @@ func (f *filter) filter(data map[string]json.RawMessage) {
 	for key, value := range data {
 		if len(value) == 0 {
 			// Delete empty data
+			if f.history[key] == 0 {
+				// Data was empty before
+				delete(data, key)
+			}
 			f.history[key] = 0
 			continue
 		}

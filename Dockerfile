@@ -16,7 +16,7 @@ RUN go build ./cmd/autoupdate
 
 
 # Test build.
-From basis as testing
+FROM basis as testing
 
 RUN apk add build-base
 
@@ -28,7 +28,6 @@ FROM basis as development
 
 RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
 EXPOSE 9012
-ENV DATASTORE service
 ENV MESSAGING redis
 ENV AUTH ticket
 
@@ -36,12 +35,11 @@ CMD CompileDaemon -log-prefix=false -build="go build ./cmd/autoupdate" -command=
 
 
 # Productive build
-FROM alpine:3.13.2
+FROM alpine:3.13.3
 WORKDIR /root/
 
 COPY --from=builder /root/autoupdate .
 EXPOSE 9012
-ENV DATASTORE service
 ENV MESSAGING redis
 ENV AUTH ticket
 

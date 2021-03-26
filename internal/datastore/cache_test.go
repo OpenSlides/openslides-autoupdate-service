@@ -7,6 +7,8 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestCacheGetOrSet(t *testing.T) {
@@ -36,9 +38,7 @@ func TestCacheGetOrSetMissingKeys(t *testing.T) {
 		t.Errorf("GetOrSet() returned the unexpected error: %v", err)
 	}
 	expect := []json.RawMessage{[]byte("value"), nil}
-	if !CmpSliceBytes(got, expect) {
-		t.Errorf("GetOrSet() returned `%s`, expected `%s`", got, expect)
-	}
+	require.Equal(t, expect, got)
 }
 
 func TestCacheGetOrSetNoSecondCall(t *testing.T) {
@@ -278,18 +278,4 @@ func TestCacheFailInOthetGetOrSetCall(t *testing.T) {
 	if string(data[0]) != "value" {
 		t.Errorf("second GetOrSet returned `%v`, expected `value`", data[0])
 	}
-}
-
-// CmpSliceBytes checks, if slice a and b holds the same values.
-func CmpSliceBytes(a, b []json.RawMessage) bool {
-	if len(a) != len(b) {
-		return false
-	}
-
-	for i := range a {
-		if !bytes.Equal(a[i], b[i]) {
-			return false
-		}
-	}
-	return true
 }
