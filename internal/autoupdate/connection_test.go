@@ -9,6 +9,8 @@ import (
 
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConnect(t *testing.T) {
@@ -81,56 +83,47 @@ func TestConnectionEmptyData(t *testing.T) {
 	datastore := test.NewMockDatastore(closed, map[string]string{
 		doesExistKey: `"Hello World"`,
 	})
-
 	s := autoupdate.New(datastore, new(test.MockRestricter), test.UserUpdater{}, closed)
-
 	kb := test.KeysBuilder{K: test.Str(doesExistKey, doesNotExistKey)}
 
 	t.Run("First responce", func(t *testing.T) {
 		c := s.Connect(1, kb)
 
 		data, err := c.Next(context.Background())
-
-		if err != nil {
-			t.Errorf("c.Next() returned an error: %v", err)
-		}
-		if _, ok := data[doesExistKey]; !ok {
-			t.Errorf("key %s not in first responce", doesExistKey)
-		}
-		if _, ok := data[doesNotExistKey]; ok {
-			t.Errorf("key %s is in first responce", doesNotExistKey)
-		}
+		require.NoError(t, err)
+		assert.Contains(t, data, doesExistKey, "c.Next() should return the existing key")
+		assert.NotContains(t, data, doesNotExistKey, "c.Next() should not return a non existing key")
 	})
 
 	for _, tt := range []struct {
 		name           string
 		update         map[string]string
+		expectBlocking bool
 		expectExist    bool
 		expectNotExist bool
 	}{
 		{
-			"not exist->not exist",
-			map[string]string{doesNotExistKey: ""},
-			false, // existing key gets filtered.
-			false,
+			name:           "not exist->not exist",
+			update:         map[string]string{doesNotExistKey: ""},
+			expectBlocking: true,
 		},
 		{
-			"not exist->exist",
-			map[string]string{doesNotExistKey: "value"},
-			false, // existing key gets filtered.
-			true,
+			name:           "not exist->exist",
+			update:         map[string]string{doesNotExistKey: "value"},
+			expectExist:    false, // existing key gets filtered.
+			expectNotExist: true,
 		},
 		{
-			"exist->not exist",
-			map[string]string{doesExistKey: ""},
-			true,
-			false,
+			name:           "exist->not exist",
+			update:         map[string]string{doesExistKey: ""},
+			expectExist:    true,
+			expectNotExist: false,
 		},
 		{
-			"exist->exist",
-			map[string]string{doesExistKey: "new value"},
-			true,
-			false,
+			name:           "exist->exist",
+			update:         map[string]string{doesExistKey: "new value"},
+			expectExist:    true,
+			expectNotExist: false,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -140,18 +133,31 @@ func TestConnectionEmptyData(t *testing.T) {
 			}
 
 			datastore.Send(tt.update)
-			data, err := c.Next(context.Background())
 
-			if err != nil {
-				t.Fatalf("c.Next() returned an error: %v", err)
-			}
-			if _, ok := data[doesExistKey]; ok != tt.expectExist {
-				t.Errorf("key %s in second responce: %t, expect: %t", doesExistKey, ok, tt.expectExist)
-			}
-			if _, ok := data[doesNotExistKey]; ok != tt.expectNotExist {
-				t.Errorf("key %s in second responce: %t, expect: %t", doesNotExistKey, ok, tt.expectExist)
+			var data map[string]json.RawMessage
+			var err error
+			isBlocking := blocking(func() {
+				data, err = c.Next(context.Background())
+			})
+
+			require.NoError(t, err)
+			if tt.expectBlocking {
+				assert.True(t, isBlocking, "Expect c.Next() to block")
+			} else {
+				assert.False(t, isBlocking, "Expect c.Next() not to block.")
 			}
 
+			if tt.expectExist {
+				assert.Contains(t, data, doesExistKey)
+			} else {
+				assert.NotContains(t, data, doesExistKey)
+			}
+
+			if tt.expectNotExist {
+				assert.Contains(t, data, doesNotExistKey)
+			} else {
+				assert.NotContains(t, data, doesNotExistKey)
+			}
 		})
 	}
 
@@ -163,22 +169,26 @@ func TestConnectionEmptyData(t *testing.T) {
 
 		// First time not exist
 		datastore.Send(map[string]string{doesExistKey: ""})
-		c.Next(context.Background())
+
+		blocking(func() {
+			c.Next(context.Background())
+		})
 
 		// Second time not exist
 		datastore.Send(map[string]string{doesExistKey: ""})
-		data, err := c.Next(context.Background())
 
-		if err != nil {
-			t.Fatalf("c.Next() returned an error: %v", err)
-		}
-		if _, ok := data[doesExistKey]; ok {
-			t.Errorf("key %s in second responce: true, expect: false", doesExistKey)
-		}
+		var err error
+		isBlocking := blocking(func() {
+			_, err = c.Next(context.Background())
+		})
+
+		require.NoError(t, err)
+		assert.True(t, isBlocking, "second request should be blocking")
 	})
 }
 
 func TestConnectionFilterData(t *testing.T) {
+	t.Skipf("TODO")
 	closed := make(chan struct{})
 	defer close(closed)
 
@@ -317,14 +327,63 @@ func TestFullUpdate(t *testing.T) {
 	})
 }
 
+func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+
+	datastore := test.NewMockDatastore(closed, map[string]string{
+		"user/1/name": `"Hello World"`,
+	})
+
+	userUpdater := new(test.UserUpdater)
+	s := autoupdate.New(datastore, &test.MockRestricter{NoPermission: true}, userUpdater, closed)
+	kb := test.KeysBuilder{K: test.Str("user/1/name")}
+
+	c := s.Connect(1, kb)
+
+	t.Run("first call", func(t *testing.T) {
+		var data map[string]json.RawMessage
+		var err error
+		isBlocked := blocking(func() {
+			data, err = c.Next(context.Background())
+
+		})
+		require.NoError(t, err, "c.Next() returnd an error")
+		assert.Empty(t, data, "c.Next() returned no data.")
+		assert.False(t, isBlocked, "c.Next() did block")
+	})
+
+	t.Run("next call", func(t *testing.T) {
+		var data map[string]json.RawMessage
+		var err error
+		isBlocked := blocking(func() {
+			data, err = c.Next(context.Background())
+
+		})
+		require.NoError(t, err, "c.Next() returned an error")
+		assert.Empty(t, data, "c.Next() returned data")
+		assert.True(t, isBlocked, "c.Next() did not block")
+	})
+
+}
+
 func blocking(f func()) bool {
+	return blockingTime(10*time.Millisecond, f)
+}
+
+// blockingDebug can be used in debug sessions.
+func blockingDebug(f func()) bool {
+	return blockingTime(time.Hour, f)
+}
+
+func blockingTime(wait time.Duration, f func()) bool {
 	done := make(chan struct{})
 	go func() {
 		f()
 		close(done)
 	}()
 
-	timer := time.NewTimer(time.Millisecond)
+	timer := time.NewTimer(wait)
 	defer timer.Stop()
 	select {
 	case <-done:
