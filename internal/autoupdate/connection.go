@@ -94,7 +94,7 @@ func (c *Connection) nextKeys(ctx context.Context) ([]string, error) {
 			if _, err := fmt.Sscanf(key, fullUpdateFormat, &uid); err == nil {
 				// The key is a fullUpdate key. Do not use it, exept of a full
 				// update.
-				if uid == c.uid {
+				if uid == -1 || uid == c.uid {
 					return c.allKeys(ctx)
 				}
 				continue

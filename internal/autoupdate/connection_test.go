@@ -362,6 +362,43 @@ func TestFullUpdate(t *testing.T) {
 		assert.True(t, isBlocking, "Next should block if there is no new data")
 		assert.Empty(t, data, "Data should be empty if data did not change")
 	})
+
+	t.Run("every user gets an full update on uid -1", func(t *testing.T) {
+		c := s.Connect(1, kb)
+		if _, err := c.Next(context.Background()); err != nil {
+			t.Errorf("c.Next() returned an error: %v", err)
+		}
+
+		restricter.Values = map[string]string{
+			"user/1/name": `"New Value"`,
+		}
+		defer func() {
+			// Reset values at the end.
+			restricter.Values = nil
+		}()
+		// Send fulldata for same user.
+		userUpdater.UserIDs = []int{-1}
+		datastore.Send(map[string]string{"some/5/data": "value"})
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		var data map[string]json.RawMessage
+		var err error
+		isBlocking := blocking(func() {
+			data, err = c.Next(ctx)
+		})
+
+		if isBlocking {
+			t.Fatalf("fulldataupdate did block")
+		}
+
+		if err != nil {
+			t.Errorf("Got unexpected error: %v", err)
+		}
+
+		assert.Equal(t, map[string]json.RawMessage{"user/1/name": []byte(`"New Value"`)}, data)
+	})
 }
 
 func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
