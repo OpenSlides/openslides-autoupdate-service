@@ -14,6 +14,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -30,6 +31,8 @@ type Datastore struct {
 	calculatedFields map[string]func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error)
 	calculatedKeys   map[string]string
 	closed           <-chan struct{}
+
+	resetMu sync.Mutex
 }
 
 // New returns a new Datastore object.
@@ -103,6 +106,13 @@ func (d *Datastore) splitCalculatedKeys(keys []string) (map[string]string, []str
 	return calculated, normal
 }
 
+// ResetCache clears the internal cache.
+func (d *Datastore) ResetCache() {
+	d.resetMu.Lock()
+	d.cache = newCache()
+	d.resetMu.Unlock()
+}
+
 // receiveKeyChanges listens for updates and saves then into the topic. This
 // function blocks until the service is closed.
 func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
@@ -124,7 +134,9 @@ func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 			continue
 		}
 
+		d.resetMu.Lock()
 		d.cache.SetIfExist(data)
+		d.resetMu.Unlock()
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
