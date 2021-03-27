@@ -75,3 +75,42 @@ func TestChangeListeners(t *testing.T) {
 	<-received
 	assert.Equal(t, map[string]json.RawMessage{"my/1/key": []byte(`"my value"`)}, receivedData)
 }
+
+func TestResetCache(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+	ts := test.NewDatastoreServer(closed, nil)
+	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+
+	// Fetch key to fill the cache.
+	ds.Get(context.Background(), "some/1/key")
+	ds.ResetCache()
+	// Fetch key again.
+	ds.Get(context.Background(), "some/1/key")
+
+	// After a reset, the key should be fetched from the server again.
+	assert.Equal(t, 2, ts.RequestCount)
+}
+
+func TestResetWhileUpdate(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+	ts := test.NewDatastoreServer(closed, nil)
+	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+
+	// Fetch key to fill the cache.
+	ds.Get(context.Background(), "some/1/key")
+
+	doneReset := make(chan struct{})
+	go func() {
+		ds.ResetCache()
+		close(doneReset)
+	}()
+	ts.Send(map[string]string{
+		"some/1/key": "value",
+	})
+
+	<-doneReset
+	// There is nothing to assert. This test is only for the race detector. Make
+	// sure to run the tests with the -race flag.
+}

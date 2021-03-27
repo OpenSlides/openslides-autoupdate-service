@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -27,6 +28,8 @@ type Datastore struct {
 	keychanger      Updater
 	changeListeners []func(map[string]json.RawMessage) error
 	closed          <-chan struct{}
+
+	resetMu sync.Mutex
 }
 
 // New returns a new Datastore object.
@@ -62,6 +65,13 @@ func (d *Datastore) RegisterChangeListener(f func(map[string]json.RawMessage) er
 	d.changeListeners = append(d.changeListeners, f)
 }
 
+// ResetCache clears the internal cache.
+func (d *Datastore) ResetCache() {
+	d.resetMu.Lock()
+	d.cache = newCache()
+	d.resetMu.Unlock()
+}
+
 // receiveKeyChanges listens for updates.
 //
 // It updates the cache and informs change listeners.
@@ -80,7 +90,9 @@ func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 			continue
 		}
 
+		d.resetMu.Lock()
 		d.cache.SetIfExist(data)
+		d.resetMu.Unlock()
 
 		for _, f := range d.changeListeners {
 			if err := f(data); err != nil {
