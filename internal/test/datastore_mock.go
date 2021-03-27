@@ -143,9 +143,9 @@ func newDatastoreValues(data map[string]string) *datastoreValues {
 	}
 }
 
-// Value returns a value for a key. If the value does not exist, the second
+// value returns a value for a key. If the value does not exist, the second
 // return value is false.
-func (d *datastoreValues) Value(key string) (json.RawMessage, error) {
+func (d *datastoreValues) value(key string) (json.RawMessage, error) {
 	if d == nil {
 		return nil, nil
 	}
@@ -161,10 +161,10 @@ func (d *datastoreValues) Value(key string) (json.RawMessage, error) {
 	return nil, nil
 }
 
-// Update updates the values from the Datastore.
+// set updates the values from the Datastore.
 //
 // This does not send a signal to the listeners.
-func (d *datastoreValues) Update(data map[string]json.RawMessage) {
+func (d *datastoreValues) set(data map[string]json.RawMessage) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 

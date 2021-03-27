@@ -20,7 +20,7 @@ func TestLive(t *testing.T) {
 		"collection/1/foo": `"Foo Value"`,
 		"collection/1/bar": `"Bar Value"`,
 	})
-	s := autoupdate.New(ds, new(test.MockRestricter), test.UserUpdater{}, closed)
+	s := autoupdate.New(ds, test.RestrictAllowed(), test.UserUpdater{}, closed)
 	kb := test.KeysBuilder{K: []string{"collection/1/foo", "collection/1/bar"}}
 
 	w := lineWriter{maxLines: 1}
@@ -39,20 +39,23 @@ func TestLiveFlushBetweenUpdates(t *testing.T) {
 		"collection/1/foo": `"Foo Value"`,
 		"collection/1/bar": `"Bar Value"`,
 	})
-	s := autoupdate.New(ds, new(test.MockRestricter), test.UserUpdater{}, closed)
+	s := autoupdate.New(ds, test.RestrictAllowed(), test.UserUpdater{}, closed)
 	kb := test.KeysBuilder{K: []string{"collection/1/foo", "collection/1/bar"}}
 
 	receiving := make(chan struct{})
 	w := lineWriter{maxLines: 2, received: receiving}
+	done := make(chan struct{})
 	var err error
 	go func() {
 		// Run Live in the background. It will return aerrWriterFull after two lines are written.
 		err = s.Live(context.Background(), 1, &w, kb)
+		close(done)
 	}()
 
 	<-receiving // Wait until the first message was received.
 	ds.Send(map[string]string{"collection/1/foo": `"new data"`})
 	<-receiving // Wair for the second line.
+	<-done
 
 	require.True(t, errors.Is(err, errWriterFull), "Live() returned %v, expected an errWriterFull", err)
 	require.Len(t, w.lines, 2)

@@ -2,10 +2,12 @@ package datastore_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDataStoreGet(t *testing.T) {
@@ -14,7 +16,7 @@ func TestDataStoreGet(t *testing.T) {
 	ts := test.NewDatastoreServer(closed, map[string]string{
 		"collection/1/field": `"Hello World"`,
 	})
-	d := datastore.New(ts.TS.URL, closed, func(error) {}, test.NewUpdaterMock())
+	d := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
 
 	got, err := d.Get(context.Background(), "collection/1/field")
 
@@ -35,7 +37,7 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 		"collection/1/field": `"Hello World"`,
 		"collection/2/field": `"Hello World"`,
 	})
-	d := datastore.New(ts.TS.URL, closed, func(error) {}, test.NewUpdaterMock())
+	d := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
 
 	got, err := d.Get(context.Background(), "collection/1/field", "collection/2/field")
 
@@ -51,4 +53,64 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 	if ts.RequestCount != 1 {
 		t.Errorf("Got %d requests to the datastore, expected 1", ts.RequestCount)
 	}
+}
+
+func TestChangeListeners(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+	ts := test.NewDatastoreServer(closed, nil)
+	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+
+	var receivedData map[string]json.RawMessage
+	received := make(chan struct{}, 1)
+
+	ds.RegisterChangeListener(func(data map[string]json.RawMessage) error {
+		receivedData = data
+		close(received)
+		return nil
+	})
+
+	ts.Send(map[string]string{"my/1/key": `"my value"`})
+
+	<-received
+	assert.Equal(t, map[string]json.RawMessage{"my/1/key": []byte(`"my value"`)}, receivedData)
+}
+
+func TestResetCache(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+	ts := test.NewDatastoreServer(closed, nil)
+	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+
+	// Fetch key to fill the cache.
+	ds.Get(context.Background(), "some/1/key")
+	ds.ResetCache()
+	// Fetch key again.
+	ds.Get(context.Background(), "some/1/key")
+
+	// After a reset, the key should be fetched from the server again.
+	assert.Equal(t, 2, ts.RequestCount)
+}
+
+func TestResetWhileUpdate(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+	ts := test.NewDatastoreServer(closed, nil)
+	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+
+	// Fetch key to fill the cache.
+	ds.Get(context.Background(), "some/1/key")
+
+	doneReset := make(chan struct{})
+	go func() {
+		ds.ResetCache()
+		close(doneReset)
+	}()
+	ts.Send(map[string]string{
+		"some/1/key": "value",
+	})
+
+	<-doneReset
+	// There is nothing to assert. This test is only for the race detector. Make
+	// sure to run the tests with the -race flag.
 }
