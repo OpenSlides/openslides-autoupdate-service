@@ -41,7 +41,7 @@ func NewDatastoreServer(close <-chan struct{}, data map[string]string) *Datastor
 
 		responceData := make(map[string]map[string]map[string]json.RawMessage)
 		for _, key := range data.Keys {
-			value, err := d.Values.Value(key)
+			value, err := d.Values.value(key)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
@@ -86,7 +86,7 @@ func NewDatastoreServer(close <-chan struct{}, data map[string]string) *Datastor
 func (d *DatastoreServer) Update(closing <-chan struct{}) (map[string]json.RawMessage, error) {
 	select {
 	case v := <-d.c:
-		d.Values.Update(v)
+		d.Values.set(v)
 		return v, nil
 	case <-closing:
 		return nil, closingError{}
@@ -105,3 +105,8 @@ func (d *DatastoreServer) Send(values map[string]string) {
 	}
 	d.c <- conv
 }
+
+type closingError struct{}
+
+func (e closingError) Closing()      {}
+func (e closingError) Error() string { return "closing" }

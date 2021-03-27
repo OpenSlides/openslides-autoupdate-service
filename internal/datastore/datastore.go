@@ -62,8 +62,9 @@ func (d *Datastore) RegisterChangeListener(f func(map[string]json.RawMessage) er
 	d.changeListeners = append(d.changeListeners, f)
 }
 
-// receiveKeyChanges listens for updates and saves then into the topic. This
-// function blocks until the service is closed.
+// receiveKeyChanges listens for updates.
+//
+// It updates the cache and informs change listeners.
 func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 	for {
 		select {
