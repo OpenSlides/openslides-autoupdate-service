@@ -16,10 +16,23 @@ import (
 	"github.com/ostcar/topic"
 )
 
-// pruneTime defines how long a topic id will be valid. If a client needs more
-// time to process the data, it will get an error and has to reconnect. A higher
-// value means, that more memory is used.
-const pruneTime = 10 * time.Minute
+const (
+	// pruneTime defines how long a topic id will be valid. If a client needs
+	// more time to process the data, it will get an error and has to reconnect.
+	// A higher value means, that more memory is used.
+	pruneTime = 10 * time.Minute
+
+	// cacheResetTime defines when the cache should be reseted.
+	//
+	// When the datastore runs for a long time, its cache grows bigger and more
+	// calculated keys have to be calculated. A reset means, that everything
+	// gets cleaned.
+	//
+	// A high value means more memory and cpu usage after some time. A lower
+	// value means more Requests to the Datastore Service and therefore a slower
+	// responce time for the clients.
+	datastoreCacheResetTime = time.Hour
+)
 
 // Format of keys in the topic that shows, that a full update is necessary. It
 // is in the same namespace then model names. So make sure, there is no model
