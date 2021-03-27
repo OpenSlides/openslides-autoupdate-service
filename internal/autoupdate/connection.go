@@ -66,8 +66,6 @@ func (c *Connection) keys(ctx context.Context) ([]string, error) {
 }
 
 func (c *Connection) allKeys(ctx context.Context) ([]string, error) {
-	c.filter.reset()
-
 	if c.tid == 0 {
 		c.tid = c.autoupdate.topic.LastID()
 	}

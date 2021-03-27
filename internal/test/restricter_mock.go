@@ -7,42 +7,40 @@ import (
 
 // MockRestricter implements the restricter interface.
 type MockRestricter struct {
-	allowAll    bool
-	allowedKeys map[string]bool
+	denie bool
+
+	Values map[string]string
 }
 
 // RestrictAllowed creates a Restricter that allows everything.
 func RestrictAllowed() *MockRestricter {
 	return &MockRestricter{
-		allowAll: true,
+		denie: false,
 	}
 }
 
 // RestrictDenied create a Restricter, that disallowes everything.
 func RestrictDenied() *MockRestricter {
-	return new(MockRestricter)
-}
-
-// RestrictOnlyAllow creates a Restricter that allows only some keys.
-func RestrictOnlyAllow(keys []string) *MockRestricter {
-	set := make(map[string]bool)
-	for _, k := range keys {
-		set[k] = true
-	}
 	return &MockRestricter{
-		allowedKeys: set,
+		denie: true,
 	}
 }
 
 // Restrict does currently nothing.
 func (r *MockRestricter) Restrict(ctx context.Context, uid int, data map[string]json.RawMessage) error {
-	if r.allowAll {
+	if r.denie {
+		for k := range data {
+			delete(data, k)
+		}
 		return nil
 	}
 
-	for k := range data {
-		if r.allowedKeys == nil || !r.allowedKeys[k] {
-			delete(data, k)
+	if r.Values != nil {
+		for k := range data {
+			v, ok := r.Values[k]
+			if ok {
+				data[k] = []byte(v)
+			}
 		}
 	}
 	return nil

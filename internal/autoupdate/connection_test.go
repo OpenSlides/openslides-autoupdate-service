@@ -258,7 +258,8 @@ func TestFullUpdate(t *testing.T) {
 	})
 
 	userUpdater := new(test.UserUpdater)
-	s := autoupdate.New(datastore, test.RestrictAllowed(), userUpdater, closed)
+	restricter := test.RestrictAllowed()
+	s := autoupdate.New(datastore, restricter, userUpdater, closed)
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 
 	t.Run("other user", func(t *testing.T) {
@@ -266,6 +267,14 @@ func TestFullUpdate(t *testing.T) {
 		if _, err := c.Next(context.Background()); err != nil {
 			t.Errorf("c.Next() returned an error: %v", err)
 		}
+
+		restricter.Values = map[string]string{
+			"user/1/name": `"New Value"`,
+		}
+		defer func() {
+			// Reset values at the end.
+			restricter.Values = nil
+		}()
 
 		// Send fulldata for other user. (additional update is triggert by an
 		// datastore-update, so we have to change some key.)
@@ -294,12 +303,19 @@ func TestFullUpdate(t *testing.T) {
 		}
 	})
 
-	t.Run("same user", func(t *testing.T) {
+	t.Run("same user restricter changed", func(t *testing.T) {
 		c := s.Connect(1, kb)
 		if _, err := c.Next(context.Background()); err != nil {
 			t.Errorf("c.Next() returned an error: %v", err)
 		}
 
+		restricter.Values = map[string]string{
+			"user/1/name": `"New Value"`,
+		}
+		defer func() {
+			// Reset values at the end.
+			restricter.Values = nil
+		}()
 		// Send fulldata for same user.
 		userUpdater.UserIDs = []int{1}
 		datastore.Send(map[string]string{"some/5/data": "value"})
@@ -321,9 +337,30 @@ func TestFullUpdate(t *testing.T) {
 			t.Errorf("Got unexpected error: %v", err)
 		}
 
-		if len(data) != 1 || string(data["user/1/name"]) != `"Hello World"` {
-			t.Errorf("Got %s, expected [user/1/name: Hello World]", data)
+		assert.Equal(t, map[string]json.RawMessage{"user/1/name": []byte(`"New Value"`)}, data)
+	})
+
+	t.Run("same user restricter data did not changed", func(t *testing.T) {
+		c := s.Connect(1, kb)
+		if _, err := c.Next(context.Background()); err != nil {
+			t.Errorf("c.Next() returned an error: %v", err)
 		}
+
+		// Send fulldata for same user.
+		userUpdater.UserIDs = []int{1}
+		datastore.Send(map[string]string{"some/5/data": "value"})
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		var data map[string]json.RawMessage
+		var err error
+		isBlocking := blocking(func() {
+			data, err = c.Next(ctx)
+		})
+		require.NoError(t, err, "Next returnd an undexpected error")
+		assert.True(t, isBlocking, "Next should block if there is no new data")
+		assert.Empty(t, data, "Data should be empty if data did not change")
 	})
 }
 

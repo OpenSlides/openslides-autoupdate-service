@@ -45,8 +45,3 @@ func (f *filter) filter(data map[string]json.RawMessage) {
 func (f *filter) empty() bool {
 	return f.history == nil
 }
-
-// reset sets the filter to its original state.
-func (f *filter) reset() {
-	f.history = nil
-}
