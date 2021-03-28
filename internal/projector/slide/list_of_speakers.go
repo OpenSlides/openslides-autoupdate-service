@@ -115,3 +115,17 @@ func ListOfSpeaker(store *projector.SlideStore) {
 		return b, hotkeys, nil
 	})
 }
+
+// CurrentListOfSpeakers renders the current_list_of_speakers slide.
+func CurrentListOfSpeakers(store *projector.SlideStore) {
+	store.AddFunc("current_list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+		return []byte(`"TODO"`), nil, nil
+	})
+}
+
+// CurrentSpeakerChyron renders the current_speaker_chyron slide.
+func CurrentSpeakerChyron(store *projector.SlideStore) {
+	store.AddFunc("current_speaker_chyron", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+		return []byte(`"TODO"`), nil, nil
+	})
+}
