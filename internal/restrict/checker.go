@@ -47,10 +47,8 @@ func (r *relationList) Check(ctx context.Context, uid int, key string, value jso
 	}
 
 	keys := make([]string, len(ids))
-	keyToID := make(map[string]int)
 	for i, id := range ids {
 		keys[i] = fmt.Sprintf("%s/%d/id", r.model, id)
-		keyToID[keys[i]] = id
 	}
 
 	allowed, err := r.permer.RestrictFQFields(ctx, uid, keys)
@@ -59,9 +57,9 @@ func (r *relationList) Check(ctx context.Context, uid int, key string, value jso
 	}
 
 	allowedIDs := make([]int, 0, len(ids))
-	for key, a := range allowed {
-		if a {
-			allowedIDs = append(allowedIDs, keyToID[key])
+	for _, id := range ids {
+		if allowed[fmt.Sprintf("%s/%d/id", r.model, id)] {
+			allowedIDs = append(allowedIDs, id)
 		}
 	}
 
@@ -93,9 +91,9 @@ func (g *genericRelationList) Check(ctx context.Context, uid int, key string, va
 	}
 
 	allowedFQIDs := make([]string, 0, len(fqids))
-	for fqid, a := range allowed {
-		if a {
-			allowedFQIDs = append(allowedFQIDs, fqid[:len(fqid)-3]) // fqfield - /id
+	for _, fqid := range fqids {
+		if allowed[fqid+"/id"] {
+			allowedFQIDs = append(allowedFQIDs, fqid)
 		}
 	}
 
