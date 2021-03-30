@@ -111,7 +111,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
-	expect := `{"stable": true, "content_object_id": "", "type":"projection"}` + "\n"
+	expect := `{"id": 0, "content_object_id": "", "type":"projection"}` + "\n"
 	assert.JSONEq(t, expect, string(fields[0]))
 }
 
