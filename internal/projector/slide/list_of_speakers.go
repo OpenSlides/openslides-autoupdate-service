@@ -41,7 +41,7 @@ func ListOfSpeaker(store *projector.SlideStore) {
 }
 
 func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID string) (encoded []byte, keys []string, err error) {
-	fetch := datastore.NewFetcher(ctx, ds)
+	fetch := datastore.NewFetcher(ds)
 	defer func() {
 		if err == nil {
 			err = fetch.Error()
@@ -49,18 +49,18 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 	}()
 
 	var los dbListOfSpeakers
-	fetch.Object(&los, losFQID)
-	title := fetch.String(los.ContentObjectID + "/title")
+	fetch.Object(ctx, &los, losFQID)
+	title := fetch.String(ctx, los.ContentObjectID+"/title")
 
 	var speakersWaiting []outputSpeaker
 	var speakersFinished []outputSpeaker
 	var currentSpeaker *outputSpeaker
 	for _, id := range los.SpeakerIDs {
 		var speaker dbSpeaker
-		fetch.Object(&speaker, "speaker/%d", id)
+		fetch.Object(ctx, &speaker, "speaker/%d", id)
 
 		var user dbUser
-		fetch.Object(&user, "user/%d", speaker.UserID)
+		fetch.Object(ctx, &user, "user/%d", speaker.UserID)
 
 		s := outputSpeaker{
 			User:         user.String(),
@@ -117,22 +117,22 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 // CurrentListOfSpeakers renders the current_list_of_speakers slide.
 func CurrentListOfSpeakers(store *projector.SlideStore) {
 	store.AddFunc("current_list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ctx, ds)
+		fetch := datastore.NewFetcher(ds)
 		defer func() {
 			if err == nil {
 				err = fetch.Error()
 			}
 		}()
 
-		projectorID := fetch.Int("projection/%d/current_projector_id", p7on.ID)
-		meetingID := fetch.Int("projector/%d/meeting_id", projectorID)
-		referenceProjectorID := fetch.Int("meeting/%d/reference_projector_id", meetingID)
-		referenceP7onIDs := fetch.Ints("projector/%d/current_projection_ids", referenceProjectorID)
+		projectorID := fetch.Int(ctx, "projection/%d/current_projector_id", p7on.ID)
+		meetingID := fetch.Int(ctx, "projector/%d/meeting_id", projectorID)
+		referenceProjectorID := fetch.Int(ctx, "meeting/%d/reference_projector_id", meetingID)
+		referenceP7onIDs := fetch.Ints(ctx, "projector/%d/current_projection_ids", referenceProjectorID)
 
 		var losID int
 		for _, pID := range referenceP7onIDs {
-			contentObjectID := fetch.String("projection/%d/content_object_id", pID)
-			losID = fetch.Int("%s/list_of_speakers_id", contentObjectID)
+			contentObjectID := fetch.String(ctx, "projection/%d/content_object_id", pID)
+			losID = fetch.Int(ctx, "%s/list_of_speakers_id", contentObjectID)
 
 			if losID != 0 {
 				break

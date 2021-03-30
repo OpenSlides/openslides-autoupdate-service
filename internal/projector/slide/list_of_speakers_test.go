@@ -304,9 +304,6 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 		}
 		assert.ElementsMatch(t, expectKeys, keys)
 	})
-
-	// TODO: test to find preview projector and history projector
-
 }
 
 func changeData(orig, change map[string]string) map[string]string {
