@@ -134,32 +134,25 @@ func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 			continue
 		}
 
+		// The lock prefents a cache reset while data is updating.
 		d.resetMu.Lock()
 		d.cache.SetIfExist(data)
-		d.resetMu.Unlock()
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
 		for key, field := range d.calculatedKeys {
-			bs, err := d.calculatedFields[field](ctx, key, data)
+			bs, err := d.calculatedFields[field](context.Background(), key, data)
 			if err != nil {
 				errHandler(fmt.Errorf("calculate key %s: %w", key, err))
 				continue
 			}
-			data[key] = bs
+			d.cache.Set(key, bs)
 		}
-
-		// This updates the cache for a second time. But this time, with the
-		// calculated fields. In most cases, there should not be many updated
-		// keys at the same time, so it is not necessary to create a separat
-		// map.
-		d.cache.SetIfExist(data)
 
 		for _, f := range d.changeListeners {
 			if err := f(data); err != nil {
 				errHandler(err)
 			}
 		}
+		d.resetMu.Unlock()
 	}
 }
 

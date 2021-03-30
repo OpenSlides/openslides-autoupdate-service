@@ -170,6 +170,14 @@ func (c *cache) fetchMissing(keys []string, set cacheSetFunc) error {
 	return nil
 }
 
+// Set updates or creates a value in the cache. Even if it does not exist.
+func (c *cache) Set(key string, value []byte) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.set(key, value)
+}
+
 // SetIfExist updates the cache with the value in the given map.
 //
 // Only keys that exist or are pending are updated.
