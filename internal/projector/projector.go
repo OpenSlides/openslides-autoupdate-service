@@ -73,10 +73,9 @@ func Register(ds Datastore, slides *SlideStore) {
 
 // Projection holds the meta data to render a projection on a projecter.
 type Projection struct {
-	Options         json.RawMessage `json:"options,omitempty"`
-	Stable          bool            `json:"stable"`
-	Type            string          `json:"type,omitempty"`
-	ContentObjectID string          `json:"content_object_id"`
+	ID              int    `json:"id"`
+	Type            string `json:"type"`
+	ContentObjectID string `json:"content_object_id"`
 }
 
 func (p *Projection) exists() bool {

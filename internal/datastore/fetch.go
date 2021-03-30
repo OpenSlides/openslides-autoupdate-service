@@ -14,6 +14,86 @@ type Getter interface {
 	Get(ctx context.Context, keys ...string) ([]json.RawMessage, error)
 }
 
+// Fetcher is a helper to fetch many keys from the datastore.
+//
+// This object is meant to be called like a function. Do not keep it around.
+//
+// The methods do not return an error. It is saved internaly. As soon, as an
+// error happens, all later calls are noops.
+//
+// Make sure to call Fetcher.Error() to see, if an error happend.
+type Fetcher struct {
+	ctx  context.Context
+	ds   Getter
+	keys []string
+	err  error
+}
+
+// NewFetcher initializes a Fetcher object. Make sure to check the error in the
+// end.
+func NewFetcher(ctx context.Context, ds Getter) *Fetcher {
+	return &Fetcher{ctx: ctx, ds: ds}
+}
+
+// Object fetches a struct from the datastore.
+func (f *Fetcher) Object(value interface{}, fqIDFmt string, a ...interface{}) {
+	if f.err != nil {
+		return
+	}
+
+	fqID := fmt.Sprintf(fqIDFmt, a...)
+	keys, err := GetObject(f.ctx, f.ds, fqID, value)
+	if err != nil {
+		f.err = fmt.Errorf("fetching object %s: %w", fqID, err)
+		return
+	}
+	f.keys = append(f.keys, keys...)
+
+}
+
+// Value fetches a value from the datastore.
+func (f *Fetcher) Value(value interface{}, keyFmt string, a ...interface{}) {
+	if f.err != nil {
+		return
+	}
+
+	key := fmt.Sprintf(keyFmt, a...)
+	if err := Get(f.ctx, f.ds, key, value); err != nil {
+		f.err = fmt.Errorf("fetching %s: %w", key, err)
+		return
+	}
+	f.keys = append(f.keys, key)
+}
+
+// Int fetches an integer from the datastore.
+func (f *Fetcher) Int(keyFmt string, a ...interface{}) int {
+	var i int
+	f.Value(&i, keyFmt, a...)
+	return i
+}
+
+// Ints fetches an int slice from the datastore.
+func (f *Fetcher) Ints(keyFmt string, a ...interface{}) []int {
+	var iSlice []int
+	f.Value(&iSlice, keyFmt, a...)
+	return iSlice
+}
+
+func (f *Fetcher) String(keyFmt string, a ...interface{}) string {
+	var s string
+	f.Value(&s, keyFmt, a...)
+	return s
+}
+
+// Keys returns all datastore keys that where fetched in the process.
+func (f *Fetcher) Keys() []string {
+	return f.keys
+}
+
+func (f *Fetcher) Error() error {
+	return f.err
+}
+
 // Get returns a value from the datastore and unpacks it in to the argument value.
 //
 // The argument value has to be an non nil pointer.

@@ -8,6 +8,7 @@ import (
 	"github.com/openslides/openslides-autoupdate-service/internal/projector/slide"
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestListOfSpeakers(t *testing.T) {
@@ -197,11 +198,115 @@ func TestListOfSpeakers(t *testing.T) {
 			bs, keys, err := losSlide.Slide(context.Background(), ds, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
-			expectedKeys := tt.expectKeys
-			_, _ = keys, expectedKeys
-			assert.ElementsMatch(t, expectedKeys, keys)
+			assert.ElementsMatch(t, tt.expectKeys, keys)
 		})
 	}
+}
+
+func TestCurrentListOfSpeakers(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+
+	s := new(projector.SlideStore)
+	slide.CurrentListOfSpeakers(s)
+
+	slide := s.Get("current_list_of_speakers")
+	require.NotNilf(t, slide, "Slide with name `curent_list_of_speakers` not found.")
+
+	// This one is a bit compicated:
+	//
+	// The slide gets a projection object with id 1
+	// projection/1 points to projector/50
+	// projector/50 points to meeting/6
+	// meeting/6 has reference_projector 60
+	// projector/60 has projection/2
+	// projection/2 has	content_object_id topic/5
+	// topic/5 points list_of_speakers/7
+	// list_of_speakers/7 points to speaker/8
+	// speaker/8 points to user/10
+	// user/10 has username jonny123
+	//
+	// lets find out if this username is on the slide-data...
+	data := test.YAMLData(`
+	projection/1/current_projector_id: 50
+	projector/50/meeting_id: 6
+	meeting/6/reference_projector_id: 60
+	projector/60/current_projection_ids: [2]
+	projection/2/content_object_id: topic/5
+
+	topic/5:
+		list_of_speakers_id: 7
+		title: topic title
+
+	list_of_speakers/7:
+		content_object_id:	topic/5
+		closed: 			true
+		speaker_ids: 		[8]
+
+	speaker/8:
+			user_id:        10
+			marked:         false
+			point_of_order: false
+			weight:         10
+
+	user/10/username: jonny123
+	`)
+
+	t.Run("Find list of speakers", func(t *testing.T) {
+		ds := test.NewMockDatastore(closed, data)
+
+		p7on := &projector.Projection{
+			ID:              1,
+			ContentObjectID: "list_of_speakers/1",
+			Type:            "current_list_of_speakers",
+		}
+
+		bs, keys, err := slide.Slide(context.Background(), ds, p7on)
+
+		assert.NoError(t, err)
+		expect := `{
+			"title": "topic title",
+			"waiting": [{
+				"user": "jonny123",
+				"marked": false,
+				"point_of_order": false,
+				"weight": 10
+			}],
+			"current": null,
+			"finished": null,
+			"closed": true,
+			"content_object_collection": "topic",
+			"title_information": "title_information for topic/5"
+		}
+		`
+		assert.JSONEq(t, expect, string(bs))
+		expectKeys := []string{
+			"projection/1/current_projector_id",
+			"projector/50/meeting_id",
+			"meeting/6/reference_projector_id",
+			"projector/60/current_projection_ids",
+			"projection/2/content_object_id",
+			"topic/5/title",
+			"topic/5/list_of_speakers_id",
+			"list_of_speakers/7/speaker_ids",
+			"list_of_speakers/7/content_object_id",
+			"list_of_speakers/7/closed",
+			"speaker/8/user_id",
+			"speaker/8/marked",
+			"speaker/8/point_of_order",
+			"speaker/8/weight",
+			"speaker/8/begin_time",
+			"speaker/8/end_time",
+			"user/10/username",
+			"user/10/title",
+			"user/10/first_name",
+			"user/10/last_name",
+		}
+		assert.ElementsMatch(t, expectKeys, keys)
+	})
+
+	// TODO: test to find preview projector and history projector
+
 }
 
 func changeData(orig, change map[string]string) map[string]string {
