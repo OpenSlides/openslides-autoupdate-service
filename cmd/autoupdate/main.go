@@ -34,13 +34,8 @@ func main() {
 
 const debugKey = "auth-dev-key"
 
-// config reads the environment variables and secrets.
-//
-// If variables are missing, defaults are used.
-//
-// This function fails, if the secrets can not be read.
-func config() (map[string]string, error) {
-	defaultEnv := map[string]string{
+func defaultEnv() map[string]string {
+	defaults := map[string]string{
 		"AUTOUPDATE_HOST": "",
 		"AUTOUPDATE_PORT": "9012",
 
@@ -62,36 +57,38 @@ func config() (map[string]string, error) {
 		"OPENSLIDES_DEVELOPMENT": "false",
 	}
 
+	for k := range defaults {
+		e, ok := os.LookupEnv(k)
+		if ok {
+			defaults[k] = e
+		}
+	}
+	return defaults
+}
+
+func secret(name string, dev bool) (string, error) {
 	defaultSecrets := map[string]string{
 		"auth_token_key":  debugKey,
 		"auth_cookie_key": debugKey,
 	}
 
-	for k := range defaultEnv {
-		e, ok := os.LookupEnv(k)
-		if ok {
-			defaultEnv[k] = e
-		}
+	d, ok := defaultSecrets[name]
+	if !ok {
+		return "", fmt.Errorf("unknown secret %s", name)
 	}
 
-	for k, v := range defaultSecrets {
-		s, err := openSecret(k)
-		if err != nil {
-			if defaultEnv["OPENSLIDES_DEVELOPMENT"] == "false" {
-				return nil, fmt.Errorf("can not read secret %s: %w", s, err)
-			}
-			s = v
+	s, err := openSecret(name)
+	if err != nil {
+		if !dev {
+			return "", fmt.Errorf("can not read secret %s: %w", s, err)
 		}
-		defaultEnv[k] = s
+		s = d
 	}
-	return defaultEnv, nil
+	return s, nil
 }
 
 func run() error {
-	env, err := config()
-	if err != nil {
-		return fmt.Errorf("loading configuration: %w", err)
-	}
+	env := defaultEnv()
 
 	closed := make(chan struct{})
 	errHandler := func(err error) {
@@ -233,8 +230,16 @@ func buildAuth(env map[string]string, receiver auth.LogoutEventer, closed <-chan
 	switch method {
 	case "ticket":
 		fmt.Println("Auth Method: ticket")
-		tokenKey := env["auth_token_key"]
-		cookieKey := env["auth_cookie_key"]
+		tokenKey, err := secret("auth_token_key", env["OPENSLIDES_DEVELOPMENT"] != "false")
+		if err != nil {
+			return nil, fmt.Errorf("getting token secret: %w", err)
+		}
+
+		cookieKey, err := secret("auth_cookie_key", env["OPENSLIDES_DEVELOPMENT"] != "false")
+		if err != nil {
+			return nil, fmt.Errorf("getting cookie secret: %w", err)
+		}
+
 		if tokenKey == debugKey || cookieKey == debugKey {
 			fmt.Println("Auth with debug key")
 		}
