@@ -22,7 +22,9 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Start With golang
-      run: go build ./cmd/autoupdate && timeout --preserve-status 2s ./autoupdate 
+      run: |
+        go build ./cmd/autoupdate
+        timeout --preserve-status 2s ./autoupdate 
 
     - name: Start With Docker
       run: |
@@ -34,7 +36,9 @@ jobs:
         DOCKER_BUILDKIT: 1
 
     - name: Start With Auto Restart
-      run: make build-dev && timeout --preserve-status 2s docker run --network host openslides-autoupdate-dev
+      run: |
+        make build-dev
+        timeout --preserve-status 5s docker run --network host --env OPENSLIDES_DEVELOPMENT=true openslides-autoupdate-dev
       env:
         DOCKER_BUILDKIT: 1
 

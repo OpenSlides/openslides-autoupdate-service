@@ -47,11 +47,12 @@ go install github.com/githubnemo/CompileDaemon@latest
 CompileDaemon -log-prefix=false -build "go build ./cmd/autoupdate" -command "./autoupdate"
 ```
 
-The make target `build-dev` creates a docker image that uses this tool:
+The make target `build-dev` creates a docker image that uses this tool. The
+environment varialbe `OPENSLIDES_DEVELOPMENT` is used to use default auth keys.
 
 ```
 make build-dev
-docker run -v $(pwd)/cert:/root/cert --network host openslides-autoupdate-dev
+docker run --network host --env OPENSLIDES_DEVELOPMENT=true openslides-autoupdate-dev
 ```
 
 
