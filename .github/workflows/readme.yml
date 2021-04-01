@@ -29,7 +29,7 @@ jobs:
         docker build . --tag openslides-autoupdate
         printf "my_token_key" > auth_token_key 
         printf "my_cookie_key" > auth_cookie_key
-        timeout --preserve-status 5s docker run --network host -v auth_token_key:/run/secrets/auth_token_key -v auth_cookie_key:/run/secrets/auth_cookie_key openslides-autoupdate
+        timeout --preserve-status 5s docker run --network host -v $PWD/auth_token_key:/run/secrets/auth_token_key -v $PWD/auth_cookie_key:/run/secrets/auth_cookie_key openslides-autoupdate
       env:
         DOCKER_BUILDKIT: 1
 

@@ -31,7 +31,7 @@ docker argument --network host. The auth-secrets have to given as a file.
 docker build . --tag openslides-autoupdate
 printf "my_token_key" > auth_token_key 
 printf "my_cookie_key" > auth_cookie_key
-docker run --network host openslides-autoupdate -v auth_token_key:/run/secrets/auth_token_key -v auth_cookie_key:/run/secrets/auth_cookie_key
+docker run --network host -v $PWD/auth_token_key:/run/secrets/auth_token_key -v $PWD/auth_cookie_key:/run/secrets/auth_cookie_key openslides-autoupdate
 ```
 
 It uses the host network to connect to redis.
