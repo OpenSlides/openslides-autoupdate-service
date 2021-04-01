@@ -67,7 +67,7 @@ func run() error {
 	permHTTP.IsAllowed(mux, ps)
 
 	// Create http server.
-	listenAddr := env["PERMISSION_HOST"] + ":" + env["PERMISSION_PORT"]
+	listenAddr := ":" + env["PERMISSION_PORT"]
 	fmt.Printf("Listen on: %s\n", listenAddr)
 	srv := &http.Server{
 		Addr:    listenAddr,
