@@ -25,11 +25,13 @@ The docker build uses the redis messaging service, the auth token and the real
 datastore service as default. Either configure it to use the fake services (see
 environment variables below) or make sure the service inside the docker
 container can connect to redis and the datastore-reader. For example with the
-docker argument --network host.
+docker argument --network host. The auth-secrets have to given as a file.
 
 ```
 docker build . --tag openslides-autoupdate
-docker run --network host openslides-autoupdate
+printf "my_token_key" > auth_token_key 
+printf "my_cookie_key" > auth_cookie_key
+docker run --network host openslides-autoupdate -v auth_token_key:/run/secrets/auth_token_key -v auth_cookie_key:/run/secrets/auth_cookie_key
 ```
 
 It uses the host network to connect to redis.
