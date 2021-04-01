@@ -22,10 +22,14 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Start With golang
-      run: go build ./cmd/autoupdate && timeout --preserve-status 2s ./autoupdate
+      run: go build ./cmd/autoupdate && timeout --preserve-status 2s ./autoupdate 
 
     - name: Start With Docker
-      run: docker build . --tag openslides-autoupdate && timeout --preserve-status 5s docker run --network host openslides-autoupdate
+      run: |
+        docker build . --tag openslides-autoupdate
+        printf "my_token_key" > auth_token_key 
+        printf "my_cookie_key" > auth_cookie_key
+        timeout --preserve-status 5s docker run --network host openslides-autoupdate -v auth_token_key:/run/secrets/auth_token_key -v auth_cookie_key:/run/secrets/auth_cookie_key
       env:
         DOCKER_BUILDKIT: 1
 
