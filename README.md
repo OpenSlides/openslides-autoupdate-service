@@ -109,7 +109,9 @@ possible to update keys by sending the following command to redis:
 `xadd field_changed * updated user/1/username updated user/1/password`
 
 
-## Environment
+## Configuration
+
+### Environment variables
 
 The Service uses the following environment variables:
 
@@ -129,10 +131,20 @@ The Service uses the following environment variables:
 * `REDIS_TEST_CONN`: Test the redis connection on startup. Disable on the cloud
   if redis needs more time to start then this service. The default is `true`.
 * `AUTH`: Sets the type of the auth service. `fake` (default) or `ticket`.
-* `AUTH_KEY_TOKEN`: Key to sign the JWT auth tocken. Default `auth-dev-key`.
-* `AUTH_KEY_COOKIE`: Key to sign the JWT auth cookie. Default `auth-dev-key`.
 * `AUTH_HOST`: Host of the auth service. The default is `localhost`.
 * `AUTH_PORT`: Port of the auth service. The default is `9004`.
 * `AUTH_PROTOCOL`: Protocol of the auth servicer. The default is `http`.
 * `DEACTIVATE_PERMISSION`: Deactivate requests to the permission service. The
-  result is, that every user can see everything (Defaullt: `false`)
+  result is, that every user can see everything. The default is `false`.
+* `OPENSLIDES_DEVELOPMENT`: If set, the service starts, even when secrets (see
+  below) are not given. The default is `false`.
+
+
+### Secrets
+
+Secrets are filenames in `/run/secrets/`. The service only starts if it can find
+each secret file and read its content. The default values are only used, if the
+environment variable `OPENSLIDES_DEVELOPMENT` is set.
+
+* `auth_token_key`: Key to sign the JWT auth tocken. Default `auth-dev-key`.
+* `auth_cookie_key`: Key to sign the JWT auth cookie. Default `auth-dev-key`.

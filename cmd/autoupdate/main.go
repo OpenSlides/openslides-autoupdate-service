@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -20,7 +21,7 @@ import (
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
-type receiver interface {
+type messageBus interface {
 	datastore.Updater
 	auth.LogoutEventer
 }
@@ -31,8 +32,15 @@ func main() {
 	}
 }
 
-func defaultEnv() map[string]string {
-	defaults := map[string]string{
+const debugKey = "auth-dev-key"
+
+// config reads the environment variables and secrets.
+//
+// If variables are missing, defaults are used.
+//
+// This function fails, if the secrets can not be read.
+func config() (map[string]string, error) {
+	defaultEnv := map[string]string{
 		"AUTOUPDATE_HOST": "",
 		"AUTOUPDATE_PORT": "9012",
 
@@ -45,27 +53,46 @@ func defaultEnv() map[string]string {
 		"MESSAGE_BUS_PORT": "6379",
 		"REDIS_TEST_CONN":  "true",
 
-		"AUTH":            "fake",
-		"AUTH_KEY_TOKEN":  "auth-dev-key",
-		"AUTH_KEY_COOKIE": "auth-dev-key",
-		"AUTH_PROTOCOL":   "http",
-		"AUTH_HOST":       "localhost",
-		"AUTH_PORT":       "9004",
+		"AUTH":          "fake",
+		"AUTH_PROTOCOL": "http",
+		"AUTH_HOST":     "localhost",
+		"AUTH_PORT":     "9004",
 
-		"DEACTIVATE_PERMISSION": "false",
+		"DEACTIVATE_PERMISSION":  "false",
+		"OPENSLIDES_DEVELOPMENT": "false",
 	}
 
-	for k := range defaults {
+	defaultSecrets := map[string]string{
+		"auth_token_key":  debugKey,
+		"auth_cookie_key": debugKey,
+	}
+
+	for k := range defaultEnv {
 		e, ok := os.LookupEnv(k)
 		if ok {
-			defaults[k] = e
+			defaultEnv[k] = e
 		}
 	}
-	return defaults
+
+	for k, v := range defaultSecrets {
+		s, err := openSecret(k)
+		if err != nil {
+			if defaultEnv["OPENSLIDES_DEVELOPMENT"] == "false" {
+				return nil, fmt.Errorf("can not read secret %s: %w", s, err)
+			}
+			s = v
+		}
+		defaultEnv[k] = s
+	}
+	return defaultEnv, nil
 }
 
 func run() error {
-	env := defaultEnv()
+	env, err := config()
+	if err != nil {
+		return fmt.Errorf("loading configuration: %w", err)
+	}
+
 	closed := make(chan struct{})
 	errHandler := func(err error) {
 		// If an error happend, we just close the session.
@@ -174,7 +201,7 @@ func buildDatastore(env map[string]string, receiver datastore.Updater, closed <-
 // buildReceiver builds the receiver needed by the datastore service. It uses
 // environment variables to make the decission. Per default, the given faker is
 // used.
-func buildReceiver(env map[string]string) (receiver, error) {
+func buildReceiver(env map[string]string) (messageBus, error) {
 	serviceName := env["MESSAGING"]
 	fmt.Printf("Messaging Service: %s\n", serviceName)
 
@@ -206,9 +233,8 @@ func buildAuth(env map[string]string, receiver auth.LogoutEventer, closed <-chan
 	switch method {
 	case "ticket":
 		fmt.Println("Auth Method: ticket")
-		const debugKey = "auth-dev-key"
-		tokenKey := env["AUTH_KEY_TOKEN"]
-		cookieKey := env["AUTH_KEY_COOKIE"]
+		tokenKey := env["auth_token_key"]
+		cookieKey := env["auth_cookie_key"]
 		if tokenKey == debugKey || cookieKey == debugKey {
 			fmt.Println("Auth with debug key")
 		}
@@ -226,4 +252,18 @@ func buildAuth(env map[string]string, receiver auth.LogoutEventer, closed <-chan
 	default:
 		return nil, fmt.Errorf("unknown auth method %s", method)
 	}
+}
+
+func openSecret(name string) (string, error) {
+	f, err := os.Open("/run/secrets/" + name)
+	if err != nil {
+		return "", err
+	}
+
+	secret, err := io.ReadAll(f)
+	if err != nil {
+		return "", fmt.Errorf("reading `/run/secrets/%s`: %w", name, err)
+	}
+
+	return string(secret), nil
 }
