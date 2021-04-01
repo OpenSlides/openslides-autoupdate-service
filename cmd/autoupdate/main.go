@@ -121,7 +121,7 @@ func run() error {
 	autoupdateHttp.Simple(mux, authService, service)
 
 	// Create http server.
-	listenAddr := env["AUTOUPDATE_HOST"] + ":" + env["AUTOUPDATE_PORT"]
+	listenAddr := ":" + env["AUTOUPDATE_PORT"]
 	srv := &http.Server{Addr: listenAddr, Handler: mux}
 
 	// Shutdown logic in separate goroutine.
