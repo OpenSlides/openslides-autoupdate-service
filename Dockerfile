@@ -1,4 +1,4 @@
-FROM golang:1.16.2-alpine3.12 as basis
+FROM golang:1.16.3-alpine3.13 as basis
 LABEL maintainer="OpenSlides Team <info@openslides.com>"
 WORKDIR /root/
 
@@ -12,7 +12,7 @@ COPY internal internal
 
 # Build service in seperate stage.
 FROM basis as builder
-RUN go build ./cmd/autoupdate
+RUN CGO_ENABLED=0 go build ./cmd/autoupdate
 
 
 # Test build.
@@ -35,12 +35,10 @@ CMD CompileDaemon -log-prefix=false -build="go build ./cmd/autoupdate" -command=
 
 
 # Productive build
-FROM alpine:3.13.3
-WORKDIR /root/
+FROM scratch
 
 COPY --from=builder /root/autoupdate .
 EXPOSE 9012
 ENV MESSAGING redis
 ENV AUTH ticket
-
-CMD ./autoupdate
+ENTRYPOINT ["/autoupdate"]
