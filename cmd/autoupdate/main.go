@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -20,7 +21,7 @@ import (
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
 )
 
-type receiver interface {
+type messageBus interface {
 	datastore.Updater
 	auth.LogoutEventer
 }
@@ -30,6 +31,8 @@ func main() {
 		log.Fatalf("Fatal error: %v", err)
 	}
 }
+
+const debugKey = "auth-dev-key"
 
 func defaultEnv() map[string]string {
 	defaults := map[string]string{
@@ -45,14 +48,13 @@ func defaultEnv() map[string]string {
 		"MESSAGE_BUS_PORT": "6379",
 		"REDIS_TEST_CONN":  "true",
 
-		"AUTH":            "fake",
-		"AUTH_KEY_TOKEN":  "auth-dev-key",
-		"AUTH_KEY_COOKIE": "auth-dev-key",
-		"AUTH_PROTOCOL":   "http",
-		"AUTH_HOST":       "localhost",
-		"AUTH_PORT":       "9004",
+		"AUTH":          "fake",
+		"AUTH_PROTOCOL": "http",
+		"AUTH_HOST":     "localhost",
+		"AUTH_PORT":     "9004",
 
-		"DEACTIVATE_PERMISSION": "false",
+		"DEACTIVATE_PERMISSION":  "false",
+		"OPENSLIDES_DEVELOPMENT": "false",
 	}
 
 	for k := range defaults {
@@ -64,8 +66,30 @@ func defaultEnv() map[string]string {
 	return defaults
 }
 
+func secret(name string, dev bool) (string, error) {
+	defaultSecrets := map[string]string{
+		"auth_token_key":  debugKey,
+		"auth_cookie_key": debugKey,
+	}
+
+	d, ok := defaultSecrets[name]
+	if !ok {
+		return "", fmt.Errorf("unknown secret %s", name)
+	}
+
+	s, err := openSecret(name)
+	if err != nil {
+		if !dev {
+			return "", fmt.Errorf("can not read secret %s: %w", s, err)
+		}
+		s = d
+	}
+	return s, nil
+}
+
 func run() error {
 	env := defaultEnv()
+
 	closed := make(chan struct{})
 	errHandler := func(err error) {
 		// If an error happend, we just close the session.
@@ -174,7 +198,7 @@ func buildDatastore(env map[string]string, receiver datastore.Updater, closed <-
 // buildReceiver builds the receiver needed by the datastore service. It uses
 // environment variables to make the decission. Per default, the given faker is
 // used.
-func buildReceiver(env map[string]string) (receiver, error) {
+func buildReceiver(env map[string]string) (messageBus, error) {
 	serviceName := env["MESSAGING"]
 	fmt.Printf("Messaging Service: %s\n", serviceName)
 
@@ -206,9 +230,16 @@ func buildAuth(env map[string]string, receiver auth.LogoutEventer, closed <-chan
 	switch method {
 	case "ticket":
 		fmt.Println("Auth Method: ticket")
-		const debugKey = "auth-dev-key"
-		tokenKey := env["AUTH_KEY_TOKEN"]
-		cookieKey := env["AUTH_KEY_COOKIE"]
+		tokenKey, err := secret("auth_token_key", env["OPENSLIDES_DEVELOPMENT"] != "false")
+		if err != nil {
+			return nil, fmt.Errorf("getting token secret: %w", err)
+		}
+
+		cookieKey, err := secret("auth_cookie_key", env["OPENSLIDES_DEVELOPMENT"] != "false")
+		if err != nil {
+			return nil, fmt.Errorf("getting cookie secret: %w", err)
+		}
+
 		if tokenKey == debugKey || cookieKey == debugKey {
 			fmt.Println("Auth with debug key")
 		}
@@ -226,4 +257,18 @@ func buildAuth(env map[string]string, receiver auth.LogoutEventer, closed <-chan
 	default:
 		return nil, fmt.Errorf("unknown auth method %s", method)
 	}
+}
+
+func openSecret(name string) (string, error) {
+	f, err := os.Open("/run/secrets/" + name)
+	if err != nil {
+		return "", err
+	}
+
+	secret, err := io.ReadAll(f)
+	if err != nil {
+		return "", fmt.Errorf("reading `/run/secrets/%s`: %w", name, err)
+	}
+
+	return string(secret), nil
 }
