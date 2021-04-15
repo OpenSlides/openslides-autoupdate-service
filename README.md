@@ -25,11 +25,13 @@ The docker build uses the redis messaging service, the auth token and the real
 datastore service as default. Either configure it to use the fake services (see
 environment variables below) or make sure the service inside the docker
 container can connect to redis and the datastore-reader. For example with the
-docker argument --network host.
+docker argument --network host. The auth-secrets have to given as a file.
 
 ```
 docker build . --tag openslides-autoupdate
-docker run --network host openslides-autoupdate
+printf "my_token_key" > auth_token_key 
+printf "my_cookie_key" > auth_cookie_key
+docker run --network host -v $PWD/auth_token_key:/run/secrets/auth_token_key -v $PWD/auth_cookie_key:/run/secrets/auth_cookie_key openslides-autoupdate
 ```
 
 It uses the host network to connect to redis.
@@ -45,11 +47,12 @@ go install github.com/githubnemo/CompileDaemon@latest
 CompileDaemon -log-prefix=false -build "go build ./cmd/autoupdate" -command "./autoupdate"
 ```
 
-The make target `build-dev` creates a docker image that uses this tool:
+The make target `build-dev` creates a docker image that uses this tool. The
+environment varialbe `OPENSLIDES_DEVELOPMENT` is used to use default auth keys.
 
 ```
 make build-dev
-docker run -v $(pwd)/cert:/root/cert --network host openslides-autoupdate-dev
+docker run --network host --env OPENSLIDES_DEVELOPMENT=true openslides-autoupdate-dev
 ```
 
 
@@ -137,8 +140,7 @@ curl -N localhost:9012/system/autoupdate -d '
 ]'
 ```
 
-
-## Environment
+### Environment variables
 
 The Service uses the following environment variables:
 
@@ -158,10 +160,20 @@ The Service uses the following environment variables:
 * `REDIS_TEST_CONN`: Test the redis connection on startup. Disable on the cloud
   if redis needs more time to start then this service. The default is `true`.
 * `AUTH`: Sets the type of the auth service. `fake` (default) or `ticket`.
-* `AUTH_KEY_TOKEN`: Key to sign the JWT auth tocken. Default `auth-dev-key`.
-* `AUTH_KEY_COOKIE`: Key to sign the JWT auth cookie. Default `auth-dev-key`.
 * `AUTH_HOST`: Host of the auth service. The default is `localhost`.
 * `AUTH_PORT`: Port of the auth service. The default is `9004`.
 * `AUTH_PROTOCOL`: Protocol of the auth servicer. The default is `http`.
 * `DEACTIVATE_PERMISSION`: Deactivate requests to the permission service. The
-  result is, that every user can see everything (Defaullt: `false`)
+  result is, that every user can see everything. The default is `false`.
+* `OPENSLIDES_DEVELOPMENT`: If set, the service starts, even when secrets (see
+  below) are not given. The default is `false`.
+
+
+### Secrets
+
+Secrets are filenames in `/run/secrets/`. The service only starts if it can find
+each secret file and read its content. The default values are only used, if the
+environment variable `OPENSLIDES_DEVELOPMENT` is set.
+
+* `auth_token_key`: Key to sign the JWT auth tocken. Default `auth-dev-key`.
+* `auth_cookie_key`: Key to sign the JWT auth cookie. Default `auth-dev-key`.
