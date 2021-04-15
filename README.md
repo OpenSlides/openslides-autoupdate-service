@@ -112,7 +112,33 @@ possible to update keys by sending the following command to redis:
 `xadd field_changed * updated user/1/username updated user/1/password`
 
 
-## Configuration
+### Projector
+
+The data for a projector can be accessed with autoupdate requests. For example use:
+
+
+```
+curl -N localhost:9012/system/autoupdate -d '
+[
+  {
+    "ids": [1],
+    "collection": "projector",
+    "fields": {
+      "current_projection_ids": {
+        "type": "relation-list",
+        "collection": "projection",
+        "fields": {
+          "content": null,
+          "content_object_id": null,
+          "stable": null,
+          "type": null,
+          "options": null
+        }
+      }
+    }
+  }
+]'
+```
 
 ### Environment variables
 

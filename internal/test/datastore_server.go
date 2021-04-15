@@ -105,8 +105,3 @@ func (d *DatastoreServer) Send(values map[string]string) {
 	}
 	d.c <- conv
 }
-
-type closingError struct{}
-
-func (e closingError) Closing()      {}
-func (e closingError) Error() string { return "closing" }

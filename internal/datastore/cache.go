@@ -16,7 +16,7 @@ const (
 )
 
 // cacheSetFunc is a function to update cache keys.
-type cacheSetFunc func(keys []string) (map[string]json.RawMessage, error)
+type cacheSetFunc func(keys []string, set func(key string, value json.RawMessage)) error
 
 // cache stores the values to the datastore.
 //
@@ -133,7 +133,14 @@ func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) (
 //
 // Deletes the keys from the pending map, even when an error happens.
 func (c *cache) fetchMissing(keys []string, set cacheSetFunc) error {
-	data, err := set(keys)
+	err := set(keys, func(key string, value json.RawMessage) {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+
+		if c.keyState(key) == stPending {
+			c.set(key, value)
+		}
+	})
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -154,12 +161,6 @@ func (c *cache) fetchMissing(keys []string, set cacheSetFunc) error {
 		return fmt.Errorf("fetching missing keys: %w", err)
 	}
 
-	for k, v := range data {
-		if c.keyState(k) == stPending {
-			c.set(k, v)
-		}
-	}
-
 	// Set all keys, that where not returned to not existing.
 	for _, k := range keys {
 		if c.keyState(k) == stPending {
@@ -169,8 +170,17 @@ func (c *cache) fetchMissing(keys []string, set cacheSetFunc) error {
 	return nil
 }
 
-// SetIfExist updates each the cache with the value in the given map. But keys
-// that exists or are pending get an update.
+// Set updates or creates a value in the cache. Even if it does not exist.
+func (c *cache) Set(key string, value []byte) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.set(key, value)
+}
+
+// SetIfExist updates the cache with the value in the given map.
+//
+// Only keys that exist or are pending are updated.
 func (c *cache) SetIfExist(data map[string]json.RawMessage) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

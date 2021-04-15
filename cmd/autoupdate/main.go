@@ -16,6 +16,8 @@ import (
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
 	autoupdateHttp "github.com/openslides/openslides-autoupdate-service/internal/http"
+	"github.com/openslides/openslides-autoupdate-service/internal/projector"
+	"github.com/openslides/openslides-autoupdate-service/internal/projector/slide"
 	"github.com/openslides/openslides-autoupdate-service/internal/redis"
 	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
@@ -143,6 +145,9 @@ func run() error {
 	service := autoupdate.New(datastoreService, restricter, updater, closed)
 	autoupdateHttp.Complex(mux, authService, service, service)
 	autoupdateHttp.Simple(mux, authService, service)
+
+	// Projector Service.
+	projector.Register(datastoreService, slide.Slides())
 
 	// Create http server.
 	listenAddr := ":" + env["AUTOUPDATE_PORT"]

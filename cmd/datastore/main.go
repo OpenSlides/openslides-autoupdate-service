@@ -93,7 +93,7 @@ func exampleHandler(w http.ResponseWriter, r *http.Request) {
 		if _, ok := responceData[keyParts[0]][keyParts[1]]; !ok {
 			responceData[keyParts[0]][keyParts[1]] = make(map[string]json.RawMessage)
 		}
-		responceData[keyParts[0]][keyParts[1]][keyParts[2]] = json.RawMessage(value)
+		responceData[keyParts[0]][keyParts[1]][keyParts[2]] = value
 	}
 
 	json.NewEncoder(w).Encode(responceData)

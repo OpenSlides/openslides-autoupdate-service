@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -23,11 +24,13 @@ const urlPath = "/internal/datastore/reader/get_many"
 //
 // Has to be created with datastore.New().
 type Datastore struct {
-	url             string
-	cache           *cache
-	keychanger      Updater
-	changeListeners []func(map[string]json.RawMessage) error
-	closed          <-chan struct{}
+	url              string
+	cache            *cache
+	keychanger       Updater
+	changeListeners  []func(map[string]json.RawMessage) error
+	calculatedFields map[string]func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error)
+	calculatedKeys   map[string]string
+	closed           <-chan struct{}
 
 	resetMu sync.Mutex
 }
@@ -35,10 +38,12 @@ type Datastore struct {
 // New returns a new Datastore object.
 func New(url string, closed <-chan struct{}, errHandler func(error), keychanger Updater) *Datastore {
 	d := &Datastore{
-		cache:      newCache(),
-		url:        url + urlPath,
-		keychanger: keychanger,
-		closed:     closed,
+		cache:            newCache(),
+		url:              url + urlPath,
+		keychanger:       keychanger,
+		closed:           closed,
+		calculatedFields: make(map[string]func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error)),
+		calculatedKeys:   make(map[string]string),
 	}
 
 	go d.receiveKeyChanges(errHandler)
@@ -50,8 +55,8 @@ func New(url string, closed <-chan struct{}, errHandler func(error), keychanger 
 //
 // If a key does not exist, the value nil is returned for that key.
 func (d *Datastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage, error) {
-	values, err := d.cache.GetOrSet(ctx, keys, func(keys []string) (map[string]json.RawMessage, error) {
-		return d.requestKeys(keys)
+	values, err := d.cache.GetOrSet(ctx, keys, func(keys []string, set func(key string, value json.RawMessage)) error {
+		return d.loadKeys(ctx, keys, set)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("getOrSet for keys `%s`: %w", keys, err)
@@ -65,6 +70,42 @@ func (d *Datastore) RegisterChangeListener(f func(map[string]json.RawMessage) er
 	d.changeListeners = append(d.changeListeners, f)
 }
 
+// RegisterCalculatedField creates a virtual field that is not in the datastore
+// but is created at runtime.
+//
+// field has to be in the form `collection/field`. The field is created for
+// every full qualified field that matches that field.
+//
+// When a fqfield, that matches the field, is fetched for the first time, then f
+// is called with `changed==nil`. On every ds-update, f is called again with the
+// data, that has changed.
+func (d *Datastore) RegisterCalculatedField(field string, f func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error)) {
+	d.calculatedFields[field] = f
+}
+
+// splitCalculatedKeys splits a list of keys in calculated keys and "normal"
+// keys. The calculated keys are returned as map that point to the field name.
+func (d *Datastore) splitCalculatedKeys(keys []string) (map[string]string, []string) {
+	var normal []string
+	calculated := make(map[string]string)
+	for _, k := range keys {
+		parts := strings.SplitN(k, "/", 3)
+		if len(parts) != 3 {
+			normal = append(normal, k)
+			continue
+		}
+
+		field := parts[0] + "/" + parts[2]
+		_, ok := d.calculatedFields[field]
+		if !ok {
+			normal = append(normal, k)
+			continue
+		}
+		calculated[k] = field
+	}
+	return calculated, normal
+}
+
 // ResetCache clears the internal cache.
 func (d *Datastore) ResetCache() {
 	d.resetMu.Lock()
@@ -72,10 +113,13 @@ func (d *Datastore) ResetCache() {
 	d.resetMu.Unlock()
 }
 
-// receiveKeyChanges listens for updates.
-//
-// It updates the cache and informs change listeners.
+// receiveKeyChanges listens for updates and saves then into the topic. This
+// function blocks until the service is closed.
 func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
+	if d.keychanger == nil {
+		return
+	}
+
 	for {
 		select {
 		case <-d.closed:
@@ -90,16 +134,49 @@ func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 			continue
 		}
 
+		// The lock prefents a cache reset while data is updating.
 		d.resetMu.Lock()
 		d.cache.SetIfExist(data)
-		d.resetMu.Unlock()
+
+		for key, field := range d.calculatedKeys {
+			bs, err := d.calculatedFields[field](context.Background(), key, data)
+			if err != nil {
+				errHandler(fmt.Errorf("calculate key %s: %w", key, err))
+				continue
+			}
+			d.cache.Set(key, bs)
+		}
 
 		for _, f := range d.changeListeners {
 			if err := f(data); err != nil {
 				errHandler(err)
 			}
 		}
+		d.resetMu.Unlock()
 	}
+}
+
+func (d *Datastore) loadKeys(ctx context.Context, keys []string, set func(string, json.RawMessage)) error {
+	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
+	if len(normalKeys) > 0 {
+		data, err := d.requestKeys(normalKeys)
+		if err != nil {
+			return fmt.Errorf("requiesting keys from datastore: %w", err)
+		}
+		for k, v := range data {
+			set(k, v)
+		}
+	}
+
+	for key, field := range calculatedKeys {
+		calculated, err := d.calculatedFields[field](ctx, key, nil)
+		if err != nil {
+			return fmt.Errorf("calculating key %s: %w", key, err)
+		}
+		d.calculatedKeys[key] = field
+		set(key, calculated)
+	}
+	return nil
 }
 
 // requestKeys request a list of keys by the datastore. If an error happens, no
