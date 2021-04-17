@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/openslides/openslides-autoupdate-service/pkg/redis"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
 )
 
 // useRealRedis desides, if a real redis instance is used or a fake redis

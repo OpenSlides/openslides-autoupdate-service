@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
-	"github.com/openslides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 )
 
 func TestRestrict(t *testing.T) {

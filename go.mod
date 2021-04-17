@@ -1,4 +1,4 @@
-module github.com/openslides/openslides-autoupdate-service
+module github.com/OpenSlides/openslides-autoupdate-service
 
 go 1.16
 

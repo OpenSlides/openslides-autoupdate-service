@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
-	"github.com/openslides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 )
 
 func TestJSONValid(t *testing.T) {

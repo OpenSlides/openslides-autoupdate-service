@@ -3,7 +3,7 @@ package slide
 import (
 	"context"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/projector"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 )
 
 // AgendaItem renders the agenda_item slide.

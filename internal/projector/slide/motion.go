@@ -3,7 +3,7 @@ package slide
 import (
 	"context"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/projector"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 )
 
 // Motion renders the motion slide.

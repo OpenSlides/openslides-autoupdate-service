@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/projector"
-	"github.com/openslides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
 type dbListOfSpeakers struct {
