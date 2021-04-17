@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/keysbuilder"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 )
 
 const prefix = "/system/autoupdate"

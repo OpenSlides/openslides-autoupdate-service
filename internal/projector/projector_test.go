@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/projector"
-	"github.com/openslides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

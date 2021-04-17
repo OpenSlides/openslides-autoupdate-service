@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/openslides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"gopkg.in/yaml.v3"
 )
 

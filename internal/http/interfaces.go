@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 )
 
 // Authenticater gives an user id for an request. Returns 0 for anonymous.

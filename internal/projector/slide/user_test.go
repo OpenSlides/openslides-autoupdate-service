@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/projector"
-	"github.com/openslides/openslides-autoupdate-service/internal/projector/slide"
-	"github.com/openslides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 	"github.com/stretchr/testify/assert"
 )
 

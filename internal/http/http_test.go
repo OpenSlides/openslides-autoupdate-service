@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
-	ahttp "github.com/openslides/openslides-autoupdate-service/internal/http"
-	"github.com/openslides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
+	ahttp "github.com/OpenSlides/openslides-autoupdate-service/internal/http"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 )
 
 type liverMock struct {

@@ -1,10 +1,6 @@
 github.com/OpenSlides/openslides-models-to-go v0.3.0/go.mod h1:CriCefW5smTixhFfVLiuA8NgyMX4PAU5e3YpJHnaZx8=
-github.com/OpenSlides/openslides-models-to-go v0.3.1-0.20210320074548-a7f97d30db9d h1:cPKRn75ZGfWFDQEe7Yu7Q3iMwrC3g7R/hZSED7kLJt0=
-github.com/OpenSlides/openslides-models-to-go v0.3.1-0.20210320074548-a7f97d30db9d/go.mod h1:CriCefW5smTixhFfVLiuA8NgyMX4PAU5e3YpJHnaZx8=
 github.com/OpenSlides/openslides-models-to-go v0.3.1-0.20210328145126-7822f69c1663 h1:PJzjgT8Xy9HFe/2HrZBsd4xwZ0Z08r2bIAhps+1ksZw=
 github.com/OpenSlides/openslides-models-to-go v0.3.1-0.20210328145126-7822f69c1663/go.mod h1:CriCefW5smTixhFfVLiuA8NgyMX4PAU5e3YpJHnaZx8=
-github.com/OpenSlides/openslides-permission-service v0.0.0-20210315064406-e30d35768452 h1:9S83D0BbrGb5Isn1Km51kstM+bgF71HKd+xkEBwk2Tk=
-github.com/OpenSlides/openslides-permission-service v0.0.0-20210315064406-e30d35768452/go.mod h1:5IL8lKaUSdk54Wp2YRjNMKGKPIgJXiDep6yO+NB7YQw=
 github.com/OpenSlides/openslides-permission-service v0.0.0-20210326165411-d3cb6d504f51 h1:jCWiTbw/XRyYXYGdaqGcF7212Z1Ekhq6pD/8qqwk/Ac=
 github.com/OpenSlides/openslides-permission-service v0.0.0-20210326165411-d3cb6d504f51/go.mod h1:5IL8lKaUSdk54Wp2YRjNMKGKPIgJXiDep6yO+NB7YQw=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
@@ -17,7 +13,6 @@ github.com/ostcar/topic v0.3.4-0.20200613094955-61bb28837a98 h1:F/nJ78OVR6ELrcXF
 github.com/ostcar/topic v0.3.4-0.20200613094955-61bb28837a98/go.mod h1:61PcAdinfpVwmQTjP2W0rZoEJqnKku7zvGS9Ag4Si18=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/stretchr/objx v0.1.0 h1:4G4v2dO3VZwixGIRoQ5Lfboy6nUhCyYzaqnIAPPhYs4=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
 github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=

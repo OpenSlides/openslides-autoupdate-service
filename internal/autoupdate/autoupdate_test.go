@@ -6,8 +6,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
-	"github.com/openslides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

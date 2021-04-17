@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"sort"
 
-	"github.com/openslides/openslides-autoupdate-service/pkg/redis"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
 )
 
 func getRedis() *redis.Redis {

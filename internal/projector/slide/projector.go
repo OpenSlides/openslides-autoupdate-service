@@ -3,7 +3,7 @@ package slide
 import (
 	"context"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/projector"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 )
 
 // ProjectorCountdown renders the projector_countdown slide.
