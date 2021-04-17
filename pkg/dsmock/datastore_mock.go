@@ -1,4 +1,4 @@
-package test
+package dsmock
 
 import (
 	"encoding/json"

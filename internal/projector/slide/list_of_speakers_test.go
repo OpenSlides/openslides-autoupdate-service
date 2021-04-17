@@ -6,7 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +18,7 @@ func TestListOfSpeakers(t *testing.T) {
 	losSlide := s.Get("list_of_speakers")
 	assert.NotNilf(t, losSlide, "Slide with name `list_of_speakers` not found.")
 
-	data := test.YAMLData(`
+	data := dsmock.YAMLData(`
 	list_of_speakers/1:
 		content_object_id:	topic/1
 		closed: 			true
@@ -189,7 +189,7 @@ func TestListOfSpeakers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			closed := make(chan struct{})
 			defer close(closed)
-			ds := test.NewMockDatastore(closed, tt.data)
+			ds := dsmock.NewMockDatastore(closed, tt.data)
 
 			p7on := &projector.Projection{
 				ContentObjectID: "list_of_speakers/1",
@@ -227,7 +227,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 	// user/10 has username jonny123
 	//
 	// lets find out if this username is on the slide-data...
-	data := test.YAMLData(`
+	data := dsmock.YAMLData(`
 	projection/1/current_projector_id: 50
 	projector/50/meeting_id: 6
 	meeting/6/reference_projector_id: 60
@@ -253,7 +253,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 	`)
 
 	t.Run("Find list of speakers", func(t *testing.T) {
-		ds := test.NewMockDatastore(closed, data)
+		ds := dsmock.NewMockDatastore(closed, data)
 
 		p7on := &projector.Projection{
 			ID:              1,

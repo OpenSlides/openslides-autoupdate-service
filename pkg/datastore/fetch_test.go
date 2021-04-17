@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +13,7 @@ import (
 func TestGetObject(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	ds := test.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
 		"testmodel/1/id":         "1",
 		"testmodel/1/text":       `"my text"`,
 		"testmodel/1/friend_ids": "[1,2,3]",
@@ -35,7 +35,7 @@ func TestGetObject(t *testing.T) {
 func TestGetObjectOtherFields(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	ds := test.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
 		"testmodel/1/id": "1",
 	})
 
@@ -53,7 +53,7 @@ func TestGetObjectOtherFields(t *testing.T) {
 func TestGetObjectOptions(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	ds := test.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
 		"testmodel/1/id": "1",
 	})
 
@@ -69,7 +69,7 @@ func TestGetObjectOptions(t *testing.T) {
 func TestGetObjectFieldDoesNotExist(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	ds := test.NewMockDatastore(closed, map[string]string{})
+	ds := dsmock.NewMockDatastore(closed, map[string]string{})
 
 	var testModel struct {
 		ID int `json:"id"`

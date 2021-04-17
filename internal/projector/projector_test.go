@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +16,7 @@ func TestProjectionDoesNotExist(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	ds := test.NewMockDatastore(closed, nil)
+	ds := dsmock.NewMockDatastore(closed, nil)
 	projector.Register(ds, testSlides())
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
@@ -28,7 +28,7 @@ func TestProjectionFromContentObject(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	ds := test.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
 		"projection/1/content_object_id": `"test_model/1"`,
 	})
 	projector.Register(ds, testSlides())
@@ -43,7 +43,7 @@ func TestProjectionFromType(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	ds := test.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
 		"projection/1/type": `"test1"`,
 	})
 	projector.Register(ds, testSlides())
@@ -58,7 +58,7 @@ func TestProjectionUpdateProjection(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	ds := test.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
 		"projection/1/type": `"test1"`,
 	})
 	projector.Register(ds, testSlides())
@@ -89,7 +89,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	ds := test.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
 		"projection/1/type": `"projection"`,
 	})
 	projector.Register(ds, testSlides())
@@ -119,7 +119,7 @@ func TestProjectionUpdateSlide(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	ds := test.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
 		"projection/1/type": `"test_model"`,
 	})
 	projector.Register(ds, testSlides())
@@ -150,7 +150,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	ds := test.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
 		"projection/1/type": `"test_model"`,
 	})
 	projector.Register(ds, testSlides())
