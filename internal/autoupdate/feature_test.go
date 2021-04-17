@@ -9,6 +9,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
 
 var dataSet = map[string]string{
@@ -67,7 +68,7 @@ func TestFeatures(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	datastore := test.NewMockDatastore(closed, dataSet)
+	datastore := dsmock.NewMockDatastore(closed, dataSet)
 	s := autoupdate.New(datastore, test.RestrictAllowed(), test.UserUpdater{}, closed)
 
 	for _, tt := range []struct {

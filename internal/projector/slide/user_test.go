@@ -6,7 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -74,7 +74,7 @@ func TestUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			closed := make(chan struct{})
 			defer close(closed)
-			ds := test.NewMockDatastore(closed, tt.data)
+			ds := dsmock.NewMockDatastore(closed, tt.data)
 
 			p7on := &projector.Projection{
 				ContentObjectID: "user/1",

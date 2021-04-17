@@ -8,6 +8,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -79,7 +80,7 @@ func TestConnectionEmptyData(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	datastore := test.NewMockDatastore(closed, map[string]string{
+	datastore := dsmock.NewMockDatastore(closed, map[string]string{
 		doesExistKey: `"Hello World"`,
 	})
 	s := autoupdate.New(datastore, test.RestrictAllowed(), test.UserUpdater{}, closed)
@@ -191,7 +192,7 @@ func TestConnectionFilterData(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	datastore := test.NewMockDatastore(closed, map[string]string{
+	datastore := dsmock.NewMockDatastore(closed, map[string]string{
 		"user/1/name": `"Hello World"`,
 	})
 
@@ -221,7 +222,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	datastore := test.NewMockDatastore(closed, map[string]string{
+	datastore := dsmock.NewMockDatastore(closed, map[string]string{
 		"user/1/name": `"Hello World"`,
 	})
 
@@ -253,7 +254,7 @@ func TestFullUpdate(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	datastore := test.NewMockDatastore(closed, map[string]string{
+	datastore := dsmock.NewMockDatastore(closed, map[string]string{
 		"user/1/name": `"Hello World"`,
 	})
 
@@ -405,7 +406,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	datastore := test.NewMockDatastore(closed, map[string]string{
+	datastore := dsmock.NewMockDatastore(closed, map[string]string{
 		"user/1/name": `"Hello World"`,
 	})
 

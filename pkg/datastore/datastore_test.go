@@ -9,6 +9,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +17,7 @@ import (
 func TestDataStoreGet(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	ts := test.NewDatastoreServer(closed, map[string]string{
+	ts := dsmock.NewDatastoreServer(closed, map[string]string{
 		"collection/1/field": `"Hello World"`,
 	})
 	d := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
@@ -34,7 +35,7 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	ts := test.NewDatastoreServer(closed, map[string]string{
+	ts := dsmock.NewDatastoreServer(closed, map[string]string{
 		"collection/1/field": `"v1"`,
 		"collection/2/field": `"v2"`,
 	})
@@ -56,7 +57,7 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 func TestCalculatedFields(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	ts := test.NewDatastoreServer(closed, nil)
+	ts := dsmock.NewDatastoreServer(closed, nil)
 	url := ts.TS.URL
 	ds := datastore.New(url, closed, func(error) {}, ts)
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
@@ -86,7 +87,7 @@ func TestCalculatedFields(t *testing.T) {
 func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	ts := test.NewDatastoreServer(closed, map[string]string{
+	ts := dsmock.NewDatastoreServer(closed, map[string]string{
 		"collection/1/normal_field": `"original value"`,
 	})
 	url := ts.TS.URL
@@ -119,7 +120,7 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	ts := test.NewDatastoreServer(closed, map[string]string{
+	ts := dsmock.NewDatastoreServer(closed, map[string]string{
 		"collection/1/normal_field": `"original value"`,
 	})
 	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
@@ -154,7 +155,7 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	ts := test.NewDatastoreServer(closed, map[string]string{
+	ts := dsmock.NewDatastoreServer(closed, map[string]string{
 		"collection/1/normal_field": `"original value"`,
 	})
 	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
@@ -175,7 +176,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 func TestCalculatedFieldsNoDBQuery(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	ts := test.NewDatastoreServer(closed, nil)
+	ts := dsmock.NewDatastoreServer(closed, nil)
 	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
 		return []byte("foobar"), nil
@@ -190,7 +191,7 @@ func TestCalculatedFieldsNoDBQuery(t *testing.T) {
 func TestChangeListeners(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	ts := test.NewDatastoreServer(closed, nil)
+	ts := dsmock.NewDatastoreServer(closed, nil)
 	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
 
 	var receivedData map[string]json.RawMessage
@@ -211,7 +212,7 @@ func TestChangeListeners(t *testing.T) {
 func TestResetCache(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	ts := test.NewDatastoreServer(closed, nil)
+	ts := dsmock.NewDatastoreServer(closed, nil)
 	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
 
 	// Fetch key to fill the cache.
@@ -227,7 +228,7 @@ func TestResetCache(t *testing.T) {
 func TestResetWhileUpdate(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	ts := test.NewDatastoreServer(closed, nil)
+	ts := dsmock.NewDatastoreServer(closed, nil)
 	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
 
 	// Fetch key to fill the cache.

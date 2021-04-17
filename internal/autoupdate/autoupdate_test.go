@@ -8,6 +8,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +17,7 @@ func TestLive(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	ds := test.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
 		"collection/1/foo": `"Foo Value"`,
 		"collection/1/bar": `"Bar Value"`,
 	})
@@ -35,7 +36,7 @@ func TestLiveFlushBetweenUpdates(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 
-	ds := test.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
 		"collection/1/foo": `"Foo Value"`,
 		"collection/1/bar": `"Bar Value"`,
 	})
