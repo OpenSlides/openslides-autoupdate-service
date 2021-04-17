@@ -55,7 +55,7 @@ func TestRedisError(t *testing.T) {
 	closing := make(chan struct{})
 	defer close(closing)
 
-	r := &redis.Service{Conn: mockConn{err: errors.New("my error")}}
+	r := &redis.Redis{Conn: mockConn{err: errors.New("my error")}}
 	keys, err := r.Update(closing)
 	if err == nil {
 		t.Errorf("Update() did not return an error, expected one.")

@@ -8,12 +8,12 @@ import (
 	"github.com/openslides/openslides-autoupdate-service/pkg/redis"
 )
 
-func getRedis() *redis.Service {
+func getRedis() *redis.Redis {
 	var c redis.Connection = mockConn{}
 	if useRealRedis {
 		c = redis.NewConnection("localhost:6379")
 	}
-	return &redis.Service{Conn: c}
+	return &redis.Redis{Conn: c}
 }
 
 type mockConn struct {

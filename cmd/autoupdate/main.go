@@ -226,7 +226,7 @@ func buildReceiver(env map[string]string) (messageBus, error) {
 		return nil, fmt.Errorf("unknown messagin service %s", serviceName)
 	}
 
-	return &redis.Service{Conn: conn}, nil
+	return &redis.Redis{Conn: conn}, nil
 }
 
 // buildAuth returns the auth service needed by the http server.

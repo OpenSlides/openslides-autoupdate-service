@@ -3,33 +3,35 @@ package datastore
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 )
 
 // Getter can get values from keys.
+//
+// The Datastore object implements this interface.
 type Getter interface {
 	Get(ctx context.Context, keys ...string) ([]json.RawMessage, error)
 }
 
 // Fetcher is a helper to fetch many keys from the datastore.
 //
-// This object is meant to be called like a function. Do not keep it around.
+// This object is meant to be called like a function. Do not store it in a
+// struct.
 //
-// The methods do not return an error. It is saved internaly. As soon, as an
-// error happens, all later calls are noops.
+// The methods do not return an error. If an error happens, it is saved
+// internaly. As soon, as an error happens, all later calls to methods of that
+// fetcher are noops.
 //
-// Make sure to call Fetcher.Error() to see, if an error happend.
+// Make sure to call Fetcher.Error() at the end to see, if an error happend.
 type Fetcher struct {
 	ds   Getter
 	keys []string
 	err  error
 }
 
-// NewFetcher initializes a Fetcher object. Make sure to check the error in the
-// end of your function.
+// NewFetcher initializes a Fetcher object.
 func NewFetcher(ds Getter) *Fetcher {
 	return &Fetcher{ds: ds}
 }
@@ -47,7 +49,6 @@ func (f *Fetcher) Object(ctx context.Context, value interface{}, fqIDFmt string,
 		return
 	}
 	f.keys = append(f.keys, keys...)
-
 }
 
 // Value fetches a value from the datastore.
@@ -57,7 +58,7 @@ func (f *Fetcher) Value(ctx context.Context, value interface{}, keyFmt string, a
 	}
 
 	key := fmt.Sprintf(keyFmt, a...)
-	if err := Get(ctx, f.ds, key, value); err != nil {
+	if err := get(ctx, f.ds, key, value); err != nil {
 		f.err = fmt.Errorf("fetching %s: %w", key, err)
 		return
 	}
@@ -78,6 +79,7 @@ func (f *Fetcher) Ints(ctx context.Context, keyFmt string, a ...interface{}) []i
 	return iSlice
 }
 
+// String fetches a string from the datastore.
 func (f *Fetcher) String(ctx context.Context, keyFmt string, a ...interface{}) string {
 	var s string
 	f.Value(ctx, &s, keyFmt, a...)
@@ -89,14 +91,19 @@ func (f *Fetcher) Keys() []string {
 	return f.keys
 }
 
+// Error returns the error that happend at a method call. If no error happend,
+// then Error() returns nil.
 func (f *Fetcher) Error() error {
 	return f.err
 }
 
-// Get returns a value from the datastore and unpacks it in to the argument value.
+// get returns a value from the datastore and unpacks it in to the argument
+// value.
 //
 // The argument value has to be an non nil pointer.
-func Get(ctx context.Context, ds Getter, fqfield string, value interface{}) error {
+//
+// get returns a DoesNotExistError if the value des not exist in the datastore.
+func get(ctx context.Context, ds Getter, fqfield string, value interface{}) error {
 	fields, err := ds.Get(ctx, fqfield)
 	if err != nil {
 		return fmt.Errorf("getting data from datastore: %w", err)
@@ -112,22 +119,20 @@ func Get(ctx context.Context, ds Getter, fqfield string, value interface{}) erro
 	return nil
 }
 
-// GetIfExist behaves like Get() but does not throw an error if the fqfield does
-// not exist.
-func GetIfExist(ctx context.Context, ds Getter, fqfield string, value interface{}) error {
-	if err := Get(ctx, ds, fqfield, value); err != nil {
-		var errDoesNotExist DoesNotExistError
-		if !errors.As(err, &errDoesNotExist) {
-			return err
-		}
-	}
-	return nil
-}
-
 // GetObject fetches an object at once.
 //
-// The argument value has to be a struct. The json-tags have to be field from
-// the models.yml.
+// The argument `value` has to be a pointer to a struct. The json-tags have to
+// be field names from the models.yml. For example:
+//
+// type dbUser struct {
+//  Username  string `json:"username"`
+//  Title     string `json:"title"`
+//  FirstName string `json:"first_name"`
+//  LastName  string `json:"last_name"`
+// }
+//
+// GetObjects writes the Attributes of the `value` struct. The first return
+// value are the fqFields that where requested.
 func GetObject(ctx context.Context, ds Getter, fqid string, value interface{}) ([]string, error) {
 	v := reflect.ValueOf(value).Elem()
 	t := reflect.TypeOf(v.Interface())
@@ -172,7 +177,8 @@ func GetObject(ctx context.Context, ds Getter, fqid string, value interface{}) (
 	return keys, nil
 }
 
-// DoesNotExistError is thowen when an field does not exist.
+// DoesNotExistError is thowen by the methods of a Fether when an field does not
+// exist.
 type DoesNotExistError string
 
 func (e DoesNotExistError) Error() string {
