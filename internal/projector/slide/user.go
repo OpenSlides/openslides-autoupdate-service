@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
 	"github.com/openslides/openslides-autoupdate-service/internal/projector"
+	"github.com/openslides/openslides-autoupdate-service/pkg/datastore"
 )
 
 type dbUser struct {

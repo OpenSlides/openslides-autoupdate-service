@@ -12,15 +12,15 @@ import (
 	"syscall"
 
 	"github.com/OpenSlides/openslides-permission-service/pkg/permission"
-	"github.com/openslides/openslides-autoupdate-service/internal/auth"
 	"github.com/openslides/openslides-autoupdate-service/internal/autoupdate"
-	"github.com/openslides/openslides-autoupdate-service/internal/datastore"
 	autoupdateHttp "github.com/openslides/openslides-autoupdate-service/internal/http"
 	"github.com/openslides/openslides-autoupdate-service/internal/projector"
 	"github.com/openslides/openslides-autoupdate-service/internal/projector/slide"
-	"github.com/openslides/openslides-autoupdate-service/internal/redis"
 	"github.com/openslides/openslides-autoupdate-service/internal/restrict"
 	"github.com/openslides/openslides-autoupdate-service/internal/test"
+	"github.com/openslides/openslides-autoupdate-service/pkg/auth"
+	"github.com/openslides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/openslides/openslides-autoupdate-service/pkg/redis"
 )
 
 type messageBus interface {
