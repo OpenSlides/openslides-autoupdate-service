@@ -1,3 +1,5 @@
+// Package auth implement the auth system from the openslides-auth-service:
+// https://github.com/OpenSlides/openslides-auth-service
 package auth
 
 import (
@@ -21,7 +23,9 @@ const cookieName = "refreshId"
 const authHeader = "Authentication"
 const authPath = "/internal/auth/authenticate"
 
-// Auth authenticates a request against the auth service.
+// Auth authenticates a request against the openslides-auth-service.
+//
+// Has to be initialized with auth.New().
 type Auth struct {
 	logoutEventer    LogoutEventer
 	logedoutSessions *topic.Topic
@@ -34,7 +38,7 @@ type Auth struct {
 	cookieKey []byte
 }
 
-// New initializes a Auth service.
+// New initializes an Auth service.
 func New(authServiceURL string, logoutEventer LogoutEventer, closed <-chan struct{}, errHandler func(error), tokenKey, cookieKey []byte) (*Auth, error) {
 	a := &Auth{
 		closed:           closed,
@@ -59,7 +63,7 @@ func New(authServiceURL string, logoutEventer LogoutEventer, closed <-chan struc
 }
 
 // Authenticate uses the headers from the given request to get the user id. The
-// returned context will be cancled, if the session is revoced.
+// returned context will be cancled, if the session is revoked.
 func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (ctx context.Context, err error) {
 	p := new(payload)
 	if err := a.loadToken(w, r, p); err != nil {
@@ -107,8 +111,8 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (ctx context
 	return ctx, nil
 }
 
-// FromContext returnes the user id from a context returned by Authenticate. If
-// the context was not returned from Authenticate or the user is an anonymous
+// FromContext returnes the user id from a context returned by Authenticate().
+// If the context was not returned from Authenticate or the user is an anonymous
 // user, then 0 is returned.
 func (a *Auth) FromContext(ctx context.Context) int {
 	v := ctx.Value(userIDType)
@@ -123,6 +127,7 @@ func (a *Auth) receiveLogoutEvent(errHandler func(error)) {
 	if errHandler == nil {
 		errHandler = func(error) {}
 	}
+
 	for {
 		select {
 		case <-a.closed:

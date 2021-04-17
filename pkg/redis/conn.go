@@ -44,7 +44,8 @@ func (s *Pool) XREAD(count, stream, id string) (interface{}, error) {
 	return conn.Do("XREAD", "COUNT", count, "BLOCK", "0", "STREAMS", stream, id)
 }
 
-// BlockingConn implements the redis.Conn interface but does nothing.
+// BlockingConn is a fake implementation of the redis connection. It does not
+// create a connection but blocks forever.
 type BlockingConn struct{}
 
 // XREAD blocks forever.

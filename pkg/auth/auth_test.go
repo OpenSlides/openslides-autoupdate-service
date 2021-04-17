@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go/v4"
-	"github.com/openslides/openslides-autoupdate-service/internal/auth"
+	"github.com/openslides/openslides-autoupdate-service/pkg/auth"
 )
 
 func TestAuth(t *testing.T) {

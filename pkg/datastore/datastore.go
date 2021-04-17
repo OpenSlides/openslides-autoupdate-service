@@ -1,6 +1,5 @@
-// Package datastore connects to the datastore service to receive values. It
-// also connections to redis to get the keyupdates from the datastore
-// connection.
+// Package datastore connects to the openslies-datastore-service to receive
+// values.
 //
 // The Datastore object uses a cache to only request keys once. If a key in the
 // cache gets an update via the keychanger, the cache gets updated.
@@ -65,7 +64,8 @@ func (d *Datastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage,
 	return values, nil
 }
 
-// RegisterChangeListener registers a function that gets changed data.
+// RegisterChangeListener registers a function that is called whenever an
+// datastore update happens.
 func (d *Datastore) RegisterChangeListener(f func(map[string]json.RawMessage) error) {
 	d.changeListeners = append(d.changeListeners, f)
 }
@@ -73,11 +73,11 @@ func (d *Datastore) RegisterChangeListener(f func(map[string]json.RawMessage) er
 // RegisterCalculatedField creates a virtual field that is not in the datastore
 // but is created at runtime.
 //
-// field has to be in the form `collection/field`. The field is created for
+// `field` has to be in the form `collection/field`. The field is created for
 // every full qualified field that matches that field.
 //
 // When a fqfield, that matches the field, is fetched for the first time, then f
-// is called with `changed==nil`. On every ds-update, f is called again with the
+// is called with `changed==nil`. On every ds-update, `f` is called again with the
 // data, that has changed.
 func (d *Datastore) RegisterCalculatedField(field string, f func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error)) {
 	d.calculatedFields[field] = f

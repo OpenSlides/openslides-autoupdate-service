@@ -1,5 +1,5 @@
-// Package redis holds the Service type, that implements the datastore.Updater
-// interface of the autoupdate package by reading from a redis stream.
+// Package redis connects to a redis database to fetch database updates and
+// logout events.
 package redis
 
 import (
@@ -23,23 +23,23 @@ const (
 	lastLogoutDuration = 15 * time.Minute
 )
 
-// Service holds the state of the redis receiver.
-type Service struct {
+// Redis holds the state of the redis receiver.
+type Redis struct {
 	Conn             Connection
 	lastAutoupdateID string
 	lastLogoutID     string
 }
 
 // Update is a blocking function that returns, when there is new data.
-func (s *Service) Update(closing <-chan struct{}) (map[string]json.RawMessage, error) {
-	id := s.lastAutoupdateID
+func (r *Redis) Update(closing <-chan struct{}) (map[string]json.RawMessage, error) {
+	id := r.lastAutoupdateID
 	if id == "" {
 		id = "$"
 	}
 
 	var data map[string]json.RawMessage
 	err := closingFunc(closing, func() error {
-		newID, d, err := autoupdateStream(s.Conn.XREAD(maxMessages, fieldChangedTopic, id))
+		newID, d, err := autoupdateStream(r.Conn.XREAD(maxMessages, fieldChangedTopic, id))
 		if err != nil {
 			return err
 		}
@@ -56,14 +56,14 @@ func (s *Service) Update(closing <-chan struct{}) (map[string]json.RawMessage, e
 		return nil, fmt.Errorf("get xread data from redis: %w", err)
 	}
 	if id != "" {
-		s.lastAutoupdateID = id
+		r.lastAutoupdateID = id
 	}
 	return data, nil
 }
 
 // LogoutEvent is a blocking function that returns, when a session was revoked.
-func (s *Service) LogoutEvent(closing <-chan struct{}) ([]string, error) {
-	id := s.lastLogoutID
+func (r *Redis) LogoutEvent(closing <-chan struct{}) ([]string, error) {
+	id := r.lastLogoutID
 	if id == "" {
 		// Generate an redis ID to get the logout events from the since `lastLogoutDuration`.
 		id = strconv.FormatInt(time.Now().Add(-lastLogoutDuration).Unix(), 10)
@@ -71,7 +71,7 @@ func (s *Service) LogoutEvent(closing <-chan struct{}) ([]string, error) {
 
 	var sessionIDs []string
 	err := closingFunc(closing, func() error {
-		newID, sIDs, err := logoutStream(s.Conn.XREAD(maxMessages, logoutTopic, id))
+		newID, sIDs, err := logoutStream(r.Conn.XREAD(maxMessages, logoutTopic, id))
 		if err != nil {
 			return err
 		}
@@ -88,7 +88,7 @@ func (s *Service) LogoutEvent(closing <-chan struct{}) ([]string, error) {
 		return nil, fmt.Errorf("get xread data from redis: %w", err)
 	}
 	if id != "" {
-		s.lastLogoutID = id
+		r.lastLogoutID = id
 	}
 	return sessionIDs, nil
 }
