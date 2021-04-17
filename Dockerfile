@@ -1,4 +1,4 @@
-FROM golang:1.16.3-alpine3.13 as basis
+FROM golang:1.16.3-alpine3 as basis
 LABEL maintainer="OpenSlides Team <info@openslides.com>"
 WORKDIR /root/
 
@@ -9,6 +9,7 @@ RUN go mod download
 
 COPY cmd cmd
 COPY internal internal
+COPY pkg pkg
 
 # Build service in seperate stage.
 FROM basis as builder
