@@ -112,7 +112,7 @@ func (p *poll) fields(fqfields []perm.FQField, result map[string]bool, restricte
 			var err error
 			hasPerm, err = f(fqfield)
 			if err != nil {
-				return fmt.Errorf("get permissions for poll %d: %w", fqfield.ID, err)
+				return fmt.Errorf("get permissions for %s: %w", fqfield.FQID(), err)
 			}
 		}
 		if hasPerm == 1 || hasPerm == 2 && !restricted[fqfield.Field] {

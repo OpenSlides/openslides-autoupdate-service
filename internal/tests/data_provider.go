@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 type dataProvider struct {
@@ -14,6 +15,9 @@ type dataProvider struct {
 func (t dataProvider) Get(ctx context.Context, fqfields ...string) ([]json.RawMessage, error) {
 	data := make([]json.RawMessage, len(fqfields))
 	for i, field := range fqfields {
+		if !validKey(field) {
+			return nil, fmt.Errorf("invalid field: %s", field)
+		}
 		value, ok := t.data[field]
 		if !ok {
 			data[i] = nil

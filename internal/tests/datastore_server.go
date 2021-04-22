@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 )
 
@@ -36,6 +37,10 @@ func NewDatastoreServer(data map[string]json.RawMessage) *DatastoreServer {
 
 		responceData := make(map[string]map[string]map[string]json.RawMessage)
 		for _, key := range requestData.Keys {
+			if !validKey(key) {
+				http.Error(w, "Key is invalid: "+key, 400)
+			}
+
 			result, err := testData.Get(r.Context(), key)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
@@ -65,4 +70,12 @@ func NewDatastoreServer(data map[string]json.RawMessage) *DatastoreServer {
 		ts.RequestCount++
 	}))
 	return ts
+}
+
+func validKey(key string) bool {
+	match, err := regexp.MatchString(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*/[a-z][a-z0-9_]*\$?[a-z0-9_]*$`, key)
+	if err != nil {
+		panic(err)
+	}
+	return match
 }
