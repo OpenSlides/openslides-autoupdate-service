@@ -13,55 +13,55 @@ import (
 )
 
 var dataSet = map[string]string{
-	"A/1/a":                   `"a1"`,
-	"A/1/title":               `"a1"`,
-	"A/1/B_id":                `1`,
-	"A/1/C_ids":               `[]`,
-	"A/1/G1_ids":              `[1,2]`,
-	"A/2/a":                   `"a2"`,
-	"A/2/title":               `"a2"`,
-	"A/2/C_ids":               `[1,2]`,
-	"A/2/G1_ids":              `[]`,
-	"B/1/b":                   `"b1"`,
-	"B/1/title":               `"b1"`,
-	"B/1/A_id":                `1`,
-	"B/1/C_ids":               `[1]`,
-	"B/1/G2_id":               `1`,
-	"B/1/B_children_ids":      `[2]`,
-	"B/1/D_ids":               `[1]`,
-	"B/2/b":                   `"b2"`,
-	"B/2/title":               `"b2"`,
-	"B/2/C_ids":               `[1,2]`,
-	"B/2/B_parent_id":         `1`,
-	"B/2/B_children_ids":      `[]`,
-	"B/2/D_ids":               `[1,2]`,
-	"C/1/c":                   `"c1"`,
-	"C/1/title":               `"c1"`,
-	"C/1/A_id":                `2`,
-	"C/1/B_ids":               `[1,2]`,
-	"C/1/G1_ids":              `[2,3]`,
-	"C/2/c":                   `"c2"`,
-	"C/2/title":               `"c2"`,
-	"C/2/A_id":                `2`,
-	"C/2/B_ids":               `[2]`,
-	"C/2/G1_ids":              `[2,3]`,
-	"D/1/d":                   `"d1"`,
-	"D/1/B_$_ids":             `["1","2","3"]`,
-	"D/1/B_$1_ids":            `[1,2]`,
-	"D/1/B_$2_ids":            `[1]`,
-	"D/1/B_$3_ids":            `[]`,
-	"D/2/d":                   `"d2"`,
-	"D/2/B_$_ids":             `["1","4"]`,
-	"D/2/B_$1_ids":            `[]`,
-	"D/2/B_$4_ids":            `[2]`,
-	"G1/1/g1":                 `"g1.1"`,
-	"G1/1/content_object_ids": `["A/1"]`,
-	"G1/2/g1":                 `"g1.2"`,
-	"G1/2/content_object_ids": `["A/1","C/1","C/2"]`,
-	"G1/3/g1":                 `"g1.3"`,
-	"G1/3/content_object_ids": `["C/1","C/2"]`,
-	"G2/1/g2":                 `"g2.1"`,
-	"G2/1/content_object_id":  `"B/1"`,
+	"a/1/a":                   `"a1"`,
+	"a/1/title":               `"a1"`,
+	"a/1/b_id":                `1`,
+	"a/1/c_ids":               `[]`,
+	"a/1/ga_ids":              `[1,2]`,
+	"a/2/a":                   `"a2"`,
+	"a/2/title":               `"a2"`,
+	"a/2/c_ids":               `[1,2]`,
+	"a/2/ga_ids":              `[]`,
+	"b/1/b":                   `"b1"`,
+	"b/1/title":               `"b1"`,
+	"b/1/a_id":                `1`,
+	"b/1/c_ids":               `[1]`,
+	"b/1/gb_id":               `1`,
+	"b/1/b_children_ids":      `[2]`,
+	"b/1/d_ids":               `[1]`,
+	"b/2/b":                   `"b2"`,
+	"b/2/title":               `"b2"`,
+	"b/2/c_ids":               `[1,2]`,
+	"b/2/b_parent_id":         `1`,
+	"b/2/b_children_ids":      `[]`,
+	"b/2/d_ids":               `[1,2]`,
+	"c/1/c":                   `"c1"`,
+	"c/1/title":               `"c1"`,
+	"c/1/a_id":                `2`,
+	"c/1/b_ids":               `[1,2]`,
+	"c/1/ga_ids":              `[2,3]`,
+	"c/2/c":                   `"c2"`,
+	"c/2/title":               `"c2"`,
+	"c/2/a_id":                `2`,
+	"c/2/b_ids":               `[2]`,
+	"c/2/ga_ids":              `[2,3]`,
+	"d/1/d":                   `"d1"`,
+	"d/1/b_$_ids":             `["1","2","3"]`,
+	"d/1/b_$1_ids":            `[1,2]`,
+	"d/1/b_$2_ids":            `[1]`,
+	"d/1/b_$3_ids":            `[]`,
+	"d/2/d":                   `"d2"`,
+	"d/2/b_$_ids":             `["1","4"]`,
+	"d/2/b_$1_ids":            `[]`,
+	"d/2/b_$4_ids":            `[2]`,
+	"ga/1/ga":                 `"ga.1"`,
+	"ga/1/content_object_ids": `["a/1"]`,
+	"ga/2/ga":                 `"ga.2"`,
+	"ga/2/content_object_ids": `["a/1","c/1","c/2"]`,
+	"ga/3/ga":                 `"ga.3"`,
+	"ga/3/content_object_ids": `["c/1","c/2"]`,
+	"gb/1/gb":                 `"gb.1"`,
+	"gb/1/content_object_id":  `"b/1"`,
 }
 
 func TestFeatures(t *testing.T) {
@@ -86,110 +86,110 @@ func TestFeatures(t *testing.T) {
 		{
 			"Basic",
 			`{
-				"collection": "A",
+				"collection": "a",
 				"ids": [
 					1,
 					2
 				],
 				"fields": {
 					"a": null,
-					"C_ids": {
+					"c_ids": {
 						"type": "relation-list",
-						"collection": "C",
+						"collection": "c",
 						"fields": {
 							"c": null,
-							"G1_ids": {
+							"ga_ids": {
 								"type": "relation-list",
-								"collection": "G1",
+								"collection": "ga",
 								"fields": {
-									"g1": null
+									"ga": null
 								}
 							}
 						}
 					},
-					"B_id": {
+					"b_id": {
 						"type": "relation",
-						"collection": "B",
+						"collection": "b",
 						"fields": {}
 					},
-					"G1_ids": {
+					"ga_ids": {
 						"type": "relation-list",
-						"collection": "G1",
+						"collection": "ga",
 						"fields": {
-							"g1": null
+							"ga": null
 						}
 					}
 				}
 			}`,
 			`{
-				"A/1/a":      "a1",
-				"A/1/C_ids":  [],
-				"A/1/B_id":   1,
-				"A/1/G1_ids": [1,2],
-				"A/2/a":      "a2",
-				"A/2/C_ids":  [1,2],
-				"A/2/G1_ids": [],
-				"C/1/c":      "c1",
-				"C/1/G1_ids": [2,3],
-				"C/2/c":      "c2",
-				"C/2/G1_ids": [2,3],
-				"G1/1/g1":    "g1.1",
-				"G1/2/g1":    "g1.2",
-				"G1/3/g1":    "g1.3"
+				"a/1/a":      "a1",
+				"a/1/c_ids":  [],
+				"a/1/b_id":   1,
+				"a/1/ga_ids": [1,2],
+				"a/2/a":      "a2",
+				"a/2/c_ids":  [1,2],
+				"a/2/ga_ids": [],
+				"c/1/c":      "c1",
+				"c/1/ga_ids": [2,3],
+				"c/2/c":      "c2",
+				"c/2/ga_ids": [2,3],
+				"ga/1/ga":    "ga.1",
+				"ga/2/ga":    "ga.2",
+				"ga/3/ga":    "ga.3"
 			}`,
 		},
 		{
 			"Partial merged fields, generic lookup",
 			`{
-				"collection": "G2",
+				"collection": "gb",
 				"ids": [1],
 				"fields": {
 					"content_object_id": {
 						"type": "generic-relation",
 						"fields": {
-							"B_children_ids": {
+							"b_children_ids": {
 								"type": "relation-list",
-								"collection": "B",
+								"collection": "b",
 								"fields": {
-									"C_ids": {
+									"c_ids": {
 										"type": "relation-list",
-										"collection": "C",
+										"collection": "c",
 										"fields": {
 											"c": null
 										}
 									},
-									"B_parent_id": null
+									"b_parent_id": null
 								}
 							},
-							"C_ids": {
+							"c_ids": {
 								"type": "relation-list",
-								"collection": "C",
+								"collection": "c",
 								"fields": {
 									"c": null,
 									"title": null
 								}
 							},
-							"G2_id": null
+							"gb_id": null
 						}
 					}
 				}
 			}`,
 			`{
-				"B/1/B_children_ids":     [2],
-				"B/1/C_ids":              [1],
-				"B/1/G2_id":              1,
-				"B/2/C_ids":              [1,2],
-				"B/2/B_parent_id":        1,
-				"G2/1/content_object_id": "B/1",
-				"C/1/c":                  "c1",
-				"C/1/title":              "c1",
-				"C/2/c":                  "c2"
+				"b/1/b_children_ids":     [2],
+				"b/1/c_ids":              [1],
+				"b/1/gb_id":              1,
+				"b/2/c_ids":              [1,2],
+				"b/2/b_parent_id":        1,
+				"gb/1/content_object_id": "b/1",
+				"c/1/c":                  "c1",
+				"c/1/title":              "c1",
+				"c/2/c":                  "c2"
 			}`,
 		},
 		{
 			"non-existent ids, fields, fqids, references, generic relations and fields without a relation",
 			`{
-				"collection": "G1",
+				"collection": "ga",
 				"ids": [2,4],
 				"fields": {
 					"content_object_ids": {
@@ -202,85 +202,85 @@ func TestFeatures(t *testing.T) {
 								"fields": {"key": null}
 							},
 							"title": null,
-							"G1_ids": null,
-							"A_id": null
+							"ga_ids": null,
+							"a_id": null
 						}
 					}
 				}
 			}`,
 			`{
-				"G1/2/content_object_ids": ["A/1","C/1","C/2"],
-				"A/1/a":                   "a1",
-				"A/1/title":               "a1",
-				"A/1/G1_ids":              [1,2],
-				"C/1/title":               "c1",
-				"C/1/A_id":                2,
-				"C/1/G1_ids":              [2,3],
-				"C/2/title":               "c2",
-				"C/2/A_id":                2,
-				"C/2/G1_ids":              [2,3]
+				"ga/2/content_object_ids": ["a/1","c/1","c/2"],
+				"a/1/a":                   "a1",
+				"a/1/title":               "a1",
+				"a/1/ga_ids":              [1,2],
+				"c/1/title":               "c1",
+				"c/1/a_id":                2,
+				"c/1/ga_ids":              [2,3],
+				"c/2/title":               "c2",
+				"c/2/a_id":                2,
+				"c/2/ga_ids":              [2,3]
 			}`,
 		},
 		{
 			"template fields",
 			`{
-				"collection": "D",
+				"collection": "d",
 				"ids": [1,2],
 				"fields": {
 					"d": null,
-					"B_$_ids": null
+					"b_$_ids": null
 				}
 			}`,
 			`{
-				"D/1/d":       "d1",
-				"D/1/B_$_ids": ["1","2","3"],
-				"D/2/d":       "d2",
-				"D/2/B_$_ids": ["1","4"]
+				"d/1/d":       "d1",
+				"d/1/b_$_ids": ["1","2","3"],
+				"d/2/d":       "d2",
+				"d/2/b_$_ids": ["1","4"]
 			}`,
 		},
 		{
 			"structured fields without references",
 			`{
-				"collection": "D",
+				"collection": "d",
 				"ids": [1,2],
 				"fields": {
 					"d": null,
-					"B_$_ids": {
+					"b_$_ids": {
 						"type": "template"
 					}
 				}
 			}`,
 			`{
-				"D/1/d":       "d1",
-				"D/1/B_$_ids": ["1","2","3"],
-				"D/1/B_$1_ids": [1,2],
-				"D/1/B_$2_ids": [1],
-				"D/1/B_$3_ids": [],
-				"D/2/d":       "d2",
-				"D/2/B_$_ids": ["1","4"],
-				"D/2/B_$1_ids": [],
-				"D/2/B_$4_ids": [2]
+				"d/1/d":       "d1",
+				"d/1/b_$_ids": ["1","2","3"],
+				"d/1/b_$1_ids": [1,2],
+				"d/1/b_$2_ids": [1],
+				"d/1/b_$3_ids": [],
+				"d/2/d":       "d2",
+				"d/2/b_$_ids": ["1","4"],
+				"d/2/b_$1_ids": [],
+				"d/2/b_$4_ids": [2]
 			}`,
 		},
 		{
 			"structed references",
 			`{
-				"collection": "D",
+				"collection": "d",
 				"ids": [1,2],
 				"fields": {
-					"B_$_ids": {
+					"b_$_ids": {
 						"type": "template",
 						"values": {
 							"type": "relation-list",
-							"collection": "B",
+							"collection": "b",
 							"fields": {
 								"b": null
 							}
 						}
 					},
-					"B_$4_ids": {
+					"b_$4_ids": {
 						"type": "relation-list",
-						"collection": "B",
+						"collection": "b",
 						"fields": {
 							"title": null
 						}
@@ -288,16 +288,16 @@ func TestFeatures(t *testing.T) {
 				}
 			}`,
 			`{
-				"D/1/B_$_ids": ["1","2","3"],
-				"D/1/B_$1_ids": [1,2],
-				"D/1/B_$2_ids": [1],
-				"D/1/B_$3_ids": [],
-				"D/2/B_$_ids": ["1","4"],
-				"D/2/B_$1_ids": [],
-				"D/2/B_$4_ids": [2],
-				"B/1/b":       "b1",
-				"B/2/b":       "b2",
-				"B/2/title":   "b2"
+				"d/1/b_$_ids": ["1","2","3"],
+				"d/1/b_$1_ids": [1,2],
+				"d/1/b_$2_ids": [1],
+				"d/1/b_$3_ids": [],
+				"d/2/b_$_ids": ["1","4"],
+				"d/2/b_$1_ids": [],
+				"d/2/b_$4_ids": [2],
+				"b/1/b":       "b1",
+				"b/2/b":       "b2",
+				"b/2/title":   "b2"
 			}`,
 		},
 	} {

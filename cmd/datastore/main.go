@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -78,6 +79,10 @@ func exampleHandler(w http.ResponseWriter, r *http.Request) {
 
 	responceData := make(map[string]map[string]map[string]json.RawMessage)
 	for _, key := range data.Keys {
+		if !validKey(key) {
+			http.Error(w, "Key is invalid: "+key, 400)
+		}
+
 		value, ok := models.ExampleData[key]
 
 		if !ok {
@@ -97,4 +102,12 @@ func exampleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(responceData)
+}
+
+func validKey(key string) bool {
+	match, err := regexp.MatchString(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*/[a-z][a-z0-9_]*\$?[a-z0-9_]*$`, key)
+	if err != nil {
+		panic(err)
+	}
+	return match
 }

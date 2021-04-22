@@ -161,7 +161,7 @@ func (d *Datastore) loadKeys(ctx context.Context, keys []string, set func(string
 	if len(normalKeys) > 0 {
 		data, err := d.requestKeys(normalKeys)
 		if err != nil {
-			return fmt.Errorf("requiesting keys from datastore: %w", err)
+			return fmt.Errorf("requesting keys from datastore: %w", err)
 		}
 		for k, v := range data {
 			set(k, v)
