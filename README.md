@@ -140,6 +140,8 @@ curl -N localhost:9012/system/autoupdate -d '
 ]'
 ```
 
+## Configuration
+
 ### Environment variables
 
 The Service uses the following environment variables:

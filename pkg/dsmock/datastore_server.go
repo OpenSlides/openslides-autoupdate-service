@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 )
 
@@ -41,6 +42,9 @@ func NewDatastoreServer(close <-chan struct{}, data map[string]string) *Datastor
 
 		responceData := make(map[string]map[string]map[string]json.RawMessage)
 		for _, key := range data.Keys {
+			if !validKey(key) {
+				http.Error(w, "Key is invalid: "+key, 400)
+			}
 			value, err := d.Values.value(key)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
@@ -110,3 +114,11 @@ type closingError struct{}
 
 func (e closingError) Closing()      {}
 func (e closingError) Error() string { return "closing" }
+
+func validKey(key string) bool {
+	match, err := regexp.MatchString(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*/[a-z][a-z0-9_]*\$?[a-z0-9_]*$`, key)
+	if err != nil {
+		panic(err)
+	}
+	return match
+}
