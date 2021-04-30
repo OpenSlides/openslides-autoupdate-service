@@ -21,100 +21,107 @@ func setup(t *testing.T) projector.Slider {
 
 func TestUser(t *testing.T) {
 	userSlide := setup(t)
+	var emptySlice []string
 
 	for _, tt := range []struct {
-		name   string
-		data   map[string]string
-		expect string
+		name            string
+		data            map[string]string
+		expect          string
+		addkeysexpected []string
 	}{
 		{
 			"Only Username",
 			map[string]string{
-				"user/1/username":          `"jonny123"`,
-				"user/1/structure_level_$": `["1"]`,
+				"user/1/username": `"jonny123"`,
 			},
 			`{"user":"jonny123"}`,
+			emptySlice,
 		},
 		{
 			"Only Firstname",
 			map[string]string{
-				"user/1/first_name":        `"Jonny"`,
-				"user/1/structure_level_$": `["1"]`,
+				"user/1/first_name": `"Jonny"`,
 			},
 			`{"user":"Jonny"}`,
+			emptySlice,
 		},
 		{
 			"Only Lastname",
 			map[string]string{
-				"user/1/last_name":         `"Bo"`,
-				"user/1/structure_level_$": `["1"]`,
+				"user/1/last_name": `"Bo"`,
 			},
 			`{"user":"Bo"}`,
+			emptySlice,
 		},
 		{
 			"Firstname Lastname",
 			map[string]string{
-				"user/1/first_name":        `"Jonny"`,
-				"user/1/last_name":         `"Bo"`,
-				"user/1/structure_level_$": `["1"]`,
+				"user/1/first_name": `"Jonny"`,
+				"user/1/last_name":  `"Bo"`,
 			},
 			`{"user":"Jonny Bo"}`,
+			emptySlice,
 		},
 		{
 			"Title Firstname Lastname",
 			map[string]string{
-				"user/1/title":             `"Dr."`,
-				"user/1/first_name":        `"Jonny"`,
-				"user/1/last_name":         `"Bo"`,
-				"user/1/structure_level_$": `["1"]`,
+				"user/1/title":      `"Dr."`,
+				"user/1/first_name": `"Jonny"`,
+				"user/1/last_name":  `"Bo"`,
 			},
 			`{"user":"Dr. Jonny Bo"}`,
+			emptySlice,
 		},
 		{
 			"Title Firstname Lastname Username",
 			map[string]string{
-				"user/1/username":          `"jonny123"`,
-				"user/1/title":             `"Dr."`,
-				"user/1/first_name":        `"Jonny"`,
-				"user/1/last_name":         `"Bo"`,
-				"user/1/structure_level_$": `["1"]`,
+				"user/1/username":   `"jonny123"`,
+				"user/1/title":      `"Dr."`,
+				"user/1/first_name": `"Jonny"`,
+				"user/1/last_name":  `"Bo"`,
 			},
 			`{"user":"Dr. Jonny Bo"}`,
+			emptySlice,
 		},
 		{
 			"Title Firstname Lastname Username Level",
 			map[string]string{
-				"user/1/username":           `"jonny123"`,
-				"user/1/title":              `"Dr."`,
-				"user/1/first_name":         `"Jonny"`,
-				"user/1/last_name":          `"Bo"`,
-				"user/1/structure_level_$":  `["1"]`,
-				"user/1/structure_level_$1": `"Bern"`,
+				"user/1/username":             `"jonny123"`,
+				"user/1/title":                `"Dr."`,
+				"user/1/first_name":           `"Jonny"`,
+				"user/1/last_name":            `"Bo"`,
+				"user/1/structure_level_$":    `["222", "223"]`,
+				"user/1/structure_level_$222": `"Bern"`,
+				"user/1/structure_level_$223": `"Bern-South"`,
 			},
 			`{"user":"Dr. Jonny Bo (Bern)"}`,
-		{
-			"Title Firstname Lastname Username StructLevel DefaultStructLevel",
-			map[string]string{
-				"user/1/username":                `"jonny123"`,
-				"user/1/title":                   `"Dr."`,
-				"user/1/first_name":              `"Jonny"`,
-				"user/1/last_name":               `"Bo"`,
-				"user/1/default_structure_level": `"Schweiz"`,
-				"user/1/structure_level_$":  `["1"]`,
-				"user/1/structure_level_$1": `"Bern"`,
-			},
-			`{"user":"Dr. Jonny Bo struct_level_meeting222"}`,
+			append(emptySlice, "user/1/structure_level_$222", "user/1/structure_level_$223"),
 		},
 		{
-			"Title Firstname Lastname Username StructLevel DefaultStructLevel",
+			"Title Firstname Lastname Username Level DefaultLevel",
 			map[string]string{
 				"user/1/username":                `"jonny123"`,
 				"user/1/title":                   `"Dr."`,
 				"user/1/first_name":              `"Jonny"`,
 				"user/1/last_name":               `"Bo"`,
-				"user/1/default_structure_level": `"def_struct_level1"`,
+				"user/1/structure_level_$":       `["222"]`,
+				"user/1/structure_level_$222":    `"Bern"`,
+				"user/1/default_structure_level": `"Switzerland"`,
 			},
-			`{"user":"Dr. Jonny Bo def_struct_level1"}`,
+			`{"user":"Dr. Jonny Bo (Bern)"}`,
+			append(emptySlice, "user/1/structure_level_$222"),
+		},
+		{
+			"Title Firstname Lastname Username DefaultLevel",
+			map[string]string{
+				"user/1/username":                `"jonny123"`,
+				"user/1/title":                   `"Dr."`,
+				"user/1/first_name":              `"Jonny"`,
+				"user/1/last_name":               `"Bo"`,
+				"user/1/default_structure_level": `"Switzerland"`,
+			},
+			`{"user":"Dr. Jonny Bo (Switzerland)"}`,
+			emptySlice,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -135,10 +142,10 @@ func TestUser(t *testing.T) {
 				"user/1/title",
 				"user/1/first_name",
 				"user/1/last_name",
-				"user/1/default_structure_level",
 				"user/1/structure_level_$",
-				"user/1/structure_level_$1",
+				"user/1/default_structure_level",
 			}
+			expectedKeys = append(expectedKeys, tt.addkeysexpected...)
 			assert.ElementsMatch(t, keys, expectedKeys)
 		})
 	}
@@ -153,8 +160,7 @@ func TestUserWithoutMeeting(t *testing.T) {
 		"user/1/title":                   `"Dr."`,
 		"user/1/first_name":              `"Jonny"`,
 		"user/1/last_name":               `"Bo"`,
-		"user/1/default_structure_level": `"def_struct_level1"`,
-		"user/1/structure_level_$222":    `"struct_level_meeting222"`,
+		"user/1/default_structure_level": `"Switzerland"`,
 	}
 
 	ds := dsmock.NewMockDatastore(closed, data)
@@ -165,8 +171,8 @@ func TestUserWithoutMeeting(t *testing.T) {
 
 	bs, keys, err := userSlide.Slide(context.Background(), ds, p7on)
 	assert.NoError(t, err)
-	assert.JSONEq(t, `{"user":"Dr. Jonny Bo jonny123"}`, string(bs))
-	expectedKeys := []string{"user/1/username", "user/1/title", "user/1/first_name", "user/1/last_name", "user/1/default_structure_level"}
+	assert.JSONEq(t, `{"user":"Dr. Jonny Bo (Switzerland)"}`, string(bs))
+	expectedKeys := []string{"user/1/username", "user/1/title", "user/1/first_name", "user/1/last_name", "user/1/default_structure_level", "user/1/structure_level_$"}
 	assert.ElementsMatch(t, keys, expectedKeys)
 }
 
@@ -182,6 +188,7 @@ func TestUserWithDataWrapError(t *testing.T) {
 
 	p7on := &projector.Projection{
 		ContentObjectID: "user/1",
+		MeetingID:       222,
 	}
 
 	bs, keys, err := userSlide.Slide(context.Background(), ds, p7on)

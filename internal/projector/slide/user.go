@@ -36,10 +36,8 @@ func (u dbUser) String(meetingID int) string {
 
 	if level := u.Level[meetingID]; level != "" {
 		parts = append(parts, fmt.Sprintf("(%s)", level))
-		// if u.StructLevel != "" {
-		// 	parts = append(parts, u.StructLevel)
-		// } else if u.DefaultStructLevel != "" {
-		// 	parts = append(parts, u.DefaultStructLevel)
+	} else if level = u.DefaultLevel; level != "" {
+		parts = append(parts, fmt.Sprintf("(%s)", level))
 	}
 
 	return strings.Join(parts, " ")
@@ -47,12 +45,12 @@ func (u dbUser) String(meetingID int) string {
 
 func getUserRepresentation(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 	var u dbUser
-	keys, err = datastore.GetObject(ctx, ds, p7on.ContentObjectID, &u)
+	keys, err = datastore.Object(ctx, ds, p7on.ContentObjectID, &u)
 	if err != nil {
 		return nil, nil, fmt.Errorf("getting user object: %w", err)
 	}
 
-	return []byte(fmt.Sprintf(`{"user":"%s"}`, u.String())), keys, nil
+	return []byte(fmt.Sprintf(`{"user":"%s"}`, u.String(p7on.MeetingID))), keys, nil
 }
 
 // User renders the user slide.
