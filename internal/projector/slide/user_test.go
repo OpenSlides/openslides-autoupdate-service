@@ -10,12 +10,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUser(t *testing.T) {
+func setup(t *testing.T) projector.Slider {
 	s := new(projector.SlideStore)
 	slide.User(s)
 
 	userSlide := s.Get("user")
 	assert.NotNilf(t, userSlide, "Slide with name `user` not found.")
+	return userSlide
+}
+
+func TestUser(t *testing.T) {
+	userSlide := setup(t)
 
 	for _, tt := range []struct {
 		name   string
@@ -87,6 +92,29 @@ func TestUser(t *testing.T) {
 				"user/1/structure_level_$1": `"Bern"`,
 			},
 			`{"user":"Dr. Jonny Bo (Bern)"}`,
+		{
+			"Title Firstname Lastname Username StructLevel DefaultStructLevel",
+			map[string]string{
+				"user/1/username":                `"jonny123"`,
+				"user/1/title":                   `"Dr."`,
+				"user/1/first_name":              `"Jonny"`,
+				"user/1/last_name":               `"Bo"`,
+				"user/1/default_structure_level": `"Schweiz"`,
+				"user/1/structure_level_$":  `["1"]`,
+				"user/1/structure_level_$1": `"Bern"`,
+			},
+			`{"user":"Dr. Jonny Bo struct_level_meeting222"}`,
+		},
+		{
+			"Title Firstname Lastname Username StructLevel DefaultStructLevel",
+			map[string]string{
+				"user/1/username":                `"jonny123"`,
+				"user/1/title":                   `"Dr."`,
+				"user/1/first_name":              `"Jonny"`,
+				"user/1/last_name":               `"Bo"`,
+				"user/1/default_structure_level": `"def_struct_level1"`,
+			},
+			`{"user":"Dr. Jonny Bo def_struct_level1"}`,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -96,6 +124,7 @@ func TestUser(t *testing.T) {
 
 			p7on := &projector.Projection{
 				ContentObjectID: "user/1",
+				MeetingID:       222,
 			}
 
 			bs, keys, err := userSlide.Slide(context.Background(), ds, p7on)
@@ -106,10 +135,58 @@ func TestUser(t *testing.T) {
 				"user/1/title",
 				"user/1/first_name",
 				"user/1/last_name",
+				"user/1/default_structure_level",
 				"user/1/structure_level_$",
 				"user/1/structure_level_$1",
 			}
 			assert.ElementsMatch(t, keys, expectedKeys)
 		})
 	}
+}
+
+func TestUserWithoutMeeting(t *testing.T) {
+	userSlide := setup(t)
+	closed := make(chan struct{})
+	defer close(closed)
+	data := map[string]string{
+		"user/1/username":                `"jonny123"`,
+		"user/1/title":                   `"Dr."`,
+		"user/1/first_name":              `"Jonny"`,
+		"user/1/last_name":               `"Bo"`,
+		"user/1/default_structure_level": `"def_struct_level1"`,
+		"user/1/structure_level_$222":    `"struct_level_meeting222"`,
+	}
+
+	ds := dsmock.NewMockDatastore(closed, data)
+
+	p7on := &projector.Projection{
+		ContentObjectID: "user/1",
+	}
+
+	bs, keys, err := userSlide.Slide(context.Background(), ds, p7on)
+	assert.NoError(t, err)
+	assert.JSONEq(t, `{"user":"Dr. Jonny Bo jonny123"}`, string(bs))
+	expectedKeys := []string{"user/1/username", "user/1/title", "user/1/first_name", "user/1/last_name", "user/1/default_structure_level"}
+	assert.ElementsMatch(t, keys, expectedKeys)
+}
+
+func TestUserWithDataWrapError(t *testing.T) {
+	userSlide := setup(t)
+	closed := make(chan struct{})
+	defer close(closed)
+	data := map[string]string{
+		"user/1/username": "jonny123",
+	}
+
+	ds := dsmock.NewMockDatastore(closed, data)
+
+	p7on := &projector.Projection{
+		ContentObjectID: "user/1",
+	}
+
+	bs, keys, err := userSlide.Slide(context.Background(), ds, p7on)
+	assert.Nil(t, bs)
+	assert.Nil(t, keys)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Error encoding responceData `map[user:map[1:map[username:jonny123]]]`")
 }
