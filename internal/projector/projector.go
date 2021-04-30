@@ -42,7 +42,7 @@ func Register(ds Datastore, slides *SlideStore) {
 		}
 
 		var p7on Projection
-		keys, err := datastore.GetObject(ctx, ds, parts[0]+"/"+parts[1], &p7on)
+		keys, err := datastore.Object(ctx, ds, parts[0]+"/"+parts[1], &p7on)
 		if err != nil {
 			return nil, fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
 		}
@@ -76,6 +76,7 @@ type Projection struct {
 	ID              int    `json:"id"`
 	Type            string `json:"type"`
 	ContentObjectID string `json:"content_object_id"`
+	MeetingID       int    `json:"meeting_id"`
 }
 
 func (p *Projection) exists() bool {

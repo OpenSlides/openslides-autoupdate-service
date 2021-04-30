@@ -36,11 +36,11 @@ type dbSpeaker struct {
 // ListOfSpeaker renders current list of speaker slide.
 func ListOfSpeaker(store *projector.SlideStore) {
 	store.AddFunc("list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, hotkeys []string, err error) {
-		return renderListOfSpeakers(ctx, ds, p7on.ContentObjectID)
+		return renderListOfSpeakers(ctx, ds, p7on.ContentObjectID, p7on.MeetingID)
 	})
 }
 
-func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID string) (encoded []byte, keys []string, err error) {
+func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID string, meetingID int) (encoded []byte, keys []string, err error) {
 	fetch := datastore.NewFetcher(ds)
 	defer func() {
 		if err == nil {
@@ -63,7 +63,7 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 		fetch.Object(ctx, &user, "user/%d", speaker.UserID)
 
 		s := outputSpeaker{
-			User:         user.String(),
+			User:         user.String(meetingID),
 			Marked:       speaker.Marked,
 			PointOfOrder: speaker.PointOfOrder,
 			Weight:       speaker.Weight,
@@ -146,7 +146,7 @@ func CurrentListOfSpeakers(store *projector.SlideStore) {
 			return nil, nil, err
 		}
 
-		content, keys, err := renderListOfSpeakers(ctx, ds, fmt.Sprintf("list_of_speakers/%d", losID))
+		content, keys, err := renderListOfSpeakers(ctx, ds, fmt.Sprintf("list_of_speakers/%d", losID), p7on.MeetingID)
 		if err != nil {
 			return nil, nil, fmt.Errorf("render list of speakers %d: %w", losID, err)
 		}

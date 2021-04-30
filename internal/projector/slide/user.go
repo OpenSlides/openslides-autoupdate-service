@@ -10,14 +10,14 @@ import (
 )
 
 type dbUser struct {
-	Username  string `json:"username"`
-	Title     string `json:"title"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	//Level     string `json:"structure_level"`
+	Username  string         `json:"username"`
+	Title     string         `json:"title"`
+	FirstName string         `json:"first_name"`
+	LastName  string         `json:"last_name"`
+	Level     map[int]string `json:"structure_level_$"`
 }
 
-func (u dbUser) String() string {
+func (u dbUser) String(meetingID int) string {
 	parts := func(sp ...string) []string {
 		var full []string
 		for _, s := range sp {
@@ -33,9 +33,9 @@ func (u dbUser) String() string {
 		return u.Username
 	}
 
-	// if u.Level != "" {
-	// 	parts = append(parts, fmt.Sprintf("(%s)", u.Level))
-	// }
+	if level := u.Level[meetingID]; level != "" {
+		parts = append(parts, fmt.Sprintf("(%s)", level))
+	}
 
 	return strings.Join(parts, " ")
 }
@@ -44,11 +44,11 @@ func (u dbUser) String() string {
 func User(store *projector.SlideStore) {
 	store.AddFunc("user", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		var u dbUser
-		keys, err = datastore.GetObject(ctx, ds, p7on.ContentObjectID, &u)
+		keys, err = datastore.Object(ctx, ds, p7on.ContentObjectID, &u)
 		if err != nil {
 			return nil, nil, fmt.Errorf("getting user object: %w", err)
 		}
 
-		return []byte(fmt.Sprintf(`{"user":"%s"}`, u.String())), keys, nil
+		return []byte(fmt.Sprintf(`{"user":"%s"}`, u.String(1))), keys, nil
 	})
 }

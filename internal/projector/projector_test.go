@@ -90,7 +90,8 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 	defer close(closed)
 
 	ds := dsmock.NewMockDatastore(closed, map[string]string{
-		"projection/1/type": `"projection"`,
+		"projection/1/type":       `"projection"`,
+		"projection/1/meeting_id": `1`,
 	})
 	projector.Register(ds, testSlides())
 
@@ -111,7 +112,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
-	expect := `{"id": 0, "content_object_id": "", "type":"projection"}` + "\n"
+	expect := `{"id": 0, "content_object_id": "", "type":"projection", "meeting_id": 1}` + "\n"
 	assert.JSONEq(t, expect, string(fields[0]))
 }
 
