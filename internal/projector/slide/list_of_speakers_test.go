@@ -122,14 +122,17 @@ func TestListOfSpeakers(t *testing.T) {
 				"user/10/title",
 				"user/10/first_name",
 				"user/10/last_name",
+				"user/10/structure_level_$",
 				"user/20/username",
 				"user/20/title",
 				"user/20/first_name",
 				"user/20/last_name",
+				"user/20/structure_level_$",
 				"user/30/username",
 				"user/30/title",
 				"user/30/first_name",
 				"user/30/last_name",
+				"user/30/structure_level_$",
 			},
 		},
 		{
@@ -179,10 +182,12 @@ func TestListOfSpeakers(t *testing.T) {
 				"user/10/title",
 				"user/10/first_name",
 				"user/10/last_name",
+				"user/10/structure_level_$",
 				"user/30/username",
 				"user/30/title",
 				"user/30/first_name",
 				"user/30/last_name",
+				"user/30/structure_level_$",
 			},
 		},
 	} {
@@ -301,6 +306,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 			"user/10/title",
 			"user/10/first_name",
 			"user/10/last_name",
+			"user/10/structure_level_$",
 		}
 		assert.ElementsMatch(t, expectKeys, keys)
 	})
