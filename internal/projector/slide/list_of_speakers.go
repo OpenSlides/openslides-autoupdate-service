@@ -61,9 +61,11 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 
 		var user dbUser
 		fetch.Object(ctx, &user, "user/%d", speaker.UserID)
+		var userRepr string
+		userRepr, err = user.String(meetingID)
 
 		s := outputSpeaker{
-			User:         user.String(meetingID),
+			User:         userRepr,
 			Marked:       speaker.Marked,
 			PointOfOrder: speaker.PointOfOrder,
 			Weight:       speaker.Weight,

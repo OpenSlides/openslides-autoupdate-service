@@ -18,7 +18,8 @@ type dbUser struct {
 	DefaultLevel string         `json:"default_structure_level"`
 }
 
-func (u dbUser) String(meetingID int) string {
+// Get instance representation of the user
+func (u dbUser) String(meetingID int) (string, error) {
 	parts := func(sp ...string) []string {
 		var full []string
 		for _, s := range sp {
@@ -28,21 +29,32 @@ func (u dbUser) String(meetingID int) string {
 			full = append(full, s)
 		}
 		return full
-	}(u.Title, u.FirstName, u.LastName)
+	}(u.FirstName, u.LastName)
 
+	fmt.Println("user.go L. 34: Username:" + u.Username)
 	if len(parts) == 0 {
-		return u.Username
+		if u.Username != "" {
+			parts = append(parts, u.Username)
+		} else {
+			fmt.Println("user.go L. 39 Errorreturn")
+			return "", fmt.Errorf("neither firstName, lastName nor username found")
+		}
+	} else if u.Title != "" {
+		parts = append([]string{u.Title}, parts...)
 	}
 
-	if level := u.Level[meetingID]; level != "" {
-		parts = append(parts, fmt.Sprintf("(%s)", level))
-	} else if level = u.DefaultLevel; level != "" {
+	level := u.Level[meetingID]
+	if level == "" {
+		level = u.DefaultLevel
+	}
+	if level != "" {
 		parts = append(parts, fmt.Sprintf("(%s)", level))
 	}
 
-	return strings.Join(parts, " ")
+	return strings.Join(parts, " "), nil
 }
 
+// Get Representation of the ContentObjectId and MeetingID from the Projection, assuming it's a User
 func getUserRepresentation(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 	var u dbUser
 	keys, err = datastore.Object(ctx, ds, p7on.ContentObjectID, &u)
@@ -50,7 +62,12 @@ func getUserRepresentation(ctx context.Context, ds projector.Datastore, p7on *pr
 		return nil, nil, fmt.Errorf("getting user object: %w", err)
 	}
 
-	return []byte(fmt.Sprintf(`{"user":"%s"}`, u.String(p7on.MeetingID))), keys, nil
+	var repr string
+	repr, err = u.String(p7on.MeetingID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("getting user representation: %w", err)
+	}
+	return []byte(fmt.Sprintf(`{"user":"%s"}`, repr)), keys, nil
 }
 
 // User renders the user slide.

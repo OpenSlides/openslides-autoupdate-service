@@ -21,13 +21,13 @@ func setup(t *testing.T) projector.Slider {
 
 func TestUser(t *testing.T) {
 	userSlide := setup(t)
-	var emptySlice []string
+	var addKeysExpected []string
 
 	for _, tt := range []struct {
 		name            string
 		data            map[string]string
 		expect          string
-		addkeysexpected []string
+		addKeysExpected []string
 	}{
 		{
 			"Only Username",
@@ -35,7 +35,7 @@ func TestUser(t *testing.T) {
 				"user/1/username": `"jonny123"`,
 			},
 			`{"user":"jonny123"}`,
-			emptySlice,
+			addKeysExpected,
 		},
 		{
 			"Only Firstname",
@@ -43,7 +43,7 @@ func TestUser(t *testing.T) {
 				"user/1/first_name": `"Jonny"`,
 			},
 			`{"user":"Jonny"}`,
-			emptySlice,
+			addKeysExpected,
 		},
 		{
 			"Only Lastname",
@@ -51,7 +51,7 @@ func TestUser(t *testing.T) {
 				"user/1/last_name": `"Bo"`,
 			},
 			`{"user":"Bo"}`,
-			emptySlice,
+			addKeysExpected,
 		},
 		{
 			"Firstname Lastname",
@@ -60,7 +60,7 @@ func TestUser(t *testing.T) {
 				"user/1/last_name":  `"Bo"`,
 			},
 			`{"user":"Jonny Bo"}`,
-			emptySlice,
+			addKeysExpected,
 		},
 		{
 			"Title Firstname Lastname",
@@ -70,7 +70,7 @@ func TestUser(t *testing.T) {
 				"user/1/last_name":  `"Bo"`,
 			},
 			`{"user":"Dr. Jonny Bo"}`,
-			emptySlice,
+			addKeysExpected,
 		},
 		{
 			"Title Firstname Lastname Username",
@@ -81,7 +81,16 @@ func TestUser(t *testing.T) {
 				"user/1/last_name":  `"Bo"`,
 			},
 			`{"user":"Dr. Jonny Bo"}`,
-			emptySlice,
+			addKeysExpected,
+		},
+		{
+			"Title Username",
+			map[string]string{
+				"user/1/username": `"jonny123"`,
+				"user/1/title":    `"Dr."`,
+			},
+			`{"user":"jonny123"}`,
+			addKeysExpected,
 		},
 		{
 			"Title Firstname Lastname Username Level",
@@ -95,7 +104,7 @@ func TestUser(t *testing.T) {
 				"user/1/structure_level_$223": `"Bern-South"`,
 			},
 			`{"user":"Dr. Jonny Bo (Bern)"}`,
-			append(emptySlice, "user/1/structure_level_$222", "user/1/structure_level_$223"),
+			append(addKeysExpected, "user/1/structure_level_$222", "user/1/structure_level_$223"),
 		},
 		{
 			"Title Firstname Lastname Username Level DefaultLevel",
@@ -109,7 +118,7 @@ func TestUser(t *testing.T) {
 				"user/1/default_structure_level": `"Switzerland"`,
 			},
 			`{"user":"Dr. Jonny Bo (Bern)"}`,
-			append(emptySlice, "user/1/structure_level_$222"),
+			append(addKeysExpected, "user/1/structure_level_$222"),
 		},
 		{
 			"Title Firstname Lastname Username DefaultLevel",
@@ -121,7 +130,16 @@ func TestUser(t *testing.T) {
 				"user/1/default_structure_level": `"Switzerland"`,
 			},
 			`{"user":"Dr. Jonny Bo (Switzerland)"}`,
-			emptySlice,
+			addKeysExpected,
+		},
+		{
+			"Username DefaultLevel",
+			map[string]string{
+				"user/1/username":                `"jonny123"`,
+				"user/1/default_structure_level": `"Switzerland"`,
+			},
+			`{"user":"jonny123 (Switzerland)"}`,
+			addKeysExpected,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -145,7 +163,7 @@ func TestUser(t *testing.T) {
 				"user/1/structure_level_$",
 				"user/1/default_structure_level",
 			}
-			expectedKeys = append(expectedKeys, tt.addkeysexpected...)
+			expectedKeys = append(expectedKeys, tt.addKeysExpected...)
 			assert.ElementsMatch(t, keys, expectedKeys)
 		})
 	}
@@ -176,12 +194,13 @@ func TestUserWithoutMeeting(t *testing.T) {
 	assert.ElementsMatch(t, keys, expectedKeys)
 }
 
-func TestUserWithDataWrapError(t *testing.T) {
+func TestUserWithError(t *testing.T) {
 	userSlide := setup(t)
 	closed := make(chan struct{})
 	defer close(closed)
 	data := map[string]string{
-		"user/1/username": "jonny123",
+		"user/1/id":                      `1`,
+		"user/1/default_structure_level": `"Switzerland"`,
 	}
 
 	ds := dsmock.NewMockDatastore(closed, data)
@@ -195,5 +214,5 @@ func TestUserWithDataWrapError(t *testing.T) {
 	assert.Nil(t, bs)
 	assert.Nil(t, keys)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "Error encoding responceData `map[user:map[1:map[username:jonny123]]]`")
+	assert.Contains(t, err.Error(), "getting user representation: neither firstName, lastName nor username found")
 }
