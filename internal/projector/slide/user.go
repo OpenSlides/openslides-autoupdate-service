@@ -19,7 +19,7 @@ type dbUser struct {
 }
 
 // Get instance representation of the user
-func (u dbUser) String(meetingID int) (string, error) {
+func (u dbUser) String(meetingID int) string {
 	parts := func(sp ...string) []string {
 		var full []string
 		for _, s := range sp {
@@ -31,14 +31,8 @@ func (u dbUser) String(meetingID int) (string, error) {
 		return full
 	}(u.FirstName, u.LastName)
 
-	fmt.Println("user.go L. 34: Username:" + u.Username)
 	if len(parts) == 0 {
-		if u.Username != "" {
-			parts = append(parts, u.Username)
-		} else {
-			fmt.Println("user.go L. 39 Errorreturn")
-			return "", fmt.Errorf("neither firstName, lastName nor username found")
-		}
+		parts = append(parts, u.Username)
 	} else if u.Title != "" {
 		parts = append([]string{u.Title}, parts...)
 	}
@@ -51,7 +45,7 @@ func (u dbUser) String(meetingID int) (string, error) {
 		parts = append(parts, fmt.Sprintf("(%s)", level))
 	}
 
-	return strings.Join(parts, " "), nil
+	return strings.Join(parts, " ")
 }
 
 // Get Representation of the ContentObjectId and MeetingID from the Projection, assuming it's a User
@@ -62,10 +56,9 @@ func getUserRepresentation(ctx context.Context, ds projector.Datastore, p7on *pr
 		return nil, nil, fmt.Errorf("getting user object: %w", err)
 	}
 
-	var repr string
-	repr, err = u.String(p7on.MeetingID)
-	if err != nil {
-		return nil, nil, fmt.Errorf("getting user representation: %w", err)
+	repr := u.String(p7on.MeetingID)
+	if repr == "" {
+		return nil, nil, slidesError{"Neither firstName, lastName nor username found", "user", p7on.ID, p7on.Type, p7on.ContentObjectID, p7on.MeetingID}
 	}
 	return []byte(fmt.Sprintf(`{"user":"%s"}`, repr)), keys, nil
 }

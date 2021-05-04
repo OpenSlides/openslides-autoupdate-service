@@ -114,6 +114,16 @@ func handleError(w http.ResponseWriter, err error, writeStatusCode bool) {
 		return
 	}
 
+	var errSlidesError slidesErrorI
+	if errors.As(err, &errSlidesError) {
+		if writeStatusCode {
+			w.WriteHeader(http.StatusBadRequest)
+		}
+
+		fmt.Fprintf(w, `{"%s": {"error": "Slide %s: %s"}}`, errSlidesError.Projection(), errSlidesError.Slide(), quote(errSlidesError.Error()))
+		return
+	}
+
 	var errClient ClientError
 	if errors.As(err, &errClient) {
 		if writeStatusCode {

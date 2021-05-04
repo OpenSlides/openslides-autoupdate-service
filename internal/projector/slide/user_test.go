@@ -2,6 +2,7 @@ package slide_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
@@ -199,8 +200,7 @@ func TestUserWithError(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 	data := map[string]string{
-		"user/1/id":                      `1`,
-		"user/1/default_structure_level": `"Switzerland"`,
+		"user/1/id": `1`,
 	}
 
 	ds := dsmock.NewMockDatastore(closed, data)
@@ -214,5 +214,6 @@ func TestUserWithError(t *testing.T) {
 	assert.Nil(t, bs)
 	assert.Nil(t, keys)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "getting user representation: neither firstName, lastName nor username found")
+	fmt.Printf(err.Error())
+	assert.Contains(t, err.Error(), "Neither firstName, lastName nor username found")
 }
