@@ -18,8 +18,8 @@ type dbUser struct {
 	DefaultLevel string         `json:"default_structure_level"`
 }
 
-// Get instance representation of the user
-func (u dbUser) String(meetingID int) string {
+// StringMeetingDependent gets the instance representation of the user, which is meeting dependent with the structur_level
+func (u dbUser) StringMeetingDependent(meetingID int) string {
 	parts := func(sp ...string) []string {
 		var full []string
 		for _, s := range sp {
@@ -48,7 +48,7 @@ func (u dbUser) String(meetingID int) string {
 	return strings.Join(parts, " ")
 }
 
-// Get Representation of the ContentObjectId and MeetingID from the Projection, assuming it's a User
+// getUserRepresentation returns the meeting-dependent string for the given user, including database access
 func getUserRepresentation(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 	var u dbUser
 	keys, err = datastore.Object(ctx, ds, p7on.ContentObjectID, &u)
@@ -56,7 +56,7 @@ func getUserRepresentation(ctx context.Context, ds projector.Datastore, p7on *pr
 		return nil, nil, fmt.Errorf("getting user object: %w", err)
 	}
 
-	repr := u.String(p7on.MeetingID)
+	repr := u.StringMeetingDependent(p7on.MeetingID)
 	if repr == "" {
 		return nil, nil, slidesError{"Neither firstName, lastName nor username found", "user", p7on.ID, p7on.Type, p7on.ContentObjectID, p7on.MeetingID}
 	}
