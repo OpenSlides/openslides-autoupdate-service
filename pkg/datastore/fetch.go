@@ -237,7 +237,7 @@ func Object(ctx context.Context, ds Getter, fqid string, value interface{}) ([]s
 				val := reflect.New(t.Field(i).Type.Elem())
 
 				if err := json.Unmarshal(dbValue, val.Interface()); err != nil {
-					return nil, fmt.Errorf("decodig %dth field (template=%s): %w", i+1, key, err)
+					return nil, fmt.Errorf("decoding %dth field (template=%s): %w", i+1, key, err)
 				}
 
 				m.SetMapIndex(mkey, val.Elem())
