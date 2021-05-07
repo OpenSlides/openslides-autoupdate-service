@@ -147,12 +147,15 @@ func Object(ctx context.Context, ds Getter, fqid string, value interface{}) ([]s
 	v := reflect.ValueOf(value).Elem()
 	t := reflect.TypeOf(v.Interface())
 	var keys []string
+
 	// unknownTemplateKeys are template keys that could not be found in the
 	// database.
 	var unknownTemplateKeys []string
+
 	// idToKey is an index from the field-idx to the db key. -1 means, that the field has no
 	// db key.
 	var idToKey []int
+
 	templates := make(map[int][]string)
 	for i := 0; i < v.NumField(); i++ {
 		f := t.Field(i)
@@ -172,17 +175,29 @@ func Object(ctx context.Context, ds Getter, fqid string, value interface{}) ([]s
 
 		if strings.Contains(tag, "$") {
 			templateKey := fqid + "/" + tag
-			var replacements []string
-			if err := get(ctx, ds, templateKey, &replacements); err != nil {
-				var errNotExist DoesNotExistError
-				if errors.As(err, &errNotExist) {
-					// Skip fields that do not exist
-					idToKey[len(idToKey)-1] = -1
-					keys = keys[:len(keys)-1]
-					unknownTemplateKeys = append(unknownTemplateKeys, templateKey)
-					continue
+			replacements := make([]string, 0)
+			if v.Field(i).IsNil() {
+				// Fetch all keys
+				if err := get(ctx, ds, templateKey, &replacements); err != nil {
+					var errNotExist DoesNotExistError
+					if errors.As(err, &errNotExist) {
+						// Skip fields that do not exist
+						idToKey[len(idToKey)-1] = -1
+						keys = keys[:len(keys)-1]
+						unknownTemplateKeys = append(unknownTemplateKeys, templateKey)
+						continue
+					}
+					return nil, fmt.Errorf("fetching template key %s: %v", templateKey, err)
 				}
-				return nil, fmt.Errorf("fetching template key %s: %v", templateKey, err)
+			} else {
+				// Only fetch some keys
+				for _, key := range v.Field(i).MapKeys() {
+					keyValue := key.String()
+					if key.Kind() == reflect.Int {
+						keyValue = strconv.Itoa(int(key.Int()))
+					}
+					replacements = append(replacements, keyValue)
+				}
 			}
 
 			templates[i] = replacements
@@ -191,7 +206,6 @@ func Object(ctx context.Context, ds Getter, fqid string, value interface{}) ([]s
 				keys = append(keys, newKey)
 			}
 		}
-
 	}
 
 	dbValues, err := ds.Get(ctx, keys...)
