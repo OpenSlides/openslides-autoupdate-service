@@ -163,3 +163,50 @@ func TestObjectTemplateDoesNotExist(t *testing.T) {
 	}
 	assert.ElementsMatch(t, expectKeys, keys)
 }
+
+func TestObjectTemplateOnlyOneField(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
+		"testmodel/1/field_$_id":  `["1","2"]`,
+		"testmodel/1/field_$1_id": `5`,
+	})
+
+	var testModel struct {
+		Field map[int]int `json:"field_$_id"`
+	}
+	testModel.Field = map[int]int{1: 0}
+	keys, err := datastore.Object(context.Background(), ds, "testmodel/1", &testModel)
+	require.NoError(t, err, "Object returned unexpected error")
+	assert.Equal(t, map[int]int{
+		1: 5,
+	}, testModel.Field)
+
+	expectKeys := []string{
+		"testmodel/1/field_$_id",
+		"testmodel/1/field_$1_id",
+	}
+	assert.ElementsMatch(t, expectKeys, keys)
+}
+
+func TestObjectTemplateNoneField(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
+		"testmodel/1/field_$_id":  `["1","2"]`,
+		"testmodel/1/field_$1_id": `5`,
+	})
+
+	var testModel struct {
+		Field map[int]int `json:"field_$_id"`
+	}
+	testModel.Field = map[int]int{}
+	keys, err := datastore.Object(context.Background(), ds, "testmodel/1", &testModel)
+	require.NoError(t, err, "Object returned unexpected error")
+	assert.Equal(t, testModel.Field, map[int]int{})
+
+	expectKeys := []string{
+		"testmodel/1/field_$_id",
+	}
+	assert.ElementsMatch(t, expectKeys, keys)
+}
