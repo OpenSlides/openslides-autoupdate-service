@@ -10,6 +10,7 @@ cases:
   can_see:
   - meeting/1/id
   - meeting/1/enable_anonymous
+  - meeting/1/name
 
 
 - name: anonymous enabled
