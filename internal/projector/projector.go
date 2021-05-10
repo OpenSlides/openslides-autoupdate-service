@@ -93,10 +93,11 @@ func Register(ds Datastore, slides *SlideStore) {
 
 // Projection holds the meta data to render a projection on a projecter.
 type Projection struct {
-	ID              int    `json:"id"`
-	Type            string `json:"type"`
-	ContentObjectID string `json:"content_object_id"`
-	MeetingID       int    `json:"meeting_id"`
+	ID              int               `json:"id"`
+	Type            string            `json:"type"`
+	ContentObjectID string            `json:"content_object_id"`
+	MeetingID       int               `json:"meeting_id"`
+	Options         map[string]string `json:"options"`
 }
 
 func p7onFromMap(in map[string]json.RawMessage) (*Projection, error) {

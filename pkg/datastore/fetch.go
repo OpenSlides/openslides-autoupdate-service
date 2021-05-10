@@ -140,6 +140,80 @@ func Object(ctx context.Context, ds Getter, fqid string, fields []string) (map[s
 	return object, keys, nil
 }
 
+// Objects fetch mor ethan one object, but all from same type, at once.
+//
+// The argument `value` has to be a pointer to a struct. This struct will be copied for the objects, created during reading.
+// Example:
+//
+// type dbUser struct {
+// 	Username     string     `json:"username"`
+// 	Title        string     `json:"title"`
+// 	FirstName    string     `json:"first_name"`
+// 	LastName     string     `json:"last_name"`
+// 	DefaultLevel string     `json:"default_structure_level"`
+// 	Level        string     `json:"structure_level_$" replacement: "ReplMeetingID"`
+//  Groups       []int      `json:"group_$_ids" replacement: "ReplMeetingID"`
+//  ReplMeetingID int
+// }
+//
+// If one of the fields contain a $, then the field is handeled as a template
+// Field. Then there are 2 cases:
+// 1. A known replacement: The templated field tag, used for the json-field-name
+// get one more key replacement with the name of a field thar will hold the value,
+// in the example above the ReplMeetingID.
+// The ReplMeetingID will contain the concrete value and without json it will not be
+// read from database and will stay unchanged.
+// 2. Without replacement-key in field tag we will do like in Object and read all the keys.
+//    This case in't implemented here and should be copied
+//
+func Objects(ctx context.Context, ds Getter, collection string, ids []int, value interface{}) (records []interface{}, keys []string, err error) {
+	var dbValues []json.RawMessage
+	fieldNames, indices, err := GetStructJsonNames(value)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, id := range ids {
+		for _, fieldName := range fieldNames {
+			keys = append(keys, fmt.Sprintf("%s/%d/%s", collection, id, fieldName))
+		}
+	}
+
+	dbValues, err = ds.Get(ctx, keys...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("fetching data: %w", err)
+	}
+
+	totalIndex := 0
+	for i := 0; i < len(ids); i++ {
+		record := value                             // shallow copy, should suffice, otherwise use deep copy lib
+		v := reflect.ValueOf(&record).Elem().Elem() // interface needs 2 Elem()
+		for _, index := range indices {
+			dbValue := dbValues[totalIndex]
+			if len(dbValue) == 0 {
+				// Field does not exist in db.
+				totalIndex++
+				continue
+			}
+
+			f := v.Field(index)
+			if err := json.Unmarshal(dbValue, f.Addr().Interface()); err != nil {
+				return nil, nil, fmt.Errorf("decoding error") // "decoding %dth field, fqfield `%s`, value `%s`: %w", i+1, keys[idToKey[i]], dbValue, err)
+			}
+
+			fmt.Printf("%03d: record:%02d no:%d: %s\n", totalIndex, i, index, string(dbValues[totalIndex]))
+			totalIndex++
+		}
+		records = append(records, record)
+	}
+
+	for no, _ := range records {
+		fmt.Printf("%02d", no)
+	}
+
+	return records, keys, nil
+}
+
 // DoesNotExistError is thowen by the methods of a Fether when an field does not
 // exist.
 type DoesNotExistError string
