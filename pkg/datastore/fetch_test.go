@@ -19,51 +19,13 @@ func TestObject(t *testing.T) {
 		"testmodel/1/friend_ids": "[1,2,3]",
 	})
 
-	var testModel struct {
-		ID      int    `json:"id"`
-		Text    string `json:"text"`
-		Friends []int  `json:"friend_ids"`
-	}
-	keys, err := datastore.Object(context.Background(), ds, "testmodel/1", &testModel)
+	object, keys, err := datastore.Object(context.Background(), ds, "testmodel/1", []string{"id", "text", "fried_ids"})
 	require.NoError(t, err, "Get returned unexpected error")
-	assert.Equal(t, 1, testModel.ID, "testModel.ID")
-	assert.Equal(t, "my text", testModel.Text, "testModel.Text")
-	assert.Equal(t, []int{1, 2, 3}, testModel.Friends, "testModel.Friends")
+
+	assert.Equal(t, []byte("1"), object["id"])
+	assert.Equal(t, []byte(`"my text"`), object["text"])
+	assert.Equal(t, []byte("[1,2,3]"), object["fiends_ids"])
 	assert.ElementsMatch(t, []string{"testmodel/1/id", "testmodel/1/text", "testmodel/1/friend_ids"}, keys)
-}
-
-func TestObjectOtherFields(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
-		"testmodel/1/id": "1",
-	})
-
-	var testModel struct {
-		ID    int `json:"id"`
-		Other string
-	}
-	keys, err := datastore.Object(context.Background(), ds, "testmodel/1", &testModel)
-	require.NoError(t, err, "Get returned unexpected error")
-	assert.Equal(t, 1, testModel.ID, "testModel.ID")
-	assert.Equal(t, "", testModel.Other, "testModel.Other")
-	assert.ElementsMatch(t, []string{"testmodel/1/id"}, keys)
-}
-
-func TestObjectOptions(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
-		"testmodel/1/id": "1",
-	})
-
-	var testModel struct {
-		ID int `json:"id,omitempty"`
-	}
-	keys, err := datastore.Object(context.Background(), ds, "testmodel/1", &testModel)
-	require.NoError(t, err, "Get returned unexpected error")
-	assert.Equal(t, 1, testModel.ID, "testModel.ID")
-	assert.ElementsMatch(t, []string{"testmodel/1/id"}, keys)
 }
 
 func TestObjectFieldDoesNotExist(t *testing.T) {
@@ -71,142 +33,9 @@ func TestObjectFieldDoesNotExist(t *testing.T) {
 	defer close(closed)
 	ds := dsmock.NewMockDatastore(closed, map[string]string{})
 
-	var testModel struct {
-		ID int `json:"id"`
-	}
-	keys, err := datastore.Object(context.Background(), ds, "testmodel/1", &testModel)
+	object, keys, err := datastore.Object(context.Background(), ds, "testmodel/1", []string{"id"})
 	require.NoError(t, err, "Get returned unexpected error")
-	assert.Equal(t, 0, testModel.ID, "testModel.ID")
+
+	require.Equal(t, 0, len(object))
 	assert.ElementsMatch(t, []string{"testmodel/1/id"}, keys)
-}
-
-func TestObjectTemplate(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
-		"testmodel/1/field_$":       `["fast","long"]`,
-		"testmodel/1/field_$fast":   `"value1"`,
-		"testmodel/1/field_$long":   `"value2"`,
-		"testmodel/1/number_$_ids":  `["1","2"]`,
-		"testmodel/1/number_$1_ids": `[1,2,3]`,
-		"testmodel/1/number_$2_ids": `[4,5,6]`,
-	})
-
-	var testModel struct {
-		Fields  map[string]string `json:"field_$"`
-		Numbers map[int][]int     `json:"number_$_ids"`
-	}
-	keys, err := datastore.Object(context.Background(), ds, "testmodel/1", &testModel)
-	require.NoError(t, err, "Object returned unexpected error")
-	assert.Equal(t, testModel.Fields, map[string]string{
-		"fast": "value1",
-		"long": "value2",
-	})
-
-	assert.Equal(t, testModel.Numbers, map[int][]int{
-		1: {1, 2, 3},
-		2: {4, 5, 6},
-	})
-
-	expectKeys := []string{
-		"testmodel/1/field_$",
-		"testmodel/1/field_$fast",
-		"testmodel/1/field_$long",
-		"testmodel/1/number_$_ids",
-		"testmodel/1/number_$1_ids",
-		"testmodel/1/number_$2_ids",
-	}
-	assert.ElementsMatch(t, expectKeys, keys)
-}
-
-func TestObjectTemplateFieldDoesNotExist(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
-		"testmodel/1/field_$":     `["fast","long"]`,
-		"testmodel/1/field_$fast": `"value1"`,
-	})
-
-	var testModel struct {
-		Fields map[string]string `json:"field_$"`
-	}
-	keys, err := datastore.Object(context.Background(), ds, "testmodel/1", &testModel)
-	require.NoError(t, err, "Object returned unexpected error")
-	assert.Equal(t, testModel.Fields, map[string]string{
-		"fast": "value1",
-	})
-
-	expectKeys := []string{
-		"testmodel/1/field_$",
-		"testmodel/1/field_$fast",
-		"testmodel/1/field_$long",
-	}
-	assert.ElementsMatch(t, expectKeys, keys)
-}
-
-func TestObjectTemplateDoesNotExist(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
-		"testmodel/1/field_$fast": `"value1"`,
-	})
-
-	var testModel struct {
-		Fields map[string]string `json:"field_$"`
-	}
-	keys, err := datastore.Object(context.Background(), ds, "testmodel/1", &testModel)
-	require.NoError(t, err, "Object returned unexpected error")
-	assert.Nil(t, testModel.Fields)
-
-	expectKeys := []string{
-		"testmodel/1/field_$",
-	}
-	assert.ElementsMatch(t, expectKeys, keys)
-}
-
-func TestObjectTemplateOnlyOneField(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
-		"testmodel/1/field_$_id":  `["1","2"]`,
-		"testmodel/1/field_$1_id": `5`,
-	})
-
-	var testModel struct {
-		Field map[int]int `json:"field_$_id"`
-	}
-	testModel.Field = map[int]int{1: 0}
-	keys, err := datastore.Object(context.Background(), ds, "testmodel/1", &testModel)
-	require.NoError(t, err, "Object returned unexpected error")
-	assert.Equal(t, map[int]int{
-		1: 5,
-	}, testModel.Field)
-
-	expectKeys := []string{
-		"testmodel/1/field_$_id",
-		"testmodel/1/field_$1_id",
-	}
-	assert.ElementsMatch(t, expectKeys, keys)
-}
-
-func TestObjectTemplateNoneField(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
-		"testmodel/1/field_$_id":  `["1","2"]`,
-		"testmodel/1/field_$1_id": `5`,
-	})
-
-	var testModel struct {
-		Field map[int]int `json:"field_$_id"`
-	}
-	testModel.Field = map[int]int{}
-	keys, err := datastore.Object(context.Background(), ds, "testmodel/1", &testModel)
-	require.NoError(t, err, "Object returned unexpected error")
-	assert.Equal(t, testModel.Field, map[int]int{})
-
-	expectKeys := []string{
-		"testmodel/1/field_$_id",
-	}
-	assert.ElementsMatch(t, expectKeys, keys)
 }

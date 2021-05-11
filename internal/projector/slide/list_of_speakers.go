@@ -16,6 +16,19 @@ type dbListOfSpeakers struct {
 	Closed          bool   `json:"closed"`
 }
 
+func losFromMap(in map[string]json.RawMessage) (*dbListOfSpeakers, error) {
+	bs, err := json.Marshal(in)
+	if err != nil {
+		return nil, fmt.Errorf("encoding list of speakers data")
+	}
+
+	var los dbListOfSpeakers
+	if err := json.Unmarshal(bs, &los); err != nil {
+		return nil, fmt.Errorf("decoding list of speakers: %w", err)
+	}
+	return &los, nil
+}
+
 type outputSpeaker struct {
 	User         string `json:"user"`
 	Marked       bool   `json:"marked"`
@@ -33,6 +46,19 @@ type dbSpeaker struct {
 	EndTime      int  `json:"end_time"`
 }
 
+func speakerFromMap(in map[string]json.RawMessage) (*dbSpeaker, error) {
+	bs, err := json.Marshal(in)
+	if err != nil {
+		return nil, fmt.Errorf("encoding speaker data")
+	}
+
+	var speaker dbSpeaker
+	if err := json.Unmarshal(bs, &speaker); err != nil {
+		return nil, fmt.Errorf("decoding speaker: %w", err)
+	}
+	return &speaker, nil
+}
+
 // ListOfSpeaker renders current list of speaker slide.
 func ListOfSpeaker(store *projector.SlideStore) {
 	store.AddFunc("list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, hotkeys []string, err error) {
@@ -48,19 +74,37 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 		}
 	}()
 
-	var los dbListOfSpeakers
-	fetch.Object(ctx, &los, losFQID)
+	data := fetch.Object(ctx, []string{"speaker_ids", "content_object_id", "closed"}, losFQID)
+	los, err := losFromMap(data)
+	if err != nil {
+		return nil, nil, fmt.Errorf("loading list of speakers: %w", err)
+	}
+
 	title := fetch.String(ctx, los.ContentObjectID+"/title")
 
 	var speakersWaiting []outputSpeaker
 	var speakersFinished []outputSpeaker
 	var currentSpeaker *outputSpeaker
+	var addKeys []string
 	for _, id := range los.SpeakerIDs {
-		var speaker dbSpeaker
-		fetch.Object(ctx, &speaker, "speaker/%d", id)
+		fields := []string{
+			"user_id",
+			"marked",
+			"point_of_order",
+			"weight",
+			"begin_time",
+			"end_time",
+		}
+		speaker, err := speakerFromMap(fetch.Object(ctx, fields, "speaker/%d", id))
+		if err != nil {
+			return nil, nil, fmt.Errorf("loading speaker: %w", err)
+		}
 
-		var user dbUser
-		fetch.Object(ctx, &user, "user/%d", speaker.UserID)
+		user, keys, err := newUser(ctx, ds, speaker.UserID, meetingID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("loading user: %w", err)
+		}
+		addKeys = append(addKeys, keys...)
 
 		s := outputSpeaker{
 			User:         user.StringMeetingDependent(meetingID),
@@ -111,7 +155,7 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 	if err != nil {
 		return nil, nil, fmt.Errorf("encoding outgoing data: %w", err)
 	}
-	return b, fetch.Keys(), nil
+	return b, append(fetch.Keys(), addKeys...), nil
 }
 
 // CurrentListOfSpeakers renders the current_list_of_speakers slide.
