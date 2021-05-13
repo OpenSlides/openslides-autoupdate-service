@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/models"
 )
 
 // Datastore gets values for keys and informs, if they change.
@@ -40,18 +41,22 @@ func Register(ds Datastore, slides *SlideStore) {
 		if len(parts) != 3 {
 			return nil, fmt.Errorf("invalid key %s, expected two '/'", fqfield)
 		}
+		pid, _ := strconv.Atoi(parts[1])
 
-		var p7on Projection
-		keys, err := datastore.Object(ctx, ds, parts[0]+"/"+parts[1], &p7on)
+		p7on, err := models.LoadProjection(ctx, ds, pid)
 		if err != nil {
 			return nil, fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
 		}
+		keys := []string{
+			"projection/" + parts[1] + "/type",
+			"projection/" + parts[1] + "/content_object_id",
+		}
 
-		if !p7on.exists() {
+		if p7on.ID == 0 {
 			return nil, nil
 		}
 
-		slideName, err := p7on.slideName()
+		slideName, err := slideName(p7on)
 		if err != nil {
 			return nil, fmt.Errorf("getting slide name: %w", err)
 		}
@@ -61,7 +66,7 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("unknown slide %s", slideName)
 		}
 
-		bs, slideKeys, err := slider.Slide(context.Background(), ds, &p7on)
+		bs, slideKeys, err := slider.Slide(context.Background(), ds, p7on)
 		if err != nil {
 			return nil, fmt.Errorf("calculating slide: %w", err)
 		}
@@ -71,19 +76,7 @@ func Register(ds Datastore, slides *SlideStore) {
 	})
 }
 
-// Projection holds the meta data to render a projection on a projecter.
-type Projection struct {
-	ID              int    `json:"id"`
-	Type            string `json:"type"`
-	ContentObjectID string `json:"content_object_id"`
-	MeetingID       int    `json:"meeting_id"`
-}
-
-func (p *Projection) exists() bool {
-	return p.Type != "" || p.ContentObjectID != ""
-}
-
-func (p *Projection) slideName() (string, error) {
+func slideName(p *models.Projection) (string, error) {
 	if p.Type != "" {
 		return p.Type, nil
 	}

@@ -3,23 +3,16 @@ package slide
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/models"
 )
 
-type dbUser struct {
-	Username     string         `json:"username"`
-	Title        string         `json:"title"`
-	FirstName    string         `json:"first_name"`
-	LastName     string         `json:"last_name"`
-	Level        map[int]string `json:"structure_level_$"`
-	DefaultLevel string         `json:"default_structure_level"`
-}
-
-// StringMeetingDependent gets the instance representation of the user, which is meeting dependent with the structur_level
-func (u dbUser) StringMeetingDependent(meetingID int) string {
+// UserMeetingDependent gets the instance representation of the user, which is
+// meeting dependent with the structur_level
+func UserMeetingDependent(u *models.User, meetingID int) string {
 	parts := func(sp ...string) []string {
 		var full []string
 		for _, s := range sp {
@@ -37,9 +30,9 @@ func (u dbUser) StringMeetingDependent(meetingID int) string {
 		parts = append([]string{u.Title}, parts...)
 	}
 
-	level := u.Level[meetingID]
+	level := u.StructureLevel[strconv.Itoa(meetingID)]
 	if level == "" {
-		level = u.DefaultLevel
+		level = u.DefaultStructureLevel
 	}
 	if level != "" {
 		parts = append(parts, fmt.Sprintf("(%s)", level))
@@ -49,14 +42,24 @@ func (u dbUser) StringMeetingDependent(meetingID int) string {
 }
 
 // getUserRepresentation returns the meeting-dependent string for the given user, including database access
-func getUserRepresentation(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-	var u dbUser
-	keys, err = datastore.Object(ctx, ds, p7on.ContentObjectID, &u)
+func getUserRepresentation(ctx context.Context, ds projector.Datastore, p7on *models.Projection) (encoded []byte, keys []string, err error) {
+	user, err := models.LoadUser(ctx, ds, idFromFQID(p7on.ContentObjectID))
 	if err != nil {
 		return nil, nil, fmt.Errorf("getting user object: %w", err)
 	}
+	keys = []string{
+		p7on.ContentObjectID + "/username",
+		p7on.ContentObjectID + "/title",
+		p7on.ContentObjectID + "/first_name",
+		p7on.ContentObjectID + "/last_name",
+		p7on.ContentObjectID + "/default_structure_level",
+	}
 
-	repr := u.StringMeetingDependent(p7on.MeetingID)
+	if p7on.MeetingID != 0 {
+		keys = append(keys, p7on.ContentObjectID+"/structure_level_$"+strconv.Itoa(p7on.MeetingID))
+	}
+
+	repr := UserMeetingDependent(user, p7on.MeetingID)
 	if repr == "" {
 		return nil, nil, slidesError{"Neither firstName, lastName nor username found", "user", p7on.ID, p7on.Type, p7on.ContentObjectID, p7on.MeetingID}
 	}
@@ -66,4 +69,10 @@ func getUserRepresentation(ctx context.Context, ds projector.Datastore, p7on *pr
 // User renders the user slide.
 func User(store *projector.SlideStore) {
 	store.AddFunc("user", getUserRepresentation)
+}
+
+func idFromFQID(fqid string) int {
+	parts := strings.Split(fqid, "/")
+	i, _ := strconv.Atoi(parts[1])
+	return i
 }

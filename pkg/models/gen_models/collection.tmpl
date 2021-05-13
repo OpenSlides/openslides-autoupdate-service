@@ -1,0 +1,60 @@
+type {{ .GoName }} struct {
+	{{ range .Fields -}}
+		{{ .GoName }} {{ .GoType }} `json:"{{ .Name }}"`
+	{{ end -}}
+}
+
+func Load{{ .GoName}}(ctx context.Context, ds Getter, id int) (*{{ .GoName }}, error) {
+	fields := []string{
+		{{ range .Fields -}}
+			"{{ .Name }}",
+		{{ end -}}
+	}
+
+	keys := make([]string, len(fields))
+	for i, f := range fields {
+		keys[i] = fmt.Sprintf("{{ .Name }}/%d/%s", id, f)
+	}
+
+	values, err := ds.Get(ctx, keys...)
+	if err != nil {
+		return nil, fmt.Errorf("loading fields: %w", err)
+	}
+
+	var c {{ .GoName }}
+	{{ range $index, $field := .Fields -}}
+	if values[{{ $index }}] != nil {
+		{{ if $field.IsTemplate -}}
+		var repl []string
+		if err := json.Unmarshal(values[{{ $index }}], &repl); err != nil {
+			return nil, fmt.Errorf("decoding %s: %w", keys[{{ $index }}], err)
+		}
+
+		tkeys := make([]string, len(repl))
+		for i, r := range repl {
+			tkeys[i] = strings.Replace(keys[{{ $index }}], "$", "$"+r, 1)
+		}
+
+		values, err := ds.Get(ctx, tkeys...)
+		if err != nil {
+			return nil, fmt.Errorf("getting template keys of field %s: %w", fields[{{ $index }}], err)
+		}
+
+		data := make({{ .GoType }}, len(repl))
+		for i, r := range repl {
+			var decoded {{ .GoTemplateType }}
+			if err := json.Unmarshal(values[i], &decoded); err != nil {
+				return nil, fmt.Errorf("decoding field %s: %w", tkeys[i], err)
+			}
+			data[r] = decoded
+		}
+		c.{{ $field.GoName }} = data
+		{{ else -}}
+		if err := json.Unmarshal(values[{{ $index }}], &c.{{ $field.GoName }}); err != nil {
+			return nil, fmt.Errorf("decoding %s: %w", keys[{{ $index }}], err)
+		}
+		{{ end -}}
+	}
+	{{ end -}}
+	return &c, nil
+}

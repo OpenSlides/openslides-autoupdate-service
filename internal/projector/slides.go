@@ -3,6 +3,8 @@ package projector
 import (
 	"context"
 	"fmt"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/models"
 )
 
 // SlideStore holds the slides by name.
@@ -34,13 +36,13 @@ func (s *SlideStore) Get(name string) Slider {
 
 // Slider knows how to create a slide.
 type Slider interface {
-	Slide(ctx context.Context, ds Datastore, p7on *Projection) (encoded []byte, keys []string, err error)
+	Slide(ctx context.Context, ds Datastore, p7on *models.Projection) (encoded []byte, keys []string, err error)
 }
 
 // SliderFunc is a function that implements the Slider interface.
-type SliderFunc func(ctx context.Context, ds Datastore, p7on *Projection) (encoded []byte, keys []string, err error)
+type SliderFunc func(ctx context.Context, ds Datastore, p7on *models.Projection) (encoded []byte, keys []string, err error)
 
 // Slide calls the func.
-func (f SliderFunc) Slide(ctx context.Context, ds Datastore, p7on *Projection) (encoded []byte, keys []string, err error) {
+func (f SliderFunc) Slide(ctx context.Context, ds Datastore, p7on *models.Projection) (encoded []byte, keys []string, err error) {
 	return f(ctx, ds, p7on)
 }

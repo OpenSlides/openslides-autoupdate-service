@@ -7,6 +7,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -73,19 +74,16 @@ func TestListOfSpeakers(t *testing.T) {
 				"title": "topic title",
 				"waiting": [{
 					"user": "jonny123",
-					"marked": false,
 					"point_of_order": false,
 					"weight": 10
 				}],
 				"current": {
 					"user": "Jonny",
-					"marked": true,
 					"point_of_order": false,
 					"weight": 20
 				},
 				"finished": [{
 					"user": "Bo",
-					"marked": true,
 					"point_of_order": true,
 					"weight": 30,
 					"end_time": 20
@@ -101,19 +99,16 @@ func TestListOfSpeakers(t *testing.T) {
 				"list_of_speakers/1/closed",
 				"topic/1/title",
 				"speaker/1/user_id",
-				"speaker/1/marked",
 				"speaker/1/point_of_order",
 				"speaker/1/weight",
 				"speaker/1/begin_time",
 				"speaker/1/end_time",
 				"speaker/2/user_id",
-				"speaker/2/marked",
 				"speaker/2/point_of_order",
 				"speaker/2/weight",
 				"speaker/2/begin_time",
 				"speaker/2/end_time",
 				"speaker/3/user_id",
-				"speaker/3/marked",
 				"speaker/3/point_of_order",
 				"speaker/3/weight",
 				"speaker/3/begin_time",
@@ -123,19 +118,19 @@ func TestListOfSpeakers(t *testing.T) {
 				"user/10/first_name",
 				"user/10/last_name",
 				"user/10/default_structure_level",
-				"user/10/structure_level_$",
+				"user/10/structure_level_$1",
 				"user/20/username",
 				"user/20/title",
 				"user/20/first_name",
 				"user/20/last_name",
 				"user/20/default_structure_level",
-				"user/20/structure_level_$",
+				"user/20/structure_level_$1",
 				"user/30/username",
 				"user/30/title",
 				"user/30/first_name",
 				"user/30/last_name",
 				"user/30/default_structure_level",
-				"user/30/structure_level_$",
+				"user/30/structure_level_$1",
 			},
 		},
 		{
@@ -147,14 +142,12 @@ func TestListOfSpeakers(t *testing.T) {
 				"title": "topic title",
 				"waiting": [{
 					"user": "jonny123",
-					"marked": false,
 					"point_of_order": false,
 					"weight": 10
 				}],
 				"current": null,
 				"finished": [{
 					"user": "Bo",
-					"marked": true,
 					"point_of_order": true,
 					"weight": 30,
 					"end_time": 20
@@ -170,13 +163,11 @@ func TestListOfSpeakers(t *testing.T) {
 				"list_of_speakers/1/closed",
 				"topic/1/title",
 				"speaker/1/user_id",
-				"speaker/1/marked",
 				"speaker/1/point_of_order",
 				"speaker/1/weight",
 				"speaker/1/begin_time",
 				"speaker/1/end_time",
 				"speaker/3/user_id",
-				"speaker/3/marked",
 				"speaker/3/point_of_order",
 				"speaker/3/weight",
 				"speaker/3/begin_time",
@@ -186,13 +177,13 @@ func TestListOfSpeakers(t *testing.T) {
 				"user/10/first_name",
 				"user/10/last_name",
 				"user/10/default_structure_level",
-				"user/10/structure_level_$",
+				"user/10/structure_level_$1",
 				"user/30/username",
 				"user/30/title",
 				"user/30/first_name",
 				"user/30/last_name",
 				"user/30/default_structure_level",
-				"user/30/structure_level_$",
+				"user/30/structure_level_$1",
 			},
 		},
 	} {
@@ -201,7 +192,8 @@ func TestListOfSpeakers(t *testing.T) {
 			defer close(closed)
 			ds := dsmock.NewMockDatastore(closed, tt.data)
 
-			p7on := &projector.Projection{
+			p7on := &models.Projection{
+				MeetingID:       1,
 				ContentObjectID: "list_of_speakers/1",
 			}
 
@@ -265,10 +257,11 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 	t.Run("Find list of speakers", func(t *testing.T) {
 		ds := dsmock.NewMockDatastore(closed, data)
 
-		p7on := &projector.Projection{
+		p7on := &models.Projection{
 			ID:              1,
 			ContentObjectID: "list_of_speakers/1",
 			Type:            "current_list_of_speakers",
+			MeetingID:       1,
 		}
 
 		bs, keys, err := slide.Slide(context.Background(), ds, p7on)
@@ -278,7 +271,6 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 			"title": "topic title",
 			"waiting": [{
 				"user": "jonny123",
-				"marked": false,
 				"point_of_order": false,
 				"weight": 10
 			}],
@@ -302,7 +294,6 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 			"list_of_speakers/7/content_object_id",
 			"list_of_speakers/7/closed",
 			"speaker/8/user_id",
-			"speaker/8/marked",
 			"speaker/8/point_of_order",
 			"speaker/8/weight",
 			"speaker/8/begin_time",
@@ -312,7 +303,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 			"user/10/first_name",
 			"user/10/last_name",
 			"user/10/default_structure_level",
-			"user/10/structure_level_$",
+			"user/10/structure_level_$1",
 		}
 		assert.ElementsMatch(t, expectKeys, keys)
 	})

@@ -8,34 +8,19 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/models"
 )
-
-type dbListOfSpeakers struct {
-	SpeakerIDs      []int  `json:"speaker_ids"`
-	ContentObjectID string `json:"content_object_id"`
-	Closed          bool   `json:"closed"`
-}
 
 type outputSpeaker struct {
 	User         string `json:"user"`
-	Marked       bool   `json:"marked"`
 	PointOfOrder bool   `json:"point_of_order"`
 	Weight       int    `json:"weight"`
 	EndTime      int    `json:"end_time,omitempty"`
 }
 
-type dbSpeaker struct {
-	UserID       int  `json:"user_id"`
-	Marked       bool `json:"marked"`
-	PointOfOrder bool `json:"point_of_order"`
-	Weight       int  `json:"weight"`
-	BeginTime    int  `json:"begin_time"`
-	EndTime      int  `json:"end_time"`
-}
-
 // ListOfSpeaker renders current list of speaker slide.
 func ListOfSpeaker(store *projector.SlideStore) {
-	store.AddFunc("list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, hotkeys []string, err error) {
+	store.AddFunc("list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *models.Projection) (encoded []byte, hotkeys []string, err error) {
 		return renderListOfSpeakers(ctx, ds, p7on.ContentObjectID, p7on.MeetingID)
 	})
 }
@@ -48,23 +33,52 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 		}
 	}()
 
-	var los dbListOfSpeakers
-	fetch.Object(ctx, &los, losFQID)
+	los, err := models.LoadListOfSpeakers(ctx, ds, idFromFQID(losFQID))
+	if err != nil {
+		return nil, nil, fmt.Errorf("loading list of speakers: %w", err)
+	}
+	keys = []string{
+		losFQID + "/speaker_ids",
+		losFQID + "/content_object_id",
+		losFQID + "/closed",
+	}
+
 	title := fetch.String(ctx, los.ContentObjectID+"/title")
 
 	var speakersWaiting []outputSpeaker
 	var speakersFinished []outputSpeaker
 	var currentSpeaker *outputSpeaker
 	for _, id := range los.SpeakerIDs {
-		var speaker dbSpeaker
-		fetch.Object(ctx, &speaker, "speaker/%d", id)
+		speaker, err := models.LoadSpeaker(ctx, ds, id)
+		if err != nil {
+			return nil, nil, fmt.Errorf("getting speaker %d: %w", id, err)
+		}
+		keys = append(
+			keys,
+			fmt.Sprintf("speaker/%d/user_id", id),
+			fmt.Sprintf("speaker/%d/point_of_order", id),
+			fmt.Sprintf("speaker/%d/weight", id),
+			fmt.Sprintf("speaker/%d/begin_time", id),
+			fmt.Sprintf("speaker/%d/end_time", id),
+		)
 
-		var user dbUser
-		fetch.Object(ctx, &user, "user/%d", speaker.UserID)
+		user, err := models.LoadUser(ctx, ds, speaker.UserID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("loading user %d: %w", speaker.UserID, err)
+		}
+
+		keys = append(
+			keys,
+			fmt.Sprintf("user/%d/username", speaker.UserID),
+			fmt.Sprintf("user/%d/title", speaker.UserID),
+			fmt.Sprintf("user/%d/first_name", speaker.UserID),
+			fmt.Sprintf("user/%d/last_name", speaker.UserID),
+			fmt.Sprintf("user/%d/default_structure_level", speaker.UserID),
+			fmt.Sprintf("user/%d/structure_level_$%d", speaker.UserID, meetingID),
+		)
 
 		s := outputSpeaker{
-			User:         user.StringMeetingDependent(meetingID),
-			Marked:       speaker.Marked,
+			User:         UserMeetingDependent(user, meetingID),
 			PointOfOrder: speaker.PointOfOrder,
 			Weight:       speaker.Weight,
 			EndTime:      speaker.EndTime,
@@ -111,12 +125,12 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 	if err != nil {
 		return nil, nil, fmt.Errorf("encoding outgoing data: %w", err)
 	}
-	return b, fetch.Keys(), nil
+	return b, append(keys, fetch.Keys()...), nil
 }
 
 // CurrentListOfSpeakers renders the current_list_of_speakers slide.
 func CurrentListOfSpeakers(store *projector.SlideStore) {
-	store.AddFunc("current_list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+	store.AddFunc("current_list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *models.Projection) (encoded []byte, keys []string, err error) {
 		fetch := datastore.NewFetcher(ds)
 		defer func() {
 			if err == nil {
@@ -157,7 +171,7 @@ func CurrentListOfSpeakers(store *projector.SlideStore) {
 
 // CurrentSpeakerChyron renders the current_speaker_chyron slide.
 func CurrentSpeakerChyron(store *projector.SlideStore) {
-	store.AddFunc("current_speaker_chyron", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+	store.AddFunc("current_speaker_chyron", func(ctx context.Context, ds projector.Datastore, p7on *models.Projection) (encoded []byte, keys []string, err error) {
 		return []byte(`"TODO"`), nil, nil
 	})
 }
