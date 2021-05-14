@@ -259,11 +259,12 @@ func TestFullUpdate(t *testing.T) {
 	})
 
 	userUpdater := new(test.UserUpdater)
-	restricter := test.RestrictAllowed()
-	s := autoupdate.New(datastore, restricter, userUpdater, closed)
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 
 	t.Run("other user", func(t *testing.T) {
+		restricter := test.RestrictAllowed()
+		s := autoupdate.New(datastore, restricter, userUpdater, closed)
+
 		c := s.Connect(1, kb)
 		if _, err := c.Next(context.Background()); err != nil {
 			t.Errorf("c.Next() returned an error: %v", err)
@@ -272,10 +273,6 @@ func TestFullUpdate(t *testing.T) {
 		restricter.Values = map[string]string{
 			"user/1/name": `"New Value"`,
 		}
-		defer func() {
-			// Reset values at the end.
-			restricter.Values = nil
-		}()
 
 		// Send fulldata for other user. (additional update is triggert by an
 		// datastore-update, so we have to change some key.)
@@ -305,6 +302,9 @@ func TestFullUpdate(t *testing.T) {
 	})
 
 	t.Run("same user restricter changed", func(t *testing.T) {
+		restricter := test.RestrictAllowed()
+		s := autoupdate.New(datastore, restricter, userUpdater, closed)
+
 		c := s.Connect(1, kb)
 		if _, err := c.Next(context.Background()); err != nil {
 			t.Errorf("c.Next() returned an error: %v", err)
@@ -313,10 +313,7 @@ func TestFullUpdate(t *testing.T) {
 		restricter.Values = map[string]string{
 			"user/1/name": `"New Value"`,
 		}
-		defer func() {
-			// Reset values at the end.
-			restricter.Values = nil
-		}()
+
 		// Send fulldata for same user.
 		userUpdater.UserIDs = []int{1}
 		datastore.Send(map[string]string{"some/5/data": "value"})
@@ -342,6 +339,9 @@ func TestFullUpdate(t *testing.T) {
 	})
 
 	t.Run("same user restricter data did not changed", func(t *testing.T) {
+		restricter := test.RestrictAllowed()
+		s := autoupdate.New(datastore, restricter, userUpdater, closed)
+
 		c := s.Connect(1, kb)
 		if _, err := c.Next(context.Background()); err != nil {
 			t.Errorf("c.Next() returned an error: %v", err)
@@ -365,6 +365,9 @@ func TestFullUpdate(t *testing.T) {
 	})
 
 	t.Run("every user gets an full update on uid -1", func(t *testing.T) {
+		restricter := test.RestrictAllowed()
+		s := autoupdate.New(datastore, restricter, userUpdater, closed)
+
 		c := s.Connect(1, kb)
 		if _, err := c.Next(context.Background()); err != nil {
 			t.Errorf("c.Next() returned an error: %v", err)
@@ -373,10 +376,7 @@ func TestFullUpdate(t *testing.T) {
 		restricter.Values = map[string]string{
 			"user/1/name": `"New Value"`,
 		}
-		defer func() {
-			// Reset values at the end.
-			restricter.Values = nil
-		}()
+
 		// Send fulldata for same user.
 		userUpdater.UserIDs = []int{-1}
 		datastore.Send(map[string]string{"some/5/data": "value"})
