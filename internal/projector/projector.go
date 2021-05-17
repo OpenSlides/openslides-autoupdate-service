@@ -41,10 +41,14 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("invalid key %s, expected two '/'", fqfield)
 		}
 
-		var p7on Projection
-		keys, err := datastore.Object(ctx, ds, parts[0]+"/"+parts[1], &p7on)
+		data, keys, err := datastore.Object(ctx, ds, parts[0]+"/"+parts[1], []string{"id", "type", "content_object_id", "meeting_id"})
 		if err != nil {
 			return nil, fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
+		}
+
+		p7on, err := p7onFromMap(data)
+		if err != nil {
+			return nil, fmt.Errorf("loading p7on: %w", err)
 		}
 
 		if !p7on.exists() {
@@ -61,7 +65,7 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("unknown slide %s", slideName)
 		}
 
-		bs, slideKeys, err := slider.Slide(context.Background(), ds, &p7on)
+		bs, slideKeys, err := slider.Slide(context.Background(), ds, p7on)
 		if err != nil {
 			return nil, fmt.Errorf("calculating slide: %w", err)
 		}
@@ -77,6 +81,19 @@ type Projection struct {
 	Type            string `json:"type"`
 	ContentObjectID string `json:"content_object_id"`
 	MeetingID       int    `json:"meeting_id"`
+}
+
+func p7onFromMap(in map[string]json.RawMessage) (*Projection, error) {
+	bs, err := json.Marshal(in)
+	if err != nil {
+		return nil, fmt.Errorf("encoding projection data")
+	}
+
+	var p Projection
+	if err := json.Unmarshal(bs, &p); err != nil {
+		return nil, fmt.Errorf("decoding projection: %w", err)
+	}
+	return &p, nil
 }
 
 func (p *Projection) exists() bool {

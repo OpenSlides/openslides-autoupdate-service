@@ -105,7 +105,7 @@ func TestUser(t *testing.T) {
 				"user/1/structure_level_$223": `"Bern-South"`,
 			},
 			`{"user":"Dr. Jonny Bo (Bern)"}`,
-			append(addKeysExpected, "user/1/structure_level_$222", "user/1/structure_level_$223"),
+			addKeysExpected,
 		},
 		{
 			"Title Firstname Lastname Username Level DefaultLevel",
@@ -119,7 +119,7 @@ func TestUser(t *testing.T) {
 				"user/1/default_structure_level": `"Switzerland"`,
 			},
 			`{"user":"Dr. Jonny Bo (Bern)"}`,
-			append(addKeysExpected, "user/1/structure_level_$222"),
+			addKeysExpected,
 		},
 		{
 			"Title Firstname Lastname Username DefaultLevel",
@@ -161,7 +161,7 @@ func TestUser(t *testing.T) {
 				"user/1/title",
 				"user/1/first_name",
 				"user/1/last_name",
-				"user/1/structure_level_$",
+				"user/1/structure_level_$222",
 				"user/1/default_structure_level",
 			}
 			expectedKeys = append(expectedKeys, tt.addKeysExpected...)
@@ -191,7 +191,7 @@ func TestUserWithoutMeeting(t *testing.T) {
 	bs, keys, err := userSlide.Slide(context.Background(), ds, p7on)
 	assert.NoError(t, err)
 	assert.JSONEq(t, `{"user":"Dr. Jonny Bo (Switzerland)"}`, string(bs))
-	expectedKeys := []string{"user/1/username", "user/1/title", "user/1/first_name", "user/1/last_name", "user/1/default_structure_level", "user/1/structure_level_$"}
+	expectedKeys := []string{"user/1/username", "user/1/title", "user/1/first_name", "user/1/last_name", "user/1/default_structure_level"}
 	assert.ElementsMatch(t, keys, expectedKeys)
 }
 
