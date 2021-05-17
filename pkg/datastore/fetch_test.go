@@ -2,6 +2,7 @@ package datastore_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -19,12 +20,12 @@ func TestObject(t *testing.T) {
 		"testmodel/1/friend_ids": "[1,2,3]",
 	})
 
-	object, keys, err := datastore.Object(context.Background(), ds, "testmodel/1", []string{"id", "text", "fried_ids"})
+	object, keys, err := datastore.Object(context.Background(), ds, "testmodel/1", []string{"id", "text", "friend_ids"})
 	require.NoError(t, err, "Get returned unexpected error")
 
-	assert.Equal(t, []byte("1"), object["id"])
-	assert.Equal(t, []byte(`"my text"`), object["text"])
-	assert.Equal(t, []byte("[1,2,3]"), object["fiends_ids"])
+	assert.Equal(t, json.RawMessage([]byte("1")), object["id"])
+	assert.Equal(t, json.RawMessage([]byte(`"my text"`)), object["text"])
+	assert.Equal(t, json.RawMessage([]byte("[1,2,3]")), object["friend_ids"])
 	assert.ElementsMatch(t, []string{"testmodel/1/id", "testmodel/1/text", "testmodel/1/friend_ids"}, keys)
 }
 
@@ -36,6 +37,7 @@ func TestObjectFieldDoesNotExist(t *testing.T) {
 	object, keys, err := datastore.Object(context.Background(), ds, "testmodel/1", []string{"id"})
 	require.NoError(t, err, "Get returned unexpected error")
 
-	require.Equal(t, 0, len(object))
+	require.Equal(t, 1, len(object))
+	require.Nil(t, object["id"])
 	assert.ElementsMatch(t, []string{"testmodel/1/id"}, keys)
 }

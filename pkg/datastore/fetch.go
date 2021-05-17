@@ -119,6 +119,8 @@ func get(ctx context.Context, ds Getter, fqfield string, value interface{}) erro
 }
 
 // Object returns a json object for the given fqid with all given fields.
+//
+// If one field does not exist in the datastore, then it is returned as nil.
 func Object(ctx context.Context, ds Getter, fqid string, fields []string) (map[string]json.RawMessage, []string, error) {
 	keys := make([]string, len(fields))
 	for i := 0; i < len(fields); i++ {
