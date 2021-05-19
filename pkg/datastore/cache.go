@@ -63,18 +63,15 @@ func newCache() *cache {
 // If the context is done, GetOrSet returns. But the set() call is not stopped.
 // Other calls to GetOrSet may wait for its result.
 func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) ([]json.RawMessage, error) {
-	c.mu.Lock()
 	missingKeys := c.notExistToPending(keys)
-	c.mu.Unlock()
 
 	// Fetch missing keys.
 	if len(missingKeys) > 0 {
 		// Fetch missing keys in the background. Do not stop the fetching. Even
 		// when the context is done. Other calls could also request it.
-		errChan := make(chan error)
+		errChan := make(chan error, 1)
 		go func() {
-			err := c.fetchMissing(missingKeys, set)
-			errChan <- err
+			errChan <- c.fetchMissing(missingKeys, set)
 		}()
 
 		select {
@@ -145,19 +142,14 @@ func (c *cache) fetchMissing(keys []string, set cacheSetFunc) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	// Make sure all pending keys are closed and deleted. Make also sure, that
-	// missing keys are set to nil.
-	defer func() {
+	if err != nil {
+		// Make sure all pending keys are closed and deleted.
 		for _, k := range keys {
 			if c.keyState(k) == stPending {
-				p := c.pending[k]
-				close(p)
+				close(c.pending[k])
 				delete(c.pending, k)
 			}
 		}
-	}()
-
-	if err != nil {
 		return fmt.Errorf("fetching missing keys: %w", err)
 	}
 
@@ -233,9 +225,10 @@ func (c *cache) set(key string, value json.RawMessage) {
 
 // notExistToPending sets all given keys, that do not exist in the cache, to pending.
 // Returns the list of keys that where set to pending.
-//
-// The cache has to be in write lock to call this method.
 func (c *cache) notExistToPending(keys []string) []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	var missingKeys []string
 	for _, key := range keys {
 		if c.keyState(key) == stNotExist {
