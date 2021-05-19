@@ -2,7 +2,9 @@ package slide
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
@@ -10,16 +12,50 @@ import (
 )
 
 type dbUser struct {
-	Username     string         `json:"username"`
-	Title        string         `json:"title"`
-	FirstName    string         `json:"first_name"`
-	LastName     string         `json:"last_name"`
-	Level        map[int]string `json:"structure_level_$"`
-	DefaultLevel string         `json:"default_structure_level"`
+	Username     string `json:"username"`
+	Title        string `json:"title"`
+	FirstName    string `json:"first_name"`
+	LastName     string `json:"last_name"`
+	Level        string `json:"structure_level_$"`
+	DefaultLevel string `json:"default_structure_level"`
+}
+
+func newUser(ctx context.Context, ds datastore.Getter, id, meetingID int) (*dbUser, []string, error) {
+	fields := []string{
+		"username",
+		"title",
+		"first_name",
+		"last_name",
+		"default_structure_level",
+	}
+	if meetingID != 0 {
+		fields = append(fields, fmt.Sprintf("structure_level_$%d", meetingID))
+	}
+
+	data, keys, err := datastore.Object(ctx, ds, fmt.Sprintf("user/%d", id), fields)
+	if err != nil {
+		return nil, nil, fmt.Errorf("getting user object: %w", err)
+	}
+
+	if meetingID != 0 {
+		data["structure_level_$"] = data[fmt.Sprintf("structure_level_$%d", meetingID)]
+	}
+
+	bs, err := json.Marshal(data)
+	if err != nil {
+		return nil, nil, fmt.Errorf("encoding user data")
+	}
+
+	var u dbUser
+	if err := json.Unmarshal(bs, &u); err != nil {
+		return nil, nil, fmt.Errorf("decoding user: %w", err)
+	}
+
+	return &u, keys, nil
 }
 
 // StringMeetingDependent gets the instance representation of the user, which is meeting dependent with the structur_level
-func (u dbUser) StringMeetingDependent(meetingID int) string {
+func (u *dbUser) StringMeetingDependent(meetingID int) string {
 	parts := func(sp ...string) []string {
 		var full []string
 		for _, s := range sp {
@@ -37,7 +73,7 @@ func (u dbUser) StringMeetingDependent(meetingID int) string {
 		parts = append([]string{u.Title}, parts...)
 	}
 
-	level := u.Level[meetingID]
+	level := u.Level
 	if level == "" {
 		level = u.DefaultLevel
 	}
@@ -50,10 +86,14 @@ func (u dbUser) StringMeetingDependent(meetingID int) string {
 
 // getUserRepresentation returns the meeting-dependent string for the given user, including database access
 func getUserRepresentation(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-	var u dbUser
-	keys, err = datastore.Object(ctx, ds, p7on.ContentObjectID, &u)
+	id, err := strconv.Atoi(strings.Split(p7on.ContentObjectID, "/")[1])
 	if err != nil {
-		return nil, nil, fmt.Errorf("getting user object: %w", err)
+		return nil, nil, fmt.Errorf("getting user id: %w", err)
+	}
+
+	u, keys, err := newUser(ctx, ds, id, p7on.MeetingID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("loading user: %w", err)
 	}
 
 	repr := u.StringMeetingDependent(p7on.MeetingID)
