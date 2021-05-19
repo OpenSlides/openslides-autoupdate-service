@@ -20,7 +20,10 @@ func TestDataStoreGet(t *testing.T) {
 	ts := dsmock.NewDatastoreServer(closed, map[string]string{
 		"collection/1/field": `"Hello World"`,
 	})
-	d := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	d, err := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	if err != nil {
+		t.Fatalf("Creating datastore: %v", err)
+	}
 
 	got, err := d.Get(context.Background(), "collection/1/field")
 	assert.NoError(t, err, "Get() returned an unexpected error")
@@ -39,7 +42,10 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 		"collection/1/field": `"v1"`,
 		"collection/2/field": `"v2"`,
 	})
-	d := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	d, err := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	if err != nil {
+		t.Fatalf("Creating datastore: %v", err)
+	}
 
 	got, err := d.Get(context.Background(), "collection/1/field", "collection/2/field")
 	assert.NoError(t, err, "Get() returned an unexpected error")
@@ -59,7 +65,10 @@ func TestCalculatedFields(t *testing.T) {
 	defer close(closed)
 	ts := dsmock.NewDatastoreServer(closed, nil)
 	url := ts.TS.URL
-	ds := datastore.New(url, closed, func(error) {}, ts)
+	ds, err := datastore.New(url, closed, func(error) {}, ts)
+	if err != nil {
+		t.Fatalf("Creating datastore: %v", err)
+	}
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
 		if changed == nil {
 			return []byte("my value"), nil
@@ -91,7 +100,10 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 		"collection/1/normal_field": `"original value"`,
 	})
 	url := ts.TS.URL
-	ds := datastore.New(url, closed, func(error) {}, ts)
+	ds, err := datastore.New(url, closed, func(error) {}, ts)
+	if err != nil {
+		t.Fatalf("Creating datastore: %v", err)
+	}
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
 		fields, err := ds.Get(context.Background(), "collection/1/normal_field")
 		if err != nil {
@@ -123,7 +135,10 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 	ts := dsmock.NewDatastoreServer(closed, map[string]string{
 		"collection/1/normal_field": `"original value"`,
 	})
-	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	ds, err := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	if err != nil {
+		t.Fatalf("Creating datastore: %v", err)
+	}
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
 		fields, err := ds.Get(context.Background(), "collection/1/normal_field")
 		if err != nil {
@@ -158,7 +173,10 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 	ts := dsmock.NewDatastoreServer(closed, map[string]string{
 		"collection/1/normal_field": `"original value"`,
 	})
-	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	ds, err := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	if err != nil {
+		t.Fatalf("Creating datastore: %v", err)
+	}
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
 		field, err := ds.Get(ctx, "collection/1/normal_field")
 		if err != nil {
@@ -169,7 +187,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
-	_, err := ds.Get(ctx, "collection/1/normal_field", "collection/1/myfield")
+	_, err = ds.Get(ctx, "collection/1/normal_field", "collection/1/myfield")
 	require.NoError(t, err, "Get returned unexpected error")
 }
 
@@ -177,14 +195,17 @@ func TestCalculatedFieldsNoDBQuery(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 	ts := dsmock.NewDatastoreServer(closed, nil)
-	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	ds, err := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	if err != nil {
+		t.Fatalf("Creating datastore: %v", err)
+	}
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
 		return []byte("foobar"), nil
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
-	_, err := ds.Get(ctx, "collection/1/myfield")
+	_, err = ds.Get(ctx, "collection/1/myfield")
 	require.NoError(t, err, "Get returned unexpected error")
 	require.Equal(t, 0, ts.RequestCount)
 }
@@ -192,7 +213,10 @@ func TestChangeListeners(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 	ts := dsmock.NewDatastoreServer(closed, nil)
-	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	ds, err := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	if err != nil {
+		t.Fatalf("Creating datastore: %v", err)
+	}
 
 	var receivedData map[string]json.RawMessage
 	received := make(chan struct{}, 1)
@@ -207,43 +231,4 @@ func TestChangeListeners(t *testing.T) {
 
 	<-received
 	assert.Equal(t, map[string]json.RawMessage{"my/1/key": []byte(`"my value"`)}, receivedData)
-}
-
-func TestResetCache(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ts := dsmock.NewDatastoreServer(closed, nil)
-	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
-
-	// Fetch key to fill the cache.
-	ds.Get(context.Background(), "some/1/key")
-	ds.ResetCache()
-	// Fetch key again.
-	ds.Get(context.Background(), "some/1/key")
-
-	// After a reset, the key should be fetched from the server again.
-	assert.Equal(t, 2, ts.RequestCount)
-}
-
-func TestResetWhileUpdate(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ts := dsmock.NewDatastoreServer(closed, nil)
-	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
-
-	// Fetch key to fill the cache.
-	ds.Get(context.Background(), "some/1/key")
-
-	doneReset := make(chan struct{})
-	go func() {
-		ds.ResetCache()
-		close(doneReset)
-	}()
-	ts.Send(map[string]string{
-		"some/1/key": "value",
-	})
-
-	<-doneReset
-	// There is nothing to assert. This test is only for the race detector. Make
-	// sure to run the tests with the -race flag.
 }

@@ -105,7 +105,12 @@ func NewMockDatastore(closed <-chan struct{}, data map[string]string) *MockDatas
 		server: dsServer,
 	}
 
-	s.Datastore = datastore.New(dsServer.TS.URL, closed, func(error) {}, s.server)
+	ds, err := datastore.New(dsServer.TS.URL, closed, func(error) {}, s.server)
+	if err != nil {
+		panic(fmt.Sprintf("creating datastore backend: %v", err))
+	}
+
+	s.Datastore = ds
 
 	return s
 }

@@ -1,18 +1,11 @@
 package datastore
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"sync"
-)
 
-const (
-	stNotExist = iota
-	stExist
-	stPending
-	stInvalid
+	"github.com/dgraph-io/ristretto"
 )
 
 // cacheSetFunc is a function to update cache keys.
@@ -20,27 +13,29 @@ type cacheSetFunc func(keys []string, set func(key string, value json.RawMessage
 
 // cache stores the values to the datastore.
 //
-// Each value of the cache has three states. Either it exists, it does not
-// exist, or it is pending. Pending means, that there is a current request to
-// the datastore. An existing key can have the value `nil` which means, that the
-// cache knows, that the key does not exist in the datastore. Each value
-// []byte("null") is changed to nil.
-//
-// cache.keyState() tells, if a key exist or is pending.
+// An existing key can have the value `nil` which means, that the cache knows,
+// that the key does not exist in the datastore. Each value []byte("null") is
+// changed to nil.
 //
 // A new cache instance has to be created with newCache().
 type cache struct {
-	mu      sync.RWMutex
-	data    map[string]json.RawMessage
-	pending map[string]chan struct{}
+	r *ristretto.Cache
 }
 
 // newCache creates an initialized cache instance.
-func newCache() *cache {
-	return &cache{
-		data:    make(map[string]json.RawMessage),
-		pending: make(map[string]chan struct{}),
+func newCache() (*cache, error) {
+	r, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: 1e7,     // number of keys to track frequency of (10M).
+		MaxCost:     1 << 30, // maximum cost of cache (1GB).
+		BufferItems: 64,      // number of keys per Get buffer.
+	})
+	if err != nil {
+		return nil, fmt.Errorf("creating ristretto cache: %w", err)
 	}
+
+	c := cache{r: r}
+
+	return &c, nil
 }
 
 // GetOrSet returns the values for a list of keys. If one or more keys do not
@@ -63,178 +58,50 @@ func newCache() *cache {
 // If the context is done, GetOrSet returns. But the set() call is not stopped.
 // Other calls to GetOrSet may wait for its result.
 func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) ([]json.RawMessage, error) {
-	missingKeys := c.notExistToPending(keys)
-
-	// Fetch missing keys.
-	if len(missingKeys) > 0 {
-		// Fetch missing keys in the background. Do not stop the fetching. Even
-		// when the context is done. Other calls could also request it.
-		errChan := make(chan error, 1)
-		go func() {
-			errChan <- c.fetchMissing(missingKeys, set)
-		}()
-
-		select {
-		case err := <-errChan:
-			if err != nil {
-				return nil, fmt.Errorf("fetching key: %w", err)
-			}
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		}
-	}
-
-	// Build return values. Blocks until pending keys are fetched.
 	values := make([]json.RawMessage, len(keys))
-	c.mu.RLock()
-	for i, key := range keys {
-		switch c.keyState(key) {
-		case stExist:
-			values[i] = c.data[key]
+	var missing []string
+	keyToID := make(map[string]int, len(keys))
+	for i := 0; i < len(keys); i++ {
+		value, found := c.r.Get(keys[i])
+		if !found {
+			keyToID[keys[i]] = i
+			missing = append(missing, keys[i])
 			continue
-		case stInvalid:
-			return nil, fmt.Errorf("key `%s` is in invalid state", key)
-		case stNotExist:
-			return nil, fmt.Errorf("key `%s` does not exist in cache", key)
 		}
-		p := c.pending[key]
-
-		c.mu.RUnlock()
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-p:
-		}
-		c.mu.RLock()
-
-		if c.keyState(key) != stExist {
-			// The value is not in the cache after pending was done. This
-			// happens when the request to the datastore of another
-			// GetOrSet-Call returned with an error. Try it once more.
-			c.mu.RUnlock()
-			_, err := c.GetOrSet(ctx, []string{key}, set)
-			if err != nil {
-				return nil, fmt.Errorf("fetching keys for a second time: %w", err)
-			}
-			c.mu.RLock()
-		}
-
-		values[i] = c.data[key]
+		values[i] = value.(json.RawMessage)
 	}
-	c.mu.RUnlock()
+
+	if len(missing) == 0 {
+		return values, nil
+	}
+
+	newValues := make(map[string]json.RawMessage)
+	setfunc := func(key string, value json.RawMessage) {
+		newValues[key] = value
+		c.Set(key, value)
+	}
+
+	if err := set(missing, setfunc); err != nil {
+		return nil, fmt.Errorf("fetching missing values: %w", err)
+	}
+
+	for k, v := range newValues {
+		values[keyToID[k]] = v
+	}
+
 	return values, nil
 }
 
-// fetchMissing loads the given keys with the set method. Does not update keys
-// that are already in the cache.
-//
-// Deletes the keys from the pending map, even when an error happens.
-func (c *cache) fetchMissing(keys []string, set cacheSetFunc) error {
-	err := set(keys, func(key string, value json.RawMessage) {
-		c.mu.Lock()
-		defer c.mu.Unlock()
-
-		if c.keyState(key) == stPending {
-			c.set(key, value)
-		}
-	})
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if err != nil {
-		// Make sure all pending keys are closed and deleted.
-		for _, k := range keys {
-			if c.keyState(k) == stPending {
-				close(c.pending[k])
-				delete(c.pending, k)
-			}
-		}
-		return fmt.Errorf("fetching missing keys: %w", err)
-	}
-
-	// Set all keys, that where not returned to not existing.
-	for _, k := range keys {
-		if c.keyState(k) == stPending {
-			c.set(k, nil)
-		}
-	}
-	return nil
+func (c *cache) Set(key string, value json.RawMessage) {
+	c.r.Set(key, value, 1)
 }
 
-// Set updates or creates a value in the cache. Even if it does not exist.
-func (c *cache) Set(key string, value []byte) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.set(key, value)
-}
-
-// SetIfExist updates the cache with the value in the given map.
-//
-// Only keys that exist or are pending are updated.
 func (c *cache) SetIfExist(data map[string]json.RawMessage) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	for key, value := range data {
-		if c.keyState(key) == stNotExist {
-			continue
-		}
-		c.set(key, value)
-	}
-}
-
-// Returns the state of a key.
-//
-// The cache has to be in read lock to call this method.
-//
-// If a key does not exist, data[key] and pending[key] do not exist.
-//
-// If a key does exist, data[key] exists but pending[key] does not exist.
-//
-// If a key is pending, data[key] does not exist and panding[key] does exist.
-func (c *cache) keyState(key string) int {
-	_, dataOK := c.data[key]
-	_, pendingOK := c.pending[key]
-
-	if dataOK {
-		if pendingOK {
-			return stInvalid
-		}
-		return stExist
-	}
-	if pendingOK {
-		return stPending
-	}
-	return stNotExist
-}
-
-// set sets a key in the cache to a value. Closes the pending state.
-func (c *cache) set(key string, value json.RawMessage) {
-	// Change "null" values to nil.
-	if bytes.Equal(value, []byte("null")) {
-		value = nil
-	}
-	c.data[key] = value
-	if p, ok := c.pending[key]; ok {
-		close(p)
-		delete(c.pending, key)
-	}
-}
-
-// notExistToPending sets all given keys, that do not exist in the cache, to pending.
-// Returns the list of keys that where set to pending.
-func (c *cache) notExistToPending(keys []string) []string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	var missingKeys []string
-	for _, key := range keys {
-		if c.keyState(key) == stNotExist {
-			missingKeys = append(missingKeys, key)
-			c.pending[key] = make(chan struct{})
+		_, found := c.r.Get(key)
+		// TODO: Could this be a race condition if a value is inserded at this point?
+		if found {
+			c.Set(key, value)
 		}
 	}
-	return missingKeys
 }
