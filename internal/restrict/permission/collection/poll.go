@@ -2,7 +2,6 @@ package collection
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -18,10 +17,6 @@ func Poll(dp dataprovider.DataProvider) perm.ConnecterFunc {
 		s.RegisterRestricter("poll", perm.CollectionFunc(p.readPoll))
 		s.RegisterRestricter("option", perm.CollectionFunc(p.readOption))
 		s.RegisterRestricter("vote", perm.CollectionFunc(p.readVote))
-
-		s.RegisterAction("poll.delete", perm.ActionFunc(p.pollDelete))
-		s.RegisterAction("option.delete", perm.ActionFunc(p.optionDelete))
-		s.RegisterAction("vote.delete", perm.ActionFunc(p.voteDelete))
 	}
 }
 
@@ -120,64 +115,6 @@ func (p *poll) fields(fqfields []perm.FQField, result map[string]bool, restricte
 		}
 	}
 	return nil
-}
-
-func (p *poll) pollDeleteWithID(ctx context.Context, userID int, pollID int) (bool, error) {
-	fqid := "poll/" + strconv.Itoa(pollID)
-	meetingID, err := p.dp.MeetingFromModel(ctx, fqid)
-	if err != nil {
-		return false, fmt.Errorf("getting meeting id from %s: %w", fqid, err)
-	}
-
-	var contentObjectID string
-	if err := p.dp.GetIfExist(ctx, fqid+"/content_object_id", &contentObjectID); err != nil {
-		return false, fmt.Errorf("getting content object id: %w", err)
-	}
-	collection := strings.Split(contentObjectID, "/")[0]
-	requiredPerm := p.canManage(collection)
-	return perm.HasPerm(ctx, p.dp, userID, meetingID, requiredPerm)
-}
-
-func (p *poll) pollDelete(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
-	var pollID int
-	if err := json.Unmarshal(payload["id"], &pollID); err != nil {
-		return false, fmt.Errorf("no id in payload: %v", err)
-	}
-
-	return p.pollDeleteWithID(ctx, userID, pollID)
-}
-
-func (p *poll) optionDelete(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
-	var optionID int
-	if err := json.Unmarshal(payload["id"], &optionID); err != nil {
-		return false, fmt.Errorf("no id in payload: %v", err)
-	}
-
-	var pollID int
-	if err := p.dp.Get(ctx, fmt.Sprintf("option/%d/poll_id", optionID), &pollID); err != nil {
-		return false, fmt.Errorf("getting poll id: %w", err)
-	}
-
-	return p.pollDeleteWithID(ctx, userID, pollID)
-}
-
-func (p *poll) voteDelete(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
-	var voteID int
-	if err := json.Unmarshal(payload["id"], &voteID); err != nil {
-		return false, fmt.Errorf("no id in payload: %v", err)
-	}
-
-	var optionID int
-	if err := p.dp.Get(ctx, fmt.Sprintf("vote/%d/option_id", voteID), &optionID); err != nil {
-		return false, fmt.Errorf("getting option id: %w", err)
-	}
-
-	var pollID int
-	if err := p.dp.Get(ctx, fmt.Sprintf("option/%d/poll_id", optionID), &pollID); err != nil {
-		return false, fmt.Errorf("getting poll id: %w", err)
-	}
-
-	return p.pollDeleteWithID(ctx, userID, pollID)
 }
 
 // pollPerm tells, if the user can see a poll.

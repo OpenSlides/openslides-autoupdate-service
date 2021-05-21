@@ -2,10 +2,7 @@ package collection
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/permission/dataprovider"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/permission/perm"
@@ -82,64 +79,5 @@ func hasPerm(dp dataprovider.DataProvider, permission perm.TPermission, collecti
 			}
 			return allowed, nil
 		})
-	}
-}
-
-// WritePerm initializes actions, that only need one permission
-func WritePerm(dp dataprovider.DataProvider, def map[string]perm.TPermission) perm.ConnecterFunc {
-	return func(s perm.HandlerStore) {
-		for route, perm := range def {
-			parts := strings.Split(route, ".")
-			if len(parts) != 2 {
-				panic("Invalid WritePerm action: " + route)
-			}
-			s.RegisterAction(route, (writeChecker(dp, parts[0], perm)))
-		}
-	}
-}
-
-func writeChecker(dp dataprovider.DataProvider, collName string, permission perm.TPermission) perm.Action {
-	return perm.ActionFunc(func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
-		var meetingID int
-		if err := json.Unmarshal(payload["meeting_id"], &meetingID); err != nil {
-			var id int
-			if err := json.Unmarshal(payload["id"], &id); err != nil {
-				return false, fmt.Errorf("invalid payload. Action needs payload `meeting_id`<int> or `id`<int>")
-			}
-
-			fqid := collName + "/" + strconv.Itoa(id)
-			meetingID, err = dp.MeetingFromModel(ctx, fqid)
-			if err != nil {
-				return false, fmt.Errorf("getting meeting id for %s: %w", fqid, err)
-			}
-		}
-
-		ok, err := perm.HasPerm(ctx, dp, userID, meetingID, permission)
-		if err != nil {
-			return false, fmt.Errorf("checking permission: %w", err)
-		}
-
-		return ok, nil
-	})
-}
-
-// OrgaManager registers actions, that can be accessed by orga managers.
-func OrgaManager(dp dataprovider.DataProvider, actions ...string) perm.ConnecterFunc {
-	return func(s perm.HandlerStore) {
-		for _, action := range actions {
-			s.RegisterAction(action, perm.ActionFunc(
-				func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
-					var orgaLevel string
-					if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/organisation_management_level", userID), &orgaLevel); err != nil {
-						return false, fmt.Errorf("getting organisation level: %w", err)
-					}
-
-					if orgaLevel == "can_manage_organisation" {
-						return true, nil
-					}
-					return false, nil
-				},
-			))
-		}
 	}
 }

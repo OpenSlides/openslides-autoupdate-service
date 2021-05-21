@@ -2,7 +2,6 @@ package collection
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -15,104 +14,12 @@ import (
 func User(dp dataprovider.DataProvider) perm.ConnecterFunc {
 	u := &user{dp: dp}
 	return func(s perm.HandlerStore) {
-		s.RegisterAction("user.create", perm.ActionFunc(u.create))
-		s.RegisterAction("user.update_self", perm.ActionFunc(u.updateSelf))
-		s.RegisterAction("user.update", perm.ActionFunc(u.update))
-		s.RegisterAction("user.set_password_self", perm.ActionFunc(u.passwordSelf))
-		s.RegisterAction("user.reset_password_to_default", perm.ActionFunc(u.update))
-		s.RegisterAction("user.generate_new_password", perm.ActionFunc(u.update))
-		s.RegisterAction("user.set_password", perm.ActionFunc(u.update))
-		s.RegisterAction("user.set_password_temporary", perm.ActionFunc(u.update))
-		s.RegisterAction("user.delete", perm.ActionFunc(u.update))
-		s.RegisterAction("user.set_present", perm.ActionFunc(u.setPresent))
-
 		s.RegisterRestricter("user", perm.CollectionFunc(u.read))
 	}
 }
 
 type user struct {
 	dp dataprovider.DataProvider
-}
-
-func (u *user) create(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
-	var orgaLevel string
-	if err := u.dp.GetIfExist(ctx, fmt.Sprintf("user/%d/organisation_management_level", userID), &orgaLevel); err != nil {
-		return false, fmt.Errorf("getting organisation level: %w", err)
-	}
-	switch orgaLevel {
-	case "can_manage_organisation", "can_manage_users":
-		return true, nil
-	default:
-		return false, nil
-	}
-}
-
-func (u *user) updateSelf(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
-	return userID != 0, nil
-}
-
-func (u *user) update(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
-	var orgaLevel string
-	if err := u.dp.GetIfExist(ctx, fmt.Sprintf("user/%d/organisation_management_level", userID), &orgaLevel); err != nil {
-		return false, fmt.Errorf("getting organisation level: %w", err)
-	}
-
-	if orgaLevel != "" {
-		return true, nil
-	}
-
-	var meetingID int
-	if err := u.dp.GetIfExist(ctx, fmt.Sprintf("user/%s/meeting_id", payload["id"]), &meetingID); err != nil {
-		return false, fmt.Errorf("getting meeting_id: %w", err)
-	}
-
-	if meetingID == 0 {
-		// Not a temporary user
-		return false, nil
-	}
-
-	b, err := perm.HasPerm(ctx, u.dp, userID, meetingID, perm.UserCanManage)
-	if err != nil {
-		return false, fmt.Errorf("checking manage perm: %w", err)
-	}
-
-	return b, nil
-}
-
-func (u *user) passwordSelf(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
-	if userID == 0 {
-		return false, nil
-	}
-
-	var meetingID int
-	if err := u.dp.GetIfExist(ctx, fmt.Sprintf("user/%d/meeting_id", userID), &meetingID); err != nil {
-		return false, fmt.Errorf("getting meeting id: %w", err)
-	}
-
-	if meetingID == 0 {
-		// Not a temporary user.
-		return true, nil
-	}
-
-	b, err := perm.HasPerm(ctx, u.dp, userID, meetingID, perm.UserCanChangeOwnPassword)
-	if err != nil {
-		return false, fmt.Errorf("getting perm: %w", err)
-	}
-
-	return b, nil
-}
-
-func (u *user) setPresent(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
-	var meetingID int
-	if err := json.Unmarshal(payload["meeting_id"], &meetingID); err != nil {
-		return false, fmt.Errorf("decoding meeting_id from payload: %w", err)
-	}
-
-	var allowSetPresent bool
-	if err := u.dp.GetIfExist(ctx, fmt.Sprintf("meeting/%d/users_allow_self_set_present", meetingID), &allowSetPresent); err != nil {
-		return false, fmt.Errorf("getting setting: %w", err)
-	}
-	return allowSetPresent, nil
 }
 
 // committeeManagerMembers returns all userIDs as a set that the userID can

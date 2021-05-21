@@ -2,26 +2,10 @@ package perm
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 )
-
-// Action is an object with the method IsAllowed.
-type Action interface {
-	// IsAllowed tells, if the user has the permission for the object this
-	// method is called on.
-	IsAllowed(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error)
-}
-
-// ActionFunc is a function with the IsAllowed signature.
-type ActionFunc func(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error)
-
-// IsAllowed calls the function.
-func (f ActionFunc) IsAllowed(ctx context.Context, userID int, payload map[string]json.RawMessage) (bool, error) {
-	return f(ctx, userID, payload)
-}
 
 // Collection is an object with a method to restrict fqfields.
 type Collection interface {
@@ -52,7 +36,6 @@ func (f ConnecterFunc) Connect(store HandlerStore) {
 // HandlerStore holds collections and actions.
 type HandlerStore interface {
 	RegisterRestricter(name string, collection Collection)
-	RegisterAction(name string, action Action)
 }
 
 // FQField contains all parts of a fqfield.

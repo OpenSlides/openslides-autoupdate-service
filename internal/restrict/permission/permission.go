@@ -37,44 +37,6 @@ func New(dp DataProvider) *Permission {
 	return p
 }
 
-// IsAllowed returns true, if the user can access the given action.
-//
-// One call to IsAllowed() handels a list of requests to this action. For each
-// entry in the payloadList the method checks, if the user is allowed to use the
-// action. The method returns true, if the user can the action for all of the
-// given payloads.
-func (ps *Permission) IsAllowed(ctx context.Context, action string, userID int, payloadList []map[string]json.RawMessage) (bool, error) {
-	superadmin, err := ps.dp.IsSuperadmin(ctx, userID)
-	if err != nil {
-		return false, fmt.Errorf("checking for superadmin: %w", err)
-	}
-	if superadmin {
-		return true, nil
-	}
-
-	// TODO: after all handlers are implemented. Move this code above the superadmin check.
-	handler, ok := ps.hs.actions[action]
-	if !ok {
-		return false, fmt.Errorf("unknown action: `%s`", action)
-	}
-
-	for i, payload := range payloadList {
-		allowed, err := handler.IsAllowed(ctx, userID, payload)
-		if err != nil {
-			bs, jsonErr := json.Marshal(payload)
-			if jsonErr != nil {
-				bs = []byte("[payload can not be encoded]")
-			}
-			return false, fmt.Errorf("action: %s, payload-index %d: `%s`: %w", action, i, bs, err)
-		}
-		if !allowed {
-			return false, nil
-		}
-	}
-
-	return true, nil
-}
-
 // superadminFields handles fields that the superadmin is not allowed to see.
 //
 // Returns true, if the normal normal restricters should be skiped.
@@ -142,20 +104,6 @@ func groupFQFields(fqfields []string) (map[string][]perm.FQField, error) {
 	return grouped, nil
 }
 
-// AllRoutes returns the names of all known actions and collections.
-func (ps *Permission) AllRoutes() (collections []string, actions []string) {
-	rr := make([]string, 0, len(ps.hs.collections))
-	for k := range ps.hs.collections {
-		rr = append(rr, k)
-	}
-
-	wr := make([]string, 0, len(ps.hs.actions))
-	for k := range ps.hs.actions {
-		wr = append(wr, k)
-	}
-	return rr, wr
-}
-
 // AdditionalUpdate TODO
 func (ps *Permission) AdditionalUpdate(ctx context.Context, updated map[string]json.RawMessage) ([]int, error) {
 	return nil, nil
@@ -174,13 +122,11 @@ type DataProvider interface {
 
 // handlerStore saves the known actions and collections
 type handlerStore struct {
-	actions     map[string]perm.Action
 	collections map[string]perm.Collection
 }
 
 func newHandlerStore() *handlerStore {
 	return &handlerStore{
-		actions:     make(map[string]perm.Action),
 		collections: make(map[string]perm.Collection),
 	}
 }
@@ -190,11 +136,4 @@ func (hs *handlerStore) RegisterRestricter(name string, collection perm.Collecti
 		panic(fmt.Sprintf("Collection with name `%s` allready exists", name))
 	}
 	hs.collections[name] = collection
-}
-
-func (hs *handlerStore) RegisterAction(name string, action perm.Action) {
-	if _, ok := hs.actions[name]; ok {
-		panic(fmt.Sprintf("Action with name `%s` allready exists", name))
-	}
-	hs.actions[name] = action
 }

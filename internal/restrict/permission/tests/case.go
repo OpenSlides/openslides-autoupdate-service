@@ -29,9 +29,7 @@ type Case struct {
 	Permission string
 
 	Payload map[string]interface{}
-	Action  string
 
-	IsAllowed *bool    `yaml:"is_allowed"`
 	CanSee    []string `yaml:"can_see"` // TODO: fix nil != undefined
 	CanNotSee []string `yaml:"can_not_see"`
 
@@ -51,9 +49,6 @@ func (c *Case) test(t *testing.T) {
 		if !strings.HasPrefix(c.Name, onlyTest) {
 			return
 		}
-	}
-	if c.IsAllowed != nil {
-		c.testWrite(t)
 	}
 	if c.CanSee != nil || c.CanNotSee != nil {
 		c.testRead(t)
@@ -163,33 +158,6 @@ func (c *Case) service() (*permission.Permission, error) {
 	return permission.New(&dataProvider{data}), nil
 }
 
-func (c *Case) testWrite(t *testing.T) {
-	p, err := c.service()
-	if err != nil {
-		t.Fatalf("Can not create permission service: %v", err)
-	}
-
-	payload := make(map[string]json.RawMessage, len(c.Payload))
-	for k, v := range c.Payload {
-		bs, err := json.Marshal(v)
-		if err != nil {
-			t.Fatalf("Invalid Payload: %v", err)
-		}
-		payload[k] = bs
-
-	}
-	dataList := []map[string]json.RawMessage{payload}
-
-	got, err := p.IsAllowed(context.Background(), c.Action, c.userID, dataList)
-	if err != nil {
-		t.Fatalf("IsAllowed retuend unexpected error: %v", err)
-	}
-
-	if got != *c.IsAllowed {
-		t.Errorf("Got %t, expected %t", got, *c.IsAllowed)
-	}
-}
-
 func (c *Case) testRead(t *testing.T) {
 	p, err := c.service()
 	if err != nil {
@@ -277,9 +245,6 @@ func (c *Case) initSub() {
 		}
 		if s.Payload == nil {
 			s.Payload = c.Payload
-		}
-		if s.Action == "" {
-			s.Action = c.Action
 		}
 
 		s.initSub()
