@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
-	"github.com/OpenSlides/openslides-permission-service/internal/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/permission/dataprovider"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/permission/perm"
 )
 
 // User handels the permissions of user-actions and the user collection.

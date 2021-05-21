@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/OpenSlides/openslides-permission-service/pkg/permission"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/permission"
 	"gopkg.in/yaml.v3"
 )
 

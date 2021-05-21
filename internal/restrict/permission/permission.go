@@ -9,8 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
-	"github.com/OpenSlides/openslides-permission-service/internal/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/permission/dataprovider"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/permission/perm"
 )
 
 // Permission provides methods to tell, if a user can use an action or can see

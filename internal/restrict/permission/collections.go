@@ -1,9 +1,9 @@
 package permission
 
 import (
-	"github.com/OpenSlides/openslides-permission-service/internal/collection"
-	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
-	"github.com/OpenSlides/openslides-permission-service/internal/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/permission/collection"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/permission/dataprovider"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/permission/perm"
 )
 
 func openSlidesCollections(dp dataprovider.DataProvider) []perm.Connecter {

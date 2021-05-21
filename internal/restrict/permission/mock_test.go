@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/OpenSlides/openslides-permission-service/internal/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/permission/perm"
 )
 
 func NewTestPermission() *Permission {

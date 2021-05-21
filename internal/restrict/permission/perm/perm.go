@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/permission/dataprovider"
 )
 
 // Permission holds the information which permissions and groups a user has.

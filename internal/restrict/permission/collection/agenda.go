@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-permission-service/internal/dataprovider"
-	"github.com/OpenSlides/openslides-permission-service/internal/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/permission/dataprovider"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/permission/perm"
 )
 
 // AgendaItem handels the permissions of agenda_item objects.
