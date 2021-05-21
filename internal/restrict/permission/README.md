@@ -20,19 +20,7 @@ is used for testing.
 
 Each file is a test-case object.
 
-There are two types of tests:
-
-1. Performing an action: To test an action that is called by the backend for
-   write requests.
-
-  * `action`: Name of the action. See backend health output for all action
-    names.
-
-  * `is_allowed`: Determines the expected result (`true` or `false`).
-
-  * `payload`: User-Payload that is used for the action.
-
-2. Reading FQFields: To test whether the user can see FQFields or not.
+Reading FQFields: To test whether the user can see FQFields or not.
 
   * `fqfields`: A list of fields to be tested.
 

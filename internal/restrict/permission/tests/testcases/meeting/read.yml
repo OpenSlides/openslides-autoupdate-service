@@ -24,8 +24,6 @@ cases:
   - meeting/1/conference_stream_url
   - meeting/1/conference_stream_poster_url
   - meeting/1/present_user_ids
-  - meeting/1/temporary_user_ids
-  - meeting/1/guest_ids
   - meeting/1/user_ids
 
 - name: member
@@ -35,8 +33,6 @@ cases:
   - meeting/1/conference_stream_url
   - meeting/1/conference_stream_poster_url
   - meeting/1/present_user_ids
-  - meeting/1/temporary_user_ids
-  - meeting/1/guest_ids
   - meeting/1/user_ids
 
 
@@ -62,19 +58,13 @@ cases:
   permission: user.can_see
   fqfields:
   - meeting/1/present_user_ids
-  - meeting/1/temporary_user_ids
-  - meeting/1/guest_ids
   - meeting/1/user_ids
   can_see:
   - meeting/1/present_user_ids
-  - meeting/1/temporary_user_ids
-  - meeting/1/guest_ids
   - meeting/1/user_ids
 
 - name: can manage config
   permission: meeting.can_manage_settings
   can_not_see:
   - meeting/1/present_user_ids
-  - meeting/1/temporary_user_ids
-  - meeting/1/guest_ids
   - meeting/1/user_ids

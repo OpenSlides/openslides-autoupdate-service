@@ -38,7 +38,6 @@ cases:
   - user/1/vote_delegated_vote_$_ids
   - user/1/assignment_candidate_$_ids
   - user/1/projection_$_ids
-  - user/1/current_projector_$_ids
 
 - name: can see extra
   permission: user.can_see_extra_data
@@ -69,14 +68,11 @@ cases:
   - user/1/vote_delegated_vote_$_ids
   - user/1/assignment_candidate_$_ids
   - user/1/projection_$_ids
-  - user/1/current_projector_$_ids
 
   # Fields new in this level
   - user/1/is_active
   - user/1/email
   - user/1/last_email_send
-  - user/1/meeting_id
-  - user/1/guest_meeting_ids
   - user/1/comment_$
   - user/1/vote_delegated_$_to_id
   - user/1/vote_delegations_$_from_ids
@@ -88,9 +84,11 @@ cases:
   can_not_see:
   - user/1/password
   - user/1/organisation_management_level
-  - user/1/committee_as_member_ids
-  - user/1/committee_as_manager_ids
   - user/1/personal_note_$_ids
+  - user/1/can_change_own_password
+  - user/1/committee_$_management_level
+  - user/1/committee_ids
+  - user/1/meeting_ids
 
 - name: Orga level user manager
   db:
@@ -111,9 +109,12 @@ cases:
   - user/1/vote_delegated_vote_$_ids
   - user/1/assignment_candidate_$_ids
   - user/1/projection_$_ids
-  - user/1/current_projector_$_ids
   - user/1/vote_delegated_$_to_id
   - user/1/vote_delegations_$_from_ids
+  - user/1/can_change_own_password
+  - user/1/committee_$_management_level
+  - user/1/committee_ids
+  - user/1/meeting_ids
 
 - name: Orga level manager
   db:
@@ -134,9 +135,12 @@ cases:
   - user/1/vote_delegated_vote_$_ids
   - user/1/assignment_candidate_$_ids
   - user/1/projection_$_ids
-  - user/1/current_projector_$_ids
   - user/1/vote_delegated_$_to_id
   - user/1/vote_delegations_$_from_ids
+  - user/1/can_change_own_password
+  - user/1/committee_$_management_level
+  - user/1/committee_ids
+  - user/1/meeting_ids
 
 - name: Committee manager
   db:
@@ -154,13 +158,15 @@ cases:
   - user/1/email
   - user/1/last_email_send
   - user/1/is_demo_user
-  - user/1/organisation_management_level
-  - user/1/committee_as_member_ids
-  - user/1/committee_as_manager_ids
+  - user/1/organisation_management_level  
 
 - name: can see own user
   user_id: 1
 
   can_not_see:
   - user/1/password
+  - user/1/can_change_own_password
+  - user/1/committee_$_management_level
+  - user/1/committee_ids
+  - user/1/meeting_ids
   # TODO: Restrict user/1/comment_$ in restricter and can_not_see user/1/comment_$X if can_see_extra X or manager in X
