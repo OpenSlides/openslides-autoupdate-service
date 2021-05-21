@@ -4,4 +4,4 @@ then
     export TEST_CASE=$1
 fi
 
-go test -race ./internal/tests/
+go test -race ./tests

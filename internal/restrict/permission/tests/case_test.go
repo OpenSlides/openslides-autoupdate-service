@@ -5,7 +5,7 @@ import (
 )
 
 func TestCases(t *testing.T) {
-	files, err := walk("../../tests")
+	files, err := walk("testcases")
 	if err != nil {
 		t.Fatalf("Can not work test case files: %v", err)
 	}

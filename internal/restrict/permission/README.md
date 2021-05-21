@@ -1,6 +1,19 @@
-# Test cases
+# Permission package
 
-This directory contains test cases in YAML. No need to learn Go to write tests.
+The permission package was its own git repository. It was merged into this
+repository because it was the only place it was used and this makes changed easier.
+
+The current code is only temporary. The code should be merged into the restict
+package to get one api.
+
+There are test cases as yaml files. To run only this test, you can go into this
+repository and run:
+
+```
+sh test.sh
+```
+
+The format of the yaml files is as follows:
 
 Each file ending on `.yml` or `.yaml` in this directory and all subdirectories
 is used for testing.
