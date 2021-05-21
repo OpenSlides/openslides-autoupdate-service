@@ -1,0 +1,18 @@
+---
+db:
+  assignment_candidate/1/meeting_id: 1
+  assignment/1/meeting_id: 1
+
+fqids:
+- assignment/1
+- assignment_candidate/1
+
+cases:
+- name: Without perm
+  can_see: []
+
+- name: With perm
+  permission: assignment.can_see
+  can_see:
+  - assignment/1
+  - assignment_candidate/1

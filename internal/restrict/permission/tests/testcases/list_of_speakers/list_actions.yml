@@ -1,0 +1,6 @@
+---
+cases:
+- name: delete
+  action: list_of_speakers.delete
+  permission: list_of_speakers.can_manage
+  is_allowed: false

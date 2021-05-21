@@ -1,0 +1,23 @@
+action: user.create
+
+cases:
+- name: no perm
+  is_allowed: false
+
+- name: superadmin
+  db:
+    user/1/organisation_management_level: superadmin
+  user_id: 1
+  is_allowed: true
+
+- name: orga manager
+  db:
+    user/1/organisation_management_level: can_manage_organisation
+  user_id: 1
+  is_allowed: true
+
+- name: user manager
+  db:
+    user/1/organisation_management_level: can_manage_users
+  user_id: 1
+  is_allowed: true

@@ -1,0 +1,57 @@
+---
+action: motion.update
+
+db:
+  motion/1:
+    submitter_ids: [3]
+    state_id: 5
+    meeting_id: 1
+  motion_submitter/3/user_id: 1
+payload:
+  id: 1
+
+cases:
+- name: without perm
+  is_allowed: false
+
+- name: manager
+  permission: motion.can_manage
+  is_allowed: true
+
+- name: submitter wrong state
+  user_id: 1
+  is_allowed: false
+
+- name: submitter correct state, wrong fields
+  db:
+    motion_state/5/allow_submitter_edit: true
+  user_id: 1
+  permission: motion.can_see
+  payload:
+    id: 1
+    bad_field: value
+  is_allowed: false
+
+- name: submitter correct state, correct fields
+  db:
+    motion_state/5/allow_submitter_edit: true
+  user_id: 1
+  permission: motion.can_see
+  payload:
+    id: 1
+    title: value
+    text: value
+    reason: value
+    amendment_paragraphs: value
+  is_allowed: true
+
+- name: submitter, correct state and fields, can not see
+  db:
+    motion_state/5/allow_submitter_edit: true
+    motion_state/5/restrictions: [motion.can_see_internal]
+  user_id: 1
+  permission: motion.can_see
+  payload:
+    id: 1
+    title: value
+  is_allowed: false

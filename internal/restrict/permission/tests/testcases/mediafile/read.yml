@@ -1,0 +1,25 @@
+---
+db:
+  mediafile/1/meeting_id: 1
+  mediafile/2:
+    meeting_id: 1
+    is_public: true
+
+fqids:
+- mediafile/1
+- mediafile/2
+
+cases:
+- name: manager
+  permission: mediafile.can_manage
+  can_see:
+  - mediafile/1
+  - mediafile/2
+
+- name: can_see
+  permission: mediafile.can_see
+  can_see:
+  - mediafile/2
+
+- name: no_perm
+  can_see:

@@ -1,0 +1,37 @@
+---
+db:
+  user/1/organisation_management_level: can_manage_organisation
+
+cases:
+- name: create
+  action: committee.create
+
+  cases:
+  - name: orga manager
+    user_id: 1
+    is_allowed: true
+
+  - name: no perm
+    is_allowed: false
+
+- name: update
+  action: committee.update
+
+  cases:
+  - name: orga manager
+    user_id: 1
+    is_allowed: true
+
+  - name: no perm
+    is_allowed: false
+
+- name: delete
+  action: committee.delete
+
+  cases:
+  - name: orga manager
+    user_id: 1
+    is_allowed: true
+
+  - name: no perm
+    is_allowed: false

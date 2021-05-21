@@ -1,0 +1,20 @@
+---
+db:
+  topic/1/meeting_id: 1
+  topic/2/meeting_id: 2
+
+fqids:
+- topic/1
+- topic/2
+
+meeting_id: 1
+
+cases:
+- name: no perm
+  can_see: []
+
+- name: can see
+  permission: agenda_item.can_see
+
+  can_see:
+  - topic/1

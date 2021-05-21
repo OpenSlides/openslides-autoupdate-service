@@ -1,0 +1,11 @@
+---
+db:
+  group/1/meeting_id: 1
+  group/2/meeting_id: 2
+
+fqids:
+- group/1
+- group/2
+
+can_see:
+- group/1

@@ -1,0 +1,17 @@
+---
+db:
+  speaker:
+    1:
+      user_id: 1
+      meeting_id: 1
+    2:
+      user_id: 999
+      meeting_id: 1
+
+fqids:
+- speaker/1
+- speaker/2
+
+user_id: 1
+can_see:
+- speaker/1

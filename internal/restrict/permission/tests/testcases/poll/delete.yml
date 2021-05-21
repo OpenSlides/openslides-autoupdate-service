@@ -1,0 +1,122 @@
+---
+db:
+  poll/1/meeting_id: 1
+
+
+cases:
+- name: poll
+  action: poll.delete
+  payload:
+    id: 1
+
+  cases:
+  - name: motion
+    db:
+      poll/1/content_object_id: motion/2
+    cases:
+    - name: Without perm
+      is_allowed: false
+
+    - name: With perm
+      permission: motion.can_manage
+      is_allowed: true
+
+  - name: assignment
+    db:
+      poll/1/content_object_id: assignment/2
+    cases:
+    - name: Without perm
+      is_allowed: false
+
+    - name: With perm
+      permission: assignment.can_manage
+      is_allowed: true
+
+  - name: other
+    cases:
+    - name: Without perm
+      is_allowed: false
+
+    - name: With perm
+      permission: agenda_item.can_manage
+      is_allowed: true
+
+- name: option
+  action: option.delete
+  db:
+    option/3/poll_id: 1
+  payload:
+    id: 3
+
+  cases:
+  - name: motion
+    db:
+      poll/1/content_object_id: motion/2
+    cases:
+    - name: Without perm
+      is_allowed: false
+
+    - name: With perm
+      permission: motion.can_manage
+      is_allowed: true
+
+  - name: assignment
+    db:
+      poll/1/content_object_id: assignment/2
+    cases:
+    - name: Without perm
+      is_allowed: false
+
+    - name: With perm
+      permission: assignment.can_manage
+      is_allowed: true
+
+  - name: other
+    cases:
+    - name: Without perm
+      is_allowed: false
+
+    - name: With perm
+      permission: agenda_item.can_manage
+      is_allowed: true
+
+
+- name: vote
+  action: vote.delete
+  db:
+    option/3/poll_id: 1
+    vote/4/option_id: 3
+  payload:
+    id: 4
+
+  cases:
+  - name: motion
+    db:
+      poll/1/content_object_id: motion/2
+    cases:
+    - name: Without perm
+      is_allowed: false
+
+    - name: With perm
+      permission: motion.can_manage
+      is_allowed: true
+
+  - name: assignment
+    db:
+      poll/1/content_object_id: assignment/2
+    cases:
+    - name: Without perm
+      is_allowed: false
+
+    - name: With perm
+      permission: assignment.can_manage
+      is_allowed: true
+
+  - name: other
+    cases:
+    - name: Without perm
+      is_allowed: false
+
+    - name: With perm
+      permission: agenda_item.can_manage
+      is_allowed: true

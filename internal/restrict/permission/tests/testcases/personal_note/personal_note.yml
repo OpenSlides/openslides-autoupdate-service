@@ -1,0 +1,53 @@
+---
+db:
+  personal_note/1/user_id: 1
+  personal_note/2/user_id: 2
+
+cases:
+- name: create
+  action: personal_note.create
+
+  cases:
+  - name: anonymous
+    user_id: 0
+    is_allowed: false
+
+  - name: logged in
+    user_id: 1
+    is_allowed: true
+
+- name: update
+  action: personal_note.update
+  payload:
+    id: 1
+
+  cases:
+  - name: own note
+    user_id: 1
+    is_allowed: true
+
+  - name: other note
+    user_id: 2
+    is_allowed: false
+
+- name: delete
+  action: personal_note.delete
+  payload:
+    id: 1
+
+  cases:
+  - name: own note
+    user_id: 1
+    is_allowed: true
+
+  - name: other note
+    user_id: 2
+    is_allowed: false
+
+- name: read
+  fqids:
+  - personal_note/1
+  - personal_note/2
+  user_id: 1
+  can_see:
+  - personal_note/1
