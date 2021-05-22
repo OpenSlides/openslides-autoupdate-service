@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -18,7 +19,7 @@ type Datastore interface {
 // Register initializes a new projector.
 func Register(ds Datastore, slides *SlideStore) {
 	hotKeys := make(map[string][]string)
-	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield string, changed map[string]json.RawMessage) ([]byte, error) {
+	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield string, changed map[string]json.RawMessage) (bs []byte, err error) {
 		if changed != nil {
 			var needUpdate bool
 			for _, k := range hotKeys[fqfield] {
@@ -35,6 +36,21 @@ func Register(ds Datastore, slides *SlideStore) {
 				return old[0], nil
 			}
 		}
+
+		var keys []string
+		defer func() {
+			// At the end, save all requested keys to check later if one has
+			// changed.
+			//
+			// If an error happend, don't return the error but log it and show
+			// the user a generic error message.
+			hotKeys[fqfield] = keys
+			if err != nil {
+				log.Printf("Error parsing slide %s: %v", fqfield, err)
+				bs = []byte(`{"error":"Ups, something went wrong!"}`)
+				err = nil
+			}
+		}()
 
 		parts := strings.SplitN(fqfield, "/", 3)
 		if len(parts) != 3 {
@@ -70,7 +86,7 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("calculating slide: %w", err)
 		}
 		keys = append(keys, slideKeys...)
-		hotKeys[fqfield] = keys
+
 		return bs, nil
 	})
 }
