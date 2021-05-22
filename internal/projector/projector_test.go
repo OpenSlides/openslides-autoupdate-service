@@ -177,6 +177,32 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 	assert.JSONEq(t, expect, string(fields[0]))
 }
 
+func TestProjectionTypeDoesNotExist(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
+		"projection/1/type": `"unexistingTestSlide"`,
+	})
+	projector.Register(ds, testSlides())
+
+	fields, err := ds.Get(context.Background(), "projection/1/content")
+	if err != nil {
+		t.Fatalf("Get returned unexpected error: %v", err)
+	}
+
+	var content struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal(fields[0], &content); err != nil {
+		t.Fatalf("Can not unmarshal field[0] `%s`: %v", fields[0], err)
+	}
+
+	if content.Error == "" {
+		t.Errorf("Field has not error")
+	}
+}
+
 func testSlides() *projector.SlideStore {
 	s := new(projector.SlideStore)
 	s.AddFunc("test1", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {

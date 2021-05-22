@@ -14,13 +14,6 @@ type Authenticater interface {
 	FromContext(context.Context) int
 }
 
-// Expected errors in package slide
-type slidesErrorI interface {
-	Error() string
-	Slide() string
-	Projection() string
-}
-
 // ClientError is an expected error that are returned to the client.
 type ClientError interface {
 	Type() string
