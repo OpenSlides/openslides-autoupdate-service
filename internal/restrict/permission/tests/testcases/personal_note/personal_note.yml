@@ -4,6 +4,10 @@ db:
   personal_note/2/user_id: 2
 
 cases:
+- name: anonymous
+  user_id: 0
+  can_see:
+
 - name: read
   fqids:
   - personal_note/1

@@ -46,8 +46,12 @@ fqids:
 - motion_comment/3
 
 cases:
+- name: anonymous
+  user_id: 0
+  can_see:
+
 - name: no perm
-  can_see: []
+  can_see:
 
 - name: can_see
   permission: motion.can_see

@@ -26,6 +26,10 @@ type user struct {
 // manage as committee manager. (Member in a meeting from a committe the userID
 // is manager.)
 func committeeManagerMembers(ctx context.Context, dp dataprovider.DataProvider, userID int) (map[int]bool, error) {
+	if userID == 0 {
+		return nil, nil
+	}
+
 	var committeManager []int
 	if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/committee_as_manager_ids", userID), &committeManager); err != nil {
 		return nil, fmt.Errorf("getting committee manager: %w", err)

@@ -10,6 +10,10 @@ fqids:
 - mediafile/2
 
 cases:
+- name: anonymous
+  user_id: 0
+  can_see:
+
 - name: manager
   permission: mediafile.can_manage
   can_see:

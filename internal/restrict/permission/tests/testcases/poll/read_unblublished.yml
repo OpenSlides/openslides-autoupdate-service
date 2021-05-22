@@ -10,8 +10,11 @@ cases:
   - poll/1
 
   cases:
+    - name: anonymous
+      can_see:
+
     - name: no perms
-      can_see: []
+      can_see:
 
     - name: can_see
       permission: agenda_item.can_see
@@ -38,22 +41,26 @@ cases:
   - option/1
 
   cases:
-    - name: no perms
-      can_see: []
+  - name: anonymous
+    user_id: 0  
+    can_see:
+      
+  - name: no perms
+    can_see:
 
-    - name: can_see
-      permission: agenda_item.can_see
-      can_not_see:
-      - option/1/yes
-      - option/1/no
-      - option/1/abstain
-      - option/1/vote_ids
+  - name: can_see
+    permission: agenda_item.can_see
+    can_not_see:
+    - option/1/yes
+    - option/1/no
+    - option/1/abstain
+    - option/1/vote_ids
 
 
-    - name: can_manage
-      permission: agenda_item.can_manage
-      can_see:
-      - option/1
+  - name: can_manage
+    permission: agenda_item.can_manage
+    can_see:
+    - option/1
 
 
 - name: unpublished vote
@@ -70,12 +77,16 @@ cases:
   - vote/1
 
   cases:
+    - name: anonymous
+      user_id: 0
+      can_see:
+      
     - name: no perms
-      can_see: []
+      can_see:
 
     - name: no perms vote user
       user_id: 1
-      can_see: []
+      can_see:
 
     - name: can_see
       permission: agenda_item.can_see

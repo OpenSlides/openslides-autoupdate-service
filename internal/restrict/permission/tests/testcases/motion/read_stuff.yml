@@ -13,6 +13,10 @@ fqids:
 
 
 casses:
+- name: anonymous
+  user_id: 0
+  can_see:
+
 - name: with_perm
   permission: motion.can_see
   can_see:
@@ -22,4 +26,4 @@ casses:
   - motion_statute_paragraph/1
 
 - name: without_perm
-  can_see: []
+  can_see:
