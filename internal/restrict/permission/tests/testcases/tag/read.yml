@@ -1,0 +1,11 @@
+---
+db:
+  tag/1/meeting_id: 1
+  tag/2/meeting_id: 2
+
+fqids:
+- tag/1
+- tag/2
+
+can_see:
+- tag/1

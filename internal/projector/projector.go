@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -18,7 +19,7 @@ type Datastore interface {
 // Register initializes a new projector.
 func Register(ds Datastore, slides *SlideStore) {
 	hotKeys := make(map[string][]string)
-	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield string, changed map[string]json.RawMessage) ([]byte, error) {
+	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield string, changed map[string]json.RawMessage) (bs []byte, err error) {
 		if changed != nil {
 			var needUpdate bool
 			for _, k := range hotKeys[fqfield] {
@@ -36,15 +37,34 @@ func Register(ds Datastore, slides *SlideStore) {
 			}
 		}
 
+		var keys []string
+		defer func() {
+			// At the end, save all requested keys to check later if one has
+			// changed.
+			//
+			// If an error happend, don't return the error but log it and show
+			// the user a generic error message.
+			hotKeys[fqfield] = keys
+			if err != nil {
+				log.Printf("Error parsing slide %s: %v", fqfield, err)
+				bs = []byte(`{"error":"Ups, something went wrong!"}`)
+				err = nil
+			}
+		}()
+
 		parts := strings.SplitN(fqfield, "/", 3)
 		if len(parts) != 3 {
 			return nil, fmt.Errorf("invalid key %s, expected two '/'", fqfield)
 		}
 
-		var p7on Projection
-		keys, err := datastore.Object(ctx, ds, parts[0]+"/"+parts[1], &p7on)
+		data, keys, err := datastore.Object(ctx, ds, parts[0]+"/"+parts[1], []string{"id", "type", "content_object_id", "meeting_id"})
 		if err != nil {
 			return nil, fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
+		}
+
+		p7on, err := p7onFromMap(data)
+		if err != nil {
+			return nil, fmt.Errorf("loading p7on: %w", err)
 		}
 
 		if !p7on.exists() {
@@ -61,12 +81,12 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("unknown slide %s", slideName)
 		}
 
-		bs, slideKeys, err := slider.Slide(context.Background(), ds, &p7on)
+		bs, slideKeys, err := slider.Slide(context.Background(), ds, p7on)
 		if err != nil {
 			return nil, fmt.Errorf("calculating slide: %w", err)
 		}
 		keys = append(keys, slideKeys...)
-		hotKeys[fqfield] = keys
+
 		return bs, nil
 	})
 }
@@ -77,6 +97,19 @@ type Projection struct {
 	Type            string `json:"type"`
 	ContentObjectID string `json:"content_object_id"`
 	MeetingID       int    `json:"meeting_id"`
+}
+
+func p7onFromMap(in map[string]json.RawMessage) (*Projection, error) {
+	bs, err := json.Marshal(in)
+	if err != nil {
+		return nil, fmt.Errorf("encoding projection data")
+	}
+
+	var p Projection
+	if err := json.Unmarshal(bs, &p); err != nil {
+		return nil, fmt.Errorf("decoding projection: %w", err)
+	}
+	return &p, nil
 }
 
 func (p *Projection) exists() bool {

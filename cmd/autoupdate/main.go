@@ -16,11 +16,11 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/permission"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
-	"github.com/OpenSlides/openslides-permission-service/pkg/permission"
 )
 
 type messageBus interface {

@@ -1,0 +1,74 @@
+---
+db:
+  motion_comment_section:
+    1:
+      meeting_id: 1
+      read_group_ids: [10]
+      motion_id: 1
+    2:
+      meeting_id: 1
+      read_group_ids: []
+      motion_id: 1
+    3:
+      meeting_id: 1
+      read_group_ids: [10]
+      motion_id: 2
+
+  motion_comment:
+    1:
+      section_id: 1
+    2:
+      section_id: 2
+    3:
+      section_id: 3
+
+
+  motion/1:
+    meeting_id: 1
+    state_id: 1
+
+  motion/2:
+    meeting_id: 1
+    state_id: 2
+
+  motion_state/2/restrictions: [motion.can_see_internal]
+
+  user/1/group_$1_ids: [10]
+
+user_id: 1
+
+fqids:
+- motion_comment_section/1
+- motion_comment_section/2
+- motion_comment_section/3
+- motion_comment/1
+- motion_comment/2
+- motion_comment/3
+
+cases:
+- name: no perm
+  can_see: []
+
+- name: can_see
+  permission: motion.can_see
+  can_see:
+  - motion_comment_section/1
+  - motion_comment/1
+
+- name: can_see_internal
+  permission: motion.can_see_internal
+  can_see:
+  - motion_comment_section/1
+  - motion_comment_section/3
+  - motion_comment/1
+  - motion_comment/3
+
+- name: can_manage
+  permission: motion.can_manage
+  can_see:
+  - motion_comment_section/1
+  - motion_comment_section/2
+  - motion_comment_section/3
+  - motion_comment/1
+  - motion_comment/2
+  - motion_comment/3

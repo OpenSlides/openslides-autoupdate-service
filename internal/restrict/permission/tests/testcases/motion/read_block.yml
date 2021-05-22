@@ -1,0 +1,28 @@
+---
+db:
+  motion_block:
+    1:
+      meeting_id: 1
+      internal: false
+    2:
+      meeting_id: 1
+      internal: true
+
+fqids:
+- motion_block/1
+- motion_block/2
+
+cases:
+- name: no perm
+  can_see: []
+
+- name: can_see
+  permission: motion.can_see
+  can_see:
+  - motion_block/1
+
+- name: can_manage
+  permission: motion.can_manage
+  can_see:
+  - motion_block/1
+  - motion_block/2

@@ -1,0 +1,36 @@
+---
+user_id: 1
+fqids:
+- committee/1
+
+cases:
+- name: anonymous
+  user_id: 0
+  can_see: []
+
+- name: unprivileged
+  can_see: []
+
+- name: superadmin
+  db:
+    user/1/organisation_management_level: superadmin
+  can_see:
+    - committee/1
+
+- name: orga manager
+  db:
+    user/1/organisation_management_level: can_manage_organisation
+  can_see:
+  - committee/1
+
+- name: commitee manager
+  db:
+    user/1/committee_as_manager_ids: [1]
+  can_see:
+  - committee/1
+
+- name: commitee member
+  db:
+    user/1/committee_as_member_ids: [1]
+  can_see:
+  - committee/1
