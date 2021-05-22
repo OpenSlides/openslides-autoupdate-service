@@ -45,8 +45,8 @@ func committeeManagerMembers(ctx context.Context, dp dataprovider.DataProvider, 
 }
 
 func (u *user) read(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
-	var orgaLevel string
-	if err := u.dp.GetIfExist(ctx, fmt.Sprintf("user/%d/organisation_management_level", userID), &orgaLevel); err != nil {
+	orgaLevel, err := u.dp.OrgaLevel(ctx, userID)
+	if err != nil {
 		return fmt.Errorf("getting organisation level: %w", err)
 	}
 
