@@ -28,8 +28,12 @@ fqids:
 - agenda_item/4
 
 cases:
+- name: anonymous
+  user_id: 0
+  can_see:
+
 - name: unprivileged user
-  can_see: []
+  can_see:
 
 - name: can_see
   permission: agenda_item.can_see

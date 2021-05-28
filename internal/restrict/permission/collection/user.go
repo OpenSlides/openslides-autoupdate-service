@@ -26,6 +26,10 @@ type user struct {
 // manage as committee manager. (Member in a meeting from a committe the userID
 // is manager.)
 func committeeManagerMembers(ctx context.Context, dp dataprovider.DataProvider, userID int) (map[int]bool, error) {
+	if userID == 0 {
+		return nil, nil
+	}
+
 	var committeManager []int
 	if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/committee_as_manager_ids", userID), &committeManager); err != nil {
 		return nil, fmt.Errorf("getting committee manager: %w", err)
@@ -45,8 +49,8 @@ func committeeManagerMembers(ctx context.Context, dp dataprovider.DataProvider, 
 }
 
 func (u *user) read(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
-	var orgaLevel string
-	if err := u.dp.GetIfExist(ctx, fmt.Sprintf("user/%d/organisation_management_level", userID), &orgaLevel); err != nil {
+	orgaLevel, err := u.dp.OrgaLevel(ctx, userID)
+	if err != nil {
 		return fmt.Errorf("getting organisation level: %w", err)
 	}
 
