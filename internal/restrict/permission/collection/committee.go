@@ -22,12 +22,12 @@ type committee struct {
 
 func (c *committee) read(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 	return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
-		var orgaLevel string
 		if userID == 0 {
 			return false, nil
 		}
 
-		if err := c.dp.GetIfExist(ctx, fmt.Sprintf("user/%d/organisation_management_level", userID), &orgaLevel); err != nil {
+		orgaLevel, err := c.dp.OrgaLevel(ctx, userID)
+		if err != nil {
 			return false, fmt.Errorf("getting organisation level: %w", err)
 		}
 

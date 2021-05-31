@@ -72,8 +72,12 @@ fqids:
 - motion_submitter/5
 
 cases:
+- name: anonymous
+  user_id: 0
+  can_see:
+
 - name: no perm
-  can_see: []
+  can_see:
 
 - name: can_see
   permission: motion.can_see
@@ -113,7 +117,7 @@ cases:
 
 - name: submitter no perm
   user_id: 1
-  can_see: []
+  can_see:
 
 - name: submitter can_see
   permission: motion.can_see

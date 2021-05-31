@@ -62,7 +62,7 @@ func superadminFields(result map[string]bool, collection string, fqfields []perm
 func (ps Permission) RestrictFQFields(ctx context.Context, userID int, fqfields []string) (map[string]bool, error) {
 	allowedFields := make(map[string]bool, len(fqfields))
 
-	superadmin, err := ps.dp.IsSuperadmin(ctx, userID)
+	orgaLevel, err := ps.dp.OrgaLevel(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("checking for superadmin: %w", err)
 	}
@@ -73,7 +73,7 @@ func (ps Permission) RestrictFQFields(ctx context.Context, userID int, fqfields 
 	}
 
 	for name, fqfields := range grouped {
-		if superadmin {
+		if orgaLevel == "superadmin" {
 			if superadminFields(allowedFields, name, fqfields) {
 				continue
 			}
