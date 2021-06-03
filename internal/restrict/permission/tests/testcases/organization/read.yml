@@ -1,0 +1,6 @@
+---
+fqids:
+- organization/1
+
+can_see:
+- organization/1

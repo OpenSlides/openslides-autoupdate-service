@@ -51,7 +51,7 @@ func committeeManagerMembers(ctx context.Context, dp dataprovider.DataProvider, 
 func (u *user) read(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 	orgaLevel, err := u.dp.OrgaLevel(ctx, userID)
 	if err != nil {
-		return fmt.Errorf("getting organisation level: %w", err)
+		return fmt.Errorf("getting organization level: %w", err)
 	}
 
 	committeeManagerMembers, err := committeeManagerMembers(ctx, u.dp, userID)
@@ -357,7 +357,7 @@ var canSeeFields = [...][]string{
 		"number_$",
 		"structure_level_$",
 		"vote_weight_$",
-		"organisation_management_level",
+		"organization_management_level",
 		"committee_as_member_ids",
 		"email",
 		"last_email_send",
@@ -404,7 +404,7 @@ var canSeeFields = [...][]string{
 		"vote_delegated_$",
 		"vote_delegations_$",
 		"default_password",
-		"organisation_management_level",
+		"organization_management_level",
 		"personal_note_$",
 		"committee_as_member_ids",
 		"committee_as_manager_ids",
@@ -422,7 +422,7 @@ var canSeeFields = [...][]string{
 		"email",
 		"last_email_send",
 		"is_demo_user",
-		"organisation_management_level",
+		"organization_management_level",
 		"committee_as_member_ids",
 		"committee_as_manager_ids",
 	},
