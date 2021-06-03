@@ -28,10 +28,10 @@ func (c *committee) read(ctx context.Context, userID int, fqfields []perm.FQFiel
 
 		orgaLevel, err := c.dp.OrgaLevel(ctx, userID)
 		if err != nil {
-			return false, fmt.Errorf("getting organisation level: %w", err)
+			return false, fmt.Errorf("getting organization level: %w", err)
 		}
 
-		if orgaLevel == "can_manage_organisation" {
+		if orgaLevel == "can_manage_organization" {
 			return true, nil
 		}
 

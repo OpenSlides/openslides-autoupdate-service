@@ -13,13 +13,13 @@ cases:
 
 - name: superadmin
   db:
-    user/1/organisation_management_level: superadmin
+    user/1/organization_management_level: superadmin
   can_see:
     - committee/1
 
 - name: orga manager
   db:
-    user/1/organisation_management_level: can_manage_organisation
+    user/1/organization_management_level: can_manage_organization
   can_see:
   - committee/1
 

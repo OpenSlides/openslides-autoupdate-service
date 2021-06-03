@@ -54,7 +54,7 @@ func (dp *DataProvider) GetIfExist(ctx context.Context, fqfield string, value in
 	return nil
 }
 
-// OrgaLevel returns the organisation level of a user. Returns an empty string
+// OrgaLevel returns the organization level of a user. Returns an empty string
 // if the user has no orga level.
 func (dp *DataProvider) OrgaLevel(ctx context.Context, userID int) (string, error) {
 	// The anonymous has no orga level.
@@ -63,8 +63,8 @@ func (dp *DataProvider) OrgaLevel(ctx context.Context, userID int) (string, erro
 	}
 
 	var orgaLevel string
-	if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/organisation_management_level", userID), &orgaLevel); err != nil {
-		return "", fmt.Errorf("getting organisation level: %w", err)
+	if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/organization_management_level", userID), &orgaLevel); err != nil {
+		return "", fmt.Errorf("getting organization level: %w", err)
 	}
 	return orgaLevel, nil
 }

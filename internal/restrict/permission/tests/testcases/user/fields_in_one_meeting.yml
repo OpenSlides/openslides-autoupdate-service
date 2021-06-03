@@ -87,7 +87,7 @@ cases:
   permission: user.can_manage
   can_not_see:
   - user/1/password
-  - user/1/organisation_management_level
+  - user/1/organization_management_level
   - user/1/personal_note_$_ids
   - user/1/can_change_own_password
   - user/1/committee_$_management_level
@@ -96,7 +96,7 @@ cases:
 
 - name: Orga level user manager
   db:
-    user/1337/organisation_management_level: can_manage_users
+    user/1337/organization_management_level: can_manage_users
   can_not_see:
   - user/1/password
   - user/1/personal_note_$_ids
@@ -122,7 +122,7 @@ cases:
 
 - name: Orga level manager
   db:
-    user/1337/organisation_management_level: can_manage_organisation
+    user/1337/organization_management_level: can_manage_organization
   can_not_see:
   - user/1/password
   - user/1/personal_note_$_ids
@@ -162,7 +162,7 @@ cases:
   - user/1/email
   - user/1/last_email_send
   - user/1/is_demo_user
-  - user/1/organisation_management_level  
+  - user/1/organization_management_level  
 
 - name: can see own user
   user_id: 1
