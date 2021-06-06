@@ -197,7 +197,7 @@ func buildDatastore(env map[string]string, receiver datastore.Updater, closed <-
 	host := env["DATASTORE_READER_HOST"]
 	port := env["DATASTORE_READER_PORT"]
 	url := protocol + "://" + host + ":" + port
-	return datastore.New(url, closed, errHandler, receiver), nil
+	return datastore.New(url, closed, errHandler, receiver)
 }
 
 // buildReceiver builds the receiver needed by the datastore service. It uses

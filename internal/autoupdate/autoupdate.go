@@ -21,21 +21,6 @@ const (
 	// more time to process the data, it will get an error and has to reconnect.
 	// A higher value means, that more memory is used.
 	pruneTime = 10 * time.Minute
-
-	// cacheResetTime defines when the cache should be reseted.
-	//
-	// When the datastore runs for a long time, its cache grows bigger and more
-	// calculated keys have to be calculated. A reset means, that everything
-	// gets cleaned.
-	//
-	// A high value means more memory and cpu usage after some time. A lower
-	// value means more Requests to the Datastore Service and therefore a slower
-	// responce time for the clients.
-	//
-	// TODO: This should be a high value, for example time.Hour. It is only a
-	// smal value, so it happens more often in development and we might find
-	// some bugs.
-	datastoreCacheResetTime = 10 * time.Second
 )
 
 // Format of keys in the topic that shows, that a full update is necessary. It
@@ -80,7 +65,6 @@ func New(datastore Datastore, restricter Restricter, userUpater UserUpdater, clo
 	})
 
 	go a.pruneTopic(closed)
-	go a.resetCache(closed)
 
 	return a
 }
@@ -140,24 +124,6 @@ func (a *Autoupdate) pruneTopic(closed <-chan struct{}) {
 			return
 		case <-tick.C:
 			a.topic.Prune(time.Now().Add(-pruneTime))
-		}
-	}
-}
-
-// resetCache runs in the background and cleans the cache from time to time.
-// Blocks until the service is closed.
-func (a *Autoupdate) resetCache(closed <-chan struct{}) {
-	tick := time.NewTicker(datastoreCacheResetTime)
-	defer tick.Stop()
-
-	for {
-		select {
-		case <-closed:
-			return
-		case <-tick.C:
-			a.datastore.ResetCache()
-			// After the cache was updated, every connection has to be recalculated.
-			a.topic.Publish(fmt.Sprintf(fullUpdateFormat, -1))
 		}
 	}
 }

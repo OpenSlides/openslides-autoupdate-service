@@ -35,9 +35,14 @@ type Datastore struct {
 }
 
 // New returns a new Datastore object.
-func New(url string, closed <-chan struct{}, errHandler func(error), keychanger Updater) *Datastore {
+func New(url string, closed <-chan struct{}, errHandler func(error), keychanger Updater) (*Datastore, error) {
+	c, err := newCache()
+	if err != nil {
+		return nil, fmt.Errorf("create cache: %w", err)
+	}
+
 	d := &Datastore{
-		cache:            newCache(),
+		cache:            c,
 		url:              url + urlPath,
 		keychanger:       keychanger,
 		closed:           closed,
@@ -47,7 +52,7 @@ func New(url string, closed <-chan struct{}, errHandler func(error), keychanger 
 
 	go d.receiveKeyChanges(errHandler)
 
-	return d
+	return d, nil
 }
 
 // Get returns the value for one or many keys.
@@ -104,13 +109,6 @@ func (d *Datastore) splitCalculatedKeys(keys []string) (map[string]string, []str
 		calculated[k] = field
 	}
 	return calculated, normal
-}
-
-// ResetCache clears the internal cache.
-func (d *Datastore) ResetCache() {
-	d.resetMu.Lock()
-	d.cache = newCache()
-	d.resetMu.Unlock()
 }
 
 // receiveKeyChanges listens for updates and saves then into the topic. This

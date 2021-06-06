@@ -9,7 +9,6 @@ import (
 type Datastore interface {
 	Get(ctx context.Context, keys ...string) ([]json.RawMessage, error)
 	RegisterChangeListener(f func(map[string]json.RawMessage) error)
-	ResetCache()
 }
 
 // Restricter restricts keys.
