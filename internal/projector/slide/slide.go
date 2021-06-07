@@ -1,6 +1,8 @@
 package slide
 
-import "github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
+import (
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
+)
 
 // Slides returns all OpenSlides-Slides.
 func Slides() *projector.SlideStore {

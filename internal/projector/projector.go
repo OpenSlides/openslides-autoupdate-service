@@ -47,7 +47,7 @@ func Register(ds Datastore, slides *SlideStore) {
 			hotKeys[fqfield] = keys
 			if err != nil {
 				log.Printf("Error parsing slide %s: %v", fqfield, err)
-				bs = []byte(`{"error":"Ups, something went wrong!"}`)
+				bs = []byte(fmt.Sprintf(`{"error":"Error parsing slide %s: %v!"}`, fqfield, err))
 				err = nil
 			}
 		}()
@@ -86,18 +86,17 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("calculating slide: %w", err)
 		}
 		keys = append(keys, slideKeys...)
-
 		return bs, nil
 	})
 }
 
 // Projection holds the meta data to render a projection on a projecter.
 type Projection struct {
-	ID              int               `json:"id"`
-	Type            string            `json:"type"`
-	ContentObjectID string            `json:"content_object_id"`
-	MeetingID       int               `json:"meeting_id"`
-	Options         map[string]string `json:"options"`
+	ID              int                    `json:"id"`
+	Type            string                 `json:"type"`
+	ContentObjectID string                 `json:"content_object_id"`
+	MeetingID       int                    `json:"meeting_id"`
+	Options         map[string]interface{} `json:"options"`
 }
 
 func p7onFromMap(in map[string]json.RawMessage) (*Projection, error) {
