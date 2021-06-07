@@ -77,3 +77,24 @@ func (s *SlideStore) RegisterGetTitleInformationFunc(collection string, f Titler
 func (s *SlideStore) GetTitleInformationFunc(name string) Titler {
 	return s.titles[name]
 }
+
+// RegisterTitleFunc registers a function for a collection name.
+func (s *SlideStore) RegisterTitleFunc(collection string, f TitlerFunc) {
+	if s.titles == nil {
+		s.titles = make(map[string]TitlerFunc)
+	}
+
+	if _, ok := s.titles[collection]; ok {
+		panic(fmt.Sprintf("GetTitle function for collection %s does already exist", collection))
+	}
+	s.titles[collection] = f
+}
+
+// Get returns a TitleFunc for a name.
+func (s *SlideStore) GetTitleFunc(collection string) TitlerFunc {
+	f := s.titles[collection]
+	if f == nil {
+		panic(fmt.Sprintf("There is no TitlerFunc registered for collection %s", collection))
+	}
+	return f
+}
