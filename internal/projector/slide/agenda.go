@@ -103,12 +103,12 @@ func AgendaItemList(store *projector.SlideStore) {
 			if err != nil {
 				return nil, nil, err
 			}
-			// if agendaItem.IsHidden || (agendaItem.IsInternal && !agendaItemList.AgendaShowInternal) {
-			// 	continue
-			// }
-			// if val, ok := p7on.Options["only_main_items"].(bool); ok && val && agendaItem.Depth > 0 {
-			// 	continue
-			// }
+			if agendaItem.IsHidden || (agendaItem.IsInternal && !agendaItemList.AgendaShowInternal) {
+				continue
+			}
+			if val, ok := p7on.Options["only_main_items"].(bool); ok && val && agendaItem.Depth > 0 {
+				continue
+			}
 
 			collection := strings.Split(agendaItem.ContentObjectID, "/")[0]
 			titleFunc := store.GetTitleFunc(collection)
