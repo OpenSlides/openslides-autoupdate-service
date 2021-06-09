@@ -2,7 +2,6 @@ package slide_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
@@ -214,6 +213,5 @@ func TestUserWithError(t *testing.T) {
 	assert.Nil(t, bs)
 	assert.Nil(t, keys)
 	assert.Error(t, err)
-	fmt.Printf(err.Error())
-	assert.Contains(t, err.Error(), "Neither firstName, lastName nor username found")
+	assert.Contains(t, err.Error(), "neither firstName, lastName nor username found")
 }
