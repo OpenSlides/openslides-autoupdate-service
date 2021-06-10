@@ -31,7 +31,7 @@ func (s *SlideStore) RegisterSlideFunc(name string, f SliderFunc) {
 }
 
 // Get returns a Slide for a name.
-func (s *SlideStore) Get(name string) Slider {
+func (s *SlideStore) GetSlideFunc(name string) Slider {
 	return s.slides[name]
 }
 

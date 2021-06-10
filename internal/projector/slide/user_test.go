@@ -15,7 +15,7 @@ func setup(t *testing.T) projector.Slider {
 	s := new(projector.SlideStore)
 	slide.User(s)
 
-	userSlide := s.Get("user")
+	userSlide := s.GetSlideFunc("user")
 	assert.NotNilf(t, userSlide, "Slide with name `user` not found.")
 	return userSlide
 }

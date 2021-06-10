@@ -18,7 +18,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 	slide.MotionBlock(s)
 	slide.Topic(s)
 
-	ailSlide := s.Get("agenda_item_list")
+	ailSlide := s.GetSlideFunc("agenda_item_list")
 	assert.NotNilf(t, ailSlide, "Slide with name `agenda_item_list` not found.")
 
 	data := dsmock.YAMLData(`
@@ -232,7 +232,7 @@ func TestAgendaItem(t *testing.T) {
 	slide.AgendaItem(s)
 	slide.Topic(s)
 
-	aiSlide := s.Get("agenda_item")
+	aiSlide := s.GetSlideFunc("agenda_item")
 	assert.NotNilf(t, aiSlide, "Slide with name `agenda_item` not found.")
 
 	data := dsmock.YAMLData(`
