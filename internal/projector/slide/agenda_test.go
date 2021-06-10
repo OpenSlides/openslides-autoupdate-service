@@ -109,10 +109,10 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				"items": [
 					{
 						"depth": 0,
-					    "title_information": {
-					    	"agenda_item_number": "Ino1",
+						"title_information": {
+							"agenda_item_number": "Ino1",
 							"content_object_id": "topic/1",
-					        "title": "topic title 1"
+							"title": "topic title 1"
 					    }
 					},
 					{

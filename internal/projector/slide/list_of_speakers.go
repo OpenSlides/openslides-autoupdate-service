@@ -61,7 +61,7 @@ func speakerFromMap(in map[string]json.RawMessage) (*dbSpeaker, error) {
 
 // ListOfSpeaker renders current list of speaker slide.
 func ListOfSpeaker(store *projector.SlideStore) {
-	store.AddFunc("list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, hotkeys []string, err error) {
+	store.RegisterSlideFunc("list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, hotkeys []string, err error) {
 		return renderListOfSpeakers(ctx, ds, p7on.ContentObjectID, p7on.MeetingID)
 	})
 }
@@ -160,7 +160,7 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 
 // CurrentListOfSpeakers renders the current_list_of_speakers slide.
 func CurrentListOfSpeakers(store *projector.SlideStore) {
-	store.AddFunc("current_list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+	store.RegisterSlideFunc("current_list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		fetch := datastore.NewFetcher(ds)
 		defer func() {
 			if err == nil {
@@ -201,7 +201,7 @@ func CurrentListOfSpeakers(store *projector.SlideStore) {
 
 // CurrentSpeakerChyron renders the current_speaker_chyron slide.
 func CurrentSpeakerChyron(store *projector.SlideStore) {
-	store.AddFunc("current_speaker_chyron", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+	store.RegisterSlideFunc("current_speaker_chyron", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		return []byte(`"TODO"`), nil, nil
 	})
 }

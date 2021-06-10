@@ -25,8 +25,8 @@ func (s *SlideStore) Add(name string, slide Slider) {
 	s.slides[name] = slide
 }
 
-// AddFunc is a helper to add a SliderFunc.
-func (s *SlideStore) AddFunc(name string, f SliderFunc) {
+// RegisterSliderFunc is a helper to add a SliderFunc.
+func (s *SlideStore) RegisterSlideFunc(name string, f SliderFunc) {
 	s.Add(name, f)
 }
 

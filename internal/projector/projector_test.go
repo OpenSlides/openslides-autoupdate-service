@@ -205,17 +205,17 @@ func TestProjectionTypeDoesNotExist(t *testing.T) {
 
 func testSlides() *projector.SlideStore {
 	s := new(projector.SlideStore)
-	s.AddFunc("test1", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+	s.RegisterSlideFunc("test1", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		return []byte(`"abc"`), nil, nil
 	})
-	s.AddFunc("test_model", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+	s.RegisterSlideFunc("test_model", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		field, err := ds.Get(ctx, "test_model/1/field")
 		if field[0] == nil {
 			return []byte(`"test_model"`), []string{"test_model/1/field"}, nil
 		}
 		return []byte(fmt.Sprintf(`"calculated with %s"`, string(field[0][1:len(field[0])-1]))), []string{"test_model/1/field"}, nil
 	})
-	s.AddFunc("projection", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+	s.RegisterSlideFunc("projection", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		bs, err := json.Marshal(p7on)
 		return bs, nil, err
 	})
