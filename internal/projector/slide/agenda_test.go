@@ -212,11 +212,14 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 			defer close(closed)
 			ds := dsmock.NewMockDatastore(closed, tt.data)
 
+			pOptions := projector.ProjectionOptions{
+				OnlyMainItems: true,
+			}
 			p7on := &projector.Projection{
 				ContentObjectID: "meeting/1",
 				Type:            "agenda_item_list",
 				MeetingID:       1,
-				Options:         map[string]interface{}{"only_main_items": true},
+				Options:         pOptions,
 			}
 
 			bs, keys, err := ailSlide.Slide(context.Background(), ds, p7on)

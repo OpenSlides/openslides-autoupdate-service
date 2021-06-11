@@ -106,7 +106,8 @@ func AgendaItemList(store *projector.SlideStore) {
 			if agendaItem.IsHidden || (agendaItem.IsInternal && !agendaItemList.AgendaShowInternal) {
 				continue
 			}
-			if val, ok := p7on.Options["only_main_items"].(bool); ok && val && agendaItem.Depth > 0 {
+
+			if p7on.Options.OnlyMainItems && agendaItem.Depth > 0 {
 				continue
 			}
 
