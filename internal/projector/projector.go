@@ -101,6 +101,11 @@ func Register(ds Datastore, slides *SlideStore) {
 	})
 }
 
+// Projections option holds the key/value pairs from the options field of Projection
+type ProjectionOptions struct {
+	OnlyMainItems bool `json:"only_main_items"`
+}
+
 // Projection holds the meta data to render a projection on a projecter.
 type Projection struct {
 	ID              int             `json:"id"`
