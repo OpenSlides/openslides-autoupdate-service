@@ -19,12 +19,12 @@ type dbListOfSpeakers struct {
 func losFromMap(in map[string]json.RawMessage) (*dbListOfSpeakers, error) {
 	bs, err := json.Marshal(in)
 	if err != nil {
-		return nil, fmt.Errorf("encoding list of speakers data")
+		return nil, fmt.Errorf("encoding list of speakers data: %w", err)
 	}
 
 	var los dbListOfSpeakers
 	if err := json.Unmarshal(bs, &los); err != nil {
-		return nil, fmt.Errorf("decoding list of speakers: %w", err)
+		return nil, fmt.Errorf("decoding list of speakers data: %w", err)
 	}
 	return &los, nil
 }
@@ -49,12 +49,12 @@ type dbSpeaker struct {
 func speakerFromMap(in map[string]json.RawMessage) (*dbSpeaker, error) {
 	bs, err := json.Marshal(in)
 	if err != nil {
-		return nil, fmt.Errorf("encoding speaker data")
+		return nil, fmt.Errorf("encoding speaker data: %w", err)
 	}
 
 	var speaker dbSpeaker
 	if err := json.Unmarshal(bs, &speaker); err != nil {
-		return nil, fmt.Errorf("decoding speaker: %w", err)
+		return nil, fmt.Errorf("decoding speaker data: %w", err)
 	}
 	return &speaker, nil
 }
