@@ -72,6 +72,8 @@ func AgendaItem(store *projector.SlideStore) {
 		if err != nil {
 			return nil, nil, fmt.Errorf("get title func: %w", err)
 		}
+		titleInfo.Collection = collection
+		titleInfo.ContentObjectId = agendaItem.ContentObjectID
 		responseValue, err := json.Marshal(map[string]interface{}{"title_information": titleInfo, "depth": agendaItem.Depth})
 		if err != nil {
 			return nil, nil, fmt.Errorf("encoding response slide agenda item: %w", err)

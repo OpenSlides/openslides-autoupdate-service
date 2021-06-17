@@ -57,9 +57,11 @@ func Motion(store *projector.SlideStore) {
 		if err != nil {
 			return nil, fmt.Errorf("get motion from map: %w", err)
 		}
+		agenda_item_number := value["agenda_item_number"].(string)
 		titleData := projector.TitlerFuncResult{
-			Title:  &motion.Title,
-			Number: &motion.Number,
+			Title:            &motion.Title,
+			Number:           &motion.Number,
+			AgendaItemNumber: &agenda_item_number,
 		}
 		return &titleData, err
 	})
