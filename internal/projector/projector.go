@@ -54,11 +54,21 @@ func Register(ds Datastore, slides *SlideStore) {
 
 		parts := strings.SplitN(fqfield, "/", 3)
 		if len(parts) != 3 {
-			err = fmt.Errorf("invalid key %s, expected two '/'", fqfield)
-			return bs, err
+			return nil, fmt.Errorf("invalid key %s, expected two '/'", fqfield)
 		}
 
-		data, keys, err := datastore.Object(ctx, ds, parts[0]+"/"+parts[1], []string{"id", "type", "content_object_id", "meeting_id", "options"})
+		data, keys, err := datastore.Object(
+			ctx,
+			ds,
+			parts[0]+"/"+parts[1],
+			[]string{
+				"id",
+				"type",
+				"content_object_id",
+				"meeting_id",
+				"options",
+			},
+		)
 		if err != nil {
 			return nil, fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
 		}

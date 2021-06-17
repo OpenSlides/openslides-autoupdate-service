@@ -71,7 +71,7 @@ func Motion(store *projector.SlideStore) {
 
 		bs, err := json.Marshal(title)
 		if err != nil {
-			return nil, fmt.Errorf("decoding title: %w", err)
+			return nil, fmt.Errorf("encoding title: %w", err)
 		}
 		return bs, err
 	})
@@ -100,7 +100,7 @@ func MotionBlock(store *projector.SlideStore) {
 
 		bs, err := json.Marshal(title)
 		if err != nil {
-			return nil, fmt.Errorf("decoding title: %w", err)
+			return nil, fmt.Errorf("encoding title: %w", err)
 		}
 		return bs, err
 	})

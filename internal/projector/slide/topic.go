@@ -20,11 +20,11 @@ func topicFromMap(in map[string]json.RawMessage) (*dbTopic, error) {
 		return nil, fmt.Errorf("encoding topic data: %w", err)
 	}
 
-	var m dbTopic
-	if err := json.Unmarshal(bs, &m); err != nil {
+	var t dbTopic
+	if err := json.Unmarshal(bs, &t); err != nil {
 		return nil, fmt.Errorf("decoding topic data: %w", err)
 	}
-	return &m, nil
+	return &t, nil
 }
 
 // Topic renders the topic slide.
@@ -50,7 +50,7 @@ func Topic(store *projector.SlideStore) {
 
 		bs, err := json.Marshal(title)
 		if err != nil {
-			return nil, fmt.Errorf("decoding title: %w", err)
+			return nil, fmt.Errorf("encoding title: %w", err)
 		}
 		return bs, err
 	})

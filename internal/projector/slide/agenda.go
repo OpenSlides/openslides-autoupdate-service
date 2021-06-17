@@ -114,7 +114,6 @@ func AgendaItem(store *projector.SlideStore) {
 // AgendaItemList renders the agenda_item_list slide.
 func AgendaItemList(store *projector.SlideStore) {
 	store.RegisterSliderFunc("agenda_item_list", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		var allAgendaItems []outAgendaItem
 		fetch := datastore.NewFetcher(ds)
 		defer func() {
 			if err == nil {
@@ -122,10 +121,17 @@ func AgendaItemList(store *projector.SlideStore) {
 			}
 		}()
 
-		data := fetch.Object(ctx, []string{"agenda_item_ids", "agenda_show_internal_items_on_projector"}, p7on.ContentObjectID)
+		data := fetch.Object(
+			ctx,
+			[]string{
+				"agenda_item_ids",
+				"agenda_show_internal_items_on_projector",
+			},
+			p7on.ContentObjectID,
+		)
 		agendaItemList, err := agendaItemListFromMap(data)
 		if err != nil {
-			return nil, nil, fmt.Errorf("get agenda item list from map: %w", err)
+			return nil, nil, fmt.Errorf("get agenda item list: %w", err)
 		}
 
 		var options struct {
@@ -135,6 +141,7 @@ func AgendaItemList(store *projector.SlideStore) {
 			return nil, nil, fmt.Errorf("decoding projection options: %w", err)
 		}
 
+		var allAgendaItems []outAgendaItem
 		for _, aiID := range agendaItemList.AgendaItemIds {
 			data = fetch.Object(
 				ctx,
@@ -152,7 +159,7 @@ func AgendaItemList(store *projector.SlideStore) {
 			)
 			agendaItem, err := agendaItemFromMap(data)
 			if err != nil {
-				return nil, nil, fmt.Errorf("get agenda item from map: %w", err)
+				return nil, nil, fmt.Errorf("get agenda item: %w", err)
 			}
 
 			if agendaItem.IsHidden || (agendaItem.IsInternal && !agendaItemList.AgendaShowInternal) {
@@ -184,7 +191,13 @@ func AgendaItemList(store *projector.SlideStore) {
 			)
 		}
 
-		responseValue, err := json.Marshal(map[string]interface{}{"items": allAgendaItems})
+		out := struct {
+			Items []outAgendaItem `json:"items"`
+		}{
+			allAgendaItems,
+		}
+
+		responseValue, err := json.Marshal(out)
 		if err != nil {
 			return nil, nil, fmt.Errorf("encoding response for slide agenda item list: %w", err)
 		}

@@ -26,7 +26,7 @@ func (f SliderFunc) Slide(ctx context.Context, ds Datastore, p7on *Projection) (
 	return f(ctx, ds, p7on)
 }
 
-// AgendaTitlerFunc is a function that implements the Titler interface.
+// AgendaTitlerFunc is a function that implements the AgendaTitler interface.
 type AgendaTitlerFunc func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error)
 
 // AgendaTitle calls the func.
@@ -34,13 +34,13 @@ func (f AgendaTitlerFunc) AgendaTitle(ctx context.Context, fetch *datastore.Fetc
 	return f(ctx, fetch, fqid, itemNumber)
 }
 
-// SlideStore holds the slides by name.
+// SlideStore holds the Sliders and AgendaTitler by name.
 type SlideStore struct {
 	slides       map[string]Slider
 	agendaTitler map[string]AgendaTitler
 }
 
-// RegisterSliderFunc is a helper to adds a Slider.
+// RegisterSliderFunc adds a SliderFunc to the store.
 func (s *SlideStore) RegisterSliderFunc(name string, f SliderFunc) {
 	if s.slides == nil {
 		s.slides = make(map[string]Slider)
@@ -59,7 +59,7 @@ func (s *SlideStore) GetSlider(name string) Slider {
 	return s.slides[name]
 }
 
-// RegisterAgendaTitlerFunc registers a function for a collection name.
+// RegisterAgendaTitlerFunc adds a AgendaTitlerFunc to the store.
 func (s *SlideStore) RegisterAgendaTitlerFunc(collection string, f AgendaTitlerFunc) {
 	if s.agendaTitler == nil {
 		s.agendaTitler = make(map[string]AgendaTitler)

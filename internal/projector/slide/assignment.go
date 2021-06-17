@@ -20,11 +20,11 @@ func assignmentFromMap(in map[string]json.RawMessage) (*dbAssignment, error) {
 		return nil, fmt.Errorf("encoding assignment data: %w", err)
 	}
 
-	var m dbAssignment
-	if err := json.Unmarshal(bs, &m); err != nil {
+	var a dbAssignment
+	if err := json.Unmarshal(bs, &a); err != nil {
 		return nil, fmt.Errorf("decoding assignment data: %w", err)
 	}
-	return &m, nil
+	return &a, nil
 }
 
 // Assignment renders the assignment slide.
@@ -50,7 +50,7 @@ func Assignment(store *projector.SlideStore) {
 
 		bs, err := json.Marshal(title)
 		if err != nil {
-			return nil, fmt.Errorf("decoding title: %w", err)
+			return nil, fmt.Errorf("encoding title: %w", err)
 		}
 		return bs, err
 	})
