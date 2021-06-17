@@ -226,7 +226,7 @@ func testSlides() *projector.SlideStore {
 		return []byte(`"abc"`), nil, nil
 	})
 	s.RegisterSlideFunc("test_model", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		field, err := ds.Get(ctx, "test_model/1/field")
+		field, _ := ds.Get(ctx, "test_model/1/field")
 		if field[0] == nil {
 			return []byte(`"test_model"`), []string{"test_model/1/field"}, nil
 		}
