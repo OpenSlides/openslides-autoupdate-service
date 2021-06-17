@@ -112,7 +112,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
-	expect := `{"id": 0, "content_object_id": "", "type":"projection", "meeting_id": 1, "options": {"only_main_items": false}}` + "\n"
+	expect := `{"id": 0, "content_object_id": "", "type":"projection", "meeting_id": 1, "options": null}` + "\n"
 	assert.JSONEq(t, expect, string(fields[0]))
 }
 
@@ -123,7 +123,7 @@ func TestProjectionWithOptionsData(t *testing.T) {
 	ds := dsmock.NewMockDatastore(closed, map[string]string{
 		"projection/1/type":       `"projection"`,
 		"projection/1/meeting_id": `1`,
-		"projection/1/options":    `{"only_main_items": true, "unused": "not in ProjectionOptions type"}`,
+		"projection/1/options":    `{"only_main_items": true}`,
 	})
 	projector.Register(ds, testSlides())
 

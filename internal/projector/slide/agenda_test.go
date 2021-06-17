@@ -109,38 +109,34 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				"items": [
 					{
 						"depth": 0,
+						"content_object_id": "topic/1",
 						"title_information": {
-							"collection": "topic",
 							"agenda_item_number": "Ino1",
-							"content_object_id": "topic/1",
 							"title": "topic title 1"
 					    }
 					},
 					{
 						"depth": 0,
+						"content_object_id": "motion/1",
 						"title_information": {
-							"collection": "motion",
 							"agenda_item_number": "Ino2",
-							"content_object_id": "motion/1",
 							"number": "motion number 1",
 							"title": "motion title 1"
 						}
 					},
 					{
 						"depth": 0,
+						"content_object_id": "motion_block/1",
 						"title_information": {
-							"collection": "motion_block",
 							"agenda_item_number": "Ino3",
-							"content_object_id": "motion_block/1",
 							"title": "motion_block title 1"
 						}
 					},
 					{
 						"depth": 0,
+						"content_object_id": "assignment/1",
 						"title_information": {
-							"collection": "assignment",
 							"agenda_item_number": "Ino4",
-							"content_object_id": "assignment/1",
 							"title": "assignment title 1"
 					    }
 					}
@@ -262,10 +258,9 @@ func TestAgendaItem(t *testing.T) {
 			data,
 			`{
 				"depth": 0,
+				"content_object_id": "topic/1",
 				"title_information": {
-					"collection": "topic",
 					"agenda_item_number": "Ino1",
-					"content_object_id": "topic/1",
 					"title": "topic title 1"
 				}
 			}

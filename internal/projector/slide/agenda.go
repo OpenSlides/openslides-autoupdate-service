@@ -88,6 +88,10 @@ func AgendaItem(store *projector.SlideStore) {
 
 		collection := strings.Split(agendaItem.ContentObjectID, "/")[0]
 		titler := store.GetAgendaTitler(collection)
+		if titler == nil {
+			return nil, nil, fmt.Errorf("no titler function registered for %s", collection)
+		}
+
 		titleInfo, err := titler.AgendaTitle(ctx, fetch, agendaItem.ContentObjectID, agendaItem.ItemNumber)
 		if err != nil {
 			return nil, nil, fmt.Errorf("get title func: %w", err)
@@ -161,6 +165,10 @@ func AgendaItemList(store *projector.SlideStore) {
 
 			collection := strings.Split(agendaItem.ContentObjectID, "/")[0]
 			titler := store.GetAgendaTitler(collection)
+			if titler == nil {
+				return nil, nil, fmt.Errorf("no titler function registered for %s", collection)
+			}
+
 			titleInfo, err := titler.AgendaTitle(ctx, fetch, agendaItem.ContentObjectID, agendaItem.ItemNumber)
 			if err != nil {
 				return nil, nil, fmt.Errorf("get title func: %w", err)

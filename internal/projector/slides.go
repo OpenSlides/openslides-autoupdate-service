@@ -53,12 +53,10 @@ func (s *SlideStore) RegisterSliderFunc(name string, f SliderFunc) {
 }
 
 // GetSlider returns the Slide for the given name.
+//
+// Returns nil, if there if the name is unknown.
 func (s *SlideStore) GetSlider(name string) Slider {
-	f := s.slides[name]
-	if f == nil {
-		panic(fmt.Sprintf("There is no Slide registered for collection %s", name))
-	}
-	return f
+	return s.slides[name]
 }
 
 // RegisterAgendaTitlerFunc registers a function for a collection name.
@@ -74,10 +72,8 @@ func (s *SlideStore) RegisterAgendaTitlerFunc(collection string, f AgendaTitlerF
 }
 
 // GetAgendaTitler returns a AgendaTitler for the given name.
+//
+// Returns nil, if there if the name is unknown.
 func (s *SlideStore) GetAgendaTitler(name string) AgendaTitler {
-	f := s.agendaTitler[name]
-	if f == nil {
-		panic(fmt.Sprintf("There is no Titler registered for collection %s", name))
-	}
-	return f
+	return s.agendaTitler[name]
 }
