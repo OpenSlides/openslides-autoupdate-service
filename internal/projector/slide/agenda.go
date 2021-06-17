@@ -51,30 +51,55 @@ func agendaItemListFromMap(in map[string]json.RawMessage) (*dbAgendaItemList, er
 	return &ail, nil
 }
 
+type outAgendaItem struct {
+	ContentObjectID  string          `json:"content_object_id"`
+	TitleInformation json.RawMessage `json:"title_information"`
+	Depth            int             `json:"depth"`
+}
+
 // AgendaItem renders the agenda_item slide.
 func AgendaItem(store *projector.SlideStore) {
-	store.RegisterSlideFunc("agenda_item", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+	store.RegisterSliderFunc("agenda_item", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		fetch := datastore.NewFetcher(ds)
 		defer func() {
 			if err == nil {
 				err = fetch.Error()
 			}
 		}()
-		data := fetch.Object(ctx, []string{"id", "item_number", "content_object_id", "meeting_id", "is_hidden", "is_internal", "level"}, p7on.ContentObjectID)
+
+		data := fetch.Object(
+			ctx,
+			[]string{
+				"id",
+				"item_number",
+				"content_object_id",
+				"meeting_id",
+				"is_hidden",
+				"is_internal",
+				"level",
+			},
+			p7on.ContentObjectID,
+		)
+
 		agendaItem, err := agendaItemFromMap(data)
 		if err != nil {
-			return nil, nil, fmt.Errorf("get agenda item from map: %w", err)
+			return nil, nil, fmt.Errorf("get agenda item: %w", err)
 		}
+
 		collection := strings.Split(agendaItem.ContentObjectID, "/")[0]
-		titleFunc := store.GetTitleFunc(collection)
-		value := map[string]interface{}{"agenda_item_number": agendaItem.ItemNumber}
-		titleInfo, err := titleFunc(ctx, fetch, agendaItem.ContentObjectID, agendaItem.MeetingID, value)
+		titler := store.GetAgendaTitler(collection)
+		titleInfo, err := titler.AgendaTitle(ctx, fetch, agendaItem.ContentObjectID, agendaItem.MeetingID, agendaItem.ItemNumber)
 		if err != nil {
 			return nil, nil, fmt.Errorf("get title func: %w", err)
 		}
-		titleInfo.Collection = collection
-		titleInfo.ContentObjectId = agendaItem.ContentObjectID
-		responseValue, err := json.Marshal(map[string]interface{}{"title_information": titleInfo, "depth": agendaItem.Depth})
+
+		out := outAgendaItem{
+			ContentObjectID:  agendaItem.ContentObjectID,
+			TitleInformation: titleInfo,
+			Depth:            agendaItem.Depth,
+		}
+
+		responseValue, err := json.Marshal(out)
 		if err != nil {
 			return nil, nil, fmt.Errorf("encoding response slide agenda item: %w", err)
 		}
@@ -84,8 +109,8 @@ func AgendaItem(store *projector.SlideStore) {
 
 // AgendaItemList renders the agenda_item_list slide.
 func AgendaItemList(store *projector.SlideStore) {
-	store.RegisterSlideFunc("agenda_item_list", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		allAgendaItems := []map[string]interface{}{}
+	store.RegisterSliderFunc("agenda_item_list", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+		var allAgendaItems []outAgendaItem
 		fetch := datastore.NewFetcher(ds)
 		defer func() {
 			if err == nil {
@@ -99,30 +124,56 @@ func AgendaItemList(store *projector.SlideStore) {
 			return nil, nil, fmt.Errorf("get agenda item list from map: %w", err)
 		}
 
+		var options struct {
+			OnlyMainItems bool `json:"only_main_items"`
+		}
+		if err := json.Unmarshal(p7on.Options, &options); err != nil {
+			return nil, nil, fmt.Errorf("decoding projection options: %w", err)
+		}
+
 		for _, aiID := range agendaItemList.AgendaItemIds {
-			data = fetch.Object(ctx, []string{"id", "item_number", "content_object_id", "meeting_id", "is_hidden", "is_internal", "level"}, "agenda_item/%d", aiID)
+			data = fetch.Object(
+				ctx,
+				[]string{
+					"id",
+					"item_number",
+					"content_object_id",
+					"meeting_id",
+					"is_hidden",
+					"is_internal",
+					"level",
+				},
+				"agenda_item/%d",
+				aiID,
+			)
 			agendaItem, err := agendaItemFromMap(data)
 			if err != nil {
 				return nil, nil, fmt.Errorf("get agenda item from map: %w", err)
 			}
+
 			if agendaItem.IsHidden || (agendaItem.IsInternal && !agendaItemList.AgendaShowInternal) {
 				continue
 			}
 
-			if p7on.Options.OnlyMainItems && agendaItem.Depth > 0 {
+			if options.OnlyMainItems && agendaItem.Depth > 0 {
 				continue
 			}
 
 			collection := strings.Split(agendaItem.ContentObjectID, "/")[0]
-			titleFunc := store.GetTitleFunc(collection)
-			value := map[string]interface{}{"agenda_item_number": agendaItem.ItemNumber}
-			titleInfo, err := titleFunc(ctx, fetch, agendaItem.ContentObjectID, agendaItem.MeetingID, value)
+			titler := store.GetAgendaTitler(collection)
+			titleInfo, err := titler.AgendaTitle(ctx, fetch, agendaItem.ContentObjectID, agendaItem.MeetingID, agendaItem.ItemNumber)
 			if err != nil {
 				return nil, nil, fmt.Errorf("get title func: %w", err)
 			}
-			titleInfo.Collection = collection
-			titleInfo.ContentObjectId = agendaItem.ContentObjectID
-			allAgendaItems = append(allAgendaItems, map[string]interface{}{"title_information": titleInfo, "depth": agendaItem.Depth})
+
+			allAgendaItems = append(
+				allAgendaItems,
+				outAgendaItem{
+					TitleInformation: titleInfo,
+					Depth:            agendaItem.Depth,
+					ContentObjectID:  agendaItem.ContentObjectID,
+				},
+			)
 		}
 
 		responseValue, err := json.Marshal(map[string]interface{}{"items": allAgendaItems})

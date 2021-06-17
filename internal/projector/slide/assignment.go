@@ -29,21 +29,29 @@ func assignmentFromMap(in map[string]json.RawMessage) (*dbAssignment, error) {
 
 // Assignment renders the assignment slide.
 func Assignment(store *projector.SlideStore) {
-	store.RegisterSlideFunc("assignment", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+	store.RegisterSliderFunc("assignment", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		return []byte(`"TODO"`), nil, nil
 	})
-	store.RegisterTitleFunc("assignment", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, meeting_id int, value map[string]interface{}) (*projector.TitlerFuncResult, error) {
 
+	store.RegisterAgendaTitlerFunc("assignment", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, meetingID int, itemNumber string) (json.RawMessage, error) {
 		data := fetch.Object(ctx, []string{"id", "title"}, fqid)
 		assignment, err := assignmentFromMap(data)
 		if err != nil {
-			return nil, fmt.Errorf("get assignment from map: %w", err)
+			return nil, fmt.Errorf("get assignment: %w", err)
 		}
-		agenda_item_number := value["agenda_item_number"].(string)
-		titleData := projector.TitlerFuncResult{
-			Title:            &assignment.Title,
-			AgendaItemNumber: &agenda_item_number,
+
+		title := struct {
+			Title  string `json:"title"`
+			Number string `json:"agenda_item_number"`
+		}{
+			assignment.Title,
+			itemNumber,
 		}
-		return &titleData, err
+
+		bs, err := json.Marshal(title)
+		if err != nil {
+			return nil, fmt.Errorf("decoding title: %w", err)
+		}
+		return bs, err
 	})
 }

@@ -60,14 +60,12 @@ func Register(ds Datastore, slides *SlideStore) {
 
 		data, keys, err := datastore.Object(ctx, ds, parts[0]+"/"+parts[1], []string{"id", "type", "content_object_id", "meeting_id", "options"})
 		if err != nil {
-			err = fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
-			return bs, err
+			return nil, fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
 		}
 
 		p7on, err := p7onFromMap(data)
 		if err != nil {
-			err = fmt.Errorf("loading p7on: %w", err)
-			return bs, err
+			return nil, fmt.Errorf("loading p7on: %w", err)
 		}
 
 		if !p7on.exists() {
@@ -76,38 +74,30 @@ func Register(ds Datastore, slides *SlideStore) {
 
 		slideName, err := p7on.slideName()
 		if err != nil {
-			err = fmt.Errorf("getting slide name: %w", err)
-			return bs, err
+			return nil, fmt.Errorf("getting slide name: %w", err)
 		}
 
 		slider := slides.GetSlideFunc(slideName)
 		if slider == nil {
-			err = fmt.Errorf("unknown slide %s", slideName)
-			return bs, err
+			return nil, fmt.Errorf("unknown slide %s", slideName)
 		}
 
 		bs, slideKeys, err := slider.Slide(context.Background(), ds, p7on)
 		if err != nil {
-			err = fmt.Errorf("calculating slide: %w", err)
-			return bs, err
+			return nil, fmt.Errorf("calculating slide: %w", err)
 		}
 		keys = append(keys, slideKeys...)
 		return bs, nil
 	})
 }
 
-// Projections option holds the key/value pairs from the options field of Projection
-type ProjectionOptions struct {
-	OnlyMainItems bool `json:"only_main_items"`
-}
-
 // Projection holds the meta data to render a projection on a projecter.
 type Projection struct {
-	ID              int               `json:"id"`
-	Type            string            `json:"type"`
-	ContentObjectID string            `json:"content_object_id"`
-	MeetingID       int               `json:"meeting_id"`
-	Options         ProjectionOptions `json:"options"`
+	ID              int             `json:"id"`
+	Type            string          `json:"type"`
+	ContentObjectID string          `json:"content_object_id"`
+	MeetingID       int             `json:"meeting_id"`
+	Options         json.RawMessage `json:"options"`
 }
 
 func p7onFromMap(in map[string]json.RawMessage) (*Projection, error) {

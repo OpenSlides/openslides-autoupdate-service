@@ -106,9 +106,9 @@ func getUserRepresentation(ctx context.Context, ds projector.Datastore, p7on *pr
 // User renders the user slide.
 func User(store *projector.SlideStore) {
 	store.RegisterSlideFunc("user", getUserRepresentation)
-	store.RegisterTitleFunc("user", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, meeting_id int, value map[string]interface{}) (*projector.TitlerFuncResult, error) {
+	store.RegisterTitleFunc("user", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, meeting_id int, value map[string]interface{}) (*projector.TitleFuncResult, error) {
 		title := "title of user"
-		titleData := projector.TitlerFuncResult{
+		titleData := projector.TitleFuncResult{
 			Title: &title,
 		}
 		return &titleData, nil

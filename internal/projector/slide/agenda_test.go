@@ -18,7 +18,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 	slide.MotionBlock(s)
 	slide.Topic(s)
 
-	ailSlide := s.GetSlideFunc("agenda_item_list")
+	ailSlide := s.GetSlider("agenda_item_list")
 	assert.NotNilf(t, ailSlide, "Slide with name `agenda_item_list` not found.")
 
 	data := dsmock.YAMLData(`
@@ -216,14 +216,11 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 			defer close(closed)
 			ds := dsmock.NewMockDatastore(closed, tt.data)
 
-			pOptions := projector.ProjectionOptions{
-				OnlyMainItems: true,
-			}
 			p7on := &projector.Projection{
 				ContentObjectID: "meeting/1",
 				Type:            "agenda_item_list",
 				MeetingID:       1,
-				Options:         pOptions,
+				Options:         []byte(`{"only_main_items":true}`),
 			}
 
 			bs, keys, err := ailSlide.Slide(context.Background(), ds, p7on)
@@ -239,7 +236,7 @@ func TestAgendaItem(t *testing.T) {
 	slide.AgendaItem(s)
 	slide.Topic(s)
 
-	aiSlide := s.GetSlideFunc("agenda_item")
+	aiSlide := s.GetSlider("agenda_item")
 	assert.NotNilf(t, aiSlide, "Slide with name `agenda_item` not found.")
 
 	data := dsmock.YAMLData(`
