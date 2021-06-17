@@ -15,7 +15,7 @@ type Slider interface {
 
 // AgendaTitler returns the needed information to parse the agenda item of an element.
 type AgendaTitler interface {
-	AgendaTitle(ctx context.Context, fetch *datastore.Fetcher, fqid string, meetingID int, itemNumber string) (json.RawMessage, error)
+	AgendaTitle(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error)
 }
 
 // SliderFunc is a function that implements the Slider interface.
@@ -27,11 +27,11 @@ func (f SliderFunc) Slide(ctx context.Context, ds Datastore, p7on *Projection) (
 }
 
 // AgendaTitlerFunc is a function that implements the Titler interface.
-type AgendaTitlerFunc func(ctx context.Context, fetch *datastore.Fetcher, fqid string, meetingID int, itemNumber string) (json.RawMessage, error)
+type AgendaTitlerFunc func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error)
 
 // AgendaTitle calls the func.
-func (f AgendaTitlerFunc) AgendaTitle(ctx context.Context, fetch *datastore.Fetcher, fqid string, meetingID int, itemNumber string) (json.RawMessage, error) {
-	return f(ctx, fetch, fqid, meetingID, itemNumber)
+func (f AgendaTitlerFunc) AgendaTitle(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
+	return f(ctx, fetch, fqid, itemNumber)
 }
 
 // SlideStore holds the slides by name.
@@ -59,8 +59,6 @@ func (s *SlideStore) GetSlider(name string) Slider {
 		panic(fmt.Sprintf("There is no Slide registered for collection %s", name))
 	}
 	return f
-
-	return s.slides[name]
 }
 
 // RegisterAgendaTitlerFunc registers a function for a collection name.

@@ -77,7 +77,7 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("getting slide name: %w", err)
 		}
 
-		slider := slides.GetSlideFunc(slideName)
+		slider := slides.GetSlider(slideName)
 		if slider == nil {
 			return nil, fmt.Errorf("unknown slide %s", slideName)
 		}

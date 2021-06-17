@@ -48,41 +48,60 @@ func motionBlockFromMap(in map[string]json.RawMessage) (*dbMotionBlock, error) {
 
 // Motion renders the motion slide.
 func Motion(store *projector.SlideStore) {
-	store.RegisterSlideFunc("motion", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+	store.RegisterSliderFunc("motion", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		return []byte(`"TODO"`), nil, nil
 	})
-	store.RegisterTitleFunc("motion", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, meeting_id int, value map[string]interface{}) (*projector.TitleFuncResult, error) {
+
+	store.RegisterAgendaTitlerFunc("motion", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
 		data := fetch.Object(ctx, []string{"id", "number", "title"}, fqid)
 		motion, err := motionFromMap(data)
 		if err != nil {
-			return nil, fmt.Errorf("get motion from map: %w", err)
+			return nil, fmt.Errorf("get motion: %w", err)
 		}
-		agenda_item_number := value["agenda_item_number"].(string)
-		titleData := projector.TitleFuncResult{
-			Title:            &motion.Title,
-			Number:           &motion.Number,
-			AgendaItemNumber: &agenda_item_number,
+
+		title := struct {
+			Title        string `json:"title"`
+			Number       string `json:"number"`
+			AgendaNumber string `json:"agenda_item_number"`
+		}{
+			motion.Title,
+			motion.Number,
+			itemNumber,
 		}
-		return &titleData, err
+
+		bs, err := json.Marshal(title)
+		if err != nil {
+			return nil, fmt.Errorf("decoding title: %w", err)
+		}
+		return bs, err
 	})
 }
 
 // MotionBlock renders the motion_block slide.
 func MotionBlock(store *projector.SlideStore) {
-	store.RegisterSlideFunc("motion_block", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+	store.RegisterSliderFunc("motion_block", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		return []byte(`"TODO"`), nil, nil
 	})
-	store.RegisterTitleFunc("motion_block", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, meeting_id int, value map[string]interface{}) (*projector.TitleFuncResult, error) {
+
+	store.RegisterAgendaTitlerFunc("motion_block", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
 		data := fetch.Object(ctx, []string{"id", "title"}, fqid)
 		motionBlock, err := motionBlockFromMap(data)
 		if err != nil {
-			return nil, fmt.Errorf("get motion block from map: %w", err)
+			return nil, fmt.Errorf("get motion block: %w", err)
 		}
-		agenda_item_number := value["agenda_item_number"].(string)
-		titleData := projector.TitleFuncResult{
-			Title:            &motionBlock.Title,
-			AgendaItemNumber: &agenda_item_number,
+
+		title := struct {
+			Title        string `json:"title"`
+			AgendaNumber string `json:"agenda_item_number"`
+		}{
+			motionBlock.Title,
+			itemNumber,
 		}
-		return &titleData, err
+
+		bs, err := json.Marshal(title)
+		if err != nil {
+			return nil, fmt.Errorf("decoding title: %w", err)
+		}
+		return bs, err
 	})
 }
