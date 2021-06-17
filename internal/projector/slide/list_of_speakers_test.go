@@ -15,7 +15,7 @@ func TestListOfSpeakers(t *testing.T) {
 	s := new(projector.SlideStore)
 	slide.ListOfSpeaker(s)
 
-	losSlide := s.Get("list_of_speakers")
+	losSlide := s.GetSlider("list_of_speakers")
 	assert.NotNilf(t, losSlide, "Slide with name `list_of_speakers` not found.")
 
 	data := dsmock.YAMLData(`
@@ -215,7 +215,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 	s := new(projector.SlideStore)
 	slide.CurrentListOfSpeakers(s)
 
-	slide := s.Get("current_list_of_speakers")
+	slide := s.GetSlider("current_list_of_speakers")
 	require.NotNilf(t, slide, "Slide with name `curent_list_of_speakers` not found.")
 
 	// This one is a bit compicated:

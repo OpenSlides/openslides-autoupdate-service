@@ -112,7 +112,24 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
-	expect := `{"id": 0, "content_object_id": "", "type":"projection", "meeting_id": 1}` + "\n"
+	expect := `{"id": 0, "content_object_id": "", "type":"projection", "meeting_id": 1, "options": null}` + "\n"
+	assert.JSONEq(t, expect, string(fields[0]))
+}
+
+func TestProjectionWithOptionsData(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
+		"projection/1/type":       `"projection"`,
+		"projection/1/meeting_id": `1`,
+		"projection/1/options":    `{"only_main_items": true}`,
+	})
+	projector.Register(ds, testSlides())
+
+	fields, err := ds.Get(context.Background(), "projection/1/content")
+	require.NoError(t, err, "Get returned unexpected error")
+	expect := `{"id": 0, "content_object_id": "", "type":"projection", "meeting_id": 1, "options": {"only_main_items": true}}` + "\n"
 	assert.JSONEq(t, expect, string(fields[0]))
 }
 
@@ -205,17 +222,17 @@ func TestProjectionTypeDoesNotExist(t *testing.T) {
 
 func testSlides() *projector.SlideStore {
 	s := new(projector.SlideStore)
-	s.AddFunc("test1", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+	s.RegisterSliderFunc("test1", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		return []byte(`"abc"`), nil, nil
 	})
-	s.AddFunc("test_model", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		field, err := ds.Get(ctx, "test_model/1/field")
+	s.RegisterSliderFunc("test_model", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+		field, _ := ds.Get(ctx, "test_model/1/field")
 		if field[0] == nil {
 			return []byte(`"test_model"`), []string{"test_model/1/field"}, nil
 		}
 		return []byte(fmt.Sprintf(`"calculated with %s"`, string(field[0][1:len(field[0])-1]))), []string{"test_model/1/field"}, nil
 	})
-	s.AddFunc("projection", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+	s.RegisterSliderFunc("projection", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		bs, err := json.Marshal(p7on)
 		return bs, nil, err
 	})

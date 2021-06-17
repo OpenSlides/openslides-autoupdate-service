@@ -47,7 +47,7 @@ func Register(ds Datastore, slides *SlideStore) {
 			hotKeys[fqfield] = keys
 			if err != nil {
 				log.Printf("Error parsing slide %s: %v", fqfield, err)
-				bs = []byte(`{"error":"Ups, something went wrong!"}`)
+				bs = []byte(fmt.Sprintf(`{"error":"Error parsing slide %s!"}`, fqfield))
 				err = nil
 			}
 		}()
@@ -57,7 +57,18 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("invalid key %s, expected two '/'", fqfield)
 		}
 
-		data, keys, err := datastore.Object(ctx, ds, parts[0]+"/"+parts[1], []string{"id", "type", "content_object_id", "meeting_id"})
+		data, keys, err := datastore.Object(
+			ctx,
+			ds,
+			parts[0]+"/"+parts[1],
+			[]string{
+				"id",
+				"type",
+				"content_object_id",
+				"meeting_id",
+				"options",
+			},
+		)
 		if err != nil {
 			return nil, fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
 		}
@@ -76,7 +87,7 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("getting slide name: %w", err)
 		}
 
-		slider := slides.Get(slideName)
+		slider := slides.GetSlider(slideName)
 		if slider == nil {
 			return nil, fmt.Errorf("unknown slide %s", slideName)
 		}
@@ -86,17 +97,17 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("calculating slide: %w", err)
 		}
 		keys = append(keys, slideKeys...)
-
 		return bs, nil
 	})
 }
 
 // Projection holds the meta data to render a projection on a projecter.
 type Projection struct {
-	ID              int    `json:"id"`
-	Type            string `json:"type"`
-	ContentObjectID string `json:"content_object_id"`
-	MeetingID       int    `json:"meeting_id"`
+	ID              int             `json:"id"`
+	Type            string          `json:"type"`
+	ContentObjectID string          `json:"content_object_id"`
+	MeetingID       int             `json:"meeting_id"`
+	Options         json.RawMessage `json:"options"`
 }
 
 func p7onFromMap(in map[string]json.RawMessage) (*Projection, error) {

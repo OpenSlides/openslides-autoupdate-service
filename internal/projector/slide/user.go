@@ -105,5 +105,19 @@ func getUserRepresentation(ctx context.Context, ds projector.Datastore, p7on *pr
 
 // User renders the user slide.
 func User(store *projector.SlideStore) {
-	store.AddFunc("user", getUserRepresentation)
+	store.RegisterSliderFunc("user", getUserRepresentation)
+
+	store.RegisterAgendaTitlerFunc("user", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
+		title := struct {
+			Username string `json:"username"`
+		}{
+			"username (TODO)",
+		}
+
+		bs, err := json.Marshal(title)
+		if err != nil {
+			return nil, fmt.Errorf("encoding title: %w", err)
+		}
+		return bs, err
+	})
 }
