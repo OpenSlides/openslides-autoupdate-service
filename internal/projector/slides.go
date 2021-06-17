@@ -40,9 +40,18 @@ type Slider interface {
 	Slide(ctx context.Context, ds Datastore, p7on *Projection) (encoded []byte, keys []string, err error)
 }
 
+type TitlerFuncResult struct {
+	Collection       string  `json:"collection"`
+	ContentObjectId  string  `json:"content_object_id"`
+	Title            *string `json:"title,omitempty"`
+	AgendaItemNumber *string `json:"agenda_item_number,omitempty"`
+	Number           *string `json:"number,omitempty"`
+	Username         *string `json:"username,omitempty"`
+}
+
 // SliderFunc is a function that implements the Slider interface.
 type SliderFunc func(ctx context.Context, ds Datastore, p7on *Projection) (encoded []byte, keys []string, err error)
-type TitlerFunc func(ctx context.Context, fetch *datastore.Fetcher, fqid string, meeting_id int, value map[string]interface{}) (title map[string]interface{}, err error)
+type TitlerFunc func(ctx context.Context, fetch *datastore.Fetcher, fqid string, meeting_id int, value map[string]interface{}) (title *TitlerFuncResult, err error)
 
 // Slide calls the func.
 func (f SliderFunc) Slide(ctx context.Context, ds Datastore, p7on *Projection) (encoded []byte, keys []string, err error) {

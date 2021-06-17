@@ -118,6 +118,8 @@ func AgendaItemList(store *projector.SlideStore) {
 			if err != nil {
 				return nil, nil, fmt.Errorf("get title func: %w", err)
 			}
+			titleInfo.Collection = collection
+			titleInfo.ContentObjectId = agendaItem.ContentObjectID
 			allAgendaItems = append(allAgendaItems, map[string]interface{}{"title_information": titleInfo, "depth": agendaItem.Depth})
 		}
 

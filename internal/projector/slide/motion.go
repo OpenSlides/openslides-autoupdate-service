@@ -51,13 +51,17 @@ func Motion(store *projector.SlideStore) {
 	store.RegisterSlideFunc("motion", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		return []byte(`"TODO"`), nil, nil
 	})
-	store.RegisterTitleFunc("motion", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, meeting_id int, value map[string]interface{}) (title map[string]interface{}, err error) {
+	store.RegisterTitleFunc("motion", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, meeting_id int, value map[string]interface{}) (*projector.TitlerFuncResult, error) {
 		data := fetch.Object(ctx, []string{"id", "number", "title"}, fqid)
 		motion, err := motionFromMap(data)
 		if err != nil {
 			return nil, fmt.Errorf("get motion from map: %w", err)
 		}
-		return map[string]interface{}{"title": motion.Title, "number": motion.Number, "agenda_item_number": value["agenda_item_number"].(string), "content_object_id": fqid}, nil
+		titleData := projector.TitlerFuncResult{
+			Title:  &motion.Title,
+			Number: &motion.Number,
+		}
+		return &titleData, err
 	})
 }
 
@@ -66,12 +70,17 @@ func MotionBlock(store *projector.SlideStore) {
 	store.RegisterSlideFunc("motion_block", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		return []byte(`"TODO"`), nil, nil
 	})
-	store.RegisterTitleFunc("motion_block", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, meeting_id int, value map[string]interface{}) (title map[string]interface{}, err error) {
+	store.RegisterTitleFunc("motion_block", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, meeting_id int, value map[string]interface{}) (*projector.TitlerFuncResult, error) {
 		data := fetch.Object(ctx, []string{"id", "title"}, fqid)
 		motionBlock, err := motionBlockFromMap(data)
 		if err != nil {
 			return nil, fmt.Errorf("get motion block from map: %w", err)
 		}
-		return map[string]interface{}{"title": motionBlock.Title, "agenda_item_number": value["agenda_item_number"].(string), "content_object_id": fqid}, nil
+		agenda_item_number := value["agenda_item_number"].(string)
+		titleData := projector.TitlerFuncResult{
+			Title:            &motionBlock.Title,
+			AgendaItemNumber: &agenda_item_number,
+		}
+		return &titleData, err
 	})
 }
