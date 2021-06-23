@@ -15,7 +15,7 @@ func Mediafile(store *projector.SlideStore) {
 		return []byte(`"TODO"`), nil, nil
 	})
 
-	store.RegisterAgendaTitlerFunc("mediafile", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
+	store.RegisterGetTitleInformationFunc("mediafile", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
 		title := "title of mediafile (TODO)"
 
 		agendatitle := struct {

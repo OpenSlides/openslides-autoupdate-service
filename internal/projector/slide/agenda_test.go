@@ -29,7 +29,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 
 	agenda_item:
 		1:
-			item_number: Ino1
+			item_number: Ino1xxx
 			content_object_id: topic/1
 			meeting_id: 1
 			is_hidden: false

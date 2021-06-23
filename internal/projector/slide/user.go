@@ -107,7 +107,7 @@ func getUserRepresentation(ctx context.Context, ds projector.Datastore, p7on *pr
 func User(store *projector.SlideStore) {
 	store.RegisterSliderFunc("user", getUserRepresentation)
 
-	store.RegisterAgendaTitlerFunc("user", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
+	store.RegisterGetTitleInformationFunc("user", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
 		title := struct {
 			Username string `json:"username"`
 		}{

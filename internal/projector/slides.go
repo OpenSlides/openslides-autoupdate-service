@@ -13,9 +13,9 @@ type Slider interface {
 	Slide(ctx context.Context, ds Datastore, p7on *Projection) (encoded []byte, keys []string, err error)
 }
 
-// AgendaTitler returns the needed information to parse the agenda item of an element.
-type AgendaTitler interface {
-	AgendaTitle(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error)
+// Titler defines the interface for GetTitleInformation-function, used for individual objects.
+type Titler interface {
+	GetTitleInformation(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error)
 }
 
 // SliderFunc is a function that implements the Slider interface.
@@ -26,18 +26,18 @@ func (f SliderFunc) Slide(ctx context.Context, ds Datastore, p7on *Projection) (
 	return f(ctx, ds, p7on)
 }
 
-// AgendaTitlerFunc is a function that implements the AgendaTitler interface.
-type AgendaTitlerFunc func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error)
+// GetTitleInformationType is a type that implements the Titler interface.
+type GetTitleInformationType func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error)
 
-// AgendaTitle calls the func.
-func (f AgendaTitlerFunc) AgendaTitle(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
+// GetTitleInformation calls the func.
+func (f GetTitleInformationType) GetTitleInformation(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
 	return f(ctx, fetch, fqid, itemNumber)
 }
 
-// SlideStore holds the Sliders and AgendaTitler by name.
+// SlideStore holds the Slider- and Titler-functions by name.
 type SlideStore struct {
-	slides       map[string]Slider
-	agendaTitler map[string]AgendaTitler
+	slides map[string]Slider
+	titles map[string]Titler
 }
 
 // RegisterSliderFunc adds a SliderFunc to the store.
@@ -59,21 +59,21 @@ func (s *SlideStore) GetSlider(name string) Slider {
 	return s.slides[name]
 }
 
-// RegisterAgendaTitlerFunc adds a AgendaTitlerFunc to the store.
-func (s *SlideStore) RegisterAgendaTitlerFunc(collection string, f AgendaTitlerFunc) {
-	if s.agendaTitler == nil {
-		s.agendaTitler = make(map[string]AgendaTitler)
+// RegisterGetTitleInformationFunc adds a function of type GetTitleInformationType to the store.
+func (s *SlideStore) RegisterGetTitleInformationFunc(collection string, f GetTitleInformationType) {
+	if s.titles == nil {
+		s.titles = make(map[string]Titler)
 	}
 
-	if _, ok := s.agendaTitler[collection]; ok {
+	if _, ok := s.titles[collection]; ok {
 		panic(fmt.Sprintf("GetTitle function for collection %s does already exist", collection))
 	}
-	s.agendaTitler[collection] = f
+	s.titles[collection] = f
 }
 
-// GetAgendaTitler returns a AgendaTitler for the given name.
+// GetTitleInformationFunc returns a Titler-function for the given name.
 //
-// Returns nil, if there if the name is unknown.
-func (s *SlideStore) GetAgendaTitler(name string) AgendaTitler {
-	return s.agendaTitler[name]
+// Returns nil, if the name is unknown.
+func (s *SlideStore) GetTitleInformationFunc(name string) Titler {
+	return s.titles[name]
 }
