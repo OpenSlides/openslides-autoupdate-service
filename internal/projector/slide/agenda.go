@@ -52,7 +52,6 @@ func agendaItemListFromMap(in map[string]json.RawMessage) (*dbAgendaItemList, er
 }
 
 type outAgendaItem struct {
-	ContentObjectID  string          `json:"content_object_id"`
 	TitleInformation json.RawMessage `json:"title_information"`
 	Depth            int             `json:"depth"`
 }
@@ -98,7 +97,6 @@ func AgendaItem(store *projector.SlideStore) {
 		}
 
 		out := outAgendaItem{
-			ContentObjectID:  agendaItem.ContentObjectID,
 			TitleInformation: titleInfo,
 			Depth:            agendaItem.Depth,
 		}
@@ -137,10 +135,12 @@ func AgendaItemList(store *projector.SlideStore) {
 		var options struct {
 			OnlyMainItems bool `json:"only_main_items"`
 		}
-		if err := json.Unmarshal(p7on.Options, &options); err != nil {
-			return nil, nil, fmt.Errorf("decoding projection options: %w", err)
+		options.OnlyMainItems = false // Default value
+		if p7on.Options != nil {
+			if err := json.Unmarshal(p7on.Options, &options); err != nil {
+				return nil, nil, fmt.Errorf("decoding projection options: %w", err)
+			}
 		}
-
 		var allAgendaItems []outAgendaItem
 		for _, aiID := range agendaItemList.AgendaItemIds {
 			data = fetch.Object(
@@ -186,7 +186,6 @@ func AgendaItemList(store *projector.SlideStore) {
 				outAgendaItem{
 					TitleInformation: titleInfo,
 					Depth:            agendaItem.Depth,
-					ContentObjectID:  agendaItem.ContentObjectID,
 				},
 			)
 		}
