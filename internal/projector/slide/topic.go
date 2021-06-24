@@ -33,7 +33,7 @@ func Topic(store *projector.SlideStore) {
 		return []byte(`"TODO"`), nil, nil
 	})
 
-	store.RegisterAgendaTitlerFunc("topic", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
+	store.RegisterGetTitleInformationFunc("topic", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
 		data := fetch.Object(ctx, []string{"id", "title"}, fqid)
 		topic, err := topicFromMap(data)
 		if err != nil {
@@ -41,9 +41,13 @@ func Topic(store *projector.SlideStore) {
 		}
 
 		title := struct {
-			Title  string `json:"title"`
-			Number string `json:"agenda_item_number"`
+			Collection       string `json:"collection"`
+			ContentObjectID  string `json:"content_object_id"`
+			Title            string `json:"title"`
+			AgendaItemNumber string `json:"agenda_item_number"`
 		}{
+			"topic",
+			fqid,
 			topic.Title,
 			itemNumber,
 		}

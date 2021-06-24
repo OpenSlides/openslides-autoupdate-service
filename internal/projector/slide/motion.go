@@ -52,7 +52,7 @@ func Motion(store *projector.SlideStore) {
 		return []byte(`"TODO"`), nil, nil
 	})
 
-	store.RegisterAgendaTitlerFunc("motion", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
+	store.RegisterGetTitleInformationFunc("motion", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
 		data := fetch.Object(ctx, []string{"id", "number", "title"}, fqid)
 		motion, err := motionFromMap(data)
 		if err != nil {
@@ -60,10 +60,14 @@ func Motion(store *projector.SlideStore) {
 		}
 
 		title := struct {
-			Title        string `json:"title"`
-			Number       string `json:"number"`
-			AgendaNumber string `json:"agenda_item_number"`
+			Collection      string `json:"collection"`
+			ContentObjectID string `json:"content_object_id"`
+			Title           string `json:"title"`
+			Number          string `json:"number"`
+			AgendaNumber    string `json:"agenda_item_number"`
 		}{
+			"motion",
+			fqid,
 			motion.Title,
 			motion.Number,
 			itemNumber,
@@ -83,7 +87,7 @@ func MotionBlock(store *projector.SlideStore) {
 		return []byte(`"TODO"`), nil, nil
 	})
 
-	store.RegisterAgendaTitlerFunc("motion_block", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
+	store.RegisterGetTitleInformationFunc("motion_block", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
 		data := fetch.Object(ctx, []string{"id", "title"}, fqid)
 		motionBlock, err := motionBlockFromMap(data)
 		if err != nil {
@@ -91,9 +95,13 @@ func MotionBlock(store *projector.SlideStore) {
 		}
 
 		title := struct {
-			Title        string `json:"title"`
-			AgendaNumber string `json:"agenda_item_number"`
+			Collection      string `json:"collection"`
+			ContentObjectID string `json:"content_object_id"`
+			Title           string `json:"title"`
+			AgendaNumber    string `json:"agenda_item_number"`
 		}{
+			"motion_block",
+			fqid,
 			motionBlock.Title,
 			itemNumber,
 		}

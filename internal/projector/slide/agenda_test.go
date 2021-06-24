@@ -26,7 +26,6 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 		1:
 			agenda_show_internal_items_on_projector: false
 			agenda_item_ids: [1,2,3,4,5,6,7]
-
 	agenda_item:
 		1:
 			item_number: Ino1
@@ -35,7 +34,6 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 			is_hidden: false
 			is_internal: false
 			level: 0
-
 		2:
 			item_number: Ino2
 			content_object_id: motion/1
@@ -43,7 +41,6 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 			is_hidden: false
 			is_internal: false
 			level: 0
-
 		3:
 			item_number: Ino3
 			content_object_id: motion_block/1
@@ -51,7 +48,6 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 			is_hidden: false
 			is_internal: false
 			level: 0
-
 		4:
 			item_number: Ino4
 			content_object_id: assignment/1
@@ -59,7 +55,6 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 			is_hidden: false
 			is_internal: false
 			level: 0
-
 		5:
 			item_number: Ino5 misses because of level
 			content_object_id: topic/2
@@ -67,7 +62,6 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 			is_hidden: false
 			is_internal: false
 			level: 1
-
 		6:
 			item_number: Ino6 misses because of hidden
 			content_object_id: topic/3
@@ -75,7 +69,6 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 			is_hidden: true
 			is_internal: false
 			level: 0
-
 		7:
 			item_number: Ino7 misses because of internal
 			content_object_id: topic/4
@@ -83,11 +76,9 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 			is_hidden: false
 			is_internal: True
 			level: 0
-
 	motion/1:
 		title:  motion title 1
 		number: motion number 1
-
 	assignment/1/title: assignment title 1
 	motion_block/1/title: motion_block title 1
 	topic/1/title: topic title 1
@@ -109,34 +100,38 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				"items": [
 					{
 						"depth": 0,
-						"content_object_id": "topic/1",
 						"title_information": {
+							"collection": "topic",
 							"agenda_item_number": "Ino1",
+							"content_object_id": "topic/1",
 							"title": "topic title 1"
 					    }
 					},
 					{
 						"depth": 0,
-						"content_object_id": "motion/1",
 						"title_information": {
+							"collection": "motion",
 							"agenda_item_number": "Ino2",
+							"content_object_id": "motion/1",
 							"number": "motion number 1",
 							"title": "motion title 1"
 						}
 					},
 					{
 						"depth": 0,
-						"content_object_id": "motion_block/1",
 						"title_information": {
+							"collection": "motion_block",
 							"agenda_item_number": "Ino3",
+							"content_object_id": "motion_block/1",
 							"title": "motion_block title 1"
 						}
 					},
 					{
 						"depth": 0,
-						"content_object_id": "assignment/1",
 						"title_information": {
+							"collection": "assignment",
 							"agenda_item_number": "Ino4",
+							"content_object_id": "assignment/1",
 							"title": "assignment title 1"
 					    }
 					}
@@ -227,6 +222,87 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 	}
 }
 
+func TestAgendaItemListWithDepthItems(t *testing.T) {
+	s := new(projector.SlideStore)
+	slide.AgendaItemList(s)
+	slide.Topic(s)
+
+	ailSlide := s.GetSlider("agenda_item_list")
+	assert.NotNilf(t, ailSlide, "Slide with name `agenda_item_list` not found.")
+
+	data := dsmock.YAMLData(`
+	meeting:
+		1:
+			agenda_show_internal_items_on_projector: false
+			agenda_item_ids: [1]
+	agenda_item:
+		1:
+			item_number: Ino1
+			content_object_id: topic/1
+			meeting_id: 1
+			is_hidden: false
+			is_internal: false
+			level: 2
+	topic/1/title: topic title 1
+    `)
+
+	for _, tt := range []struct {
+		name       string
+		data       map[string]string
+		expect     string
+		expectKeys []string
+	}{
+		{
+			"with_leveled_item",
+			data,
+			`{
+				"items": [
+					{
+						"depth": 2,
+						"title_information": {
+							"collection": "topic",
+							"agenda_item_number": "Ino1",
+							"content_object_id": "topic/1",
+							"title": "topic title 1"
+					    }
+					}
+				]
+			}
+			`,
+			[]string{
+				"meeting/1/agenda_item_ids",
+				"meeting/1/agenda_show_internal_items_on_projector",
+				"agenda_item/1/id",
+				"agenda_item/1/item_number",
+				"agenda_item/1/content_object_id",
+				"agenda_item/1/meeting_id",
+				"agenda_item/1/is_hidden",
+				"agenda_item/1/is_internal",
+				"agenda_item/1/level",
+				"topic/1/id",
+				"topic/1/title",
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			closed := make(chan struct{})
+			defer close(closed)
+			ds := dsmock.NewMockDatastore(closed, tt.data)
+
+			p7on := &projector.Projection{
+				ContentObjectID: "meeting/1",
+				Type:            "agenda_item_list",
+				MeetingID:       1,
+			}
+
+			bs, keys, err := ailSlide.Slide(context.Background(), ds, p7on)
+			assert.NoError(t, err)
+			assert.JSONEq(t, tt.expect, string(bs))
+			assert.ElementsMatch(t, tt.expectKeys, keys)
+		})
+	}
+}
+
 func TestAgendaItem(t *testing.T) {
 	s := new(projector.SlideStore)
 	slide.AgendaItem(s)
@@ -243,7 +319,6 @@ func TestAgendaItem(t *testing.T) {
 		is_hidden: false
 		is_internal: false
 		level: 0
-
 	topic/1/title: topic title 1
     `)
 
@@ -258,9 +333,10 @@ func TestAgendaItem(t *testing.T) {
 			data,
 			`{
 				"depth": 0,
-				"content_object_id": "topic/1",
 				"title_information": {
+					"collection": "topic",
 					"agenda_item_number": "Ino1",
+					"content_object_id": "topic/1",
 					"title": "topic title 1"
 				}
 			}

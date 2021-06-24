@@ -52,7 +52,6 @@ func agendaItemListFromMap(in map[string]json.RawMessage) (*dbAgendaItemList, er
 }
 
 type outAgendaItem struct {
-	ContentObjectID  string          `json:"content_object_id"`
 	TitleInformation json.RawMessage `json:"title_information"`
 	Depth            int             `json:"depth"`
 }
@@ -87,18 +86,17 @@ func AgendaItem(store *projector.SlideStore) {
 		}
 
 		collection := strings.Split(agendaItem.ContentObjectID, "/")[0]
-		titler := store.GetAgendaTitler(collection)
+		titler := store.GetTitleInformationFunc(collection)
 		if titler == nil {
 			return nil, nil, fmt.Errorf("no titler function registered for %s", collection)
 		}
 
-		titleInfo, err := titler.AgendaTitle(ctx, fetch, agendaItem.ContentObjectID, agendaItem.ItemNumber)
+		titleInfo, err := titler.GetTitleInformation(ctx, fetch, agendaItem.ContentObjectID, agendaItem.ItemNumber)
 		if err != nil {
 			return nil, nil, fmt.Errorf("get title func: %w", err)
 		}
 
 		out := outAgendaItem{
-			ContentObjectID:  agendaItem.ContentObjectID,
 			TitleInformation: titleInfo,
 			Depth:            agendaItem.Depth,
 		}
@@ -137,10 +135,11 @@ func AgendaItemList(store *projector.SlideStore) {
 		var options struct {
 			OnlyMainItems bool `json:"only_main_items"`
 		}
-		if err := json.Unmarshal(p7on.Options, &options); err != nil {
-			return nil, nil, fmt.Errorf("decoding projection options: %w", err)
+		if p7on.Options != nil {
+			if err := json.Unmarshal(p7on.Options, &options); err != nil {
+				return nil, nil, fmt.Errorf("decoding projection options: %w", err)
+			}
 		}
-
 		var allAgendaItems []outAgendaItem
 		for _, aiID := range agendaItemList.AgendaItemIds {
 			data = fetch.Object(
@@ -171,12 +170,12 @@ func AgendaItemList(store *projector.SlideStore) {
 			}
 
 			collection := strings.Split(agendaItem.ContentObjectID, "/")[0]
-			titler := store.GetAgendaTitler(collection)
+			titler := store.GetTitleInformationFunc(collection)
 			if titler == nil {
 				return nil, nil, fmt.Errorf("no titler function registered for %s", collection)
 			}
 
-			titleInfo, err := titler.AgendaTitle(ctx, fetch, agendaItem.ContentObjectID, agendaItem.ItemNumber)
+			titleInfo, err := titler.GetTitleInformation(ctx, fetch, agendaItem.ContentObjectID, agendaItem.ItemNumber)
 			if err != nil {
 				return nil, nil, fmt.Errorf("get title func: %w", err)
 			}
@@ -186,7 +185,6 @@ func AgendaItemList(store *projector.SlideStore) {
 				outAgendaItem{
 					TitleInformation: titleInfo,
 					Depth:            agendaItem.Depth,
-					ContentObjectID:  agendaItem.ContentObjectID,
 				},
 			)
 		}
