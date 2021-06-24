@@ -42,7 +42,7 @@ func Assignment(store *projector.SlideStore) {
 
 		title := struct {
 			Collection       string `json:"collection"`
-			ContentObjectId  string `json:"content_object_id"`
+			ContentObjectID  string `json:"content_object_id"`
 			Title            string `json:"title"`
 			AgendaItemNumber string `json:"agenda_item_number"`
 		}{

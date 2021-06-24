@@ -61,7 +61,7 @@ func Motion(store *projector.SlideStore) {
 
 		title := struct {
 			Collection      string `json:"collection"`
-			ContentObjectId string `json:"content_object_id"`
+			ContentObjectID string `json:"content_object_id"`
 			Title           string `json:"title"`
 			Number          string `json:"number"`
 			AgendaNumber    string `json:"agenda_item_number"`
@@ -96,7 +96,7 @@ func MotionBlock(store *projector.SlideStore) {
 
 		title := struct {
 			Collection      string `json:"collection"`
-			ContentObjectId string `json:"content_object_id"`
+			ContentObjectID string `json:"content_object_id"`
 			Title           string `json:"title"`
 			AgendaNumber    string `json:"agenda_item_number"`
 		}{

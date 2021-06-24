@@ -135,7 +135,6 @@ func AgendaItemList(store *projector.SlideStore) {
 		var options struct {
 			OnlyMainItems bool `json:"only_main_items"`
 		}
-		options.OnlyMainItems = false // Default value
 		if p7on.Options != nil {
 			if err := json.Unmarshal(p7on.Options, &options); err != nil {
 				return nil, nil, fmt.Errorf("decoding projection options: %w", err)

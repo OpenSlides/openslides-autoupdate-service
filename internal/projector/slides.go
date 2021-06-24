@@ -26,11 +26,11 @@ func (f SliderFunc) Slide(ctx context.Context, ds Datastore, p7on *Projection) (
 	return f(ctx, ds, p7on)
 }
 
-// GetTitleInformationType is a type that implements the Titler interface.
-type GetTitleInformationType func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error)
+// TitlerFunc is a type that implements the Titler interface.
+type TitlerFunc func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error)
 
 // GetTitleInformation calls the func.
-func (f GetTitleInformationType) GetTitleInformation(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
+func (f TitlerFunc) GetTitleInformation(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
 	return f(ctx, fetch, fqid, itemNumber)
 }
 
@@ -59,14 +59,14 @@ func (s *SlideStore) GetSlider(name string) Slider {
 	return s.slides[name]
 }
 
-// RegisterGetTitleInformationFunc adds a function of type GetTitleInformationType to the store.
-func (s *SlideStore) RegisterGetTitleInformationFunc(collection string, f GetTitleInformationType) {
+// RegisterGetTitleInformationFunc adds a function of type TitlerFunc to the store.
+func (s *SlideStore) RegisterGetTitleInformationFunc(collection string, f TitlerFunc) {
 	if s.titles == nil {
 		s.titles = make(map[string]Titler)
 	}
 
 	if _, ok := s.titles[collection]; ok {
-		panic(fmt.Sprintf("GetTitle function for collection %s does already exist", collection))
+		panic(fmt.Sprintf("GetTitleInformation function for collection %s does already exist", collection))
 	}
 	s.titles[collection] = f
 }
