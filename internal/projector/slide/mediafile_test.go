@@ -14,7 +14,7 @@ func TestMediafile(t *testing.T) {
 	s := new(projector.SlideStore)
 	slide.Mediafile(s)
 
-	mfSlide := s.GetSlideFunc("mediafile")
+	mfSlide := s.GetSlider("mediafile")
 	assert.NotNilf(t, mfSlide, "Slide with name `mediafile` not found.")
 
 	data := dsmock.YAMLData(`
