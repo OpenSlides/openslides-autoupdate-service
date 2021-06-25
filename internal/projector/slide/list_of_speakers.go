@@ -107,7 +107,7 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 		addKeys = append(addKeys, keys...)
 
 		s := outputSpeaker{
-			User:         user.GetUserRepresentation(meetingID),
+			User:         user.UserRepresentation(meetingID),
 			Marked:       speaker.Marked,
 			PointOfOrder: speaker.PointOfOrder,
 			Weight:       speaker.Weight,

@@ -54,8 +54,7 @@ func Register(ds Datastore, slides *SlideStore) {
 
 		parts := strings.SplitN(fqfield, "/", 3)
 		if len(parts) != 3 {
-			err = fmt.Errorf("invalid key %s, expected two '/'", fqfield)
-			return bs, err
+			return nil, fmt.Errorf("invalid key %s, expected two '/'", fqfield)
 		}
 
 		data, keys, err := datastore.Object(
@@ -71,14 +70,12 @@ func Register(ds Datastore, slides *SlideStore) {
 			},
 		)
 		if err != nil {
-			err = fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
-			return bs, err
+			return nil, fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
 		}
 
 		p7on, err := p7onFromMap(data)
 		if err != nil {
-			err = fmt.Errorf("loading p7on: %w", err)
-			return bs, err
+			return nil, fmt.Errorf("loading p7on: %w", err)
 		}
 
 		if !p7on.exists() {
@@ -87,20 +84,17 @@ func Register(ds Datastore, slides *SlideStore) {
 
 		slideName, err := p7on.slideName()
 		if err != nil {
-			err = fmt.Errorf("getting slide name: %w", err)
-			return bs, err
+			return nil, fmt.Errorf("getting slide name: %w", err)
 		}
 
 		slider := slides.GetSlider(slideName)
 		if slider == nil {
-			err = fmt.Errorf("unknown slide %s", slideName)
-			return bs, err
+			return nil, fmt.Errorf("unknown slide %s", slideName)
 		}
 
 		bs, slideKeys, err := slider.Slide(context.Background(), ds, p7on)
 		if err != nil {
-			err = fmt.Errorf("calculating slide: %w", err)
-			return bs, err
+			return nil, fmt.Errorf("calculating slide: %w", err)
 		}
 		keys = append(keys, slideKeys...)
 		return bs, nil

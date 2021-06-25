@@ -20,7 +20,8 @@ type dbUser struct {
 	DefaultLevel string `json:"default_structure_level"`
 }
 
-// newUser gets the user from datastore and return the user as dbUser struct together with keys and error
+// newUser gets the user from datastore and return the user as dbUser struct
+// together with keys and error.
 func newUser(ctx context.Context, ds datastore.Getter, id, meetingID int) (*dbUser, []string, error) {
 	fields := []string{
 		"username",
@@ -58,17 +59,19 @@ func newUser(ctx context.Context, ds datastore.Getter, id, meetingID int) (*dbUs
 	return &u, keys, nil
 }
 
-// getUserRepresentation returns the meeting-dependent string for the given user
-func (u *dbUser) GetUserRepresentation(meetingID int) string {
-	parts := []string{u.getUserShortName()}
-	level := u.GetUserStructureLevel(meetingID)
+// UserRepresentation returns the meeting-dependent string for the given user.
+func (u *dbUser) UserRepresentation(meetingID int) string {
+	parts := []string{u.UserShortName()}
+	level := u.UserStructureLevel(meetingID)
 	if level != "" {
 		parts = append(parts, fmt.Sprintf("(%s)", level))
 	}
 	return strings.Join(parts, " ")
 }
 
-func (u *dbUser) GetUserStructureLevel(meetingID int) string {
+// UserStructureLevel returns in first place the meeting specific level,
+// otherwise the default level.
+func (u *dbUser) UserStructureLevel(meetingID int) string {
 	level := u.Level
 	if level == "" {
 		level = u.DefaultLevel
@@ -76,9 +79,9 @@ func (u *dbUser) GetUserStructureLevel(meetingID int) string {
 	return level
 }
 
-// getUserShortName returns the short name as "title first_name last_name".
-// Without first_name and last_name, uses username instead
-func (u *dbUser) getUserShortName() string {
+// UserShortName returns the short name as "title first_name last_name".
+// Without first_name and last_name, uses username instead.
+func (u *dbUser) UserShortName() string {
 	parts := func(sp ...string) []string {
 		var full []string
 		for _, s := range sp {
@@ -110,8 +113,12 @@ func User(store *projector.SlideStore) {
 		if err != nil {
 			return nil, nil, fmt.Errorf("loading user: %w", err)
 		}
-
-		responseValue, err := json.Marshal(map[string]interface{}{"user": user.GetUserRepresentation(p7on.MeetingID)})
+		out := struct {
+			User string `json:"user"`
+		}{
+			user.UserRepresentation(p7on.MeetingID),
+		}
+		responseValue, err := json.Marshal(out)
 		if err != nil {
 			return nil, nil, fmt.Errorf("encoding response slide user: %w", err)
 		}
