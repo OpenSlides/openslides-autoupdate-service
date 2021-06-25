@@ -14,7 +14,7 @@ func TestProjectorCountdown(t *testing.T) {
 	s := new(projector.SlideStore)
 	slide.ProjectorCountdown(s)
 
-	pcSlide := s.GetSlideFunc("projector_countdown")
+	pcSlide := s.GetSlider("projector_countdown")
 	assert.NotNilf(t, pcSlide, "Slide with name `projector_countdown` not found.")
 
 	data := dsmock.YAMLData(`
@@ -71,7 +71,7 @@ func TestProjectorMessage(t *testing.T) {
 	s := new(projector.SlideStore)
 	slide.ProjectorMessage(s)
 
-	pmSlide := s.GetSlideFunc("projector_message")
+	pmSlide := s.GetSlider("projector_message")
 	assert.NotNilf(t, pmSlide, "Slide with name `projector_message` not found.")
 
 	data := dsmock.YAMLData(`

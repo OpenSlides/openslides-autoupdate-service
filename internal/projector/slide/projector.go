@@ -62,8 +62,8 @@ func ProjectorCountdown(store *projector.SlideStore) {
 		if err != nil {
 			return nil, nil, fmt.Errorf("get projector countdown from map: %w", err)
 		}
-		pcwarning_time := fetch.Int(ctx, fmt.Sprintf("meeting/%d/projector_countdown_warning_time", pc.MeetingID))
-		responseValue, err := json.Marshal(map[string]interface{}{"description": pc.Description, "running": pc.Running, "countdown_time": pc.CountdownTime, "warning_time": pcwarning_time})
+		pcwarningTime := fetch.Int(ctx, fmt.Sprintf("meeting/%d/projector_countdown_warning_time", pc.MeetingID))
+		responseValue, err := json.Marshal(map[string]interface{}{"description": pc.Description, "running": pc.Running, "countdown_time": pc.CountdownTime, "warning_time": pcwarningTime})
 		if err != nil {
 			return nil, nil, fmt.Errorf("encoding response for projector countdown slide: %w", err)
 		}
