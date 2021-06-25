@@ -59,16 +59,16 @@ func newUser(ctx context.Context, ds datastore.Getter, id, meetingID int) (*dbUs
 }
 
 // getUserRepresentation returns the meeting-dependent string for the given user
-func (u *dbUser) GetUserRepresentation(meetingId int) string {
+func (u *dbUser) GetUserRepresentation(meetingID int) string {
 	parts := []string{u.getUserShortName()}
-	level := u.GetUserStructureLevel(meetingId)
+	level := u.GetUserStructureLevel(meetingID)
 	if level != "" {
 		parts = append(parts, fmt.Sprintf("(%s)", level))
 	}
 	return strings.Join(parts, " ")
 }
 
-func (u *dbUser) GetUserStructureLevel(meetingId int) string {
+func (u *dbUser) GetUserStructureLevel(meetingID int) string {
 	level := u.Level
 	if level == "" {
 		level = u.DefaultLevel
@@ -100,7 +100,7 @@ func (u *dbUser) getUserShortName() string {
 
 // User renders the user slide.
 func User(store *projector.SlideStore) {
-	store.RegisterSlideFunc("user", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+	store.RegisterSliderFunc("user", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		id, err := strconv.Atoi(strings.Split(p7on.ContentObjectID, "/")[1])
 		if err != nil {
 			return nil, nil, fmt.Errorf("getting user id: %w", err)
@@ -130,4 +130,5 @@ func User(store *projector.SlideStore) {
 			return nil, fmt.Errorf("encoding title: %w", err)
 		}
 		return bs, err
+	})
 }
