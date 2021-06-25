@@ -14,4 +14,4 @@ golinter:
 	golint -set_exit_status ./...
 
 gofmt:
-    gofmt -l -s -w .
+	gofmt -l -s -w .
