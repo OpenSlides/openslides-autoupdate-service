@@ -22,6 +22,7 @@ type dbUser struct {
 
 // newUser gets the user from datastore and return the user as dbUser struct
 // together with keys and error.
+// The meeting_id is used only to get the user-level for this meeting.
 func newUser(ctx context.Context, ds datastore.Getter, id, meetingID int) (*dbUser, []string, error) {
 	fields := []string{
 		"username",
@@ -71,6 +72,8 @@ func (u *dbUser) UserRepresentation(meetingID int) string {
 
 // UserStructureLevel returns in first place the meeting specific level,
 // otherwise the default level.
+// It is assumed that the Level-field in dbUser-struct contains the
+// meeting dependent level.
 func (u *dbUser) UserStructureLevel(meetingID int) string {
 	if u.Level == "" {
 		return u.DefaultLevel
