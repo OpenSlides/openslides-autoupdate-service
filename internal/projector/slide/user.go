@@ -61,22 +61,21 @@ func newUser(ctx context.Context, ds datastore.Getter, id, meetingID int) (*dbUs
 
 // UserRepresentation returns the meeting-dependent string for the given user.
 func (u *dbUser) UserRepresentation(meetingID int) string {
-	parts := []string{u.UserShortName()}
+	name := u.UserShortName()
 	level := u.UserStructureLevel(meetingID)
-	if level != "" {
-		parts = append(parts, fmt.Sprintf("(%s)", level))
+	if level == "" {
+		return name
 	}
-	return strings.Join(parts, " ")
+	return fmt.Sprintf("%s (%s)", name, level)
 }
 
 // UserStructureLevel returns in first place the meeting specific level,
 // otherwise the default level.
 func (u *dbUser) UserStructureLevel(meetingID int) string {
-	level := u.Level
-	if level == "" {
-		level = u.DefaultLevel
+	if u.Level == "" {
+		return u.DefaultLevel
 	}
-	return level
+	return u.Level
 }
 
 // UserShortName returns the short name as "title first_name last_name".
