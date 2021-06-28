@@ -5,7 +5,13 @@ run-tests:
 	docker build . --target testing --tag openslides-autoupdate-test
 	docker run openslides-autoupdate-test
 
-all: golinter
+all: gofmt gotest golinter
+
+gotest:
+	go test ./...
 
 golinter:
 	golint -set_exit_status ./...
+
+gofmt:
+	gofmt -l -s -w .

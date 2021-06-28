@@ -20,6 +20,9 @@ type dbUser struct {
 	DefaultLevel string `json:"default_structure_level"`
 }
 
+// newUser gets the user from datastore and return the user as dbUser struct
+// together with keys and error.
+// The meeting_id is used only to get the user-level for this meeting.
 func newUser(ctx context.Context, ds datastore.Getter, id, meetingID int) (*dbUser, []string, error) {
 	fields := []string{
 		"username",
@@ -43,19 +46,44 @@ func newUser(ctx context.Context, ds datastore.Getter, id, meetingID int) (*dbUs
 
 	bs, err := json.Marshal(data)
 	if err != nil {
-		return nil, nil, fmt.Errorf("encoding user data")
+		return nil, nil, fmt.Errorf("encoding user data: %w", err)
 	}
 
 	var u dbUser
 	if err := json.Unmarshal(bs, &u); err != nil {
-		return nil, nil, fmt.Errorf("decoding user: %w", err)
+		return nil, nil, fmt.Errorf("decoding user data: %w", err)
 	}
 
+	if u.FirstName == "" && u.LastName == "" && u.Username == "" {
+		return nil, nil, fmt.Errorf("neither firstName, lastName nor username found")
+	}
 	return &u, keys, nil
 }
 
-// StringMeetingDependent gets the instance representation of the user, which is meeting dependent with the structur_level
-func (u *dbUser) StringMeetingDependent(meetingID int) string {
+// UserRepresentation returns the meeting-dependent string for the given user.
+func (u *dbUser) UserRepresentation(meetingID int) string {
+	name := u.UserShortName()
+	level := u.UserStructureLevel(meetingID)
+	if level == "" {
+		return name
+	}
+	return fmt.Sprintf("%s (%s)", name, level)
+}
+
+// UserStructureLevel returns in first place the meeting specific level,
+// otherwise the default level.
+// It is assumed that the Level-field in dbUser-struct contains the
+// meeting dependent level.
+func (u *dbUser) UserStructureLevel(meetingID int) string {
+	if u.Level == "" {
+		return u.DefaultLevel
+	}
+	return u.Level
+}
+
+// UserShortName returns the short name as "title first_name last_name".
+// Without first_name and last_name, uses username instead.
+func (u *dbUser) UserShortName() string {
 	parts := func(sp ...string) []string {
 		var full []string
 		for _, s := range sp {
@@ -72,40 +100,32 @@ func (u *dbUser) StringMeetingDependent(meetingID int) string {
 	} else if u.Title != "" {
 		parts = append([]string{u.Title}, parts...)
 	}
-
-	level := u.Level
-	if level == "" {
-		level = u.DefaultLevel
-	}
-	if level != "" {
-		parts = append(parts, fmt.Sprintf("(%s)", level))
-	}
-
 	return strings.Join(parts, " ")
-}
-
-// getUserRepresentation returns the meeting-dependent string for the given user, including database access
-func getUserRepresentation(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-	id, err := strconv.Atoi(strings.Split(p7on.ContentObjectID, "/")[1])
-	if err != nil {
-		return nil, nil, fmt.Errorf("getting user id: %w", err)
-	}
-
-	u, keys, err := newUser(ctx, ds, id, p7on.MeetingID)
-	if err != nil {
-		return nil, nil, fmt.Errorf("loading user: %w", err)
-	}
-
-	repr := u.StringMeetingDependent(p7on.MeetingID)
-	if repr == "" {
-		return nil, nil, slidesError{"Neither firstName, lastName nor username found", "user", p7on.ID, p7on.Type, p7on.ContentObjectID, p7on.MeetingID}
-	}
-	return []byte(fmt.Sprintf(`{"user":"%s"}`, repr)), keys, nil
 }
 
 // User renders the user slide.
 func User(store *projector.SlideStore) {
-	store.RegisterSliderFunc("user", getUserRepresentation)
+	store.RegisterSliderFunc("user", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+		id, err := strconv.Atoi(strings.Split(p7on.ContentObjectID, "/")[1])
+		if err != nil {
+			return nil, nil, fmt.Errorf("getting user id: %w", err)
+		}
+
+		user, keys, err := newUser(ctx, ds, id, p7on.MeetingID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("loading user: %w", err)
+		}
+		out := struct {
+			User string `json:"user"`
+		}{
+			user.UserRepresentation(p7on.MeetingID),
+		}
+		responseValue, err := json.Marshal(out)
+		if err != nil {
+			return nil, nil, fmt.Errorf("encoding response slide user: %w", err)
+		}
+		return responseValue, keys, err
+	})
 
 	store.RegisterGetTitleInformationFunc("user", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
 		title := struct {
