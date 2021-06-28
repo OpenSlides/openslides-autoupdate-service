@@ -11,6 +11,7 @@ import (
 
 type dbMediafile struct {
 	ID       int    `json:"id"`
+	Title    string `json:"title"`
 	Mimetype string `json:"mimetype"`
 }
 
@@ -49,15 +50,23 @@ func Mediafile(store *projector.SlideStore) {
 	})
 
 	store.RegisterGetTitleInformationFunc("mediafile", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
-		title := "title of mediafile (TODO)"
-
-		agendatitle := struct {
-			Title string `json:"title"`
-		}{
-			title,
+		data := fetch.Object(ctx, []string{"id", "title"}, fqid)
+		mediafile, err := mediafileItemFromMap(data)
+		if err != nil {
+			return nil, fmt.Errorf("get mediafile: %w", err)
 		}
 
-		bs, err := json.Marshal(agendatitle)
+		mediafiletitle := struct {
+			Collection      string `json:"collection"`
+			ContentObjectID string `json:"content_object_id"`
+			Title           string `json:"title"`
+		}{
+			"mediafile",
+			fqid,
+			mediafile.Title,
+		}
+
+		bs, err := json.Marshal(mediafiletitle)
 		if err != nil {
 			return nil, fmt.Errorf("decoding title: %w", err)
 		}
