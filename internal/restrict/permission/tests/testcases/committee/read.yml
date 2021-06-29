@@ -23,6 +23,12 @@ cases:
   can_see:
   - committee/1
 
+- name: user manager
+  db:
+    user/1/organization_management_level: can_manage_users
+  can_see:
+  - committee/1
+
 - name: commitee manager
   db:
     user/1/committee_as_manager_ids: [1]
