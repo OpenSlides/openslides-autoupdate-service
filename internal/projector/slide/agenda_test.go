@@ -28,32 +28,36 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 			agenda_item_ids: [1,2,3,4,5,6,7]
 	agenda_item:
 		1:
+			item_number: Ino1.2
+			content_object_id: assignment/1
+			meeting_id: 1
+			is_hidden: false
+			is_internal: false
+			weight: 8
+			level: 0
+		2:
+			item_number: Ino1.1
+			content_object_id: motion/1
+			meeting_id: 1
+			is_hidden: false
+			is_internal: false
+			weight: 4
+			level: 0
+		3:
 			item_number: Ino1
 			content_object_id: topic/1
 			meeting_id: 1
 			is_hidden: false
 			is_internal: false
+			weight: 2
 			level: 0
-		2:
-			item_number: Ino2
-			content_object_id: motion/1
-			meeting_id: 1
-			is_hidden: false
-			is_internal: false
-			level: 0
-		3:
-			item_number: Ino3
+		4:
+			item_number: Ino1.1.1
 			content_object_id: motion_block/1
 			meeting_id: 1
 			is_hidden: false
 			is_internal: false
-			level: 0
-		4:
-			item_number: Ino4
-			content_object_id: assignment/1
-			meeting_id: 1
-			is_hidden: false
-			is_internal: false
+			weight: 6
 			level: 0
 		5:
 			item_number: Ino5 misses because of level
@@ -61,6 +65,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 			meeting_id: 1
 			is_hidden: false
 			is_internal: false
+			weight: 10
 			level: 1
 		6:
 			item_number: Ino6 misses because of hidden
@@ -68,6 +73,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 			meeting_id: 1
 			is_hidden: true
 			is_internal: false
+			weight: 12
 			level: 0
 		7:
 			item_number: Ino7 misses because of internal
@@ -75,6 +81,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 			meeting_id: 1
 			is_hidden: false
 			is_internal: True
+			weight: 14
 			level: 0
 	motion/1:
 		title:  motion title 1
@@ -94,7 +101,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 		expectKeys []string
 	}{
 		{
-			"Starter",
+			"Starter AgendaItemList",
 			data,
 			`{
 				"items": [
@@ -111,7 +118,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 						"depth": 0,
 						"title_information": {
 							"collection": "motion",
-							"agenda_item_number": "Ino2",
+							"agenda_item_number": "Ino1.1",
 							"content_object_id": "motion/1",
 							"number": "motion number 1",
 							"title": "motion title 1"
@@ -121,7 +128,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 						"depth": 0,
 						"title_information": {
 							"collection": "motion_block",
-							"agenda_item_number": "Ino3",
+							"agenda_item_number": "Ino1.1.1",
 							"content_object_id": "motion_block/1",
 							"title": "motion_block title 1"
 						}
@@ -130,7 +137,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 						"depth": 0,
 						"title_information": {
 							"collection": "assignment",
-							"agenda_item_number": "Ino4",
+							"agenda_item_number": "Ino1.2",
 							"content_object_id": "assignment/1",
 							"title": "assignment title 1"
 					    }
@@ -148,6 +155,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				"agenda_item/1/is_hidden",
 				"agenda_item/1/is_internal",
 				"agenda_item/1/level",
+				"agenda_item/1/weight",
 				"topic/1/id",
 				"topic/1/title",
 				"agenda_item/2/id",
@@ -157,6 +165,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				"agenda_item/2/is_hidden",
 				"agenda_item/2/is_internal",
 				"agenda_item/2/level",
+				"agenda_item/2/weight",
 				"motion/1/id",
 				"motion/1/number",
 				"motion/1/title",
@@ -167,6 +176,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				"agenda_item/3/is_hidden",
 				"agenda_item/3/is_internal",
 				"agenda_item/3/level",
+				"agenda_item/3/weight",
 				"motion_block/1/id",
 				"motion_block/1/title",
 				"agenda_item/4/id",
@@ -176,6 +186,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				"agenda_item/4/is_hidden",
 				"agenda_item/4/is_internal",
 				"agenda_item/4/level",
+				"agenda_item/4/weight",
 				"assignment/1/id",
 				"assignment/1/title",
 				"agenda_item/5/id",
@@ -185,6 +196,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				"agenda_item/5/is_hidden",
 				"agenda_item/5/is_internal",
 				"agenda_item/5/level",
+				"agenda_item/5/weight",
 				"agenda_item/6/id",
 				"agenda_item/6/item_number",
 				"agenda_item/6/content_object_id",
@@ -192,6 +204,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				"agenda_item/6/is_hidden",
 				"agenda_item/6/is_internal",
 				"agenda_item/6/level",
+				"agenda_item/6/weight",
 				"agenda_item/7/id",
 				"agenda_item/7/item_number",
 				"agenda_item/7/content_object_id",
@@ -199,6 +212,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				"agenda_item/7/is_hidden",
 				"agenda_item/7/is_internal",
 				"agenda_item/7/level",
+				"agenda_item/7/weight",
 			},
 		},
 	} {
@@ -279,6 +293,7 @@ func TestAgendaItemListWithDepthItems(t *testing.T) {
 				"agenda_item/1/is_hidden",
 				"agenda_item/1/is_internal",
 				"agenda_item/1/level",
+				"agenda_item/1/weight",
 				"topic/1/id",
 				"topic/1/title",
 			},
@@ -319,6 +334,7 @@ func TestAgendaItem(t *testing.T) {
 		is_hidden: false
 		is_internal: false
 		level: 0
+		weight: 2
 	topic/1/title: topic title 1
     `)
 
@@ -329,7 +345,7 @@ func TestAgendaItem(t *testing.T) {
 		expectKeys []string
 	}{
 		{
-			"Starter",
+			"Starter AgendaItem",
 			data,
 			`{
 				"depth": 0,
@@ -349,6 +365,7 @@ func TestAgendaItem(t *testing.T) {
 				"agenda_item/1/is_hidden",
 				"agenda_item/1/is_internal",
 				"agenda_item/1/level",
+				"agenda_item/1/weight",
 				"topic/1/id",
 				"topic/1/title",
 			},

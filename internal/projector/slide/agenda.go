@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
@@ -18,6 +19,7 @@ type dbAgendaItem struct {
 	IsHidden        bool   `json:"is_hidden"`
 	IsInternal      bool   `json:"is_internal"`
 	Depth           int    `json:"level"`
+	Weight          int    `json:"weight"`
 }
 
 func agendaItemFromMap(in map[string]json.RawMessage) (*dbAgendaItem, error) {
@@ -75,6 +77,7 @@ func AgendaItem(store *projector.SlideStore) {
 				"meeting_id",
 				"is_hidden",
 				"is_internal",
+				"weight",
 				"level",
 			},
 			p7on.ContentObjectID,
@@ -140,7 +143,7 @@ func AgendaItemList(store *projector.SlideStore) {
 				return nil, nil, fmt.Errorf("decoding projection options: %w", err)
 			}
 		}
-		var allAgendaItems []outAgendaItem
+		var sortAgendaItems []*dbAgendaItem
 		for _, aiID := range agendaItemList.AgendaItemIds {
 			data = fetch.Object(
 				ctx,
@@ -151,6 +154,7 @@ func AgendaItemList(store *projector.SlideStore) {
 					"meeting_id",
 					"is_hidden",
 					"is_internal",
+					"weight",
 					"level",
 				},
 				"agenda_item/%d",
@@ -168,7 +172,17 @@ func AgendaItemList(store *projector.SlideStore) {
 			if options.OnlyMainItems && agendaItem.Depth > 0 {
 				continue
 			}
+			sortAgendaItems = append(
+				sortAgendaItems,
+				agendaItem,
+			)
 
+		}
+
+		sort.SliceStable(sortAgendaItems, func(i, j int) bool { return sortAgendaItems[i].Weight < sortAgendaItems[j].Weight })
+
+		var allAgendaItems []outAgendaItem
+		for _, agendaItem := range sortAgendaItems {
 			collection := strings.Split(agendaItem.ContentObjectID, "/")[0]
 			titler := store.GetTitleInformationFunc(collection)
 			if titler == nil {
