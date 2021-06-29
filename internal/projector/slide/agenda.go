@@ -56,6 +56,7 @@ func agendaItemListFromMap(in map[string]json.RawMessage) (*dbAgendaItemList, er
 type outAgendaItem struct {
 	TitleInformation json.RawMessage `json:"title_information"`
 	Depth            int             `json:"depth"`
+	weight           int
 }
 
 // AgendaItem renders the agenda_item slide.
@@ -143,7 +144,7 @@ func AgendaItemList(store *projector.SlideStore) {
 				return nil, nil, fmt.Errorf("decoding projection options: %w", err)
 			}
 		}
-		var sortAgendaItems []*dbAgendaItem
+		var allAgendaItems []outAgendaItem
 		for _, aiID := range agendaItemList.AgendaItemIds {
 			data = fetch.Object(
 				ctx,
@@ -154,8 +155,8 @@ func AgendaItemList(store *projector.SlideStore) {
 					"meeting_id",
 					"is_hidden",
 					"is_internal",
-					"weight",
 					"level",
+					"weight",
 				},
 				"agenda_item/%d",
 				aiID,
@@ -172,17 +173,7 @@ func AgendaItemList(store *projector.SlideStore) {
 			if options.OnlyMainItems && agendaItem.Depth > 0 {
 				continue
 			}
-			sortAgendaItems = append(
-				sortAgendaItems,
-				agendaItem,
-			)
 
-		}
-
-		sort.SliceStable(sortAgendaItems, func(i, j int) bool { return sortAgendaItems[i].Weight < sortAgendaItems[j].Weight })
-
-		var allAgendaItems []outAgendaItem
-		for _, agendaItem := range sortAgendaItems {
 			collection := strings.Split(agendaItem.ContentObjectID, "/")[0]
 			titler := store.GetTitleInformationFunc(collection)
 			if titler == nil {
@@ -199,9 +190,12 @@ func AgendaItemList(store *projector.SlideStore) {
 				outAgendaItem{
 					TitleInformation: titleInfo,
 					Depth:            agendaItem.Depth,
+					weight:           agendaItem.Weight,
 				},
 			)
 		}
+
+		sort.SliceStable(allAgendaItems, func(i, j int) bool { return allAgendaItems[i].weight < allAgendaItems[j].weight })
 
 		out := struct {
 			Items []outAgendaItem `json:"items"`
