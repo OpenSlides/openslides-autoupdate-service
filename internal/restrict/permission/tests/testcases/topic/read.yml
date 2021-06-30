@@ -12,10 +12,10 @@ meeting_id: 1
 cases:
 - name: anonymous
   user_id: 0
-  can_see:
+  can_see: []
 
 - name: no perm
-  can_see:
+  can_see: []
 
 - name: can see
   permission: agenda_item.can_see

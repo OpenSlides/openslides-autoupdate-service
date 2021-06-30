@@ -11,10 +11,10 @@ fqids:
 cases:
 - name: anonymous
   user_id: 0
-  can_see:
+  can_see: []
 
 - name: without perm
-  can_see:
+  can_see: []
 
 - name: with perm
   permission: list_of_speakers.can_see
