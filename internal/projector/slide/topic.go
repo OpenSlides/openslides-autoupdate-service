@@ -57,9 +57,7 @@ func Topic(store *projector.SlideStore) {
 
 		var itemNumber string
 		if topic.AgendaItemID > 0 {
-			itemNumber = fetch.String(ctx, fmt.Sprintf("agenda_item/%d/item_number", topic.AgendaItemID))
-		} else {
-			itemNumber = ""
+			itemNumber = fetch.String(ctx, "agenda_item/%d/item_number", topic.AgendaItemID)
 		}
 		out := struct {
 			Title            string `json:"title"`
