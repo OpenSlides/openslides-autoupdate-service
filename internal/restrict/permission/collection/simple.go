@@ -46,6 +46,26 @@ func isPublic(ctx context.Context, userID int, fqfields []perm.FQField, result m
 	return nil
 }
 
+// LoggedIn can be seen by logged in users.
+func LoggedIn(dp dataprovider.DataProvider, collections ...string) perm.ConnecterFunc {
+	return func(s perm.HandlerStore) {
+		for _, c := range collections {
+			s.RegisterRestricter(c, perm.CollectionFunc(isLoggedIn))
+		}
+	}
+}
+
+func isLoggedIn(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
+	if userID == 0 {
+		return nil
+	}
+
+	for _, field := range fqfields {
+		result[field.String()] = true
+	}
+	return nil
+}
+
 func isInMeeting(dp dataprovider.DataProvider, collection string) perm.CollectionFunc {
 	return func(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
 		return perm.AllFields(fqfields, result, func(fqfield perm.FQField) (bool, error) {
