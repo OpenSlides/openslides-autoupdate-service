@@ -5,3 +5,4 @@ cert
 .vscode
 workspace.code-workspace
 __debug_bin
+debug.test
