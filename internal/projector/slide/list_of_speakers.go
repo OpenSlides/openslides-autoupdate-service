@@ -85,7 +85,6 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 	var speakersWaiting []outputSpeaker
 	var speakersFinished []outputSpeaker
 	var currentSpeaker *outputSpeaker
-	var addKeys []string
 	for _, id := range los.SpeakerIDs {
 		fields := []string{
 			"user_id",
@@ -100,11 +99,10 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 			return nil, nil, fmt.Errorf("loading speaker: %w", err)
 		}
 
-		user, keys, err := newUser(ctx, ds, speaker.UserID, meetingID)
+		user, err := newUser(ctx, fetch, speaker.UserID, meetingID)
 		if err != nil {
 			return nil, nil, fmt.Errorf("loading user: %w", err)
 		}
-		addKeys = append(addKeys, keys...)
 
 		s := outputSpeaker{
 			User:         user.UserRepresentation(meetingID),
@@ -155,7 +153,7 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 	if err != nil {
 		return nil, nil, fmt.Errorf("encoding outgoing data: %w", err)
 	}
-	return b, append(fetch.Keys(), addKeys...), nil
+	return b, fetch.Keys(), nil
 }
 
 // CurrentListOfSpeakers renders the current_list_of_speakers slide.
