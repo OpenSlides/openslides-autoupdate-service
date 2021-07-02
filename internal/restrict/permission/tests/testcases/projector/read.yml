@@ -24,7 +24,7 @@ fqids:
 - projector_message/2
 - projector_countdown/2
 
-casses:
+cases:
 - name: anonymous
   user_id: 0
   can_see: []
