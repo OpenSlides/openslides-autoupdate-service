@@ -95,7 +95,7 @@ func AgendaItem(store *projector.SlideStore) {
 			return nil, nil, fmt.Errorf("no titler function registered for %s", collection)
 		}
 
-		titleInfo, err := titler.GetTitleInformation(ctx, fetch, agendaItem.ContentObjectID, agendaItem.ItemNumber)
+		titleInfo, err := titler.GetTitleInformation(ctx, fetch, agendaItem.ContentObjectID, agendaItem.ItemNumber, p7on.MeetingID)
 		if err != nil {
 			return nil, nil, fmt.Errorf("get title func: %w", err)
 		}
@@ -180,7 +180,7 @@ func AgendaItemList(store *projector.SlideStore) {
 				return nil, nil, fmt.Errorf("no titler function registered for %s", collection)
 			}
 
-			titleInfo, err := titler.GetTitleInformation(ctx, fetch, agendaItem.ContentObjectID, agendaItem.ItemNumber)
+			titleInfo, err := titler.GetTitleInformation(ctx, fetch, agendaItem.ContentObjectID, agendaItem.ItemNumber, p7on.MeetingID)
 			if err != nil {
 				return nil, nil, fmt.Errorf("get title func: %w", err)
 			}

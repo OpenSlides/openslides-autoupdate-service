@@ -23,7 +23,7 @@ type dbUser struct {
 // newUser gets the user from datastore and return the user as dbUser struct
 // together with keys and error.
 // The meeting_id is used only to get the user-level for this meeting.
-func newUser(ctx context.Context, ds datastore.Getter, id, meetingID int) (*dbUser, []string, error) {
+func newUser(ctx context.Context, fetch *datastore.Fetcher, id, meetingID int) (*dbUser, error) {
 	fields := []string{
 		"username",
 		"title",
@@ -35,9 +35,9 @@ func newUser(ctx context.Context, ds datastore.Getter, id, meetingID int) (*dbUs
 		fields = append(fields, fmt.Sprintf("structure_level_$%d", meetingID))
 	}
 
-	data, keys, err := datastore.Object(ctx, ds, fmt.Sprintf("user/%d", id), fields)
-	if err != nil {
-		return nil, nil, fmt.Errorf("getting user object: %w", err)
+	data := fetch.Object(ctx, fields, "user/%d", id)
+	if fetch.Error() != nil {
+		return nil, fmt.Errorf("getting user object: %w", fetch.Error())
 	}
 
 	if meetingID != 0 {
@@ -46,18 +46,18 @@ func newUser(ctx context.Context, ds datastore.Getter, id, meetingID int) (*dbUs
 
 	bs, err := json.Marshal(data)
 	if err != nil {
-		return nil, nil, fmt.Errorf("encoding user data: %w", err)
+		return nil, fmt.Errorf("encoding user data: %w", err)
 	}
 
 	var u dbUser
 	if err := json.Unmarshal(bs, &u); err != nil {
-		return nil, nil, fmt.Errorf("decoding user data: %w", err)
+		return nil, fmt.Errorf("decoding user data: %w", err)
 	}
 
 	if u.FirstName == "" && u.LastName == "" && u.Username == "" {
-		return nil, nil, fmt.Errorf("neither firstName, lastName nor username found")
+		return nil, fmt.Errorf("neither firstName, lastName nor username found")
 	}
-	return &u, keys, nil
+	return &u, nil
 }
 
 // UserRepresentation returns the meeting-dependent string for the given user.
@@ -105,39 +105,59 @@ func (u *dbUser) UserShortName() string {
 
 // User renders the user slide.
 func User(store *projector.SlideStore) {
-	store.RegisterSliderFunc("user", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+	store.RegisterSliderFunc("user", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (responseValue []byte, keys []string, err error) {
+		fetch := datastore.NewFetcher(ds)
+		defer func() {
+			if err == nil {
+				err = fetch.Error()
+			}
+			if err == nil {
+				keys = fetch.Keys()
+			} else {
+				responseValue = nil
+			}
+		}()
+
 		id, err := strconv.Atoi(strings.Split(p7on.ContentObjectID, "/")[1])
 		if err != nil {
 			return nil, nil, fmt.Errorf("getting user id: %w", err)
 		}
 
-		user, keys, err := newUser(ctx, ds, id, p7on.MeetingID)
+		user, err := newUser(ctx, fetch, id, p7on.MeetingID)
 		if err != nil {
-			return nil, nil, fmt.Errorf("loading user: %w", err)
+			return nil, nil, fmt.Errorf("getting new user id: %w", err)
 		}
 		out := struct {
 			User string `json:"user"`
 		}{
 			user.UserRepresentation(p7on.MeetingID),
 		}
-		responseValue, err := json.Marshal(out)
+		responseValue, err = json.Marshal(out)
 		if err != nil {
 			return nil, nil, fmt.Errorf("encoding response slide user: %w", err)
 		}
 		return responseValue, keys, err
 	})
 
-	store.RegisterGetTitleInformationFunc("user", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
-		title := struct {
-			Username string `json:"username"`
-		}{
-			"username (TODO)",
+	store.RegisterGetTitleInformationFunc("user", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string, meetingID int) (json.RawMessage, error) {
+		id, err := strconv.Atoi(strings.Split(fqid, "/")[1])
+		if err != nil {
+			return nil, fmt.Errorf("getting user id: %w", err)
 		}
 
-		bs, err := json.Marshal(title)
+		user, err := newUser(ctx, fetch, id, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("loading user: %w", err)
+		}
+		out := struct {
+			Username string `json:"username"`
+		}{
+			user.UserRepresentation(meetingID),
+		}
+		responseValue, err := json.Marshal(out)
 		if err != nil {
 			return nil, fmt.Errorf("encoding title: %w", err)
 		}
-		return bs, err
+		return responseValue, err
 	})
 }
