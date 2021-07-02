@@ -9,6 +9,7 @@ const (
 	AssignmentCanNominateOther    TPermission = "assignment.can_nominate_other"
 	AssignmentCanNominateSelf     TPermission = "assignment.can_nominate_self"
 	AssignmentCanSee              TPermission = "assignment.can_see"
+	ChatCanManage                 TPermission = "chat.can_manage"
 	ListOfSpeakersCanBeSpeaker    TPermission = "list_of_speakers.can_be_speaker"
 	ListOfSpeakersCanManage       TPermission = "list_of_speakers.can_manage"
 	ListOfSpeakersCanSee          TPermission = "list_of_speakers.can_see"
@@ -32,7 +33,6 @@ const (
 	ProjectorCanManage            TPermission = "projector.can_manage"
 	ProjectorCanSee               TPermission = "projector.can_see"
 	TagCanManage                  TPermission = "tag.can_manage"
-	UserCanChangeOwnPassword      TPermission = "user.can_change_own_password"
 	UserCanManage                 TPermission = "user.can_manage"
 	UserCanSee                    TPermission = "user.can_see"
 	UserCanSeeExtraData           TPermission = "user.can_see_extra_data"
@@ -46,6 +46,7 @@ var derivatePerms = map[TPermission][]TPermission{
 	"assignment.can_nominate_other":      {"assignment.can_see"},
 	"assignment.can_nominate_self":       {"assignment.can_see"},
 	"assignment.can_see":                 {},
+	"chat.can_manage":                    {},
 	"list_of_speakers.can_be_speaker":    {"list_of_speakers.can_see"},
 	"list_of_speakers.can_manage":        {"list_of_speakers.can_see"},
 	"list_of_speakers.can_see":           {},

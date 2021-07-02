@@ -31,7 +31,7 @@ func (c *committee) read(ctx context.Context, userID int, fqfields []perm.FQFiel
 			return false, fmt.Errorf("getting organization level: %w", err)
 		}
 
-		if orgaLevel == "can_manage_organization" {
+		if orgaLevel == "can_manage_organization" || orgaLevel == "can_manage_users" {
 			return true, nil
 		}
 

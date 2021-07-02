@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
@@ -18,6 +19,7 @@ type dbAgendaItem struct {
 	IsHidden        bool   `json:"is_hidden"`
 	IsInternal      bool   `json:"is_internal"`
 	Depth           int    `json:"level"`
+	Weight          int    `json:"weight"`
 }
 
 func agendaItemFromMap(in map[string]json.RawMessage) (*dbAgendaItem, error) {
@@ -54,6 +56,7 @@ func agendaItemListFromMap(in map[string]json.RawMessage) (*dbAgendaItemList, er
 type outAgendaItem struct {
 	TitleInformation json.RawMessage `json:"title_information"`
 	Depth            int             `json:"depth"`
+	weight           int
 }
 
 // AgendaItem renders the agenda_item slide.
@@ -75,6 +78,7 @@ func AgendaItem(store *projector.SlideStore) {
 				"meeting_id",
 				"is_hidden",
 				"is_internal",
+				"weight",
 				"level",
 			},
 			p7on.ContentObjectID,
@@ -91,7 +95,7 @@ func AgendaItem(store *projector.SlideStore) {
 			return nil, nil, fmt.Errorf("no titler function registered for %s", collection)
 		}
 
-		titleInfo, err := titler.GetTitleInformation(ctx, fetch, agendaItem.ContentObjectID, agendaItem.ItemNumber)
+		titleInfo, err := titler.GetTitleInformation(ctx, fetch, agendaItem.ContentObjectID, agendaItem.ItemNumber, p7on.MeetingID)
 		if err != nil {
 			return nil, nil, fmt.Errorf("get title func: %w", err)
 		}
@@ -152,6 +156,7 @@ func AgendaItemList(store *projector.SlideStore) {
 					"is_hidden",
 					"is_internal",
 					"level",
+					"weight",
 				},
 				"agenda_item/%d",
 				aiID,
@@ -175,7 +180,7 @@ func AgendaItemList(store *projector.SlideStore) {
 				return nil, nil, fmt.Errorf("no titler function registered for %s", collection)
 			}
 
-			titleInfo, err := titler.GetTitleInformation(ctx, fetch, agendaItem.ContentObjectID, agendaItem.ItemNumber)
+			titleInfo, err := titler.GetTitleInformation(ctx, fetch, agendaItem.ContentObjectID, agendaItem.ItemNumber, p7on.MeetingID)
 			if err != nil {
 				return nil, nil, fmt.Errorf("get title func: %w", err)
 			}
@@ -185,9 +190,12 @@ func AgendaItemList(store *projector.SlideStore) {
 				outAgendaItem{
 					TitleInformation: titleInfo,
 					Depth:            agendaItem.Depth,
+					weight:           agendaItem.Weight,
 				},
 			)
 		}
+
+		sort.SliceStable(allAgendaItems, func(i, j int) bool { return allAgendaItems[i].weight < allAgendaItems[j].weight })
 
 		out := struct {
 			Items []outAgendaItem `json:"items"`

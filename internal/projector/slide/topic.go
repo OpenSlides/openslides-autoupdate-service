@@ -10,8 +10,10 @@ import (
 )
 
 type dbTopic struct {
-	ID    int    `json:"id"`
-	Title string `json:"title"`
+	ID           int    `json:"id"`
+	Title        string `json:"title"`
+	Text         string `json:"text"`
+	AgendaItemID int    `json:"agenda_item_id"`
 }
 
 func topicFromMap(in map[string]json.RawMessage) (*dbTopic, error) {
@@ -30,10 +32,51 @@ func topicFromMap(in map[string]json.RawMessage) (*dbTopic, error) {
 // Topic renders the topic slide.
 func Topic(store *projector.SlideStore) {
 	store.RegisterSliderFunc("topic", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		return []byte(`"TODO"`), nil, nil
+		fetch := datastore.NewFetcher(ds)
+		defer func() {
+			if err == nil {
+				err = fetch.Error()
+			}
+		}()
+
+		data := fetch.Object(
+			ctx,
+			[]string{
+				"id",
+				"title",
+				"text",
+				"agenda_item_id",
+			},
+			p7on.ContentObjectID,
+		)
+
+		topic, err := topicFromMap(data)
+		if err != nil {
+			return nil, nil, fmt.Errorf("get topic: %w", err)
+		}
+
+		var itemNumber string
+		if topic.AgendaItemID > 0 {
+			itemNumber = fetch.String(ctx, "agenda_item/%d/item_number", topic.AgendaItemID)
+		}
+		out := struct {
+			Title            string `json:"title"`
+			Text             string `json:"text"`
+			AgendaItemNumber string `json:"item_number"`
+		}{
+			Title:            topic.Title,
+			Text:             topic.Text,
+			AgendaItemNumber: itemNumber,
+		}
+
+		responseValue, err := json.Marshal(out)
+		if err != nil {
+			return nil, nil, fmt.Errorf("encoding response slide topic: %w", err)
+		}
+		return responseValue, fetch.Keys(), err
 	})
 
-	store.RegisterGetTitleInformationFunc("topic", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
+	store.RegisterGetTitleInformationFunc("topic", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string, meetingID int) (json.RawMessage, error) {
 		data := fetch.Object(ctx, []string{"id", "title"}, fqid)
 		topic, err := topicFromMap(data)
 		if err != nil {

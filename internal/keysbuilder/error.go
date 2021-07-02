@@ -86,6 +86,7 @@ func (e ValueError) Type() string {
 	return "ValueError"
 }
 
+// Unwrap returns the thrown error.
 func (e ValueError) Unwrap() error {
 	return e.err
 }

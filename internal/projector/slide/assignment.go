@@ -33,7 +33,7 @@ func Assignment(store *projector.SlideStore) {
 		return []byte(`"TODO"`), nil, nil
 	})
 
-	store.RegisterGetTitleInformationFunc("assignment", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
+	store.RegisterGetTitleInformationFunc("assignment", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string, meetingID int) (json.RawMessage, error) {
 		data := fetch.Object(ctx, []string{"id", "title"}, fqid)
 		assignment, err := assignmentFromMap(data)
 		if err != nil {
