@@ -49,7 +49,7 @@ func Mediafile(store *projector.SlideStore) {
 		return responseValue, fetch.Keys(), err
 	})
 
-	store.RegisterGetTitleInformationFunc("mediafile", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
+	store.RegisterGetTitleInformationFunc("mediafile", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string, meetingID int) (json.RawMessage, error) {
 		data := fetch.Object(ctx, []string{"id", "title"}, fqid)
 		mediafile, err := mediafileItemFromMap(data)
 		if err != nil {

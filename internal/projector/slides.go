@@ -15,7 +15,7 @@ type Slider interface {
 
 // Titler defines the interface for GetTitleInformation-function, used for individual objects.
 type Titler interface {
-	GetTitleInformation(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error)
+	GetTitleInformation(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string, meetingID int) (json.RawMessage, error)
 }
 
 // SliderFunc is a function that implements the Slider interface.
@@ -27,11 +27,11 @@ func (f SliderFunc) Slide(ctx context.Context, ds Datastore, p7on *Projection) (
 }
 
 // TitlerFunc is a type that implements the Titler interface.
-type TitlerFunc func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error)
+type TitlerFunc func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string, meetingID int) (json.RawMessage, error)
 
 // GetTitleInformation calls the func.
-func (f TitlerFunc) GetTitleInformation(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
-	return f(ctx, fetch, fqid, itemNumber)
+func (f TitlerFunc) GetTitleInformation(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string, meetingID int) (json.RawMessage, error) {
+	return f(ctx, fetch, fqid, itemNumber, meetingID)
 }
 
 // SlideStore holds the Slider- and Titler-functions by name.

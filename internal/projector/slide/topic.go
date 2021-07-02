@@ -76,7 +76,7 @@ func Topic(store *projector.SlideStore) {
 		return responseValue, fetch.Keys(), err
 	})
 
-	store.RegisterGetTitleInformationFunc("topic", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string) (json.RawMessage, error) {
+	store.RegisterGetTitleInformationFunc("topic", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string, meetingID int) (json.RawMessage, error) {
 		data := fetch.Object(ctx, []string{"id", "title"}, fqid)
 		topic, err := topicFromMap(data)
 		if err != nil {
