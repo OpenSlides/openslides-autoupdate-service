@@ -1,6 +1,5 @@
 ---
 db:
-  foo: bar
   agenda_item:
     1:
       is_hidden: false
