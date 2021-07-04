@@ -19,9 +19,9 @@ jobs:
 
     - name: Install cue
       run: go install cuelang.org/go/cmd/cue@latest
-    
-    - name: check yaml files
-      run: cue vet case_schema.cue */*.yml
 
     - name: Run with find for better output
       run: find -iname *.yml -exec echo {} \; -exec cue vet case_schema.cue {} \;
+    
+    - name: check yaml files
+      run: cue vet case_schema.cue */*.yml
