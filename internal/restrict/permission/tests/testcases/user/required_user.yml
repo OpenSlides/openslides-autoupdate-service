@@ -13,7 +13,7 @@ cases:
   cases:
   - name: anonymous
     user_id: 0
-    can_see:
+    can_see: []
 
   - name: can_see
     permission: list_of_speakers.can_see
@@ -33,7 +33,7 @@ cases:
   cases:
   - name: anonymous
     user_id: 0
-    can_see:
+    can_see: []
 
   - name: can_see
     permission: motion.can_see
@@ -62,7 +62,7 @@ cases:
   cases:
   - name: anonymous
     user_id: 0
-    can_see:
+    can_see: []
 
   - name: can_see
     permission: motion.can_see
@@ -89,7 +89,7 @@ cases:
   cases:
   - name: anonymous
     user_id: 0
-    can_see:
+    can_see: []
 
   - name: can_see
     permission: agenda_item.can_see
@@ -111,7 +111,7 @@ cases:
   cases:
   - name: anonymous
     user_id: 0
-    can_see:
+    can_see: []
 
   - name: can_see
     permission: assignment.can_see
@@ -130,7 +130,7 @@ cases:
   cases:
   - name: anonymous
     user_id: 0
-    can_see:
+    can_see: []
 
   - name: can_see
     permission: assignment.can_see
@@ -149,7 +149,7 @@ cases:
   cases:
   - name: anonymous
     user_id: 0
-    can_see:
+    can_see: []
 
   - name: can_see
     permission: projector.can_see
@@ -168,7 +168,7 @@ cases:
   cases:
   - name: anonymous
     user_id: 0
-    can_see:
+    can_see: []
 
   - name: can_see
     permission: projector.can_see
