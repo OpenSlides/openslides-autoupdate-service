@@ -1,0 +1,22 @@
+name: Permission YAML tests
+on: [pull_request]
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./internal/restrict/permission/tests/testcases/
+    
+    steps:
+    - name: Install cue
+      run: go install cuelang.org/go/cmd/cue@latest
+
+    - name: Check out code
+      uses: actions/checkout@v2.3.4
+    
+    - name: check yaml files
+      run: cue vet case_schema.cue */*.yml
+
+    - name: Run with find for better output
+      run: find -iname *.yml -exec echo {} \; -exec cue vet case_schema.cue {} \;
