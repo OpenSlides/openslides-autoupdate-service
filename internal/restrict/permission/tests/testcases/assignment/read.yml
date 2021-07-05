@@ -10,10 +10,10 @@ fqids:
 cases:
 - name: anonymous
   user_id: 0
-  can_see:
+  can_see: []
 
 - name: Without perm
-  can_see:
+  can_see: []
 
 - name: With perm
   permission: assignment.can_see

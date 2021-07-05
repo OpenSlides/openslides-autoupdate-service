@@ -24,10 +24,10 @@ fqids:
 - projector_message/2
 - projector_countdown/2
 
-casses:
+cases:
 - name: anonymous
   user_id: 0
-  can_see:
+  can_see: []
 
 - name: with_perm
   permission: projector.can_see
@@ -40,4 +40,4 @@ casses:
 
 
 - name: without_perm
-  can_see:
+  can_see: []

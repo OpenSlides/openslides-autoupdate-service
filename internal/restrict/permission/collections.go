@@ -19,6 +19,7 @@ func openSlidesCollections(dp dataprovider.DataProvider) []perm.Connecter {
 		collection.Committee(dp),
 
 		collection.Public(dp, "resource", "organization"),
+		collection.LoggedIn(dp, "organization_tag"),
 		collection.ReadInMeeting(dp, "tag", "group"),
 		collection.ReadPerm(dp, perm.AssignmentCanSee, "assignment", "assignment_candidate"),
 		collection.ReadPerm(dp, perm.AgendaItemCanSee, "topic"),

@@ -12,7 +12,7 @@ fqids:
 cases:
 - name: anonymous
   user_id: 0
-  can_see:
+  can_see: []
 
 - name: manager
   permission: mediafile.can_manage
@@ -26,4 +26,4 @@ cases:
   - mediafile/2
 
 - name: no_perm
-  can_see:
+  can_see: []

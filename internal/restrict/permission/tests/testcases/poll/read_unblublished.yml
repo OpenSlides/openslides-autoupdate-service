@@ -11,10 +11,10 @@ cases:
 
   cases:
     - name: anonymous
-      can_see:
+      can_see: []
 
     - name: no perms
-      can_see:
+      can_see: []
 
     - name: can_see
       permission: agenda_item.can_see
@@ -43,10 +43,10 @@ cases:
   cases:
   - name: anonymous
     user_id: 0  
-    can_see:
+    can_see: []
       
   - name: no perms
-    can_see:
+    can_see: []
 
   - name: can_see
     permission: agenda_item.can_see
@@ -79,18 +79,18 @@ cases:
   cases:
     - name: anonymous
       user_id: 0
-      can_see:
+      can_see: []
       
     - name: no perms
-      can_see:
+      can_see: []
 
     - name: no perms vote user
       user_id: 1
-      can_see:
+      can_see: []
 
     - name: can_see
       permission: agenda_item.can_see
-      can_see:
+      can_see: []
 
     - name: can_see vote user
       permission: agenda_item.can_see
