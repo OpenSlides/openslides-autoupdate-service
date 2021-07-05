@@ -150,8 +150,12 @@ func User(store *projector.SlideStore) {
 			return nil, fmt.Errorf("loading user: %w", err)
 		}
 		out := struct {
-			Username string `json:"username"`
+			Collection      string `json:"collection"`
+			ContentObjectID string `json:"content_object_id"`
+			Username        string `json:"username"`
 		}{
+			"user",
+			fqid,
 			user.UserRepresentation(meetingID),
 		}
 		responseValue, err := json.Marshal(out)
