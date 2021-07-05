@@ -17,7 +17,7 @@ type dbAssignment struct {
 	OpenPosts            int    `json:"open_posts"`
 	Description          string `json:"description"`
 	NumberPollCandidates bool   `json:"number_poll_candidates"`
-	CandidateIds         []int  `json:"candidate_ids"`
+	CandidateIDs         []int  `json:"candidate_ids"`
 }
 
 type dbAssignmentCandidate struct {
@@ -81,7 +81,7 @@ func Assignment(store *projector.SlideStore) {
 		}
 
 		var allUsers []*dbAssignmentCandidate
-		for _, ac := range assignment.CandidateIds {
+		for _, ac := range assignment.CandidateIDs {
 			data = fetch.Object(ctx, []string{"user_id", "weight"}, "assignment_candidate/%d", ac)
 			userWeight, err := assignmentCandidateFromMap(data)
 			if err != nil {
