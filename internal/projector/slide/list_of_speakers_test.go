@@ -208,21 +208,12 @@ func TestListOfSpeakers(t *testing.T) {
 	}
 }
 
-func TestCurrentListOfSpeakers(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-
-	s := new(projector.SlideStore)
-	slide.CurrentListOfSpeakers(s)
-
-	slide := s.GetSlider("current_list_of_speakers")
-	require.NotNilf(t, slide, "Slide with name `curent_list_of_speakers` not found.")
-
-	// This one is a bit compicated:
+func getDataForCurrentList() map[string]string {
+	// This one is a bit complicated and will be used
+	// for tests current_list_of_speakers and, slightly modified,
+	// for current_speaker_chyron
 	//
-	// The slide gets a projection object with id 1
-	// projection/1 points to projector/50
-	// projector/50 points to meeting/6
+	// The slide gets a contentObjectID of meeting/6
 	// meeting/6 has reference_projector 60
 	// projector/60 has projection/2
 	// projection/2 has	content_object_id topic/5
@@ -232,37 +223,47 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 	// user/10 has username jonny123
 	//
 	// lets find out if this username is on the slide-data...
-	data := dsmock.YAMLData(`
-	projection/1/current_projector_id: 50
-	projector/50/meeting_id: 6
-	meeting/6/reference_projector_id: 60
-	projector/60/current_projection_ids: [2]
-	projection/2/content_object_id: topic/5
+	return dsmock.YAMLData(`
+		meeting/6/reference_projector_id: 60
+		projector/60/current_projection_ids: [2]
+		projection/2/content_object_id: topic/5
 
-	topic/5:
-		list_of_speakers_id: 7
-		title: topic title
+		topic/5:
+			list_of_speakers_id: 7
+			title: topic title
 
-	list_of_speakers/7:
-		content_object_id:	topic/5
-		closed: 			true
-		speaker_ids: 		[8]
+		list_of_speakers/7:
+			content_object_id:	topic/5
+			closed: 			true
+			speaker_ids: 		[8]
 
-	speaker/8:
-			user_id:        10
-			marked:         false
-			point_of_order: false
-			weight:         10
+		speaker/8:
+				user_id:        10
+				marked:         false
+				point_of_order: false
+				weight:         10
 
-	user/10/username: jonny123
+		user/10/username: jonny123
 	`)
 
+}
+func TestCurrentListOfSpeakers(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+
+	s := new(projector.SlideStore)
+	slide.CurrentListOfSpeakers(s)
+
+	slide := s.GetSlider("current_list_of_speakers")
+	require.NotNilf(t, slide, "Slide with name `current_list_of_speakers` not found.")
+
+	data := getDataForCurrentList()
 	t.Run("Find list of speakers", func(t *testing.T) {
 		ds := dsmock.NewMockDatastore(closed, data)
 
 		p7on := &projector.Projection{
 			ID:              1,
-			ContentObjectID: "list_of_speakers/1",
+			ContentObjectID: "meeting/6",
 			Type:            "current_list_of_speakers",
 		}
 
@@ -286,8 +287,6 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 		`
 		assert.JSONEq(t, expect, string(bs))
 		expectKeys := []string{
-			"projection/1/current_projector_id",
-			"projector/50/meeting_id",
 			"meeting/6/reference_projector_id",
 			"projector/60/current_projection_ids",
 			"projection/2/content_object_id",
@@ -307,6 +306,79 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 			"user/10/first_name",
 			"user/10/last_name",
 			"user/10/default_structure_level",
+		}
+		assert.ElementsMatch(t, expectKeys, keys)
+	})
+}
+
+func TestCurrentSpeakerChyron(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+
+	s := new(projector.SlideStore)
+	slide.CurrentSpeakerChyron(s)
+
+	slide := s.GetSlider("current_speaker_chyron")
+	require.NotNilf(t, slide, "Slide with name `current_speaker_chyron` not found.")
+
+	data := getDataForCurrentList()
+	for k, v := range dsmock.YAMLData(`
+		speaker/8/begin_time: 100
+		speaker/8/end_time: 0
+
+		user/10:
+			title: Admiral
+			first_name: Don
+			last_name: Snyder
+			default_structure_level: GB
+			structure_level_$6: Dinner
+
+		projector/60:
+			chyron_background_color: green
+			chyron_font_color: red
+	`) {
+		data[k] = v
+	}
+
+	t.Run("current speaker chyron test", func(t *testing.T) {
+		ds := dsmock.NewMockDatastore(closed, data)
+
+		p7on := &projector.Projection{
+			ID:              1,
+			ContentObjectID: "meeting/6",
+			Type:            "current_speaker_chyron",
+		}
+
+		bs, keys, err := slide.Slide(context.Background(), ds, p7on)
+
+		assert.NoError(t, err)
+		expect := `{
+			"background_color": "green",
+			"font_color": "red",
+			"current_speaker_name": "Admiral Don Snyder",
+			"current_speaker_level": "Dinner"
+		}
+		`
+		assert.JSONEq(t, expect, string(bs))
+		expectKeys := []string{
+			"meeting/6/reference_projector_id",
+			"projector/60/current_projection_ids",
+			"projector/60/chyron_background_color",
+			"projector/60/chyron_font_color",
+			"projection/2/content_object_id",
+			"topic/5/list_of_speakers_id",
+			"list_of_speakers/7/speaker_ids",
+			"list_of_speakers/7/content_object_id",
+			"list_of_speakers/7/closed",
+			"speaker/8/user_id",
+			"speaker/8/begin_time",
+			"speaker/8/end_time",
+			"user/10/username",
+			"user/10/title",
+			"user/10/first_name",
+			"user/10/last_name",
+			"user/10/default_structure_level",
+			"user/10/structure_level_$6",
 		}
 		assert.ElementsMatch(t, expectKeys, keys)
 	})

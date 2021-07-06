@@ -127,13 +127,16 @@ func (p *Projection) exists() bool {
 	return p.Type != "" || p.ContentObjectID != ""
 }
 
+// slideName extracts the name from Projection.
+// Only collection meeting from ContentObjectID can be used with type
 func (p *Projection) slideName() (string, error) {
-	if p.Type != "" {
-		return p.Type, nil
-	}
-	i := strings.Index(p.ContentObjectID, "/")
-	if i == -1 {
+	parts := strings.Split(p.ContentObjectID, "/")
+	if len(parts) != 2 {
 		return "", fmt.Errorf("invalid content_object_id `%s`, expected one '/'", p.ContentObjectID)
 	}
-	return p.ContentObjectID[:i], nil
+
+	if p.Type != "" && parts[0] == "meeting" {
+		return p.Type, nil
+	}
+	return parts[0], nil
 }
