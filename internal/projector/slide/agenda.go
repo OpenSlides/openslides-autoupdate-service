@@ -36,7 +36,7 @@ func agendaItemFromMap(in map[string]json.RawMessage) (*dbAgendaItem, error) {
 }
 
 type dbAgendaItemList struct {
-	AgendaItemIds      []int `json:"agenda_item_ids"`
+	AgendaItemIDs      []int `json:"agenda_item_ids"`
 	AgendaShowInternal bool  `json:"agenda_show_internal_items_on_projector"`
 }
 
@@ -145,7 +145,7 @@ func AgendaItemList(store *projector.SlideStore) {
 			}
 		}
 		var allAgendaItems []outAgendaItem
-		for _, aiID := range agendaItemList.AgendaItemIds {
+		for _, aiID := range agendaItemList.AgendaItemIDs {
 			data = fetch.Object(
 				ctx,
 				[]string{
