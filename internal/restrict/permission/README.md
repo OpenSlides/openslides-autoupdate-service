@@ -20,23 +20,8 @@ is used for testing.
 
 Each file is a test-case object.
 
-Reading FQFields: To test whether the user can see FQFields or not.
-
-  * `fqfields`: A list of fields to be tested.
-
-  * `fqids`: List of fqids. Adds all fields of the objects to the fqfields
-    attribute.
-
-  * `can_see`: A list of fields that the user is expected to see. Omit fields
-    that the user can not see.
-
-  * `can_not_see`: A shortcut for saying `can_see` everything from `fqfields`
-    expect thes once.
-
-Both types can be combined.
-
-Each test case object can have the following additional keywords to define the
-test parameters:
+Each test case object can have the following keywords to define the test
+parameters:
 
 * `name`: Name of the test case. It is shown if the test fails.
 
@@ -59,6 +44,11 @@ test parameters:
         name: Yellow
 ```
 
+* `fqfields`: A list of fields to be tested.
+
+* `fqids`: List of fqids. Adds all fields of the objects to the fqfields
+  attribute.
+
 * `user_id`: ID of the user that is used for the test. If the user does not
   exist, it is created. The value 0 means anonymous user. Default is 1337.
 
@@ -69,6 +59,12 @@ test parameters:
   created that has only the test user and this permission. If the test user is
   in other groups, he could also have other permissions. This field is ignored
   for anonymous user. The default is no permission.
+
+* `can_see`: A list of fields that the user is expected to see. Omit fields
+  that the user can not see.
+
+* `can_not_see`: A shortcut for saying `can_see` everything from `fqfields`
+  expect thes once.
 
 * `cases`: A list of sub test cases. Each sub test case can have the mentioned
   keywords.
