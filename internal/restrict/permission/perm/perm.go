@@ -129,6 +129,10 @@ func (p *Permission) IsAdmin() bool {
 
 // InGroup returns true, if the user is in the given group (by group_id).
 func (p *Permission) InGroup(gid int) bool {
+	if p == nil {
+		return false
+	}
+	
 	for _, id := range p.groupIDs {
 		if id == gid {
 			return true
