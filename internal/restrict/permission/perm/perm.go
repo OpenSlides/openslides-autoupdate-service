@@ -132,7 +132,7 @@ func (p *Permission) InGroup(gid int) bool {
 	if p == nil {
 		return false
 	}
-	
+
 	for _, id := range p.groupIDs {
 		if id == gid {
 			return true
