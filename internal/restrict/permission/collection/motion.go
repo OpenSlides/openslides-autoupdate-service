@@ -208,6 +208,10 @@ func (m *motion) canSeeCommentSection(ctx context.Context, userID, id int) (bool
 		return false, fmt.Errorf("getting user permissions: %w", err)
 	}
 
+	if !perms.Has(perm.MotionCanSee) {
+		return false, nil
+	}
+
 	if perms.Has(perm.MotionCanManage) {
 		return true, nil
 	}
