@@ -128,7 +128,8 @@ func (p *Projection) exists() bool {
 }
 
 // slideName extracts the name from Projection.
-// Only collection meeting from ContentObjectID can be used with type
+// Using Type as slideName is only possible together with collection meeting,
+// otherwise use always collection.
 func (p *Projection) slideName() (string, error) {
 	parts := strings.Split(p.ContentObjectID, "/")
 	if len(parts) != 2 {

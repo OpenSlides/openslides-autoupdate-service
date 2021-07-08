@@ -175,15 +175,15 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 	return b, fetch.Keys(), nil
 }
 
-// get_losID determines the losID and first current_projection of the reference_projector
+// getLosID determines the losID and first current_projection of the reference_projector.
 func getLosID(ctx context.Context, ContentObjectID string, fetch *datastore.Fetcher) (losID int, referenceProjectorID int, err error) {
 	parts := strings.Split(ContentObjectID, "/")
 	if len(parts) != 2 || parts[0] != "meeting" {
-		return losID, referenceProjectorID, fmt.Errorf("invalid Content_objectID %s. Expected a meeting-objectID", ContentObjectID)
+		return losID, referenceProjectorID, fmt.Errorf("invalid ContentObjectID %s. Expected a meeting-objectID", ContentObjectID)
 	}
 	meetingID, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return losID, referenceProjectorID, fmt.Errorf("invalid Content_objectID %s. Expected a numeric meeting_id", ContentObjectID)
+		return losID, referenceProjectorID, fmt.Errorf("invalid ContentObjectID %s. Expected a numeric meeting_id", ContentObjectID)
 	}
 	referenceProjectorID = fetch.Int(ctx, "meeting/%d/reference_projector_id", meetingID)
 	referenceP7onIDs := fetch.Ints(ctx, "projector/%d/current_projection_ids", referenceProjectorID)
@@ -234,7 +234,7 @@ func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID 
 	data := fetch.Object(ctx, []string{"speaker_ids", "content_object_id", "closed"}, "list_of_speakers/%d", losID)
 	los, err := losFromMap(data)
 	if err != nil {
-		return shortName, structureLevel, fmt.Errorf("loading list of speakers: %w", err)
+		return "", "", fmt.Errorf("loading list of speakers: %w", err)
 	}
 
 	fields := []string{
@@ -246,7 +246,7 @@ func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID 
 	for _, id := range los.SpeakerIDs {
 		speaker, err := speakerFromMap(fetch.Object(ctx, fields, "speaker/%d", id))
 		if err != nil {
-			return shortName, structureLevel, fmt.Errorf("loading speaker: %w", err)
+			return "", "", fmt.Errorf("loading speaker: %w", err)
 		}
 
 		if speaker.BeginTime == 0 || (speaker.BeginTime != 0 && speaker.EndTime != 0) {
@@ -255,7 +255,7 @@ func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID 
 
 		user, err := newUser(ctx, fetch, speaker.UserID, meetingID)
 		if err != nil {
-			return shortName, structureLevel, fmt.Errorf("getting newUser: %w", err)
+			return "", "", fmt.Errorf("getting newUser: %w", err)
 		}
 		return user.UserShortName(), user.UserStructureLevel(meetingID), nil
 	}
@@ -276,7 +276,10 @@ func CurrentSpeakerChyron(store *projector.SlideStore) {
 		if err != nil {
 			return nil, nil, fmt.Errorf("error in getLosID: %w", err)
 		}
-		meetingID, _ := strconv.Atoi(strings.Split(p7on.ContentObjectID, "/")[1])
+		meetingID, err := strconv.Atoi(strings.Split(p7on.ContentObjectID, "/")[1])
+		if err != nil {
+			return nil, nil, fmt.Errorf("error in Atoi with ContentObjectID: %w", err)
+		}
 
 		data := fetch.Object(ctx, []string{"chyron_background_color", "chyron_font_color"}, "projector/%d", projectorID)
 		projector, err := chyronProjectorFromMap(data)
