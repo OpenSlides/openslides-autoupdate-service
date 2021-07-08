@@ -144,7 +144,11 @@ func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 				errHandler(fmt.Errorf("calculate key %s: %w", key, err))
 				continue
 			}
+
+			// Update the cache and also update the data-map. The data-map is
+			// used later in this function to inform the changeListeners.
 			d.cache.Set(key, bs)
+			data[key] = bs
 		}
 
 		for _, f := range d.changeListeners {
