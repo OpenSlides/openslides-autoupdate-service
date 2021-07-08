@@ -147,7 +147,7 @@ func AgendaItemList(store *projector.SlideStore) {
 				return nil, nil, fmt.Errorf("decoding projection options: %w", err)
 			}
 		}
-		var allAgendaItems []outAgendaItem
+		var allAgendaItems []*outAgendaItem
 		for _, aiID := range agendaItemList.AgendaItemIDs {
 			data = fetch.Object(
 				ctx,
@@ -191,7 +191,7 @@ func AgendaItemList(store *projector.SlideStore) {
 
 			allAgendaItems = append(
 				allAgendaItems,
-				outAgendaItem{
+				&outAgendaItem{
 					TitleInformation: titleInfo,
 					Depth:            agendaItem.Depth,
 					weight:           agendaItem.Weight,
@@ -201,7 +201,7 @@ func AgendaItemList(store *projector.SlideStore) {
 			)
 		}
 
-		sort.SliceStable(allAgendaItems, func(i, j int) bool {
+		sort.Slice(allAgendaItems, func(i, j int) bool {
 			// sort by parent is not necessary, but helps to understand
 			if allAgendaItems[i].parent == allAgendaItems[j].parent {
 				if allAgendaItems[i].weight == allAgendaItems[j].weight {
@@ -213,7 +213,7 @@ func AgendaItemList(store *projector.SlideStore) {
 		})
 
 		out := struct {
-			Items []outAgendaItem `json:"items"`
+			Items []*outAgendaItem `json:"items"`
 		}{getFlatTree(allAgendaItems)}
 
 		responseValue, err := json.Marshal(out)
@@ -224,15 +224,17 @@ func AgendaItemList(store *projector.SlideStore) {
 	})
 }
 
-func getFlatTree(allAgendaItems []outAgendaItem) []outAgendaItem {
+// getFlatTree expects the allAgendaItems to be sorted in preorder,
+// see https://en.wikipedia.org/wiki/Tree_traversal#Pre-order.
+func getFlatTree(allAgendaItems []*outAgendaItem) []*outAgendaItem {
 	children := make(map[int][]int)
-	allItemMap := make(map[int]outAgendaItem)
+	allItemMap := make(map[int]*outAgendaItem)
 	for _, item := range allAgendaItems {
 		children[item.parent] = append(children[item.parent], item.id)
 		allItemMap[item.id] = item
 	}
 
-	flatTree := make([]outAgendaItem, 0, len(allAgendaItems))
+	flatTree := make([]*outAgendaItem, 0, len(allAgendaItems))
 	var buildTree func(itemIDS []int, depth int)
 	buildTree = func(itemIDS []int, depth int) {
 		for _, itemID := range itemIDS {
