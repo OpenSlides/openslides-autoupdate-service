@@ -35,7 +35,7 @@ const (
 	// TODO: This should be a high value, for example time.Hour. It is only a
 	// smal value, so it happens more often in development and we might find
 	// some bugs.
-	datastoreCacheResetTime = 10 * time.Second
+	datastoreCacheResetTime = 24 * time.Hour
 )
 
 // Format of keys in the topic that shows, that a full update is necessary. It
