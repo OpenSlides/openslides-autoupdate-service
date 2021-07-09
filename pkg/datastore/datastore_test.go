@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -188,6 +189,7 @@ func TestCalculatedFieldsNoDBQuery(t *testing.T) {
 	require.NoError(t, err, "Get returned unexpected error")
 	require.Equal(t, 0, ts.RequestCount)
 }
+
 func TestChangeListeners(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
@@ -207,6 +209,39 @@ func TestChangeListeners(t *testing.T) {
 
 	<-received
 	assert.Equal(t, map[string]json.RawMessage{"my/1/key": []byte(`"my value"`)}, receivedData)
+}
+
+func TestChangeListenersWithCalculatedFields(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+	ts := dsmock.NewDatastoreServer(closed, nil)
+	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+
+	var callCounter int
+	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
+		callCounter++
+		return []byte("foobar" + strconv.Itoa(callCounter)), nil
+	})
+
+	// Load calculated field in cache.
+	ds.Get(context.Background(), "collection/1/myfield")
+
+	var receivedData map[string]json.RawMessage
+	received := make(chan struct{}, 1)
+
+	ds.RegisterChangeListener(func(data map[string]json.RawMessage) error {
+		receivedData = data
+		close(received)
+		return nil
+	})
+
+	ts.Send(map[string]string{"my/1/key": `"my value"`})
+
+	<-received
+	assert.Equal(t, map[string]json.RawMessage{
+		"my/1/key":             []byte(`"my value"`),
+		"collection/1/myfield": []byte("foobar2"),
+	}, receivedData)
 }
 
 func TestResetCache(t *testing.T) {
