@@ -20,6 +20,7 @@ type dbAgendaItem struct {
 	IsInternal      bool   `json:"is_internal"`
 	Depth           int    `json:"level"`
 	Weight          int    `json:"weight"`
+	ParentID        int    `json:"parent_id"`
 }
 
 func agendaItemFromMap(in map[string]json.RawMessage) (*dbAgendaItem, error) {
@@ -57,6 +58,8 @@ type outAgendaItem struct {
 	TitleInformation json.RawMessage `json:"title_information"`
 	Depth            int             `json:"depth"`
 	weight           int
+	parent           int
+	id               int
 }
 
 // AgendaItem renders the agenda_item slide.
@@ -144,7 +147,7 @@ func AgendaItemList(store *projector.SlideStore) {
 				return nil, nil, fmt.Errorf("decoding projection options: %w", err)
 			}
 		}
-		var allAgendaItems []outAgendaItem
+		var allAgendaItems []*outAgendaItem
 		for _, aiID := range agendaItemList.AgendaItemIDs {
 			data = fetch.Object(
 				ctx,
@@ -157,6 +160,7 @@ func AgendaItemList(store *projector.SlideStore) {
 					"is_internal",
 					"level",
 					"weight",
+					"parent_id",
 				},
 				"agenda_item/%d",
 				aiID,
@@ -187,21 +191,30 @@ func AgendaItemList(store *projector.SlideStore) {
 
 			allAgendaItems = append(
 				allAgendaItems,
-				outAgendaItem{
+				&outAgendaItem{
 					TitleInformation: titleInfo,
 					Depth:            agendaItem.Depth,
 					weight:           agendaItem.Weight,
+					parent:           agendaItem.ParentID,
+					id:               agendaItem.ID,
 				},
 			)
 		}
 
-		sort.SliceStable(allAgendaItems, func(i, j int) bool { return allAgendaItems[i].weight < allAgendaItems[j].weight })
+		sort.Slice(allAgendaItems, func(i, j int) bool {
+			// sort by parent is not necessary, but helps to understand
+			if allAgendaItems[i].parent == allAgendaItems[j].parent {
+				if allAgendaItems[i].weight == allAgendaItems[j].weight {
+					return allAgendaItems[i].id < allAgendaItems[j].id
+				}
+				return allAgendaItems[i].weight < allAgendaItems[j].weight
+			}
+			return allAgendaItems[i].parent < allAgendaItems[j].parent
+		})
 
 		out := struct {
-			Items []outAgendaItem `json:"items"`
-		}{
-			allAgendaItems,
-		}
+			Items []*outAgendaItem `json:"items"`
+		}{getFlatTree(allAgendaItems)}
 
 		responseValue, err := json.Marshal(out)
 		if err != nil {
@@ -209,4 +222,28 @@ func AgendaItemList(store *projector.SlideStore) {
 		}
 		return responseValue, fetch.Keys(), err
 	})
+}
+
+// getFlatTree expects the allAgendaItems to be sorted in preorder,
+// see https://en.wikipedia.org/wiki/Tree_traversal#Pre-order.
+func getFlatTree(allAgendaItems []*outAgendaItem) []*outAgendaItem {
+	children := make(map[int][]int)
+	allItemMap := make(map[int]*outAgendaItem)
+	for _, item := range allAgendaItems {
+		children[item.parent] = append(children[item.parent], item.id)
+		allItemMap[item.id] = item
+	}
+
+	flatTree := make([]*outAgendaItem, 0, len(allAgendaItems))
+	var buildTree func(itemIDS []int, depth int)
+	buildTree = func(itemIDS []int, depth int) {
+		for _, itemID := range itemIDS {
+			item := allItemMap[itemID]
+			item.Depth = depth
+			flatTree = append(flatTree, item)
+			buildTree(children[itemID], depth+1)
+		}
+	}
+	buildTree(children[0], 0)
+	return flatTree
 }

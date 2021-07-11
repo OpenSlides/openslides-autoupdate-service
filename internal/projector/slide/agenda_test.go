@@ -156,6 +156,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				"agenda_item/1/is_internal",
 				"agenda_item/1/level",
 				"agenda_item/1/weight",
+				"agenda_item/1/parent_id",
 				"topic/1/id",
 				"topic/1/title",
 				"agenda_item/2/id",
@@ -166,6 +167,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				"agenda_item/2/is_internal",
 				"agenda_item/2/level",
 				"agenda_item/2/weight",
+				"agenda_item/2/parent_id",
 				"motion/1/id",
 				"motion/1/number",
 				"motion/1/title",
@@ -177,6 +179,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				"agenda_item/3/is_internal",
 				"agenda_item/3/level",
 				"agenda_item/3/weight",
+				"agenda_item/3/parent_id",
 				"motion_block/1/id",
 				"motion_block/1/title",
 				"agenda_item/4/id",
@@ -187,6 +190,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				"agenda_item/4/is_internal",
 				"agenda_item/4/level",
 				"agenda_item/4/weight",
+				"agenda_item/4/parent_id",
 				"assignment/1/id",
 				"assignment/1/title",
 				"agenda_item/5/id",
@@ -197,6 +201,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				"agenda_item/5/is_internal",
 				"agenda_item/5/level",
 				"agenda_item/5/weight",
+				"agenda_item/5/parent_id",
 				"agenda_item/6/id",
 				"agenda_item/6/item_number",
 				"agenda_item/6/content_object_id",
@@ -205,6 +210,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				"agenda_item/6/is_internal",
 				"agenda_item/6/level",
 				"agenda_item/6/weight",
+				"agenda_item/6/parent_id",
 				"agenda_item/7/id",
 				"agenda_item/7/item_number",
 				"agenda_item/7/content_object_id",
@@ -213,6 +219,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				"agenda_item/7/is_internal",
 				"agenda_item/7/level",
 				"agenda_item/7/weight",
+				"agenda_item/7/parent_id",
 			},
 		},
 	} {
@@ -236,6 +243,8 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 	}
 }
 
+// TestAgendaItemListWithDepthItems tests the sorting and delivery
+// with weights per level
 func TestAgendaItemListWithDepthItems(t *testing.T) {
 	s := new(projector.SlideStore)
 	slide.AgendaItemList(s)
@@ -248,16 +257,79 @@ func TestAgendaItemListWithDepthItems(t *testing.T) {
 	meeting:
 		1:
 			agenda_show_internal_items_on_projector: false
-			agenda_item_ids: [1]
+			agenda_item_ids: [1, 2, 3 ,4 ,5, 6, 7, 8]
 	agenda_item:
 		1:
 			item_number: Ino1
 			content_object_id: topic/1
 			meeting_id: 1
-			is_hidden: false
-			is_internal: false
+			level: 0
+			weight: 2
+			child_ids: [2, 3]
+		2:
+			item_number: Ino1.1
+			content_object_id: topic/2
+			meeting_id: 1
+			level: 1
+			weight: 3
+			parent_id: 1
+			child_ids: [4, 5]
+		3:
+			item_number: Ino1.2
+			content_object_id: topic/3
+			meeting_id: 1
+			level: 1
+			weight: 4
+			parent_id: 1
+			child_ids: []
+		4:
+			item_number: Ino1.1.1
+			content_object_id: topic/4
+			meeting_id: 1
+			level: 3
+			parent_id: 2
+			child_ids: []
+		5:
+			item_number: Ino1.1.2
+			content_object_id: topic/5
+			meeting_id: 1
 			level: 2
+			parent_id: 2
+			child_ids: []
+		6:
+			item_number: Ino2
+			content_object_id: topic/6
+			meeting_id: 1
+			level: 0
+			weight: 3
+			parent_id: 0
+			child_ids: [7]
+		7:
+			item_number: Ino2.1
+			content_object_id: topic/7
+			meeting_id: 1
+			level: 1
+			weight: 4
+			parent_id: 6
+			child_ids: [8]
+		8:
+			item_number: Ino2.1.1
+			content_object_id: topic/8
+			meeting_id: 1
+			level: 2
+			weight: 5
+			parent_id: 7
+			child_ids: []
+
 	topic/1/title: topic title 1
+	topic/2/title: topic title 1.1
+	topic/3/title: topic title 1.2
+	topic/4/title: topic title 1.1.1
+	topic/5/title: topic title 1.1.2
+	topic/6/title: topic title 2
+	topic/7/title: topic title 2.1
+	topic/8/title: topic title 2.1.1
+
     `)
 
 	for _, tt := range []struct {
@@ -272,12 +344,75 @@ func TestAgendaItemListWithDepthItems(t *testing.T) {
 			`{
 				"items": [
 					{
-						"depth": 2,
+						"depth": 0,
 						"title_information": {
 							"collection": "topic",
 							"agenda_item_number": "Ino1",
 							"content_object_id": "topic/1",
 							"title": "topic title 1"
+					    }
+					},
+					{
+						"depth": 1,
+						"title_information": {
+							"collection": "topic",
+							"agenda_item_number": "Ino1.1",
+							"content_object_id": "topic/2",
+							"title": "topic title 1.1"
+					    }
+					},
+					{
+						"depth": 2,
+						"title_information": {
+							"collection": "topic",
+							"agenda_item_number": "Ino1.1.1",
+							"content_object_id": "topic/4",
+							"title": "topic title 1.1.1"
+					    }
+					},
+					{
+						"depth": 2,
+						"title_information": {
+							"collection": "topic",
+							"agenda_item_number": "Ino1.1.2",
+							"content_object_id": "topic/5",
+							"title": "topic title 1.1.2"
+					    }
+					},
+					{
+						"depth": 1,
+						"title_information": {
+							"collection": "topic",
+							"agenda_item_number": "Ino1.2",
+							"content_object_id": "topic/3",
+							"title": "topic title 1.2"
+					    }
+					},
+					{
+						"depth": 0,
+						"title_information": {
+							"collection": "topic",
+							"agenda_item_number": "Ino2",
+							"content_object_id": "topic/6",
+							"title": "topic title 2"
+					    }
+					},
+					{
+						"depth": 1,
+						"title_information": {
+							"collection": "topic",
+							"agenda_item_number": "Ino2.1",
+							"content_object_id": "topic/7",
+							"title": "topic title 2.1"
+					    }
+					},
+					{
+						"depth": 2,
+						"title_information": {
+							"collection": "topic",
+							"agenda_item_number": "Ino2.1.1",
+							"content_object_id": "topic/8",
+							"title": "topic title 2.1.1"
 					    }
 					}
 				]
@@ -294,8 +429,86 @@ func TestAgendaItemListWithDepthItems(t *testing.T) {
 				"agenda_item/1/is_internal",
 				"agenda_item/1/level",
 				"agenda_item/1/weight",
+				"agenda_item/1/parent_id",
 				"topic/1/id",
 				"topic/1/title",
+				"agenda_item/2/id",
+				"agenda_item/2/item_number",
+				"agenda_item/2/content_object_id",
+				"agenda_item/2/meeting_id",
+				"agenda_item/2/is_hidden",
+				"agenda_item/2/is_internal",
+				"agenda_item/2/level",
+				"agenda_item/2/weight",
+				"agenda_item/2/parent_id",
+				"topic/2/id",
+				"topic/2/title",
+				"agenda_item/3/id",
+				"agenda_item/3/item_number",
+				"agenda_item/3/content_object_id",
+				"agenda_item/3/meeting_id",
+				"agenda_item/3/is_hidden",
+				"agenda_item/3/is_internal",
+				"agenda_item/3/level",
+				"agenda_item/3/weight",
+				"agenda_item/3/parent_id",
+				"topic/3/id",
+				"topic/3/title",
+				"agenda_item/4/id",
+				"agenda_item/4/item_number",
+				"agenda_item/4/content_object_id",
+				"agenda_item/4/meeting_id",
+				"agenda_item/4/is_hidden",
+				"agenda_item/4/is_internal",
+				"agenda_item/4/level",
+				"agenda_item/4/weight",
+				"agenda_item/4/parent_id",
+				"topic/4/id",
+				"topic/4/title",
+				"agenda_item/5/id",
+				"agenda_item/5/item_number",
+				"agenda_item/5/content_object_id",
+				"agenda_item/5/meeting_id",
+				"agenda_item/5/is_hidden",
+				"agenda_item/5/is_internal",
+				"agenda_item/5/level",
+				"agenda_item/5/weight",
+				"agenda_item/5/parent_id",
+				"topic/5/id",
+				"topic/5/title",
+				"agenda_item/6/id",
+				"agenda_item/6/item_number",
+				"agenda_item/6/content_object_id",
+				"agenda_item/6/meeting_id",
+				"agenda_item/6/is_hidden",
+				"agenda_item/6/is_internal",
+				"agenda_item/6/level",
+				"agenda_item/6/weight",
+				"agenda_item/6/parent_id",
+				"topic/6/id",
+				"topic/6/title",
+				"agenda_item/7/id",
+				"agenda_item/7/item_number",
+				"agenda_item/7/content_object_id",
+				"agenda_item/7/meeting_id",
+				"agenda_item/7/is_hidden",
+				"agenda_item/7/is_internal",
+				"agenda_item/7/level",
+				"agenda_item/7/weight",
+				"agenda_item/7/parent_id",
+				"topic/7/id",
+				"topic/7/title",
+				"agenda_item/8/id",
+				"agenda_item/8/item_number",
+				"agenda_item/8/content_object_id",
+				"agenda_item/8/meeting_id",
+				"agenda_item/8/is_hidden",
+				"agenda_item/8/is_internal",
+				"agenda_item/8/level",
+				"agenda_item/8/weight",
+				"agenda_item/8/parent_id",
+				"topic/8/id",
+				"topic/8/title",
 			},
 		},
 	} {
