@@ -30,7 +30,7 @@ func TestPoll(t *testing.T) {
 	        global_yes: false
 	        global_no: true
 	        global_abstain: false
-	        option_ids: [1]
+	        option_ids: [1, 2]
 	        is_pseudoanonymized: false
 	        pollmethod: YNA
 	        onehundred_percent_base: YNA
@@ -38,7 +38,7 @@ func TestPoll(t *testing.T) {
 	        votesvalid: 2.000000
 	        votesinvalid: 9.000000
 	        votescast: 2.000000
-	        global_option_id: 2
+	        global_option_id: 3
 	        meeting_id: 111
 	motion:
 	    1:
@@ -51,7 +51,15 @@ func TestPoll(t *testing.T) {
 	        yes: 4.000000
 	        no: 5.000000
 	        abstain: 6.000000
+	        weight: 10
 	    2:
+	        text: Option text
+	        content_object_id: topic/2
+	        yes: 5.000000
+	        no: 4.000000
+	        abstain: 3.000000
+	        weight: 3
+	    3:
 	        yes: 14.000000
 	        no: 15.000000
 	        abstain: 16.000000
@@ -59,6 +67,9 @@ func TestPoll(t *testing.T) {
 	    1:
 	        title: Topic title 1
 	        text: Topic text 1
+	    2:
+	        title: Topic title 2
+	        text: Topic text 2
 	`)
 
 	for _, tt := range []struct {
@@ -87,19 +98,34 @@ func TestPoll(t *testing.T) {
                 "global_yes":false,
                 "global_no":true,
                 "global_abstain":false,
-                "options": [{
-                    "content_object_id":"topic/1",
-                    "text":"Option text",
-                    "content_object":{
-                        "content_object_id":"topic/1",
-                        "collection":"topic",
-                        "title":"Topic title 1",
-                        "agenda_item_number":""
+                "options": [
+                    {
+                        "content_object_id":"topic/2",
+                        "text":"Option text",
+                        "content_object":{
+                            "content_object_id":"topic/2",
+                            "collection":"topic",
+                            "title":"Topic title 2",
+                            "agenda_item_number":""
+                        },
+                        "yes":5,
+                        "no":4,
+                        "abstain":3
                     },
-                    "yes":4,
-                    "no":5,
-                    "abstain":6
-                }],
+                    {
+                        "content_object_id":"topic/1",
+                        "text":"Option text",
+                        "content_object":{
+                            "content_object_id":"topic/1",
+                            "collection":"topic",
+                            "title":"Topic title 1",
+                            "agenda_item_number":""
+                        },
+                        "yes":4,
+                        "no":5,
+                        "abstain":6
+                    }
+                ],
                 "is_pseudoanonymized":false,
                 "pollmethod":"YNA",
                 "onehundred_percent_base":"YNA",
@@ -138,16 +164,27 @@ func TestPoll(t *testing.T) {
 				"motion/1/id",
 				"motion/1/number",
 				"motion/1/title",
+				"option/1/id",
 				"option/1/text",
 				"option/1/content_object_id",
 				"option/1/yes",
 				"option/1/no",
 				"option/1/abstain",
+				"option/1/weight",
+				"option/2/id",
+				"option/2/text",
+				"option/2/content_object_id",
 				"option/2/yes",
 				"option/2/no",
 				"option/2/abstain",
+				"option/2/weight",
+				"option/3/yes",
+				"option/3/no",
+				"option/3/abstain",
 				"topic/1/id",
 				"topic/1/title",
+				"topic/2/id",
+				"topic/2/title",
 			},
 		},
 		{
@@ -172,16 +209,28 @@ func TestPoll(t *testing.T) {
                 "global_yes":false,
                 "global_no":true,
                 "global_abstain":false,
-                "options": [{
-                    "content_object_id":"topic/1",
-                    "text":"Option text",
-                     "content_object":{
+                "options": [
+                    {
+                        "content_object_id":"topic/2",
+                        "text":"Option text",
+                        "content_object":{
+                            "content_object_id":"topic/2",
+                            "collection":"topic",
+                            "title":"Topic title 2",
+                            "agenda_item_number":""
+                        }
+                    },
+                    {
                         "content_object_id":"topic/1",
-                        "collection":"topic",
-                        "title":"Topic title 1",
-                        "agenda_item_number":""
+                        "text":"Option text",
+                        "content_object":{
+                            "content_object_id":"topic/1",
+                            "collection":"topic",
+                            "title":"Topic title 1",
+                            "agenda_item_number":""
+                        }
                     }
-                }]
+                ]
             }
             `,
 			[]string{
@@ -200,10 +249,18 @@ func TestPoll(t *testing.T) {
 				"motion/1/id",
 				"motion/1/number",
 				"motion/1/title",
+				"option/1/id",
+				"option/1/weight",
 				"option/1/text",
 				"option/1/content_object_id",
+				"option/2/id",
+				"option/2/weight",
+				"option/2/text",
+				"option/2/content_object_id",
 				"topic/1/id",
 				"topic/1/title",
+				"topic/2/id",
+				"topic/2/title",
 			},
 		},
 	} {

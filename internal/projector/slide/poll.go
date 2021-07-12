@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
@@ -17,6 +18,8 @@ type optionRepr struct {
 	Yes             *float64        `json:"yes,omitempty"`
 	No              *float64        `json:"no,omitempty"`
 	Abstain         *float64        `json:"abstain,omitempty"`
+	id              *int
+	weight          *int
 }
 
 func optionFromMap(in map[string]json.RawMessage) (*optionRepr, error) {
@@ -28,6 +31,12 @@ func optionFromMap(in map[string]json.RawMessage) (*optionRepr, error) {
 	var or optionRepr
 	if err := json.Unmarshal(bs, &or); err != nil {
 		return nil, fmt.Errorf("decoding option data: %w", err)
+	}
+	if err := json.Unmarshal(in["weight"], &or.weight); err != nil {
+		return nil, fmt.Errorf("decoding option weight: %w", err)
+	}
+	if err := json.Unmarshal(in["id"], &or.id); err != nil {
+		return nil, fmt.Errorf("decoding option id: %w", err)
 	}
 	return &or, nil
 }
@@ -170,6 +179,8 @@ func getOptions(ctx context.Context, fetch *datastore.Fetcher, store *projector.
 	fetchFields := []string{
 		"text",
 		"content_object_id",
+		"weight",
+		"id",
 	}
 	if state == "published" {
 		fetchFields = append(fetchFields, []string{
@@ -189,9 +200,15 @@ func getOptions(ctx context.Context, fetch *datastore.Fetcher, store *projector.
 		if err != nil {
 			return nil, fmt.Errorf("getTitleInfoFromContentObject: %w", err)
 		}
-
 		options = append(options, option)
 	}
+	sort.Slice(options, func(i, j int) bool {
+		if *options[i].weight == *options[j].weight {
+			return *options[i].id < *options[j].id
+		}
+		return *options[i].weight < *options[j].weight
+	})
+
 	return options, nil
 }
 
