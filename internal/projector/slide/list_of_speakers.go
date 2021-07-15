@@ -118,7 +118,7 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 			return nil, nil, fmt.Errorf("loading speaker: %w", err)
 		}
 
-		user, err := newUser(ctx, fetch, speaker.UserID, meetingID)
+		user, err := NewUser(ctx, fetch, speaker.UserID, meetingID)
 		if err != nil {
 			return nil, nil, fmt.Errorf("loading user: %w", err)
 		}
@@ -253,7 +253,7 @@ func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID 
 			continue
 		}
 
-		user, err := newUser(ctx, fetch, speaker.UserID, meetingID)
+		user, err := NewUser(ctx, fetch, speaker.UserID, meetingID)
 		if err != nil {
 			return "", "", fmt.Errorf("getting newUser: %w", err)
 		}

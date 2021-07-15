@@ -1,5 +1,5 @@
 ---
-user_id: 1
+user_id: 10
 fqids:
 - committee/1
 
@@ -13,30 +13,32 @@ cases:
 
 - name: superadmin
   db:
-    user/1/organization_management_level: superadmin
+    user/10/organization_management_level: superadmin
   can_see:
     - committee/1
 
 - name: orga manager
   db:
-    user/1/organization_management_level: can_manage_organization
+    user/10/organization_management_level: can_manage_organization
   can_see:
   - committee/1
 
 - name: user manager
   db:
-    user/1/organization_management_level: can_manage_users
-  can_see:
-  - committee/1
+    user/10/organization_management_level: can_manage_users
+  can_not_see:
+  - committee/1/forward_to_committee_ids
+  - committee/1/receive_forwardings_from_committee_ids
 
-- name: commitee manager
+- name: In committee
   db:
-    user/1/committee_as_manager_ids: [1]
-  can_see:
-  - committee/1
+    user/10/committee_ids: [1]
+  can_not_see:
+  - committee/1/forward_to_committee_ids
+  - committee/1/receive_forwardings_from_committee_ids
 
-- name: commitee member
+- name: Not in committee
   db:
-    user/1/committee_as_member_ids: [1]
-  can_see:
+    user/10/committee_ids: []
+  can_not_see:
   - committee/1

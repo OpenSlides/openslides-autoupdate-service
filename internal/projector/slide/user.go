@@ -11,7 +11,8 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
-type dbUser struct {
+// DbUser is the class with methods to get needed User Informations
+type DbUser struct {
 	Username     string `json:"username"`
 	Title        string `json:"title"`
 	FirstName    string `json:"first_name"`
@@ -20,10 +21,10 @@ type dbUser struct {
 	DefaultLevel string `json:"default_structure_level"`
 }
 
-// newUser gets the user from datastore and return the user as dbUser struct
+// NewUser gets the user from datastore and return the user as DbUser struct
 // together with keys and error.
 // The meeting_id is used only to get the user-level for this meeting.
-func newUser(ctx context.Context, fetch *datastore.Fetcher, id, meetingID int) (*dbUser, error) {
+func NewUser(ctx context.Context, fetch *datastore.Fetcher, id, meetingID int) (*DbUser, error) {
 	fields := []string{
 		"username",
 		"title",
@@ -49,7 +50,7 @@ func newUser(ctx context.Context, fetch *datastore.Fetcher, id, meetingID int) (
 		return nil, fmt.Errorf("encoding user data: %w", err)
 	}
 
-	var u dbUser
+	var u DbUser
 	if err := json.Unmarshal(bs, &u); err != nil {
 		return nil, fmt.Errorf("decoding user data: %w", err)
 	}
@@ -61,7 +62,7 @@ func newUser(ctx context.Context, fetch *datastore.Fetcher, id, meetingID int) (
 }
 
 // UserRepresentation returns the meeting-dependent string for the given user.
-func (u *dbUser) UserRepresentation(meetingID int) string {
+func (u *DbUser) UserRepresentation(meetingID int) string {
 	name := u.UserShortName()
 	level := u.UserStructureLevel(meetingID)
 	if level == "" {
@@ -72,9 +73,9 @@ func (u *dbUser) UserRepresentation(meetingID int) string {
 
 // UserStructureLevel returns in first place the meeting specific level,
 // otherwise the default level.
-// It is assumed that the Level-field in dbUser-struct contains the
+// It is assumed that the Level-field in DbUser-struct contains the
 // meeting dependent level.
-func (u *dbUser) UserStructureLevel(meetingID int) string {
+func (u *DbUser) UserStructureLevel(meetingID int) string {
 	if u.Level == "" {
 		return u.DefaultLevel
 	}
@@ -83,7 +84,7 @@ func (u *dbUser) UserStructureLevel(meetingID int) string {
 
 // UserShortName returns the short name as "title first_name last_name".
 // Without first_name and last_name, uses username instead.
-func (u *dbUser) UserShortName() string {
+func (u *DbUser) UserShortName() string {
 	parts := func(sp ...string) []string {
 		var full []string
 		for _, s := range sp {
@@ -123,7 +124,7 @@ func User(store *projector.SlideStore) {
 			return nil, nil, fmt.Errorf("getting user id: %w", err)
 		}
 
-		user, err := newUser(ctx, fetch, id, p7on.MeetingID)
+		user, err := NewUser(ctx, fetch, id, p7on.MeetingID)
 		if err != nil {
 			return nil, nil, fmt.Errorf("getting new user id: %w", err)
 		}
@@ -145,7 +146,7 @@ func User(store *projector.SlideStore) {
 			return nil, fmt.Errorf("getting user id: %w", err)
 		}
 
-		user, err := newUser(ctx, fetch, id, meetingID)
+		user, err := NewUser(ctx, fetch, id, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("loading user: %w", err)
 		}
