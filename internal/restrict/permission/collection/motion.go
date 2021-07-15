@@ -208,21 +208,12 @@ func (m *motion) canSeeCommentSection(ctx context.Context, userID, id int) (bool
 		return false, fmt.Errorf("getting user permissions: %w", err)
 	}
 
+	if !perms.Has(perm.MotionCanSee) {
+		return false, nil
+	}
+
 	if perms.Has(perm.MotionCanManage) {
 		return true, nil
-	}
-
-	var motionID int
-	if err := m.dp.Get(ctx, fqid+"/motion_id", &motionID); err != nil {
-		return false, fmt.Errorf("getting motion id: %w", err)
-	}
-
-	motionOK, err := canSeeMotion(ctx, m.dp, userID, motionID, perms)
-	if err != nil {
-		return false, fmt.Errorf("checking permission for motion: %w", err)
-	}
-	if !motionOK {
-		return false, nil
 	}
 
 	var readGroupIDs []int
