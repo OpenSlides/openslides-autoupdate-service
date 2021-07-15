@@ -44,7 +44,7 @@ func TestAssignment(t *testing.T) {
 				"user/110/username": `"user110"`,
 				"user/111/username": `"user111"`,
 			},
-			`{"title":"title 1","phase":"","open_posts":10, "description":"description 1","number_poll_candidates":true, "candidates":[{"collection":"user","content_object_id":"user/111","username":"user111"},{"collection":"user","content_object_id":"user/110","username":"user110"}]}`,
+			`{"title":"title 1","phase":"","open_posts":10, "description":"description 1","number_poll_candidates":true, "candidates":["user111", "user110"]}`,
 			[]string{
 				"assignment/1/id",
 				"assignment/1/title",

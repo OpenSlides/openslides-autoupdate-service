@@ -95,29 +95,29 @@ func Assignment(store *projector.SlideStore) {
 			return nil, nil, fmt.Errorf("no titler function registered for user")
 		}
 
-		var uGTI []json.RawMessage
-		for _, userWeight := range allUsers {
-			uti, err := titler.GetTitleInformation(ctx, fetch, fmt.Sprintf("user/%d", userWeight.UserID), "", p7on.MeetingID)
+		var users []string
+		for _, candidate := range allUsers {
+			user, err := NewUser(ctx, fetch, candidate.UserID, p7on.MeetingID)
 			if err != nil {
-				return nil, nil, fmt.Errorf(": %w", err)
+				return nil, nil, fmt.Errorf("getting new user id: %w", err)
 			}
-			uGTI = append(uGTI, uti)
+			users = append(users, user.UserRepresentation(p7on.MeetingID))
 		}
 
 		out := struct {
-			Title                string            `json:"title"`
-			Phase                string            `json:"phase"`
-			OpenPosts            int               `json:"open_posts"`
-			Description          string            `json:"description"`
-			NumberPollCandidates bool              `json:"number_poll_candidates"`
-			Candidates           []json.RawMessage `json:"candidates"`
+			Title                string   `json:"title"`
+			Phase                string   `json:"phase"`
+			OpenPosts            int      `json:"open_posts"`
+			Description          string   `json:"description"`
+			NumberPollCandidates bool     `json:"number_poll_candidates"`
+			Candidates           []string `json:"candidates"`
 		}{
 			Title:                assignment.Title,
 			Phase:                assignment.Phase,
 			OpenPosts:            assignment.OpenPosts,
 			Description:          assignment.Description,
 			NumberPollCandidates: assignment.NumberPollCandidates,
-			Candidates:           uGTI,
+			Candidates:           users,
 		}
 
 		responseValue, err := json.Marshal(out)
