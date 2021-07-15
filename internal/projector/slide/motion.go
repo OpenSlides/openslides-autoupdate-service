@@ -55,28 +55,28 @@ type dbMotionWork struct {
 	StateID                                      int      `json:"state_id"`
 }
 type dbMotion struct {
-	ID                               int                                      `json:"id"`
-	Title                            string                                   `json:"title"`
-	Number                           string                                   `json:"number"`
-	Submitters                       *[]map[string]string                     `json:"submitters"`
-	ShowSidebox                      bool                                     `json:"show_sidebox"`
-	LineLength                       int                                      `json:"line_length"`
-	Preamble                         string                                   `json:"preamble"`
-	LineNumbering                    string                                   `json:"line_numbering"`
-	AmendmentParagraphs              map[string]string                        `json:"amendment_paragraphs,omitempty"`
-	LeadMotion                       *leadMotionType                          `json:"lead_motion,omitempty"`
-	BaseStatute                      *dbMotionStatuteParagraph                `json:"base_statute,omitempty"`
-	ChangeRecommendations            map[string]*dbMotionChangeRecommendation `json:"change_recommendations,omitempty"`
-	Amendments                       map[string]*amendmentsType               `json:"amendments,omitempty"`
-	RecommendationReferencingMotions map[string]json.RawMessage               `json:"recommendation_referencing_motions,omitempty"`
-	RecommendationLabel              *string                                  `json:"recommendation_label,omitempty"`
-	RecommendationExtension          *string                                  `json:"recommendation_extension,omitempty"`
-	RecommendationReferencedMotions  map[string]json.RawMessage               `json:"recommendation_referenced_motions,omitempty"`
-	Recommender                      *string                                  `json:"recommender,omitempty"`
-	Text                             *string                                  `json:"text,omitempty"`
-	Reason                           *string                                  `json:"reason,omitempty"`
-	ModifiedFinalVersion             *string                                  `json:"modified_final_version,omitempty"`
-	MotionWork                       *dbMotionWork                            `json:",omitempty"`
+	ID                               int                                     `json:"id"`
+	Title                            string                                  `json:"title"`
+	Number                           string                                  `json:"number"`
+	Submitters                       []map[string]string                     `json:"submitters"`
+	ShowSidebox                      bool                                    `json:"show_sidebox"`
+	LineLength                       int                                     `json:"line_length"`
+	Preamble                         string                                  `json:"preamble"`
+	LineNumbering                    string                                  `json:"line_numbering"`
+	AmendmentParagraphs              map[string]string                       `json:"amendment_paragraphs,omitempty"`
+	LeadMotion                       *leadMotionType                         `json:"lead_motion,omitempty"`
+	BaseStatute                      *dbMotionStatuteParagraph               `json:"base_statute,omitempty"`
+	ChangeRecommendations            map[string]dbMotionChangeRecommendation `json:"change_recommendations,omitempty"`
+	Amendments                       map[string]amendmentsType               `json:"amendments,omitempty"`
+	RecommendationReferencingMotions map[string]json.RawMessage              `json:"recommendation_referencing_motions,omitempty"`
+	RecommendationLabel              *string                                 `json:"recommendation_label,omitempty"`
+	RecommendationExtension          *string                                 `json:"recommendation_extension,omitempty"`
+	RecommendationReferencedMotions  map[string]json.RawMessage              `json:"recommendation_referenced_motions,omitempty"`
+	Recommender                      *string                                 `json:"recommender,omitempty"`
+	Text                             *string                                 `json:"text,omitempty"`
+	Reason                           *string                                 `json:"reason,omitempty"`
+	ModifiedFinalVersion             *string                                 `json:"modified_final_version,omitempty"`
+	MotionWork                       *dbMotionWork                           `json:",omitempty"`
 }
 
 func motionFromMap(in map[string]json.RawMessage) (*dbMotion, error) {
@@ -352,7 +352,7 @@ func fillChangeRecommendations(ctx context.Context, fetch *datastore.Fetcher, mo
 	if len(motion.MotionWork.ChangeRecommendationIDS) == 0 {
 		return nil
 	}
-	motion.ChangeRecommendations = make(map[string]*dbMotionChangeRecommendation)
+	motion.ChangeRecommendations = make(map[string]dbMotionChangeRecommendation)
 	for _, id := range motion.MotionWork.ChangeRecommendationIDS {
 		data := fetch.Object(ctx, []string{"rejected", "type", "other_description", "line_from", "line_to", "text", "creation_time", "internal"}, "motion_change_recommendation/%d", id)
 		var internal bool
@@ -370,7 +370,7 @@ func fillChangeRecommendations(ctx context.Context, fetch *datastore.Fetcher, mo
 		if err := json.Unmarshal(bs, &mo); err != nil {
 			return fmt.Errorf("decoding ChangeRecommendations data: %w", err)
 		}
-		motion.ChangeRecommendations[strconv.Itoa(id)] = &mo
+		motion.ChangeRecommendations[strconv.Itoa(id)] = mo
 	}
 	return nil
 }
@@ -432,7 +432,6 @@ func fillSubmitters(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 		UserID int `json:"user_id"`
 		Weight int `json:"weight"`
 	}
-	var submitterList []map[string]string
 	var submitterToSort []*submitterSort
 
 	for _, id := range motion.MotionWork.SubmitterIDS {
@@ -464,14 +463,13 @@ func fillSubmitters(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 		submitter := map[string]string{
 			fqid: user.UserRepresentation(motion.MotionWork.MeetingID),
 		}
-		submitterList = append(submitterList, submitter)
+		motion.Submitters = append(motion.Submitters, submitter)
 	}
-	motion.Submitters = &submitterList
 	return nil
 }
 
 func fillAmendments(ctx context.Context, fetch *datastore.Fetcher, motion *dbMotion) error {
-	motion.Amendments = make(map[string]*amendmentsType, len(motion.MotionWork.AmendmentIDS))
+	motion.Amendments = make(map[string]amendmentsType, len(motion.MotionWork.AmendmentIDS))
 	fetchFields := []string{
 		"id",
 		"title",
@@ -512,7 +510,7 @@ func fillAmendments(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 			}
 		}
 
-		motion.Amendments[strconv.Itoa(id)] = &amendment
+		motion.Amendments[strconv.Itoa(id)] = amendment
 	}
 	return nil
 }
