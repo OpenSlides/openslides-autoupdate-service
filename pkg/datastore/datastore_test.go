@@ -3,6 +3,7 @@ package datastore_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"testing"
@@ -52,6 +53,27 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 
 	if ts.RequestCount != 1 {
 		t.Errorf("Got %d requests to the datastore, expected 1", ts.RequestCount)
+	}
+}
+
+func TestDataStoreGetInvalidKey(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+
+	ts := dsmock.NewDatastoreServer(closed, map[string]string{})
+	d := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+
+	_, err := d.Get(context.Background(), "collection/1/Field")
+
+	var errTyped interface {
+		Type() string
+	}
+	if !errors.As(err, &errTyped) {
+		t.Fatalf("Get() returned no error with Type method, got: %v", err)
+	}
+
+	if errTyped.Type() != "invalid" {
+		t.Errorf("Error is of type %s, expected invalid", errTyped.Type())
 	}
 }
 
