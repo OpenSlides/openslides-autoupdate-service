@@ -69,13 +69,13 @@ type dbMotion struct {
 	ChangeRecommendations            map[string]dbMotionChangeRecommendation `json:"change_recommendations,omitempty"`
 	Amendments                       map[string]amendmentsType               `json:"amendments,omitempty"`
 	RecommendationReferencingMotions map[string]json.RawMessage              `json:"recommendation_referencing_motions,omitempty"`
-	RecommendationLabel              *string                                 `json:"recommendation_label,omitempty"`
-	RecommendationExtension          *string                                 `json:"recommendation_extension,omitempty"`
+	RecommendationLabel              string                                  `json:"recommendation_label,omitempty"`
+	RecommendationExtension          string                                  `json:"recommendation_extension,omitempty"`
 	RecommendationReferencedMotions  map[string]json.RawMessage              `json:"recommendation_referenced_motions,omitempty"`
-	Recommender                      *string                                 `json:"recommender,omitempty"`
-	Text                             *string                                 `json:"text,omitempty"`
-	Reason                           *string                                 `json:"reason,omitempty"`
-	ModifiedFinalVersion             *string                                 `json:"modified_final_version,omitempty"`
+	Recommender                      string                                  `json:"recommender,omitempty"`
+	Text                             string                                  `json:"text,omitempty"`
+	Reason                           string                                  `json:"reason,omitempty"`
+	ModifiedFinalVersion             string                                  `json:"modified_final_version,omitempty"`
 	MotionWork                       *dbMotionWork                           `json:",omitempty"`
 }
 
@@ -182,7 +182,7 @@ func Motion(store *projector.SlideStore) {
 		if err != nil {
 			return nil, nil, fmt.Errorf("get motion: %w", err)
 		}
-		motion.RecommendationExtension = nil // will be filled conditionally
+		motion.RecommendationExtension = "" // will be (re-)filled conditionally
 
 		fillMotionFromMeeting(motion, meeting)
 		fillAmendmentParagraphs(ctx, fetch, motion)
@@ -401,9 +401,9 @@ func fillRecommendationLabelEtc(ctx context.Context, fetch *datastore.Fetcher, t
 	if err := json.Unmarshal(bs, &st); err != nil {
 		return fmt.Errorf("decoding MotionState data: %w", err)
 	}
-	motion.RecommendationLabel = &st.RecommendationLabel
+	motion.RecommendationLabel = st.RecommendationLabel
 	if st.ShowRecommendationExtensionField {
-		motion.RecommendationExtension = &motion.MotionWork.RecommendationExtension
+		motion.RecommendationExtension = motion.MotionWork.RecommendationExtension
 		motion.RecommendationReferencedMotions = make(map[string]json.RawMessage, len(motion.MotionWork.RecommendationExtensionReferenceIDS))
 		for _, fqid := range motion.MotionWork.RecommendationExtensionReferenceIDS {
 			parts := strings.Split(fqid, "/")
@@ -420,9 +420,9 @@ func fillRecommendationLabelEtc(ctx context.Context, fetch *datastore.Fetcher, t
 
 	}
 	if motion.MotionWork.StatuteParagraphID > 0 {
-		motion.Recommender = &meeting.MotionsStatuteRecommendationsBy
+		motion.Recommender = meeting.MotionsStatuteRecommendationsBy
 	} else {
-		motion.Recommender = &meeting.MotionsRecommendationsBy
+		motion.Recommender = meeting.MotionsRecommendationsBy
 	}
 	return nil
 }
