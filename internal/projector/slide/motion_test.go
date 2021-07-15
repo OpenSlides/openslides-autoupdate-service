@@ -181,9 +181,9 @@ func TestMotion(t *testing.T) {
                 "title":"Motion Title 1",
                 "number":"MNr1234",
                 "submitters":[
-                    {"user/11":"user11"},
-                    {"user/12":"user12"},
-                    {"user/13":"user13"}
+                    "user11",
+                    "user12",
+                    "user13"
                 ],
                 "show_sidebox": true,
                 "line_length": 85,
@@ -193,8 +193,8 @@ func TestMotion(t *testing.T) {
                     "1":"amendmentParagraph1",
                     "2":"amendmentParagraph2"
                 },
-                "change_recommendations":{
-                    "1":{
+                "change_recommendations":[
+                    {
                         "rejected": true,
                         "type": "replacement",
                         "other_description": "Other Description1",
@@ -203,7 +203,7 @@ func TestMotion(t *testing.T) {
                         "text": "<p>text1 HTML</p>",
                         "creation_time": 12345
                     },
-                    "3":{
+                    {
                         "rejected": false,
                         "type": "insertion",
                         "other_description": "Other Description3",
@@ -212,9 +212,9 @@ func TestMotion(t *testing.T) {
                         "text": "<p>text3 HTML</p>",
                         "creation_time": 32345
                     }
-                },
-                "amendments":{
-                    "3":{
+                ],
+                "amendments":[
+                    {
                         "id": 3,
                         "title": "Amendment3 title",
                         "number": "Amendment3 123",
@@ -225,7 +225,7 @@ func TestMotion(t *testing.T) {
                         "merge_amendment_into_final": "do_merge",
                         "merge_amendment_into_diff": "do_merge"
                     },
-                    "4":{
+                    {
                         "id": 4,
                         "title": "Amendment4 title",
                         "number": "Amendment4 4123",
@@ -233,7 +233,7 @@ func TestMotion(t *testing.T) {
                         "merge_amendment_into_final": "undefined",
                         "merge_amendment_into_diff": "undefined"
                     },
-                    "5":{
+                    {
                         "id": 5,
                         "title": "Amendment5 title",
                         "number": "Amendment5 5123",
@@ -241,7 +241,7 @@ func TestMotion(t *testing.T) {
                         "merge_amendment_into_final": "undefined",
                         "merge_amendment_into_diff": "do_merge"
                     },
-                    "6":{
+                    {
                         "id": 6,
                         "title": "Amendment6 title",
                         "number": "Amendment6 6123",
@@ -249,7 +249,7 @@ func TestMotion(t *testing.T) {
                         "merge_amendment_into_final": "undefined",
                         "merge_amendment_into_diff": "undefined"
                     }
-                }
+                ]
             }
             `,
 			[]string{
@@ -381,9 +381,9 @@ func TestMotion(t *testing.T) {
                 "title":"Motion Title 1",
                 "number":"MNr1234",
                 "submitters":[
-                    {"user/11":"user11"},
-                    {"user/12":"user12"},
-                    {"user/13":"user13"}
+                    "user11",
+                    "user12",
+                    "user13"
                 ],
                 "show_sidebox": true,
                 "line_length": 85,
@@ -393,8 +393,8 @@ func TestMotion(t *testing.T) {
                     "1":"amendmentParagraph1",
                     "2":"amendmentParagraph2"
                 },
-                "change_recommendations":{
-                    "1":{
+                "change_recommendations":[
+                    {
                         "rejected": true,
                         "type": "replacement",
                         "other_description": "Other Description1",
@@ -403,7 +403,7 @@ func TestMotion(t *testing.T) {
                         "text": "<p>text1 HTML</p>",
                         "creation_time": 12345
                     },
-                    "3":{
+                    {
                         "rejected": false,
                         "type": "insertion",
                         "other_description": "Other Description3",
@@ -412,9 +412,9 @@ func TestMotion(t *testing.T) {
                         "text": "<p>text3 HTML</p>",
                         "creation_time": 32345
                     }
-                },
-                "amendments":{
-                    "3":{
+                ],
+                "amendments":[
+                    {
                         "id": 3,
                         "title": "Amendment3 title",
                         "number": "Amendment3 123",
@@ -425,7 +425,7 @@ func TestMotion(t *testing.T) {
                         "merge_amendment_into_final": "do_merge",
                         "merge_amendment_into_diff": "do_merge"
                     },
-                    "4":{
+                    {
                         "id": 4,
                         "title": "Amendment4 title",
                         "number": "Amendment4 4123",
@@ -433,7 +433,7 @@ func TestMotion(t *testing.T) {
                         "merge_amendment_into_final": "undefined",
                         "merge_amendment_into_diff": "undefined"
                     },
-                    "5":{
+                    {
                         "id": 5,
                         "title": "Amendment5 title",
                         "number": "Amendment5 5123",
@@ -441,7 +441,7 @@ func TestMotion(t *testing.T) {
                         "merge_amendment_into_final": "undefined",
                         "merge_amendment_into_diff": "do_merge"
                     },
-                    "6":{
+                    {
                         "id": 6,
                         "title": "Amendment6 title",
                         "number": "Amendment6 6123",
@@ -449,7 +449,7 @@ func TestMotion(t *testing.T) {
                         "merge_amendment_into_final": "undefined",
                         "merge_amendment_into_diff": "undefined"
                     }
-                },
+                ],
                 "text":"<p>Motion1 Text HTML</p>",
                 "reason": "<p>Motion1 reason HTML</p>",
                 "modified_final_version":"<p>Motion1 modifiedFinalVersion HTML</p>",
@@ -462,22 +462,22 @@ func TestMotion(t *testing.T) {
                     "title":"MotionStatuteParagraph1 title",
                     "text":"<p>MotionStatuteParagraph1 text html</p>"
                 },
-                "recommendation_referencing_motions":{
-                    "7":{
+                "recommendation_referencing_motions":[
+                    {
                         "agenda_item_number":"",
                         "collection":"motion",
                         "content_object_id":"motion/7",
                         "title": "ReferencedInMotionRecommendationExtension7 title",
                         "number": "RIMRE7 number"
                     },
-                    "8":{
+                    {
                         "agenda_item_number":"",
                         "collection":"motion",
                         "content_object_id":"motion/8",
                         "title": "ReferencedInMotionRecommendationExtension8 title",
                         "number": "RIMRE8 number"
                     }
-                },
+                ],
                 "recommendation_label":"RecommendationLabel_state4",
                 "recommendation_extension":"RecommendationExtension_motion1",
                 "recommendation_referenced_motions":{
