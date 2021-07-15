@@ -17,6 +17,7 @@ type dbMotionStatuteParagraph struct {
 }
 
 type dbMotionChangeRecommendation struct {
+	ID               int    `json:"id"`
 	Rejected         bool   `json:"rejected"`
 	Type             string `json:"type"`
 	OtherDescription string `json:"other_description"`
@@ -352,7 +353,7 @@ func fillChangeRecommendations(ctx context.Context, fetch *datastore.Fetcher, mo
 		return nil
 	}
 	for _, id := range motion.MotionWork.ChangeRecommendationIDS {
-		data := fetch.Object(ctx, []string{"rejected", "type", "other_description", "line_from", "line_to", "text", "creation_time", "internal"}, "motion_change_recommendation/%d", id)
+		data := fetch.Object(ctx, []string{"id", "rejected", "type", "other_description", "line_from", "line_to", "text", "creation_time", "internal"}, "motion_change_recommendation/%d", id)
 		var internal bool
 		if err := json.Unmarshal(data["internal"], &internal); err != nil {
 			return fmt.Errorf("decoding internal from ChangeRecommendations: %w", err)

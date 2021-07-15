@@ -195,6 +195,7 @@ func TestMotion(t *testing.T) {
                 },
                 "change_recommendations":[
                     {
+                        "id": 1,
                         "rejected": true,
                         "type": "replacement",
                         "other_description": "Other Description1",
@@ -204,6 +205,7 @@ func TestMotion(t *testing.T) {
                         "creation_time": 12345
                     },
                     {
+                        "id": 3,
                         "rejected": false,
                         "type": "insertion",
                         "other_description": "Other Description3",
@@ -303,6 +305,7 @@ func TestMotion(t *testing.T) {
 				"user/13/last_name",
 				"user/13/default_structure_level",
 				"user/13/structure_level_$1",
+				"motion_change_recommendation/1/id",
 				"motion_change_recommendation/1/rejected",
 				"motion_change_recommendation/1/type",
 				"motion_change_recommendation/1/other_description",
@@ -311,6 +314,7 @@ func TestMotion(t *testing.T) {
 				"motion_change_recommendation/1/text",
 				"motion_change_recommendation/1/creation_time",
 				"motion_change_recommendation/1/internal",
+				"motion_change_recommendation/2/id",
 				"motion_change_recommendation/2/rejected",
 				"motion_change_recommendation/2/type",
 				"motion_change_recommendation/2/other_description",
@@ -319,6 +323,7 @@ func TestMotion(t *testing.T) {
 				"motion_change_recommendation/2/text",
 				"motion_change_recommendation/2/creation_time",
 				"motion_change_recommendation/2/internal",
+				"motion_change_recommendation/3/id",
 				"motion_change_recommendation/3/rejected",
 				"motion_change_recommendation/3/type",
 				"motion_change_recommendation/3/other_description",
@@ -395,6 +400,7 @@ func TestMotion(t *testing.T) {
                 },
                 "change_recommendations":[
                     {
+                        "id": 1,
                         "rejected": true,
                         "type": "replacement",
                         "other_description": "Other Description1",
@@ -404,6 +410,7 @@ func TestMotion(t *testing.T) {
                         "creation_time": 12345
                     },
                     {
+                        "id": 3,
                         "rejected": false,
                         "type": "insertion",
                         "other_description": "Other Description3",
@@ -558,6 +565,7 @@ func TestMotion(t *testing.T) {
 				"motion/2/text",
 				"motion_statute_paragraph/1/title",
 				"motion_statute_paragraph/1/text",
+				"motion_change_recommendation/1/id",
 				"motion_change_recommendation/1/rejected",
 				"motion_change_recommendation/1/type",
 				"motion_change_recommendation/1/other_description",
@@ -566,6 +574,7 @@ func TestMotion(t *testing.T) {
 				"motion_change_recommendation/1/text",
 				"motion_change_recommendation/1/creation_time",
 				"motion_change_recommendation/1/internal",
+				"motion_change_recommendation/2/id",
 				"motion_change_recommendation/2/rejected",
 				"motion_change_recommendation/2/type",
 				"motion_change_recommendation/2/other_description",
@@ -574,6 +583,7 @@ func TestMotion(t *testing.T) {
 				"motion_change_recommendation/2/text",
 				"motion_change_recommendation/2/creation_time",
 				"motion_change_recommendation/2/internal",
+				"motion_change_recommendation/3/id",
 				"motion_change_recommendation/3/rejected",
 				"motion_change_recommendation/3/type",
 				"motion_change_recommendation/3/other_description",
