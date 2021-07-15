@@ -36,3 +36,9 @@ cases:
   can_not_see:
   - committee/1/forward_to_committee_ids
   - committee/1/receive_forwardings_from_committee_ids
+
+- name: Not in committee
+  db:
+    user/10/committee_ids: []
+  can_not_see:
+  - committee/1
