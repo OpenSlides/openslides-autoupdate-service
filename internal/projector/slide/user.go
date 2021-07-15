@@ -20,10 +20,10 @@ type dbUser struct {
 	DefaultLevel string `json:"default_structure_level"`
 }
 
-// newUser gets the user from datastore and return the user as dbUser struct
+// NewUser gets the user from datastore and return the user as dbUser struct
 // together with keys and error.
 // The meeting_id is used only to get the user-level for this meeting.
-func newUser(ctx context.Context, fetch *datastore.Fetcher, id, meetingID int) (*dbUser, error) {
+func NewUser(ctx context.Context, fetch *datastore.Fetcher, id, meetingID int) (*dbUser, error) {
 	fields := []string{
 		"username",
 		"title",
@@ -123,7 +123,7 @@ func User(store *projector.SlideStore) {
 			return nil, nil, fmt.Errorf("getting user id: %w", err)
 		}
 
-		user, err := newUser(ctx, fetch, id, p7on.MeetingID)
+		user, err := NewUser(ctx, fetch, id, p7on.MeetingID)
 		if err != nil {
 			return nil, nil, fmt.Errorf("getting new user id: %w", err)
 		}
@@ -145,7 +145,7 @@ func User(store *projector.SlideStore) {
 			return nil, fmt.Errorf("getting user id: %w", err)
 		}
 
-		user, err := newUser(ctx, fetch, id, meetingID)
+		user, err := NewUser(ctx, fetch, id, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("loading user: %w", err)
 		}
