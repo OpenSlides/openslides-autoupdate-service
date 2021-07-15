@@ -78,6 +78,7 @@ func TestMotion(t *testing.T) {
 	        amendment_paragraph_$: ["31", "32"]
 	        amendment_paragraph_$31: amendmentParagraph31
 	        amendment_paragraph_$32: amendmentParagraph32
+	        change_recommendation_ids: [4, 5]
 	        state_id: 1
 	    4:
 	        title: Amendment4 title
@@ -163,6 +164,17 @@ func TestMotion(t *testing.T) {
 	        line_to: 5
 	        text: <p>text3 HTML</p>
 	        creation_time: 32345
+	    4:
+	        internal: false
+	        rejected: true
+	        type: replacement
+	        other_description: ChangeRecommendation4 for amendment3
+	        line_from: 4
+	        line_to: 5
+	        text: <p>text4 HTML</p>
+	        creation_time: 42345
+	    5:
+	        internal: true
 	`)
 
 	for _, tt := range []struct {
@@ -224,6 +236,18 @@ func TestMotion(t *testing.T) {
                             "31":"amendmentParagraph31",
                             "32":"amendmentParagraph32"
                         },
+                        "change_recommendations":[
+                            {
+                                "id": 4,
+                                "rejected": true,
+                                "type": "replacement",
+                                "other_description": "ChangeRecommendation4 for amendment3",
+                                "line_from": 4,
+                                "line_to": 5,
+                                "text": "<p>text4 HTML</p>",
+                                "creation_time": 42345
+                            }
+                        ],
                         "merge_amendment_into_final": "do_merge",
                         "merge_amendment_into_diff": "do_merge"
                     },
@@ -232,6 +256,7 @@ func TestMotion(t *testing.T) {
                         "title": "Amendment4 title",
                         "number": "Amendment4 4123",
                         "amendment_paragraphs": null,
+                        "change_recommendations": null,
                         "merge_amendment_into_final": "undefined",
                         "merge_amendment_into_diff": "undefined"
                     },
@@ -240,6 +265,7 @@ func TestMotion(t *testing.T) {
                         "title": "Amendment5 title",
                         "number": "Amendment5 5123",
                         "amendment_paragraphs": null,
+                        "change_recommendations": null,
                         "merge_amendment_into_final": "undefined",
                         "merge_amendment_into_diff": "do_merge"
                     },
@@ -248,6 +274,7 @@ func TestMotion(t *testing.T) {
                         "title": "Amendment6 title",
                         "number": "Amendment6 6123",
                         "amendment_paragraphs": null,
+                        "change_recommendations": null,
                         "merge_amendment_into_final": "undefined",
                         "merge_amendment_into_diff": "undefined"
                     }
@@ -332,6 +359,24 @@ func TestMotion(t *testing.T) {
 				"motion_change_recommendation/3/text",
 				"motion_change_recommendation/3/creation_time",
 				"motion_change_recommendation/3/internal",
+				"motion_change_recommendation/4/id",
+				"motion_change_recommendation/4/rejected",
+				"motion_change_recommendation/4/type",
+				"motion_change_recommendation/4/other_description",
+				"motion_change_recommendation/4/line_from",
+				"motion_change_recommendation/4/line_to",
+				"motion_change_recommendation/4/text",
+				"motion_change_recommendation/4/creation_time",
+				"motion_change_recommendation/4/internal",
+				"motion_change_recommendation/5/id",
+				"motion_change_recommendation/5/rejected",
+				"motion_change_recommendation/5/type",
+				"motion_change_recommendation/5/other_description",
+				"motion_change_recommendation/5/line_from",
+				"motion_change_recommendation/5/line_to",
+				"motion_change_recommendation/5/text",
+				"motion_change_recommendation/5/creation_time",
+				"motion_change_recommendation/5/internal",
 				"motion/3/id",
 				"motion/3/title",
 				"motion/3/number",
@@ -341,6 +386,7 @@ func TestMotion(t *testing.T) {
 				"motion/3/recommendation_id",
 				"motion/3/amendment_paragraph_$31",
 				"motion/3/amendment_paragraph_$32",
+				"motion/3/change_recommendation_ids",
 				"motion_state/1/merge_amendment_into_final",
 				"motion/4/id",
 				"motion/4/title",
@@ -349,6 +395,7 @@ func TestMotion(t *testing.T) {
 				"motion/4/amendment_paragraph_$",
 				"motion/4/state_id",
 				"motion/4/recommendation_id",
+				"motion/4/change_recommendation_ids",
 				"motion_state/2/merge_amendment_into_final",
 				"motion/5/id",
 				"motion/5/title",
@@ -357,6 +404,7 @@ func TestMotion(t *testing.T) {
 				"motion/5/amendment_paragraph_$",
 				"motion/5/state_id",
 				"motion/5/recommendation_id",
+				"motion/5/change_recommendation_ids",
 				"motion_state/3/merge_amendment_into_final",
 				"motion_state/1/merge_amendment_into_final",
 				"motion/6/id",
@@ -366,6 +414,7 @@ func TestMotion(t *testing.T) {
 				"motion/6/amendment_paragraph_$",
 				"motion/6/state_id",
 				"motion/6/recommendation_id",
+				"motion/6/change_recommendation_ids",
 				"motion_state/3/merge_amendment_into_final",
 				"motion_state/2/merge_amendment_into_final",
 			},
@@ -429,6 +478,18 @@ func TestMotion(t *testing.T) {
                             "31":"amendmentParagraph31",
                             "32":"amendmentParagraph32"
                         },
+                        "change_recommendations":[
+                            {
+                                "id": 4,
+                                "rejected": true,
+                                "type": "replacement",
+                                "other_description": "ChangeRecommendation4 for amendment3",
+                                "line_from": 4,
+                                "line_to": 5,
+                                "text": "<p>text4 HTML</p>",
+                                "creation_time": 42345
+                            }
+                        ],
                         "merge_amendment_into_final": "do_merge",
                         "merge_amendment_into_diff": "do_merge"
                     },
@@ -437,6 +498,7 @@ func TestMotion(t *testing.T) {
                         "title": "Amendment4 title",
                         "number": "Amendment4 4123",
                         "amendment_paragraphs": null,
+                        "change_recommendations": null,
                         "merge_amendment_into_final": "undefined",
                         "merge_amendment_into_diff": "undefined"
                     },
@@ -445,6 +507,7 @@ func TestMotion(t *testing.T) {
                         "title": "Amendment5 title",
                         "number": "Amendment5 5123",
                         "amendment_paragraphs": null,
+                        "change_recommendations": null,
                         "merge_amendment_into_final": "undefined",
                         "merge_amendment_into_diff": "do_merge"
                     },
@@ -453,6 +516,7 @@ func TestMotion(t *testing.T) {
                         "title": "Amendment6 title",
                         "number": "Amendment6 6123",
                         "amendment_paragraphs": null,
+                        "change_recommendations": null,
                         "merge_amendment_into_final": "undefined",
                         "merge_amendment_into_diff": "undefined"
                     }
@@ -592,6 +656,24 @@ func TestMotion(t *testing.T) {
 				"motion_change_recommendation/3/text",
 				"motion_change_recommendation/3/creation_time",
 				"motion_change_recommendation/3/internal",
+				"motion_change_recommendation/4/id",
+				"motion_change_recommendation/4/rejected",
+				"motion_change_recommendation/4/type",
+				"motion_change_recommendation/4/other_description",
+				"motion_change_recommendation/4/line_from",
+				"motion_change_recommendation/4/line_to",
+				"motion_change_recommendation/4/text",
+				"motion_change_recommendation/4/creation_time",
+				"motion_change_recommendation/4/internal",
+				"motion_change_recommendation/5/id",
+				"motion_change_recommendation/5/rejected",
+				"motion_change_recommendation/5/type",
+				"motion_change_recommendation/5/other_description",
+				"motion_change_recommendation/5/line_from",
+				"motion_change_recommendation/5/line_to",
+				"motion_change_recommendation/5/text",
+				"motion_change_recommendation/5/creation_time",
+				"motion_change_recommendation/5/internal",
 				"motion/3/id",
 				"motion/3/title",
 				"motion/3/number",
@@ -601,6 +683,7 @@ func TestMotion(t *testing.T) {
 				"motion/3/recommendation_id",
 				"motion/3/amendment_paragraph_$31",
 				"motion/3/amendment_paragraph_$32",
+				"motion/3/change_recommendation_ids",
 				"motion_state/1/merge_amendment_into_final",
 				"motion/4/id",
 				"motion/4/title",
@@ -609,6 +692,7 @@ func TestMotion(t *testing.T) {
 				"motion/4/amendment_paragraph_$",
 				"motion/4/state_id",
 				"motion/4/recommendation_id",
+				"motion/4/change_recommendation_ids",
 				"motion_state/2/merge_amendment_into_final",
 				"motion/5/id",
 				"motion/5/title",
@@ -617,6 +701,7 @@ func TestMotion(t *testing.T) {
 				"motion/5/amendment_paragraph_$",
 				"motion/5/state_id",
 				"motion/5/recommendation_id",
+				"motion/5/change_recommendation_ids",
 				"motion_state/3/merge_amendment_into_final",
 				"motion_state/1/merge_amendment_into_final",
 				"motion/6/id",
@@ -626,6 +711,7 @@ func TestMotion(t *testing.T) {
 				"motion/6/amendment_paragraph_$",
 				"motion/6/state_id",
 				"motion/6/recommendation_id",
+				"motion/6/change_recommendation_ids",
 				"motion_state/3/merge_amendment_into_final",
 				"motion_state/2/merge_amendment_into_final",
 				"motion/7/id",

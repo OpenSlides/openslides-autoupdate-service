@@ -28,12 +28,13 @@ type dbMotionChangeRecommendation struct {
 }
 
 type amendmentsType struct {
-	ID                      int               `json:"id"`
-	Title                   string            `json:"title"`
-	Number                  string            `json:"number"`
-	AmendmentParagraphs     map[string]string `json:"amendment_paragraphs"`
-	MergeAmendmentIntoFinal string            `json:"merge_amendment_into_final"`
-	MergeAmendmentIntoDiff  string            `json:"merge_amendment_into_diff"`
+	ID                      int                            `json:"id"`
+	Title                   string                         `json:"title"`
+	Number                  string                         `json:"number"`
+	AmendmentParagraphs     map[string]string              `json:"amendment_paragraphs"`
+	ChangeRecommendations   []dbMotionChangeRecommendation `json:"change_recommendations"`
+	MergeAmendmentIntoFinal string                         `json:"merge_amendment_into_final"`
+	MergeAmendmentIntoDiff  string                         `json:"merge_amendment_into_diff"`
 }
 type leadMotionType struct {
 	Title  string `json:"title"`
@@ -66,7 +67,7 @@ type dbMotion struct {
 	AmendmentParagraphs              map[string]string              `json:"amendment_paragraphs,omitempty"`
 	LeadMotion                       *leadMotionType                `json:"lead_motion,omitempty"`
 	BaseStatute                      *dbMotionStatuteParagraph      `json:"base_statute,omitempty"`
-	ChangeRecommendations            []dbMotionChangeRecommendation `json:"change_recommendations,omitempty"`
+	ChangeRecommendations            []dbMotionChangeRecommendation `json:"change_recommendations"`
 	Amendments                       []amendmentsType               `json:"amendments,omitempty"`
 	RecommendationReferencingMotions []json.RawMessage              `json:"recommendation_referencing_motions,omitempty"`
 	RecommendationLabel              string                         `json:"recommendation_label,omitempty"`
@@ -471,6 +472,7 @@ func fillAmendments(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 		"amendment_paragraph_$",
 		"state_id",
 		"recommendation_id",
+		"change_recommendation_ids",
 	}
 	for _, id := range motion.MotionWork.AmendmentIDS {
 		data := fetch.Object(ctx, fetchFields, "motion/%d", id)
@@ -479,11 +481,13 @@ func fillAmendments(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 			return fmt.Errorf("motionFromMap: %w", err)
 		}
 		fillAmendmentParagraphs(ctx, fetch, motionAmend)
+		fillChangeRecommendations(ctx, fetch, motionAmend)
 		var amendment amendmentsType
 		amendment.ID = id
 		amendment.Title = motionAmend.Title
 		amendment.Number = motionAmend.Number
 		amendment.AmendmentParagraphs = motionAmend.AmendmentParagraphs
+		amendment.ChangeRecommendations = motionAmend.ChangeRecommendations
 
 		maif := fetch.String(ctx, "motion_state/%d/merge_amendment_into_final", motionAmend.MotionWork.StateID)
 		if maif == "do_merge" {
