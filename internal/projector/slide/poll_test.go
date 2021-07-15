@@ -40,6 +40,7 @@ func TestPoll(t *testing.T) {
 	        votescast: 2.000000
 	        global_option_id: 3
 	        meeting_id: 111
+	        entitled_users_at_stop: {"A": "bcd", "B":"def"}
 	motion:
 	    1:
 	        title: Motion title 1
@@ -126,6 +127,10 @@ func TestPoll(t *testing.T) {
                         "abstain":6
                     }
                 ],
+                "entitled_users_at_stop": {
+                    "A":"bcd",
+                    "B":"def"
+                },
                 "is_pseudoanonymized":false,
                 "pollmethod":"YNA",
                 "onehundred_percent_base":"YNA",
@@ -153,6 +158,7 @@ func TestPoll(t *testing.T) {
 				"poll/1/global_abstain",
 				"poll/1/option_ids",
 				"poll/1/meeting_id",
+				"poll/1/entitled_users_at_stop",
 				"poll/1/is_pseudoanonymized",
 				"poll/1/pollmethod",
 				"poll/1/onehundred_percent_base",

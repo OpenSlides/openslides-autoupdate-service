@@ -68,26 +68,27 @@ type dbPollWork struct {
 }
 
 type dbPoll struct {
-	ID                    int             `json:"id"`
-	ContentObjectID       string          `json:"content_object_id"`
-	TitleInformation      json.RawMessage `json:"title_information"`
-	Title                 string          `json:"title"`
-	Description           string          `json:"description"`
-	Type                  string          `json:"type"`
-	State                 string          `json:"state"`
-	GlobalYes             bool            `json:"global_yes"`
-	GlobalNo              bool            `json:"global_no"`
-	GlobalAbstain         bool            `json:"global_abstain"`
-	Options               []*optionRepr   `json:"options"`
-	IsPseudoanonymized    *bool           `json:"is_pseudoanonymized,omitempty"`
-	Pollmethod            *string         `json:"pollmethod,omitempty"`
-	OnehundredPercentBase *string         `json:"onehundred_percent_base,omitempty"`
-	MajorityMethod        *string         `json:"majority_method,omitempty"`
-	Votesvalid            *float32        `json:"votesvalid,omitempty"`
-	Votesinvalid          *float32        `json:"votesinvalid,omitempty"`
-	Votescast             *float32        `json:"votescast,omitempty"`
-	GlobalOption          *optionGlobRepr `json:"global_option,omitempty"`
-	PollWork              *dbPollWork     `json:",omitempty"`
+	ID                    int              `json:"id"`
+	ContentObjectID       string           `json:"content_object_id"`
+	TitleInformation      json.RawMessage  `json:"title_information"`
+	Title                 string           `json:"title"`
+	Description           string           `json:"description"`
+	Type                  string           `json:"type"`
+	State                 string           `json:"state"`
+	GlobalYes             bool             `json:"global_yes"`
+	GlobalNo              bool             `json:"global_no"`
+	GlobalAbstain         bool             `json:"global_abstain"`
+	Options               []*optionRepr    `json:"options"`
+	EntitledUsersAtStop   *json.RawMessage `json:"entitled_users_at_stop,omitempty"`
+	IsPseudoanonymized    *bool            `json:"is_pseudoanonymized,omitempty"`
+	Pollmethod            *string          `json:"pollmethod,omitempty"`
+	OnehundredPercentBase *string          `json:"onehundred_percent_base,omitempty"`
+	MajorityMethod        *string          `json:"majority_method,omitempty"`
+	Votesvalid            *float32         `json:"votesvalid,omitempty"`
+	Votesinvalid          *float32         `json:"votesinvalid,omitempty"`
+	Votescast             *float32         `json:"votescast,omitempty"`
+	GlobalOption          *optionGlobRepr  `json:"global_option,omitempty"`
+	PollWork              *dbPollWork      `json:",omitempty"`
 }
 
 func pollFromMap(in map[string]json.RawMessage, state string) (*dbPoll, error) {
@@ -134,6 +135,7 @@ func Poll(store *projector.SlideStore) {
 		state := fetch.String(ctx, "%s/%s", p7on.ContentObjectID, "state")
 		if state == "published" {
 			fetchFields = append(fetchFields, []string{
+				"entitled_users_at_stop",
 				"is_pseudoanonymized",
 				"pollmethod",
 				"onehundred_percent_base",
