@@ -69,13 +69,12 @@ func TestDataStoreGetInvalidKey(t *testing.T) {
 		Type() string
 	}
 	if !errors.As(err, &errTyped) {
-		t.Fatalf("Get() retuned no error with Type method, got: %v", err)
+		t.Fatalf("Get() returned no error with Type method, got: %v", err)
 	}
 
 	if errTyped.Type() != "invalid" {
 		t.Errorf("Error is of type %s, expected invalid", errTyped.Type())
 	}
-
 }
 
 func TestCalculatedFields(t *testing.T) {
