@@ -99,8 +99,9 @@ func motionFromMap(in map[string]json.RawMessage) (*dbMotion, error) {
 }
 
 type dbMotionBlock struct {
-	ID    int    `json:"id"`
-	Title string `json:"title"`
+	ID     int    `json:"id"`
+	Title  string `json:"title"`
+	Number string `json:"number"`
 }
 
 func motionBlockFromMap(in map[string]json.RawMessage) (*dbMotionBlock, error) {
