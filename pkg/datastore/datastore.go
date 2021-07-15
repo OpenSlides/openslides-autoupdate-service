@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -50,11 +51,30 @@ func New(url string, closed <-chan struct{}, errHandler func(error), keychanger 
 	return d
 }
 
+var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*/[a-z][a-z0-9_]*\$?[a-z0-9_]*$`)
+
+// invalidKeys checks if all of the given keys are valid. Invalid keys are
+// returned.
+//
+// A return value of nil means, that all keys are valid.
+func invalidKeys(keys ...string) []string {
+	var invalid []string
+	for _, key := range keys {
+		if ok := reValidKeys.MatchString(key); !ok {
+			invalid = append(invalid, key)
+		}
+	}
+	return invalid
+}
+
 // Get returns the value for one or many keys.
 //
 // If a key does not exist, the value nil is returned for that key.
 func (d *Datastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage, error) {
 	values, err := d.cache.GetOrSet(ctx, keys, func(keys []string, set func(key string, value json.RawMessage)) error {
+		if invalid := invalidKeys(keys...); invalid != nil {
+			return invalidKeyError{keys: invalid}
+		}
 		return d.loadKeys(ctx, keys, set)
 	})
 	if err != nil {
