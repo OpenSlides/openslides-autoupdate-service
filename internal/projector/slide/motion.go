@@ -43,7 +43,7 @@ type leadMotionType struct {
 type dbMotionWork struct {
 	MeetingID                                    int      `json:"meeting_id"`
 	LeadMotionID                                 int      `json:"lead_motion_id"`
-	Statute_ParagraphID                          int      `json:"statute_paragraph_id"`
+	StatuteParagraphID                           int      `json:"statute_paragraph_id"`
 	AmendmentParagraph                           []string `json:"amendment_paragraph_$"`
 	ChangeRecommendationIDS                      []int    `json:"change_recommendation_ids"`
 	AmendmentIDS                                 []int    `json:"amendment_ids"`
@@ -332,10 +332,10 @@ func fillLeadMotion(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 }
 
 func fillBaseStatute(ctx context.Context, fetch *datastore.Fetcher, motion *dbMotion) error {
-	if motion.MotionWork.Statute_ParagraphID == 0 {
+	if motion.MotionWork.StatuteParagraphID == 0 {
 		return nil
 	}
-	data := fetch.Object(ctx, []string{"title", "text"}, "motion_statute_paragraph/%d", motion.MotionWork.Statute_ParagraphID)
+	data := fetch.Object(ctx, []string{"title", "text"}, "motion_statute_paragraph/%d", motion.MotionWork.StatuteParagraphID)
 	bs, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("encoding BaseStatute data: %w", err)
@@ -419,7 +419,7 @@ func fillRecommendationLabelEtc(ctx context.Context, fetch *datastore.Fetcher, t
 		}
 
 	}
-	if motion.MotionWork.Statute_ParagraphID > 0 {
+	if motion.MotionWork.StatuteParagraphID > 0 {
 		motion.Recommender = &meeting.MotionsStatuteRecommendationsBy
 	} else {
 		motion.Recommender = &meeting.MotionsRecommendationsBy
