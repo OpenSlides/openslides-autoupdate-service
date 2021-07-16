@@ -14,6 +14,7 @@ import (
 func TestListOfSpeakers(t *testing.T) {
 	s := new(projector.SlideStore)
 	slide.ListOfSpeaker(s)
+	slide.Topic(s)
 
 	losSlide := s.GetSlider("list_of_speakers")
 	assert.NotNilf(t, losSlide, "Slide with name `list_of_speakers` not found.")
@@ -24,7 +25,7 @@ func TestListOfSpeakers(t *testing.T) {
 		closed: 			true
 		speaker_ids: 		[1,2,3]
 
-	topic/1/title: topic title
+	topic/1/title: topic1 title
 
 	speaker:
 		1:
@@ -70,7 +71,6 @@ func TestListOfSpeakers(t *testing.T) {
 			"Starter",
 			data,
 			`{
-				"title": "topic title",
 				"waiting": [{
 					"user": "jonny123",
 					"marked": false,
@@ -92,13 +92,19 @@ func TestListOfSpeakers(t *testing.T) {
 				}],
 				"closed": true,
 				"content_object_collection": "topic",
-				"title_information": "title_information for topic/1"
+				"title_information": {
+					"agenda_item_number": "",
+					"collection": "topic",
+					"content_object_id": "topic/1",
+					"title": "topic1 title"
+				}
 			}
 			`,
 			[]string{
 				"list_of_speakers/1/speaker_ids",
 				"list_of_speakers/1/content_object_id",
 				"list_of_speakers/1/closed",
+				"topic/1/id",
 				"topic/1/title",
 				"speaker/1/user_id",
 				"speaker/1/marked",
@@ -136,12 +142,11 @@ func TestListOfSpeakers(t *testing.T) {
 			},
 		},
 		{
-			"No Current spaker",
+			"No Current speaker",
 			changeData(data, map[string]string{
 				"list_of_speakers/1/speaker_ids": "[1,3]",
 			}),
 			`{
-				"title": "topic title",
 				"waiting": [{
 					"user": "jonny123",
 					"marked": false,
@@ -158,13 +163,19 @@ func TestListOfSpeakers(t *testing.T) {
 				}],
 				"closed": true,
 				"content_object_collection": "topic",
-				"title_information": "title_information for topic/1"
+				"title_information": {
+					"agenda_item_number": "",
+					"collection": "topic",
+					"content_object_id": "topic/1",
+					"title": "topic1 title"
+				}
 			}
 			`,
 			[]string{
 				"list_of_speakers/1/speaker_ids",
 				"list_of_speakers/1/content_object_id",
 				"list_of_speakers/1/closed",
+				"topic/1/id",
 				"topic/1/title",
 				"speaker/1/user_id",
 				"speaker/1/marked",
@@ -230,7 +241,7 @@ func getDataForCurrentList() map[string]string {
 
 		topic/5:
 			list_of_speakers_id: 7
-			title: topic title
+			title: topic5 title
 
 		list_of_speakers/7:
 			content_object_id:	topic/5
@@ -253,6 +264,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 
 	s := new(projector.SlideStore)
 	slide.CurrentListOfSpeakers(s)
+	slide.Topic(s)
 
 	slide := s.GetSlider("current_list_of_speakers")
 	require.NotNilf(t, slide, "Slide with name `current_list_of_speakers` not found.")
@@ -271,7 +283,6 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 
 		assert.NoError(t, err)
 		expect := `{
-			"title": "topic title",
 			"waiting": [{
 				"user": "jonny123",
 				"marked": false,
@@ -282,7 +293,12 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 			"finished": null,
 			"closed": true,
 			"content_object_collection": "topic",
-			"title_information": "title_information for topic/5"
+			"title_information": {
+				"agenda_item_number": "",
+				"collection": "topic",
+				"content_object_id": "topic/5",
+				"title": "topic5 title"
+			}
 		}
 		`
 		assert.JSONEq(t, expect, string(bs))
@@ -290,6 +306,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 			"meeting/6/reference_projector_id",
 			"projector/60/current_projection_ids",
 			"projection/2/content_object_id",
+			"topic/5/id",
 			"topic/5/title",
 			"topic/5/list_of_speakers_id",
 			"list_of_speakers/7/speaker_ids",
