@@ -58,15 +58,6 @@ func TestMotion(t *testing.T) {
 	        global_yes: false
 	        global_no: true
 	        global_abstain: false
-	        option_ids: [1, 2]
-	        is_pseudoanonymized: false
-	        pollmethod: YNA
-	        onehundred_percent_base: YNA
-	        majority_method: simple
-	        votesvalid: 2.000000
-	        votesinvalid: 9.000000
-	        votescast: 2.000000
-	        global_option_id: 3
 	        meeting_id: 1
 	    2:
 	        title: Lead Motion Title
