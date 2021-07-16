@@ -83,7 +83,6 @@ type dbPoll struct {
 	IsPseudoanonymized    *bool            `json:"is_pseudoanonymized,omitempty"`
 	Pollmethod            *string          `json:"pollmethod,omitempty"`
 	OnehundredPercentBase *string          `json:"onehundred_percent_base,omitempty"`
-	MajorityMethod        *string          `json:"majority_method,omitempty"`
 	Votesvalid            *float32         `json:"votesvalid,omitempty"`
 	Votesinvalid          *float32         `json:"votesinvalid,omitempty"`
 	Votescast             *float32         `json:"votescast,omitempty"`
@@ -139,7 +138,6 @@ func Poll(store *projector.SlideStore) {
 				"is_pseudoanonymized",
 				"pollmethod",
 				"onehundred_percent_base",
-				"majority_method",
 				"votesvalid",
 				"votesinvalid",
 				"votescast",

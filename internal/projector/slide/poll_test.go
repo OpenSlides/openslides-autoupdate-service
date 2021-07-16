@@ -34,7 +34,6 @@ func TestPoll(t *testing.T) {
 	        is_pseudoanonymized: false
 	        pollmethod: YNA
 	        onehundred_percent_base: YNA
-	        majority_method: simple
 	        votesvalid: 2.000000
 	        votesinvalid: 9.000000
 	        votescast: 2.000000
@@ -134,7 +133,6 @@ func TestPoll(t *testing.T) {
                 "is_pseudoanonymized":false,
                 "pollmethod":"YNA",
                 "onehundred_percent_base":"YNA",
-                "majority_method":"simple",
                 "votesvalid": 2,
                 "votesinvalid": 9,
                 "votescast": 2,
@@ -162,7 +160,6 @@ func TestPoll(t *testing.T) {
 				"poll/1/is_pseudoanonymized",
 				"poll/1/pollmethod",
 				"poll/1/onehundred_percent_base",
-				"poll/1/majority_method",
 				"poll/1/votesvalid",
 				"poll/1/votesinvalid",
 				"poll/1/votescast",
