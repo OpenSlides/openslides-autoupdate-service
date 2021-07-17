@@ -13,8 +13,6 @@ import (
 type dbAssignment struct {
 	ID                   int    `json:"id"`
 	Title                string `json:"title"`
-	Phase                string `json:"phase"`
-	OpenPosts            int    `json:"open_posts"`
 	Description          string `json:"description"`
 	NumberPollCandidates bool   `json:"number_poll_candidates"`
 	CandidateIDs         []int  `json:"candidate_ids"`
@@ -66,8 +64,6 @@ func Assignment(store *projector.SlideStore) {
 			[]string{
 				"id",
 				"title",
-				"phase",
-				"open_posts",
 				"description",
 				"number_poll_candidates",
 				"candidate_ids",
@@ -106,15 +102,11 @@ func Assignment(store *projector.SlideStore) {
 
 		out := struct {
 			Title                string   `json:"title"`
-			Phase                string   `json:"phase"`
-			OpenPosts            int      `json:"open_posts"`
 			Description          string   `json:"description"`
 			NumberPollCandidates bool     `json:"number_poll_candidates"`
 			Candidates           []string `json:"candidates"`
 		}{
 			Title:                assignment.Title,
-			Phase:                assignment.Phase,
-			OpenPosts:            assignment.OpenPosts,
 			Description:          assignment.Description,
 			NumberPollCandidates: assignment.NumberPollCandidates,
 			Candidates:           users,
