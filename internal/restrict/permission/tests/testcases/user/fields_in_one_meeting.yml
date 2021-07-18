@@ -18,7 +18,7 @@ cases:
 - name: no perm
   can_see: []
 
-- name: can see
+- name: can see perm
   permission: user.can_see
   can_see:
   # Group A
@@ -80,6 +80,9 @@ cases:
 
   # Group C
   - user/1/email
+  - user/1/vote_delegated_$_to_id
+  - user/1/vote_delegations_$_from_ids
+  - user/1/group_$_ids
 
 
 - name: can manage
@@ -114,6 +117,9 @@ cases:
 
   # Group C
   - user/1/email
+  - user/1/vote_delegated_$_to_id
+  - user/1/vote_delegations_$_from_ids
+  - user/1/group_$_ids
 
   # Group D
   - user/1/last_email_send
@@ -273,6 +279,7 @@ cases:
     user/1337/committee_$_management_level: ["5"]
     user/1337/committee_$5_management_level: can_manage
     committee/5/meeting_ids: [1]
+    meeting/1/user_ids: [1]
   can_see:
   # Group A
   - user/1/id
@@ -351,8 +358,8 @@ cases:
 
 - name: vote delegation from user
   db:
-    user/1/vote_delegated_$_to_id: ["1","2"]
-    user/1/vote_delegated_$2_to_id: 1337
+    user/1337/vote_delegated_$_to_id: ["1","2"]
+    user/1337/vote_delegated_$2_to_id: 1
   can_see:
   # Group A
   - user/1/id
@@ -383,8 +390,8 @@ cases:
 
 - name: vote delegation to user
   db:
-    user/1/vote_delegations_$_from_ids: ["1","2"]
-    user/1/vote_delegations_$2_from_ids: [1337]
+    user/1337/vote_delegations_$_from_ids: ["1","2"]
+    user/1337/vote_delegations_$2_from_ids: [1]
   can_see:
   # Group A
   - user/1/id
