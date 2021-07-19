@@ -30,22 +30,88 @@ func committeeManagerMembers(ctx context.Context, dp dataprovider.DataProvider, 
 		return nil, nil
 	}
 
-	var committeManager []int
-	if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/committee_as_manager_ids", userID), &committeManager); err != nil {
-		return nil, fmt.Errorf("getting committee manager: %w", err)
+	var committeManagerLevel []string
+	if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/committee_$_management_level", userID), &committeManagerLevel); err != nil {
+		return nil, fmt.Errorf("getting committee manager level: %w", err)
 	}
 
 	members := make(map[int]bool)
-	for _, id := range committeManager {
+	for _, id := range committeManagerLevel {
+		var level string
+		if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/committee_$%s_management_level", userID, id), &level); err != nil {
+			return nil, fmt.Errorf("getting committee manager level for committee %s: %w", id, err)
+		}
+
+		if level != "can_manage" {
+			continue
+		}
+
 		var membersIDs []int
-		if err := dp.GetIfExist(ctx, fmt.Sprintf("committee/%d/member_ids", id), &membersIDs); err != nil {
+		if err := dp.GetIfExist(ctx, fmt.Sprintf("committee/%s/user_ids", id), &membersIDs); err != nil {
 			return nil, fmt.Errorf("getting members: %w", err)
 		}
-		for _, id := range membersIDs {
-			members[id] = true
+
+		for _, memberID := range membersIDs {
+			members[memberID] = true
+		}
+
+		// This is O(n³). There has to be another way.
+		var meetingIDs []int
+		if err := dp.GetIfExist(ctx, fmt.Sprintf("committee/%s/meeting_ids", id), &meetingIDs); err != nil {
+			return nil, fmt.Errorf("getting meetings: %w", err)
+		}
+
+		for _, meetingID := range meetingIDs {
+			var membersIDs []int
+			if err := dp.GetIfExist(ctx, fmt.Sprintf("meeting/%d/user_ids", meetingID), &membersIDs); err != nil {
+				return nil, fmt.Errorf("getting meeting members: %w", err)
+			}
+
+			for _, memberID := range membersIDs {
+				members[memberID] = true
+			}
 		}
 	}
 	return members, nil
+}
+
+// delegatedVoteFromAndTo returns all user ID that the userID has given his vote
+// or is delegated an all meetings.
+func delegatedVoteFromAndTo(ctx context.Context, dp dataprovider.DataProvider, userID int) (map[int]bool, error) {
+	if userID == 0 {
+		return nil, nil
+	}
+
+	users := make(map[int]bool)
+
+	var delegatedTo []string
+	if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/vote_delegated_$_to_id", userID), &delegatedTo); err != nil {
+		return nil, fmt.Errorf("get vote_delegated_to_id: %w", err)
+	}
+
+	for _, e := range delegatedTo {
+		var oterUserID int
+		if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/vote_delegated_$%s_to_id", userID, e), &oterUserID); err != nil {
+			return nil, fmt.Errorf("get vote delegated to for meeting %s: %w", e, err)
+		}
+		users[oterUserID] = true
+	}
+
+	var delegatedFrom []string
+	if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/vote_delegations_$_from_ids", userID), &delegatedFrom); err != nil {
+		return nil, fmt.Errorf("get vote_delegated_from_ids: %w", err)
+	}
+
+	for _, e := range delegatedFrom {
+		var userIDs []int
+		if err := dp.GetIfExist(ctx, fmt.Sprintf("user/%d/vote_delegations_$%s_from_ids", userID, e), &userIDs); err != nil {
+			return nil, fmt.Errorf("get vote delegated from for meeting %s: %w", e, err)
+		}
+		for _, userID := range userIDs {
+			users[userID] = true
+		}
+	}
+	return users, nil
 }
 
 func (u *user) read(ctx context.Context, userID int, fqfields []perm.FQField, result map[string]bool) error {
@@ -59,6 +125,11 @@ func (u *user) read(ctx context.Context, userID int, fqfields []perm.FQField, re
 		return fmt.Errorf("getting members of committee: %w", err)
 	}
 
+	delegated, err := delegatedVoteFromAndTo(ctx, u.dp, userID)
+	if err != nil {
+		return fmt.Errorf("getting delegated (from/to) user ids: %w", err)
+	}
+
 	meetingFields := make(map[int]map[string]bool)
 
 	grouped := groupByID(fqfields)
@@ -66,13 +137,21 @@ func (u *user) read(ctx context.Context, userID int, fqfields []perm.FQField, re
 		seeFields := make(map[string]bool)
 
 		if orgaLevel != "" {
-			addSlice(seeFields, canSeeFields[3])
+			addSlice(seeFields, canSeeFields['A'])
+			addSlice(seeFields, canSeeFields['C'])
+			addSlice(seeFields, canSeeFields['D'])
+			addSlice(seeFields, canSeeFields['E'])
+			addSlice(seeFields, canSeeFields['F'])
 		}
 		if fqfields[0].ID == userID {
-			addSlice(seeFields, canSeeFields[4])
+			addSlice(seeFields, canSeeFields['A'])
+			addSlice(seeFields, canSeeFields['B'])
+			addSlice(seeFields, canSeeFields['C'])
+			addSlice(seeFields, canSeeFields['E'])
+			addSlice(seeFields, canSeeFields['F'])
 		}
-		if committeeManagerMembers[fqfields[0].ID] {
-			addSlice(seeFields, canSeeFields[5])
+		if committeeManagerMembers[fqfields[0].ID] || delegated[fqfields[0].ID] {
+			addSlice(seeFields, canSeeFields['A'])
 		}
 
 		var meetingIDsStr []string
@@ -98,13 +177,14 @@ func (u *user) read(ctx context.Context, userID int, fqfields []perm.FQField, re
 					return fmt.Errorf("getting perms for user %d in meeting %d: %w", userID, meetingID, err)
 				}
 				if perms.Has(perm.UserCanSee) {
-					addSlice(fields, canSeeFields[0])
+					addSlice(fields, canSeeFields['A'])
 				}
 				if perms.Has(perm.UserCanSeeExtraData) {
-					addSlice(fields, canSeeFields[1])
+					addSlice(fields, canSeeFields['C'])
 				}
 				if perms.Has(perm.UserCanManage) {
-					addSlice(fields, canSeeFields[2])
+					addSlice(fields, canSeeFields['D'])
+					addSlice(fields, canSeeFields['E'])
 				}
 				meetingFields[meetingID] = fields
 			}
@@ -118,7 +198,7 @@ func (u *user) read(ctx context.Context, userID int, fqfields []perm.FQField, re
 				return err
 			}
 			if r {
-				addSlice(seeFields, canSeeFields[0])
+				addSlice(seeFields, canSeeFields['A'])
 			}
 		}
 
@@ -272,6 +352,14 @@ func addMap(data map[string]bool, m map[string]bool) {
 	}
 }
 
+// templateFieldPrefix returns the part of a templatefield until the $.
+//
+// If the field is not a template field, it returns the full field.
+//
+// Example:
+// * user/1/speaker_$_ids -> user/1/speaker_$
+// * user/1/speaker_$5_ids -> user/1/speaker_$
+// * user/1/username -> user/1/username
 func templateFieldPrefix(fqfield perm.FQField) string {
 	i := strings.IndexByte(fqfield.Field, '$')
 	if i < 0 {
@@ -300,8 +388,8 @@ func meetingFilter(fqfield perm.FQField) int {
 // canSeeFields list all fields of the user ordered by permission levels.
 //
 // Structured fields contain only the prefix, ending with the $.
-var canSeeFields = [...][]string{
-	{ // can_see
+var canSeeFields = map[byte][]string{
+	'A': {
 		"id",
 		"username",
 		"title",
@@ -311,13 +399,13 @@ var canSeeFields = [...][]string{
 		"gender",
 		"default_number",
 		"default_structure_level",
+		"default_vote_weight",
 		"is_demo_user",
 		"is_present_in_meeting_ids",
 		"number_$",
 		"structure_level_$",
 		"about_me_$",
 		"vote_weight_$",
-		"group_$",
 		"speaker_$",
 		"supported_motion_$",
 		"submitted_motion_$",
@@ -327,103 +415,29 @@ var canSeeFields = [...][]string{
 		"vote_delegated_vote_$",
 		"assignment_candidate_$",
 		"projection_$",
-		"current_projector_$",
 	},
-	{ // can_see_extra
-		"is_active",
-		"email",
-		"last_email_send",
-		"meeting_id",
-		"guest_meeting_ids",
-		"comment_$",
-		"vote_delegated_$",
-		"vote_delegations_$",
-		"default_vote_weight",
-	},
-	{ // can_manage
-		"default_password",
-	},
-	{ // orga can_manage_user
-		"id",
-		"username",
-		"title",
-		"first_name",
-		"last_name",
-		"is_physical_person",
-		"gender",
-		"default_number",
-		"default_structure_level",
-		"is_demo_user",
-		"number_$",
-		"structure_level_$",
-		"vote_weight_$",
-		"organization_management_level",
-		"committee_as_member_ids",
-		"email",
-		"last_email_send",
-		"committee_as_manager_ids",
-		"is_active",
-		"guest_meeting_ids",
-		"default_password",
-		"default_vote_weight",
-		"meeting_id",
-	},
-	{ // own user
-		"id",
-		"username",
-		"title",
-		"first_name",
-		"last_name",
-		"is_physical_person",
-		"gender",
-		"default_number",
-		"default_structure_level",
-		"is_demo_user",
-		"is_present_in_meeting_ids",
-		"number_$",
-		"structure_level_$",
-		"about_me_$",
-		"vote_weight_$",
-		"group_$",
-		"speaker_$",
-		"supported_motion_$",
-		"submitted_motion_$",
-		"poll_voted_$",
-		"option_$",
-		"vote_$",
-		"vote_delegated_vote_$",
-		"assignment_candidate_$",
-		"projection_$",
-		"current_projector_$",
-		"is_active",
-		"email",
-		"last_email_send",
-		"meeting_id",
-		"guest_meeting_ids",
-		"comment_$",
-		"vote_delegated_$",
-		"vote_delegations_$",
-		"default_password",
-		"organization_management_level",
+	'B': {
 		"personal_note_$",
-		"committee_as_member_ids",
-		"committee_as_manager_ids",
-		"default_vote_weight",
 	},
-	{ // Committee manager
-		"id",
-		"username",
-		"title",
-		"first_name",
-		"last_name",
-		"is_active",
-		"is_physical_person",
-		"gender",
+	'C': {
 		"email",
+		"vote_delegated_$",
+		"vote_delegations_$",
+		"group_$",
+	},
+	'D': {
 		"last_email_send",
-		"is_demo_user",
+		"is_active",
+		"comment_$",
+		"default_password",
+		"can_change_own_password",
+	},
+	'E': {
+		"committee_ids",
+		"committee_$",
+		"meeting_ids",
+	},
+	'F': {
 		"organization_management_level",
-		"committee_as_member_ids",
-		"committee_as_manager_ids",
 	},
 }

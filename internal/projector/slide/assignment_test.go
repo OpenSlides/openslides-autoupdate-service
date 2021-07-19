@@ -29,7 +29,6 @@ func TestAssignment(t *testing.T) {
 			map[string]string{
 				"assignment/1/id":                     `1`,
 				"assignment/1/title":                  `"title 1"`,
-				"assignment/1/open_posts":             `10`,
 				"assignment/1/description":            `"description 1"`,
 				"assignment/1/number_poll_candidates": `true`,
 				"assignment/1/candidate_ids":          `[10,11]`,
@@ -44,12 +43,10 @@ func TestAssignment(t *testing.T) {
 				"user/110/username": `"user110"`,
 				"user/111/username": `"user111"`,
 			},
-			`{"title":"title 1","phase":"","open_posts":10, "description":"description 1","number_poll_candidates":true, "candidates":["user111", "user110"]}`,
+			`{"title":"title 1", "description":"description 1","number_poll_candidates":true, "candidates":["user111", "user110"]}`,
 			[]string{
 				"assignment/1/id",
 				"assignment/1/title",
-				"assignment/1/phase",
-				"assignment/1/open_posts",
 				"assignment/1/description",
 				"assignment/1/number_poll_candidates",
 				"assignment/1/candidate_ids",
