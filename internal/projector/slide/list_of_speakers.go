@@ -81,11 +81,11 @@ func chyronProjectorFromMap(in map[string]json.RawMessage) (*dbChyronProjector, 
 // ListOfSpeaker renders current list of speaker slide.
 func ListOfSpeaker(store *projector.SlideStore) {
 	store.RegisterSliderFunc("list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, hotkeys []string, err error) {
-		return renderListOfSpeakers(ctx, ds, p7on.ContentObjectID, p7on.MeetingID)
+		return renderListOfSpeakers(ctx, ds, p7on.ContentObjectID, p7on.MeetingID, store)
 	})
 }
 
-func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID string, meetingID int) (encoded []byte, keys []string, err error) {
+func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID string, meetingID int, store *projector.SlideStore) (encoded []byte, keys []string, err error) {
 	fetch := datastore.NewFetcher(ds)
 	defer func() {
 		if err == nil {
@@ -98,8 +98,6 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 	if err != nil {
 		return nil, nil, fmt.Errorf("loading list of speakers: %w", err)
 	}
-
-	title := fetch.String(ctx, los.ContentObjectID+"/title")
 
 	var speakersWaiting []outputSpeaker
 	var speakersFinished []outputSpeaker
@@ -148,24 +146,38 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 		return nil, nil, err
 	}
 
-	idx := strings.Index(los.ContentObjectID, "/")
-	collection := los.ContentObjectID[:idx]
+	parts := strings.Split(los.ContentObjectID, "/")
+	if len(parts) != 2 {
+		return nil, nil, fmt.Errorf("splitting ComtentObjectID: %w", err)
+	}
+	collection := parts[0]
+	if err != nil {
+		return nil, nil, fmt.Errorf("get ID from ContentObjectID: %w", err)
+	}
+
+	titler := store.GetTitleInformationFunc(collection)
+	if titler == nil {
+		return nil, nil, fmt.Errorf("no titler function registered for %s", collection)
+	}
+
+	titleInfo, err := titler.GetTitleInformation(ctx, fetch, los.ContentObjectID, "", meetingID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("get title func: %w", err)
+	}
 
 	slideData := struct {
-		Title                   string          `json:"title"`
 		Waiting                 []outputSpeaker `json:"waiting"`
 		Current                 *outputSpeaker  `json:"current,"`
 		Finished                []outputSpeaker `json:"finished"`
 		ContentObjectCollection string          `json:"content_object_collection"`
-		TitleInformation        string          `json:"title_information"`
+		TitleInformation        json.RawMessage `json:"title_information"`
 		Closed                  bool            `json:"closed"`
 	}{
-		title,
 		speakersWaiting,
 		currentSpeaker,
 		speakersFinished,
 		collection,
-		fmt.Sprintf("title_information for %s", los.ContentObjectID),
+		titleInfo,
 		los.Closed,
 	}
 	b, err := json.Marshal(slideData)
@@ -221,7 +233,7 @@ func CurrentListOfSpeakers(store *projector.SlideStore) {
 			return nil, nil, err
 		}
 
-		content, keys, err := renderListOfSpeakers(ctx, ds, fmt.Sprintf("list_of_speakers/%d", losID), p7on.MeetingID)
+		content, keys, err := renderListOfSpeakers(ctx, ds, fmt.Sprintf("list_of_speakers/%d", losID), p7on.MeetingID, store)
 		if err != nil {
 			return nil, nil, fmt.Errorf("render list of speakers %d: %w", losID, err)
 		}
