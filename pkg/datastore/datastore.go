@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -31,6 +32,7 @@ type Datastore struct {
 	calculatedFields map[string]func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error)
 	calculatedKeys   map[string]string
 	closed           <-chan struct{}
+	errHandler       func(error)
 
 	resetMu sync.Mutex
 }
@@ -44,6 +46,7 @@ func New(url string, closed <-chan struct{}, errHandler func(error), keychanger 
 		closed:           closed,
 		calculatedFields: make(map[string]func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error)),
 		calculatedKeys:   make(map[string]string),
+		errHandler:       errHandler,
 	}
 
 	go d.receiveKeyChanges(errHandler)
@@ -75,7 +78,7 @@ func (d *Datastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage,
 		if invalid := invalidKeys(keys...); invalid != nil {
 			return invalidKeyError{keys: invalid}
 		}
-		return d.loadKeys(ctx, keys, set)
+		return d.loadKeys(keys, set)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("getOrSet for keys `%s`: %w", keys, err)
@@ -159,11 +162,7 @@ func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 		d.cache.SetIfExist(data)
 
 		for key, field := range d.calculatedKeys {
-			bs, err := d.calculatedFields[field](context.Background(), key, data)
-			if err != nil {
-				errHandler(fmt.Errorf("calculate key %s: %w", key, err))
-				continue
-			}
+			bs := d.calculateField(field, key, data)
 
 			// Update the cache and also update the data-map. The data-map is
 			// used later in this function to inform the changeListeners.
@@ -180,7 +179,7 @@ func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 	}
 }
 
-func (d *Datastore) loadKeys(ctx context.Context, keys []string, set func(string, json.RawMessage)) error {
+func (d *Datastore) loadKeys(keys []string, set func(string, json.RawMessage)) error {
 	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
 	if len(normalKeys) > 0 {
 		data, err := d.requestKeys(normalKeys)
@@ -193,14 +192,30 @@ func (d *Datastore) loadKeys(ctx context.Context, keys []string, set func(string
 	}
 
 	for key, field := range calculatedKeys {
-		calculated, err := d.calculatedFields[field](ctx, key, nil)
-		if err != nil {
-			return fmt.Errorf("calculating key %s: %w", key, err)
-		}
+		calculated := d.calculateField(field, key, nil)
 		d.calculatedKeys[key] = field
 		set(key, calculated)
 	}
 	return nil
+}
+
+func (d *Datastore) calculateField(field string, key string, updated map[string]json.RawMessage) []byte {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	calculated, err := d.calculatedFields[field](ctx, key, nil)
+	if err != nil {
+		d.errHandler(fmt.Errorf("calculating key %s: %v", key, err))
+
+		msg := fmt.Sprintf("calculating key %s", key)
+		if errors.Is(err, context.Canceled) {
+			msg = fmt.Sprintf("calculating key %s timed out", key)
+		}
+
+		calculated = []byte(fmt.Sprintf(`{"error": "%s"}`, msg))
+	}
+	return calculated
+
 }
 
 // requestKeys request a list of keys by the datastore. If an error happens, no

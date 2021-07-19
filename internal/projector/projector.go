@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -41,15 +40,7 @@ func Register(ds Datastore, slides *SlideStore) {
 		defer func() {
 			// At the end, save all requested keys to check later if one has
 			// changed.
-			//
-			// If an error happend, don't return the error but log it and show
-			// the user a generic error message.
 			hotKeys[fqfield] = keys
-			if err != nil {
-				log.Printf("Error parsing slide %s: %v", fqfield, err)
-				bs = []byte(fmt.Sprintf(`{"error":"Error parsing slide %s!"}`, fqfield))
-				err = nil
-			}
 		}()
 
 		parts := strings.SplitN(fqfield, "/", 3)
@@ -92,9 +83,9 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("unknown slide %s", slideName)
 		}
 
-		bs, slideKeys, err := slider.Slide(context.Background(), ds, p7on)
+		bs, slideKeys, err := slider.Slide(ctx, ds, p7on)
 		if err != nil {
-			return nil, fmt.Errorf("calculating slide: %w", err)
+			return nil, fmt.Errorf("calculating slide %s for p7on %v: %w", slideName, p7on, err)
 		}
 		keys = append(keys, slideKeys...)
 		return bs, nil
