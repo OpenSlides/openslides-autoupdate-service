@@ -83,7 +83,7 @@ func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) (
 				return nil, fmt.Errorf("fetching key: %w", err)
 			}
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return nil, fmt.Errorf("waiting for fetch missing: %w", ctx.Err())
 		}
 	}
 
@@ -105,7 +105,7 @@ func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) (
 		c.mu.RUnlock()
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return nil, fmt.Errorf("waiting for pending key %s: %w", key, ctx.Err())
 		case <-p:
 		}
 		c.mu.RLock()

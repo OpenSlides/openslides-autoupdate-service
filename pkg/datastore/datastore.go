@@ -75,7 +75,7 @@ func (d *Datastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage,
 		if invalid := invalidKeys(keys...); invalid != nil {
 			return invalidKeyError{keys: invalid}
 		}
-		return d.loadKeys(ctx, keys, set)
+		return d.loadKeys(context.Background(), keys, set)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("getOrSet for keys `%s`: %w", keys, err)
