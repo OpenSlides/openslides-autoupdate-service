@@ -15,9 +15,9 @@ type optionRepr struct {
 	Text            string          `json:"text"`
 	ContentObjectID string          `json:"content_object_id"`
 	ContentObject   json.RawMessage `json:"content_object"`
-	Yes             *float64        `json:"yes,omitempty"`
-	No              *float64        `json:"no,omitempty"`
-	Abstain         *float64        `json:"abstain,omitempty"`
+	Yes             *string         `json:"yes,omitempty"`     // Python-DecimalField
+	No              *string         `json:"no,omitempty"`      // Python-DecimalField
+	Abstain         *string         `json:"abstain,omitempty"` // Python-DecimalField
 	id              *int
 	weight          *int
 }
@@ -42,9 +42,9 @@ func optionFromMap(in map[string]json.RawMessage) (*optionRepr, error) {
 }
 
 type optionGlobRepr struct {
-	Yes     float64 `json:"yes"`
-	No      float64 `json:"no"`
-	Abstain float64 `json:"abstain"`
+	Yes     string `json:"yes"`     // Python-DecimalField
+	No      string `json:"no"`      // Python-DecimalField
+	Abstain string `json:"abstain"` // Python-DecimalField
 }
 
 func optionGlobFromMap(in map[string]json.RawMessage) (*optionGlobRepr, error) {
@@ -83,9 +83,9 @@ type dbPoll struct {
 	IsPseudoanonymized    *bool            `json:"is_pseudoanonymized,omitempty"`
 	Pollmethod            *string          `json:"pollmethod,omitempty"`
 	OnehundredPercentBase *string          `json:"onehundred_percent_base,omitempty"`
-	Votesvalid            *float32         `json:"votesvalid,omitempty"`
-	Votesinvalid          *float32         `json:"votesinvalid,omitempty"`
-	Votescast             *float32         `json:"votescast,omitempty"`
+	Votesvalid            *string          `json:"votesvalid,omitempty"`   // Python-DecimalField
+	Votesinvalid          *string          `json:"votesinvalid,omitempty"` // Python-DecimalField
+	Votescast             *string          `json:"votescast,omitempty"`    // Python-DecimalField
 	GlobalOption          *optionGlobRepr  `json:"global_option,omitempty"`
 	PollWork              *dbPollWork      `json:",omitempty"`
 }
