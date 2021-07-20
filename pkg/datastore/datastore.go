@@ -203,7 +203,7 @@ func (d *Datastore) calculateField(field string, key string, updated map[string]
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	calculated, err := d.calculatedFields[field](ctx, key, nil)
+	calculated, err := d.calculatedFields[field](ctx, key, updated)
 	if err != nil {
 		d.errHandler(fmt.Errorf("calculating key %s: %v", key, err))
 
