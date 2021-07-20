@@ -74,7 +74,7 @@ func invalidKeys(keys ...string) []string {
 //
 // If a key does not exist, the value nil is returned for that key.
 func (d *Datastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage, error) {
-	values, err := d.cache.GetOrSet(ctx, keys, func(keys []string, set func(key string, value json.RawMessage)) error {
+	values, err := d.cache.GetOrSet(ctx, keys, func(keys []string, set func(key string, value []byte)) error {
 		if invalid := invalidKeys(keys...); invalid != nil {
 			return invalidKeyError{keys: invalid}
 		}
@@ -179,7 +179,7 @@ func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 	}
 }
 
-func (d *Datastore) loadKeys(keys []string, set func(string, json.RawMessage)) error {
+func (d *Datastore) loadKeys(keys []string, set func(string, []byte)) error {
 	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
 	if len(normalKeys) > 0 {
 		data, err := d.requestKeys(normalKeys)
