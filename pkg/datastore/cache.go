@@ -18,8 +18,6 @@ type cacheSetFunc func(keys []string, set func(key string, value []byte)) error
 // cache knows, that the key does not exist in the datastore. Each value
 // []byte("null") is changed to nil.
 //
-// cache.keyState() tells, if a key exist or is pending.
-//
 // A new cache instance has to be created with newCache().
 type cache struct {
 	data *pendingMap
@@ -90,17 +88,17 @@ func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) (
 // fetchMissing loads the given keys with the set method. Does not update keys
 // that are already in the cache.
 //
-// Deletes the keys from the pending map, even when an error happens.
+// Sets all keys to not pending, even when an error happens.
 func (c *cache) fetchMissing(keys []string, set cacheSetFunc) error {
-	err := set(keys, func(key string, value []byte) {
-		c.data.setIfPending(key, value)
-	})
-
 	// Make sure all pending keys are closed. Make also sure, that
 	// missing keys are set to nil.
 	defer func() {
 		c.data.setEmptyIfPending(keys...)
 	}()
+
+	err := set(keys, func(key string, value []byte) {
+		c.data.setIfPending(key, value)
+	})
 
 	if err != nil {
 		return fmt.Errorf("fetching missing keys: %w", err)
@@ -108,15 +106,14 @@ func (c *cache) fetchMissing(keys []string, set cacheSetFunc) error {
 	return nil
 }
 
-// Set updates or creates a value in the cache. Even if it does not exist.
-func (c *cache) Set(key string, value []byte) {
+// SetIfExist updates the cache if the key exists or is pending.
+func (c *cache) SetIfExist(key string, value []byte) {
 	c.data.setIfExist(key, value)
 }
 
-// SetIfExist updates the cache with the value in the given map.
-//
-// Only keys that exist or are pending are updated.
-func (c *cache) SetIfExist(data map[string]json.RawMessage) {
+// SetIfExistMany is like SetIfExist but with many keys.
+func (c *cache) SetIfExistMany(data map[string]json.RawMessage) {
+	// TODO: Change json.RawMessage to []byte
 	c.data.setIfExistMany(data)
 }
 
@@ -199,23 +196,6 @@ func (d *pendingMap) markPending(keys ...string) []string {
 		marked = append(marked, key)
 	}
 	return marked
-}
-
-// setMany updates values in the dict.
-//
-// If a key is pending, informs all listeners.
-func (d *pendingMap) setMany(data map[string][]byte) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	for key, value := range data {
-		d.data[key] = value
-
-		if pending, isPending := d.pending[key]; isPending {
-			close(pending)
-			delete(d.pending, key)
-		}
-	}
 }
 
 // setIfExiists is like setIfExist but without setting a lock. Should not be

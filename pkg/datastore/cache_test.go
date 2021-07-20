@@ -113,7 +113,7 @@ func TestCacheSetIfExist(t *testing.T) {
 	})
 
 	// Set key1 and key2. key1 is in the cache. key2 should be ignored.
-	c.SetIfExist(map[string]json.RawMessage{
+	c.SetIfExistMany(map[string]json.RawMessage{
 		"key1": json.RawMessage("new_value"),
 		"key2": json.RawMessage("new_value"),
 	})
@@ -152,7 +152,7 @@ func TestCacheSetIfExistParallelToGetOrSet(t *testing.T) {
 	<-waitForGetOrSet
 
 	// Set key1 to new value and stop the ongoing GetOrSet-Call
-	c.SetIfExist(map[string]json.RawMessage{"key1": json.RawMessage("new value")})
+	c.SetIfExistMany(map[string]json.RawMessage{"key1": json.RawMessage("new value")})
 
 	got, _ := c.GetOrSet(context.Background(), []string{"key1"}, func(key []string, set func(string, []byte)) error {
 		set("key1", []byte("Expect values in cache"))
@@ -188,7 +188,7 @@ func TestCacheGetOrSetOldData(t *testing.T) {
 	}()
 
 	<-waitForGetOrSetStart
-	c.SetIfExist(map[string]json.RawMessage{
+	c.SetIfExistMany(map[string]json.RawMessage{
 		"key1": []byte("v2"),
 		"key2": []byte("v2"),
 	})

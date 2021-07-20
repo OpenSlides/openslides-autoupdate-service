@@ -159,14 +159,14 @@ func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 
 		// The lock prefents a cache reset while data is updating.
 		d.resetMu.Lock()
-		d.cache.SetIfExist(data)
+		d.cache.SetIfExistMany(data)
 
 		for key, field := range d.calculatedKeys {
 			bs := d.calculateField(field, key, data)
 
 			// Update the cache and also update the data-map. The data-map is
 			// used later in this function to inform the changeListeners.
-			d.cache.Set(key, bs)
+			d.cache.SetIfExist(key, bs)
 			data[key] = bs
 		}
 
