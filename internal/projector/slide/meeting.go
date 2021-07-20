@@ -20,6 +20,8 @@ type dbMeeting struct {
 	MotionsLineLength                      int    `json:"motions_line_length"`
 	MotionsPreamble                        string `json:"motions_preamble"`
 	MotionsDefaultLineNumbering            string `json:"motions_default_line_numbering"`
+	ListOfSpeakersAmountNextOnProjector    int    `json:"list_of_speakers_amount_next_on_projector"`
+	ListOfSpeakersAmountLastOnProjector    int    `json:"list_of_speakers_amount_last_on_projector"`
 }
 
 func meetingFromMap(in map[string]json.RawMessage) (*dbMeeting, error) {
