@@ -23,6 +23,7 @@ func TestListOfSpeakers(t *testing.T) {
 	meeting/1:
 		list_of_speakers_amount_next_on_projector: 4
 		list_of_speakers_amount_last_on_projector: 2
+		list_of_speakers_show_amount_of_speakers_on_slide: true
 	list_of_speakers/1:
 		content_object_id:	topic/1
 		closed: 			true
@@ -150,12 +151,14 @@ func TestListOfSpeakers(t *testing.T) {
 					"collection": "topic",
 					"content_object_id": "topic/1",
 					"title": "topic1 title"
-				}
+				},
+				"number_of_waiting_speakers": 2
 			}
 			`,
 			[]string{
 				"meeting/1/list_of_speakers_amount_next_on_projector",
 				"meeting/1/list_of_speakers_amount_last_on_projector",
+				"meeting/1/list_of_speakers_show_amount_of_speakers_on_slide",
 				"list_of_speakers/1/speaker_ids",
 				"list_of_speakers/1/content_object_id",
 				"list_of_speakers/1/closed",
@@ -244,7 +247,8 @@ func TestListOfSpeakers(t *testing.T) {
 		{
 			"No Current speaker",
 			changeData(data, map[string]string{
-				"list_of_speakers/1/speaker_ids": "[1,4]",
+				"list_of_speakers/1/speaker_ids":                              "[1,4]",
+				"meeting/1/list_of_speakers_show_amount_of_speakers_on_slide": "false",
 			}),
 			`{
 				"waiting": [{
@@ -270,6 +274,9 @@ func TestListOfSpeakers(t *testing.T) {
 			}
 			`,
 			[]string{
+				"meeting/1/list_of_speakers_amount_next_on_projector",
+				"meeting/1/list_of_speakers_amount_last_on_projector",
+				"meeting/1/list_of_speakers_show_amount_of_speakers_on_slide",
 				"list_of_speakers/1/speaker_ids",
 				"list_of_speakers/1/content_object_id",
 				"list_of_speakers/1/closed",
@@ -338,10 +345,12 @@ func getDataForCurrentList() map[string]string {
 	//
 	// lets find out if this username is on the slide-data...
 	return dsmock.YAMLData(`
-		meeting/6/reference_projector_id: 60
 		projector/60/current_projection_ids: [2]
 		projection/2/content_object_id: topic/5
 
+		meeting/6:
+			list_of_speakers_show_amount_of_speakers_on_slide: false
+			reference_projector_id: 60
 		topic/5:
 			list_of_speakers_id: 7
 			title: topic5 title
@@ -381,6 +390,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 			ID:              1,
 			ContentObjectID: "meeting/6",
 			Type:            "current_list_of_speakers",
+			MeetingID:       6,
 		}
 
 		bs, keys, err := slide.Slide(context.Background(), ds, p7on)
@@ -406,6 +416,9 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 		`
 		assert.JSONEq(t, expect, string(bs))
 		expectKeys := []string{
+			"meeting/6/list_of_speakers_amount_next_on_projector",
+			"meeting/6/list_of_speakers_amount_last_on_projector",
+			"meeting/6/list_of_speakers_show_amount_of_speakers_on_slide",
 			"meeting/6/reference_projector_id",
 			"projector/60/current_projection_ids",
 			"projection/2/content_object_id",
@@ -427,6 +440,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 			"user/10/first_name",
 			"user/10/last_name",
 			"user/10/default_structure_level",
+			"user/10/structure_level_$6",
 		}
 		assert.ElementsMatch(t, expectKeys, keys)
 	})

@@ -241,7 +241,7 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 
 	var speakersWaiting []dbSpeaker
 	var speakersFinished []dbSpeaker
-	currentSpeaker, err := getSpeakerLists(ctx, los, meetingID, fetch, &speakersWaiting, &speakersFinished)
+	currentSpeaker, numberOfWaitingSpeakers, err := getSpeakerLists(ctx, los, meetingID, fetch, &speakersWaiting, &speakersFinished)
 	if err != nil {
 		return nil, nil, fmt.Errorf("getSpeakersList: %w", err)
 	}
@@ -270,17 +270,19 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 	}
 
 	slideData := struct {
-		Waiting          []dbSpeaker     `json:"waiting"`
-		Current          *dbSpeaker      `json:"current,"`
-		Finished         []dbSpeaker     `json:"finished"`
-		TitleInformation json.RawMessage `json:"title_information"`
-		Closed           bool            `json:"closed"`
+		Waiting                 []dbSpeaker     `json:"waiting"`
+		Current                 *dbSpeaker      `json:"current,"`
+		Finished                []dbSpeaker     `json:"finished"`
+		TitleInformation        json.RawMessage `json:"title_information"`
+		Closed                  bool            `json:"closed"`
+		NumberOfWaitingSpeakers *int            `json:"number_of_waiting_speakers,omitempty"`
 	}{
 		speakersWaiting,
 		currentSpeaker,
 		speakersFinished,
 		titleInfo,
 		los.Closed,
+		numberOfWaitingSpeakers,
 	}
 	b, err := json.Marshal(slideData)
 	if err != nil {
@@ -289,7 +291,7 @@ func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID s
 	return b, fetch.Keys(), nil
 }
 
-func getSpeakerLists(ctx context.Context, los *dbListOfSpeakers, meetingID int, fetch *datastore.Fetcher, speakersWaiting *[]dbSpeaker, speakersFinished *[]dbSpeaker) (*dbSpeaker, error) {
+func getSpeakerLists(ctx context.Context, los *dbListOfSpeakers, meetingID int, fetch *datastore.Fetcher, speakersWaiting *[]dbSpeaker, speakersFinished *[]dbSpeaker) (*dbSpeaker, *int, error) {
 	fields := []string{
 		"user_id",
 		"speech_state",
@@ -301,15 +303,16 @@ func getSpeakerLists(ctx context.Context, los *dbListOfSpeakers, meetingID int, 
 	}
 
 	var currentSpeaker *dbSpeaker
+	var numberOfWaitingSpeakers *int
 	for _, id := range los.SpeakerIDs {
 		speaker, err := speakerFromMap(fetch.Object(ctx, fields, "speaker/%d", id))
 		if err != nil {
-			return nil, fmt.Errorf("loading speaker: %w", err)
+			return nil, nil, fmt.Errorf("loading speaker: %w", err)
 		}
 
 		user, err := NewUser(ctx, fetch, speaker.SpeakerWork.UserID, meetingID)
 		if err != nil {
-			return nil, fmt.Errorf("loading user: %w", err)
+			return nil, nil, fmt.Errorf("loading user: %w", err)
 		}
 
 		speaker.User = user.UserRepresentation(meetingID)
@@ -340,11 +343,17 @@ func getSpeakerLists(ctx context.Context, los *dbListOfSpeakers, meetingID int, 
 		return (*speakersFinished)[i].SpeakerWork.EndTime > (*speakersFinished)[j].SpeakerWork.EndTime
 	})
 
+	meeting, err := getMeeting(ctx, fetch, meetingID, []string{"list_of_speakers_amount_next_on_projector", "list_of_speakers_amount_last_on_projector", "list_of_speakers_show_amount_of_speakers_on_slide"})
+	if err != nil {
+		return nil, nil, fmt.Errorf("reading meeting: %w", err)
+	}
+
+	if meeting.ListOfSpeakersShowAmountOfSpeakersOnSlide {
+		number := len(*speakersWaiting)
+		numberOfWaitingSpeakers = &number
+	}
+
 	if len(*speakersWaiting) > 1 || len(*speakersFinished) > 1 {
-		meeting, err := getMeeting(ctx, fetch, meetingID, []string{"list_of_speakers_amount_next_on_projector", "list_of_speakers_amount_last_on_projector"})
-		if err != nil {
-			return nil, fmt.Errorf("reading meeting: %w", err)
-		}
 		if len(*speakersWaiting) > 1 && meeting.ListOfSpeakersAmountNextOnProjector >= 0 && meeting.ListOfSpeakersAmountNextOnProjector < len(*speakersWaiting) {
 			*speakersWaiting = (*speakersWaiting)[:meeting.ListOfSpeakersAmountNextOnProjector]
 		}
@@ -363,5 +372,5 @@ func getSpeakerLists(ctx context.Context, los *dbListOfSpeakers, meetingID int, 
 	if currentSpeaker != nil {
 		currentSpeaker.SpeakerWork = nil
 	}
-	return currentSpeaker, nil
+	return currentSpeaker, numberOfWaitingSpeakers, nil
 }
