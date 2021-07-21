@@ -34,9 +34,9 @@ func TestPoll(t *testing.T) {
 	        is_pseudoanonymized: false
 	        pollmethod: YNA
 	        onehundred_percent_base: YNA
-	        votesvalid: 2.000000
-	        votesinvalid: 9.000000
-	        votescast: 2.000000
+	        votesvalid: "2.000000"
+	        votesinvalid: "9.000000"
+	        votescast: "2.000000"
 	        global_option_id: 3
 	        meeting_id: 111
 	        entitled_users_at_stop: {"A": "bcd", "B":"def"}
@@ -48,21 +48,21 @@ func TestPoll(t *testing.T) {
 	    1:
 	        text: Option text
 	        content_object_id: topic/1
-	        yes: 4.000000
-	        no: 5.000000
-	        abstain: 6.000000
+	        yes: "4.000000"
+	        no: "5.000000"
+	        abstain: "6.000000"
 	        weight: 10
 	    2:
 	        text: Option text
 	        content_object_id: topic/2
-	        yes: 5.000000
-	        no: 4.000000
-	        abstain: 3.000000
+	        yes: "5.000000"
+	        no: "4.000000"
+	        abstain: "3.000000"
 	        weight: 3
 	    3:
-	        yes: 14.000000
-	        no: 15.000000
-	        abstain: 16.000000
+	        yes: "14.000000"
+	        no: "15.000000"
+	        abstain: "16.000000"
 	topic:
 	    1:
 	        title: Topic title 1
@@ -108,9 +108,9 @@ func TestPoll(t *testing.T) {
                             "title":"Topic title 2",
                             "agenda_item_number":""
                         },
-                        "yes":5,
-                        "no":4,
-                        "abstain":3
+                        "yes":"5.000000",
+                        "no":"4.000000",
+                        "abstain":"3.000000"
                     },
                     {
                         "content_object_id":"topic/1",
@@ -121,9 +121,9 @@ func TestPoll(t *testing.T) {
                             "title":"Topic title 1",
                             "agenda_item_number":""
                         },
-                        "yes":4,
-                        "no":5,
-                        "abstain":6
+                        "yes":"4.000000",
+                        "no":"5.000000",
+                        "abstain":"6.000000"
                     }
                 ],
                 "entitled_users_at_stop": {
@@ -133,13 +133,13 @@ func TestPoll(t *testing.T) {
                 "is_pseudoanonymized":false,
                 "pollmethod":"YNA",
                 "onehundred_percent_base":"YNA",
-                "votesvalid": 2,
-                "votesinvalid": 9,
-                "votescast": 2,
+                "votesvalid": "2.000000",
+                "votesinvalid": "9.000000",
+                "votescast": "2.000000",
                 "global_option":{
-                    "yes":14,
-                    "no":15,
-                    "abstain":16
+                    "yes":"14.000000",
+                    "no":"15.000000",
+                    "abstain":"16.000000"
                 }
             }
             `,

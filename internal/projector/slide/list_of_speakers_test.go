@@ -20,10 +20,13 @@ func TestListOfSpeakers(t *testing.T) {
 	assert.NotNilf(t, losSlide, "Slide with name `list_of_speakers` not found.")
 
 	data := dsmock.YAMLData(`
+	meeting/1:
+		list_of_speakers_amount_next_on_projector: 4
+		list_of_speakers_amount_last_on_projector: 2
 	list_of_speakers/1:
 		content_object_id:	topic/1
 		closed: 			true
-		speaker_ids: 		[1,2,3]
+		speaker_ids: 		[1,2,3,4,5,6]
 
 	topic/1/title: topic1 title
 
@@ -31,34 +34,70 @@ func TestListOfSpeakers(t *testing.T) {
 		1:
 			# Waiting
 			user_id:        10
-			marked:         false
+			speech_state:   contribution
+			note:           Seq2Waiting
 			point_of_order: false
 			weight:         10
-		
 		2:
-			# Current
-			user_id:        20
-			begin_time:     100
-			marked:         true
-			point_of_order: false
-			weight:         20
+			# Waiting
+			user_id:        11
+			speech_state:   contribution
+			note:           Seq1Waiting
+			point_of_order: true
+			weight:         5
 		
 		3:
+			# Current
+			user_id:        20
+			speech_state:   pro
+			note:           SeqCurrent
+			point_of_order: false
+			weight:         20
+			begin_time:     100
+			
+		
+		4:
 			# Finished
 			user_id:        30
-			begin_time:     10
-			end_time:       20
-			marked:         true
+			speech_state:   contra
+			note:           Seq3Finished
 			point_of_order: true
 			weight:         30
+			begin_time:     20
+			end_time:       23
+			
+		5:
+			# Finished
+			user_id:        31
+			speech_state:   contra
+			note:           Seq1Finished
+			point_of_order: true
+			weight:         30
+			begin_time:     29
+			end_time:       32
+		6:
+			# Finished
+			user_id:        32
+			speech_state:   contra
+			note:           Seq2Finished
+			point_of_order: true
+			weight:         30
+			begin_time:     24
+			end_time:       28
 
 	user:
 		10:
 			username: jonny123
+		11:
+			username: elenor
 		20:
 			first_name: Jonny
 		30:
 			last_name: Bo
+		31:
+			username: Ernest
+		32:
+			username: Calli
 	`)
 
 	for _, tt := range []struct {
@@ -71,27 +110,41 @@ func TestListOfSpeakers(t *testing.T) {
 			"Starter",
 			data,
 			`{
-				"waiting": [{
-					"user": "jonny123",
-					"marked": false,
-					"point_of_order": false,
-					"weight": 10
-				}],
+				"waiting": [
+					{
+						"user": "elenor",
+						"speech_state": "contribution",
+						"note": "Seq1Waiting",
+						"point_of_order": true
+					},
+					{
+						"user": "jonny123",
+						"speech_state": "contribution",
+						"note": "Seq2Waiting",
+						"point_of_order": false
+					}
+				],
 				"current": {
 					"user": "Jonny",
-					"marked": true,
-					"point_of_order": false,
-					"weight": 20
+					"speech_state": "pro",
+					"note": "SeqCurrent",
+					"point_of_order": false
 				},
-				"finished": [{
-					"user": "Bo",
-					"marked": true,
-					"point_of_order": true,
-					"weight": 30,
-					"end_time": 20
-				}],
+				"finished": [
+					{
+						"user": "Ernest",
+						"speech_state": "contra",
+						"note": "Seq1Finished",
+						"point_of_order": true
+					},
+					{
+						"user": "Calli",
+						"speech_state": "contra",
+						"note": "Seq2Finished",
+						"point_of_order": true
+					}
+				],
 				"closed": true,
-				"content_object_collection": "topic",
 				"title_information": {
 					"agenda_item_number": "",
 					"collection": "topic",
@@ -101,68 +154,113 @@ func TestListOfSpeakers(t *testing.T) {
 			}
 			`,
 			[]string{
+				"meeting/1/list_of_speakers_amount_next_on_projector",
+				"meeting/1/list_of_speakers_amount_last_on_projector",
 				"list_of_speakers/1/speaker_ids",
 				"list_of_speakers/1/content_object_id",
 				"list_of_speakers/1/closed",
 				"topic/1/id",
 				"topic/1/title",
 				"speaker/1/user_id",
-				"speaker/1/marked",
+				"speaker/1/speech_state",
+				"speaker/1/note",
 				"speaker/1/point_of_order",
 				"speaker/1/weight",
 				"speaker/1/begin_time",
 				"speaker/1/end_time",
 				"speaker/2/user_id",
-				"speaker/2/marked",
+				"speaker/2/speech_state",
+				"speaker/2/note",
 				"speaker/2/point_of_order",
 				"speaker/2/weight",
 				"speaker/2/begin_time",
 				"speaker/2/end_time",
 				"speaker/3/user_id",
-				"speaker/3/marked",
+				"speaker/3/speech_state",
+				"speaker/3/note",
 				"speaker/3/point_of_order",
 				"speaker/3/weight",
 				"speaker/3/begin_time",
 				"speaker/3/end_time",
+				"speaker/4/user_id",
+				"speaker/4/speech_state",
+				"speaker/4/note",
+				"speaker/4/point_of_order",
+				"speaker/4/weight",
+				"speaker/4/begin_time",
+				"speaker/4/end_time",
+				"speaker/5/user_id",
+				"speaker/5/speech_state",
+				"speaker/5/note",
+				"speaker/5/point_of_order",
+				"speaker/5/weight",
+				"speaker/5/begin_time",
+				"speaker/5/end_time",
+				"speaker/6/user_id",
+				"speaker/6/speech_state",
+				"speaker/6/note",
+				"speaker/6/point_of_order",
+				"speaker/6/weight",
+				"speaker/6/begin_time",
+				"speaker/6/end_time",
 				"user/10/username",
 				"user/10/title",
 				"user/10/first_name",
 				"user/10/last_name",
 				"user/10/default_structure_level",
+				"user/10/structure_level_$1",
+				"user/11/username",
+				"user/11/title",
+				"user/11/first_name",
+				"user/11/last_name",
+				"user/11/default_structure_level",
+				"user/11/structure_level_$1",
 				"user/20/username",
 				"user/20/title",
 				"user/20/first_name",
 				"user/20/last_name",
 				"user/20/default_structure_level",
+				"user/20/structure_level_$1",
 				"user/30/username",
 				"user/30/title",
 				"user/30/first_name",
 				"user/30/last_name",
 				"user/30/default_structure_level",
+				"user/30/structure_level_$1",
+				"user/31/username",
+				"user/31/title",
+				"user/31/first_name",
+				"user/31/last_name",
+				"user/31/default_structure_level",
+				"user/31/structure_level_$1",
+				"user/32/username",
+				"user/32/title",
+				"user/32/first_name",
+				"user/32/last_name",
+				"user/32/default_structure_level",
+				"user/32/structure_level_$1",
 			},
 		},
 		{
 			"No Current speaker",
 			changeData(data, map[string]string{
-				"list_of_speakers/1/speaker_ids": "[1,3]",
+				"list_of_speakers/1/speaker_ids": "[1,4]",
 			}),
 			`{
 				"waiting": [{
 					"user": "jonny123",
-					"marked": false,
-					"point_of_order": false,
-					"weight": 10
+					"speech_state": "contribution",
+					"note": "Seq2Waiting",
+					"point_of_order": false
 				}],
 				"current": null,
 				"finished": [{
 					"user": "Bo",
-					"marked": true,
-					"point_of_order": true,
-					"weight": 30,
-					"end_time": 20
+					"speech_state": "contra",
+					"note": "Seq3Finished",
+					"point_of_order": true
 				}],
 				"closed": true,
-				"content_object_collection": "topic",
 				"title_information": {
 					"agenda_item_number": "",
 					"collection": "topic",
@@ -178,27 +276,31 @@ func TestListOfSpeakers(t *testing.T) {
 				"topic/1/id",
 				"topic/1/title",
 				"speaker/1/user_id",
-				"speaker/1/marked",
+				"speaker/1/speech_state",
+				"speaker/1/note",
 				"speaker/1/point_of_order",
 				"speaker/1/weight",
 				"speaker/1/begin_time",
 				"speaker/1/end_time",
-				"speaker/3/user_id",
-				"speaker/3/marked",
-				"speaker/3/point_of_order",
-				"speaker/3/weight",
-				"speaker/3/begin_time",
-				"speaker/3/end_time",
+				"speaker/4/user_id",
+				"speaker/4/speech_state",
+				"speaker/4/note",
+				"speaker/4/point_of_order",
+				"speaker/4/weight",
+				"speaker/4/begin_time",
+				"speaker/4/end_time",
 				"user/10/username",
 				"user/10/title",
 				"user/10/first_name",
 				"user/10/last_name",
 				"user/10/default_structure_level",
+				"user/10/structure_level_$1",
 				"user/30/username",
 				"user/30/title",
 				"user/30/first_name",
 				"user/30/last_name",
 				"user/30/default_structure_level",
+				"user/30/structure_level_$1",
 			},
 		},
 	} {
@@ -209,6 +311,7 @@ func TestListOfSpeakers(t *testing.T) {
 
 			p7on := &projector.Projection{
 				ContentObjectID: "list_of_speakers/1",
+				MeetingID:       1,
 			}
 
 			bs, keys, err := losSlide.Slide(context.Background(), ds, p7on)
@@ -250,7 +353,8 @@ func getDataForCurrentList() map[string]string {
 
 		speaker/8:
 				user_id:        10
-				marked:         false
+				speech_state:   pro
+				note:           Lonesome speaker
 				point_of_order: false
 				weight:         10
 
@@ -285,14 +389,13 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 		expect := `{
 			"waiting": [{
 				"user": "jonny123",
-				"marked": false,
-				"point_of_order": false,
-				"weight": 10
+				"speech_state": "pro",
+				"note": "Lonesome speaker",
+				"point_of_order": false
 			}],
 			"current": null,
 			"finished": null,
 			"closed": true,
-			"content_object_collection": "topic",
 			"title_information": {
 				"agenda_item_number": "",
 				"collection": "topic",
@@ -313,7 +416,8 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 			"list_of_speakers/7/content_object_id",
 			"list_of_speakers/7/closed",
 			"speaker/8/user_id",
-			"speaker/8/marked",
+			"speaker/8/speech_state",
+			"speaker/8/note",
 			"speaker/8/point_of_order",
 			"speaker/8/weight",
 			"speaker/8/begin_time",
