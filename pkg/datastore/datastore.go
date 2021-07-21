@@ -74,7 +74,7 @@ func invalidKeys(keys ...string) []string {
 //
 // If a key does not exist, the value nil is returned for that key.
 func (d *Datastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage, error) {
-	values, err := d.cache.GetOrSet(ctx, keys, func(keys []string, set func(key string, value json.RawMessage)) error {
+	values, err := d.cache.GetOrSet(ctx, keys, func(keys []string, set func(key string, value []byte)) error {
 		if invalid := invalidKeys(keys...); invalid != nil {
 			return invalidKeyError{keys: invalid}
 		}
@@ -159,14 +159,14 @@ func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 
 		// The lock prefents a cache reset while data is updating.
 		d.resetMu.Lock()
-		d.cache.SetIfExist(data)
+		d.cache.SetIfExistMany(data)
 
 		for key, field := range d.calculatedKeys {
 			bs := d.calculateField(field, key, data)
 
 			// Update the cache and also update the data-map. The data-map is
 			// used later in this function to inform the changeListeners.
-			d.cache.Set(key, bs)
+			d.cache.SetIfExist(key, bs)
 			data[key] = bs
 		}
 
@@ -179,7 +179,7 @@ func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
 	}
 }
 
-func (d *Datastore) loadKeys(keys []string, set func(string, json.RawMessage)) error {
+func (d *Datastore) loadKeys(keys []string, set func(string, []byte)) error {
 	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
 	if len(normalKeys) > 0 {
 		data, err := d.requestKeys(normalKeys)
