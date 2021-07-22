@@ -14,7 +14,7 @@ import (
 func TestListOfSpeakers(t *testing.T) {
 	s := new(projector.SlideStore)
 	slide.ListOfSpeaker(s)
-	slide.Topic(s)
+	slide.Assignment(s)
 
 	losSlide := s.GetSlider("list_of_speakers")
 	assert.NotNilf(t, losSlide, "Slide with name `list_of_speakers` not found.")
@@ -25,11 +25,14 @@ func TestListOfSpeakers(t *testing.T) {
 		list_of_speakers_amount_last_on_projector: 2
 		list_of_speakers_show_amount_of_speakers_on_slide: true
 	list_of_speakers/1:
-		content_object_id:	topic/1
+		content_object_id:	assignment/1
 		closed: 			true
 		speaker_ids: 		[1,2,3,4,5,6]
 
-	topic/1/title: topic1 title
+	assignment/1:
+		title: assignment1 title
+		agenda_item_id: 1
+	agenda_item/1/item_number: ItemNr Assignment1
 
 	speaker:
 		1:
@@ -147,10 +150,10 @@ func TestListOfSpeakers(t *testing.T) {
 				],
 				"closed": true,
 				"title_information": {
-					"agenda_item_number": "",
-					"collection": "topic",
-					"content_object_id": "topic/1",
-					"title": "topic1 title"
+					"agenda_item_number": "ItemNr Assignment1",
+					"collection": "assignment",
+					"content_object_id": "assignment/1",
+					"title": "assignment1 title"
 				},
 				"number_of_waiting_speakers": 2
 			}
@@ -162,8 +165,10 @@ func TestListOfSpeakers(t *testing.T) {
 				"list_of_speakers/1/speaker_ids",
 				"list_of_speakers/1/content_object_id",
 				"list_of_speakers/1/closed",
-				"topic/1/id",
-				"topic/1/title",
+				"assignment/1/id",
+				"assignment/1/title",
+				"assignment/1/agenda_item_id",
+				"agenda_item/1/item_number",
 				"speaker/1/user_id",
 				"speaker/1/speech_state",
 				"speaker/1/note",
@@ -266,10 +271,10 @@ func TestListOfSpeakers(t *testing.T) {
 				}],
 				"closed": true,
 				"title_information": {
-					"agenda_item_number": "",
-					"collection": "topic",
-					"content_object_id": "topic/1",
-					"title": "topic1 title"
+					"agenda_item_number": "ItemNr Assignment1",
+					"collection": "assignment",
+					"content_object_id": "assignment/1",
+					"title": "assignment1 title"
 				}
 			}
 			`,
@@ -280,8 +285,10 @@ func TestListOfSpeakers(t *testing.T) {
 				"list_of_speakers/1/speaker_ids",
 				"list_of_speakers/1/content_object_id",
 				"list_of_speakers/1/closed",
-				"topic/1/id",
-				"topic/1/title",
+				"assignment/1/id",
+				"assignment/1/title",
+				"assignment/1/agenda_item_id",
+				"agenda_item/1/item_number",
 				"speaker/1/user_id",
 				"speaker/1/speech_state",
 				"speaker/1/note",
@@ -338,7 +345,7 @@ func getDataForCurrentList() map[string]string {
 	// meeting/6 has reference_projector 60
 	// projector/60 has projection/2
 	// projection/2 has	content_object_id topic/5
-	// topic/5 points list_of_speakers/7
+	// motion_block/1 points list_of_speakers/7
 	// list_of_speakers/7 points to speaker/8
 	// speaker/8 points to user/10
 	// user/10 has username jonny123
@@ -346,17 +353,18 @@ func getDataForCurrentList() map[string]string {
 	// lets find out if this username is on the slide-data...
 	return dsmock.YAMLData(`
 		projector/60/current_projection_ids: [2]
-		projection/2/content_object_id: topic/5
+		projection/2/content_object_id: motion_block/1
 
 		meeting/6:
 			list_of_speakers_show_amount_of_speakers_on_slide: false
 			reference_projector_id: 60
-		topic/5:
+		motion_block/1:
 			list_of_speakers_id: 7
-			title: topic5 title
+			title: motion_block1 title
+			agenda_item_id: 1
 
 		list_of_speakers/7:
-			content_object_id:	topic/5
+			content_object_id:	motion_block/1
 			closed: 			true
 			speaker_ids: 		[8]
 
@@ -368,6 +376,7 @@ func getDataForCurrentList() map[string]string {
 				weight:         10
 
 		user/10/username: jonny123
+		agenda_item/1/item_number: ItemNr. MotionBlock1
 	`)
 
 }
@@ -377,7 +386,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 
 	s := new(projector.SlideStore)
 	slide.CurrentListOfSpeakers(s)
-	slide.Topic(s)
+	slide.MotionBlock(s)
 
 	slide := s.GetSlider("current_list_of_speakers")
 	require.NotNilf(t, slide, "Slide with name `current_list_of_speakers` not found.")
@@ -407,10 +416,10 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 			"finished": null,
 			"closed": true,
 			"title_information": {
-				"agenda_item_number": "",
-				"collection": "topic",
-				"content_object_id": "topic/5",
-				"title": "topic5 title"
+				"agenda_item_number": "ItemNr. MotionBlock1",
+				"collection": "motion_block",
+				"content_object_id": "motion_block/1",
+				"title": "motion_block1 title"
 			}
 		}
 		`
@@ -422,9 +431,11 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 			"meeting/6/reference_projector_id",
 			"projector/60/current_projection_ids",
 			"projection/2/content_object_id",
-			"topic/5/id",
-			"topic/5/title",
-			"topic/5/list_of_speakers_id",
+			"motion_block/1/id",
+			"motion_block/1/title",
+			"motion_block/1/agenda_item_id",
+			"motion_block/1/list_of_speakers_id",
+			"agenda_item/1/item_number",
 			"list_of_speakers/7/speaker_ids",
 			"list_of_speakers/7/content_object_id",
 			"list_of_speakers/7/closed",
@@ -501,7 +512,7 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 			"projector/60/chyron_background_color",
 			"projector/60/chyron_font_color",
 			"projection/2/content_object_id",
-			"topic/5/list_of_speakers_id",
+			"motion_block/1/list_of_speakers_id",
 			"list_of_speakers/7/speaker_ids",
 			"list_of_speakers/7/content_object_id",
 			"list_of_speakers/7/closed",

@@ -54,6 +54,7 @@ type dbMotionWork struct {
 	RecommendationExtensionReferenceIDS          []string `json:"recommendation_extension_reference_ids"`
 	RecommendationExtension                      string   `json:"recommendation_extension"`
 	StateID                                      int      `json:"state_id"`
+	AgendaItemID                                 int      `json:"agenda_item_id"`
 }
 type dbMotion struct {
 	ID                               int                            `json:"id"`
@@ -99,9 +100,10 @@ func motionFromMap(in map[string]json.RawMessage) (*dbMotion, error) {
 }
 
 type dbMotionBlock struct {
-	ID     int    `json:"id"`
-	Title  string `json:"title"`
-	Number string `json:"number"`
+	ID           int    `json:"id"`
+	Title        string `json:"title"`
+	Number       string `json:"number"`
+	AgendaItemID int    `json:"agenda_item_id"`
 }
 
 func motionBlockFromMap(in map[string]json.RawMessage) (*dbMotionBlock, error) {
@@ -237,18 +239,22 @@ func Motion(store *projector.SlideStore) {
 	})
 
 	store.RegisterGetTitleInformationFunc("motion", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string, meetingID int) (json.RawMessage, error) {
-		data := fetch.Object(ctx, []string{"id", "number", "title"}, fqid)
+		data := fetch.Object(ctx, []string{"id", "number", "title", "agenda_item_id"}, fqid)
 		motion, err := motionFromMap(data)
 		if err != nil {
 			return nil, fmt.Errorf("get motion: %w", err)
 		}
 
+		if itemNumber == "" && motion.MotionWork.AgendaItemID > 0 {
+			itemNumber = fetch.String(ctx, "agenda_item/%d/item_number", motion.MotionWork.AgendaItemID)
+		}
+
 		title := struct {
-			Collection      string `json:"collection"`
-			ContentObjectID string `json:"content_object_id"`
-			Title           string `json:"title"`
-			Number          string `json:"number"`
-			AgendaNumber    string `json:"agenda_item_number"`
+			Collection       string `json:"collection"`
+			ContentObjectID  string `json:"content_object_id"`
+			Title            string `json:"title"`
+			Number           string `json:"number"`
+			AgendaItemNumber string `json:"agenda_item_number"`
 		}{
 			"motion",
 			fqid,
@@ -272,17 +278,21 @@ func MotionBlock(store *projector.SlideStore) {
 	})
 
 	store.RegisterGetTitleInformationFunc("motion_block", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string, meetingID int) (json.RawMessage, error) {
-		data := fetch.Object(ctx, []string{"id", "title"}, fqid)
+		data := fetch.Object(ctx, []string{"id", "title", "agenda_item_id"}, fqid)
 		motionBlock, err := motionBlockFromMap(data)
 		if err != nil {
 			return nil, fmt.Errorf("get motion block: %w", err)
 		}
 
+		if itemNumber == "" && motionBlock.AgendaItemID > 0 {
+			itemNumber = fetch.String(ctx, "agenda_item/%d/item_number", motionBlock.AgendaItemID)
+		}
+
 		title := struct {
-			Collection      string `json:"collection"`
-			ContentObjectID string `json:"content_object_id"`
-			Title           string `json:"title"`
-			AgendaNumber    string `json:"agenda_item_number"`
+			Collection       string `json:"collection"`
+			ContentObjectID  string `json:"content_object_id"`
+			Title            string `json:"title"`
+			AgendaItemNumber string `json:"agenda_item_number"`
 		}{
 			"motion_block",
 			fqid,

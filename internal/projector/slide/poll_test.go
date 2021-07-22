@@ -44,6 +44,7 @@ func TestPoll(t *testing.T) {
 	    1:
 	        title: Motion title 1
 	        number: motion number 1234
+	        agenda_item_id: 1
 	option:
 	    1:
 	        text: Option text
@@ -67,9 +68,14 @@ func TestPoll(t *testing.T) {
 	    1:
 	        title: Topic title 1
 	        text: Topic text 1
+	        agenda_item_id: 2
 	    2:
 	        title: Topic title 2
 	        text: Topic text 2
+	        agenda_item_id: 3
+	agenda_item/1/item_number: itemNr. Motion1
+	agenda_item/2/item_number: itemNr. Topic1
+	agenda_item/3/item_number: itemNr. Topic2
 	`)
 
 	for _, tt := range []struct {
@@ -89,7 +95,7 @@ func TestPoll(t *testing.T) {
                     "collection":"motion",
                     "title":"Motion title 1",
                     "number":"motion number 1234",
-                    "agenda_item_number":""
+                    "agenda_item_number":"itemNr. Motion1"
                 },
                 "title":"Poll Title 1",
                 "description":"Poll description 1",
@@ -106,7 +112,7 @@ func TestPoll(t *testing.T) {
                             "content_object_id":"topic/2",
                             "collection":"topic",
                             "title":"Topic title 2",
-                            "agenda_item_number":""
+                            "agenda_item_number":"itemNr. Topic2"
                         },
                         "yes":"5.000000",
                         "no":"4.000000",
@@ -119,7 +125,7 @@ func TestPoll(t *testing.T) {
                             "content_object_id":"topic/1",
                             "collection":"topic",
                             "title":"Topic title 1",
-                            "agenda_item_number":""
+                            "agenda_item_number":"itemNr. Topic1"
                         },
                         "yes":"4.000000",
                         "no":"5.000000",
@@ -167,6 +173,7 @@ func TestPoll(t *testing.T) {
 				"motion/1/id",
 				"motion/1/number",
 				"motion/1/title",
+				"motion/1/agenda_item_id",
 				"option/1/id",
 				"option/1/text",
 				"option/1/content_object_id",
@@ -186,8 +193,13 @@ func TestPoll(t *testing.T) {
 				"option/3/abstain",
 				"topic/1/id",
 				"topic/1/title",
+				"topic/1/agenda_item_id",
 				"topic/2/id",
 				"topic/2/title",
+				"topic/2/agenda_item_id",
+				"agenda_item/1/item_number",
+				"agenda_item/2/item_number",
+				"agenda_item/3/item_number",
 			},
 		},
 		{
@@ -203,7 +215,7 @@ func TestPoll(t *testing.T) {
                     "collection":"motion",
                     "title":"Motion title 1",
                     "number":"motion number 1234",
-                    "agenda_item_number":""
+                    "agenda_item_number":"itemNr. Motion1"
                 },
                 "title":"Poll Title 1",
                 "description":"Poll description 1",
@@ -220,7 +232,7 @@ func TestPoll(t *testing.T) {
                             "content_object_id":"topic/2",
                             "collection":"topic",
                             "title":"Topic title 2",
-                            "agenda_item_number":""
+                            "agenda_item_number":"itemNr. Topic2"
                         }
                     },
                     {
@@ -230,19 +242,19 @@ func TestPoll(t *testing.T) {
                             "content_object_id":"topic/1",
                             "collection":"topic",
                             "title":"Topic title 1",
-                            "agenda_item_number":""
+                            "agenda_item_number":"itemNr. Topic1"
                         }
                     }
                 ]
             }
             `,
 			[]string{
-				"poll/1/state",
 				"poll/1/id",
 				"poll/1/content_object_id",
 				"poll/1/title",
 				"poll/1/description",
 				"poll/1/type",
+				"poll/1/state",
 				"poll/1/state",
 				"poll/1/global_yes",
 				"poll/1/global_no",
@@ -252,6 +264,7 @@ func TestPoll(t *testing.T) {
 				"motion/1/id",
 				"motion/1/number",
 				"motion/1/title",
+				"motion/1/agenda_item_id",
 				"option/1/id",
 				"option/1/weight",
 				"option/1/text",
@@ -262,8 +275,13 @@ func TestPoll(t *testing.T) {
 				"option/2/content_object_id",
 				"topic/1/id",
 				"topic/1/title",
+				"topic/1/agenda_item_id",
 				"topic/2/id",
 				"topic/2/title",
+				"topic/2/agenda_item_id",
+				"agenda_item/1/item_number",
+				"agenda_item/2/item_number",
+				"agenda_item/3/item_number",
 			},
 		},
 	} {

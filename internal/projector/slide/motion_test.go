@@ -59,10 +59,12 @@ func TestMotion(t *testing.T) {
 	        global_no: true
 	        global_abstain: false
 	        meeting_id: 1
+	        agenda_item_id: 1
 	    2:
 	        title: Lead Motion Title
 	        number: Lead Motion 111
 	        text: <p>Lead Motion Text HTML</p>
+	        agenda_item_id: 2
 	    3:
 	        title: Amendment3 title
 	        number: Amendment3 123
@@ -71,35 +73,43 @@ func TestMotion(t *testing.T) {
 	        amendment_paragraph_$32: amendmentParagraph32
 	        change_recommendation_ids: [4, 5]
 	        state_id: 1
+	        agenda_item_id: 3
 	    4:
 	        title: Amendment4 title
 	        number: Amendment4 4123
 	        amendment_paragraph_$: []
 	        state_id: 2
+	        agenda_item_id: 4
 	    5:
 	        title: Amendment5 title
 	        number: Amendment5 5123
 	        amendment_paragraph_$: []
 	        state_id: 3
 	        recommendation_id: 1
+	        agenda_item_id: 5
 	    6:
 	        title: Amendment6 title
 	        number: Amendment6 6123
 	        amendment_paragraph_$: []
 	        state_id: 3
 	        recommendation_id: 2
+	        agenda_item_id: 6
 	    7:
 	        title: ReferencedInMotionRecommendationExtension7 title
 	        number: RIMRE7 number
+	        agenda_item_id: 7
 	    8:
 	        title: ReferencedInMotionRecommendationExtension8 title
 	        number: RIMRE8 number
+	        agenda_item_id: 8
 	    9:
 	        title: RecommendationExtensionReferenceMotion9 title
 	        number: RecommendationExtensionReferenceMotion9 number
+	        agenda_item_id: 9
 	    10:
 	        title: RecommendationExtensionReferenceMotion10 title
 	        number: RecommendationExtensionReferenceMotion10 number
+	        agenda_item_id: 10
 	motion_state:
 	    1:
 	        merge_amendment_into_final: do_merge
@@ -166,6 +176,17 @@ func TestMotion(t *testing.T) {
 	        creation_time: 42345
 	    5:
 	        internal: true
+	agenda_item/1/item_number: ItemNr Motion1
+	agenda_item/2/item_number: ItemNr Motion2
+	agenda_item/3/item_number: ItemNr Motion3
+	agenda_item/4/item_number: ItemNr Motion4
+	agenda_item/5/item_number: ItemNr Motion5
+	agenda_item/6/item_number: ItemNr Motion6
+	agenda_item/7/item_number: ItemNr Motion7
+	agenda_item/8/item_number: ItemNr Motion8
+	agenda_item/9/item_number: ItemNr Motion9
+	agenda_item/10/item_number: ItemNr Motion10
+
 	`)
 
 	for _, tt := range []struct {
@@ -526,14 +547,14 @@ func TestMotion(t *testing.T) {
                 },
                 "recommendation_referencing_motions":[
                     {
-                        "agenda_item_number":"",
+                        "agenda_item_number":"ItemNr Motion7",
                         "collection":"motion",
                         "content_object_id":"motion/7",
                         "title": "ReferencedInMotionRecommendationExtension7 title",
                         "number": "RIMRE7 number"
                     },
                     {
-                        "agenda_item_number":"",
+                        "agenda_item_number":"ItemNr Motion8",
                         "collection":"motion",
                         "content_object_id":"motion/8",
                         "title": "ReferencedInMotionRecommendationExtension8 title",
@@ -544,14 +565,14 @@ func TestMotion(t *testing.T) {
                 "recommendation_extension":"RecommendationExtension_motion1",
                 "recommendation_referenced_motions":{
                     "motion/9":{
-                        "agenda_item_number":"",
+                        "agenda_item_number":"ItemNr Motion9",
                         "collection":"motion",
                         "content_object_id":"motion/9",
                         "title": "RecommendationExtensionReferenceMotion9 title",
                         "number": "RecommendationExtensionReferenceMotion9 number"
                     },
                     "motion/10":{
-                        "agenda_item_number":"",
+                        "agenda_item_number":"ItemNr Motion10",
                         "collection":"motion",
                         "content_object_id":"motion/10",
                         "title": "RecommendationExtensionReferenceMotion10 title",
@@ -708,17 +729,25 @@ func TestMotion(t *testing.T) {
 				"motion/7/id",
 				"motion/7/number",
 				"motion/7/title",
+				"motion/7/agenda_item_id",
 				"motion/8/id",
 				"motion/8/number",
 				"motion/8/title",
+				"motion/8/agenda_item_id",
 				"motion_state/4/recommendation_label",
 				"motion_state/4/show_recommendation_extension_field",
 				"motion/9/id",
 				"motion/9/number",
 				"motion/9/title",
+				"motion/9/agenda_item_id",
 				"motion/10/id",
 				"motion/10/number",
 				"motion/10/title",
+				"motion/10/agenda_item_id",
+				"agenda_item/7/item_number",
+				"agenda_item/8/item_number",
+				"agenda_item/9/item_number",
+				"agenda_item/10/item_number",
 			},
 		},
 	} {

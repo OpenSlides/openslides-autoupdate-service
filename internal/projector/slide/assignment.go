@@ -16,6 +16,7 @@ type dbAssignment struct {
 	Description          string `json:"description"`
 	NumberPollCandidates bool   `json:"number_poll_candidates"`
 	CandidateIDs         []int  `json:"candidate_ids"`
+	AgendaItemID         int    `json:"agenda_item_id"`
 }
 
 type dbAssignmentCandidate struct {
@@ -120,10 +121,14 @@ func Assignment(store *projector.SlideStore) {
 	})
 
 	store.RegisterGetTitleInformationFunc("assignment", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string, meetingID int) (json.RawMessage, error) {
-		data := fetch.Object(ctx, []string{"id", "title"}, fqid)
+		data := fetch.Object(ctx, []string{"id", "title", "agenda_item_id"}, fqid)
 		assignment, err := assignmentFromMap(data)
 		if err != nil {
 			return nil, fmt.Errorf("get assignment: %w", err)
+		}
+
+		if itemNumber == "" && assignment.AgendaItemID > 0 {
+			itemNumber = fetch.String(ctx, "agenda_item/%d/item_number", assignment.AgendaItemID)
 		}
 
 		title := struct {
