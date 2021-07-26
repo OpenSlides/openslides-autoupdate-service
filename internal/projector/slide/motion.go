@@ -11,6 +11,33 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
+type dbMotionState struct {
+	RecommendationLabel string             `json:"recommendation_label"`
+	CSSClass            string             `json:"css_class"`
+	MotionStateWork     *dbMotionStateWork `json:",omitempty"`
+}
+type dbMotionStateWork struct {
+	ShowRecommendationExtensionField bool `json:"show_recommendation_extension_field"`
+}
+
+func motionStateFromMap(in map[string]json.RawMessage) (*dbMotionState, error) {
+	bs, err := json.Marshal(in)
+	if err != nil {
+		return nil, fmt.Errorf("encoding motion state data: %w", err)
+	}
+
+	var ms dbMotionState
+	var msWork dbMotionStateWork
+	ms.MotionStateWork = &msWork
+	if err := json.Unmarshal(bs, &ms); err != nil {
+		return nil, fmt.Errorf("decoding motion state data: %w", err)
+	}
+	if err := json.Unmarshal(bs, &msWork); err != nil {
+		return nil, fmt.Errorf("decoding motion state work data: %w", err)
+	}
+	return &ms, nil
+}
+
 type dbMotionStatuteParagraph struct {
 	Title string `json:"title"`
 	Text  string `json:"text"`
@@ -97,26 +124,6 @@ func motionFromMap(in map[string]json.RawMessage) (*dbMotion, error) {
 		return nil, fmt.Errorf("decoding motion work data: %w", err)
 	}
 	return &mo, nil
-}
-
-type dbMotionBlock struct {
-	ID           int    `json:"id"`
-	Title        string `json:"title"`
-	Number       string `json:"number"`
-	AgendaItemID int    `json:"agenda_item_id"`
-}
-
-func motionBlockFromMap(in map[string]json.RawMessage) (*dbMotionBlock, error) {
-	bs, err := json.Marshal(in)
-	if err != nil {
-		return nil, fmt.Errorf("encoding motion data: %w", err)
-	}
-
-	var m dbMotionBlock
-	if err := json.Unmarshal(bs, &m); err != nil {
-		return nil, fmt.Errorf("decoding motion: %w", err)
-	}
-	return &m, nil
 }
 
 // Motion renders the motion slide.
@@ -271,43 +278,6 @@ func Motion(store *projector.SlideStore) {
 	})
 }
 
-// MotionBlock renders the motion_block slide.
-func MotionBlock(store *projector.SlideStore) {
-	store.RegisterSliderFunc("motion_block", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		return []byte(`"TODO"`), nil, nil
-	})
-
-	store.RegisterGetTitleInformationFunc("motion_block", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string, meetingID int) (json.RawMessage, error) {
-		data := fetch.Object(ctx, []string{"id", "title", "agenda_item_id"}, fqid)
-		motionBlock, err := motionBlockFromMap(data)
-		if err != nil {
-			return nil, fmt.Errorf("get motion block: %w", err)
-		}
-
-		if itemNumber == "" && motionBlock.AgendaItemID > 0 {
-			itemNumber = fetch.String(ctx, "agenda_item/%d/item_number", motionBlock.AgendaItemID)
-		}
-
-		title := struct {
-			Collection       string `json:"collection"`
-			ContentObjectID  string `json:"content_object_id"`
-			Title            string `json:"title"`
-			AgendaItemNumber string `json:"agenda_item_number"`
-		}{
-			"motion_block",
-			fqid,
-			motionBlock.Title,
-			itemNumber,
-		}
-
-		bs, err := json.Marshal(title)
-		if err != nil {
-			return nil, fmt.Errorf("encoding title: %w", err)
-		}
-		return bs, err
-	})
-}
-
 // fillMotionFrom Meeting transfers the needed values from meeting object to motion object.
 func fillMotionFromMeeting(motion *dbMotion, meeting *dbMeeting) {
 	motion.ShowSidebox = meeting.MotionsEnableSideboxOnProjector
@@ -400,19 +370,12 @@ func fillRecommendationReferencingMotions(ctx context.Context, fetch *datastore.
 
 func fillRecommendationLabelEtc(ctx context.Context, fetch *datastore.Fetcher, titler projector.Titler, motion *dbMotion, meeting *dbMeeting) error {
 	data := fetch.Object(ctx, []string{"recommendation_label", "show_recommendation_extension_field"}, "motion_state/%d", motion.MotionWork.RecommendationID)
-	bs, err := json.Marshal(data)
+	st, err := motionStateFromMap(data)
 	if err != nil {
-		return fmt.Errorf("encoding MotionState data: %w", err)
-	}
-	var st struct {
-		RecommendationLabel              string `json:"recommendation_label"`
-		ShowRecommendationExtensionField bool   `json:"show_recommendation_extension_field"`
-	}
-	if err := json.Unmarshal(bs, &st); err != nil {
-		return fmt.Errorf("decoding MotionState data: %w", err)
+		return fmt.Errorf("get motion state: %w", err)
 	}
 	motion.RecommendationLabel = st.RecommendationLabel
-	if st.ShowRecommendationExtensionField {
+	if st.MotionStateWork.ShowRecommendationExtensionField {
 		motion.RecommendationExtension = motion.MotionWork.RecommendationExtension
 		motion.RecommendationReferencedMotions = make(map[string]json.RawMessage, len(motion.MotionWork.RecommendationExtensionReferenceIDS))
 		for _, fqid := range motion.MotionWork.RecommendationExtensionReferenceIDS {
