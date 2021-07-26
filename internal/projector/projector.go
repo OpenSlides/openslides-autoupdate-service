@@ -132,20 +132,3 @@ func (p *Projection) slideName() (string, error) {
 	}
 	return parts[0], nil
 }
-
-// GetProjection as convenience function reading projections
-func GetProjection(ctx context.Context, fetch *datastore.Fetcher, projectionID int) (projection *Projection, err error) {
-	defer func() {
-		if err == nil {
-			err = fetch.Error()
-		}
-	}()
-
-	data := fetch.Object(ctx, []string{"id", "type", "content_object_id", "meeting_id", "options"}, "projection/%d", projectionID)
-
-	projection, err = p7onFromMap(data)
-	if err != nil {
-		return nil, fmt.Errorf("get projection: %w", err)
-	}
-	return projection, nil
-}

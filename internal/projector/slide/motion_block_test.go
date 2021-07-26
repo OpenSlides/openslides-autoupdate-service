@@ -6,7 +6,6 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,9 +20,6 @@ func TestMotionBlock(t *testing.T) {
 	assert.NotNilf(t, motionBlockSlide, "Slide with name `motion_block` not found.")
 
 	data := dsmock.YAMLData(`
-	projection/1:
-	    content_object_id: motion_block/1
-	    meeting_id: 1
 	motion_block/1:
 	    title: MotionBlock1 Title
 	    motion_ids: [1,2]
@@ -147,9 +143,11 @@ func TestMotionBlock(t *testing.T) {
 			defer close(closed)
 			ctx := context.Background()
 			ds := dsmock.NewMockDatastore(closed, tt.data)
-			fetch := datastore.NewFetcher(ds)
-			p7on, err := projector.GetProjection(ctx, fetch, 1)
-			assert.NoError(t, err)
+
+			p7on := &projector.Projection{
+				ContentObjectID: "motion_block/1",
+				MeetingID:       1,
+			}
 
 			bs, keys, err := motionBlockSlide.Slide(ctx, ds, p7on)
 			assert.NoError(t, err)
