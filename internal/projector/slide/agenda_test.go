@@ -96,10 +96,9 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
     `)
 
 	for _, tt := range []struct {
-		name       string
-		data       map[string]string
-		expect     string
-		expectKeys []string
+		name   string
+		data   map[string]string
+		expect string
 	}{
 		{
 			"Starter AgendaItemList",
@@ -146,86 +145,6 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 				]
 			}
 			`,
-			[]string{
-				"meeting/1/agenda_item_ids",
-				"meeting/1/agenda_show_internal_items_on_projector",
-				"agenda_item/1/id",
-				"agenda_item/1/item_number",
-				"agenda_item/1/content_object_id",
-				"agenda_item/1/meeting_id",
-				"agenda_item/1/is_hidden",
-				"agenda_item/1/is_internal",
-				"agenda_item/1/level",
-				"agenda_item/1/weight",
-				"agenda_item/1/parent_id",
-				"topic/1/id",
-				"topic/1/title",
-				"topic/1/agenda_item_id",
-				"agenda_item/2/id",
-				"agenda_item/2/item_number",
-				"agenda_item/2/content_object_id",
-				"agenda_item/2/meeting_id",
-				"agenda_item/2/is_hidden",
-				"agenda_item/2/is_internal",
-				"agenda_item/2/level",
-				"agenda_item/2/weight",
-				"agenda_item/2/parent_id",
-				"motion/1/id",
-				"motion/1/number",
-				"motion/1/title",
-				"motion/1/agenda_item_id",
-				"agenda_item/3/id",
-				"agenda_item/3/item_number",
-				"agenda_item/3/content_object_id",
-				"agenda_item/3/meeting_id",
-				"agenda_item/3/is_hidden",
-				"agenda_item/3/is_internal",
-				"agenda_item/3/level",
-				"agenda_item/3/weight",
-				"agenda_item/3/parent_id",
-				"motion_block/1/id",
-				"motion_block/1/title",
-				"motion_block/1/agenda_item_id",
-				"agenda_item/4/id",
-				"agenda_item/4/item_number",
-				"agenda_item/4/content_object_id",
-				"agenda_item/4/meeting_id",
-				"agenda_item/4/is_hidden",
-				"agenda_item/4/is_internal",
-				"agenda_item/4/level",
-				"agenda_item/4/weight",
-				"agenda_item/4/parent_id",
-				"assignment/1/id",
-				"assignment/1/title",
-				"assignment/1/agenda_item_id",
-				"agenda_item/5/id",
-				"agenda_item/5/item_number",
-				"agenda_item/5/content_object_id",
-				"agenda_item/5/meeting_id",
-				"agenda_item/5/is_hidden",
-				"agenda_item/5/is_internal",
-				"agenda_item/5/level",
-				"agenda_item/5/weight",
-				"agenda_item/5/parent_id",
-				"agenda_item/6/id",
-				"agenda_item/6/item_number",
-				"agenda_item/6/content_object_id",
-				"agenda_item/6/meeting_id",
-				"agenda_item/6/is_hidden",
-				"agenda_item/6/is_internal",
-				"agenda_item/6/level",
-				"agenda_item/6/weight",
-				"agenda_item/6/parent_id",
-				"agenda_item/7/id",
-				"agenda_item/7/item_number",
-				"agenda_item/7/content_object_id",
-				"agenda_item/7/meeting_id",
-				"agenda_item/7/is_hidden",
-				"agenda_item/7/is_internal",
-				"agenda_item/7/level",
-				"agenda_item/7/weight",
-				"agenda_item/7/parent_id",
-			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -244,7 +163,6 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NoError(t, fetch.Err())
 			assert.JSONEq(t, tt.expect, string(bs))
-			assert.ElementsMatch(t, tt.expectKeys, fetch.Keys())
 		})
 	}
 }
@@ -339,10 +257,9 @@ func TestAgendaItemListWithDepthItems(t *testing.T) {
     `)
 
 	for _, tt := range []struct {
-		name       string
-		data       map[string]string
-		expect     string
-		expectKeys []string
+		name   string
+		data   map[string]string
+		expect string
 	}{
 		{
 			"with_leveled_item",
@@ -424,106 +341,6 @@ func TestAgendaItemListWithDepthItems(t *testing.T) {
 				]
 			}
 			`,
-			[]string{
-				"meeting/1/agenda_item_ids",
-				"meeting/1/agenda_show_internal_items_on_projector",
-				"agenda_item/1/id",
-				"agenda_item/1/item_number",
-				"agenda_item/1/content_object_id",
-				"agenda_item/1/meeting_id",
-				"agenda_item/1/is_hidden",
-				"agenda_item/1/is_internal",
-				"agenda_item/1/level",
-				"agenda_item/1/weight",
-				"agenda_item/1/parent_id",
-				"topic/1/id",
-				"topic/1/title",
-				"topic/1/agenda_item_id",
-				"agenda_item/2/id",
-				"agenda_item/2/item_number",
-				"agenda_item/2/content_object_id",
-				"agenda_item/2/meeting_id",
-				"agenda_item/2/is_hidden",
-				"agenda_item/2/is_internal",
-				"agenda_item/2/level",
-				"agenda_item/2/weight",
-				"agenda_item/2/parent_id",
-				"topic/2/id",
-				"topic/2/title",
-				"topic/2/agenda_item_id",
-				"agenda_item/3/id",
-				"agenda_item/3/item_number",
-				"agenda_item/3/content_object_id",
-				"agenda_item/3/meeting_id",
-				"agenda_item/3/is_hidden",
-				"agenda_item/3/is_internal",
-				"agenda_item/3/level",
-				"agenda_item/3/weight",
-				"agenda_item/3/parent_id",
-				"topic/3/id",
-				"topic/3/title",
-				"topic/3/agenda_item_id",
-				"agenda_item/4/id",
-				"agenda_item/4/item_number",
-				"agenda_item/4/content_object_id",
-				"agenda_item/4/meeting_id",
-				"agenda_item/4/is_hidden",
-				"agenda_item/4/is_internal",
-				"agenda_item/4/level",
-				"agenda_item/4/weight",
-				"agenda_item/4/parent_id",
-				"topic/4/id",
-				"topic/4/title",
-				"topic/4/agenda_item_id",
-				"agenda_item/5/id",
-				"agenda_item/5/item_number",
-				"agenda_item/5/content_object_id",
-				"agenda_item/5/meeting_id",
-				"agenda_item/5/is_hidden",
-				"agenda_item/5/is_internal",
-				"agenda_item/5/level",
-				"agenda_item/5/weight",
-				"agenda_item/5/parent_id",
-				"topic/5/id",
-				"topic/5/title",
-				"topic/5/agenda_item_id",
-				"agenda_item/6/id",
-				"agenda_item/6/item_number",
-				"agenda_item/6/content_object_id",
-				"agenda_item/6/meeting_id",
-				"agenda_item/6/is_hidden",
-				"agenda_item/6/is_internal",
-				"agenda_item/6/level",
-				"agenda_item/6/weight",
-				"agenda_item/6/parent_id",
-				"topic/6/id",
-				"topic/6/title",
-				"topic/6/agenda_item_id",
-				"agenda_item/7/id",
-				"agenda_item/7/item_number",
-				"agenda_item/7/content_object_id",
-				"agenda_item/7/meeting_id",
-				"agenda_item/7/is_hidden",
-				"agenda_item/7/is_internal",
-				"agenda_item/7/level",
-				"agenda_item/7/weight",
-				"agenda_item/7/parent_id",
-				"topic/7/id",
-				"topic/7/title",
-				"topic/7/agenda_item_id",
-				"agenda_item/8/id",
-				"agenda_item/8/item_number",
-				"agenda_item/8/content_object_id",
-				"agenda_item/8/meeting_id",
-				"agenda_item/8/is_hidden",
-				"agenda_item/8/is_internal",
-				"agenda_item/8/level",
-				"agenda_item/8/weight",
-				"agenda_item/8/parent_id",
-				"topic/8/id",
-				"topic/8/title",
-				"topic/8/agenda_item_id",
-			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -541,7 +358,6 @@ func TestAgendaItemListWithDepthItems(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NoError(t, fetch.Err())
 			assert.JSONEq(t, tt.expect, string(bs))
-			assert.ElementsMatch(t, tt.expectKeys, fetch.Keys())
 		})
 	}
 }

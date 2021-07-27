@@ -80,10 +80,9 @@ func TestPoll(t *testing.T) {
 	`)
 
 	for _, tt := range []struct {
-		name       string
-		data       map[string]string
-		expect     string
-		expectKeys []string
+		name   string
+		data   map[string]string
+		expect string
 	}{
 		{
 			"Poll state published",
@@ -150,58 +149,6 @@ func TestPoll(t *testing.T) {
                 }
             }
             `,
-			[]string{
-				"poll/1/state",
-				"poll/1/id",
-				"poll/1/content_object_id",
-				"poll/1/title",
-				"poll/1/description",
-				"poll/1/type",
-				"poll/1/state",
-				"poll/1/global_yes",
-				"poll/1/global_no",
-				"poll/1/global_abstain",
-				"poll/1/option_ids",
-				"poll/1/meeting_id",
-				"poll/1/entitled_users_at_stop",
-				"poll/1/is_pseudoanonymized",
-				"poll/1/pollmethod",
-				"poll/1/onehundred_percent_base",
-				"poll/1/votesvalid",
-				"poll/1/votesinvalid",
-				"poll/1/votescast",
-				"poll/1/global_option_id",
-				"motion/1/id",
-				"motion/1/number",
-				"motion/1/title",
-				"motion/1/agenda_item_id",
-				"option/1/id",
-				"option/1/text",
-				"option/1/content_object_id",
-				"option/1/yes",
-				"option/1/no",
-				"option/1/abstain",
-				"option/1/weight",
-				"option/2/id",
-				"option/2/text",
-				"option/2/content_object_id",
-				"option/2/yes",
-				"option/2/no",
-				"option/2/abstain",
-				"option/2/weight",
-				"option/3/yes",
-				"option/3/no",
-				"option/3/abstain",
-				"topic/1/id",
-				"topic/1/title",
-				"topic/1/agenda_item_id",
-				"topic/2/id",
-				"topic/2/title",
-				"topic/2/agenda_item_id",
-				"agenda_item/1/item_number",
-				"agenda_item/2/item_number",
-				"agenda_item/3/item_number",
-			},
 		},
 		{
 			"Poll state finished",
@@ -249,41 +196,6 @@ func TestPoll(t *testing.T) {
                 ]
             }
             `,
-			[]string{
-				"poll/1/id",
-				"poll/1/content_object_id",
-				"poll/1/title",
-				"poll/1/description",
-				"poll/1/type",
-				"poll/1/state",
-				"poll/1/state",
-				"poll/1/global_yes",
-				"poll/1/global_no",
-				"poll/1/global_abstain",
-				"poll/1/option_ids",
-				"poll/1/meeting_id",
-				"motion/1/id",
-				"motion/1/number",
-				"motion/1/title",
-				"motion/1/agenda_item_id",
-				"option/1/id",
-				"option/1/weight",
-				"option/1/text",
-				"option/1/content_object_id",
-				"option/2/id",
-				"option/2/weight",
-				"option/2/text",
-				"option/2/content_object_id",
-				"topic/1/id",
-				"topic/1/title",
-				"topic/1/agenda_item_id",
-				"topic/2/id",
-				"topic/2/title",
-				"topic/2/agenda_item_id",
-				"agenda_item/1/item_number",
-				"agenda_item/2/item_number",
-				"agenda_item/3/item_number",
-			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -298,7 +210,6 @@ func TestPoll(t *testing.T) {
 			bs, err := pollSlide.Slide(context.Background(), fetch, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
-			assert.ElementsMatch(t, tt.expectKeys, fetch.Keys())
 		})
 	}
 }

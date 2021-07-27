@@ -108,7 +108,10 @@ func Assignment(store *projector.SlideStore) {
 		if err != nil {
 			return nil, fmt.Errorf("encoding response slide assignment: %w", err)
 		}
-		return responseValue, err
+		if err := fetch.Err(); err != nil {
+			return nil, err
+		}
+		return responseValue, nil
 	})
 
 	store.RegisterGetTitleInformationFunc("assignment", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string, meetingID int) (json.RawMessage, error) {
@@ -138,6 +141,9 @@ func Assignment(store *projector.SlideStore) {
 		if err != nil {
 			return nil, fmt.Errorf("encoding title: %w", err)
 		}
-		return bs, err
+		if err := fetch.Err(); err != nil {
+			return nil, err
+		}
+		return bs, nil
 	})
 }

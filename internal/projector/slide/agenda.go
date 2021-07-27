@@ -154,7 +154,10 @@ func AgendaItemList(store *projector.SlideStore) {
 		if err != nil {
 			return nil, fmt.Errorf("encoding response for slide agenda item list: %w", err)
 		}
-		return responseValue, err
+		if err := fetch.Err(); err != nil {
+			return nil, err
+		}
+		return responseValue, nil
 	})
 }
 

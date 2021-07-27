@@ -116,6 +116,10 @@ func User(store *projector.SlideStore) {
 		if err != nil {
 			return nil, fmt.Errorf("getting new user id: %w", err)
 		}
+		if err := fetch.Err(); err != nil {
+			return nil, err
+		}
+
 		out := struct {
 			User string `json:"user"`
 		}{
@@ -138,6 +142,10 @@ func User(store *projector.SlideStore) {
 		if err != nil {
 			return nil, fmt.Errorf("loading user: %w", err)
 		}
+		if err := fetch.Err(); err != nil {
+			return nil, err
+		}
+
 		out := struct {
 			Collection      string `json:"collection"`
 			ContentObjectID string `json:"content_object_id"`

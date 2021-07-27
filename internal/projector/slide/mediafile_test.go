@@ -23,10 +23,9 @@ func TestMediafile(t *testing.T) {
     `)
 
 	for _, tt := range []struct {
-		name       string
-		data       map[string]string
-		expect     string
-		expectKeys []string
+		name   string
+		data   map[string]string
+		expect string
 	}{
 		{
 			"Starter",
@@ -35,10 +34,6 @@ func TestMediafile(t *testing.T) {
 				"id": 1,
 				"mimetype": "application/pdf"
 			}`,
-			[]string{
-				"mediafile/1/id",
-				"mediafile/1/mimetype",
-			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -53,7 +48,6 @@ func TestMediafile(t *testing.T) {
 			bs, err := mfSlide.Slide(context.Background(), fetch, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
-			assert.ElementsMatch(t, tt.expectKeys, fetch.Keys())
 		})
 	}
 }

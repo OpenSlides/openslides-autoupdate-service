@@ -20,10 +20,9 @@ func TestAssignment(t *testing.T) {
 	assert.NotNilf(t, assignmentSlide, "Slide with name `assignment` not found.")
 
 	for _, tt := range []struct {
-		name         string
-		data         map[string]string
-		expect       string
-		expectedKeys []string
+		name   string
+		data   map[string]string
+		expect string
 	}{
 		{
 			"Assignment Complete",
@@ -45,27 +44,6 @@ func TestAssignment(t *testing.T) {
 				"user/111/username": `"user111"`,
 			},
 			`{"title":"title 1", "description":"description 1","number_poll_candidates":true, "candidates":["user111", "user110"]}`,
-			[]string{
-				"assignment/1/id",
-				"assignment/1/title",
-				"assignment/1/description",
-				"assignment/1/number_poll_candidates",
-				"assignment/1/candidate_ids",
-				"assignment_candidate/10/user_id",
-				"assignment_candidate/10/weight",
-				"assignment_candidate/11/user_id",
-				"assignment_candidate/11/weight",
-				"user/111/username",
-				"user/111/title",
-				"user/111/first_name",
-				"user/111/last_name",
-				"user/111/default_structure_level",
-				"user/110/username",
-				"user/110/title",
-				"user/110/first_name",
-				"user/110/last_name",
-				"user/110/default_structure_level",
-			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -81,7 +59,6 @@ func TestAssignment(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NoError(t, fetch.Err())
 			assert.JSONEq(t, tt.expect, string(bs))
-			assert.ElementsMatch(t, fetch.Keys(), tt.expectedKeys)
 		})
 	}
 }

@@ -28,10 +28,9 @@ func TestProjectorCountdown(t *testing.T) {
     `)
 
 	for _, tt := range []struct {
-		name       string
-		data       map[string]string
-		expect     string
-		expectKeys []string
+		name   string
+		data   map[string]string
+		expect string
 	}{
 		{
 			"Starter",
@@ -41,14 +40,6 @@ func TestProjectorCountdown(t *testing.T) {
 			    "description":"description text",
 				"running":true,
 				"warning_time":100}`,
-			[]string{
-				"projector_countdown/1/id",
-				"projector_countdown/1/description",
-				"projector_countdown/1/running",
-				"projector_countdown/1/countdown_time",
-				"projector_countdown/1/meeting_id",
-				"meeting/1/projector_countdown_warning_time",
-			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -63,7 +54,6 @@ func TestProjectorCountdown(t *testing.T) {
 			bs, err := pcSlide.Slide(context.Background(), fetch, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
-			assert.ElementsMatch(t, tt.expectKeys, fetch.Keys())
 		})
 	}
 }
@@ -80,19 +70,14 @@ func TestProjectorMessage(t *testing.T) {
     `)
 
 	for _, tt := range []struct {
-		name       string
-		data       map[string]string
-		expect     string
-		expectKeys []string
+		name   string
+		data   map[string]string
+		expect string
 	}{
 		{
 			"Starter",
 			data,
 			`{"message": "Shine on you crazy diamond"}`,
-			[]string{
-				"projector_message/1/id",
-				"projector_message/1/message",
-			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -107,7 +92,6 @@ func TestProjectorMessage(t *testing.T) {
 			bs, err := pmSlide.Slide(context.Background(), fetch, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
-			assert.ElementsMatch(t, tt.expectKeys, fetch.Keys())
 		})
 	}
 }
