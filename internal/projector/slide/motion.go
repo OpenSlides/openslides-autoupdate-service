@@ -128,14 +128,7 @@ func motionFromMap(in map[string]json.RawMessage) (*dbMotion, error) {
 
 // Motion renders the motion slide.
 func Motion(store *projector.SlideStore) {
-	store.RegisterSliderFunc("motion", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
-		defer func() {
-			if err == nil {
-				err = fetch.Error()
-			}
-		}()
-
+	store.RegisterSliderFunc("motion", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
 		meeting, err := getMeeting(ctx, fetch, p7on.MeetingID, []string{
 			"motions_enable_text_on_projector",
 			"motions_enable_reason_on_projector",
@@ -149,7 +142,7 @@ func Motion(store *projector.SlideStore) {
 			"motions_default_line_numbering",
 		})
 		if err != nil {
-			return nil, nil, fmt.Errorf("getMeeting: %w", err)
+			return nil, fmt.Errorf("getMeeting: %w", err)
 		}
 
 		var options struct {
@@ -157,7 +150,7 @@ func Motion(store *projector.SlideStore) {
 		}
 		if p7on.Options != nil {
 			if err := json.Unmarshal(p7on.Options, &options); err != nil {
-				return nil, nil, fmt.Errorf("decoding projection options: %w", err)
+				return nil, fmt.Errorf("decoding projection options: %w", err)
 			}
 		}
 
@@ -187,11 +180,11 @@ func Motion(store *projector.SlideStore) {
 			fetchFields = append(fetchFields, "modified_final_version")
 		}
 
-		data := fetch.Object(ctx, fetchFields, p7on.ContentObjectID)
+		data := fetch.Object(ctx, p7on.ContentObjectID, fetchFields...)
 
 		motion, err := motionFromMap(data)
 		if err != nil {
-			return nil, nil, fmt.Errorf("get motion: %w", err)
+			return nil, fmt.Errorf("get motion: %w", err)
 		}
 		motion.RecommendationExtension = "" // will be (re-)filled conditionally
 
@@ -199,61 +192,61 @@ func Motion(store *projector.SlideStore) {
 		fillAmendmentParagraphs(ctx, fetch, motion)
 		err = fillSubmitters(ctx, fetch, motion)
 		if err != nil {
-			return nil, nil, fmt.Errorf("fillSubmitters: %w", err)
+			return nil, fmt.Errorf("fillSubmitters: %w", err)
 		}
 		err = fillLeadMotion(ctx, fetch, motion)
 		if err != nil {
-			return nil, nil, fmt.Errorf("fillLeadMotion: %w", err)
+			return nil, fmt.Errorf("fillLeadMotion: %w", err)
 		}
 		err = fillBaseStatute(ctx, fetch, motion)
 		if err != nil {
-			return nil, nil, fmt.Errorf("fillBaseStatute: %w", err)
+			return nil, fmt.Errorf("fillBaseStatute: %w", err)
 		}
 		err = fillChangeRecommendations(ctx, fetch, motion)
 		if err != nil {
-			return nil, nil, fmt.Errorf("fillChangeRecommendations: %w", err)
+			return nil, fmt.Errorf("fillChangeRecommendations: %w", err)
 		}
 		err = fillAmendments(ctx, fetch, motion)
 		if err != nil {
-			return nil, nil, fmt.Errorf("fillAmendments: %w", err)
+			return nil, fmt.Errorf("fillAmendments: %w", err)
 		}
 
 		titlerMotion := store.GetTitleInformationFunc("motion")
 		if titlerMotion == nil {
-			return nil, nil, fmt.Errorf("no titler function registered for motion")
+			return nil, fmt.Errorf("no titler function registered for motion")
 		}
 
 		if meeting.MotionsShowReferringMotions && len(motion.MotionWork.ReferencedInMotionRecommendationExtensionIDS) > 0 {
 			err = fillRecommendationReferencingMotions(ctx, fetch, titlerMotion, motion)
 			if err != nil {
-				return nil, nil, fmt.Errorf("FillRecommendationReferencingMotions: %w", err)
+				return nil, fmt.Errorf("FillRecommendationReferencingMotions: %w", err)
 			}
 		}
 
 		if meeting.MotionsEnableRecommendationOnProjector && motion.MotionWork.RecommendationID > 0 {
 			err = fillRecommendationLabelEtc(ctx, fetch, titlerMotion, motion, meeting)
 			if err != nil {
-				return nil, nil, fmt.Errorf("RecommendationLabelEtc: %w", err)
+				return nil, fmt.Errorf("RecommendationLabelEtc: %w", err)
 			}
 		}
 
 		motion.MotionWork = nil // do not export worker fields
 		responseValue, err := json.Marshal(motion)
 		if err != nil {
-			return nil, nil, fmt.Errorf("encoding response for slide motion: %w", err)
+			return nil, fmt.Errorf("encoding response for slide motion: %w", err)
 		}
-		return responseValue, fetch.Keys(), err
+		return responseValue, err
 	})
 
 	store.RegisterGetTitleInformationFunc("motion", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string, meetingID int) (json.RawMessage, error) {
-		data := fetch.Object(ctx, []string{"id", "number", "title", "agenda_item_id"}, fqid)
+		data := fetch.Object(ctx, fqid, "id", "number", "title", "agenda_item_id")
 		motion, err := motionFromMap(data)
 		if err != nil {
 			return nil, fmt.Errorf("get motion: %w", err)
 		}
 
 		if itemNumber == "" && motion.MotionWork.AgendaItemID > 0 {
-			itemNumber = fetch.String(ctx, "agenda_item/%d/item_number", motion.MotionWork.AgendaItemID)
+			itemNumber = datastore.String(ctx, fetch.Fetch, "agenda_item/%d/item_number", motion.MotionWork.AgendaItemID)
 		}
 
 		title := struct {
@@ -290,7 +283,7 @@ func fillAmendmentParagraphs(ctx context.Context, fetch *datastore.Fetcher, moti
 	if len(motion.MotionWork.AmendmentParagraph) > 0 {
 		motion.AmendmentParagraphs = make(map[string]string, len(motion.MotionWork.AmendmentParagraph))
 		for _, nr := range motion.MotionWork.AmendmentParagraph {
-			text := fetch.String(ctx, "motion/%d/amendment_paragraph_$%s", motion.ID, nr)
+			text := datastore.String(ctx, fetch.Fetch, "motion/%d/amendment_paragraph_$%s", motion.ID, nr)
 			motion.AmendmentParagraphs[nr] = text
 		}
 	}
@@ -300,7 +293,7 @@ func fillLeadMotion(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 	if motion.MotionWork.LeadMotionID == 0 {
 		return nil
 	}
-	data := fetch.Object(ctx, []string{"title", "number", "text"}, "motion/%d", motion.MotionWork.LeadMotionID)
+	data := fetch.Object(ctx, fmt.Sprintf("motion/%d", motion.MotionWork.LeadMotionID), "title", "number", "text")
 	bs, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("encoding LeadMotion data: %w", err)
@@ -317,7 +310,7 @@ func fillBaseStatute(ctx context.Context, fetch *datastore.Fetcher, motion *dbMo
 	if motion.MotionWork.StatuteParagraphID == 0 {
 		return nil
 	}
-	data := fetch.Object(ctx, []string{"title", "text"}, "motion_statute_paragraph/%d", motion.MotionWork.StatuteParagraphID)
+	data := fetch.Object(ctx, fmt.Sprintf("motion_statute_paragraph/%d", motion.MotionWork.StatuteParagraphID), "title", "text")
 	bs, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("encoding BaseStatute data: %w", err)
@@ -335,7 +328,19 @@ func fillChangeRecommendations(ctx context.Context, fetch *datastore.Fetcher, mo
 		return nil
 	}
 	for _, id := range motion.MotionWork.ChangeRecommendationIDS {
-		data := fetch.Object(ctx, []string{"id", "rejected", "type", "other_description", "line_from", "line_to", "text", "creation_time", "internal"}, "motion_change_recommendation/%d", id)
+		data := fetch.Object(
+			ctx,
+			fmt.Sprintf("motion_change_recommendation/%d", id),
+			"id",
+			"rejected",
+			"type",
+			"other_description",
+			"line_from",
+			"line_to",
+			"text",
+			"creation_time",
+			"internal",
+		)
 		var internal bool
 		if err := json.Unmarshal(data["internal"], &internal); err != nil {
 			return fmt.Errorf("decoding internal from ChangeRecommendations: %w", err)
@@ -369,7 +374,12 @@ func fillRecommendationReferencingMotions(ctx context.Context, fetch *datastore.
 }
 
 func fillRecommendationLabelEtc(ctx context.Context, fetch *datastore.Fetcher, titler projector.Titler, motion *dbMotion, meeting *dbMeeting) error {
-	data := fetch.Object(ctx, []string{"recommendation_label", "show_recommendation_extension_field"}, "motion_state/%d", motion.MotionWork.RecommendationID)
+	data := fetch.Object(
+		ctx,
+		fmt.Sprintf("motion_state/%d", motion.MotionWork.RecommendationID),
+		"recommendation_label",
+		"show_recommendation_extension_field",
+	)
 	st, err := motionStateFromMap(data)
 	if err != nil {
 		return fmt.Errorf("get motion state: %w", err)
@@ -408,7 +418,7 @@ func fillSubmitters(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 	var submitterToSort []*submitterSort
 
 	for _, id := range motion.MotionWork.SubmitterIDS {
-		data := fetch.Object(ctx, []string{"user_id", "weight"}, "motion_submitter/%d", id)
+		data := fetch.Object(ctx, fmt.Sprintf("motion_submitter/%d", id), "user_id", "weight")
 		bs, err := json.Marshal(data)
 		if err != nil {
 			return fmt.Errorf("encoding MotionSubmitter data: %w", err)
@@ -449,7 +459,7 @@ func fillAmendments(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 		"change_recommendation_ids",
 	}
 	for _, id := range motion.MotionWork.AmendmentIDS {
-		data := fetch.Object(ctx, fetchFields, "motion/%d", id)
+		data := fetch.Object(ctx, fmt.Sprintf("motion/%d", id), fetchFields...)
 		motionAmend, err := motionFromMap(data)
 		if err != nil {
 			return fmt.Errorf("motionFromMap: %w", err)
@@ -463,7 +473,7 @@ func fillAmendments(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 		amendment.AmendmentParagraphs = motionAmend.AmendmentParagraphs
 		amendment.ChangeRecommendations = motionAmend.ChangeRecommendations
 
-		maif := fetch.String(ctx, "motion_state/%d/merge_amendment_into_final", motionAmend.MotionWork.StateID)
+		maif := datastore.String(ctx, fetch.Fetch, "motion_state/%d/merge_amendment_into_final", motionAmend.MotionWork.StateID)
 		if maif == "do_merge" {
 			amendment.MergeAmendmentIntoFinal = maif
 			amendment.MergeAmendmentIntoDiff = maif
@@ -472,7 +482,7 @@ func fillAmendments(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 			if maif == "do_not_merge" || motionAmend.MotionWork.RecommendationID == 0 {
 				amendment.MergeAmendmentIntoDiff = "undefined"
 			} else {
-				maifReco := fetch.String(ctx, "motion_state/%d/merge_amendment_into_final", motionAmend.MotionWork.RecommendationID)
+				maifReco := datastore.String(ctx, fetch.Fetch, "motion_state/%d/merge_amendment_into_final", motionAmend.MotionWork.RecommendationID)
 				if maifReco == "do_merge" {
 					amendment.MergeAmendmentIntoDiff = maifReco
 				} else {
