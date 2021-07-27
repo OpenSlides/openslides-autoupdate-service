@@ -212,7 +212,6 @@ func TestUserWithError(t *testing.T) {
 
 	bs, err := userSlide.Slide(context.Background(), fetch, p7on)
 	assert.Nil(t, bs)
-	assert.Nil(t, fetch.Keys())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "neither firstName, lastName nor username found")
 }

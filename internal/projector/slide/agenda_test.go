@@ -541,7 +541,7 @@ func TestAgendaItemListWithDepthItems(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NoError(t, fetch.Err())
 			assert.JSONEq(t, tt.expect, string(bs))
-			assert.ElementsMatch(t, tt.expectKeys, fetch.Err())
+			assert.ElementsMatch(t, tt.expectKeys, fetch.Keys())
 		})
 	}
 }
