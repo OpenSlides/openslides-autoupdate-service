@@ -36,11 +36,17 @@ func Register(ds Datastore, slides *SlideStore) {
 			}
 		}
 
-		var keys []string
+		fetch := datastore.NewFetcher(ds)
+
 		defer func() {
 			// At the end, save all requested keys to check later if one has
 			// changed.
-			hotKeys[fqfield] = keys
+			hotKeys[fqfield] = fetch.Keys()
+
+			// If no other error is set, use the error from the fetcher (could be nil).
+			if err == nil {
+				err = fetch.Err()
+			}
 		}()
 
 		parts := strings.SplitN(fqfield, "/", 3)
@@ -48,19 +54,16 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("invalid key %s, expected two '/'", fqfield)
 		}
 
-		data, keys, err := datastore.Object(
+		data := fetch.Object(
 			ctx,
-			ds,
 			parts[0]+"/"+parts[1],
-			[]string{
-				"id",
-				"type",
-				"content_object_id",
-				"meeting_id",
-				"options",
-			},
+			"id",
+			"type",
+			"content_object_id",
+			"meeting_id",
+			"options",
 		)
-		if err != nil {
+		if err := fetch.Err(); err != nil {
 			return nil, fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
 		}
 
@@ -83,11 +86,10 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("unknown slide %s", slideName)
 		}
 
-		bs, slideKeys, err := slider.Slide(ctx, ds, p7on)
+		bs, err = slider.Slide(ctx, fetch, p7on)
 		if err != nil {
 			return nil, fmt.Errorf("calculating slide %s for p7on %v: %w", slideName, p7on, err)
 		}
-		keys = append(keys, slideKeys...)
 		return bs, nil
 	})
 }

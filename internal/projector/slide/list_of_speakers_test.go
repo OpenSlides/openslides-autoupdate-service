@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -321,17 +322,18 @@ func TestListOfSpeakers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			closed := make(chan struct{})
 			defer close(closed)
-			ds := dsmock.NewMockDatastore(closed, tt.data)
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, tt.data))
 
 			p7on := &projector.Projection{
 				ContentObjectID: "list_of_speakers/1",
 				MeetingID:       1,
 			}
 
-			bs, keys, err := losSlide.Slide(context.Background(), ds, p7on)
+			bs, err := losSlide.Slide(context.Background(), fetch, p7on)
 			assert.NoError(t, err)
+			assert.NoError(t, fetch.Err())
 			assert.JSONEq(t, tt.expect, string(bs))
-			assert.ElementsMatch(t, tt.expectKeys, keys)
+			assert.ElementsMatch(t, tt.expectKeys, fetch.Keys())
 		})
 	}
 }
@@ -393,7 +395,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 
 	data := getDataForCurrentList()
 	t.Run("Find list of speakers", func(t *testing.T) {
-		ds := dsmock.NewMockDatastore(closed, data)
+		fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, data))
 
 		p7on := &projector.Projection{
 			ID:              1,
@@ -402,7 +404,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 			MeetingID:       6,
 		}
 
-		bs, keys, err := slide.Slide(context.Background(), ds, p7on)
+		bs, err := slide.Slide(context.Background(), fetch, p7on)
 
 		assert.NoError(t, err)
 		expect := `{
@@ -453,7 +455,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 			"user/10/default_structure_level",
 			"user/10/structure_level_$6",
 		}
-		assert.ElementsMatch(t, expectKeys, keys)
+		assert.ElementsMatch(t, expectKeys, fetch.Keys())
 	})
 }
 
@@ -487,7 +489,7 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 	}
 
 	t.Run("current speaker chyron test", func(t *testing.T) {
-		ds := dsmock.NewMockDatastore(closed, data)
+		fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, data))
 
 		p7on := &projector.Projection{
 			ID:              1,
@@ -495,9 +497,10 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 			Type:            "current_speaker_chyron",
 		}
 
-		bs, keys, err := slide.Slide(context.Background(), ds, p7on)
+		bs, err := slide.Slide(context.Background(), fetch, p7on)
 
 		assert.NoError(t, err)
+		assert.NoError(t, fetch.Err())
 		expect := `{
 			"background_color": "green",
 			"font_color": "red",
@@ -526,7 +529,7 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 			"user/10/default_structure_level",
 			"user/10/structure_level_$6",
 		}
-		assert.ElementsMatch(t, expectKeys, keys)
+		assert.ElementsMatch(t, expectKeys, fetch.Keys())
 	})
 }
 
