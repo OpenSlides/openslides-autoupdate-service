@@ -78,11 +78,11 @@ func (f *Fetcher) Object(ctx context.Context, fqID string, fields ...string) map
 	}
 
 	object, keys, err := object(ctx, f.ds, fqID, fields)
+	f.keys = append(f.keys, keys...)
 	if err != nil {
 		f.err = fmt.Errorf("fetching object %s: %w", fqID, err)
 		return nil
 	}
-	f.keys = append(f.keys, keys...)
 	return object
 }
 
@@ -155,7 +155,7 @@ func object(ctx context.Context, ds Getter, fqid string, fields []string) (map[s
 
 	vals, err := ds.Get(ctx, keys...)
 	if err != nil {
-		return nil, nil, fmt.Errorf("fetching data: %w", err)
+		return nil, keys, fmt.Errorf("fetching data: %w", err)
 	}
 
 	object := make(map[string]json.RawMessage, len(fields))

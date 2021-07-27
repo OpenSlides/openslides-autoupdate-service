@@ -31,6 +31,25 @@ func TestFetchObject(t *testing.T) {
 	assert.ElementsMatch(t, []string{"testmodel/1/id", "testmodel/1/text", "testmodel/1/friend_ids"}, fetch.Keys())
 }
 
+func TestFetchObjectOnError(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
+		"testmodel/1/id":         "1",
+		"testmodel/1/text":       `"my text"`,
+		"testmodel/1/friend_ids": "[1,2,3]",
+	})
+	ds.InjectError(errors.New("some error"))
+	fetch := datastore.NewFetcher(ds)
+
+	fetch.Object(context.Background(), "testmodel/1", "id", "text", "friend_ids")
+	if err := fetch.Err(); err == nil {
+		t.Fatalf("Object did not return an error")
+	}
+
+	keysEqual(t, fetch.Keys(), "testmodel/1/id", "testmodel/1/text", "testmodel/1/friend_ids")
+}
+
 func TestFetchObjectFieldDoesNotExist(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
@@ -245,13 +264,13 @@ func keysEqual(t *testing.T, got []string, expect ...string) {
 	t.Helper()
 
 	if len(got) != len(expect) {
-		t.Errorf("Got %d fields, expected %d", len(got), len(expect))
+		t.Errorf("Got %d keys, expected %d\nGot:\n%v\nExpected:\n%v", len(got), len(expect), got, expect)
 		return
 	}
 
 	for i := range got {
 		if got[i] != expect[i] {
-			t.Errorf("Field[%d] == %q, expected %q", i, got[i], expect[i])
+			t.Errorf("Key[%d] == %q, expected %q", i, got[i], expect[i])
 		}
 	}
 }
