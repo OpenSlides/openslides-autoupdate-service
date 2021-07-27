@@ -159,6 +159,10 @@ func Poll(store *projector.SlideStore) {
 				return nil, fmt.Errorf("get GlobalOption func: %w", err)
 			}
 		}
+		if err := fetch.Err(); err != nil {
+			return nil, err
+		}
+
 		poll.PollWork = nil // don't export
 		responseValue, err := json.Marshal(poll)
 		if err != nil {
@@ -195,6 +199,10 @@ func getOptions(ctx context.Context, fetch *datastore.Fetcher, store *projector.
 		}
 		options = append(options, option)
 	}
+	if err := fetch.Err(); err != nil {
+		return nil, err
+	}
+
 	sort.Slice(options, func(i, j int) bool {
 		if *options[i].weight == *options[j].weight {
 			return *options[i].id < *options[j].id

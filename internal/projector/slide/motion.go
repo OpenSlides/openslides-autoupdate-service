@@ -229,6 +229,9 @@ func Motion(store *projector.SlideStore) {
 				return nil, fmt.Errorf("RecommendationLabelEtc: %w", err)
 			}
 		}
+		if err := fetch.Err(); err != nil {
+			return nil, err
+		}
 
 		motion.MotionWork = nil // do not export worker fields
 		responseValue, err := json.Marshal(motion)
@@ -247,6 +250,9 @@ func Motion(store *projector.SlideStore) {
 
 		if itemNumber == "" && motion.MotionWork.AgendaItemID > 0 {
 			itemNumber = datastore.String(ctx, fetch.Fetch, "agenda_item/%d/item_number", motion.MotionWork.AgendaItemID)
+		}
+		if err := fetch.Err(); err != nil {
+			return nil, err
 		}
 
 		title := struct {

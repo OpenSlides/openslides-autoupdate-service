@@ -19,10 +19,9 @@ func TestTopic(t *testing.T) {
 	assert.NotNilf(t, topicSlide, "Slide with name `topic` not found.")
 
 	for _, tt := range []struct {
-		name         string
-		data         map[string]string
-		expect       string
-		expectedKeys []string
+		name   string
+		data   map[string]string
+		expect string
 	}{
 		{
 			"Topic Complete",
@@ -34,13 +33,6 @@ func TestTopic(t *testing.T) {
 				"agenda_item/1/item_number": `"AI-Item 1"`,
 			},
 			`{"title":"topic title 1","text":"topic text 1","item_number":"AI-Item 1"}`,
-			[]string{
-				"topic/1/id",
-				"topic/1/title",
-				"topic/1/text",
-				"topic/1/agenda_item_id",
-				"agenda_item/1/item_number",
-			},
 		},
 		{
 			"Without Agenda Item",
@@ -50,12 +42,6 @@ func TestTopic(t *testing.T) {
 				"topic/1/text":  `"topic text 1"`,
 			},
 			`{"item_number":"", "text":"topic text 1", "title":"topic title 1"}`,
-			[]string{
-				"topic/1/id",
-				"topic/1/title",
-				"topic/1/text",
-				"topic/1/agenda_item_id",
-			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -70,7 +56,6 @@ func TestTopic(t *testing.T) {
 			bs, err := topicSlide.Slide(context.Background(), fetch, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
-			assert.ElementsMatch(t, fetch.Keys(), tt.expectedKeys)
 		})
 	}
 }

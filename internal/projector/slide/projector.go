@@ -57,6 +57,10 @@ func ProjectorCountdown(store *projector.SlideStore) {
 			return nil, fmt.Errorf("get projector countdown from map: %w", err)
 		}
 		pcwarningTime := datastore.Int(ctx, fetch.Fetch, "meeting/%d/projector_countdown_warning_time", pc.MeetingID)
+		if err := fetch.Err(); err != nil {
+			return nil, err
+		}
+
 		responseValue, err := json.Marshal(map[string]interface{}{"description": pc.Description, "running": pc.Running, "countdown_time": pc.CountdownTime, "warning_time": pcwarningTime})
 		if err != nil {
 			return nil, fmt.Errorf("encoding response for projector countdown slide: %w", err)
@@ -69,6 +73,10 @@ func ProjectorCountdown(store *projector.SlideStore) {
 func ProjectorMessage(store *projector.SlideStore) {
 	store.RegisterSliderFunc("projector_message", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
 		data := fetch.Object(ctx, p7on.ContentObjectID, "id", "message")
+		if err := fetch.Err(); err != nil {
+			return nil, err
+		}
+
 		projectorMessage, err := projectorMessageFromMap(data)
 		if err != nil {
 			return nil, fmt.Errorf("get projector message from map: %w", err)

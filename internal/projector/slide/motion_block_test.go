@@ -59,10 +59,9 @@ func TestMotionBlock(t *testing.T) {
 	`)
 
 	for _, tt := range []struct {
-		name       string
-		data       map[string]string
-		expect     string
-		expectKeys []string
+		name   string
+		data   map[string]string
+		expect string
 	}{
 		{
 			"MotionBlock Standard",
@@ -104,39 +103,6 @@ func TestMotionBlock(t *testing.T) {
                 }
             }
             `,
-			[]string{
-				"motion_block/1/title",
-				"motion_block/1/motion_ids",
-				"motion/1/title",
-				"motion/1/number",
-				"motion/1/agenda_item_id",
-				"motion/1/recommendation_id",
-				"motion/1/recommendation_extension",
-				"motion/1/recommendation_extension_reference_ids",
-				"motion/1/meeting_id",
-				"motion_state/1/recommendation_label",
-				"motion_state/1/css_class",
-				"motion_state/1/show_recommendation_extension_field",
-				"motion/3/id",
-				"motion/3/number",
-				"motion/3/title",
-				"motion/3/agenda_item_id",
-				"agenda_item/3/item_number",
-				"motion/4/id",
-				"motion/4/number",
-				"motion/4/title",
-				"motion/4/agenda_item_id",
-				"agenda_item/4/item_number",
-				"agenda_item/1/item_number",
-				"motion/2/title",
-				"motion/2/number",
-				"motion/2/agenda_item_id",
-				"motion/2/recommendation_id",
-				"motion/2/recommendation_extension",
-				"motion/2/recommendation_extension_reference_ids",
-				"motion/2/meeting_id",
-				"agenda_item/2/item_number",
-			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -153,7 +119,6 @@ func TestMotionBlock(t *testing.T) {
 			bs, err := motionBlockSlide.Slide(ctx, fetch, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
-			assert.ElementsMatch(t, tt.expectKeys, fetch.Keys())
 		})
 	}
 }

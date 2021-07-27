@@ -107,6 +107,9 @@ func CurrentListOfSpeakers(store *projector.SlideStore) {
 		if err != nil {
 			return nil, fmt.Errorf("render list of speakers %d: %w", losID, err)
 		}
+		if err := fetch.Err(); err != nil {
+			return nil, err
+		}
 		return content, nil
 	})
 }
@@ -123,15 +126,24 @@ func CurrentSpeakerChyron(store *projector.SlideStore) {
 			return nil, fmt.Errorf("error in Atoi with ContentObjectID: %w", err)
 		}
 
-		data := fetch.Object(ctx, fmt.Sprintf("projector/%d", projectorID), "chyron_background_color", "chyron_font_color")
-		projector, err := chyronProjectorFromMap(data)
-		if err != nil {
-			return nil, fmt.Errorf("error in get chyron projector: %w", err)
+		projector := &dbChyronProjector{}
+		if projectorID > 0 {
+			data := fetch.Object(ctx, fmt.Sprintf("projector/%d", projectorID), "chyron_background_color", "chyron_font_color")
+			projector, err = chyronProjectorFromMap(data)
+			if err != nil {
+				return nil, fmt.Errorf("error in get chyron projector: %w", err)
+			}
 		}
 
-		shortName, structureLevel, err := getCurrentSpeakerData(ctx, fetch, losID, meetingID)
-		if err != nil {
-			return nil, fmt.Errorf("get CurrentSpeakerData: %w", err)
+		var shortName, structureLevel string
+		if losID > 0 {
+			shortName, structureLevel, err = getCurrentSpeakerData(ctx, fetch, losID, meetingID)
+			if err != nil {
+				return nil, fmt.Errorf("get CurrentSpeakerData: %w", err)
+			}
+			if err := fetch.Err(); err != nil {
+				return nil, err
+			}
 		}
 
 		out := struct {
@@ -150,7 +162,7 @@ func CurrentSpeakerChyron(store *projector.SlideStore) {
 		if err != nil {
 			return nil, fmt.Errorf("encoding response slide current_speaker_chyron: %w", err)
 		}
-		return responseValue, err
+		return responseValue, nil
 	})
 }
 
@@ -169,11 +181,14 @@ func getLosID(ctx context.Context, ContentObjectID string, fetch *datastore.Fetc
 
 	for _, pID := range referenceP7onIDs {
 		contentObjectID := datastore.String(ctx, fetch.Fetch, "projection/%d/content_object_id", pID)
-		losID = datastore.Int(ctx, fetch.Fetch, "%s/list_of_speakers_id", contentObjectID)
+		losID = datastore.Int(ctx, fetch.FetchIfExist, "%s/list_of_speakers_id", contentObjectID)
 
 		if losID != 0 {
 			break
 		}
+	}
+	if err := fetch.Err(); err != nil {
+		return losID, referenceProjectorID, err
 	}
 	return losID, referenceProjectorID, nil
 }
@@ -205,8 +220,12 @@ func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID 
 		if err != nil {
 			return "", "", fmt.Errorf("getting newUser: %w", err)
 		}
+		if err := fetch.Err(); err != nil {
+			return "", "", err
+		}
 		return user.UserShortName(), user.UserStructureLevel(meetingID), nil
 	}
+
 	return shortName, structureLevel, nil
 }
 
@@ -266,6 +285,10 @@ func renderListOfSpeakers(ctx context.Context, fetch *datastore.Fetcher, losFQID
 	if err != nil {
 		return nil, fmt.Errorf("encoding outgoing data: %w", err)
 	}
+	if err := fetch.Err(); err != nil {
+		return nil, err
+	}
+
 	return b, nil
 }
 
@@ -324,6 +347,9 @@ func getSpeakerLists(ctx context.Context, los *dbListOfSpeakers, meetingID int, 
 	meeting, err := getMeeting(ctx, fetch, meetingID, []string{"list_of_speakers_amount_next_on_projector", "list_of_speakers_amount_last_on_projector", "list_of_speakers_show_amount_of_speakers_on_slide"})
 	if err != nil {
 		return nil, nil, fmt.Errorf("reading meeting: %w", err)
+	}
+	if err := fetch.Err(); err != nil {
+		return nil, nil, err
 	}
 
 	if meeting.ListOfSpeakersShowAmountOfSpeakersOnSlide {

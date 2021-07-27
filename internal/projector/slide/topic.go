@@ -50,6 +50,10 @@ func Topic(store *projector.SlideStore) {
 		if topic.AgendaItemID > 0 {
 			itemNumber = datastore.String(ctx, fetch.Fetch, "agenda_item/%d/item_number", topic.AgendaItemID)
 		}
+		if err := fetch.Err(); err != nil {
+			return nil, err
+		}
+
 		out := struct {
 			Title            string `json:"title"`
 			Text             string `json:"text"`
@@ -77,6 +81,10 @@ func Topic(store *projector.SlideStore) {
 		if itemNumber == "" && topic.AgendaItemID > 0 {
 			itemNumber = datastore.String(ctx, fetch.Fetch, "agenda_item/%d/item_number", topic.AgendaItemID)
 		}
+		if err := fetch.Err(); err != nil {
+			return nil, err
+		}
+
 		title := struct {
 			Collection       string `json:"collection"`
 			ContentObjectID  string `json:"content_object_id"`
