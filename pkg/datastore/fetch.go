@@ -3,6 +3,7 @@ package datastore
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
@@ -34,14 +35,49 @@ func NewFetcher(ds Getter) *Fetcher {
 	return &Fetcher{ds: ds}
 }
 
-// Object fetches a struct from the datastore.
-func (f *Fetcher) Object(ctx context.Context, fields []string, fqIDFmt string, a ...interface{}) map[string]json.RawMessage {
+// Fetch gets a value from the datastore and saves it into the argument `value`.
+//
+// If the key does not exist, it is handeled as an error.
+//
+// To get the error, call f.Err().
+func (f *Fetcher) Fetch(ctx context.Context, value interface{}, keyFmt string, a ...interface{}) {
+	if f.err != nil {
+		return
+	}
+
+	key := fmt.Sprintf(keyFmt, a...)
+	f.keys = append(f.keys, key)
+	if err := get(ctx, f.ds, key, value); err != nil {
+		f.err = fmt.Errorf("fetching %s: %w", key, err)
+		return
+	}
+}
+
+// FetchIfExist is like Fetch but does not return an error, if a key does not
+// exist. In this case, value is nil.
+func (f *Fetcher) FetchIfExist(ctx context.Context, value interface{}, keyFmt string, a ...interface{}) {
+	if f.err != nil {
+		return
+	}
+
+	f.Fetch(ctx, value, keyFmt, a...)
+	if f.err != nil {
+		var errDoesNotExist DoesNotExistError
+		if errors.As(f.err, &errDoesNotExist) {
+			f.err = nil
+		}
+	}
+}
+
+// Object returns a json object for the given fqid with all given fields.
+//
+// If one field does not exist in the datastore, then it is returned as nil.
+func (f *Fetcher) Object(ctx context.Context, fqID string, fields ...string) map[string]json.RawMessage {
 	if f.err != nil {
 		return nil
 	}
 
-	fqID := fmt.Sprintf(fqIDFmt, a...)
-	object, keys, err := Object(ctx, f.ds, fqID, fields)
+	object, keys, err := object(ctx, f.ds, fqID, fields)
 	if err != nil {
 		f.err = fmt.Errorf("fetching object %s: %w", fqID, err)
 		return nil
@@ -50,50 +86,40 @@ func (f *Fetcher) Object(ctx context.Context, fields []string, fqIDFmt string, a
 	return object
 }
 
-// Value fetches a value from the datastore.
-func (f *Fetcher) Value(ctx context.Context, value interface{}, keyFmt string, a ...interface{}) {
-	if f.err != nil {
-		return
-	}
-
-	key := fmt.Sprintf(keyFmt, a...)
-	if err := get(ctx, f.ds, key, value); err != nil {
-		f.err = fmt.Errorf("fetching %s: %w", key, err)
-		return
-	}
-	f.keys = append(f.keys, key)
-}
-
-// Int fetches an integer from the datastore.
-func (f *Fetcher) Int(ctx context.Context, keyFmt string, a ...interface{}) int {
-	var i int
-	f.Value(ctx, &i, keyFmt, a...)
-	return i
-}
-
-// Ints fetches an int slice from the datastore.
-func (f *Fetcher) Ints(ctx context.Context, keyFmt string, a ...interface{}) []int {
-	var iSlice []int
-	f.Value(ctx, &iSlice, keyFmt, a...)
-	return iSlice
-}
-
-// String fetches a string from the datastore.
-func (f *Fetcher) String(ctx context.Context, keyFmt string, a ...interface{}) string {
-	var s string
-	f.Value(ctx, &s, keyFmt, a...)
-	return s
-}
-
 // Keys returns all datastore keys that where fetched in the process.
 func (f *Fetcher) Keys() []string {
 	return f.keys
 }
 
-// Error returns the error that happend at a method call. If no error happend,
-// then Error() returns nil.
-func (f *Fetcher) Error() error {
+// Err returns the error that happend at a method call. If no error happend,
+// then Err() returns nil.
+func (f *Fetcher) Err() error {
 	return f.err
+}
+
+// FetchFunc is a function that fetches a value. It has the signature of
+// fetch.Fetch() or fetch.FetchIfExist().
+type FetchFunc func(ctx context.Context, value interface{}, keyFmt string, a ...interface{})
+
+// Int fetches an integer from the datastore.
+func Int(ctx context.Context, fetch FetchFunc, keyFmt string, a ...interface{}) int {
+	var value int
+	fetch(ctx, &value, keyFmt, a...)
+	return value
+}
+
+// Ints fetches an int slice from the datastore.
+func Ints(ctx context.Context, fetch FetchFunc, keyFmt string, a ...interface{}) []int {
+	var value []int
+	fetch(ctx, &value, keyFmt, a...)
+	return value
+}
+
+// String fetches a string from the datastore.
+func String(ctx context.Context, fetch FetchFunc, keyFmt string, a ...interface{}) string {
+	var value string
+	fetch(ctx, &value, keyFmt, a...)
+	return value
 }
 
 // get returns a value from the datastore and unpacks it in to the argument
@@ -118,10 +144,10 @@ func get(ctx context.Context, ds Getter, fqfield string, value interface{}) erro
 	return nil
 }
 
-// Object returns a json object for the given fqid with all given fields.
+// object returns a json object for the given fqid with all given fields.
 //
 // If one field does not exist in the datastore, then it is returned as nil.
-func Object(ctx context.Context, ds Getter, fqid string, fields []string) (map[string]json.RawMessage, []string, error) {
+func object(ctx context.Context, ds Getter, fqid string, fields []string) (map[string]json.RawMessage, []string, error) {
 	keys := make([]string, len(fields))
 	for i := 0; i < len(fields); i++ {
 		keys[i] = fqid + "/" + fields[i]
