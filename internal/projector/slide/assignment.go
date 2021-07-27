@@ -52,51 +52,42 @@ func assignmentCandidateFromMap(in map[string]json.RawMessage) (*dbAssignmentCan
 
 // Assignment renders the assignment slide.
 func Assignment(store *projector.SlideStore) {
-	store.RegisterSliderFunc("assignment", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
-		defer func() {
-			if err == nil {
-				err = fetch.Error()
-			}
-		}()
-
+	store.RegisterSliderFunc("assignment", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
 		data := fetch.Object(
 			ctx,
-			[]string{
-				"id",
-				"title",
-				"description",
-				"number_poll_candidates",
-				"candidate_ids",
-			},
 			p7on.ContentObjectID,
+			"id",
+			"title",
+			"description",
+			"number_poll_candidates",
+			"candidate_ids",
 		)
 
 		assignment, err := assignmentFromMap(data)
 		if err != nil {
-			return nil, nil, fmt.Errorf("get assignment: %w", err)
+			return nil, fmt.Errorf("get assignment: %w", err)
 		}
 
 		var allUsers []*dbAssignmentCandidate
 		for _, ac := range assignment.CandidateIDs {
-			data = fetch.Object(ctx, []string{"user_id", "weight"}, "assignment_candidate/%d", ac)
+			data = fetch.Object(ctx, fmt.Sprintf("assignment_candidate/%d", ac), "user_id", "weight")
 			userWeight, err := assignmentCandidateFromMap(data)
 			if err != nil {
-				return nil, nil, fmt.Errorf("get assignment candidate: %w", err)
+				return nil, fmt.Errorf("get assignment candidate: %w", err)
 			}
 			allUsers = append(allUsers, userWeight)
 		}
 		sort.SliceStable(allUsers, func(i, j int) bool { return allUsers[i].Weight < allUsers[j].Weight })
 		titler := store.GetTitleInformationFunc("user")
 		if titler == nil {
-			return nil, nil, fmt.Errorf("no titler function registered for user")
+			return nil, fmt.Errorf("no titler function registered for user")
 		}
 
 		var users []string
 		for _, candidate := range allUsers {
 			user, err := NewUser(ctx, fetch, candidate.UserID, p7on.MeetingID)
 			if err != nil {
-				return nil, nil, fmt.Errorf("getting new user id: %w", err)
+				return nil, fmt.Errorf("getting new user id: %w", err)
 			}
 			users = append(users, user.UserRepresentation(p7on.MeetingID))
 		}
@@ -115,20 +106,20 @@ func Assignment(store *projector.SlideStore) {
 
 		responseValue, err := json.Marshal(out)
 		if err != nil {
-			return nil, nil, fmt.Errorf("encoding response slide assignment: %w", err)
+			return nil, fmt.Errorf("encoding response slide assignment: %w", err)
 		}
-		return responseValue, fetch.Keys(), err
+		return responseValue, err
 	})
 
 	store.RegisterGetTitleInformationFunc("assignment", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string, meetingID int) (json.RawMessage, error) {
-		data := fetch.Object(ctx, []string{"id", "title", "agenda_item_id"}, fqid)
+		data := fetch.Object(ctx, fqid, "id", "title", "agenda_item_id")
 		assignment, err := assignmentFromMap(data)
 		if err != nil {
 			return nil, fmt.Errorf("get assignment: %w", err)
 		}
 
 		if itemNumber == "" && assignment.AgendaItemID > 0 {
-			itemNumber = fetch.String(ctx, "agenda_item/%d/item_number", assignment.AgendaItemID)
+			itemNumber = datastore.String(ctx, fetch.Fetch, "agenda_item/%d/item_number", assignment.AgendaItemID)
 		}
 
 		title := struct {

@@ -31,33 +31,24 @@ func topicFromMap(in map[string]json.RawMessage) (*dbTopic, error) {
 
 // Topic renders the topic slide.
 func Topic(store *projector.SlideStore) {
-	store.RegisterSliderFunc("topic", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
-		defer func() {
-			if err == nil {
-				err = fetch.Error()
-			}
-		}()
-
+	store.RegisterSliderFunc("topic", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
 		data := fetch.Object(
 			ctx,
-			[]string{
-				"id",
-				"title",
-				"text",
-				"agenda_item_id",
-			},
 			p7on.ContentObjectID,
+			"id",
+			"title",
+			"text",
+			"agenda_item_id",
 		)
 
 		topic, err := topicFromMap(data)
 		if err != nil {
-			return nil, nil, fmt.Errorf("get topic: %w", err)
+			return nil, fmt.Errorf("get topic: %w", err)
 		}
 
 		var itemNumber string
 		if topic.AgendaItemID > 0 {
-			itemNumber = fetch.String(ctx, "agenda_item/%d/item_number", topic.AgendaItemID)
+			itemNumber = datastore.String(ctx, fetch.Fetch, "agenda_item/%d/item_number", topic.AgendaItemID)
 		}
 		out := struct {
 			Title            string `json:"title"`
@@ -71,20 +62,20 @@ func Topic(store *projector.SlideStore) {
 
 		responseValue, err := json.Marshal(out)
 		if err != nil {
-			return nil, nil, fmt.Errorf("encoding response slide topic: %w", err)
+			return nil, fmt.Errorf("encoding response slide topic: %w", err)
 		}
-		return responseValue, fetch.Keys(), err
+		return responseValue, err
 	})
 
 	store.RegisterGetTitleInformationFunc("topic", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string, meetingID int) (json.RawMessage, error) {
-		data := fetch.Object(ctx, []string{"id", "title", "agenda_item_id"}, fqid)
+		data := fetch.Object(ctx, fqid, "id", "title", "agenda_item_id")
 		topic, err := topicFromMap(data)
 		if err != nil {
 			return nil, fmt.Errorf("get topic from map: %w", err)
 		}
 
 		if itemNumber == "" && topic.AgendaItemID > 0 {
-			itemNumber = fetch.String(ctx, "agenda_item/%d/item_number", topic.AgendaItemID)
+			itemNumber = datastore.String(ctx, fetch.Fetch, "agenda_item/%d/item_number", topic.AgendaItemID)
 		}
 		title := struct {
 			Collection       string `json:"collection"`

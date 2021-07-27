@@ -41,11 +41,11 @@ func meetingFromMap(in map[string]json.RawMessage) (*dbMeeting, error) {
 func getMeeting(ctx context.Context, fetch *datastore.Fetcher, meetingID int, fetchFields []string) (meeting *dbMeeting, err error) {
 	defer func() {
 		if err == nil {
-			err = fetch.Error()
+			err = fetch.Err()
 		}
 	}()
 
-	data := fetch.Object(ctx, fetchFields, "meeting/%d", meetingID)
+	data := fetch.Object(ctx, fmt.Sprintf("meeting/%d", meetingID), fetchFields...)
 
 	meeting, err = meetingFromMap(data)
 	if err != nil {

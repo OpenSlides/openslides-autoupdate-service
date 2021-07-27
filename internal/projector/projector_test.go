@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -228,19 +229,22 @@ func TestProjectionTypeDoesNotExist(t *testing.T) {
 
 func testSlides() *projector.SlideStore {
 	s := new(projector.SlideStore)
-	s.RegisterSliderFunc("test1", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		return []byte(`"abc"`), nil, nil
+	s.RegisterSliderFunc("test1", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
+		return []byte(`"abc"`), nil
 	})
-	s.RegisterSliderFunc("test_model", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		field, _ := ds.Get(ctx, "test_model/1/field")
-		if field[0] == nil {
-			return []byte(`"test_model"`), []string{"test_model/1/field"}, nil
+
+	s.RegisterSliderFunc("test_model", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
+		var field json.RawMessage
+		fetch.FetchIfExist(ctx, &field, "test_model/1/field")
+		if field == nil {
+			return []byte(`"test_model"`), nil
 		}
-		return []byte(fmt.Sprintf(`"calculated with %s"`, string(field[0][1:len(field[0])-1]))), []string{"test_model/1/field"}, nil
+		return []byte(fmt.Sprintf(`"calculated with %s"`, string(field[1:len(field)-1]))), nil
 	})
-	s.RegisterSliderFunc("projection", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
+
+	s.RegisterSliderFunc("projection", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
 		bs, err := json.Marshal(p7on)
-		return bs, nil, err
+		return bs, err
 	})
 	return s
 }

@@ -64,25 +64,16 @@ type outAgendaItem struct {
 
 // AgendaItemList renders the agenda_item_list slide.
 func AgendaItemList(store *projector.SlideStore) {
-	store.RegisterSliderFunc("agenda_item_list", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
-		defer func() {
-			if err == nil {
-				err = fetch.Error()
-			}
-		}()
-
+	store.RegisterSliderFunc("agenda_item_list", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
 		data := fetch.Object(
 			ctx,
-			[]string{
-				"agenda_item_ids",
-				"agenda_show_internal_items_on_projector",
-			},
 			p7on.ContentObjectID,
+			"agenda_item_ids",
+			"agenda_show_internal_items_on_projector",
 		)
 		agendaItemList, err := agendaItemListFromMap(data)
 		if err != nil {
-			return nil, nil, fmt.Errorf("get agenda item list: %w", err)
+			return nil, fmt.Errorf("get agenda item list: %w", err)
 		}
 
 		var options struct {
@@ -90,30 +81,27 @@ func AgendaItemList(store *projector.SlideStore) {
 		}
 		if p7on.Options != nil {
 			if err := json.Unmarshal(p7on.Options, &options); err != nil {
-				return nil, nil, fmt.Errorf("decoding projection options: %w", err)
+				return nil, fmt.Errorf("decoding projection options: %w", err)
 			}
 		}
 		var allAgendaItems []*outAgendaItem
 		for _, aiID := range agendaItemList.AgendaItemIDs {
 			data = fetch.Object(
 				ctx,
-				[]string{
-					"id",
-					"item_number",
-					"content_object_id",
-					"meeting_id",
-					"is_hidden",
-					"is_internal",
-					"level",
-					"weight",
-					"parent_id",
-				},
-				"agenda_item/%d",
-				aiID,
+				fmt.Sprintf("agenda_item/%d", aiID),
+				"id",
+				"item_number",
+				"content_object_id",
+				"meeting_id",
+				"is_hidden",
+				"is_internal",
+				"level",
+				"weight",
+				"parent_id",
 			)
 			agendaItem, err := agendaItemFromMap(data)
 			if err != nil {
-				return nil, nil, fmt.Errorf("get agenda item: %w", err)
+				return nil, fmt.Errorf("get agenda item: %w", err)
 			}
 
 			if agendaItem.IsHidden || (agendaItem.IsInternal && !agendaItemList.AgendaShowInternal) {
@@ -127,12 +115,12 @@ func AgendaItemList(store *projector.SlideStore) {
 			collection := strings.Split(agendaItem.ContentObjectID, "/")[0]
 			titler := store.GetTitleInformationFunc(collection)
 			if titler == nil {
-				return nil, nil, fmt.Errorf("no titler function registered for %s", collection)
+				return nil, fmt.Errorf("no titler function registered for %s", collection)
 			}
 
 			titleInfo, err := titler.GetTitleInformation(ctx, fetch, agendaItem.ContentObjectID, agendaItem.ItemNumber, p7on.MeetingID)
 			if err != nil {
-				return nil, nil, fmt.Errorf("get title func: %w", err)
+				return nil, fmt.Errorf("get title func: %w", err)
 			}
 
 			allAgendaItems = append(
@@ -164,9 +152,9 @@ func AgendaItemList(store *projector.SlideStore) {
 
 		responseValue, err := json.Marshal(out)
 		if err != nil {
-			return nil, nil, fmt.Errorf("encoding response for slide agenda item list: %w", err)
+			return nil, fmt.Errorf("encoding response for slide agenda item list: %w", err)
 		}
-		return responseValue, fetch.Keys(), err
+		return responseValue, err
 	})
 }
 

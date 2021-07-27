@@ -110,14 +110,7 @@ func pollFromMap(in map[string]json.RawMessage, state string) (*dbPoll, error) {
 
 // Poll renders the poll slide.
 func Poll(store *projector.SlideStore) {
-	store.RegisterSliderFunc("poll", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
-		defer func() {
-			if err == nil {
-				err = fetch.Error()
-			}
-		}()
-
+	store.RegisterSliderFunc("poll", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
 		fetchFields := []string{
 			"id",
 			"content_object_id",
@@ -131,7 +124,7 @@ func Poll(store *projector.SlideStore) {
 			"option_ids",
 			"meeting_id",
 		}
-		state := fetch.String(ctx, "%s/%s", p7on.ContentObjectID, "state")
+		state := datastore.String(ctx, fetch.Fetch, "%s/%s", p7on.ContentObjectID, "state")
 		if state == "published" {
 			fetchFields = append(fetchFields, []string{
 				"entitled_users_at_stop",
@@ -144,34 +137,34 @@ func Poll(store *projector.SlideStore) {
 				"global_option_id",
 			}...)
 		}
-		data := fetch.Object(ctx, fetchFields, p7on.ContentObjectID)
+		data := fetch.Object(ctx, p7on.ContentObjectID, fetchFields...)
 
 		poll, err := pollFromMap(data, state)
 		if err != nil {
-			return nil, nil, fmt.Errorf("get poll: %w", err)
+			return nil, fmt.Errorf("get poll: %w", err)
 		}
 
 		poll.TitleInformation, err = getTitleInfoFromContentObject(ctx, fetch, store, poll.ContentObjectID, "", p7on.MeetingID)
 		if err != nil {
-			return nil, nil, fmt.Errorf("getTitleInfoFromContentObject: %w", err)
+			return nil, fmt.Errorf("getTitleInfoFromContentObject: %w", err)
 		}
 
 		poll.Options, err = getOptions(ctx, fetch, store, poll.PollWork.OptionIDS, state, p7on.MeetingID)
 		if err != nil {
-			return nil, nil, fmt.Errorf("get Options func: %w", err)
+			return nil, fmt.Errorf("get Options func: %w", err)
 		}
 		if state == "published" {
 			poll.GlobalOption, err = getGlobalOption(ctx, fetch, store, poll.PollWork.GlobalOptionID)
 			if err != nil {
-				return nil, nil, fmt.Errorf("get GlobalOption func: %w", err)
+				return nil, fmt.Errorf("get GlobalOption func: %w", err)
 			}
 		}
 		poll.PollWork = nil // don't export
 		responseValue, err := json.Marshal(poll)
 		if err != nil {
-			return nil, nil, fmt.Errorf("encoding response slide poll: %w", err)
+			return nil, fmt.Errorf("encoding response slide poll: %w", err)
 		}
-		return responseValue, fetch.Keys(), err
+		return responseValue, err
 	})
 }
 
@@ -191,7 +184,7 @@ func getOptions(ctx context.Context, fetch *datastore.Fetcher, store *projector.
 	}
 
 	for _, optionID := range optionIDS {
-		data := fetch.Object(ctx, fetchFields, "option/%d", optionID)
+		data := fetch.Object(ctx, fmt.Sprintf("option/%d", optionID), fetchFields...)
 		option, err := optionFromMap(data)
 		if err != nil {
 			return nil, fmt.Errorf("get option data: %w", err)
@@ -213,7 +206,7 @@ func getOptions(ctx context.Context, fetch *datastore.Fetcher, store *projector.
 }
 
 func getGlobalOption(ctx context.Context, fetch *datastore.Fetcher, store *projector.SlideStore, globalOptionID int) (*optionGlobRepr, error) {
-	data := fetch.Object(ctx, []string{"yes", "no", "abstain"}, "option/%d", globalOptionID)
+	data := fetch.Object(ctx, fmt.Sprintf("option/%d", globalOptionID), "yes", "no", "abstain")
 	globalOption, err := optionGlobFromMap(data)
 	if err != nil {
 		return nil, fmt.Errorf("get option data: %w", err)

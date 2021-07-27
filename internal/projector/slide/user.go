@@ -36,9 +36,9 @@ func NewUser(ctx context.Context, fetch *datastore.Fetcher, id, meetingID int) (
 		fields = append(fields, fmt.Sprintf("structure_level_$%d", meetingID))
 	}
 
-	data := fetch.Object(ctx, fields, "user/%d", id)
-	if fetch.Error() != nil {
-		return nil, fmt.Errorf("getting user object: %w", fetch.Error())
+	data := fetch.Object(ctx, fmt.Sprintf("user/%d", id), fields...)
+	if err := fetch.Err(); err != nil {
+		return nil, fmt.Errorf("getting user object: %w", err)
 	}
 
 	if meetingID != 0 {
@@ -106,27 +106,15 @@ func (u *DbUser) UserShortName() string {
 
 // User renders the user slide.
 func User(store *projector.SlideStore) {
-	store.RegisterSliderFunc("user", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (responseValue []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
-		defer func() {
-			if err == nil {
-				err = fetch.Error()
-			}
-			if err == nil {
-				keys = fetch.Keys()
-			} else {
-				responseValue = nil
-			}
-		}()
-
+	store.RegisterSliderFunc("user", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (responseValue []byte, err error) {
 		id, err := strconv.Atoi(strings.Split(p7on.ContentObjectID, "/")[1])
 		if err != nil {
-			return nil, nil, fmt.Errorf("getting user id: %w", err)
+			return nil, fmt.Errorf("getting user id: %w", err)
 		}
 
 		user, err := NewUser(ctx, fetch, id, p7on.MeetingID)
 		if err != nil {
-			return nil, nil, fmt.Errorf("getting new user id: %w", err)
+			return nil, fmt.Errorf("getting new user id: %w", err)
 		}
 		out := struct {
 			User string `json:"user"`
@@ -135,9 +123,9 @@ func User(store *projector.SlideStore) {
 		}
 		responseValue, err = json.Marshal(out)
 		if err != nil {
-			return nil, nil, fmt.Errorf("encoding response slide user: %w", err)
+			return nil, fmt.Errorf("encoding response slide user: %w", err)
 		}
-		return responseValue, keys, err
+		return responseValue, err
 	})
 
 	store.RegisterGetTitleInformationFunc("user", func(ctx context.Context, fetch *datastore.Fetcher, fqid string, itemNumber string, meetingID int) (json.RawMessage, error) {

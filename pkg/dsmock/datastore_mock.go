@@ -1,6 +1,7 @@
 package dsmock
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -95,6 +96,7 @@ func YAMLData(input string) map[string]string {
 type MockDatastore struct {
 	*datastore.Datastore
 	server *DatastoreServer
+	err    error
 }
 
 // NewMockDatastore create a MockDatastore with data.
@@ -108,6 +110,20 @@ func NewMockDatastore(closed <-chan struct{}, data map[string]string) *MockDatas
 	s.Datastore = datastore.New(dsServer.TS.URL, closed, func(error) {}, s.server)
 
 	return s
+}
+
+// Get calls the Get() method of the datastore.
+func (d *MockDatastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage, error) {
+	if d.err != nil {
+		return nil, d.err
+	}
+
+	return d.Datastore.Get(ctx, keys...)
+}
+
+// InjectError lets the next calls to Get() return the injected error.
+func (d *MockDatastore) InjectError(err error) {
+	d.err = err
 }
 
 // Send updates the data.

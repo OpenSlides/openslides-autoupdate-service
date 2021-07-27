@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -754,7 +755,7 @@ func TestMotion(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			closed := make(chan struct{})
 			defer close(closed)
-			ds := dsmock.NewMockDatastore(closed, tt.data)
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, tt.data))
 
 			p7on := &projector.Projection{
 				ContentObjectID: "motion/1",
@@ -762,10 +763,10 @@ func TestMotion(t *testing.T) {
 				Options:         tt.options,
 			}
 
-			bs, keys, err := motionSlide.Slide(context.Background(), ds, p7on)
+			bs, err := motionSlide.Slide(context.Background(), fetch, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
-			assert.ElementsMatch(t, tt.expectKeys, keys)
+			assert.ElementsMatch(t, tt.expectKeys, fetch.Keys())
 		})
 	}
 }
