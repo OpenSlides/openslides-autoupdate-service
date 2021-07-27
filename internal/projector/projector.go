@@ -19,6 +19,7 @@ type Datastore interface {
 func Register(ds Datastore, slides *SlideStore) {
 	hotKeys := make(map[string][]string)
 	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield string, changed map[string]json.RawMessage) (bs []byte, err error) {
+		fetch := datastore.NewFetcher(ds)
 		if changed != nil {
 			var needUpdate bool
 			for _, k := range hotKeys[fqfield] {
@@ -36,11 +37,10 @@ func Register(ds Datastore, slides *SlideStore) {
 			}
 		}
 
-		var keys []string
 		defer func() {
 			// At the end, save all requested keys to check later if one has
 			// changed.
-			hotKeys[fqfield] = keys
+			hotKeys[fqfield] = fetch.Keys()
 		}()
 
 		parts := strings.SplitN(fqfield, "/", 3)
@@ -48,10 +48,8 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("invalid key %s, expected two '/'", fqfield)
 		}
 
-		data, keys, err := datastore.Object(
+		data := fetch.Object(
 			ctx,
-			ds,
-			parts[0]+"/"+parts[1],
 			[]string{
 				"id",
 				"type",
@@ -59,8 +57,9 @@ func Register(ds Datastore, slides *SlideStore) {
 				"meeting_id",
 				"options",
 			},
+			fqfield,
 		)
-		if err != nil {
+		if err = fetch.Error(); err != nil {
 			return nil, fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
 		}
 
@@ -83,11 +82,10 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("unknown slide %s", slideName)
 		}
 
-		bs, slideKeys, err := slider.Slide(ctx, ds, p7on)
+		bs, err := slider.Slide(ctx, fetch, p7on)
 		if err != nil {
 			return nil, fmt.Errorf("calculating slide %s for p7on %v: %w", slideName, p7on, err)
 		}
-		keys = append(keys, slideKeys...)
 		return bs, nil
 	})
 }

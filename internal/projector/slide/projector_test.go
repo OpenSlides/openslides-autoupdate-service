@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -54,12 +55,13 @@ func TestProjectorCountdown(t *testing.T) {
 			closed := make(chan struct{})
 			defer close(closed)
 			ds := dsmock.NewMockDatastore(closed, tt.data)
+			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
 				ContentObjectID: "projector_countdown/1",
 			}
 
-			bs, keys, err := pcSlide.Slide(context.Background(), ds, p7on)
+			bs, keys, err := pcSlide.Slide(context.Background(), fetch, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
 			assert.ElementsMatch(t, tt.expectKeys, keys)
@@ -98,12 +100,13 @@ func TestProjectorMessage(t *testing.T) {
 			closed := make(chan struct{})
 			defer close(closed)
 			ds := dsmock.NewMockDatastore(closed, tt.data)
+			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
 				ContentObjectID: "projector_message/1",
 			}
 
-			bs, keys, err := pmSlide.Slide(context.Background(), ds, p7on)
+			bs, keys, err := pmSlide.Slide(context.Background(), fetch, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
 			assert.ElementsMatch(t, tt.expectKeys, keys)

@@ -83,15 +83,14 @@ func chyronProjectorFromMap(in map[string]json.RawMessage) (*dbChyronProjector, 
 
 // ListOfSpeaker renders current list of speaker slide.
 func ListOfSpeaker(store *projector.SlideStore) {
-	store.RegisterSliderFunc("list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, hotkeys []string, err error) {
-		return renderListOfSpeakers(ctx, ds, p7on.ContentObjectID, p7on.MeetingID, store)
+	store.RegisterSliderFunc("list_of_speakers", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, hotkeys []string, err error) {
+		return renderListOfSpeakers(ctx, fetch, p7on.ContentObjectID, p7on.MeetingID, store)
 	})
 }
 
 // CurrentListOfSpeakers renders the current_list_of_speakers slide.
 func CurrentListOfSpeakers(store *projector.SlideStore) {
-	store.RegisterSliderFunc("current_list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
+	store.RegisterSliderFunc("current_list_of_speakers", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		defer func() {
 			if err == nil {
 				err = fetch.Error()
@@ -110,7 +109,7 @@ func CurrentListOfSpeakers(store *projector.SlideStore) {
 			return nil, nil, err
 		}
 
-		content, keys, err := renderListOfSpeakers(ctx, ds, fmt.Sprintf("list_of_speakers/%d", losID), p7on.MeetingID, store)
+		content, keys, err := renderListOfSpeakers(ctx, fetch, fmt.Sprintf("list_of_speakers/%d", losID), p7on.MeetingID, store)
 		if err != nil {
 			return nil, nil, fmt.Errorf("render list of speakers %d: %w", losID, err)
 		}
@@ -121,8 +120,7 @@ func CurrentListOfSpeakers(store *projector.SlideStore) {
 
 // CurrentSpeakerChyron renders the current_speaker_chyron slide.
 func CurrentSpeakerChyron(store *projector.SlideStore) {
-	store.RegisterSliderFunc("current_speaker_chyron", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
+	store.RegisterSliderFunc("current_speaker_chyron", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		defer func() {
 			if err == nil {
 				err = fetch.Error()
@@ -225,8 +223,7 @@ func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID 
 	return shortName, structureLevel, nil
 }
 
-func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID string, meetingID int, store *projector.SlideStore) (encoded []byte, keys []string, err error) {
-	fetch := datastore.NewFetcher(ds)
+func renderListOfSpeakers(ctx context.Context, fetch *datastore.Fetcher, losFQID string, meetingID int, store *projector.SlideStore) (encoded []byte, keys []string, err error) {
 	defer func() {
 		if err == nil {
 			err = fetch.Error()

@@ -31,8 +31,7 @@ func topicFromMap(in map[string]json.RawMessage) (*dbTopic, error) {
 
 // Topic renders the topic slide.
 func Topic(store *projector.SlideStore) {
-	store.RegisterSliderFunc("topic", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
+	store.RegisterSliderFunc("topic", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		defer func() {
 			if err == nil {
 				err = fetch.Error()

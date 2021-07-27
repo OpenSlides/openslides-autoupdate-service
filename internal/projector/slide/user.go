@@ -106,8 +106,7 @@ func (u *DbUser) UserShortName() string {
 
 // User renders the user slide.
 func User(store *projector.SlideStore) {
-	store.RegisterSliderFunc("user", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (responseValue []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
+	store.RegisterSliderFunc("user", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (responseValue []byte, keys []string, err error) {
 		defer func() {
 			if err == nil {
 				err = fetch.Error()

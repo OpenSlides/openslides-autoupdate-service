@@ -85,6 +85,11 @@ func (f *Fetcher) String(ctx context.Context, keyFmt string, a ...interface{}) s
 	return s
 }
 
+// Datastore returns the datastore
+func (f *Fetcher) Datastore() Getter {
+	return f.ds
+}
+
 // Keys returns all datastore keys that where fetched in the process.
 func (f *Fetcher) Keys() []string {
 	return f.keys

@@ -110,8 +110,7 @@ func pollFromMap(in map[string]json.RawMessage, state string) (*dbPoll, error) {
 
 // Poll renders the poll slide.
 func Poll(store *projector.SlideStore) {
-	store.RegisterSliderFunc("poll", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
+	store.RegisterSliderFunc("poll", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		defer func() {
 			if err == nil {
 				err = fetch.Error()

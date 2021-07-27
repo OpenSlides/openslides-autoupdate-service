@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -143,13 +144,13 @@ func TestMotionBlock(t *testing.T) {
 			defer close(closed)
 			ctx := context.Background()
 			ds := dsmock.NewMockDatastore(closed, tt.data)
-
+			fetch := datastore.NewFetcher(ds)
 			p7on := &projector.Projection{
 				ContentObjectID: "motion_block/1",
 				MeetingID:       1,
 			}
 
-			bs, keys, err := motionBlockSlide.Slide(ctx, ds, p7on)
+			bs, keys, err := motionBlockSlide.Slide(ctx, fetch, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
 			assert.ElementsMatch(t, tt.expectKeys, keys)

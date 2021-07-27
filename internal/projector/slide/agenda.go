@@ -64,8 +64,7 @@ type outAgendaItem struct {
 
 // AgendaItemList renders the agenda_item_list slide.
 func AgendaItemList(store *projector.SlideStore) {
-	store.RegisterSliderFunc("agenda_item_list", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
+	store.RegisterSliderFunc("agenda_item_list", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		defer func() {
 			if err == nil {
 				err = fetch.Error()

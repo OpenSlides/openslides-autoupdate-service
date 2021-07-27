@@ -50,8 +50,7 @@ func projectorMessageFromMap(in map[string]json.RawMessage) (*dbProjectorMessage
 
 // ProjectorCountdown renders the projector_countdown slide.
 func ProjectorCountdown(store *projector.SlideStore) {
-	store.RegisterSliderFunc("projector_countdown", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
+	store.RegisterSliderFunc("projector_countdown", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		defer func() {
 			if err == nil {
 				err = fetch.Error()
@@ -73,8 +72,7 @@ func ProjectorCountdown(store *projector.SlideStore) {
 
 // ProjectorMessage renders the projector_message slide.
 func ProjectorMessage(store *projector.SlideStore) {
-	store.RegisterSliderFunc("projector_message", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
+	store.RegisterSliderFunc("projector_message", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		defer func() {
 			if err == nil {
 				err = fetch.Error()

@@ -128,8 +128,7 @@ func motionFromMap(in map[string]json.RawMessage) (*dbMotion, error) {
 
 // Motion renders the motion slide.
 func Motion(store *projector.SlideStore) {
-	store.RegisterSliderFunc("motion", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
+	store.RegisterSliderFunc("motion", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		defer func() {
 			if err == nil {
 				err = fetch.Error()

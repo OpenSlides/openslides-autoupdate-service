@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -146,13 +147,14 @@ func TestUser(t *testing.T) {
 			closed := make(chan struct{})
 			defer close(closed)
 			ds := dsmock.NewMockDatastore(closed, tt.data)
+			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
 				ContentObjectID: "user/1",
 				MeetingID:       222,
 			}
 
-			bs, keys, err := userSlide.Slide(context.Background(), ds, p7on)
+			bs, keys, err := userSlide.Slide(context.Background(), fetch, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
 			expectedKeys := []string{
@@ -182,12 +184,13 @@ func TestUserWithoutMeeting(t *testing.T) {
 	}
 
 	ds := dsmock.NewMockDatastore(closed, data)
+	fetch := datastore.NewFetcher(ds)
 
 	p7on := &projector.Projection{
 		ContentObjectID: "user/1",
 	}
 
-	bs, keys, err := userSlide.Slide(context.Background(), ds, p7on)
+	bs, keys, err := userSlide.Slide(context.Background(), fetch, p7on)
 	assert.NoError(t, err)
 	assert.JSONEq(t, `{"user":"Dr. Jonny Bo (Switzerland)"}`, string(bs))
 	expectedKeys := []string{"user/1/username", "user/1/title", "user/1/first_name", "user/1/last_name", "user/1/default_structure_level"}
@@ -203,13 +206,14 @@ func TestUserWithError(t *testing.T) {
 	}
 
 	ds := dsmock.NewMockDatastore(closed, data)
+	fetch := datastore.NewFetcher(ds)
 
 	p7on := &projector.Projection{
 		ContentObjectID: "user/1",
 		MeetingID:       222,
 	}
 
-	bs, keys, err := userSlide.Slide(context.Background(), ds, p7on)
+	bs, keys, err := userSlide.Slide(context.Background(), fetch, p7on)
 	assert.Nil(t, bs)
 	assert.Nil(t, keys)
 	assert.Error(t, err)

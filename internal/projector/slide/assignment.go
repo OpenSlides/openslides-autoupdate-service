@@ -52,8 +52,7 @@ func assignmentCandidateFromMap(in map[string]json.RawMessage) (*dbAssignmentCan
 
 // Assignment renders the assignment slide.
 func Assignment(store *projector.SlideStore) {
-	store.RegisterSliderFunc("assignment", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
+	store.RegisterSliderFunc("assignment", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		defer func() {
 			if err == nil {
 				err = fetch.Error()

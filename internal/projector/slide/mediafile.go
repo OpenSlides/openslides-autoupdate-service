@@ -30,8 +30,7 @@ func mediafileItemFromMap(in map[string]json.RawMessage) (*dbMediafile, error) {
 
 // Mediafile renders the mediafile slide.
 func Mediafile(store *projector.SlideStore) {
-	store.RegisterSliderFunc("mediafile", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
+	store.RegisterSliderFunc("mediafile", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
 		defer func() {
 			if err == nil {
 				err = fetch.Error()

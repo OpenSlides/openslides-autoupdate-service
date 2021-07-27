@@ -10,7 +10,7 @@ import (
 
 // Slider knows how to create a slide.
 type Slider interface {
-	Slide(ctx context.Context, ds Datastore, p7on *Projection) (encoded []byte, keys []string, err error)
+	Slide(ctx context.Context, fetch *datastore.Fetcher, p7on *Projection) (encoded []byte, err error)
 }
 
 // Titler defines the interface for GetTitleInformation-function, used for individual objects.
@@ -19,11 +19,11 @@ type Titler interface {
 }
 
 // SliderFunc is a function that implements the Slider interface.
-type SliderFunc func(ctx context.Context, ds Datastore, p7on *Projection) (encoded []byte, keys []string, err error)
+type SliderFunc func(ctx context.Context, fetch *datastore.Fetcher, p7on *Projection) (encoded []byte, keys []string, err error)
 
 // Slide calls the func.
-func (f SliderFunc) Slide(ctx context.Context, ds Datastore, p7on *Projection) (encoded []byte, keys []string, err error) {
-	return f(ctx, ds, p7on)
+func (f SliderFunc) Slide(ctx context.Context, fetch *datastore.Fetcher, p7on *Projection) (encoded []byte, keys []string, err error) {
+	return f(ctx, fetch, p7on)
 }
 
 // TitlerFunc is a type that implements the Titler interface.
