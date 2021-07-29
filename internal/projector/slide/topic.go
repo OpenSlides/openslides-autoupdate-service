@@ -48,7 +48,7 @@ func Topic(store *projector.SlideStore) {
 
 		var itemNumber string
 		if topic.AgendaItemID > 0 {
-			itemNumber = datastore.String(ctx, fetch.Fetch, "agenda_item/%d/item_number", topic.AgendaItemID)
+			itemNumber = datastore.String(ctx, fetch.FetchIfExist, "agenda_item/%d/item_number", topic.AgendaItemID)
 		}
 		if err := fetch.Err(); err != nil {
 			return nil, err
