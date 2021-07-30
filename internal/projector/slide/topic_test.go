@@ -43,6 +43,16 @@ func TestTopic(t *testing.T) {
 			},
 			`{"item_number":"", "text":"topic text 1", "title":"topic title 1"}`,
 		},
+		{
+			"Agenda Item without number",
+			map[string]string{
+				"topic/1/id":             `1`,
+				"topic/1/title":          `"topic title 1"`,
+				"topic/1/text":           `"topic text 1"`,
+				"topic/1/agenda_item_id": `1`,
+			},
+			`{"title":"topic title 1","text":"topic text 1","item_number":""}`,
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			closed := make(chan struct{})
