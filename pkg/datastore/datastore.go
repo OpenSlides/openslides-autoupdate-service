@@ -218,8 +218,12 @@ func (d *Datastore) calculateField(field string, key string, updated map[string]
 
 }
 
-// requestKeys request a list of keys by the datastore. If an error happens, no
-// key is returned.
+// requestKeys request a list of keys by the datastore.
+//
+// If an error happens, no key is returned.
+//
+// The returned map contains exacply the given keys. If a key does not exist in
+// the datastore, then the value of this key is <nil>.
 func (d *Datastore) requestKeys(keys []string) (map[string]json.RawMessage, error) {
 	requestData, err := keysToGetManyRequest(keys)
 	if err != nil {
@@ -250,6 +254,14 @@ func (d *Datastore) requestKeys(keys []string) (map[string]json.RawMessage, erro
 	responseData, err := getManyResponceToKeyValue(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("parse responce: %w", err)
+	}
+
+	// Add keys that where not returned.
+	for _, k := range keys {
+		if _, ok := responseData[k]; ok {
+			continue
+		}
+		responseData[k] = nil
 	}
 
 	return responseData, nil
