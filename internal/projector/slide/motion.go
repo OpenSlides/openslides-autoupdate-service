@@ -249,7 +249,7 @@ func Motion(store *projector.SlideStore) {
 		}
 
 		if itemNumber == "" && motion.MotionWork.AgendaItemID > 0 {
-			itemNumber = datastore.String(ctx, fetch.Fetch, "agenda_item/%d/item_number", motion.MotionWork.AgendaItemID)
+			itemNumber = datastore.String(ctx, fetch.FetchIfExist, "agenda_item/%d/item_number", motion.MotionWork.AgendaItemID)
 		}
 		if err := fetch.Err(); err != nil {
 			return nil, err
@@ -289,7 +289,7 @@ func fillAmendmentParagraphs(ctx context.Context, fetch *datastore.Fetcher, moti
 	if len(motion.MotionWork.AmendmentParagraph) > 0 {
 		motion.AmendmentParagraphs = make(map[string]string, len(motion.MotionWork.AmendmentParagraph))
 		for _, nr := range motion.MotionWork.AmendmentParagraph {
-			text := datastore.String(ctx, fetch.Fetch, "motion/%d/amendment_paragraph_$%s", motion.ID, nr)
+			text := datastore.String(ctx, fetch.FetchIfExist, "motion/%d/amendment_paragraph_$%s", motion.ID, nr)
 			motion.AmendmentParagraphs[nr] = text
 		}
 	}
@@ -479,7 +479,7 @@ func fillAmendments(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 		amendment.AmendmentParagraphs = motionAmend.AmendmentParagraphs
 		amendment.ChangeRecommendations = motionAmend.ChangeRecommendations
 
-		maif := datastore.String(ctx, fetch.Fetch, "motion_state/%d/merge_amendment_into_final", motionAmend.MotionWork.StateID)
+		maif := datastore.String(ctx, fetch.FetchIfExist, "motion_state/%d/merge_amendment_into_final", motionAmend.MotionWork.StateID)
 		if maif == "do_merge" {
 			amendment.MergeAmendmentIntoFinal = maif
 			amendment.MergeAmendmentIntoDiff = maif
@@ -488,7 +488,7 @@ func fillAmendments(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 			if maif == "do_not_merge" || motionAmend.MotionWork.RecommendationID == 0 {
 				amendment.MergeAmendmentIntoDiff = "undefined"
 			} else {
-				maifReco := datastore.String(ctx, fetch.Fetch, "motion_state/%d/merge_amendment_into_final", motionAmend.MotionWork.RecommendationID)
+				maifReco := datastore.String(ctx, fetch.FetchIfExist, "motion_state/%d/merge_amendment_into_final", motionAmend.MotionWork.RecommendationID)
 				if maifReco == "do_merge" {
 					amendment.MergeAmendmentIntoDiff = maifReco
 				} else {
