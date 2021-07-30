@@ -176,11 +176,11 @@ func getLosID(ctx context.Context, ContentObjectID string, fetch *datastore.Fetc
 	if err != nil {
 		return losID, referenceProjectorID, fmt.Errorf("invalid ContentObjectID %s. Expected a numeric meeting_id", ContentObjectID)
 	}
-	referenceProjectorID = datastore.Int(ctx, fetch.Fetch, "meeting/%d/reference_projector_id", meetingID)
-	referenceP7onIDs := datastore.Ints(ctx, fetch.Fetch, "projector/%d/current_projection_ids", referenceProjectorID)
+	referenceProjectorID = datastore.Int(ctx, fetch.FetchIfExist, "meeting/%d/reference_projector_id", meetingID)
+	referenceP7onIDs := datastore.Ints(ctx, fetch.FetchIfExist, "projector/%d/current_projection_ids", referenceProjectorID)
 
 	for _, pID := range referenceP7onIDs {
-		contentObjectID := datastore.String(ctx, fetch.Fetch, "projection/%d/content_object_id", pID)
+		contentObjectID := datastore.String(ctx, fetch.FetchIfExist, "projection/%d/content_object_id", pID)
 		losID = datastore.Int(ctx, fetch.FetchIfExist, "%s/list_of_speakers_id", contentObjectID)
 
 		if losID != 0 {

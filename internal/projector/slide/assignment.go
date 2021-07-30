@@ -122,7 +122,7 @@ func Assignment(store *projector.SlideStore) {
 		}
 
 		if itemNumber == "" && assignment.AgendaItemID > 0 {
-			itemNumber = datastore.String(ctx, fetch.Fetch, "agenda_item/%d/item_number", assignment.AgendaItemID)
+			itemNumber = datastore.String(ctx, fetch.FetchIfExist, "agenda_item/%d/item_number", assignment.AgendaItemID)
 		}
 
 		title := struct {

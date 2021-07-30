@@ -208,7 +208,7 @@ func (d *Datastore) calculateField(field string, key string, updated map[string]
 		d.errHandler(fmt.Errorf("calculating key %s: %v", key, err))
 
 		msg := fmt.Sprintf("calculating key %s", key)
-		if errors.Is(err, context.Canceled) {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			msg = fmt.Sprintf("calculating key %s timed out", key)
 		}
 

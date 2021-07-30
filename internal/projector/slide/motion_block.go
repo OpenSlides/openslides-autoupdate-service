@@ -95,7 +95,7 @@ func MotionBlock(store *projector.SlideStore) {
 				}
 				recommendation.MotionStateWork = nil // don't export
 			}
-			itemNumber := datastore.String(ctx, fetch.Fetch, "agenda_item/%d/item_number", motion.MotionWork.AgendaItemID)
+			itemNumber := datastore.String(ctx, fetch.FetchIfExist, "agenda_item/%d/item_number", motion.MotionWork.AgendaItemID)
 			if err := fetch.Err(); err != nil {
 				return nil, err
 			}
@@ -133,7 +133,7 @@ func MotionBlock(store *projector.SlideStore) {
 		}
 
 		if itemNumber == "" && motionBlock.AgendaItemID > 0 {
-			itemNumber = datastore.String(ctx, fetch.Fetch, "agenda_item/%d/item_number", motionBlock.AgendaItemID)
+			itemNumber = datastore.String(ctx, fetch.FetchIfExist, "agenda_item/%d/item_number", motionBlock.AgendaItemID)
 		}
 		if err := fetch.Err(); err != nil {
 			return nil, err

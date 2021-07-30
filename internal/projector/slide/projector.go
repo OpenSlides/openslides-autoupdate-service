@@ -56,7 +56,7 @@ func ProjectorCountdown(store *projector.SlideStore) {
 		if err != nil {
 			return nil, fmt.Errorf("get projector countdown from map: %w", err)
 		}
-		pcwarningTime := datastore.Int(ctx, fetch.Fetch, "meeting/%d/projector_countdown_warning_time", pc.MeetingID)
+		pcwarningTime := datastore.Int(ctx, fetch.FetchIfExist, "meeting/%d/projector_countdown_warning_time", pc.MeetingID)
 		if err := fetch.Err(); err != nil {
 			return nil, err
 		}

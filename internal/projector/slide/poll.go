@@ -124,7 +124,7 @@ func Poll(store *projector.SlideStore) {
 			"option_ids",
 			"meeting_id",
 		}
-		state := datastore.String(ctx, fetch.Fetch, "%s/%s", p7on.ContentObjectID, "state")
+		state := datastore.String(ctx, fetch.FetchIfExist, "%s/%s", p7on.ContentObjectID, "state")
 		if state == "published" {
 			fetchFields = append(fetchFields, []string{
 				"entitled_users_at_stop",
