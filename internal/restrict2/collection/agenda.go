@@ -28,12 +28,14 @@ func (a *AgendaItem) See(ctx context.Context, fetch *datastore.Fetcher, mperms *
 	}
 
 	isHidden := datastore.Bool(ctx, fetch.FetchIfExist, "agenda/%d/is_hidden", id)
+	isInternal := datastore.Bool(ctx, fetch.FetchIfExist, "agenda/%d/is_internal", id)
+	if err := fetch.Err(); err != nil {
+		return false, fmt.Errorf("fetching isHidden and isInternal: %w", err)
+	}
 
 	if perms.Has(perm.AgendaItemCanSeeInternal) && !isHidden {
 		return true, nil
 	}
-
-	isInternal := datastore.Bool(ctx, fetch.FetchIfExist, "agenda/%d/is_internal", id)
 
 	if perms.Has(perm.AgendaItemCanSee) && (!isHidden || !isInternal) {
 		return true, nil
