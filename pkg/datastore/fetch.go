@@ -122,6 +122,20 @@ func String(ctx context.Context, fetch FetchFunc, keyFmt string, a ...interface{
 	return value
 }
 
+// Strings fetches a slice of string from the datastore.
+func Strings(ctx context.Context, fetch FetchFunc, keyFmt string, a ...interface{}) []string {
+	var value []string
+	fetch(ctx, &value, keyFmt, a...)
+	return value
+}
+
+// Bool fetches a boolean value from the datastore.
+func Bool(ctx context.Context, fetch FetchFunc, keyFmt string, a ...interface{}) bool {
+	var value bool
+	fetch(ctx, &value, keyFmt, a...)
+	return value
+}
+
 // get returns a value from the datastore and unpacks it in to the argument
 // value.
 //

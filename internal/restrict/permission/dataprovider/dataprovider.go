@@ -69,18 +69,6 @@ func (dp *DataProvider) OrgaLevel(ctx context.Context, userID int) (string, erro
 	return orgaLevel, nil
 }
 
-// MeetingIDFromPayload returns the id of a meeting from the payload.
-//
-// It expect the payload to have a idfield to an object. This object needs to
-// have a field `meeting_id`.
-func (dp *DataProvider) MeetingIDFromPayload(ctx context.Context, payload map[string]json.RawMessage, collection, idField string) (int, error) {
-	var meetingID int
-	if err := dp.Get(ctx, fmt.Sprintf("%s/%s/meeting_id", collection, payload[idField]), &meetingID); err != nil {
-		return 0, fmt.Errorf("getting meetingID: %w", err)
-	}
-	return meetingID, nil
-}
-
 // InMeeting returns true, if the user is part of a meeting.
 //
 // Anonymous is part of a meeting, if anonymous is enabled.
