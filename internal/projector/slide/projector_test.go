@@ -37,7 +37,7 @@ func TestProjectorCountdown(t *testing.T) {
 			data,
 			`{
 				"countdown_time":200.3445678,
-			    "description":"description text",
+				"description":"description text",
 				"running":true,
 				"warning_time":100}`,
 		},
