@@ -18,17 +18,18 @@ func TestFetchObject(t *testing.T) {
 	defer close(closed)
 	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, map[string]string{
 		"testmodel/1/id":         "1",
+		"testmodel/1/number":     "456",
 		"testmodel/1/text":       `"my text"`,
 		"testmodel/1/friend_ids": "[1,2,3]",
 	}))
 
-	object := fetch.Object(context.Background(), "testmodel/1", "id", "text", "friend_ids")
+	object := fetch.Object(context.Background(), "testmodel/1", "number", "text", "friend_ids")
 	require.NoError(t, fetch.Err(), "Get returned unexpected error")
 
-	assert.Equal(t, json.RawMessage([]byte("1")), object["id"])
+	assert.Equal(t, json.RawMessage([]byte("456")), object["number"])
 	assert.Equal(t, json.RawMessage([]byte(`"my text"`)), object["text"])
 	assert.Equal(t, json.RawMessage([]byte("[1,2,3]")), object["friend_ids"])
-	assert.ElementsMatch(t, []string{"testmodel/1/id", "testmodel/1/text", "testmodel/1/friend_ids"}, fetch.Keys())
+	assert.ElementsMatch(t, []string{"testmodel/1/id", "testmodel/1/number", "testmodel/1/text", "testmodel/1/friend_ids"}, fetch.Keys())
 }
 
 func TestFetchObjectOnError(t *testing.T) {
@@ -36,31 +37,32 @@ func TestFetchObjectOnError(t *testing.T) {
 	defer close(closed)
 	ds := dsmock.NewMockDatastore(closed, map[string]string{
 		"testmodel/1/id":         "1",
+		"testmodel/1/number":     "456",
 		"testmodel/1/text":       `"my text"`,
 		"testmodel/1/friend_ids": "[1,2,3]",
 	})
 	ds.InjectError(errors.New("some error"))
 	fetch := datastore.NewFetcher(ds)
 
-	fetch.Object(context.Background(), "testmodel/1", "id", "text", "friend_ids")
+	fetch.Object(context.Background(), "testmodel/1", "number", "text", "friend_ids")
 	if err := fetch.Err(); err == nil {
 		t.Fatalf("Object did not return an error")
 	}
 
-	keysEqual(t, fetch.Keys(), "testmodel/1/id", "testmodel/1/text", "testmodel/1/friend_ids")
+	keysEqual(t, fetch.Keys(), "testmodel/1/id", "testmodel/1/number", "testmodel/1/text", "testmodel/1/friend_ids")
 }
 
-func TestFetchObjectFieldDoesNotExist(t *testing.T) {
+func TestFetchObjectDoesNotExist(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, map[string]string{}))
 
-	object := fetch.Object(context.Background(), "testmodel/1", "id")
-	require.NoError(t, fetch.Err(), "Get returned unexpected error")
+	fetch.Object(context.Background(), "testmodel/1", "text")
 
-	require.Equal(t, 1, len(object))
-	require.Nil(t, object["id"])
-	assert.ElementsMatch(t, []string{"testmodel/1/id"}, fetch.Keys())
+	var errDoesNotExist datastore.DoesNotExistError
+	if err := fetch.Err(); !errors.As(err, &errDoesNotExist) {
+		t.Errorf("fetch.Object returned error %v, expected a does not exist error", err)
+	}
 }
 
 func TestFetchValue(t *testing.T) {
@@ -91,40 +93,48 @@ func TestFetchValueDoesNotExist(t *testing.T) {
 	var value string
 	fetch.Fetch(context.Background(), &value, "testmodel/1/text")
 
-	var errDoesNotExist datastore.DoesNotExistError
-	if !errors.As(fetch.Err(), &errDoesNotExist) {
-		t.Errorf("Fetch returned error %q, expected datastore.DoesNotExist", fetch.Err())
+	if err := fetch.Err(); err != nil {
+		t.Errorf("Fetch returned unexpected error %v", err)
 	}
 	keysEqual(t, fetch.Keys(), "testmodel/1/text")
+	if value != "" {
+		t.Errorf("Fetch of unexpected key returned %q, expected am empty string", value)
+	}
 }
 
 func TestFetchValueAfterError(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
 		"testmodel/1/text": `"my text"`,
-	}))
+	})
+	fetch := datastore.NewFetcher(ds)
 
-	var doesNotExistValue string
-	fetch.Fetch(context.Background(), &doesNotExistValue, "testmodel/1/does_not_exist")
+	myerr := errors.New("some error")
+	ds.InjectError(myerr)
+	var errorValue string
+	fetch.Fetch(context.Background(), &errorValue, "testmodel/1/error_value")
+
+	ds.InjectError(nil)
 	var value string
 	fetch.Fetch(context.Background(), &value, "testmodel/1/text")
 
-	var errDoesNotExist datastore.DoesNotExistError
-	if !errors.As(fetch.Err(), &errDoesNotExist) {
-		t.Errorf("Fetch returned error %q, expected datastore.DoesNotExist", fetch.Err())
+	if err := fetch.Err(); !errors.Is(err, myerr) {
+		t.Errorf("Fetch returned error %q, expected %q", fetch.Err(), myerr)
 	}
 
 	if value != "" {
 		t.Errorf("Fetch set value after an error to %q", value)
 	}
-	keysEqual(t, fetch.Keys(), "testmodel/1/does_not_exist")
+	keysEqual(t, fetch.Keys(), "testmodel/1/error_value")
 }
 
 func TestFetchIfExist(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, nil))
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, map[string]string{
+		"testmodel/1/id": "1",
+	}))
 
 	var value string
 	fetch.FetchIfExist(context.Background(), &value, "testmodel/1/text")
@@ -132,21 +142,45 @@ func TestFetchIfExist(t *testing.T) {
 	if err := fetch.Err(); err != nil {
 		t.Errorf("Fetch returned error: %v", err)
 	}
-	keysEqual(t, fetch.Keys(), "testmodel/1/text")
+	keysEqual(t, fetch.Keys(), "testmodel/1/id", "testmodel/1/text")
+}
+
+func TestFetchIfExistObjectDoesNotExist(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, map[string]string{
+		"testmodel/1/text": `"some test"`,
+	}))
+
+	var value string
+	fetch.FetchIfExist(context.Background(), &value, "testmodel/1/text")
+
+	var errDoesNotExist datastore.DoesNotExistError
+	if err := fetch.Err(); !errors.As(err, &errDoesNotExist) {
+		t.Errorf("FetchIfExist returned error: %q, expected DoesNotExistError", err)
+	}
+	keysEqual(t, fetch.Keys(), "testmodel/1/id", "testmodel/1/text")
 }
 
 func TestFetchIfExistAfterError(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, nil))
+	ds := dsmock.NewMockDatastore(closed, map[string]string{
+		"testmodel/1/id":   "1",
+		"testmodel/1/text": `"some test"`,
+	})
+	fetch := datastore.NewFetcher(ds)
+	myerr := errors.New("some error")
 
+	ds.InjectError(myerr)
 	var value string
 	fetch.Fetch(context.Background(), &value, "testmodel/1/text")
+
+	ds.InjectError(nil)
 	fetch.FetchIfExist(context.Background(), &value, "testmodel/1/text")
 
-	var errDoesNotExist datastore.DoesNotExistError
-	if !errors.As(fetch.Err(), &errDoesNotExist) {
-		t.Errorf("Fetch returned error %q, expected datastore.DoesNotExist", fetch.Err())
+	if err := fetch.Err(); !errors.Is(err, myerr) {
+		t.Errorf("Fetch returned error %q, expected %q", err, myerr)
 	}
 	if value != "" {
 		t.Errorf("Fetch set value after an error to %q", value)
@@ -177,17 +211,15 @@ func ExampleInt_doesNotExist() {
 	defer close(closed)
 	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, nil))
 
-	i := datastore.Int(context.Background(), fetch.Fetch, "testmodel/%d/id", 1)
+	i := datastore.Int(context.Background(), fetch.Fetch, "testmodel/%d/number", 1)
 
 	fmt.Println(i)
 	fmt.Println(fetch.Keys())
-	var errDoesNotExist datastore.DoesNotExistError
-	errors.As(fetch.Err(), &errDoesNotExist)
-	fmt.Println(errDoesNotExist)
+	fmt.Println(fetch.Err())
 	// Output:
 	// 0
-	// [testmodel/1/id]
-	// testmodel/1/id does not exist.
+	// [testmodel/1/number]
+	// <nil>
 }
 
 func ExampleInt_wrongType() {
@@ -213,15 +245,15 @@ func ExampleInt_ifExist() {
 	defer close(closed)
 	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, nil))
 
-	i := datastore.Int(context.Background(), fetch.FetchIfExist, "testmodel/%d/id", 1)
+	i := datastore.Int(context.Background(), fetch.FetchIfExist, "testmodel/%d/number", 1)
 
 	fmt.Println(i)
 	fmt.Println(fetch.Keys())
 	fmt.Println(fetch.Err())
 	// Output:
 	// 0
-	// [testmodel/1/id]
-	// <nil>
+	// [testmodel/1/id testmodel/1/number]
+	// testmodel/1 does not exist.
 }
 
 func ExampleInts() {

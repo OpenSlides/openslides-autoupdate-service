@@ -40,7 +40,9 @@ func TestAssignment(t *testing.T) {
 				"assignment_candidate/11/user_id": `111`,
 				"assignment_candidate/11/weight":  `3`,
 
+				"user/110/id":       "110",
 				"user/110/username": `"user110"`,
+				"user/111/id":       "111",
 				"user/111/username": `"user111"`,
 			},
 			`{"title":"title 1", "description":"description 1","number_poll_candidates":true, "candidates":["user111", "user110"]}`,
