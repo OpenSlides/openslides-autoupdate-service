@@ -22,7 +22,7 @@ func TestProjectorCountdown(t *testing.T) {
 	projector_countdown/1:
 		description: description text
 		running: true
-		countdown_time: 200.34
+		countdown_time: 200.3445678
 		meeting_id: 1
 	meeting/1/projector_countdown_warning_time: 100
     `)
@@ -36,8 +36,8 @@ func TestProjectorCountdown(t *testing.T) {
 			"Starter",
 			data,
 			`{
-				"countdown_time":200.34,
-			    "description":"description text",
+				"countdown_time":200.3445678,
+				"description":"description text",
 				"running":true,
 				"warning_time":100}`,
 		},

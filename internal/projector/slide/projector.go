@@ -10,11 +10,11 @@ import (
 )
 
 type dbProjectorCountdown struct {
-	ID            int     `json:"id"`
-	Description   string  `json:"description"`
-	Running       bool    `json:"running"`
-	CountdownTime float32 `json:"countdown_time"`
-	MeetingID     int     `json:"meeting_id"`
+	ID            int             `json:"id"`
+	Description   string          `json:"description"`
+	Running       bool            `json:"running"`
+	CountdownTime json.RawMessage `json:"countdown_time"`
+	MeetingID     int             `json:"meeting_id"`
 }
 
 func projectorCountdownFromMap(in map[string]json.RawMessage) (*dbProjectorCountdown, error) {
