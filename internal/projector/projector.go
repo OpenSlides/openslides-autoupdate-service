@@ -3,6 +3,7 @@ package projector
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -42,11 +43,6 @@ func Register(ds Datastore, slides *SlideStore) {
 			// At the end, save all requested keys to check later if one has
 			// changed.
 			hotKeys[fqfield] = fetch.Keys()
-
-			// If no other error is set, use the error from the fetcher (could be nil).
-			if err == nil {
-				err = fetch.Err()
-			}
 		}()
 
 		parts := strings.SplitN(fqfield, "/", 3)
@@ -64,16 +60,17 @@ func Register(ds Datastore, slides *SlideStore) {
 			"options",
 		)
 		if err := fetch.Err(); err != nil {
+			var errDoesNotExist datastore.DoesNotExistError
+			if errors.As(err, &errDoesNotExist) {
+
+				return nil, nil
+			}
 			return nil, fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
 		}
 
 		p7on, err := p7onFromMap(data)
 		if err != nil {
 			return nil, fmt.Errorf("loading p7on: %w", err)
-		}
-
-		if !p7on.exists() {
-			return nil, nil
 		}
 
 		slideName, err := p7on.slideName()
@@ -89,6 +86,10 @@ func Register(ds Datastore, slides *SlideStore) {
 		bs, err = slider.Slide(ctx, fetch, p7on)
 		if err != nil {
 			return nil, fmt.Errorf("calculating slide %s for p7on %v: %w", slideName, p7on, err)
+		}
+
+		if err := fetch.Err(); err != nil {
+			return nil, err
 		}
 		return bs, nil
 	})
@@ -114,10 +115,6 @@ func p7onFromMap(in map[string]json.RawMessage) (*Projection, error) {
 		return nil, fmt.Errorf("decoding projection: %w", err)
 	}
 	return &p, nil
-}
-
-func (p *Projection) exists() bool {
-	return p.Type != "" || p.ContentObjectID != ""
 }
 
 // slideName extracts the name from Projection.

@@ -56,6 +56,28 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 	}
 }
 
+func TestDataStoreGetKeyTwice(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+
+	ts := dsmock.NewDatastoreServer(closed, map[string]string{
+		"collection/1/field": `"v1"`,
+	})
+	d := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+
+	got, err := d.Get(context.Background(), "collection/1/field", "collection/1/field")
+	assert.NoError(t, err, "Get() returned an unexpected error")
+
+	expect := test.Str(`"v1"`, `"v1"`)
+	if len(got) != 2 || string(got[0]) != expect[0] || string(got[1]) != expect[1] {
+		t.Errorf("Get() returned %s, expected %s", got, expect)
+	}
+
+	if ts.RequestCount != 1 {
+		t.Errorf("Got %d requests to the datastore, expected 1", ts.RequestCount)
+	}
+}
+
 func TestDataStoreGetInvalidKey(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
@@ -196,6 +218,27 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 	require.NoError(t, err, "Get returned unexpected error")
 }
 
+func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+	ts := dsmock.NewDatastoreServer(closed, map[string]string{
+		"collection/1/normal_field": `"original value"`,
+	})
+	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
+		fields, err := ds.Get(ctx, "collection/1/normal_field", "collection/1/normal_field")
+		if err != nil {
+			return nil, fmt.Errorf("getting normal field: %w", err)
+		}
+		return append(fields[0], fields[1]...), nil
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+	_, err := ds.Get(ctx, "collection/1/normal_field", "collection/1/myfield")
+	require.NoError(t, err, "Get returned unexpected error")
+}
+
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExist(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
@@ -207,6 +250,25 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExist(t 
 			return nil, fmt.Errorf("getting normal field: %w", err)
 		}
 		return field[0], nil
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+	_, err := ds.Get(ctx, "collection/1/normal_field", "collection/1/myfield")
+	require.NoError(t, err, "Get returned unexpected error")
+}
+
+func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExistTwice(t *testing.T) {
+	closed := make(chan struct{})
+	defer close(closed)
+	ts := dsmock.NewDatastoreServer(closed, nil)
+	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
+		fields, err := ds.Get(ctx, "collection/1/normal_field", "collection/1/normal_field")
+		if err != nil {
+			return nil, fmt.Errorf("getting normal field: %w", err)
+		}
+		return append(fields[0], fields[1]...), nil
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
