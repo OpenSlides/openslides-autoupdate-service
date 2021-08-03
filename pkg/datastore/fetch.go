@@ -37,7 +37,7 @@ func NewFetcher(ds Getter) *Fetcher {
 
 // Fetch gets a value from the datastore and saves it into the argument `value`.
 //
-// The the object, that the key belongs to does not exist, no error is thrown.
+// If the object, that the key belongs to does not exist, no error is thrown.
 //
 // To get the error, call f.Err().
 func (f *Fetcher) Fetch(ctx context.Context, value interface{}, keyFmt string, a ...interface{}) {
@@ -174,7 +174,7 @@ func String(ctx context.Context, fetch FetchFunc, keyFmt string, a ...interface{
 	return value
 }
 
-// DoesNotExistError is thowen by the methods of a Fether when an object does
+// DoesNotExistError is thrown by the methods of a Fetcher when an object does
 // not exist.
 type DoesNotExistError string
 
