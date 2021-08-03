@@ -13,14 +13,15 @@ import (
 )
 
 func TestAuth(t *testing.T) {
-	const secret = "auth-dev-key"
+	const secretToken = "auth-dev-token-key"
+	const secretCookie = "auth-dev-cookie-key"
 	const invalidSecret = "wrong-auth-dev-key"
 	const cookieName = "refreshId"
 	const authHeader = "Authentication"
 
 	validCookie, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sessionId": "123",
-	}).SignedString([]byte(secret))
+	}).SignedString([]byte(secretCookie))
 	if err != nil {
 		t.Fatalf("Can not sign cookie token: %v", err)
 	}
@@ -29,7 +30,7 @@ func TestAuth(t *testing.T) {
 	validHeader, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId":    1,
 		"sessionId": "123",
-	}).SignedString([]byte(secret))
+	}).SignedString([]byte(secretToken))
 	if err != nil {
 		t.Fatalf("Can not sign token token: %v", err)
 	}
@@ -39,7 +40,7 @@ func TestAuth(t *testing.T) {
 		"userId":    1,
 		"sessionId": "123",
 		"exp":       123,
-	}).SignedString([]byte(secret))
+	}).SignedString([]byte(secretToken))
 	if err != nil {
 		t.Fatalf("Can not sign token token: %v", err)
 	}
@@ -64,7 +65,7 @@ func TestAuth(t *testing.T) {
 
 	authSRV := httptest.NewServer(&mockAuth{token: "NEWTOKEN"})
 	defer authSRV.Close()
-	a, err := auth.New(authSRV.URL, nil, nil, nil, []byte(secret), []byte(secret))
+	a, err := auth.New(authSRV.URL, nil, nil, nil, []byte(secretToken), []byte(secretCookie))
 	if err != nil {
 		t.Fatalf("Can not create auth service: %v", err)
 	}
