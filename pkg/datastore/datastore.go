@@ -200,12 +200,13 @@ func (d *Datastore) loadKeys(keys []string, set func(string, []byte)) error {
 }
 
 func (d *Datastore) calculateField(field string, key string, updated map[string]json.RawMessage) []byte {
+	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
 	calculated, err := d.calculatedFields[field](ctx, key, updated)
 	if err != nil {
-		d.errHandler(fmt.Errorf("calculating key %s: %v", key, err))
+		d.errHandler(fmt.Errorf("calculating key %s: %w", key, err))
 
 		msg := fmt.Sprintf("calculating key %s", key)
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {

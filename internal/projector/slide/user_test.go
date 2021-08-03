@@ -31,6 +31,7 @@ func TestUser(t *testing.T) {
 		{
 			"Only Username",
 			map[string]string{
+				"user/1/id":       "1",
 				"user/1/username": `"jonny123"`,
 			},
 			`{"user":"jonny123"}`,
@@ -38,6 +39,7 @@ func TestUser(t *testing.T) {
 		{
 			"Only Firstname",
 			map[string]string{
+				"user/1/id":         "1",
 				"user/1/first_name": `"Jonny"`,
 			},
 			`{"user":"Jonny"}`,
@@ -45,6 +47,7 @@ func TestUser(t *testing.T) {
 		{
 			"Only Lastname",
 			map[string]string{
+				"user/1/id":        "1",
 				"user/1/last_name": `"Bo"`,
 			},
 			`{"user":"Bo"}`,
@@ -52,6 +55,7 @@ func TestUser(t *testing.T) {
 		{
 			"Firstname Lastname",
 			map[string]string{
+				"user/1/id":         "1",
 				"user/1/first_name": `"Jonny"`,
 				"user/1/last_name":  `"Bo"`,
 			},
@@ -60,6 +64,7 @@ func TestUser(t *testing.T) {
 		{
 			"Title Firstname Lastname",
 			map[string]string{
+				"user/1/id":         "1",
 				"user/1/title":      `"Dr."`,
 				"user/1/first_name": `"Jonny"`,
 				"user/1/last_name":  `"Bo"`,
@@ -69,6 +74,7 @@ func TestUser(t *testing.T) {
 		{
 			"Title Firstname Lastname Username",
 			map[string]string{
+				"user/1/id":         "1",
 				"user/1/username":   `"jonny123"`,
 				"user/1/title":      `"Dr."`,
 				"user/1/first_name": `"Jonny"`,
@@ -79,6 +85,7 @@ func TestUser(t *testing.T) {
 		{
 			"Title Username",
 			map[string]string{
+				"user/1/id":       "1",
 				"user/1/username": `"jonny123"`,
 				"user/1/title":    `"Dr."`,
 			},
@@ -87,6 +94,7 @@ func TestUser(t *testing.T) {
 		{
 			"Title Firstname Lastname Username Level",
 			map[string]string{
+				"user/1/id":                   "1",
 				"user/1/username":             `"jonny123"`,
 				"user/1/title":                `"Dr."`,
 				"user/1/first_name":           `"Jonny"`,
@@ -100,6 +108,7 @@ func TestUser(t *testing.T) {
 		{
 			"Title Firstname Lastname Username Level DefaultLevel",
 			map[string]string{
+				"user/1/id":                      "1",
 				"user/1/username":                `"jonny123"`,
 				"user/1/title":                   `"Dr."`,
 				"user/1/first_name":              `"Jonny"`,
@@ -113,6 +122,7 @@ func TestUser(t *testing.T) {
 		{
 			"Title Firstname Lastname Username DefaultLevel",
 			map[string]string{
+				"user/1/id":                      "1",
 				"user/1/username":                `"jonny123"`,
 				"user/1/title":                   `"Dr."`,
 				"user/1/first_name":              `"Jonny"`,
@@ -124,6 +134,7 @@ func TestUser(t *testing.T) {
 		{
 			"Username DefaultLevel",
 			map[string]string{
+				"user/1/id":                      "1",
 				"user/1/username":                `"jonny123"`,
 				"user/1/default_structure_level": `"Switzerland"`,
 			},
@@ -152,6 +163,7 @@ func TestUserWithoutMeeting(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)
 	data := map[string]string{
+		"user/1/id":                      "1",
 		"user/1/username":                `"jonny123"`,
 		"user/1/title":                   `"Dr."`,
 		"user/1/first_name":              `"Jonny"`,
