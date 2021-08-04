@@ -15,6 +15,12 @@ import (
 	"github.com/ostcar/topic"
 )
 
+// DebugTokenKey and DebugCookieKey are non random auth keys for development.
+const (
+	DebugTokenKey  = "auth-dev-token-key"
+	DebugCookieKey = "auth-dev-cookie-key"
+)
+
 // pruneTime defines how long a topic id will be valid. This should be higher
 // then the max livetime of a token.
 const pruneTime = 15 * time.Minute

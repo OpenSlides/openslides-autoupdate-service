@@ -34,8 +34,6 @@ func main() {
 	}
 }
 
-const debugKey = "auth-dev-key"
-
 func defaultEnv() map[string]string {
 	defaults := map[string]string{
 		"AUTOUPDATE_HOST": "",
@@ -70,8 +68,8 @@ func defaultEnv() map[string]string {
 
 func secret(name string, dev bool) (string, error) {
 	defaultSecrets := map[string]string{
-		"auth_token_key":  debugKey,
-		"auth_cookie_key": debugKey,
+		"auth_token_key":  auth.DebugTokenKey,
+		"auth_cookie_key": auth.DebugCookieKey,
 	}
 
 	d, ok := defaultSecrets[name]
@@ -245,7 +243,7 @@ func buildAuth(env map[string]string, receiver auth.LogoutEventer, closed <-chan
 			return nil, fmt.Errorf("getting cookie secret: %w", err)
 		}
 
-		if tokenKey == debugKey || cookieKey == debugKey {
+		if tokenKey == auth.DebugTokenKey || cookieKey == auth.DebugCookieKey {
 			fmt.Println("Auth with debug key")
 		}
 
