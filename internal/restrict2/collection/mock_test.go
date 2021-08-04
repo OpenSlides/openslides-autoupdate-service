@@ -2,7 +2,6 @@ package collection_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
@@ -31,13 +30,7 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 		got, err := f(context.Background(), fetch, perms, 1)
 
 		if err != nil {
-			var errDoesNotExist datastore.DoesNotExistError
-			if !errors.As(err, &errDoesNotExist) {
-				t.Fatalf("See returned unexpected error: %v", err)
-			}
-			if got {
-				t.Fatalf("See with does not exist error returned true")
-			}
+			t.Fatalf("See returned unexpected error: %v", err)
 		}
 
 		if got != tt.expect {

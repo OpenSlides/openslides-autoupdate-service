@@ -53,7 +53,14 @@ func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[s
 			continue
 		}
 
-		canSeeMode, err := restricter.Modes(fieldMode)(ctx, fetch, mperms, fqfield.ID)
+		modefunc := restricter.Modes(fieldMode)
+		if modefunc == nil {
+			// Mode unknown
+			data[key] = nil
+			continue
+		}
+
+		canSeeMode, err := modefunc(ctx, fetch, mperms, fqfield.ID)
 		if err != nil {
 			var errDoesNotExist datastore.DoesNotExistError
 			if !errors.As(err, &errDoesNotExist) {
@@ -83,6 +90,7 @@ type collectionRestricter interface {
 }
 
 var collections = map[string]collectionRestricter{
-	"agenda_item": collection.AgendaItem{},
-	"assignment":  collection.Assignment{},
+	"agenda_item":      collection.AgendaItem{},
+	"assignment":       collection.Assignment{},
+	"list_of_speakers": collection.ListOfSpeakers{},
 }

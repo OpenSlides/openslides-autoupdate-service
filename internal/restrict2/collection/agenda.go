@@ -48,17 +48,13 @@ func (a AgendaItem) See(ctx context.Context, fetch *datastore.Fetcher, mperms pe
 func (a AgendaItem) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return a.modeA
+		return allways
 	case "B":
 		return a.modeB
 	case "C":
 		return a.modeC
 	}
 	return nil
-}
-
-func (a AgendaItem) modeA(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, agndaID int) (bool, error) {
-	return true, nil
 }
 
 func (a AgendaItem) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, agendaID int) (bool, error) {

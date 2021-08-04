@@ -13,23 +13,16 @@ func TestAgendaSee(t *testing.T) {
 	for _, tt := range []testData{
 		{
 			"No permission",
-			``,
+			`---
+			agenda_item/1/meeting_id: 1
+			`,
 			[]perm.TPermission{},
 			false,
 		},
 
 		{
-			"agenda does not exist",
-			``,
-			[]perm.TPermission{
-				perm.AgendaItemCanManage,
-			},
-			false,
-		},
-
-		{
 			"manager",
-			`
+			`---
 			agenda_item/1/meeting_id: 1
 			`,
 			[]perm.TPermission{
@@ -40,7 +33,7 @@ func TestAgendaSee(t *testing.T) {
 
 		{
 			"Can see internal with hidden",
-			`
+			`---
 			agenda_item/1:
 				meeting_id: 1
 				is_hidden: true
@@ -53,7 +46,7 @@ func TestAgendaSee(t *testing.T) {
 
 		{
 			"Can see internal not hidden",
-			`
+			`---
 			agenda_item/1:
 				meeting_id: 1
 				is_hidden: false
@@ -66,7 +59,7 @@ func TestAgendaSee(t *testing.T) {
 
 		{
 			"Can see with hidden and internal",
-			`
+			`---
 			agenda_item/1:
 				meeting_id: 1
 				is_hidden: true
@@ -80,7 +73,7 @@ func TestAgendaSee(t *testing.T) {
 
 		{
 			"Can see not hidden but internal",
-			`
+			`---
 			agenda_item/1:
 				meeting_id: 1
 				is_hidden: false
@@ -94,7 +87,7 @@ func TestAgendaSee(t *testing.T) {
 
 		{
 			"Can see with hidden but not internal",
-			`
+			`---
 			agenda_item/1:
 				meeting_id: 1
 				is_hidden: true
@@ -108,7 +101,7 @@ func TestAgendaSee(t *testing.T) {
 
 		{
 			"Can see not hidden and not internal",
-			`
+			`---
 			agenda_item/1:
 				meeting_id: 1
 				is_hidden: false
