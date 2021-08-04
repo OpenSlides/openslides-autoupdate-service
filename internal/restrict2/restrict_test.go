@@ -11,6 +11,7 @@ import (
 
 func TestRestrict(t *testing.T) {
 	fetch := datastore.NewFetcher(dsmock.Stub(dsmock.YAMLData(`---
+	meeting/1/id: 1
 	user/1:
 		group_$_ids: ["1"]
 		group_$1_ids: [10]
@@ -25,10 +26,11 @@ func TestRestrict(t *testing.T) {
 	`)))
 
 	data := map[string]string{
-		//"agenda_item/1/item_number":   `"numberOne"`,
+		"agenda_item/1/item_number":   `"numberOne"`,
+		"agenda_item/1/unknown_field": `"numberOne"`,
 		"agenda_item/404/item_number": `"numberA"`,
-		//"agenda_item/10/item_number":  `"numberB"`,
-		//"unknown_collection/1/field":  "404",
+		"agenda_item/10/item_number":  `"numberB"`,
+		"unknown_collection/1/field":  "404",
 	}
 
 	got := make(map[string][]byte, len(data))
@@ -44,6 +46,10 @@ func TestRestrict(t *testing.T) {
 
 	if got["agenda_item/1/item_number"] == nil {
 		t.Errorf("agenda_item/1/item_number was removed")
+	}
+
+	if got["agenda_item/1/unknown_field"] != nil {
+		t.Errorf("agenda_item/1/item_number was not removed")
 	}
 
 	if got["agenda_item/404/item_number"] != nil {
