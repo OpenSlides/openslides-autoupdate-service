@@ -1,0 +1,47 @@
+package collection_test
+
+import (
+	"context"
+	"errors"
+	"testing"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
+)
+
+type restrictTestData struct {
+	name   string
+	data   string
+	perms  []perm.TPermission
+	expect bool
+}
+
+func (tt restrictTestData) test(t *testing.T, f collection.FieldRestricter) {
+	t.Helper()
+
+	t.Run(tt.name, func(t *testing.T) {
+		fetch := datastore.NewFetcher(dsmock.Stub(dsmock.YAMLData(tt.data)))
+		perms := test.MeetingPermissionStub{UID: 1, Permissions: map[int][]perm.TPermission{
+			1: tt.perms,
+		}}
+
+		got, err := f(context.Background(), fetch, perms, 1)
+
+		if err != nil {
+			var errDoesNotExist datastore.DoesNotExistError
+			if !errors.As(err, &errDoesNotExist) {
+				t.Fatalf("See returned unexpected error: %v", err)
+			}
+			if got {
+				t.Fatalf("See with does not exist error returned true")
+			}
+		}
+
+		if got != tt.expect {
+			t.Errorf("See() returned %t, expected %t", got, tt.expect)
+		}
+	})
+}
