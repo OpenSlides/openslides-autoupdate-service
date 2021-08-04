@@ -12,8 +12,8 @@ import (
 type AgendaItem struct{}
 
 // See tells, if a user can see the agenda item.
-func (a *AgendaItem) See(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, uid int, id int) (bool, error) {
-	meetingID, err := a.MeetingID(ctx, fetch, id)
+func (a AgendaItem) See(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, agendaID int) (bool, error) {
+	meetingID, err := a.meetingID(ctx, fetch, agendaID)
 	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)
 	}
@@ -27,8 +27,8 @@ func (a *AgendaItem) See(ctx context.Context, fetch *datastore.Fetcher, mperms *
 		return true, nil
 	}
 
-	isHidden := datastore.Bool(ctx, fetch.FetchIfExist, "agenda/%d/is_hidden", id)
-	isInternal := datastore.Bool(ctx, fetch.FetchIfExist, "agenda/%d/is_internal", id)
+	isHidden := datastore.Bool(ctx, fetch.FetchIfExist, "agenda_item/%d/is_hidden", agendaID)
+	isInternal := datastore.Bool(ctx, fetch.FetchIfExist, "agenda_item/%d/is_internal", agendaID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("fetching isHidden and isInternal: %w", err)
 	}
@@ -37,33 +37,32 @@ func (a *AgendaItem) See(ctx context.Context, fetch *datastore.Fetcher, mperms *
 		return true, nil
 	}
 
-	if perms.Has(perm.AgendaItemCanSee) && (!isHidden || !isInternal) {
+	if perms.Has(perm.AgendaItemCanSee) && (!isHidden && !isInternal) {
 		return true, nil
 	}
 
 	return false, nil
 }
 
-// FieldRestricter is a function to restrict fields of a collection.
-type FieldRestricter func(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, uid int, id int) (bool, error)
-
-// FieldGroups returns a map from all known groups to there restricter.
-func (a *AgendaItem) FieldGroups() map[string]FieldRestricter {
-	return map[string]FieldRestricter{
-		"group_a": a.GroupA,
-		"group_b": a.GroupB,
-		"group_c": a.GroupC,
+// Modes returns a map from all known modes to there restricter.
+func (a AgendaItem) Modes(mode string) FieldRestricter {
+	switch mode {
+	case "A":
+		return a.modeA
+	case "B":
+		return a.modeB
+	case "C":
+		return a.modeC
 	}
+	return nil
 }
 
-// GroupA handels restructions for fields in GroupA.
-func (a *AgendaItem) GroupA(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, uid int, id int) (bool, error) {
+func (a AgendaItem) modeA(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, agndaID int) (bool, error) {
 	return true, nil
 }
 
-// GroupB handels restructions for fields in GroupB.
-func (a *AgendaItem) GroupB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, uid int, id int) (bool, error) {
-	meetingID, err := a.MeetingID(ctx, fetch, id)
+func (a AgendaItem) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, agendaID int) (bool, error) {
+	meetingID, err := a.meetingID(ctx, fetch, agendaID)
 	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)
 	}
@@ -76,9 +75,8 @@ func (a *AgendaItem) GroupB(ctx context.Context, fetch *datastore.Fetcher, mperm
 	return perms.Has(perm.AgendaItemCanSeeInternal), nil
 }
 
-// GroupC handels restructions for fields in GroupC.
-func (a *AgendaItem) GroupC(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, uid int, id int) (bool, error) {
-	meetingID, err := a.MeetingID(ctx, fetch, id)
+func (a AgendaItem) modeC(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, agendaID int) (bool, error) {
+	meetingID, err := a.meetingID(ctx, fetch, agendaID)
 	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)
 	}
@@ -91,9 +89,8 @@ func (a *AgendaItem) GroupC(ctx context.Context, fetch *datastore.Fetcher, mperm
 	return perms.Has(perm.AgendaItemCanManage), nil
 }
 
-// MeetingID returns the meetingID for the agenda
-func (a *AgendaItem) MeetingID(ctx context.Context, fetch *datastore.Fetcher, id int) (int, error) {
-	mid := datastore.Int(ctx, fetch.Fetch, "meeting/%d/meeting_id", id)
+func (a AgendaItem) meetingID(ctx context.Context, fetch *datastore.Fetcher, id int) (int, error) {
+	mid := datastore.Int(ctx, fetch.FetchIfExist, "agenda_item/%d/meeting_id", id)
 	if err := fetch.Err(); err != nil {
 		return 0, fmt.Errorf("fetching meeting_id for agenda_item %d: %w", id, err)
 	}

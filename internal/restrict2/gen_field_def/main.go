@@ -82,20 +82,20 @@ const tpl = `// Code generated with models.txt DO NOT EDIT.
 package restrict
 
 
-// RelationLists is list from all relation-list and generic-relation-list the
+// relationLists is list from all relation-list and generic-relation-list the
 // model where it directs to. generic-relation-list habe '*' als value. The list
 // contains also all template-fields that contain relation-list and
 // geneeric-relation-lists.
 //
 // The map is automaticly created from the models.yml file.
-var RelationLists = map[string]string{
+var relationLists = map[string]string{
 	{{- range $key, $value := .Relations}}
 	"{{$key}}": "{{$value}}",
 	{{- end}}
 }
 
-// RestrictionModes are all fields to there restriction_mode.
-var RestrictionModes = map[string]string{
+// restrictionModes are all fields to there restriction_mode.
+var restrictionModes = map[string]string{
 	{{- range $key, $value := .Restrictions}}
 	"{{$key}}": "{{$value}}",
 	{{- end}}
