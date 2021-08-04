@@ -1,5 +1,7 @@
 package restrict
 
+//go:generate  sh -c "go run gen_field_def/main.go > field_def.go"
+
 import (
 	"context"
 	"errors"
