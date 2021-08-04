@@ -12,14 +12,14 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
 
-type restrictTestData struct {
+type testData struct {
 	name   string
 	data   string
 	perms  []perm.TPermission
 	expect bool
 }
 
-func (tt restrictTestData) test(t *testing.T, f collection.FieldRestricter) {
+func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 	t.Helper()
 
 	t.Run(tt.name, func(t *testing.T) {

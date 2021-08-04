@@ -10,7 +10,7 @@ import (
 func TestAgendaSee(t *testing.T) {
 	var a collection.AgendaItem
 
-	for _, tt := range []restrictTestData{
+	for _, tt := range []testData{
 		{
 			"No permission",
 			``,
@@ -127,7 +127,7 @@ func TestAgendaSee(t *testing.T) {
 func TestAgendaModeA(t *testing.T) {
 	var a collection.AgendaItem
 
-	restrictTestData{
+	testData{
 		"simple",
 		``,
 		nil,
@@ -142,14 +142,14 @@ func TestAgendaModeB(t *testing.T) {
 	agenda_item/1/meeting_id: 1
 	`
 
-	restrictTestData{
+	testData{
 		"Can see internal",
 		ds,
 		[]perm.TPermission{perm.AgendaItemCanSeeInternal},
 		true,
 	}.test(t, r)
 
-	restrictTestData{
+	testData{
 		"Can not see internal",
 		ds,
 		nil,
@@ -164,28 +164,28 @@ func TestAgendaModeC(t *testing.T) {
 	agenda_item/1/meeting_id: 1
 	`
 
-	restrictTestData{
+	testData{
 		"Can see internal",
 		ds,
 		[]perm.TPermission{perm.AgendaItemCanSeeInternal},
 		false,
 	}.test(t, r)
 
-	restrictTestData{
+	testData{
 		"Can see",
 		ds,
 		[]perm.TPermission{perm.AgendaItemCanSee},
 		false,
 	}.test(t, r)
 
-	restrictTestData{
+	testData{
 		"Can manage",
 		ds,
 		[]perm.TPermission{perm.AgendaItemCanManage},
 		true,
 	}.test(t, r)
 
-	restrictTestData{
+	testData{
 		"No perm",
 		ds,
 		nil,

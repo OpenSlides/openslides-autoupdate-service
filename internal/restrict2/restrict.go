@@ -84,4 +84,5 @@ type collectionRestricter interface {
 
 var collections = map[string]collectionRestricter{
 	"agenda_item": collection.AgendaItem{},
+	"assignment":  collection.Assignment{},
 }
