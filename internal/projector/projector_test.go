@@ -22,7 +22,9 @@ func TestProjectionDoesNotExist(t *testing.T) {
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
-	assert.Nil(t, fields[0], "Get content for nonexisting projection should not exist")
+	if fields[0] != nil {
+		t.Errorf("Content was calculated, should be nil, got: %q", fields[0])
+	}
 }
 
 func TestProjectionFromContentObject(t *testing.T) {
@@ -30,6 +32,7 @@ func TestProjectionFromContentObject(t *testing.T) {
 	defer close(closed)
 
 	ds := dsmock.NewMockDatastore(closed, map[string]string{
+		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"test_model/1"`,
 	})
 	projector.Register(ds, testSlides())
@@ -45,6 +48,7 @@ func TestProjectionFromType(t *testing.T) {
 	defer close(closed)
 
 	ds := dsmock.NewMockDatastore(closed, map[string]string{
+		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/1"`,
 		"projection/1/type":              `"test1"`,
 	})
@@ -61,6 +65,7 @@ func TestProjectionUpdateProjection(t *testing.T) {
 	defer close(closed)
 
 	ds := dsmock.NewMockDatastore(closed, map[string]string{
+		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/1"`,
 		"projection/1/type":              `"test1"`,
 	})
@@ -93,6 +98,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 	defer close(closed)
 
 	ds := dsmock.NewMockDatastore(closed, map[string]string{
+		"projection/1/id":                "1",
 		"projection/1/type":              `"projection"`,
 		"projection/1/content_object_id": `"meeting/1"`,
 	})
@@ -115,7 +121,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
-	expect := `{"id": 0, "content_object_id": "meeting/1", "meeting_id":0, "type":"projection", "options": null}` + "\n"
+	expect := `{"id": 1, "content_object_id": "meeting/1", "meeting_id":0, "type":"projection", "options": null}` + "\n"
 	assert.JSONEq(t, expect, string(fields[0]))
 }
 
@@ -124,6 +130,7 @@ func TestProjectionWithOptionsData(t *testing.T) {
 	defer close(closed)
 
 	ds := dsmock.NewMockDatastore(closed, map[string]string{
+		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/6"`,
 		"projection/1/type":              `"projection"`,
 		"projection/1/meeting_id":        `1`,
@@ -133,7 +140,7 @@ func TestProjectionWithOptionsData(t *testing.T) {
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
-	expect := `{"id": 0, "content_object_id": "meeting/6", "type":"projection", "meeting_id": 1, "options": {"only_main_items": true}}` + "\n"
+	expect := `{"id": 1, "content_object_id": "meeting/6", "type":"projection", "meeting_id": 1, "options": {"only_main_items": true}}` + "\n"
 	assert.JSONEq(t, expect, string(fields[0]))
 }
 
@@ -142,6 +149,7 @@ func TestProjectionUpdateSlide(t *testing.T) {
 	defer close(closed)
 
 	ds := dsmock.NewMockDatastore(closed, map[string]string{
+		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/6"`,
 		"projection/1/type":              `"test_model"`,
 	})
@@ -174,6 +182,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 	defer close(closed)
 
 	ds := dsmock.NewMockDatastore(closed, map[string]string{
+		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/1"`,
 		"projection/1/type":              `"test_model"`,
 	})
@@ -205,6 +214,7 @@ func TestProjectionTypeDoesNotExist(t *testing.T) {
 	defer close(closed)
 
 	ds := dsmock.NewMockDatastore(closed, map[string]string{
+		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/1"`,
 		"projection/1/type":              `"unexistingTestSlide"`,
 	})
@@ -235,7 +245,7 @@ func testSlides() *projector.SlideStore {
 
 	s.RegisterSliderFunc("test_model", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
 		var field json.RawMessage
-		fetch.FetchIfExist(ctx, &field, "test_model/1/field")
+		fetch.Fetch(ctx, &field, "test_model/1/field")
 		if field == nil {
 			return []byte(`"test_model"`), nil
 		}

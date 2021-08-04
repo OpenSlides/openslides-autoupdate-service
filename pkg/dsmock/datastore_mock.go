@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -125,7 +126,7 @@ func NewMockDatastore(closed <-chan struct{}, data map[string]string) *MockDatas
 		server: dsServer,
 	}
 
-	s.Datastore = datastore.New(dsServer.TS.URL, closed, func(error) {}, s.server)
+	s.Datastore = datastore.New(dsServer.TS.URL, closed, func(err error) { log.Println(err) }, s.server)
 
 	return s
 }
