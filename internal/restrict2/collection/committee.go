@@ -17,7 +17,7 @@ func (a Committee) Modes(mode string) FieldRestricter {
 	case "A":
 		return a.see
 	case "B":
-		//return a.modeB
+		return a.modeB
 	}
 	return nil
 }
@@ -39,5 +39,13 @@ func (a Committee) see(ctx context.Context, fetch *datastore.Fetcher, mperms *pe
 		return false, fmt.Errorf("checking oml perm: %w", err)
 	}
 
+	return hasOMLPerm, nil
+}
+
+func (a Committee) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, committeeID int) (bool, error) {
+	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, fetch, mperms.UserID(), perm.OMLCanManageOrganization)
+	if err != nil {
+		return false, fmt.Errorf("checking oml: %w", err)
+	}
 	return hasOMLPerm, nil
 }

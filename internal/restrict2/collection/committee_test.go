@@ -29,11 +29,32 @@ func TestCommitteeModeA(t *testing.T) {
 			true,
 			`---
 			committee/1/id: 1
-			user/1/organization_management_level: can_manage_organization
+			user/1/organization_management_level: can_manage_users
 			`,
 		),
 	} {
 		tt.test(t, c.Modes("A"))
 	}
+}
 
+func TestCommitteeModeB(t *testing.T) {
+	var c collection.Committee
+
+	testCase(
+		"OML can_manage_users",
+		false,
+		`---
+		committee/1/id: 1
+		user/1/organization_management_level: can_manage_users
+		`,
+	).test(t, c.Modes("B"))
+
+	testCase(
+		"OML can_manage_organization",
+		true,
+		`---
+		committee/1/id: 1
+		user/1/organization_management_level: can_manage_organization
+		`,
+	).test(t, c.Modes("B"))
 }
