@@ -19,17 +19,23 @@ func TestAssignmentCandidateModeA(t *testing.T) {
 	list_of_speakers/9/meeting_id: 1
 	`
 
-	testData{
+	testCase(
 		"Can see all assignments",
-		ds,
-		permList(perm.AssignmentCanSee),
 		true,
-	}.test(t, a.Modes("A"))
+		ds,
+		withPerms(1, perm.AssignmentCanSee),
+	).test(t, a.Modes("A"))
 
-	testData{
+	testCase(
 		"Can only see the linked assignment",
-		ds,
-		permList(perm.ListOfSpeakersCanSee),
 		true,
-	}.test(t, a.Modes("A"))
+		ds,
+		withPerms(1, perm.ListOfSpeakersCanSee),
+	).test(t, a.Modes("A"))
+
+	testCase(
+		"No Perm",
+		false,
+		ds,
+	).test(t, a.Modes("A"))
 }

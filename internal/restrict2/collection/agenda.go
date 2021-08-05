@@ -24,7 +24,7 @@ func (a AgendaItem) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a AgendaItem) see(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, agendaID int) (bool, error) {
+func (a AgendaItem) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, agendaID int) (bool, error) {
 	meetingID, err := a.meetingID(ctx, fetch, agendaID)
 	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)
@@ -56,7 +56,7 @@ func (a AgendaItem) see(ctx context.Context, fetch *datastore.Fetcher, mperms pe
 	return false, nil
 }
 
-func (a AgendaItem) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, agendaID int) (bool, error) {
+func (a AgendaItem) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, agendaID int) (bool, error) {
 	meetingID, err := a.meetingID(ctx, fetch, agendaID)
 	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)
@@ -70,7 +70,7 @@ func (a AgendaItem) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms 
 	return perms.Has(perm.AgendaItemCanSeeInternal), nil
 }
 
-func (a AgendaItem) modeC(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, agendaID int) (bool, error) {
+func (a AgendaItem) modeC(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, agendaID int) (bool, error) {
 	meetingID, err := a.meetingID(ctx, fetch, agendaID)
 	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)

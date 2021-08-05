@@ -9,16 +9,8 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
-// Permission is a type to check if a permission is given.
-type Permission interface {
-	Has(perm TPermission) bool
-	// TODO: Is IsAdmin realy needed?
-	IsAdmin() bool
-	InGroup(gid int) bool
-}
-
-// permission holds the information which permissions and groups a user has.
-type permission struct {
+// Permission holds the information which permissions and groups a user has.
+type Permission struct {
 	admin       bool
 	groupIDs    []int
 	permissions map[TPermission]bool
@@ -27,7 +19,7 @@ type permission struct {
 // New creates a new Permission object for a user in a specific meeting.
 //
 // If the user is not a member of the meeting, nil is returned.
-func New(ctx context.Context, fetch *datastore.Fetcher, userID, meetingID int) (Permission, error) {
+func New(ctx context.Context, fetch *datastore.Fetcher, userID, meetingID int) (*Permission, error) {
 	if userID == 0 {
 		return newAnonymous(ctx, fetch, meetingID)
 	}
@@ -41,7 +33,7 @@ func New(ctx context.Context, fetch *datastore.Fetcher, userID, meetingID int) (
 		// User is not in the meeting. Do not just return nil. Nil would be an
 		// nil interface. But what we want is a interface of type permission
 		// with value nil.
-		var p *permission
+		var p *Permission
 		return p, nil
 	}
 
@@ -50,7 +42,7 @@ func New(ctx context.Context, fetch *datastore.Fetcher, userID, meetingID int) (
 		return nil, fmt.Errorf("checking if user is admin: %w", err)
 	}
 	if admin {
-		return &permission{admin: true}, nil
+		return &Permission{admin: true}, nil
 	}
 
 	perms, err := permissionsFromGroups(ctx, fetch, groupIDs...)
@@ -58,10 +50,10 @@ func New(ctx context.Context, fetch *datastore.Fetcher, userID, meetingID int) (
 		return nil, fmt.Errorf("getting permissions from all groups of meeting %d: %w", meetingID, err)
 	}
 
-	return &permission{groupIDs: groupIDs, permissions: perms}, nil
+	return &Permission{groupIDs: groupIDs, permissions: perms}, nil
 }
 
-func newAnonymous(ctx context.Context, fetch *datastore.Fetcher, meetingID int) (*permission, error) {
+func newAnonymous(ctx context.Context, fetch *datastore.Fetcher, meetingID int) (*Permission, error) {
 	enableAnonymous := datastore.Bool(ctx, fetch.FetchIfExist, "meeting/%d/enable_anonymous", meetingID)
 	if err := fetch.Err(); err != nil {
 		return nil, fmt.Errorf("checking anonymous enabled: %w", err)
@@ -80,7 +72,7 @@ func newAnonymous(ctx context.Context, fetch *datastore.Fetcher, meetingID int) 
 		return nil, fmt.Errorf("getting permissions for default group: %w", err)
 	}
 
-	return &permission{groupIDs: []int{defaultGroupID}, permissions: perms}, nil
+	return &Permission{groupIDs: []int{defaultGroupID}, permissions: perms}, nil
 }
 
 func isAdmin(ctx context.Context, fetch *datastore.Fetcher, meetingID int, groupIDs []int) (bool, error) {
@@ -118,7 +110,7 @@ func permissionsFromGroups(ctx context.Context, fetch *datastore.Fetcher, groupI
 }
 
 // Has returns true, if the permission object contains the given permissions.
-func (p *permission) Has(perm TPermission) bool {
+func (p *Permission) Has(perm TPermission) bool {
 	if p == nil {
 		return false
 	}
@@ -131,14 +123,18 @@ func (p *permission) Has(perm TPermission) bool {
 }
 
 // IsAdmin returns true, if the user is a meeting admin.
-func (p *permission) IsAdmin() bool {
+func (p *Permission) IsAdmin() bool {
 	return p.admin
 }
 
 // InGroup returns true, if the user is in the given group (by group_id).
-func (p *permission) InGroup(gid int) bool {
+func (p *Permission) InGroup(gid int) bool {
 	if p == nil {
 		return false
+	}
+
+	if p.admin {
+		return true
 	}
 
 	for _, id := range p.groupIDs {

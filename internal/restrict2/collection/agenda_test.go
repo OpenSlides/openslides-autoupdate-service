@@ -11,93 +11,91 @@ func TestAgendaModeA(t *testing.T) {
 	var a collection.AgendaItem
 
 	for _, tt := range []testData{
-		{
+		testCase(
 			"No permission",
+			false,
 			`---
 			agenda_item/1/meeting_id: 1
 			`,
-			nil,
-			false,
-		},
-
-		{
+		),
+		testCase(
 			"manager",
+			true,
 			`---
 			agenda_item/1/meeting_id: 1
 			`,
-			permList(perm.AgendaItemCanManage),
-			true,
-		},
+			withPerms(1, perm.AgendaItemCanManage),
+		),
 
-		{
+		testCase(
 			"Can see internal with hidden",
+			false,
 			`---
 			agenda_item/1:
 				meeting_id: 1
 				is_hidden: true
 			`,
-			permList(perm.AgendaItemCanSeeInternal),
-			false,
-		},
+			withPerms(1, perm.AgendaItemCanSeeInternal),
+		),
 
-		{
+		testCase(
 			"Can see internal not hidden",
+			true,
 			`---
 			agenda_item/1:
 				meeting_id: 1
 				is_hidden: false
 			`,
-			permList(perm.AgendaItemCanSeeInternal),
-			true,
-		},
+			withPerms(1, perm.AgendaItemCanSeeInternal),
+		),
 
-		{
+		testCase(
 			"Can see with hidden and internal",
+			false,
 			`---
 			agenda_item/1:
 				meeting_id: 1
 				is_hidden: true
 				is_internal: true
 			`,
-			permList(perm.AgendaItemCanSee),
-			false,
-		},
+			withPerms(1, perm.AgendaItemCanSee),
+		),
 
-		{
+		testCase(
 			"Can see not hidden but internal",
+			false,
 			`---
 			agenda_item/1:
 				meeting_id: 1
 				is_hidden: false
 				is_internal: true
 			`,
-			permList(perm.AgendaItemCanSee),
-			false,
-		},
+			withPerms(1, perm.AgendaItemCanSee),
+		),
 
-		{
+		testCase(
 			"Can see with hidden but not internal",
+			false,
 			`---
 			agenda_item/1:
 				meeting_id: 1
 				is_hidden: true
 				is_internal: false
 			`,
-			permList(perm.AgendaItemCanSee),
-			false,
-		},
+			withPerms(1, perm.AgendaItemCanSee),
+		),
 
-		{
+		testCase(
 			"Can see not hidden and not internal",
+			true,
 			`---
 			agenda_item/1:
 				meeting_id: 1
 				is_hidden: false
 				is_internal: false
 			`,
-			permList(perm.AgendaItemCanSee),
-			true,
-		},
+			withPerms(1, perm.AgendaItemCanSee),
+		),
 	} {
 		tt.test(t, a.Modes("A"))
 	}
@@ -110,19 +108,18 @@ func TestAgendaModeB(t *testing.T) {
 	agenda_item/1/meeting_id: 1
 	`
 
-	testData{
+	testCase(
 		"Can see internal",
-		ds,
-		permList(perm.AgendaItemCanSeeInternal),
 		true,
-	}.test(t, r)
-
-	testData{
-		"Can not see internal",
 		ds,
-		nil,
+		withPerms(1, perm.AgendaItemCanSeeInternal),
+	).test(t, r)
+
+	testCase(
+		"Can not see internal",
 		false,
-	}.test(t, r)
+		ds,
+	).test(t, r)
 }
 
 func TestAgendaModeC(t *testing.T) {
@@ -132,31 +129,30 @@ func TestAgendaModeC(t *testing.T) {
 	agenda_item/1/meeting_id: 1
 	`
 
-	testData{
+	testCase(
 		"Can see internal",
-		ds,
-		permList(perm.AgendaItemCanSeeInternal),
 		false,
-	}.test(t, r)
+		ds,
+		withPerms(1, perm.AgendaItemCanSeeInternal),
+	).test(t, r)
 
-	testData{
+	testCase(
 		"Can see",
-		ds,
-		permList(perm.AgendaItemCanSee),
 		false,
-	}.test(t, r)
+		ds,
+		withPerms(1, perm.AgendaItemCanSee),
+	).test(t, r)
 
-	testData{
+	testCase(
 		"Can manage",
-		ds,
-		permList(perm.AgendaItemCanManage),
 		true,
-	}.test(t, r)
-
-	testData{
-		"No perm",
 		ds,
-		nil,
+		withPerms(1, perm.AgendaItemCanManage),
+	).test(t, r)
+
+	testCase(
+		"No perm",
 		false,
-	}.test(t, r)
+		ds,
+	).test(t, r)
 }

@@ -13,17 +13,16 @@ func TestListOfSpeakersModeA(t *testing.T) {
 	list_of_speakers/1/meeting_id: 1
 	`
 
-	testData{
+	testCase(
 		"Can see internal",
-		ds,
-		permList(perm.ListOfSpeakersCanSee),
 		true,
-	}.test(t, los.Modes("A"))
-
-	testData{
-		"Can not see internal",
 		ds,
-		nil,
+		withPerms(1, perm.ListOfSpeakersCanSee),
+	).test(t, los.Modes("A"))
+
+	testCase(
+		"Can not see internal",
 		false,
-	}.test(t, los.Modes("A"))
+		ds,
+	).test(t, los.Modes("A"))
 }

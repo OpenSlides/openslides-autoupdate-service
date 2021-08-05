@@ -10,21 +10,16 @@ import (
 // meeting.
 //
 // Can be used if fields from different meetings are checked.
-type MeetingPermission interface {
-	Meeting(ctx context.Context, id int) (Permission, error)
-	UserID() int
-}
-
-type meetingPermission struct {
-	perms map[int]Permission
+type MeetingPermission struct {
+	perms map[int]*Permission
 	fetch *datastore.Fetcher
 	uid   int
 }
 
 // NewMeetingPermission initializes a new MeetingPermission.
-func NewMeetingPermission(fetch *datastore.Fetcher, uid int) MeetingPermission {
-	p := meetingPermission{
-		perms: make(map[int]Permission),
+func NewMeetingPermission(fetch *datastore.Fetcher, uid int) *MeetingPermission {
+	p := MeetingPermission{
+		perms: make(map[int]*Permission),
 		fetch: fetch,
 		uid:   uid,
 	}
@@ -32,7 +27,7 @@ func NewMeetingPermission(fetch *datastore.Fetcher, uid int) MeetingPermission {
 }
 
 // Meeting returns the permission object for the meeting.
-func (p meetingPermission) Meeting(ctx context.Context, id int) (Permission, error) {
+func (p MeetingPermission) Meeting(ctx context.Context, id int) (*Permission, error) {
 	perms, ok := p.perms[id]
 	if ok {
 		return perms, nil
@@ -46,6 +41,6 @@ func (p meetingPermission) Meeting(ctx context.Context, id int) (Permission, err
 }
 
 // UserID returns the user id the object was initialized with.
-func (p meetingPermission) UserID() int {
+func (p MeetingPermission) UserID() int {
 	return p.uid
 }

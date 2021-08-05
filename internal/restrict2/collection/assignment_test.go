@@ -11,43 +11,28 @@ func TestAssignmentModeA(t *testing.T) {
 	var a collection.Assignment
 
 	for _, tt := range []testData{
-		{
+		testCase(
 			"Without perms",
+			false,
 			`---
 			assignment/1:
 				meeting_id: 1
 			`,
-			nil,
-			false,
-		},
+		),
 
-		{
+		testCase(
 			"Can see",
+			true,
 			`---
 			assignment/1:
 				meeting_id: 1
 			`,
-			permList(perm.AssignmentCanSee),
-			true,
-		},
+			withPerms(1, perm.AssignmentCanSee),
+		),
 
-		{
+		testCase(
 			"Can see list of speakers",
-			`---
-			assignment/1:
-				list_of_speakers_id: 15
-				meeting_id: 1
-
-			list_of_speakers/15:
-				id: 15
-				meeting_id: 1
-			`,
-			permList(perm.ListOfSpeakersCanSee),
 			true,
-		},
-
-		{
-			"Can not see list of speakers",
 			`---
 			assignment/1:
 				list_of_speakers_id: 15
@@ -57,12 +42,26 @@ func TestAssignmentModeA(t *testing.T) {
 				id: 15
 				meeting_id: 1
 			`,
-			nil,
-			false,
-		},
+			withPerms(1, perm.ListOfSpeakersCanSee),
+		),
 
-		{
+		testCase(
+			"Can not see list of speakers",
+			false,
+			`---
+			assignment/1:
+				list_of_speakers_id: 15
+				meeting_id: 1
+
+			list_of_speakers/15:
+				id: 15
+				meeting_id: 1
+			`,
+		),
+
+		testCase(
 			"Can see list of speakers but assignment has no list",
+			false,
 			`---
 			assignment/1:
 				meeting_id: 1
@@ -71,26 +70,12 @@ func TestAssignmentModeA(t *testing.T) {
 				id: 15
 				meeting_id: 1
 			`,
-			permList(perm.ListOfSpeakersCanSee),
-			false,
-		},
+			withPerms(1, perm.ListOfSpeakersCanSee),
+		),
 
-		{
+		testCase(
 			"Can see agenda item",
-			`---
-			assignment/1:
-				agenda_item_id: 30
-				meeting_id: 1
-
-			agenda_item/30:
-				meeting_id: 1
-			`,
-			permList(perm.AgendaItemCanSee),
 			true,
-		},
-
-		{
-			"Can not see agenda item",
 			`---
 			assignment/1:
 				agenda_item_id: 30
@@ -99,12 +84,25 @@ func TestAssignmentModeA(t *testing.T) {
 			agenda_item/30:
 				meeting_id: 1
 			`,
-			nil,
-			false,
-		},
+			withPerms(1, perm.AgendaItemCanSee),
+		),
 
-		{
+		testCase(
+			"Can not see agenda item",
+			false,
+			`---
+			assignment/1:
+				agenda_item_id: 30
+				meeting_id: 1
+
+			agenda_item/30:
+				meeting_id: 1
+			`,
+		),
+
+		testCase(
 			"Can see agenda item but assignment has none",
+			false,
 			`---
 			assignment/1:
 				meeting_id: 1
@@ -112,9 +110,8 @@ func TestAssignmentModeA(t *testing.T) {
 			agenda_item/30:
 				meeting_id: 1
 			`,
-			permList(perm.AgendaItemCanSee),
-			false,
-		},
+			withPerms(1, perm.AgendaItemCanSee),
+		),
 	} {
 		tt.test(t, a.Modes("A"))
 	}
@@ -123,28 +120,28 @@ func TestAssignmentModeA(t *testing.T) {
 func TestAssignmentModeB(t *testing.T) {
 	var a collection.Assignment
 
-	testData{
+	testCase(
 		"Without perms",
-		`---
-		assignment/1:
-			meeting_id: 1
-		`,
-		nil,
 		false,
-	}.test(t, a.Modes("B"))
-
-	testData{
-		"Can see",
 		`---
 		assignment/1:
 			meeting_id: 1
 		`,
-		permList(perm.AssignmentCanSee),
-		true,
-	}.test(t, a.Modes("B"))
+	).test(t, a.Modes("B"))
 
-	testData{
+	testCase(
+		"Can see",
+		true,
+		`---
+		assignment/1:
+			meeting_id: 1
+		`,
+		withPerms(1, perm.AssignmentCanSee),
+	).test(t, a.Modes("B"))
+
+	testCase(
 		"Can see list of speakers",
+		false,
 		`---
 		assignment/1:
 			list_of_speakers_id: 15
@@ -154,12 +151,12 @@ func TestAssignmentModeB(t *testing.T) {
 			id: 15
 			meeting_id: 1
 		`,
-		permList(perm.ListOfSpeakersCanSee),
-		false,
-	}.test(t, a.Modes("B"))
+		withPerms(1, perm.ListOfSpeakersCanSee),
+	).test(t, a.Modes("B"))
 
-	testData{
+	testCase(
 		"Can see agenda item",
+		false,
 		`---
 		assignment/1:
 			agenda_item_id: 30
@@ -168,7 +165,6 @@ func TestAssignmentModeB(t *testing.T) {
 		agenda_item/30:
 			meeting_id: 1
 		`,
-		permList(perm.AgendaItemCanSee),
-		false,
-	}.test(t, a.Modes("B"))
+		withPerms(1, perm.AgendaItemCanSee),
+	).test(t, a.Modes("B"))
 }

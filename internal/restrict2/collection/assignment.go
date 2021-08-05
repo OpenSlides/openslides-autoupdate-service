@@ -22,7 +22,7 @@ func (a Assignment) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a Assignment) see(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, assignmentID int) (bool, error) {
+func (a Assignment) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, assignmentID int) (bool, error) {
 	meetingID, err := a.meetingID(ctx, fetch, assignmentID)
 	if err != nil {
 		return false, fmt.Errorf("fetching meeting id: %w", err)
@@ -72,7 +72,7 @@ func (a Assignment) see(ctx context.Context, fetch *datastore.Fetcher, mperms pe
 	return false, nil
 }
 
-func (a Assignment) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, assignmentID int) (bool, error) {
+func (a Assignment) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, assignmentID int) (bool, error) {
 	meetingID, err := a.meetingID(ctx, fetch, assignmentID)
 	if err != nil {
 		return false, fmt.Errorf("fetching meeting id: %w", err)

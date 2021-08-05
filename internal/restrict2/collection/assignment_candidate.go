@@ -20,7 +20,7 @@ func (a AssignmentCandidate) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a AssignmentCandidate) see(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, assignmentCandidateID int) (bool, error) {
+func (a AssignmentCandidate) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, assignmentCandidateID int) (bool, error) {
 	assignmentID := datastore.Int(ctx, fetch.FetchIfExist, "assignment_candidate/%d/assignment_id", assignmentCandidateID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("fetching assignment id: %w", err)

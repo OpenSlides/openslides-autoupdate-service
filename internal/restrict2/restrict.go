@@ -75,7 +75,9 @@ type collectionRestricter interface {
 }
 
 var collections = map[string]collectionRestricter{
-	"agenda_item":      collection.AgendaItem{},
-	"assignment":       collection.Assignment{},
-	"list_of_speakers": collection.ListOfSpeakers{},
+	"agenda_item":          collection.AgendaItem{},
+	"assignment":           collection.Assignment{},
+	"assignment_candidate": collection.AssignmentCandidate{},
+	"list_of_speakers":     collection.ListOfSpeakers{},
+	"chat_group":           collection.ChatGroup{},
 }
