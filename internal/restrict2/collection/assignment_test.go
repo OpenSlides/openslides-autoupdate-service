@@ -27,7 +27,7 @@ func TestAssignmentModeA(t *testing.T) {
 			assignment/1:
 				meeting_id: 1
 			`,
-			[]perm.TPermission{perm.AssignmentCanSee},
+			permList(perm.AssignmentCanSee),
 			true,
 		},
 
@@ -42,9 +42,7 @@ func TestAssignmentModeA(t *testing.T) {
 				id: 15
 				meeting_id: 1
 			`,
-			[]perm.TPermission{
-				perm.ListOfSpeakersCanSee,
-			},
+			permList(perm.ListOfSpeakersCanSee),
 			true,
 		},
 
@@ -59,7 +57,7 @@ func TestAssignmentModeA(t *testing.T) {
 				id: 15
 				meeting_id: 1
 			`,
-			[]perm.TPermission{},
+			nil,
 			false,
 		},
 
@@ -73,9 +71,7 @@ func TestAssignmentModeA(t *testing.T) {
 				id: 15
 				meeting_id: 1
 			`,
-			[]perm.TPermission{
-				perm.ListOfSpeakersCanSee,
-			},
+			permList(perm.ListOfSpeakersCanSee),
 			false,
 		},
 
@@ -89,7 +85,7 @@ func TestAssignmentModeA(t *testing.T) {
 			agenda_item/30:
 				meeting_id: 1
 			`,
-			[]perm.TPermission{perm.AgendaItemCanSee},
+			permList(perm.AgendaItemCanSee),
 			true,
 		},
 
@@ -116,7 +112,7 @@ func TestAssignmentModeA(t *testing.T) {
 			agenda_item/30:
 				meeting_id: 1
 			`,
-			[]perm.TPermission{perm.AgendaItemCanSee},
+			permList(perm.AgendaItemCanSee),
 			false,
 		},
 	} {
@@ -143,7 +139,7 @@ func TestAssignmentModeB(t *testing.T) {
 		assignment/1:
 			meeting_id: 1
 		`,
-		[]perm.TPermission{perm.AssignmentCanSee},
+		permList(perm.AssignmentCanSee),
 		true,
 	}.test(t, a.Modes("B"))
 
@@ -158,9 +154,7 @@ func TestAssignmentModeB(t *testing.T) {
 			id: 15
 			meeting_id: 1
 		`,
-		[]perm.TPermission{
-			perm.ListOfSpeakersCanSee,
-		},
+		permList(perm.ListOfSpeakersCanSee),
 		false,
 	}.test(t, a.Modes("B"))
 
@@ -174,7 +168,7 @@ func TestAssignmentModeB(t *testing.T) {
 		agenda_item/30:
 			meeting_id: 1
 		`,
-		[]perm.TPermission{perm.AgendaItemCanSee},
+		permList(perm.AgendaItemCanSee),
 		false,
 	}.test(t, a.Modes("B"))
 }

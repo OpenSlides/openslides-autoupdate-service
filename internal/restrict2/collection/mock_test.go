@@ -38,3 +38,7 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 		}
 	})
 }
+
+func permList(ps ...perm.TPermission) []perm.TPermission {
+	return ps
+}

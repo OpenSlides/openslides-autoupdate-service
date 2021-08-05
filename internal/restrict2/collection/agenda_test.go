@@ -16,7 +16,7 @@ func TestAgendaModeA(t *testing.T) {
 			`---
 			agenda_item/1/meeting_id: 1
 			`,
-			[]perm.TPermission{},
+			nil,
 			false,
 		},
 
@@ -25,9 +25,7 @@ func TestAgendaModeA(t *testing.T) {
 			`---
 			agenda_item/1/meeting_id: 1
 			`,
-			[]perm.TPermission{
-				perm.AgendaItemCanManage,
-			},
+			permList(perm.AgendaItemCanManage),
 			true,
 		},
 
@@ -38,9 +36,7 @@ func TestAgendaModeA(t *testing.T) {
 				meeting_id: 1
 				is_hidden: true
 			`,
-			[]perm.TPermission{
-				perm.AgendaItemCanSeeInternal,
-			},
+			permList(perm.AgendaItemCanSeeInternal),
 			false,
 		},
 
@@ -51,9 +47,7 @@ func TestAgendaModeA(t *testing.T) {
 				meeting_id: 1
 				is_hidden: false
 			`,
-			[]perm.TPermission{
-				perm.AgendaItemCanSeeInternal,
-			},
+			permList(perm.AgendaItemCanSeeInternal),
 			true,
 		},
 
@@ -65,9 +59,7 @@ func TestAgendaModeA(t *testing.T) {
 				is_hidden: true
 				is_internal: true
 			`,
-			[]perm.TPermission{
-				perm.AgendaItemCanSee,
-			},
+			permList(perm.AgendaItemCanSee),
 			false,
 		},
 
@@ -79,9 +71,7 @@ func TestAgendaModeA(t *testing.T) {
 				is_hidden: false
 				is_internal: true
 			`,
-			[]perm.TPermission{
-				perm.AgendaItemCanSee,
-			},
+			permList(perm.AgendaItemCanSee),
 			false,
 		},
 
@@ -93,9 +83,7 @@ func TestAgendaModeA(t *testing.T) {
 				is_hidden: true
 				is_internal: false
 			`,
-			[]perm.TPermission{
-				perm.AgendaItemCanSee,
-			},
+			permList(perm.AgendaItemCanSee),
 			false,
 		},
 
@@ -107,9 +95,7 @@ func TestAgendaModeA(t *testing.T) {
 				is_hidden: false
 				is_internal: false
 			`,
-			[]perm.TPermission{
-				perm.AgendaItemCanSee,
-			},
+			permList(perm.AgendaItemCanSee),
 			true,
 		},
 	} {
@@ -127,7 +113,7 @@ func TestAgendaModeB(t *testing.T) {
 	testData{
 		"Can see internal",
 		ds,
-		[]perm.TPermission{perm.AgendaItemCanSeeInternal},
+		permList(perm.AgendaItemCanSeeInternal),
 		true,
 	}.test(t, r)
 
@@ -149,21 +135,21 @@ func TestAgendaModeC(t *testing.T) {
 	testData{
 		"Can see internal",
 		ds,
-		[]perm.TPermission{perm.AgendaItemCanSeeInternal},
+		permList(perm.AgendaItemCanSeeInternal),
 		false,
 	}.test(t, r)
 
 	testData{
 		"Can see",
 		ds,
-		[]perm.TPermission{perm.AgendaItemCanSee},
+		permList(perm.AgendaItemCanSee),
 		false,
 	}.test(t, r)
 
 	testData{
 		"Can manage",
 		ds,
-		[]perm.TPermission{perm.AgendaItemCanManage},
+		permList(perm.AgendaItemCanManage),
 		true,
 	}.test(t, r)
 

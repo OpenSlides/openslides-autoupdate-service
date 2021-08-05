@@ -16,7 +16,7 @@ func TestListOfSpeakersModeA(t *testing.T) {
 	testData{
 		"Can see internal",
 		ds,
-		[]perm.TPermission{perm.ListOfSpeakersCanSee},
+		permList(perm.ListOfSpeakersCanSee),
 		true,
 	}.test(t, los.Modes("A"))
 

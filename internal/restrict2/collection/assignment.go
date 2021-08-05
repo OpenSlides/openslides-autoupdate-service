@@ -11,6 +11,17 @@ import (
 // Assignment handels restrictions for the assignment collection.
 type Assignment struct{}
 
+// Modes returns the restricter for the a restriction mode.
+func (a Assignment) Modes(mode string) FieldRestricter {
+	switch mode {
+	case "A":
+		return a.see
+	case "B":
+		return a.modeB
+	}
+	return nil
+}
+
 func (a Assignment) see(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, assignmentID int) (bool, error) {
 	meetingID, err := a.meetingID(ctx, fetch, assignmentID)
 	if err != nil {
@@ -59,17 +70,6 @@ func (a Assignment) see(ctx context.Context, fetch *datastore.Fetcher, mperms pe
 	}
 
 	return false, nil
-}
-
-// Modes returns the restricter for the a restriction mode.
-func (a Assignment) Modes(mode string) FieldRestricter {
-	switch mode {
-	case "A":
-		return a.see
-	case "B":
-		return a.modeB
-	}
-	return nil
 }
 
 func (a Assignment) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, assignmentID int) (bool, error) {

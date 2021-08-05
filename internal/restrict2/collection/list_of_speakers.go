@@ -11,6 +11,15 @@ import (
 // ListOfSpeakers handels the restriction for the list_of_speakers collection.
 type ListOfSpeakers struct{}
 
+// Modes returns a map from all known modes to there restricter.
+func (los ListOfSpeakers) Modes(mode string) FieldRestricter {
+	switch mode {
+	case "A":
+		return los.see
+	}
+	return nil
+}
+
 func (los ListOfSpeakers) see(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, losID int) (bool, error) {
 	mid, err := los.meetingID(ctx, fetch, losID)
 	if err != nil {
@@ -23,15 +32,6 @@ func (los ListOfSpeakers) see(ctx context.Context, fetch *datastore.Fetcher, mpe
 	}
 
 	return perms.Has(perm.ListOfSpeakersCanSee), nil
-}
-
-// Modes returns a map from all known modes to there restricter.
-func (los ListOfSpeakers) Modes(mode string) FieldRestricter {
-	switch mode {
-	case "A":
-		return los.see
-	}
-	return nil
 }
 
 func (los ListOfSpeakers) meetingID(ctx context.Context, fetch *datastore.Fetcher, id int) (int, error) {

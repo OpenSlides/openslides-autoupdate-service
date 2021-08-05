@@ -66,6 +66,10 @@ func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[s
 	return nil
 }
 
+// collectionRestricter returns a fieldRestricter for a restriction_mode.
+//
+// The FieldRestricter is a function that tells, if a user can see fields in
+// that mode.
 type collectionRestricter interface {
 	Modes(mode string) collection.FieldRestricter
 }

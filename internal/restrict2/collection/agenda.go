@@ -11,6 +11,19 @@ import (
 // AgendaItem handels permission for the agenda.
 type AgendaItem struct{}
 
+// Modes returns a map from all known modes to there restricter.
+func (a AgendaItem) Modes(mode string) FieldRestricter {
+	switch mode {
+	case "A":
+		return a.see
+	case "B":
+		return a.modeB
+	case "C":
+		return a.modeC
+	}
+	return nil
+}
+
 func (a AgendaItem) see(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, agendaID int) (bool, error) {
 	meetingID, err := a.meetingID(ctx, fetch, agendaID)
 	if err != nil {
@@ -41,19 +54,6 @@ func (a AgendaItem) see(ctx context.Context, fetch *datastore.Fetcher, mperms pe
 	}
 
 	return false, nil
-}
-
-// Modes returns a map from all known modes to there restricter.
-func (a AgendaItem) Modes(mode string) FieldRestricter {
-	switch mode {
-	case "A":
-		return a.see
-	case "B":
-		return a.modeB
-	case "C":
-		return a.modeC
-	}
-	return nil
 }
 
 func (a AgendaItem) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, agendaID int) (bool, error) {
