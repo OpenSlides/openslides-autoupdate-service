@@ -34,14 +34,10 @@ func (a Committee) see(ctx context.Context, fetch *datastore.Fetcher, mperms *pe
 		}
 	}
 
-	oml := datastore.String(ctx, fetch.FetchIfExist, "user/%d/organization_management_level", mperms.UserID())
-	if err := fetch.Err(); err != nil {
-		return false, fmt.Errorf("getting oml of user %d: %w", mperms.UserID(), err)
+	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, fetch, mperms.UserID(), perm.OMLCanManageUsers)
+	if err != nil {
+		return false, fmt.Errorf("checking oml perm: %w", err)
 	}
 
-	if oml == "can_manage_organization" || oml == "can_manage_users" {
-		return true, nil
-	}
-
-	return false, nil
+	return hasOMLPerm, nil
 }

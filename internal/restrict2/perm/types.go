@@ -1,42 +1,10 @@
 package perm
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"strings"
 )
-
-// Collection is an object with a method to restrict fqfields.
-type Collection interface {
-	RestrictFQFields(ctx context.Context, userID int, fqfields []FQField, result map[string]bool) error
-}
-
-// CollectionFunc is a function with the Collection.RestrictFQFields signature.
-type CollectionFunc func(ctx context.Context, userID int, fqfields []FQField, result map[string]bool) error
-
-// RestrictFQFields calls the function.
-func (f CollectionFunc) RestrictFQFields(ctx context.Context, userID int, fqfields []FQField, result map[string]bool) error {
-	return f(ctx, userID, fqfields, result)
-}
-
-// Connecter can connect Actions and Collections to a HandlerStore.
-type Connecter interface {
-	Connect(store HandlerStore)
-}
-
-// ConnecterFunc is a function that implements the Connecter interface.
-type ConnecterFunc func(store HandlerStore)
-
-// Connect calls itself.
-func (f ConnecterFunc) Connect(store HandlerStore) {
-	f(store)
-}
-
-// HandlerStore holds collections and actions.
-type HandlerStore interface {
-	RegisterRestricter(name string, collection Collection)
-}
 
 // FQField contains all parts of a fqfield.
 type FQField struct {
@@ -75,3 +43,14 @@ func (fqfield FQField) FQID() string {
 
 // TPermission is a type of all valid permission strings.
 type TPermission string
+
+// OrganizationManagementLevel are possible values from user/organization_management_level
+type OrganizationManagementLevel string
+
+// Organization management levels
+const (
+	OMLNone                  OrganizationManagementLevel = ""
+	OMLSuperadmin            OrganizationManagementLevel = "superadmin"
+	OMLCanManageOrganization OrganizationManagementLevel = "can_manage_organization"
+	OMLCanManageUsers        OrganizationManagementLevel = "can_manage_users"
+)

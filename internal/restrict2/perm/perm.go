@@ -144,3 +144,23 @@ func (p *Permission) InGroup(gid int) bool {
 	}
 	return false
 }
+
+// HasOrganizationManagementLevel returns true if the user has the level or a higher level
+func HasOrganizationManagementLevel(ctx context.Context, fetch *datastore.Fetcher, uid int, level OrganizationManagementLevel) (bool, error) {
+	oml := datastore.String(ctx, fetch.FetchIfExist, "user/%d/organization_management_level", uid)
+	if err := fetch.Err(); err != nil {
+		return false, fmt.Errorf("getting oml of user %d: %w", uid, err)
+	}
+
+	switch OrganizationManagementLevel(oml) {
+	case OMLSuperadmin:
+		return true, nil
+
+	case OMLCanManageOrganization:
+		return level == OMLCanManageOrganization || level == OMLCanManageUsers, nil
+
+	case OMLCanManageUsers:
+		return level == OMLCanManageUsers, nil
+	}
+	return false, nil
+}
