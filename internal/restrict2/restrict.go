@@ -15,6 +15,7 @@ import (
 // Restrict changes the keys and values in data for the user with the given user
 // id.
 func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[string][]byte) error {
+	// TODO: superadmin
 	mperms := perm.NewMeetingPermission(fetch, uid)
 	for key := range data {
 		fqfield, err := parseFQField(key)
@@ -80,4 +81,5 @@ var collections = map[string]collectionRestricter{
 	"assignment_candidate": collection.AssignmentCandidate{},
 	"list_of_speakers":     collection.ListOfSpeakers{},
 	"chat_group":           collection.ChatGroup{},
+	"committee":            collection.Committee{},
 }
