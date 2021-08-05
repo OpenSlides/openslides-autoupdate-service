@@ -7,7 +7,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 )
 
-func TestAssignmentSee(t *testing.T) {
+func TestAssignmentModeA(t *testing.T) {
 	var a collection.Assignment
 
 	for _, tt := range []testData{
@@ -120,19 +120,8 @@ func TestAssignmentSee(t *testing.T) {
 			false,
 		},
 	} {
-		tt.test(t, a.See)
+		tt.test(t, a.Modes("A"))
 	}
-}
-
-func TestAssignmentModeA(t *testing.T) {
-	var a collection.Assignment
-
-	testData{
-		"simple",
-		``,
-		nil,
-		true,
-	}.test(t, a.Modes("A"))
 }
 
 func TestAssignmentModeB(t *testing.T) {

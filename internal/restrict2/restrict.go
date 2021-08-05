@@ -28,24 +28,6 @@ func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[s
 			continue
 		}
 
-		canSee, err := restricter.See(ctx, fetch, mperms, fqfield.ID)
-		if err != nil {
-			var errDoesNotExist datastore.DoesNotExistError
-			if !errors.As(err, &errDoesNotExist) {
-				return fmt.Errorf("see permission for %s: %w", fqfield, err)
-			}
-
-			// If an element does not exist, then just handel it as no
-			// permission.
-			data[key] = nil
-			continue
-		}
-
-		if !canSee {
-			data[key] = nil
-			continue
-		}
-
 		fieldMode, ok := restrictionModes[fqfield.CollectionField()]
 		if !ok {
 			// Field unknown
@@ -85,7 +67,6 @@ func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[s
 }
 
 type collectionRestricter interface {
-	See(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, agendaID int) (bool, error)
 	Modes(mode string) collection.FieldRestricter
 }
 

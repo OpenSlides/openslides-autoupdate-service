@@ -11,8 +11,7 @@ import (
 // Assignment handels restrictions for the assignment collection.
 type Assignment struct{}
 
-// See tells, if a user can see the agenda item.
-func (a Assignment) See(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, assignmentID int) (bool, error) {
+func (a Assignment) see(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, assignmentID int) (bool, error) {
 	meetingID, err := a.meetingID(ctx, fetch, assignmentID)
 	if err != nil {
 		return false, fmt.Errorf("fetching meeting id: %w", err)
@@ -33,7 +32,7 @@ func (a Assignment) See(ctx context.Context, fetch *datastore.Fetcher, mperms pe
 	}
 
 	if losID != 0 {
-		canSeeLOS, err := ListOfSpeakers{}.See(ctx, fetch, mperms, losID)
+		canSeeLOS, err := ListOfSpeakers{}.see(ctx, fetch, mperms, losID)
 		if err != nil {
 			return false, fmt.Errorf("calculating los see: %w", err)
 		}
@@ -49,7 +48,7 @@ func (a Assignment) See(ctx context.Context, fetch *datastore.Fetcher, mperms pe
 	}
 
 	if agendaID != 0 {
-		canSeeAgenda, err := AgendaItem{}.See(ctx, fetch, mperms, agendaID)
+		canSeeAgenda, err := AgendaItem{}.see(ctx, fetch, mperms, agendaID)
 		if err != nil {
 			return false, fmt.Errorf("calculating agendaItem see: %w", err)
 		}
@@ -66,7 +65,7 @@ func (a Assignment) See(ctx context.Context, fetch *datastore.Fetcher, mperms pe
 func (a Assignment) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return allways
+		return a.see
 	case "B":
 		return a.modeB
 	}

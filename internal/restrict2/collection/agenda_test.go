@@ -7,7 +7,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 )
 
-func TestAgendaSee(t *testing.T) {
+func TestAgendaModeA(t *testing.T) {
 	var a collection.AgendaItem
 
 	for _, tt := range []testData{
@@ -113,19 +113,8 @@ func TestAgendaSee(t *testing.T) {
 			true,
 		},
 	} {
-		tt.test(t, a.See)
+		tt.test(t, a.Modes("A"))
 	}
-}
-
-func TestAgendaModeA(t *testing.T) {
-	var a collection.AgendaItem
-
-	testData{
-		"simple",
-		``,
-		nil,
-		true,
-	}.test(t, a.Modes("A"))
 }
 
 func TestAgendaModeB(t *testing.T) {

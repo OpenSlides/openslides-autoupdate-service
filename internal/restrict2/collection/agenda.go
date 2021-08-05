@@ -11,8 +11,7 @@ import (
 // AgendaItem handels permission for the agenda.
 type AgendaItem struct{}
 
-// See tells, if a user can see the agenda item.
-func (a AgendaItem) See(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, agendaID int) (bool, error) {
+func (a AgendaItem) see(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, agendaID int) (bool, error) {
 	meetingID, err := a.meetingID(ctx, fetch, agendaID)
 	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)
@@ -48,7 +47,7 @@ func (a AgendaItem) See(ctx context.Context, fetch *datastore.Fetcher, mperms pe
 func (a AgendaItem) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return allways
+		return a.see
 	case "B":
 		return a.modeB
 	case "C":

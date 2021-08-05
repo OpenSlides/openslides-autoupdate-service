@@ -11,8 +11,7 @@ import (
 // ListOfSpeakers handels the restriction for the list_of_speakers collection.
 type ListOfSpeakers struct{}
 
-// See defiends the see property.
-func (los ListOfSpeakers) See(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, losID int) (bool, error) {
+func (los ListOfSpeakers) see(ctx context.Context, fetch *datastore.Fetcher, mperms perm.MeetingPermission, losID int) (bool, error) {
 	mid, err := los.meetingID(ctx, fetch, losID)
 	if err != nil {
 		return false, fmt.Errorf("fetching meeting id for los %d: %w", losID, err)
@@ -30,7 +29,7 @@ func (los ListOfSpeakers) See(ctx context.Context, fetch *datastore.Fetcher, mpe
 func (los ListOfSpeakers) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return allways
+		return los.see
 	}
 	return nil
 }
