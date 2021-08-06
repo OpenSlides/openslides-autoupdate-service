@@ -23,8 +23,8 @@ func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[s
 			return fmt.Errorf("parsing fqfield %s: %w", key, err)
 		}
 
-		restricter, ok := collections[fqfield.Collection]
-		if !ok {
+		restricter := collection.Collection(fqfield.Collection)
+		if restricter == nil {
 			data[key] = nil
 			continue
 		}
@@ -65,21 +65,4 @@ func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[s
 	}
 
 	return nil
-}
-
-// collectionRestricter returns a fieldRestricter for a restriction_mode.
-//
-// The FieldRestricter is a function that tells, if a user can see fields in
-// that mode.
-type collectionRestricter interface {
-	Modes(mode string) collection.FieldRestricter
-}
-
-var collections = map[string]collectionRestricter{
-	"agenda_item":          collection.AgendaItem{},
-	"assignment":           collection.Assignment{},
-	"assignment_candidate": collection.AssignmentCandidate{},
-	"list_of_speakers":     collection.ListOfSpeakers{},
-	"chat_group":           collection.ChatGroup{},
-	"committee":            collection.Committee{},
 }

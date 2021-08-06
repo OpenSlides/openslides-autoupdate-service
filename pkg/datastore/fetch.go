@@ -63,7 +63,7 @@ func (f *Fetcher) Fetch(ctx context.Context, value interface{}, keyFmt string, a
 	}
 
 	if err := json.Unmarshal(fields[0], value); err != nil {
-		f.err = fmt.Errorf("unpacking value: %w", err)
+		f.err = fmt.Errorf("unpacking value of %q: %w", fqfield, err)
 	}
 	return
 }
@@ -101,7 +101,7 @@ func (f *Fetcher) FetchIfExist(ctx context.Context, value interface{}, keyFmt st
 	}
 
 	if err := json.Unmarshal(fields[1], value); err != nil {
-		f.err = fmt.Errorf("unpacking value: %w", err)
+		f.err = fmt.Errorf("unpacking value of %q: %w", fqfield, err)
 	}
 	return
 }
@@ -206,7 +206,7 @@ func Bool(ctx context.Context, fetch FetchFunc, keyFmt string, a ...interface{})
 func get(ctx context.Context, ds Getter, fqfield string, value interface{}) error {
 	fields, err := ds.Get(ctx, fqfield)
 	if err != nil {
-		return fmt.Errorf("getting data from datastore: %w", err)
+		return fmt.Errorf("getting %q from datastore: %w", fqfield, err)
 	}
 
 	if fields[0] == nil {
