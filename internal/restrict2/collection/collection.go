@@ -41,6 +41,8 @@ func Collection(collection string) Restricter {
 		return ChatGroup{}
 	case "committee":
 		return Committee{}
+	case "group":
+		return Group{}
 	case "meeting":
 		return Meeting{}
 	default:
