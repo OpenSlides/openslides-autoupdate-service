@@ -43,6 +43,8 @@ func Collection(collection string) Restricter {
 		return Committee{}
 	case "group":
 		return Group{}
+	case "mediafile":
+		return Mediafile{}
 	case "meeting":
 		return Meeting{}
 	default:

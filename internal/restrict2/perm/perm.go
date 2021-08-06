@@ -124,6 +124,9 @@ func (p *Permission) Has(perm TPermission) bool {
 
 // IsAdmin returns true, if the user is a meeting admin.
 func (p *Permission) IsAdmin() bool {
+	if p == nil {
+		return false
+	}
 	return p.admin
 }
 
