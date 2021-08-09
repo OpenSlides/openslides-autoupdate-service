@@ -1,0 +1,12 @@
+// Code generated with go generate DO NOT EDIT.
+package datastore
+
+import (
+	"context"
+	"fmt"
+	"encoding/json"
+)
+
+{{ range .Fields }}
+    {{ . }}
+{{ end -}}

@@ -1,0 +1,9 @@
+func (f Fields) {{ .GoName }}(ctx context.Context, {{ .Collection }}ID int) ({{ .GoType }}, error) {
+    var v {{ .GoType }}
+    f.fetch.FetchIfExist(ctx, &v, "{{ .FQField }}", {{ .Collection }}ID)
+    if err := f.fetch.Err(); err != nil {
+        return {{ .Zero }}, fmt.Errorf("fetching \"{{ .FQField }}\": %w", {{ .Collection }}ID, err)
+    }
+
+    return v, nil
+}
