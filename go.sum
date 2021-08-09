@@ -1,7 +1,5 @@
-github.com/OpenSlides/openslides-models-to-go v0.3.1-0.20210804054715-e3f3e509fc9d h1:hsGRXbuo/vrtUB4QP0UCIESaGhN5fYevUsQhVLp1ciY=
-github.com/OpenSlides/openslides-models-to-go v0.3.1-0.20210804054715-e3f3e509fc9d/go.mod h1:4lP5K8B1aG/sBHptdYVAKPi4fXH276yhCCv6dBDKyzo=
-github.com/OpenSlides/openslides-models-to-go v0.3.1-0.20210804060918-7537379fca65 h1:kAW1m6nltLJc3q5YWmbEf4m9+D/wJBVjNdG5aQiFsSg=
-github.com/OpenSlides/openslides-models-to-go v0.3.1-0.20210804060918-7537379fca65/go.mod h1:4lP5K8B1aG/sBHptdYVAKPi4fXH276yhCCv6dBDKyzo=
+github.com/OpenSlides/openslides-models-to-go v0.3.1-0.20210809095855-79ee196797eb h1:5H6IFQjAyJ5XHD2AjztsNLGySgQ9cc2hl43CNCu5zow=
+github.com/OpenSlides/openslides-models-to-go v0.3.1-0.20210809095855-79ee196797eb/go.mod h1:4lP5K8B1aG/sBHptdYVAKPi4fXH276yhCCv6dBDKyzo=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1 h1:CaO/zOnF8VvUfEbhRatPcwKVWamvbYd8tQGRWacE9kU=
