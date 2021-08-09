@@ -10,7 +10,8 @@ import (
 // FieldRestricter is a function to restrict fields of a collection.
 type FieldRestricter func(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, id int) (bool, error)
 
-func allways(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, elementID int) (bool, error) {
+// Allways is a restricter func that just returns true.
+func Allways(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, elementID int) (bool, error) {
 	return true, nil
 }
 
@@ -43,6 +44,8 @@ func Collection(collection string) Restricter {
 		return Mediafile{}
 	case "meeting":
 		return Meeting{}
+	case "personal_note":
+		return PersonalNote{}
 	default:
 		return nil
 	}

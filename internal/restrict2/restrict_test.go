@@ -63,5 +63,47 @@ func TestRestrict(t *testing.T) {
 	if got["unknown_collection/1/field"] != nil {
 		t.Errorf("unknown_collection/1/field was not removed")
 	}
+}
+
+func TestRestrictSuperAdmin(t *testing.T) {
+	fetch := datastore.NewFetcher(dsmock.Stub(dsmock.YAMLData(`---
+	user/1/organization_management_level: superadmin
+	personal_note/1/user_id: 1
+	personal_note/2/user_id: 2
+	`)))
+
+	data := map[string]string{
+		"unknown_collection/404/field": "404",
+		"user/404/unknown_field":       "404",
+		"personal_note/1/id":           "1",
+		"personal_note/2/id":           "2",
+	}
+
+	got := make(map[string][]byte, len(data))
+	for k, v := range data {
+		got[k] = []byte(v)
+	}
+
+	err := restrict.Restrict(context.Background(), fetch, 1, got)
+
+	if err != nil {
+		t.Fatalf("Restrict returned: %v", err)
+	}
+
+	if got["unknown_collection/404/field"] == nil {
+		t.Errorf("unknown_collection/404/field was restricted")
+	}
+
+	if got["user/404/unknown_field"] == nil {
+		t.Errorf("user/404/unknown_field was restricted")
+	}
+
+	if got["personal_note/1/id"] == nil {
+		t.Errorf("personal_note/1/id got restricted")
+	}
+
+	if got["personal_note/2/id"] != nil {
+		t.Errorf("personal_note/2/id got not restricted")
+	}
 
 }

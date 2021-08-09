@@ -14,23 +14,25 @@ import (
 )
 
 type testData struct {
-	name   string
-	data   map[string]string
-	expect bool
+	name          string
+	data          map[string]string
+	expect        bool
+	requestUserID int
 }
 
 func testCase(name string, expect bool, yaml string, op ...testCaseOption) testData {
 	td := testData{
-		name:   name,
-		expect: expect,
-		data:   dsmock.YAMLData(yaml),
+		name:          name,
+		expect:        expect,
+		data:          dsmock.YAMLData(yaml),
+		requestUserID: 1,
 	}
-
-	td.data["user/1/id"] = "1"
 
 	for _, o := range op {
-		o(td)
+		o(&td)
 	}
+
+	td.data[fmt.Sprintf("user/%d/id", td.requestUserID)] = strconv.Itoa(td.requestUserID)
 
 	return td
 }
@@ -40,7 +42,7 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 
 	t.Run(tt.name, func(t *testing.T) {
 		fetch := datastore.NewFetcher(dsmock.Stub(tt.data))
-		perms := perm.NewMeetingPermission(fetch, 1)
+		perms := perm.NewMeetingPermission(fetch, tt.requestUserID)
 
 		got, err := f(context.Background(), fetch, perms, 1)
 
@@ -54,12 +56,14 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 	})
 }
 
-type testCaseOption func(testData)
+type testCaseOption func(*testData)
 
-// withPerms uses the group X337 to add permissions to user 1 in the given
+// withPerms uses the group X337 to add permissions to the request user in the given
 // meeting. X is the meetingID.
+//
+// Make sure to call withRequestUser before withPerms.
 func withPerms(meetingID int, perms ...perm.TPermission) testCaseOption {
-	return func(td testData) {
+	return func(td *testData) {
 		permString := "["
 		for _, p := range perms {
 			permString += fmt.Sprintf("%q,", p)
@@ -72,6 +76,12 @@ func withPerms(meetingID int, perms ...perm.TPermission) testCaseOption {
 		td.data[fmt.Sprintf("group/%d/id", groupID)] = strconv.Itoa(groupID)
 		td.data[fmt.Sprintf("group/%d/permissions", groupID)] = permString
 		td.data[fmt.Sprintf("meeting/%d/id", meetingID)] = strconv.Itoa(meetingID)
+	}
+}
+
+func withRequestUser(userID int) testCaseOption {
+	return func(td *testData) {
+		td.requestUserID = userID
 	}
 }
 

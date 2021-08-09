@@ -15,7 +15,7 @@ type Meeting struct{}
 func (m Meeting) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return allways
+		return Allways
 	case "B":
 		return m.see
 	case "C":
