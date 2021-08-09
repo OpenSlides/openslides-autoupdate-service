@@ -23,7 +23,7 @@ func (a Committee) Modes(mode string) FieldRestricter {
 }
 
 func (a Committee) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, committeeID int) (bool, error) {
-	userIDs := datastore.Ints(ctx, fetch.FetchIfExist, "committee/%d/user_ids", committeeID)
+	userIDs := fetch.Field().Committee_UserIDs(ctx, committeeID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("getting committee users: %w", err)
 	}

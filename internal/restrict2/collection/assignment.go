@@ -37,7 +37,7 @@ func (a Assignment) see(ctx context.Context, fetch *datastore.Fetcher, mperms *p
 		return true, nil
 	}
 
-	losID := datastore.Int(ctx, fetch.Fetch, "assignment/%d/list_of_speakers_id", assignmentID)
+	losID := fetch.Field().Assignment_ListOfSpeakersID(ctx, assignmentID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("fetching losID: %w", err)
 	}
@@ -53,7 +53,7 @@ func (a Assignment) see(ctx context.Context, fetch *datastore.Fetcher, mperms *p
 		}
 	}
 
-	agendaID := datastore.Int(ctx, fetch.Fetch, "assignment/%d/agenda_item_id", assignmentID)
+	agendaID := fetch.Field().Assignment_AgendaItemID(ctx, assignmentID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("fetching agendaID: %w", err)
 	}
@@ -87,7 +87,7 @@ func (a Assignment) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms 
 }
 
 func (a Assignment) meetingID(ctx context.Context, fetch *datastore.Fetcher, id int) (int, error) {
-	mid := datastore.Int(ctx, fetch.FetchIfExist, "assignment/%d/meeting_id", id)
+	mid := fetch.Field().Assignment_MeetingID(ctx, id)
 	if err := fetch.Err(); err != nil {
 		return 0, fmt.Errorf("fetching meeting_id for assignment %d: %w", id, err)
 	}

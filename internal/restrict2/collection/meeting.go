@@ -27,20 +27,20 @@ func (m Meeting) Modes(mode string) FieldRestricter {
 }
 
 func (m Meeting) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, meetingID int) (bool, error) {
-	enableAnonymous := datastore.Bool(ctx, fetch.FetchIfExist, "meeting/%d/enable_anonymous", meetingID)
+	enableAnonymous := fetch.Field().Meeting_EnableAnonymous(ctx, meetingID)
 	if enableAnonymous {
 		return true, nil
 	}
 
-	userIDs := datastore.Ints(ctx, fetch.FetchIfExist, "meeting/%d/user_ids", meetingID)
+	userIDs := fetch.Field().Meeting_UserIDs(ctx, meetingID)
 	for _, id := range userIDs {
 		if mperms.UserID() == id {
 			return true, nil
 		}
 	}
 
-	committeeID := datastore.Int(ctx, fetch.FetchIfExist, "meeting/%d/committee_id", meetingID)
-	userManagementLvl := datastore.String(ctx, fetch.FetchIfExist, "user/%d/committee_$%d_management_level", mperms.UserID(), committeeID)
+	committeeID := fetch.Field().Meeting_CommitteeID(ctx, meetingID)
+	userManagementLvl := fetch.Field().User_CommitteeManagementLevel(ctx, mperms.UserID(), committeeID)
 	if userManagementLvl == "can_manage" {
 		return true, nil
 	}

@@ -4,7 +4,6 @@ package datastore
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 )
 
 func (f Fields) AgendaItem_ChildIDs(ctx context.Context, AgendaItemID int) []int {
@@ -568,25 +567,25 @@ func (f Fields) Mediafile_Title(ctx context.Context, MediafileID int) string {
 func (f Fields) Mediafile_UsedAsFontInMeetingIDTmpl(ctx context.Context, MediafileID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "mediafile/%d/used_as_font_$_in_meeting_id", MediafileID)
-	return v, nil
+	return v
 }
 
 func (f Fields) Mediafile_UsedAsFontInMeetingID(ctx context.Context, MediafileID int, replacement string) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "mediafile/%d/used_as_font_$%s_in_meeting_id", MediafileID, replacement)
-	return v, nil
+	return v
 }
 
 func (f Fields) Mediafile_UsedAsLogoInMeetingIDTmpl(ctx context.Context, MediafileID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "mediafile/%d/used_as_logo_$_in_meeting_id", MediafileID)
-	return v, nil
+	return v
 }
 
 func (f Fields) Mediafile_UsedAsLogoInMeetingID(ctx context.Context, MediafileID int, replacement string) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "mediafile/%d/used_as_logo_$%s_in_meeting_id", MediafileID, replacement)
-	return v, nil
+	return v
 }
 
 func (f Fields) Meeting_AdminGroupID(ctx context.Context, MeetingID int) int {
@@ -850,13 +849,13 @@ func (f Fields) Meeting_DefaultMeetingForCommitteeID(ctx context.Context, Meetin
 func (f Fields) Meeting_DefaultProjectorIDTmpl(ctx context.Context, MeetingID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/default_projector_$_id", MeetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) Meeting_DefaultProjectorID(ctx context.Context, MeetingID int, replacement string) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/default_projector_$%s_id", MeetingID, replacement)
-	return v, nil
+	return v
 }
 
 func (f Fields) Meeting_Description(ctx context.Context, MeetingID int) string {
@@ -916,13 +915,13 @@ func (f Fields) Meeting_ExportPdfPagesize(ctx context.Context, MeetingID int) st
 func (f Fields) Meeting_FontIDTmpl(ctx context.Context, MeetingID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/font_$_id", MeetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) Meeting_FontID(ctx context.Context, MeetingID int, replacement string) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/font_$%s_id", MeetingID, replacement)
-	return v, nil
+	return v
 }
 
 func (f Fields) Meeting_GroupIDs(ctx context.Context, MeetingID int) []int {
@@ -1048,13 +1047,13 @@ func (f Fields) Meeting_Location(ctx context.Context, MeetingID int) string {
 func (f Fields) Meeting_LogoIDTmpl(ctx context.Context, MeetingID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/logo_$_id", MeetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) Meeting_LogoID(ctx context.Context, MeetingID int, replacement string) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/logo_$%s_id", MeetingID, replacement)
-	return v, nil
+	return v
 }
 
 func (f Fields) Meeting_MediafileIDs(ctx context.Context, MeetingID int) []int {
@@ -2116,13 +2115,13 @@ func (f Fields) Motion_AmendmentIDs(ctx context.Context, MotionID int) []int {
 func (f Fields) Motion_AmendmentParagraphTmpl(ctx context.Context, MotionID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "motion/%d/amendment_paragraph_$", MotionID)
-	return v, nil
+	return v
 }
 
 func (f Fields) Motion_AmendmentParagraph(ctx context.Context, MotionID int, replacement string) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "motion/%d/amendment_paragraph_$%s", MotionID, replacement)
-	return v, nil
+	return v
 }
 
 func (f Fields) Motion_AttachmentIDs(ctx context.Context, MotionID int) []int {
@@ -2986,13 +2985,13 @@ func (f Fields) Projector_ShowTitle(ctx context.Context, ProjectorID int) bool {
 func (f Fields) Projector_UsedAsDefaultInMeetingIDTmpl(ctx context.Context, ProjectorID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "projector/%d/used_as_default_$_in_meeting_id", ProjectorID)
-	return v, nil
+	return v
 }
 
 func (f Fields) Projector_UsedAsDefaultInMeetingID(ctx context.Context, ProjectorID int, replacement string) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "projector/%d/used_as_default_$%s_in_meeting_id", ProjectorID, replacement)
-	return v, nil
+	return v
 }
 
 func (f Fields) Projector_UsedAsReferenceProjectorMeetingID(ctx context.Context, ProjectorID int) int {
@@ -3184,25 +3183,25 @@ func (f Fields) Topic_Title(ctx context.Context, TopicID int) string {
 func (f Fields) User_AboutMeTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/about_me_$", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_AboutMe(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/about_me_$%d", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_AssignmentCandidateIDsTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/assignment_candidate_$_ids", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_AssignmentCandidateIDs(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/assignment_candidate_$%d_ids", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_CanChangeOwnPassword(ctx context.Context, UserID int) bool {
@@ -3214,13 +3213,13 @@ func (f Fields) User_CanChangeOwnPassword(ctx context.Context, UserID int) bool 
 func (f Fields) User_CommentTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/comment_$", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_Comment(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/comment_$%d", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_CommitteeIDs(ctx context.Context, UserID int) []int {
@@ -3232,13 +3231,13 @@ func (f Fields) User_CommitteeIDs(ctx context.Context, UserID int) []int {
 func (f Fields) User_CommitteeManagementLevelTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/committee_$_management_level", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_CommitteeManagementLevel(ctx context.Context, UserID int, committeeID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/committee_$%d_management_level", UserID, committeeID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_DefaultNumber(ctx context.Context, UserID int) string {
@@ -3286,13 +3285,13 @@ func (f Fields) User_Gender(ctx context.Context, UserID int) string {
 func (f Fields) User_GroupIDsTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/group_$_ids", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_GroupIDs(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/group_$%d_ids", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_ID(ctx context.Context, UserID int) int {
@@ -3346,25 +3345,25 @@ func (f Fields) User_MeetingIDs(ctx context.Context, UserID int) []int {
 func (f Fields) User_NumberTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/number_$", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_Number(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/number_$%d", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_OptionIDsTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/option_$_ids", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_OptionIDs(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/option_$%d_ids", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_OrganizationManagementLevel(ctx context.Context, UserID int) string {
@@ -3382,85 +3381,85 @@ func (f Fields) User_Password(ctx context.Context, UserID int) string {
 func (f Fields) User_PersonalNoteIDsTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/personal_note_$_ids", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_PersonalNoteIDs(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/personal_note_$%d_ids", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_PollVotedIDsTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/poll_voted_$_ids", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_PollVotedIDs(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/poll_voted_$%d_ids", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_ProjectionIDsTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/projection_$_ids", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_ProjectionIDs(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/projection_$%d_ids", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_SpeakerIDsTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/speaker_$_ids", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_SpeakerIDs(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/speaker_$%d_ids", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_StructureLevelTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/structure_level_$", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_StructureLevel(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/structure_level_$%d", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_SubmittedMotionIDsTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/submitted_motion_$_ids", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_SubmittedMotionIDs(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/submitted_motion_$%d_ids", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_SupportedMotionIDsTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/supported_motion_$_ids", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_SupportedMotionIDs(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/supported_motion_$%d_ids", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_Title(ctx context.Context, UserID int) string {
@@ -3478,61 +3477,61 @@ func (f Fields) User_Username(ctx context.Context, UserID int) string {
 func (f Fields) User_VoteDelegatedToIDTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/vote_delegated_$_to_id", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_VoteDelegatedToID(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/vote_delegated_$%d_to_id", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_VoteDelegatedVoteIDsTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/vote_delegated_vote_$_ids", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_VoteDelegatedVoteIDs(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/vote_delegated_vote_$%d_ids", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_VoteDelegationsFromIDsTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/vote_delegations_$_from_ids", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_VoteDelegationsFromIDs(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/vote_delegations_$%d_from_ids", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_VoteIDsTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/vote_$_ids", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_VoteIDs(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/vote_$%d_ids", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_VoteWeightTmpl(ctx context.Context, UserID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/vote_weight_$", UserID)
-	return v, nil
+	return v
 }
 
 func (f Fields) User_VoteWeight(ctx context.Context, UserID int, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/vote_weight_$%d", UserID, meetingID)
-	return v, nil
+	return v
 }
 
 func (f Fields) Vote_DelegatedUserID(ctx context.Context, VoteID int) int {

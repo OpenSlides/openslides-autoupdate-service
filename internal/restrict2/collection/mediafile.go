@@ -23,7 +23,7 @@ func (m Mediafile) Modes(mode string) FieldRestricter {
 }
 
 func (m Mediafile) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, mediafileID int) (bool, error) {
-	meetingID := datastore.Int(ctx, fetch.FetchIfExist, "mediafile/%d/meeting_id", mediafileID)
+	meetingID := fetch.Field().Mediafile_MeetingID(ctx, mediafileID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("fetching meeting_id of mediafile %d: %w", mediafileID, err)
 	}
@@ -42,8 +42,8 @@ func (m Mediafile) see(ctx context.Context, fetch *datastore.Fetcher, mperms *pe
 		return false, fmt.Errorf("can see meeting %d: %w", meetingID, err)
 	}
 
-	usedAsLogo := datastore.Strings(ctx, fetch.FetchIfExist, "mediafile/%d/used_as_logo_$_in_meeting_id", mediafileID)
-	usedAsFont := datastore.Strings(ctx, fetch.FetchIfExist, "mediafile/%d/used_as_font_$_in_meeting_id", mediafileID)
+	usedAsLogo := fetch.Field().Mediafile_UsedAsLogoInMeetingIDTmpl(ctx, mediafileID)
+	usedAsFont := fetch.Field().Mediafile_UsedAsFontInMeetingIDTmpl(ctx, mediafileID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("fetching as logo and as font: %w", err)
 	}
@@ -52,9 +52,9 @@ func (m Mediafile) see(ctx context.Context, fetch *datastore.Fetcher, mperms *pe
 	}
 
 	if perms.Has(perm.ProjectorCanSee) {
-		p7onIDs := datastore.Ints(ctx, fetch.FetchIfExist, "mediafile/%d/projection_ids", mediafileID)
+		p7onIDs := fetch.Field().Mediafile_ProjectionIDs(ctx, mediafileID)
 		for _, p7onID := range p7onIDs {
-			current := datastore.Int(ctx, fetch.Fetch, "projection/%d/current_projector_id", p7onID)
+			current := fetch.Field().Projection_CurrentProjectorID(ctx, p7onID)
 			if current != 0 {
 				return true, nil
 			}
@@ -66,12 +66,12 @@ func (m Mediafile) see(ctx context.Context, fetch *datastore.Fetcher, mperms *pe
 	}
 
 	if perms.Has(perm.MediafileCanSee) {
-		public := datastore.Bool(ctx, fetch.FetchIfExist, "mediafile/%d/is_public", mediafileID)
+		public := fetch.Field().Mediafile_IsPublic(ctx, mediafileID)
 		if public {
 			return true, nil
 		}
 
-		inheritedGroups := datastore.Ints(ctx, fetch.FetchIfExist, "mediafile/%d/inherited_access_group_ids", mediafileID)
+		inheritedGroups := fetch.Field().Mediafile_InheritedAccessGroupIDs(ctx, mediafileID)
 		for _, id := range inheritedGroups {
 			if perms.InGroup(id) {
 				return true, nil
@@ -95,7 +95,7 @@ func (m Mediafile) modeA(ctx context.Context, fetch *datastore.Fetcher, mperms *
 		return true, nil
 	}
 
-	losID := datastore.Int(ctx, fetch.FetchIfExist, "mediafile/%d/list_of_speakers_id", mediafileID)
+	losID := fetch.Field().Mediafile_ListOfSpeakersID(ctx, mediafileID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("getting list of speakers id: %w", err)
 	}

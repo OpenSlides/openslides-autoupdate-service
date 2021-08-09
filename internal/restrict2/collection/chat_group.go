@@ -31,7 +31,7 @@ func (c ChatGroup) see(ctx context.Context, fetch *datastore.Fetcher, mperms *pe
 		return false, fmt.Errorf("getting permissions: %w", err)
 	}
 
-	adminGroup := datastore.Int(ctx, fetch.FetchIfExist, "meeting/%d/admin_group_id", meetingID)
+	adminGroup := fetch.Field().Meeting_AdminGroupID(ctx, meetingID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("getting admin group id: %w", err)
 	}
@@ -40,7 +40,7 @@ func (c ChatGroup) see(ctx context.Context, fetch *datastore.Fetcher, mperms *pe
 		return true, nil
 	}
 
-	readGroups := datastore.Ints(ctx, fetch.FetchIfExist, "chat_group/%d/read_group_ids", chatGroupID)
+	readGroups := fetch.Field().ChatGroup_ReadGroupIDs(ctx, chatGroupID)
 	for _, gid := range readGroups {
 		if perms.InGroup(gid) {
 			return true, nil
@@ -51,7 +51,7 @@ func (c ChatGroup) see(ctx context.Context, fetch *datastore.Fetcher, mperms *pe
 }
 
 func (c ChatGroup) meetingID(ctx context.Context, fetch *datastore.Fetcher, id int) (int, error) {
-	mid := datastore.Int(ctx, fetch.FetchIfExist, "chat_group/%d/meeting_id", id)
+	mid := fetch.Field().ChatGroup_MeetingID(ctx, id)
 	if err := fetch.Err(); err != nil {
 		return 0, fmt.Errorf("fetching meeting_id for chat_group %d: %w", id, err)
 	}

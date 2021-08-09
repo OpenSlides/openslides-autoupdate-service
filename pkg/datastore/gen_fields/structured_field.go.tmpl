@@ -1,11 +1,11 @@
 func (f Fields) {{ .GoName }}Tmpl(ctx context.Context, {{ .Collection }}ID int) []string {
     var v []string
     f.fetch.FetchIfExist(ctx, &v, "{{ .FQField }}", {{ .Collection }}ID)
-    return v, nil
+    return v
 }
 
 func (f Fields) {{ .GoName }}(ctx context.Context, {{ .Collection }}ID int, {{ .TemplateAttr }} {{ .TemplateAttrType }}) {{ .GoType }} {
     var v {{ .GoType }}
     f.fetch.FetchIfExist(ctx, &v, "{{ .TemplateFQField }}", {{ .Collection }}ID, {{ .TemplateAttr }})
-    return v, nil
+    return v
 }

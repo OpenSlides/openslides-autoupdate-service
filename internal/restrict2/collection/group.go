@@ -21,7 +21,7 @@ func (g Group) Modes(mode string) FieldRestricter {
 }
 
 func (g Group) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, groupID int) (bool, error) {
-	meetingID := datastore.Int(ctx, fetch.FetchIfExist, "group/%d/meeting_id", groupID)
+	meetingID := fetch.Field().Group_MeetingID(ctx, groupID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("fetching meeting id of group %d: %w", groupID, err)
 	}

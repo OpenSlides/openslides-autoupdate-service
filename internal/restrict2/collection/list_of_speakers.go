@@ -35,7 +35,7 @@ func (los ListOfSpeakers) see(ctx context.Context, fetch *datastore.Fetcher, mpe
 }
 
 func (los ListOfSpeakers) meetingID(ctx context.Context, fetch *datastore.Fetcher, id int) (int, error) {
-	mid := datastore.Int(ctx, fetch.FetchIfExist, "list_of_speakers/%d/meeting_id", id)
+	mid := fetch.Field().ListOfSpeakers_MeetingID(ctx, id)
 	if err := fetch.Err(); err != nil {
 		return 0, fmt.Errorf("fetching meeting_id for the list of speakers %d: %w", id, err)
 	}

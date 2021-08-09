@@ -14,10 +14,6 @@ func allways(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Meeting
 	return true, nil
 }
 
-func never(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, elementID int) (bool, error) {
-	return false, nil
-}
-
 // Restricter returns a fieldRestricter for a restriction_mode.
 //
 // The FieldRestricter is a function that tells, if a user can see fields in
