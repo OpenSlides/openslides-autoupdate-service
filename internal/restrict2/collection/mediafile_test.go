@@ -93,6 +93,7 @@ func TestMediafileModeA(t *testing.T) {
 				meeting_id: 7
 				projection_ids: [4]
 			meeting/7/id: 7
+			projection/4/id: 4
 			`,
 			withPerms(7, perm.ProjectorCanSee),
 		),
