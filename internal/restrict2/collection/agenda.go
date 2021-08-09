@@ -39,7 +39,7 @@ func (a AgendaItem) see(ctx context.Context, fetch *datastore.Fetcher, mperms *p
 		return true, nil
 	}
 
-	isHidden := datastore.Bool(ctx, fetch.FetchIfExist, "agenda_item/%d/is_hidden", agendaID)
+	isHidden := fetch.Field().AgendaItem_IsHidden(ctx, agendaID)
 	isInternal := datastore.Bool(ctx, fetch.FetchIfExist, "agenda_item/%d/is_internal", agendaID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("fetching isHidden and isInternal: %w", err)

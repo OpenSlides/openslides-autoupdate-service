@@ -74,7 +74,6 @@ func parse(r io.Reader) ([]field, error) {
 			f.GoType = goType(modelField.Type)
 			f.Collection = goName(collectionName)
 			f.FQField = collectionName + "/%d/" + fieldName
-			f.Zero = goZeroValue(f.GoType)
 
 			if strings.Contains(fieldName, "$") {
 				f.TemplateAttr = "replacement"
@@ -106,7 +105,6 @@ type field struct {
 	GoType           string
 	Collection       string
 	FQField          string
-	Zero             string
 	TemplateFQField  string
 	TemplateAttr     string
 	TemplateAttrType string
@@ -215,24 +213,5 @@ func goType(modelsType string) string {
 
 	default:
 		panic(fmt.Sprintf("Unknown type %q", modelsType))
-	}
-}
-
-func goZeroValue(goType string) string {
-	switch goType {
-	case "int", "float32":
-		return "0"
-
-	case "string":
-		return `""`
-
-	case "bool":
-		return "false"
-
-	case "[]int", "json.RawMessage", "[]string":
-		return "nil"
-
-	default:
-		panic(fmt.Sprintf("Unknown type %q", goType))
 	}
 }

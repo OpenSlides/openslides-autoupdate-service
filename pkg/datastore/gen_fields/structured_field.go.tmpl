@@ -1,19 +1,11 @@
-func (f Fields) {{ .GoName }}Tmpl(ctx context.Context, {{ .Collection }}ID int) ([]string, error) {
+func (f Fields) {{ .GoName }}Tmpl(ctx context.Context, {{ .Collection }}ID int) []string {
     var v []string
     f.fetch.FetchIfExist(ctx, &v, "{{ .FQField }}", {{ .Collection }}ID)
-    if err := f.fetch.Err(); err != nil {
-        return nil, fmt.Errorf("fetching \"{{ .FQField }}\": %w", {{ .Collection }}ID, err)
-    }
-
     return v, nil
 }
 
-func (f Fields) {{ .GoName }}(ctx context.Context, {{ .Collection }}ID int, {{ .TemplateAttr }} {{ .TemplateAttrType }}) ({{ .GoType }}, error) {
+func (f Fields) {{ .GoName }}(ctx context.Context, {{ .Collection }}ID int, {{ .TemplateAttr }} {{ .TemplateAttrType }}) {{ .GoType }} {
     var v {{ .GoType }}
     f.fetch.FetchIfExist(ctx, &v, "{{ .TemplateFQField }}", {{ .Collection }}ID, {{ .TemplateAttr }})
-    if err := f.fetch.Err(); err != nil {
-        return {{ .Zero }}, fmt.Errorf("fetching \"{{ .TemplateFQField }}\": %w", {{ .Collection }}ID, {{ .TemplateAttr }}, err)
-    }
-
     return v, nil
 }
