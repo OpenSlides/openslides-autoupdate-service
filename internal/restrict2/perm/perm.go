@@ -24,7 +24,7 @@ func New(ctx context.Context, fetch *datastore.Fetcher, userID, meetingID int) (
 		return newAnonymous(ctx, fetch, meetingID)
 	}
 
-	groupIDs := datastore.Ints(ctx, fetch.FetchIfExist, "user/%d/group_$%d_ids", userID, meetingID)
+	groupIDs := fetch.Field().User_GroupIDs(ctx, userID, meetingID)
 	if err := fetch.Err(); err != nil {
 		return nil, fmt.Errorf("get group ids: %w", err)
 	}
@@ -54,7 +54,7 @@ func New(ctx context.Context, fetch *datastore.Fetcher, userID, meetingID int) (
 }
 
 func newAnonymous(ctx context.Context, fetch *datastore.Fetcher, meetingID int) (*Permission, error) {
-	enableAnonymous := datastore.Bool(ctx, fetch.FetchIfExist, "meeting/%d/enable_anonymous", meetingID)
+	enableAnonymous := fetch.Field().Meeting_EnableAnonymous(ctx, meetingID)
 	if err := fetch.Err(); err != nil {
 		return nil, fmt.Errorf("checking anonymous enabled: %w", err)
 	}
@@ -62,7 +62,7 @@ func newAnonymous(ctx context.Context, fetch *datastore.Fetcher, meetingID int) 
 		return nil, nil
 	}
 
-	defaultGroupID := datastore.Int(ctx, fetch.FetchIfExist, "meeting/%d/default_group_id", meetingID)
+	defaultGroupID := fetch.Field().Meeting_DefaultGroupID(ctx, meetingID)
 	if err := fetch.Err(); err != nil {
 		return nil, fmt.Errorf("getting default group: %w", err)
 	}
@@ -76,7 +76,7 @@ func newAnonymous(ctx context.Context, fetch *datastore.Fetcher, meetingID int) 
 }
 
 func isAdmin(ctx context.Context, fetch *datastore.Fetcher, meetingID int, groupIDs []int) (bool, error) {
-	adminGroupID := datastore.Int(ctx, fetch.FetchIfExist, "meeting/%d/admin_group_id", meetingID)
+	adminGroupID := fetch.Field().Meeting_AdminGroupID(ctx, meetingID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("check for admin group: %w", err)
 	}
@@ -94,7 +94,7 @@ func isAdmin(ctx context.Context, fetch *datastore.Fetcher, meetingID int, group
 func permissionsFromGroups(ctx context.Context, fetch *datastore.Fetcher, groupIDs ...int) (map[TPermission]bool, error) {
 	permissions := make(map[TPermission]bool)
 	for _, gid := range groupIDs {
-		perms := datastore.Strings(ctx, fetch.FetchIfExist, "group/%d/permissions", gid)
+		perms := fetch.Field().Group_Permissions(ctx, gid)
 		for _, perm := range perms {
 			permissions[TPermission(perm)] = true
 			for _, p := range derivatePerms[TPermission(perm)] {
@@ -149,10 +149,10 @@ func (p *Permission) InGroup(gid int) bool {
 }
 
 // HasOrganizationManagementLevel returns true if the user has the level or a higher level
-func HasOrganizationManagementLevel(ctx context.Context, fetch *datastore.Fetcher, uid int, level OrganizationManagementLevel) (bool, error) {
-	oml := datastore.String(ctx, fetch.FetchIfExist, "user/%d/organization_management_level", uid)
+func HasOrganizationManagementLevel(ctx context.Context, fetch *datastore.Fetcher, userID int, level OrganizationManagementLevel) (bool, error) {
+	oml := fetch.Field().User_OrganizationManagementLevel(ctx, userID)
 	if err := fetch.Err(); err != nil {
-		return false, fmt.Errorf("getting oml of user %d: %w", uid, err)
+		return false, fmt.Errorf("getting oml of user %d: %w", userID, err)
 	}
 
 	switch OrganizationManagementLevel(oml) {

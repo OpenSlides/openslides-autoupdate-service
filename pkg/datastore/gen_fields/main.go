@@ -72,13 +72,14 @@ func parse(r io.Reader) ([]field, error) {
 			f.Name = collectionName + "/" + fieldName
 			f.GoName = goName(collectionName) + "_" + goName(fieldName)
 			f.GoType = goType(modelField.Type)
-			f.Collection = goName(collectionName)
+			f.Collection = firstLower(goName(collectionName))
 			f.FQField = collectionName + "/%d/" + fieldName
 
 			if strings.Contains(fieldName, "$") {
 				f.TemplateAttr = "replacement"
 				f.TemplateAttrType = "string"
 				f.TemplateFQField = collectionName + "/%d/" + strings.Replace(fieldName, "$", "$%s", 1)
+				f.GoType = goType(modelField.Template.Fields.Type)
 
 				if modelField.Template.Replacement != "" {
 					f.TemplateAttr = modelField.Template.Replacement + "ID"
@@ -186,6 +187,10 @@ func goName(name string) string {
 
 	name = strings.ReplaceAll(name, "Id", "ID")
 	return name
+}
+
+func firstLower(s string) string {
+	return strings.ToLower(string(s[0])) + s[1:]
 }
 
 func goType(modelsType string) string {
