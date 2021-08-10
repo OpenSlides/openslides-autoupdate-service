@@ -24,12 +24,12 @@ func main() {
 	}
 	defer r.Close()
 
-	relations, restrictions, err := parse(r)
+	td, err := parse(r)
 	if err != nil {
 		log.Fatalf("Can not parse model definition: %v", err)
 	}
 
-	if err := writeFile(os.Stdout, relations, restrictions); err != nil {
+	if err := writeFile(os.Stdout, td); err != nil {
 		log.Fatalf("Can not write result: %v", err)
 	}
 }
@@ -45,20 +45,27 @@ func loadDefition() (io.ReadCloser, error) {
 	return r.Body, nil
 }
 
+type templateData struct {
+	RelationList        map[string]string
+	GenericRelationList map[string]string
+	Restrictions        map[string]string
+}
+
 // parse returns all relation-list and generic-relation-list fields and where
 // they point to.
-func parse(r io.Reader) (relations map[string]string, restrictions map[string]string, err error) {
+func parse(r io.Reader) (td templateData, err error) {
 	inData, err := models.Unmarshal(r)
 	if err != nil {
-		return nil, nil, fmt.Errorf("unmarshalling models.yml: %w", err)
+		return td, fmt.Errorf("unmarshalling models.yml: %w", err)
 	}
 
-	relations = make(map[string]string)
-	restrictions = make(map[string]string)
+	td.RelationList = make(map[string]string)
+	td.GenericRelationList = make(map[string]string)
+	td.Restrictions = make(map[string]string)
 	for modelName, model := range inData {
 		for fieldName, field := range model.Fields {
-			fqfield := fmt.Sprintf("%s/%s", modelName, fieldName)
-			restrictions[fqfield] = field.RestrictionMode()
+			collectionField := fmt.Sprintf("%s/%s", modelName, fieldName)
+			td.Restrictions[collectionField] = field.RestrictionMode()
 
 			r := field.Relation()
 
@@ -66,30 +73,34 @@ func parse(r io.Reader) (relations map[string]string, restrictions map[string]st
 				continue
 			}
 
-			collection := "*"
-			if _, ok := r.(*models.AttributeRelation); ok {
-				collection = r.ToCollections()[0].Collection
+			switch v := r.(type) {
+			case *models.AttributeRelation:
+				td.RelationList[collectionField] = v.ToCollections()[0].Collection + "/" + v.ToCollections()[0].ToField.Name
+
+			case *models.AttributeGenericRelation:
+				td.GenericRelationList[collectionField] = v.ToCollections()[0].ToField.Name
+
+			default:
+				return td, fmt.Errorf("unknown type %t for field.Relation", v)
 			}
 
-			relations[fqfield] = collection
 		}
 	}
 
-	return relations, restrictions, nil
+	return td, nil
 }
 
 const tpl = `// Code generated with models.txt DO NOT EDIT.
 package restrict
 
+var relationList = map[string]string{
+	{{- range $key, $value := .RelationList}}
+	"{{$key}}": "{{$value}}",
+	{{- end}}
+}
 
-// relationLists is list from all relation-list and generic-relation-list the
-// model where it directs to. generic-relation-list habe '*' als value. The list
-// contains also all template-fields that contain relation-list and
-// geneeric-relation-lists.
-//
-// The map is automaticly created from the models.yml file.
-var relationLists = map[string]string{
-	{{- range $key, $value := .Relations}}
+var genericRelationList = map[string]string{
+	{{- range $key, $value := .GenericRelationList}}
 	"{{$key}}": "{{$value}}",
 	{{- end}}
 }
@@ -102,21 +113,16 @@ var restrictionModes = map[string]string{
 }
 `
 
-func writeFile(w io.Writer, relations map[string]string, restrictions map[string]string) error {
+func writeFile(w io.Writer, td templateData) error {
 	t := template.New("t")
 	t, err := t.Parse(tpl)
 	if err != nil {
 		return fmt.Errorf("parsing template: %w", err)
 	}
 
-	data := map[string]interface{}{
-		"Relations":    relations,
-		"Restrictions": restrictions,
-	}
-
 	buf := new(bytes.Buffer)
 
-	if err := t.Execute(buf, data); err != nil {
+	if err := t.Execute(buf, td); err != nil {
 		return fmt.Errorf("writing template: %w", err)
 	}
 

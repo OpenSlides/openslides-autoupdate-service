@@ -46,6 +46,8 @@ func Collection(collection string) Restricter {
 		return Meeting{}
 	case "personal_note":
 		return PersonalNote{}
+	case "tag":
+		return Tag{}
 	default:
 		return nil
 	}

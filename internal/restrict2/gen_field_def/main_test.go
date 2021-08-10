@@ -47,18 +47,18 @@ func TestParse(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			yml := strings.ReplaceAll(tt.models, "\t", "  ")
-			got, _, err := parse(strings.NewReader(yml))
+			got, err := parse(strings.NewReader(yml))
 			if err != nil {
 				t.Fatalf("Got unexpected error: %v", err)
 			}
 
-			if len(got) != len(tt.expect) {
-				t.Errorf("Got %d fields, expected %d", len(got), len(tt.expect))
+			if len(got.RelationList) != len(tt.expect) {
+				t.Errorf("Got %d fields, expected %d", len(got.RelationList), len(tt.expect))
 			}
 
 			for k, v := range tt.expect {
-				if got[k] != v {
-					t.Errorf("got[%s] == `%s`, expected `%s`", k, got[k], v)
+				if got.RelationList[k] != v {
+					t.Errorf("got[%s] == `%s`, expected `%s`", k, got.RelationList[k], v)
 				}
 			}
 		})

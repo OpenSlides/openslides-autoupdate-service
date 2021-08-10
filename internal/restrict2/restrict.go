@@ -4,9 +4,12 @@ package restrict
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
@@ -30,6 +33,7 @@ func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[s
 
 		modeFunc, err := restrictMode(fqfield.Collection, fqfield.Field, isSuperAdmin)
 		if err != nil {
+			// Collection or field unknown. Handle it as no permission.
 			log.Printf("Warning: %v", err)
 			data[key] = nil
 			continue
@@ -53,10 +57,96 @@ func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[s
 			continue
 		}
 
+		if toCollectionfield, ok := relationList[fqfield.CollectionField()]; ok {
+			value, err := filterRelationList(ctx, fetch, mperms, toCollectionfield, isSuperAdmin, data[key])
+			if err != nil {
+				return fmt.Errorf("restrict relation-list ids of %q: %w", key, err)
+			}
+			data[key] = value
+		}
+
+		if toCollectionfield, ok := genericRelationList[fqfield.CollectionField()]; ok {
+			value, err := filterGenericRelationList(ctx, fetch, mperms, toCollectionfield, isSuperAdmin, data[key])
+			if err != nil {
+				return fmt.Errorf("restrict generic-relation-list ids of %q: %w", key, err)
+			}
+			data[key] = value
+		}
+
 		// TODO: Look for relation, relation-list, generic-* fields, also in templates, and remove items without permission.
 	}
 
 	return nil
+}
+
+func filterRelationList(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, toCollectionField string, isSuperAdmin bool, data []byte) ([]byte, error) {
+	var ids []int
+	if err := json.Unmarshal(data, &ids); err != nil {
+		return nil, fmt.Errorf("decoding ids: %w", err)
+	}
+
+	parts := strings.Split(toCollectionField, "/")
+
+	relationListModeFunc, err := restrictMode(parts[0], parts[1], isSuperAdmin)
+	if err != nil {
+		// Collection or field unknown. Handle it as no permission.
+		log.Printf("Warning: %v", err)
+		return nil, nil
+	}
+
+	var allowedIDs []int
+	for _, id := range ids {
+		allowed, err := relationListModeFunc(ctx, fetch, mperms, id)
+		if err != nil {
+			return nil, fmt.Errorf("checking %q for id %d: %w", toCollectionField, id, err)
+		}
+		if allowed {
+			allowedIDs = append(allowedIDs, id)
+		}
+	}
+
+	encoded, err := json.Marshal(allowedIDs)
+	if err != nil {
+		return nil, fmt.Errorf("encoding ids: %w", err)
+	}
+	return encoded, nil
+}
+
+func filterGenericRelationList(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, toCollectionField string, isSuperAdmin bool, data []byte) ([]byte, error) {
+	var genericIDs []string
+	if err := json.Unmarshal(data, &genericIDs); err != nil {
+		return nil, fmt.Errorf("decoding ids: %w", err)
+	}
+
+	var allowedIDs []string
+	for _, genericID := range genericIDs {
+		parts := strings.Split(genericID, "/")
+		id, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return nil, fmt.Errorf("invalid generic id: %w", err)
+		}
+
+		relationListModeFunc, err := restrictMode(parts[0], toCollectionField, isSuperAdmin)
+		if err != nil {
+			// Collection or field unknown. Handle it as no permission.
+			fmt.Printf("Warning: %v", err)
+			return nil, nil
+		}
+
+		allowed, err := relationListModeFunc(ctx, fetch, mperms, id)
+		if err != nil {
+			return nil, fmt.Errorf("checking %q for id %d: %w", toCollectionField, id, err)
+		}
+		if allowed {
+			allowedIDs = append(allowedIDs, genericID)
+		}
+	}
+
+	encoded, err := json.Marshal(allowedIDs)
+	if err != nil {
+		return nil, fmt.Errorf("encoding ids: %w", err)
+	}
+	return encoded, nil
 }
 
 // restrictMode returns the field restricter function to use.

@@ -11,7 +11,9 @@ import (
 
 func TestRestrict(t *testing.T) {
 	fetch := datastore.NewFetcher(dsmock.Stub(dsmock.YAMLData(`---
-	meeting/1/id: 1
+	meeting/1/enable_anonymous: true
+	meeting/2/enable_anonymous: false
+
 	user/1:
 		group_$_ids: ["1"]
 		group_$1_ids: [10]
@@ -23,14 +25,21 @@ func TestRestrict(t *testing.T) {
 			meeting_id: 1
 		10:
 			meeting_id: 2
+	tag:
+		1:
+			meeting_id: 1
+		2:
+			meeting_id: 2
 	`)))
 
 	data := map[string]string{
 		"agenda_item/1/item_number":   `"numberOne"`,
 		"agenda_item/1/unknown_field": `"numberOne"`,
+		"agenda_item/1/tag_ids":       `[1,2]`,
 		"agenda_item/404/item_number": `"numberA"`,
 		"agenda_item/10/item_number":  `"numberB"`,
 		"unknown_collection/1/field":  "404",
+		"tag/1/tagged_ids":            `["agenda_item/1","agenda_item/10"]`,
 	}
 
 	got := make(map[string][]byte, len(data))
@@ -62,6 +71,14 @@ func TestRestrict(t *testing.T) {
 
 	if got["unknown_collection/1/field"] != nil {
 		t.Errorf("unknown_collection/1/field was not removed")
+	}
+
+	if got := string(got["tag/1/tagged_ids"]); got != `["agenda_item/1"]` {
+		t.Errorf("tag/1/tagged_ids was restricted to %q, expedted %q", got, `["agenda_item/1"]`)
+	}
+
+	if got := string(got["agenda_item/1/tag_ids"]); got != `[1]` {
+		t.Errorf("agenda_item/1/tag_ids was restricted to %q, expedted %q", got, `[1]`)
 	}
 }
 
