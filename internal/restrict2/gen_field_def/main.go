@@ -46,7 +46,9 @@ func loadDefition() (io.ReadCloser, error) {
 }
 
 type templateData struct {
+	Relation            map[string]string
 	RelationList        map[string]string
+	GenericRelation     map[string]string
 	GenericRelationList map[string]string
 	Restrictions        map[string]string
 }
@@ -59,7 +61,9 @@ func parse(r io.Reader) (td templateData, err error) {
 		return td, fmt.Errorf("unmarshalling models.yml: %w", err)
 	}
 
+	td.Relation = make(map[string]string)
 	td.RelationList = make(map[string]string)
+	td.GenericRelation = make(map[string]string)
 	td.GenericRelationList = make(map[string]string)
 	td.Restrictions = make(map[string]string)
 	for modelName, model := range inData {
@@ -69,16 +73,26 @@ func parse(r io.Reader) (td templateData, err error) {
 
 			r := field.Relation()
 
-			if r == nil || !r.List() {
+			if r == nil {
 				continue
 			}
 
 			switch v := r.(type) {
 			case *models.AttributeRelation:
-				td.RelationList[collectionField] = v.ToCollections()[0].Collection + "/" + v.ToCollections()[0].ToField.Name
+				to := v.ToCollections()[0].Collection + "/" + v.ToCollections()[0].ToField.Name
+				if r.List() {
+					td.RelationList[collectionField] = to
+				} else {
+					td.Relation[collectionField] = to
+				}
 
 			case *models.AttributeGenericRelation:
-				td.GenericRelationList[collectionField] = v.ToCollections()[0].ToField.Name
+				to := v.ToCollections()[0].ToField.Name
+				if r.List() {
+					td.GenericRelationList[collectionField] = to
+				} else {
+					td.GenericRelation[collectionField] = to
+				}
 
 			default:
 				return td, fmt.Errorf("unknown type %t for field.Relation", v)
@@ -93,13 +107,25 @@ func parse(r io.Reader) (td templateData, err error) {
 const tpl = `// Code generated with models.txt DO NOT EDIT.
 package restrict
 
-var relationList = map[string]string{
+var relationFields = map[string]string{
+	{{- range $key, $value := .Relation}}
+	"{{$key}}": "{{$value}}",
+	{{- end}}
+}
+
+var relationListFields = map[string]string{
 	{{- range $key, $value := .RelationList}}
 	"{{$key}}": "{{$value}}",
 	{{- end}}
 }
 
-var genericRelationList = map[string]string{
+var genericRelationFields = map[string]string{
+	{{- range $key, $value := .GenericRelation}}
+	"{{$key}}": "{{$value}}",
+	{{- end}}
+}
+
+var genericRelationListFields = map[string]string{
 	{{- range $key, $value := .GenericRelationList}}
 	"{{$key}}": "{{$value}}",
 	{{- end}}

@@ -57,7 +57,28 @@ func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[s
 			continue
 		}
 
-		if toCollectionfield, ok := relationList[fqfield.CollectionField()]; ok {
+		if toCollectionfield, ok := relationFields[fqfield.CollectionField()]; ok {
+			var id int
+			if err := json.Unmarshal(data[key], &id); err != nil {
+				return fmt.Errorf("decoding %q: %w", key, err)
+			}
+
+			parts := strings.Split(toCollectionfield, "/")
+			modeFunc, err := restrictMode(parts[0], parts[1], isSuperAdmin)
+			if err != nil {
+				return fmt.Errorf("getting restict func: %w", err)
+			}
+
+			cansee, err := modeFunc(ctx, fetch, mperms, id)
+			if err != nil {
+				return fmt.Errorf("checking can see: %w", err)
+			}
+			if !cansee {
+				data[key] = nil
+			}
+		}
+
+		if toCollectionfield, ok := relationListFields[fqfield.CollectionField()]; ok {
 			value, err := filterRelationList(ctx, fetch, mperms, toCollectionfield, isSuperAdmin, data[key])
 			if err != nil {
 				return fmt.Errorf("restrict relation-list ids of %q: %w", key, err)
@@ -65,7 +86,33 @@ func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[s
 			data[key] = value
 		}
 
-		if toCollectionfield, ok := genericRelationList[fqfield.CollectionField()]; ok {
+		if toCollectionfield, ok := genericRelationFields[fqfield.CollectionField()]; ok {
+			var genericID string
+			if err := json.Unmarshal(data[key], &genericID); err != nil {
+				return fmt.Errorf("decoding %q: %w", key, err)
+			}
+
+			parts := strings.Split(genericID, "/")
+			modeFunc, err := restrictMode(toCollectionfield, parts[2], isSuperAdmin)
+			if err != nil {
+				return fmt.Errorf("getting restict func: %w", err)
+			}
+
+			id, err := strconv.Atoi(parts[0])
+			if err != nil {
+				return fmt.Errorf("decoding genericID: %w", err)
+			}
+
+			cansee, err := modeFunc(ctx, fetch, mperms, id)
+			if err != nil {
+				return fmt.Errorf("checking can see: %w", err)
+			}
+			if !cansee {
+				data[key] = nil
+			}
+		}
+
+		if toCollectionfield, ok := genericRelationListFields[fqfield.CollectionField()]; ok {
 			value, err := filterGenericRelationList(ctx, fetch, mperms, toCollectionfield, isSuperAdmin, data[key])
 			if err != nil {
 				return fmt.Errorf("restrict generic-relation-list ids of %q: %w", key, err)
@@ -73,7 +120,7 @@ func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[s
 			data[key] = value
 		}
 
-		// TODO: Look for relation, relation-list, generic-* fields, also in templates, and remove items without permission.
+		// TODO: templates
 	}
 
 	return nil
