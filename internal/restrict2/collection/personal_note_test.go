@@ -12,17 +12,21 @@ func TestPersonalNoteModeA(t *testing.T) {
 
 	testCase(
 		"own note",
+		t,
+		p.Modes("A"),
 		true,
 		ds,
 		withRequestUser(1),
-	).test(t, p.Modes("A"))
+	)
 
 	testCase(
 		"Other note",
+		t,
+		p.Modes("A"),
 		false,
 		ds,
 		withRequestUser(2),
-	).test(t, p.Modes("A"))
+	)
 }
 
 func TestPersonalNoteSuperAdminModeA(t *testing.T) {
@@ -31,8 +35,10 @@ func TestPersonalNoteSuperAdminModeA(t *testing.T) {
 
 	testCase(
 		"Other note",
+		t,
+		p.SuperAdmin("A"),
 		false,
 		ds,
 		withRequestUser(2),
-	).test(t, p.SuperAdmin("A"))
+	)
 }

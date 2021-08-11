@@ -11,28 +11,34 @@ func TestGroupModeA(t *testing.T) {
 
 	testCase(
 		"no perms",
+		t,
+		g.Modes("A"),
 		false,
 		`---
 		group/1/meeting_id: 1
 		meeting/1/id: 1
 		`,
-	).test(t, g.Modes("A"))
+	)
 
 	testCase(
 		"anonymous enabled",
+		t,
+		g.Modes("A"),
 		true,
 		`---
 		group/1/meeting_id: 1
 		meeting/1/enable_anonymous: true
 		`,
-	).test(t, g.Modes("A"))
+	)
 
 	testCase(
 		"In meeting",
+		t,
+		g.Modes("A"),
 		true,
 		`---
 		group/1/meeting_id: 1
 		meeting/1/user_ids: [1]
 		`,
-	).test(t, g.Modes("A"))
+	)
 }

@@ -10,42 +10,52 @@ import (
 func TestMeetingModeA(t *testing.T) {
 	var m collection.Meeting
 
-	testCase("without perms", true, "meeting/1/id: 1").test(t, m.Modes("A"))
+	testCase(
+		"without perms",
+		t,
+		m.Modes("A"),
+		true,
+		"meeting/1/id: 1",
+	)
 }
 
 func TestMeetingModeB(t *testing.T) {
 	var m collection.Meeting
 
-	for _, tt := range []testData{
-		testCase(
-			"No perms",
-			false,
-			`meeting/1/id: 1`,
-		),
+	testCase(
+		"No perms",
+		t,
+		m.Modes("B"),
+		false,
+		`meeting/1/id: 1`,
+	)
 
-		testCase(
-			"anonymous enabled",
-			true,
-			`meeting/1/enable_anonymous: true`,
-		),
+	testCase(
+		"anonymous enabled",
+		t,
+		m.Modes("B"),
+		true,
+		`meeting/1/enable_anonymous: true`,
+	)
 
-		testCase(
-			"user in meeting",
-			true,
-			"meeting/1/user_ids: [1]",
-		),
+	testCase(
+		"user in meeting",
+		t,
+		m.Modes("B"),
+		true,
+		"meeting/1/user_ids: [1]",
+	)
 
-		testCase(
-			"CML can manage",
-			true,
-			`---
+	testCase(
+		"CML can manage",
+		t,
+		m.Modes("B"),
+		true,
+		`---
 			meeting/1/committee_id: 4
 			user/1/committee_$4_management_level: can_manage
 			`,
-		),
-	} {
-		tt.test(t, m.Modes("B"))
-	}
+	)
 }
 
 func TestMeetingModeC(t *testing.T) {
@@ -53,16 +63,20 @@ func TestMeetingModeC(t *testing.T) {
 
 	testCase(
 		"No perms",
+		t,
+		m.Modes("C"),
 		false,
 		`meeting/1/id: 1`,
-	).test(t, m.Modes("C"))
+	)
 
 	testCase(
 		"See frontpage",
+		t,
+		m.Modes("C"),
 		true,
 		`meeting/1/id: 1`,
 		withPerms(1, perm.MeetingCanSeeFrontpage),
-	).test(t, m.Modes("C"))
+	)
 }
 
 func TestMeetingModeD(t *testing.T) {
@@ -70,14 +84,18 @@ func TestMeetingModeD(t *testing.T) {
 
 	testCase(
 		"No perms",
+		t,
+		m.Modes("D"),
 		false,
 		`meeting/1/id: 1`,
-	).test(t, m.Modes("D"))
+	)
 
 	testCase(
 		"See frontpage",
+		t,
+		m.Modes("D"),
 		true,
 		`meeting/1/id: 1`,
 		withPerms(1, perm.MeetingCanSeeLivestream),
-	).test(t, m.Modes("D"))
+	)
 }

@@ -11,19 +11,23 @@ func TestTagModeA(t *testing.T) {
 
 	testCase(
 		"see meeting",
+		t,
+		tg.Modes("A"),
 		true,
 		`---
 		tag/1/meeting_id: 5
 		meeting/5/enable_anonymous: true
 		`,
-	).test(t, tg.Modes("A"))
+	)
 
 	testCase(
 		"can not see meeting",
+		t,
+		tg.Modes("A"),
 		false,
 		`---
 		tag/1/meeting_id: 5
 		meeting/5/enable_anonymous: false
 		`,
-	).test(t, tg.Modes("A"))
+	)
 }

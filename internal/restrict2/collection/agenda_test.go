@@ -10,149 +10,172 @@ import (
 func TestAgendaModeA(t *testing.T) {
 	var a collection.AgendaItem
 
-	for _, tt := range []testData{
-		testCase(
-			"No permission",
-			false,
-			`---
-			agenda_item/1/meeting_id: 1
-			`,
-		),
-		testCase(
-			"manager",
-			true,
-			`---
-			agenda_item/1/meeting_id: 1
-			`,
-			withPerms(1, perm.AgendaItemCanManage),
-		),
+	testCase(
+		"No permission",
+		t,
+		a.Modes("A"),
+		false,
+		`---
+		agenda_item/1/meeting_id: 1
+		`,
+	)
 
-		testCase(
-			"Can see internal with hidden",
-			false,
-			`---
-			agenda_item/1:
-				meeting_id: 1
-				is_hidden: true
-			`,
-			withPerms(1, perm.AgendaItemCanSeeInternal),
-		),
+	testCase(
+		"manager",
+		t,
+		a.Modes("A"),
+		true,
+		`---
+		agenda_item/1/meeting_id: 1
+		`,
+		withPerms(1, perm.AgendaItemCanManage),
+	)
 
-		testCase(
-			"Can see internal not hidden",
-			true,
-			`---
-			agenda_item/1:
-				meeting_id: 1
-				is_hidden: false
-			`,
-			withPerms(1, perm.AgendaItemCanSeeInternal),
-		),
+	testCase(
+		"Can see internal with hidden",
+		t,
+		a.Modes("A"),
+		false,
+		`---
+		agenda_item/1:
+			meeting_id: 1
+			is_hidden: true
+		`,
+		withPerms(1, perm.AgendaItemCanSeeInternal),
+	)
 
-		testCase(
-			"Can see with hidden and internal",
-			false,
-			`---
-			agenda_item/1:
-				meeting_id: 1
-				is_hidden: true
-				is_internal: true
-			`,
-			withPerms(1, perm.AgendaItemCanSee),
-		),
+	testCase(
+		"Can see internal not hidden",
+		t,
+		a.Modes("A"),
+		true,
+		`---
+		agenda_item/1:
+			meeting_id: 1
+			is_hidden: false
+		`,
+		withPerms(1, perm.AgendaItemCanSeeInternal),
+	)
 
-		testCase(
-			"Can see not hidden but internal",
-			false,
-			`---
-			agenda_item/1:
-				meeting_id: 1
-				is_hidden: false
-				is_internal: true
-			`,
-			withPerms(1, perm.AgendaItemCanSee),
-		),
+	testCase(
+		"Can see with hidden and internal",
+		t,
+		a.Modes("A"),
+		false,
+		`---
+		agenda_item/1:
+			meeting_id: 1
+			is_hidden: true
+			is_internal: true
+		`,
+		withPerms(1, perm.AgendaItemCanSee),
+	)
 
-		testCase(
-			"Can see with hidden but not internal",
-			false,
-			`---
-			agenda_item/1:
-				meeting_id: 1
-				is_hidden: true
-				is_internal: false
-			`,
-			withPerms(1, perm.AgendaItemCanSee),
-		),
+	testCase(
+		"Can see not hidden but internal",
+		t,
+		a.Modes("A"),
+		false,
+		`---
+		agenda_item/1:
+			meeting_id: 1
+			is_hidden: false
+			is_internal: true
+		`,
+		withPerms(1, perm.AgendaItemCanSee),
+	)
 
-		testCase(
-			"Can see not hidden and not internal",
-			true,
-			`---
-			agenda_item/1:
-				meeting_id: 1
-				is_hidden: false
-				is_internal: false
-			`,
-			withPerms(1, perm.AgendaItemCanSee),
-		),
-	} {
-		tt.test(t, a.Modes("A"))
-	}
+	testCase(
+		"Can see with hidden but not internal",
+		t,
+		a.Modes("A"),
+		false,
+		`---
+		agenda_item/1:
+			meeting_id: 1
+			is_hidden: true
+			is_internal: false
+		`,
+		withPerms(1, perm.AgendaItemCanSee),
+	)
+
+	testCase(
+		"Can see not hidden and not internal",
+		t,
+		a.Modes("A"),
+		true,
+		`---
+		agenda_item/1:
+			meeting_id: 1
+			is_hidden: false
+			is_internal: false
+		`,
+		withPerms(1, perm.AgendaItemCanSee),
+	)
 }
 
 func TestAgendaModeB(t *testing.T) {
 	var a collection.AgendaItem
-	r := a.Modes("B")
 	ds := `---
 	agenda_item/1/meeting_id: 1
 	`
 
 	testCase(
 		"Can see internal",
+		t,
+		a.Modes("B"),
 		true,
 		ds,
 		withPerms(1, perm.AgendaItemCanSeeInternal),
-	).test(t, r)
+	)
 
 	testCase(
 		"Can not see internal",
+		t,
+		a.Modes("B"),
 		false,
 		ds,
-	).test(t, r)
+	)
 }
 
 func TestAgendaModeC(t *testing.T) {
 	var a collection.AgendaItem
-	r := a.Modes("C")
 	ds := `---
 	agenda_item/1/meeting_id: 1
 	`
 
 	testCase(
 		"Can see internal",
+		t,
+		a.Modes("C"),
 		false,
 		ds,
 		withPerms(1, perm.AgendaItemCanSeeInternal),
-	).test(t, r)
+	)
 
 	testCase(
 		"Can see",
+		t,
+		a.Modes("C"),
 		false,
 		ds,
 		withPerms(1, perm.AgendaItemCanSee),
-	).test(t, r)
+	)
 
 	testCase(
 		"Can manage",
+		t,
+		a.Modes("C"),
 		true,
 		ds,
 		withPerms(1, perm.AgendaItemCanManage),
-	).test(t, r)
+	)
 
 	testCase(
 		"No perm",
+		t,
+		a.Modes("C"),
 		false,
 		ds,
-	).test(t, r)
+	)
 }

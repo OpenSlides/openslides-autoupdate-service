@@ -27,13 +27,13 @@ func NewMeetingPermission(fetch *datastore.Fetcher, uid int) *MeetingPermission 
 }
 
 // Meeting returns the permission object for the meeting.
-func (p MeetingPermission) Meeting(ctx context.Context, id int) (*Permission, error) {
-	perms, ok := p.perms[id]
+func (p MeetingPermission) Meeting(ctx context.Context, meetingID int) (*Permission, error) {
+	perms, ok := p.perms[meetingID]
 	if ok {
 		return perms, nil
 	}
 
-	perms, err := New(ctx, p.fetch, p.uid, id)
+	perms, err := New(ctx, p.fetch, p.uid, meetingID)
 	if err != nil {
 		return nil, err
 	}

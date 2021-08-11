@@ -18,14 +18,16 @@ type testData struct {
 	data          map[string]string
 	expect        bool
 	requestUserID int
+	elementID     int
 }
 
-func testCase(name string, expect bool, yaml string, op ...testCaseOption) testData {
+func testCase(name string, t *testing.T, f collection.FieldRestricter, expect bool, yaml string, op ...testCaseOption) {
 	td := testData{
 		name:          name,
 		expect:        expect,
 		data:          dsmock.YAMLData(yaml),
 		requestUserID: 1,
+		elementID:     1,
 	}
 
 	for _, o := range op {
@@ -34,7 +36,7 @@ func testCase(name string, expect bool, yaml string, op ...testCaseOption) testD
 
 	td.data[fmt.Sprintf("user/%d/id", td.requestUserID)] = strconv.Itoa(td.requestUserID)
 
-	return td
+	td.test(t, f)
 }
 
 func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
@@ -44,7 +46,7 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 		fetch := datastore.NewFetcher(dsmock.Stub(tt.data))
 		perms := perm.NewMeetingPermission(fetch, tt.requestUserID)
 
-		got, err := f(context.Background(), fetch, perms, 1)
+		got, err := f(context.Background(), fetch, perms, tt.elementID)
 
 		if err != nil {
 			t.Fatalf("See returned unexpected error: %v", err)
@@ -82,6 +84,12 @@ func withPerms(meetingID int, perms ...perm.TPermission) testCaseOption {
 func withRequestUser(userID int) testCaseOption {
 	return func(td *testData) {
 		td.requestUserID = userID
+	}
+}
+
+func withElementID(id int) testCaseOption {
+	return func(td *testData) {
+		td.elementID = id
 	}
 }
 

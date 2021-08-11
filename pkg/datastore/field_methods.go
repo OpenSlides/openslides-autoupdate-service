@@ -4,6 +4,8 @@ package datastore
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strconv"
 )
 
 func (f Fields) AgendaItem_ChildIDs(ctx context.Context, agendaItemID int) []int {
@@ -3180,10 +3182,20 @@ func (f Fields) Topic_Title(ctx context.Context, topicID int) string {
 	return v
 }
 
-func (f Fields) User_AboutMeTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_AboutMeTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/about_me_$", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_AboutMe(ctx context.Context, userID int, meetingID int) string {
@@ -3192,10 +3204,20 @@ func (f Fields) User_AboutMe(ctx context.Context, userID int, meetingID int) str
 	return v
 }
 
-func (f Fields) User_AssignmentCandidateIDsTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_AssignmentCandidateIDsTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/assignment_candidate_$_ids", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_AssignmentCandidateIDs(ctx context.Context, userID int, meetingID int) []int {
@@ -3210,10 +3232,20 @@ func (f Fields) User_CanChangeOwnPassword(ctx context.Context, userID int) bool 
 	return v
 }
 
-func (f Fields) User_CommentTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_CommentTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/comment_$", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_Comment(ctx context.Context, userID int, meetingID int) string {
@@ -3228,10 +3260,20 @@ func (f Fields) User_CommitteeIDs(ctx context.Context, userID int) []int {
 	return v
 }
 
-func (f Fields) User_CommitteeManagementLevelTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_CommitteeManagementLevelTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/committee_$_management_level", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_CommitteeManagementLevel(ctx context.Context, userID int, committeeID int) string {
@@ -3282,10 +3324,20 @@ func (f Fields) User_Gender(ctx context.Context, userID int) string {
 	return v
 }
 
-func (f Fields) User_GroupIDsTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_GroupIDsTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/group_$_ids", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_GroupIDs(ctx context.Context, userID int, meetingID int) []int {
@@ -3342,10 +3394,20 @@ func (f Fields) User_MeetingIDs(ctx context.Context, userID int) []int {
 	return v
 }
 
-func (f Fields) User_NumberTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_NumberTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/number_$", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_Number(ctx context.Context, userID int, meetingID int) string {
@@ -3354,10 +3416,20 @@ func (f Fields) User_Number(ctx context.Context, userID int, meetingID int) stri
 	return v
 }
 
-func (f Fields) User_OptionIDsTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_OptionIDsTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/option_$_ids", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_OptionIDs(ctx context.Context, userID int, meetingID int) []int {
@@ -3378,10 +3450,20 @@ func (f Fields) User_Password(ctx context.Context, userID int) string {
 	return v
 }
 
-func (f Fields) User_PersonalNoteIDsTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_PersonalNoteIDsTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/personal_note_$_ids", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_PersonalNoteIDs(ctx context.Context, userID int, meetingID int) []int {
@@ -3390,10 +3472,20 @@ func (f Fields) User_PersonalNoteIDs(ctx context.Context, userID int, meetingID 
 	return v
 }
 
-func (f Fields) User_PollVotedIDsTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_PollVotedIDsTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/poll_voted_$_ids", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_PollVotedIDs(ctx context.Context, userID int, meetingID int) []int {
@@ -3402,10 +3494,20 @@ func (f Fields) User_PollVotedIDs(ctx context.Context, userID int, meetingID int
 	return v
 }
 
-func (f Fields) User_ProjectionIDsTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_ProjectionIDsTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/projection_$_ids", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_ProjectionIDs(ctx context.Context, userID int, meetingID int) []int {
@@ -3414,10 +3516,20 @@ func (f Fields) User_ProjectionIDs(ctx context.Context, userID int, meetingID in
 	return v
 }
 
-func (f Fields) User_SpeakerIDsTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_SpeakerIDsTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/speaker_$_ids", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_SpeakerIDs(ctx context.Context, userID int, meetingID int) []int {
@@ -3426,10 +3538,20 @@ func (f Fields) User_SpeakerIDs(ctx context.Context, userID int, meetingID int) 
 	return v
 }
 
-func (f Fields) User_StructureLevelTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_StructureLevelTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/structure_level_$", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_StructureLevel(ctx context.Context, userID int, meetingID int) string {
@@ -3438,10 +3560,20 @@ func (f Fields) User_StructureLevel(ctx context.Context, userID int, meetingID i
 	return v
 }
 
-func (f Fields) User_SubmittedMotionIDsTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_SubmittedMotionIDsTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/submitted_motion_$_ids", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_SubmittedMotionIDs(ctx context.Context, userID int, meetingID int) []int {
@@ -3450,10 +3582,20 @@ func (f Fields) User_SubmittedMotionIDs(ctx context.Context, userID int, meeting
 	return v
 }
 
-func (f Fields) User_SupportedMotionIDsTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_SupportedMotionIDsTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/supported_motion_$_ids", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_SupportedMotionIDs(ctx context.Context, userID int, meetingID int) []int {
@@ -3474,10 +3616,20 @@ func (f Fields) User_Username(ctx context.Context, userID int) string {
 	return v
 }
 
-func (f Fields) User_VoteDelegatedToIDTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_VoteDelegatedToIDTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/vote_delegated_$_to_id", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_VoteDelegatedToID(ctx context.Context, userID int, meetingID int) int {
@@ -3486,10 +3638,20 @@ func (f Fields) User_VoteDelegatedToID(ctx context.Context, userID int, meetingI
 	return v
 }
 
-func (f Fields) User_VoteDelegatedVoteIDsTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_VoteDelegatedVoteIDsTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/vote_delegated_vote_$_ids", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_VoteDelegatedVoteIDs(ctx context.Context, userID int, meetingID int) []int {
@@ -3498,10 +3660,20 @@ func (f Fields) User_VoteDelegatedVoteIDs(ctx context.Context, userID int, meeti
 	return v
 }
 
-func (f Fields) User_VoteDelegationsFromIDsTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_VoteDelegationsFromIDsTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/vote_delegations_$_from_ids", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_VoteDelegationsFromIDs(ctx context.Context, userID int, meetingID int) []int {
@@ -3510,10 +3682,20 @@ func (f Fields) User_VoteDelegationsFromIDs(ctx context.Context, userID int, mee
 	return v
 }
 
-func (f Fields) User_VoteIDsTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_VoteIDsTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/vote_$_ids", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_VoteIDs(ctx context.Context, userID int, meetingID int) []int {
@@ -3522,10 +3704,20 @@ func (f Fields) User_VoteIDs(ctx context.Context, userID int, meetingID int) []i
 	return v
 }
 
-func (f Fields) User_VoteWeightTmpl(ctx context.Context, userID int) []string {
+func (f Fields) User_VoteWeightTmpl(ctx context.Context, userID int) []int {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/vote_weight_$", userID)
-	return v
+
+	var ints []int
+	for _, e := range v {
+		i, err := strconv.Atoi(e)
+		if err != nil {
+			f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+			return nil
+		}
+		ints = append(ints, i)
+	}
+	return ints
 }
 
 func (f Fields) User_VoteWeight(ctx context.Context, userID int, meetingID int) int {

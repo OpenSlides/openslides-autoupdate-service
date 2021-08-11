@@ -15,14 +15,18 @@ func TestListOfSpeakersModeA(t *testing.T) {
 
 	testCase(
 		"Can see internal",
+		t,
+		los.Modes("A"),
 		true,
 		ds,
 		withPerms(1, perm.ListOfSpeakersCanSee),
-	).test(t, los.Modes("A"))
+	)
 
 	testCase(
 		"Can not see internal",
+		t,
+		los.Modes("A"),
 		false,
 		ds,
-	).test(t, los.Modes("A"))
+	)
 }

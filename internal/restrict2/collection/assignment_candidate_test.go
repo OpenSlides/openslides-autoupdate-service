@@ -21,21 +21,27 @@ func TestAssignmentCandidateModeA(t *testing.T) {
 
 	testCase(
 		"Can see all assignments",
+		t,
+		a.Modes("A"),
 		true,
 		ds,
 		withPerms(1, perm.AssignmentCanSee),
-	).test(t, a.Modes("A"))
+	)
 
 	testCase(
 		"Can only see the linked assignment",
+		t,
+		a.Modes("A"),
 		true,
 		ds,
 		withPerms(1, perm.ListOfSpeakersCanSee),
-	).test(t, a.Modes("A"))
+	)
 
 	testCase(
 		"No Perm",
+		t,
+		a.Modes("A"),
 		false,
 		ds,
-	).test(t, a.Modes("A"))
+	)
 }
