@@ -57,7 +57,8 @@ func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[s
 			continue
 		}
 
-		if toCollectionfield, ok := relationFields[fqfield.CollectionField()]; ok {
+		// Relation fields
+		if toCollectionfield, ok := relationFields[templateKeyPrefix(fqfield.CollectionField())]; ok {
 			var id int
 			if err := json.Unmarshal(data[key], &id); err != nil {
 				return fmt.Errorf("decoding %q: %w", key, err)
@@ -78,7 +79,9 @@ func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[s
 			}
 		}
 
-		if toCollectionfield, ok := relationListFields[fqfield.CollectionField()]; ok {
+		foo := templateKeyPrefix(fqfield.CollectionField())
+		// Relation List fields
+		if toCollectionfield, ok := relationListFields[foo]; ok {
 			value, err := filterRelationList(ctx, fetch, mperms, toCollectionfield, isSuperAdmin, data[key])
 			if err != nil {
 				return fmt.Errorf("restrict relation-list ids of %q: %w", key, err)
@@ -86,7 +89,8 @@ func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[s
 			data[key] = value
 		}
 
-		if toCollectionfield, ok := genericRelationFields[fqfield.CollectionField()]; ok {
+		// Generic Relation fields
+		if toCollectionfield, ok := genericRelationFields[templateKeyPrefix(fqfield.CollectionField())]; ok {
 			var genericID string
 			if err := json.Unmarshal(data[key], &genericID); err != nil {
 				return fmt.Errorf("decoding %q: %w", key, err)
@@ -112,18 +116,29 @@ func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[s
 			}
 		}
 
-		if toCollectionfield, ok := genericRelationListFields[fqfield.CollectionField()]; ok {
+		// Generic Relation List fields
+		if toCollectionfield, ok := genericRelationListFields[templateKeyPrefix(fqfield.CollectionField())]; ok {
 			value, err := filterGenericRelationList(ctx, fetch, mperms, toCollectionfield, isSuperAdmin, data[key])
 			if err != nil {
 				return fmt.Errorf("restrict generic-relation-list ids of %q: %w", key, err)
 			}
 			data[key] = value
 		}
-
-		// TODO: templates
 	}
 
 	return nil
+}
+
+// templateKeyPrefix returns the index of the field list list. For template fields this is
+// the key without the replacement.
+func templateKeyPrefix(collectionField string) string {
+	i := strings.IndexByte(collectionField, '$')
+	if i < 0 || i == len(collectionField)-1 || collectionField[i+1] == '_' {
+		// Normal field or $ at the end or $_
+		return collectionField
+	}
+
+	return collectionField[:i+1]
 }
 
 func filterRelationList(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, toCollectionField string, isSuperAdmin bool, data []byte) ([]byte, error) {
@@ -204,10 +219,10 @@ func restrictMode(collectionName, fieldName string, isSuperAdmin bool) (collecti
 			// Superadmins can see unknown collections.
 			return collection.Allways, nil
 		}
-		return nil, fmt.Errorf("collection %q is not implemented", collectionName)
+		return nil, fmt.Errorf("collection %q is not implemented, maybe run go generate ./... to fetch all fields from the models.yml", collectionName)
 	}
 
-	fieldMode, ok := restrictionModes[collectionName+"/"+fieldName]
+	fieldMode, ok := restrictionModes[templateKeyPrefix(collectionName+"/"+fieldName)]
 	if !ok {
 		return nil, fmt.Errorf("fqfield %q is unknown, maybe run go generate ./... to fetch all fields from the models.yml", collectionName+"/"+fieldName)
 	}

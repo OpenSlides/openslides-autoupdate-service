@@ -17,9 +17,15 @@ func TestRestrict(t *testing.T) {
 	user/1:
 		group_$_ids: ["1"]
 		group_$1_ids: [10]
-	group/10:
-		permissions:
-		- agenda_item.can_manage
+	group:
+		1:
+			meeting_id: 1
+		2:
+			meeting_id: 2
+		10:
+			meeting_id: 1
+			permissions:
+			- agenda_item.can_manage
 	agenda_item:
 		1:
 			meeting_id: 1
@@ -40,6 +46,9 @@ func TestRestrict(t *testing.T) {
 		"agenda_item/10/item_number":  `"numberB"`,
 		"unknown_collection/1/field":  "404",
 		"tag/1/tagged_ids":            `["agenda_item/1","agenda_item/10"]`,
+		"user/1/group_$_ids":          `["1","2"]`,
+		"user/1/group_$1_ids":         `[1]`,
+		"user/1/group_$2_ids":         `[2]`,
 	}
 
 	got := make(map[string][]byte, len(data))
@@ -79,6 +88,19 @@ func TestRestrict(t *testing.T) {
 
 	if got := string(got["agenda_item/1/tag_ids"]); got != `[1]` {
 		t.Errorf("agenda_item/1/tag_ids was restricted to %q, expedted %q", got, `[1]`)
+	}
+
+	// This should change in the future. meeting 2 is not visible
+	if got := string(got["user/1/group_$_ids"]); got != `["1","2"]` {
+		t.Errorf("user/1/group_$_ids was restricted to %q, did not expect it", got)
+	}
+
+	if got := string(got["user/1/group_$1_ids"]); got != `[1]` {
+		t.Errorf("user/1/group_$1_ids was restricted to %q, did not expect it", got)
+	}
+
+	if got := string(got["user/1/group_$2_ids"]); got != `null` {
+		t.Errorf("user/1/group_$2_ids is %q, expected a empty list", got)
 	}
 }
 
@@ -122,5 +144,4 @@ func TestRestrictSuperAdmin(t *testing.T) {
 	if got["personal_note/2/id"] != nil {
 		t.Errorf("personal_note/2/id got not restricted")
 	}
-
 }

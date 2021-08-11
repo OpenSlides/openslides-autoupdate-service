@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"text/template"
 
 	models "github.com/OpenSlides/openslides-models-to-go"
@@ -69,6 +70,8 @@ func parse(r io.Reader) (td templateData, err error) {
 	for modelName, model := range inData {
 		for fieldName, field := range model.Fields {
 			collectionField := fmt.Sprintf("%s/%s", modelName, fieldName)
+			reducedKey := reduceKey(collectionField)
+			td.Restrictions[reducedKey] = field.RestrictionMode()
 			td.Restrictions[collectionField] = field.RestrictionMode()
 
 			r := field.Relation()
@@ -81,17 +84,17 @@ func parse(r io.Reader) (td templateData, err error) {
 			case *models.AttributeRelation:
 				to := v.ToCollections()[0].Collection + "/" + v.ToCollections()[0].ToField.Name
 				if r.List() {
-					td.RelationList[collectionField] = to
+					td.RelationList[reducedKey] = to
 				} else {
-					td.Relation[collectionField] = to
+					td.Relation[reducedKey] = to
 				}
 
 			case *models.AttributeGenericRelation:
 				to := v.ToCollections()[0].ToField.Name
 				if r.List() {
-					td.GenericRelationList[collectionField] = to
+					td.GenericRelationList[reducedKey] = to
 				} else {
-					td.GenericRelation[collectionField] = to
+					td.GenericRelation[reducedKey] = to
 				}
 
 			default:
@@ -102,6 +105,17 @@ func parse(r io.Reader) (td templateData, err error) {
 	}
 
 	return td, nil
+}
+
+// reduceKey returns key for normal keys and the prefix for template keys.
+func reduceKey(key string) string {
+	i := strings.IndexByte(key, '$')
+	if i < 0 || i == len(key)-1 {
+		// Normal field or $ at the end
+		return key
+	}
+
+	return key[:i+1]
 }
 
 const tpl = `// Code generated with models.txt DO NOT EDIT.
