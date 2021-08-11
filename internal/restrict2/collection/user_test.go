@@ -165,3 +165,295 @@ func TestUserModeA(t *testing.T) {
 		withElementID(2),
 	)
 }
+
+func TestUserModeB(t *testing.T) {
+	var u collection.User
+
+	testCase(
+		"X == Y",
+		t,
+		u.Modes("B"),
+		true,
+		``,
+		withRequestUser(1),
+		withElementID(1),
+	)
+
+	testCase(
+		"X != Y",
+		t,
+		u.Modes("B"),
+		false,
+		``,
+		withRequestUser(1),
+		withElementID(2),
+	)
+}
+
+func TestUserModeC(t *testing.T) {
+	var u collection.User
+
+	testCase(
+		"No perms",
+		t,
+		u.Modes("C"),
+		false,
+		`user/2/id: 2`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"OML can manage users",
+		t,
+		u.Modes("C"),
+		true,
+		`---
+		user/1/organization_management_level: can_manage_users
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"user.can_see_exta_data in meeting",
+		t,
+		u.Modes("C"),
+		true,
+		`---
+		user/2/group_$_ids: ["5"]
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(5, perm.UserCanSeeExtraData),
+	)
+
+	testCase(
+		"user.can_see_exta_data not in meeting",
+		t,
+		u.Modes("C"),
+		false,
+		`---
+		user/2/group_$_ids: []
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(5, perm.UserCanSeeExtraData),
+	)
+
+	testCase(
+		"X == Y",
+		t,
+		u.Modes("C"),
+		true,
+		``,
+		withRequestUser(1),
+		withElementID(1),
+	)
+}
+
+func TestUserModeD(t *testing.T) {
+	var u collection.User
+
+	testCase(
+		"No perms",
+		t,
+		u.Modes("D"),
+		false,
+		`user/2/id: 2`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"OML can manage users",
+		t,
+		u.Modes("D"),
+		true,
+		`---
+		user/1/organization_management_level: can_manage_users
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"user.can_manage in meeting",
+		t,
+		u.Modes("D"),
+		true,
+		`---
+		user/2/group_$_ids: ["5"]
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(5, perm.UserCanManage),
+	)
+
+	testCase(
+		"user.can_manage not in meeting",
+		t,
+		u.Modes("D"),
+		false,
+		`---
+		user/2/group_$_ids: []
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(5, perm.UserCanManage),
+	)
+}
+
+func TestUserModeE(t *testing.T) {
+	var u collection.User
+
+	testCase(
+		"No perms",
+		t,
+		u.Modes("E"),
+		false,
+		`user/2/id: 2`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"OML can manage users",
+		t,
+		u.Modes("E"),
+		true,
+		`---
+		user/1/organization_management_level: can_manage_users
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"Committee Manager",
+		t,
+		u.Modes("E"),
+		true,
+		`---
+		user/2/committee_ids: [5]
+		user/1:
+			committee_$_management_level: ["5"]
+			committee_$5_management_level: can_manage
+		committee/5/user_ids: [2]
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"Committee Manager user not in it",
+		t,
+		u.Modes("E"),
+		false,
+		`---
+		user/2/committee_ids: [5]
+		user/1:
+			committee_$_management_level: ["5"]
+			committee_$5_management_level: can_manage
+		committee/5/user_ids: []
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"X == Y",
+		t,
+		u.Modes("E"),
+		true,
+		``,
+		withRequestUser(1),
+		withElementID(1),
+	)
+}
+
+func TestUserModeF(t *testing.T) {
+	var u collection.User
+
+	testCase(
+		"No perms",
+		t,
+		u.Modes("F"),
+		false,
+		`user/2/id: 2`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"OML can manage users",
+		t,
+		u.Modes("F"),
+		true,
+		`---
+		user/1/organization_management_level: can_manage_users
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"X == Y",
+		t,
+		u.Modes("F"),
+		true,
+		``,
+		withRequestUser(1),
+		withElementID(1),
+	)
+}
+
+func TestUserModeG(t *testing.T) {
+	var u collection.User
+
+	testCase(
+		"No perms",
+		t,
+		u.Modes("G"),
+		false,
+		`user/2/id: 2`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"OML can manage users",
+		t,
+		u.Modes("G"),
+		false,
+		`---
+		user/1/organization_management_level: can_manage_users
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"X == Y",
+		t,
+		u.Modes("G"),
+		false,
+		``,
+		withRequestUser(1),
+		withElementID(1),
+	)
+}
+
+func TestPersonalNoteSuperAdminModeG(t *testing.T) {
+	var u collection.User
+
+	testCase(
+		"Superadmin",
+		t,
+		u.SuperAdmin("G"),
+		false,
+		``,
+		withRequestUser(1),
+		withElementID(2),
+	)
+}

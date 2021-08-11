@@ -48,6 +48,8 @@ func Collection(collection string) Restricter {
 		return PersonalNote{}
 	case "tag":
 		return Tag{}
+	case "user":
+		return User{}
 	default:
 		return nil
 	}
