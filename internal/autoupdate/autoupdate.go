@@ -31,10 +31,6 @@ const (
 	// A high value means more memory and cpu usage after some time. A lower
 	// value means more Requests to the Datastore Service and therefore a slower
 	// responce time for the clients.
-	//
-	// TODO: This should be a high value, for example time.Hour. It is only a
-	// smal value, so it happens more often in development and we might find
-	// some bugs.
 	datastoreCacheResetTime = 24 * time.Hour
 )
 
@@ -66,7 +62,7 @@ func New(datastore Datastore, restricter Restricter, userUpater UserUpdater, clo
 			keys = append(keys, k)
 		}
 
-		uids, err := userUpater.AdditionalUpdate(context.TODO(), data)
+		uids, err := userUpater.AdditionalUpdate(context.Background(), data)
 		if err != nil {
 			return fmt.Errorf("getting addition user ids: %w", err)
 		}
