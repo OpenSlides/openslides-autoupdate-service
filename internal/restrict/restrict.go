@@ -224,6 +224,10 @@ func restrictMode(collectionName, fieldName string, isSuperAdmin bool) (collecti
 
 	fieldMode, ok := restrictionModes[templateKeyPrefix(collectionName+"/"+fieldName)]
 	if !ok {
+		if isSuperAdmin {
+			// Superadmin can see unknown fields
+			return collection.Allways, nil
+		}
 		return nil, fmt.Errorf("fqfield %q is unknown, maybe run go generate ./... to fetch all fields from the models.yml", collectionName+"/"+fieldName)
 	}
 
@@ -233,13 +237,13 @@ func restrictMode(collectionName, fieldName string, isSuperAdmin bool) (collecti
 		}
 		sr, ok := restricter.(superRestricter)
 		if !ok {
-			// Do not restrict unknown fields from collections that do not
-			// implement the superRestricter.
+			// Superadmin can see all collections without a SuperAdmin method.
 			return collection.Allways, nil
 		}
 		modefunc := sr.SuperAdmin(fieldMode)
 		if modefunc == nil {
-			return nil, fmt.Errorf("mode %q of models %q for superadmin is not implemented", fieldMode, collectionName)
+			// Do not restrict unknown fields that are not implemented.
+			return collection.Allways, nil
 		}
 
 	}

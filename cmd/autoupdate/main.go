@@ -15,6 +15,7 @@ import (
 	autoupdateHttp "github.com/OpenSlides/openslides-autoupdate-service/internal/http"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -123,7 +124,7 @@ func run() error {
 	}
 
 	// Autoupdate Service.
-	service := autoupdate.New(datastoreService, closed)
+	service := autoupdate.New(datastoreService, restrict.Restrict, closed)
 	autoupdateHttp.Complex(mux, authService, service, service)
 	autoupdateHttp.Simple(mux, authService, service)
 

@@ -69,7 +69,7 @@ func TestFeatures(t *testing.T) {
 	defer close(closed)
 
 	datastore := dsmock.NewMockDatastore(closed, dataSet)
-	s := autoupdate.New(datastore, test.RestrictAllowed(), test.UserUpdater{}, closed)
+	s := autoupdate.New(datastore, test.RestrictAllowed, closed)
 
 	for _, tt := range []struct {
 		name string

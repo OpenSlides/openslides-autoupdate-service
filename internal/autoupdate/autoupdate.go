@@ -13,7 +13,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/ostcar/topic"
 )
@@ -44,15 +43,20 @@ const fullUpdateFormat = "fullupdate/%d"
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
 // with autoupdate.New().
 type Autoupdate struct {
-	datastore Datastore
-	topic     *topic.Topic
+	datastore  Datastore
+	topic      *topic.Topic
+	restricter RestricterFunc
 }
 
+// RestricterFunc is a function that can restrict data.
+type RestricterFunc func(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[string]json.RawMessage) error
+
 // New creates a new autoupdate service.
-func New(datastore Datastore, closed <-chan struct{}) *Autoupdate {
+func New(datastore Datastore, restricter RestricterFunc, closed <-chan struct{}) *Autoupdate {
 	a := &Autoupdate{
-		datastore: datastore,
-		topic:     topic.New(topic.WithClosed(closed)),
+		datastore:  datastore,
+		topic:      topic.New(topic.WithClosed(closed)),
+		restricter: restricter,
 	}
 
 	// Update the topic when an data update is received.
@@ -165,7 +169,7 @@ func (a *Autoupdate) RestrictedData(ctx context.Context, uid int, keys ...string
 
 	fetch := datastore.NewFetcher(a.datastore)
 
-	if err := restrict.Restrict(ctx, fetch, uid, data); err != nil {
+	if err := a.restricter(ctx, fetch, uid, data); err != nil {
 		return nil, fmt.Errorf("restrict data: %w", err)
 	}
 	return data, nil
