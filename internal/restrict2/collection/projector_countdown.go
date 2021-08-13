@@ -8,11 +8,11 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
-// Projector handels the restriction for the projector collection.
-type Projector struct{}
+// ProjectorCountdown handels the restriction for the projector_countdown collection.
+type ProjectorCountdown struct{}
 
 // Modes returns the restrictions modes for the meeting collection.
-func (p Projector) Modes(mode string) FieldRestricter {
+func (p ProjectorCountdown) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
 		return p.see
@@ -20,10 +20,10 @@ func (p Projector) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p Projector) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, projectorID int) (bool, error) {
-	meetingID := fetch.Field().Projector_MeetingID(ctx, projectorID)
+func (p ProjectorCountdown) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, projectorCountdownID int) (bool, error) {
+	meetingID := fetch.Field().ProjectorCountdown_ID(ctx, projectorCountdownID)
 	if err := fetch.Err(); err != nil {
-		return false, fmt.Errorf("fetching meeting_id %d: %w", projectorID, err)
+		return false, fmt.Errorf("fetching meeting_id %d: %w", projectorCountdownID, err)
 	}
 
 	perms, err := mperms.Meeting(ctx, meetingID)
