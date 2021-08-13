@@ -7,15 +7,15 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 )
 
-func TestMotionCategoryModeA(t *testing.T) {
-	f := collection.MotionCategory{}.Modes("A")
+func TestMotionStateModeA(t *testing.T) {
+	f := collection.MotionState{}.Modes("A")
 
 	testCase(
 		"no perms",
 		t,
 		f,
 		false,
-		"motion_category/1/meeting_id: 1",
+		"motion_state/1/meeting_id: 1",
 	)
 
 	testCase(
@@ -23,7 +23,7 @@ func TestMotionCategoryModeA(t *testing.T) {
 		t,
 		f,
 		true,
-		"motion_category/1/meeting_id: 1",
+		"motion_state/1/meeting_id: 1",
 		withPerms(1, perm.MotionCanSee),
 	)
 }
