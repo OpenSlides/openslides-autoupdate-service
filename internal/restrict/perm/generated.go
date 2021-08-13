@@ -1,4 +1,4 @@
-// Code generated with generated/main.go DO NOT EDIT.
+// Code generated from models.yml DO NOT EDIT.
 package perm
 
 const (

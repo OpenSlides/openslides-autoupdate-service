@@ -1,4 +1,4 @@
-// Code generated with models.txt DO NOT EDIT.
+// Code generated with models.yml DO NOT EDIT.
 package restrict
 
 var relationFields = map[string]string{
