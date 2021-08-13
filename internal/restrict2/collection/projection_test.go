@@ -7,16 +7,16 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 )
 
-func TestListOfSpeakersModeA(t *testing.T) {
-	f := collection.ListOfSpeakers{}.Modes("A")
+func TestProjectionModeA(t *testing.T) {
+	f := collection.Projection{}.Modes("A")
 
 	testCase(
 		"can see",
 		t,
 		f,
 		true,
-		"list_of_speakers/1/meeting_id: 1",
-		withPerms(1, perm.ListOfSpeakersCanSee),
+		"projection/1/meeting_id: 1",
+		withPerms(1, perm.ProjectorCanSee),
 	)
 
 	testCase(
@@ -24,6 +24,6 @@ func TestListOfSpeakersModeA(t *testing.T) {
 		t,
 		f,
 		false,
-		"list_of_speakers/1/meeting_id: 1",
+		"projection/1/meeting_id: 1",
 	)
 }

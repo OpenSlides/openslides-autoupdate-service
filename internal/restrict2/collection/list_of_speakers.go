@@ -11,7 +11,7 @@ import (
 // ListOfSpeakers handels the restriction for the list_of_speakers collection.
 type ListOfSpeakers struct{}
 
-// Modes returns a map from all known modes to there restricter.
+// Modes returns the restrictions modes for the meeting collection.
 func (los ListOfSpeakers) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
