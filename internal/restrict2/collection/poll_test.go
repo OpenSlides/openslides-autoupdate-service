@@ -244,3 +244,87 @@ func TestPollModeB(t *testing.T) {
 		withPerms(1, perm.PollCanManage),
 	)
 }
+
+func TestPollModeD(t *testing.T) {
+	f := collection.Poll{}.Modes("D")
+
+	testCase(
+		"published can see",
+		t,
+		f,
+		true,
+		`---
+		poll/1:
+			content_object_id: motion/1
+			state: published
+		
+		motion/1:
+			meeting_id: 1
+		`,
+		withPerms(1, perm.MotionCanSee),
+	)
+
+	testCase(
+		"published can not see",
+		t,
+		f,
+		false,
+		`---
+		poll/1:
+			content_object_id: motion/1
+			state: published
+		
+		motion/1:
+			meeting_id: 1
+		`,
+	)
+
+	testCase(
+		"finished can manage motion",
+		t,
+		f,
+		true,
+		`---
+		poll/1:
+			content_object_id: motion/1
+			state: finished
+		
+		motion/1:
+			meeting_id: 1
+		`,
+		withPerms(1, perm.MotionCanManagePolls),
+	)
+
+	testCase(
+		"finished can not manage motion",
+		t,
+		f,
+		false,
+		`---
+		poll/1:
+			content_object_id: motion/1
+			state: finished
+		
+		motion/1:
+			meeting_id: 1
+		`,
+	)
+
+	testCase(
+		"finished can manage list of speakers",
+		t,
+		f,
+		true,
+		`---
+		poll/1:
+			content_object_id: motion/1
+			state: finished
+			meeting_id: 1
+		
+		motion/1:
+			meeting_id: 1
+		`,
+		withPerms(1, perm.ListOfSpeakersCanManage),
+	)
+
+}

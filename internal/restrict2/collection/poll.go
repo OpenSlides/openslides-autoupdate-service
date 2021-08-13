@@ -172,5 +172,42 @@ func (m Poll) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.
 }
 
 func (m Poll) modeD(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, pollID int) (bool, error) {
-	return false, nil
+	state := fetch.Field().Poll_State(ctx, pollID)
+	if err := fetch.Err(); err != nil {
+		return false, fmt.Errorf("getting poll state: %w", err)
+	}
+
+	switch state {
+	case "published":
+		see, err := m.see(ctx, fetch, mperms, pollID)
+		if err != nil {
+			return false, fmt.Errorf("checking see: %w", err)
+		}
+		return see, nil
+
+	case "finished":
+		manage, err := m.manage(ctx, fetch, mperms, pollID)
+		if err != nil {
+			return false, fmt.Errorf("checking manage: %w", err)
+		}
+		if manage {
+			return true, nil
+		}
+
+		meetingID := fetch.Field().Poll_MeetingID(ctx, pollID)
+		if err := fetch.Err(); err != nil {
+			return false, fmt.Errorf("gettin meeting id of poll %d: %w", pollID, err)
+		}
+
+		perms, err := mperms.Meeting(ctx, meetingID)
+		if err != nil {
+			return false, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
+		}
+
+		return perms.Has(perm.ListOfSpeakersCanManage), nil
+
+	default:
+		return false, nil
+
+	}
 }
