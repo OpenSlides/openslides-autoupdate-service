@@ -7,12 +7,12 @@ import (
 )
 
 func TestTagModeA(t *testing.T) {
-	var tg collection.Tag
+	f := collection.Tag{}.Modes("A")
 
 	testCase(
 		"see meeting",
 		t,
-		tg.Modes("A"),
+		f,
 		true,
 		`---
 		tag/1/meeting_id: 5
@@ -23,7 +23,7 @@ func TestTagModeA(t *testing.T) {
 	testCase(
 		"can not see meeting",
 		t,
-		tg.Modes("A"),
+		f,
 		false,
 		`---
 		tag/1/meeting_id: 5
