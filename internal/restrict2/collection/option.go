@@ -12,17 +12,17 @@ import (
 type Option struct{}
 
 // Modes returns the restrictions modes for the meeting collection.
-func (m Option) Modes(mode string) FieldRestricter {
+func (o Option) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return m.see
+		return o.see
 	case "B":
-		return m.modeB
+		return o.modeB
 	}
 	return nil
 }
 
-func (m Option) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, optionID int) (bool, error) {
+func (o Option) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, optionID int) (bool, error) {
 	pollID := fetch.Field().Option_PollID(ctx, optionID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("getting poll id: %w", err)
@@ -36,7 +36,7 @@ func (m Option) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.
 	return see, nil
 }
 
-func (m Option) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, optionID int) (bool, error) {
+func (o Option) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, optionID int) (bool, error) {
 	pollID := fetch.Field().Option_PollID(ctx, optionID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("getting poll id: %w", err)
