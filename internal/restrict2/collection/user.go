@@ -40,8 +40,8 @@ func (u User) SuperAdmin(mode string) FieldRestricter {
 	return Allways
 }
 
-func (u User) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, UserID int) (bool, error) {
-	if mperms.UserID() == UserID {
+func (u User) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, userID int) (bool, error) {
+	if mperms.UserID() == userID {
 		return true, nil
 	}
 
@@ -64,7 +64,7 @@ func (u User) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 
 		userIDs := fetch.Field().Committee_UserIDs(ctx, committeeID)
 		for _, uid := range userIDs {
-			if UserID == uid {
+			if userID == uid {
 				return true, nil
 			}
 		}
@@ -73,7 +73,7 @@ func (u User) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 		return false, fmt.Errorf("checking committee management level: %w", err)
 	}
 
-	meetingIDs := fetch.Field().User_GroupIDsTmpl(ctx, UserID)
+	meetingIDs := fetch.Field().User_GroupIDsTmpl(ctx, userID)
 	for _, meetingID := range meetingIDs {
 		perms, err := mperms.Meeting(ctx, meetingID)
 		if err != nil {
@@ -96,7 +96,7 @@ func (u User) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 
 	for _, meetingID := range fetch.Field().User_VoteDelegatedToIDTmpl(ctx, mperms.UserID()) {
 		delegated := fetch.Field().User_VoteDelegatedToID(ctx, mperms.UserID(), meetingID)
-		if delegated == UserID {
+		if delegated == userID {
 			return true, nil
 		}
 	}
@@ -107,7 +107,7 @@ func (u User) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 	for _, meetingID := range fetch.Field().User_VoteDelegationsFromIDsTmpl(ctx, mperms.UserID()) {
 		delegations := fetch.Field().User_VoteDelegationsFromIDs(ctx, mperms.UserID(), meetingID)
 		for _, uid := range delegations {
-			if uid == UserID {
+			if uid == userID {
 				return true, nil
 			}
 		}
@@ -116,15 +116,86 @@ func (u User) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 		return false, fmt.Errorf("checking vote delegations form: %w", err)
 	}
 
-	// TODO: required user to see:
-	// There is a related object:
+	requiredObjects := []struct {
+		name     string
+		tmplFunc func(context.Context, int) []int
+		elemFunc func(context.Context, int, int) []int
+		seeFunc  FieldRestricter
+	}{
+		{
+			"motion submitter",
+			fetch.Field().User_SubmittedMotionIDsTmpl,
+			fetch.Field().User_SubmittedMotionIDs,
+			Motion{}.see,
+		},
 
-	//     There exists a motion which Y can see and X is a submitter/supporter.
-	//     There exists an option which Y can see and X is the linked content object.
-	//     There exists an assignment candidate which Y can see and X is the linked user.
-	//     There exists a speaker which Y can see and X is the linked user.
-	//     There exists a poll where Y can see the poll/voted_ids and X is part of that list.
-	//     There exists a vote which Y can see and X is linked in user_id or delegated_user_id.
+		{
+			"motion supporter",
+			fetch.Field().User_SupportedMotionIDsTmpl,
+			fetch.Field().User_SupportedMotionIDs,
+			Motion{}.see,
+		},
+
+		{
+			"option",
+			fetch.Field().User_OptionIDsTmpl,
+			fetch.Field().User_OptionIDs,
+			Option{}.see,
+		},
+
+		{
+			"assignment candidate",
+			fetch.Field().User_AssignmentCandidateIDsTmpl,
+			fetch.Field().User_AssignmentCandidateIDs,
+			AssignmentCandidate{}.see,
+		},
+
+		{
+			"speaker",
+			fetch.Field().User_SpeakerIDsTmpl,
+			fetch.Field().User_SpeakerIDs,
+			Speaker{}.see,
+		},
+
+		{
+			"poll voted",
+			fetch.Field().User_PollVotedIDsTmpl,
+			fetch.Field().User_PollVotedIDs,
+			Poll{}.modeB, // Checking field poll/voted_ids that is in modeB and not in see.
+		},
+
+		{
+			"vote user",
+			fetch.Field().User_VoteIDsTmpl,
+			fetch.Field().User_VoteIDs,
+			Vote{}.see,
+		},
+
+		{
+			"vote delegated user",
+			fetch.Field().User_VoteDelegatedVoteIDsTmpl,
+			fetch.Field().User_VoteDelegatedVoteIDs,
+			Vote{}.see,
+		},
+	}
+
+	for _, r := range requiredObjects {
+		for _, meetingID := range r.tmplFunc(ctx, userID) {
+			for _, elementID := range r.elemFunc(ctx, userID, meetingID) {
+				see, err := r.seeFunc(ctx, fetch, mperms, elementID)
+				if err != nil {
+					return false, fmt.Errorf("checking required object %q: %w", r.name, err)
+				}
+
+				if see {
+					return true, nil
+				}
+			}
+		}
+		if err := fetch.Err(); err != nil {
+			return false, fmt.Errorf("getting object %q: %w", r.name, err)
+		}
+	}
 
 	return false, nil
 }

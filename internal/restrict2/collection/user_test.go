@@ -8,12 +8,12 @@ import (
 )
 
 func TestUserModeA(t *testing.T) {
-	var u collection.User
+	f := collection.User{}.Modes("A")
 
 	testCase(
 		"No perms",
 		t,
-		u.Modes("A"),
+		f,
 		false,
 		`user/2/id: 2`,
 		withRequestUser(1),
@@ -23,7 +23,7 @@ func TestUserModeA(t *testing.T) {
 	testCase(
 		"Request user",
 		t,
-		u.Modes("A"),
+		f,
 		true,
 		`user/2/id: 2`,
 		withRequestUser(1),
@@ -33,7 +33,7 @@ func TestUserModeA(t *testing.T) {
 	testCase(
 		"Can manage users",
 		t,
-		u.Modes("A"),
+		f,
 		true,
 		`---
 		user/2/id: 2
@@ -46,7 +46,7 @@ func TestUserModeA(t *testing.T) {
 	testCase(
 		"Committee Manager",
 		t,
-		u.Modes("A"),
+		f,
 		true,
 		`---
 		user/2/committee_ids: [5]
@@ -62,7 +62,7 @@ func TestUserModeA(t *testing.T) {
 	testCase(
 		"Committee Manager user not in it",
 		t,
-		u.Modes("A"),
+		f,
 		false,
 		`---
 		user/2/committee_ids: [5]
@@ -78,7 +78,7 @@ func TestUserModeA(t *testing.T) {
 	testCase(
 		"user.can_see in meeting",
 		t,
-		u.Modes("A"),
+		f,
 		true,
 		`---
 		user/2/group_$_ids: ["5"]
@@ -91,7 +91,7 @@ func TestUserModeA(t *testing.T) {
 	testCase(
 		"user.can_see not in meeting",
 		t,
-		u.Modes("A"),
+		f,
 		false,
 		`---
 		user/2/group_$_ids: []
@@ -104,7 +104,7 @@ func TestUserModeA(t *testing.T) {
 	testCase(
 		"committee can manage",
 		t,
-		u.Modes("A"),
+		f,
 		true,
 		`---
 		user/2/group_$_ids: ["5"]
@@ -121,7 +121,7 @@ func TestUserModeA(t *testing.T) {
 	testCase(
 		"committee can manage user not in meeting",
 		t,
-		u.Modes("A"),
+		f,
 		false,
 		`---
 		user/2/group_$_ids: []
@@ -138,7 +138,7 @@ func TestUserModeA(t *testing.T) {
 	testCase(
 		"Vote delegated to",
 		t,
-		u.Modes("A"),
+		f,
 		true,
 		`---
 		user/1:
@@ -153,13 +153,174 @@ func TestUserModeA(t *testing.T) {
 	testCase(
 		"Vote delegated from",
 		t,
-		u.Modes("A"),
+		f,
 		true,
 		`---
 		user/1:
 			vote_delegations_$_from_ids: ["3"]
 			vote_delegations_$3_from_ids: [2]
 		user/2/id: 2
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"motion submitter",
+		t,
+		f,
+		true,
+		`---
+		user/2:
+			submitted_motion_$_ids: ["1"]
+			submitted_motion_$1_ids: [4]
+		
+		motion/4:
+			meeting_id: 1
+			state_id: 5
+		
+		motion_state/5/id: 5
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(1, perm.MotionCanSee),
+	)
+
+	testCase(
+		"motion supporter",
+		t,
+		f,
+		true,
+		`---
+		user/2:
+			supported_motion_$_ids: ["1"]
+			supported_motion_$1_ids: [4]
+		
+		motion/4:
+			meeting_id: 1
+			state_id: 5
+		
+		motion_state/5/id: 5
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(1, perm.MotionCanSee),
+	)
+
+	testCase(
+		"linked in option",
+		t,
+		f,
+		true,
+		`---
+		user/2:
+			option_$_ids: ["1"]
+			option_$1_ids: [4]
+		
+		option/4/poll_id: 5
+		poll/5/meeting_id: 1
+		meeting/1/enable_anonymous: true
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"assignment candidate",
+		t,
+		f,
+		true,
+		`---
+		user/2:
+			assignment_candidate_$_ids: ["1"]
+			assignment_candidate_$1_ids: [4]
+		
+		assignment_candidate/4/assignment_id: 5
+		assignment/5/meeting_id: 1
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(1, perm.AssignmentCanSee),
+	)
+
+	testCase(
+		"speaker",
+		t,
+		f,
+		true,
+		`---
+		user/2:
+			speaker_$_ids: ["1"]
+			speaker_$1_ids: [4]
+		
+		speaker/4/list_of_speakers_id: 5
+		list_of_speakers/5/meeting_id: 1
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(1, perm.ListOfSpeakersCanSee),
+	)
+
+	testCase(
+		"vote",
+		t,
+		f,
+		true,
+		`---
+		user/2:
+			poll_voted_$_ids: ["1"]
+			poll_voted_$1_ids: [4]
+		
+		poll/4:
+			state: finished
+			meeting_id: 1
+		
+		meeting/1/id: 1
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(1, perm.PollCanManage),
+	)
+
+	testCase(
+		"vote user ids",
+		t,
+		f,
+		true,
+		`---
+		user/2:
+			vote_$_ids: ["1"]
+			vote_$1_ids: [4]
+		
+		vote/4/option_id: 5
+		option/5/poll_id: 6
+		poll/6:
+			state: published
+			meeting_id: 1
+
+		meeting/1/enable_anonymous: true
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"vote delegated ids",
+		t,
+		f,
+		true,
+		`---
+		user/2:
+			vote_delegated_vote_$_ids: ["1"]
+			vote_delegated_vote_$1_ids: [4]
+		
+		vote/4/option_id: 5
+		option/5/poll_id: 6
+		poll/6:
+			state: published
+			meeting_id: 1
+
+		meeting/1/enable_anonymous: true
 		`,
 		withRequestUser(1),
 		withElementID(2),
