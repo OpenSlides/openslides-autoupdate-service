@@ -193,52 +193,109 @@ func TestMotionModeB(t *testing.T) {
 		withPerms(1, perm.MotionCanSee),
 	)
 
-	// testCase(
-	// 	"see reference",
-	// 	t,
-	// 	f,
-	// 	true,
-	// 	`---
-	// 	motion:
-	// 		1:
-	// 			meeting_id: 1
-	// 			state_id: 3
-	// 			submitter_ids: [4]
-	// 			forwarding_tree_motion_ids: 2
-	// 		2:
-	// 			meeting_id: 1
+	testCase(
+		"see all_origin_ids",
+		t,
+		f,
+		true,
+		`---
+		motion:
+			1:
+				meeting_id: 1
+				state_id: 3
+				submitter_ids: [4]
+				all_origin_ids: [2]
+			2:
+				meeting_id: 1
+				state_id: 3
+				submitter_ids: [5]
 
-	// 	motion_state/3/restrictions:
-	// 	- is_submitter
+		motion_state/3/restrictions:
+		- is_submitter
 
-	// 	motion_submitter/4/user_id: 2
-	// 	`,
-	// 	withPerms(1, perm.MotionCanSee),
-	// )
+		motion_submitter/4/user_id: 2
+		motion_submitter/5/user_id: 1
+		`,
+		withPerms(1, perm.MotionCanSee),
+	)
 
-	// testCase(
-	// 	"not see reference",
-	// 	t,
-	// 	f,
-	// 	false,
-	// 	`---
-	// 	motion:
-	// 		1:
-	// 			meeting_id: 1
-	// 			state_id: 3
-	// 			submitter_ids: [4]
-	// 			forwarding_tree_motion_ids: 2
-	// 		2:
-	// 			meeting_id: 1
-	// 			submitter_ids: [4]
+	testCase(
+		"not see all_origin_ids",
+		t,
+		f,
+		false,
+		`---
+		motion:
+			1:
+				meeting_id: 1
+				state_id: 3
+				submitter_ids: [4]
+				all_origin_ids: [2]
+			2:
+				meeting_id: 1
+				state_id: 3
+				submitter_ids: [5]
 
-	// 	motion_state/3/restrictions:
-	// 	- is_submitter
+		motion_state/3/restrictions:
+		- is_submitter
 
-	// 	motion_submitter/4/user_id: 2
-	// 	`,
-	// 	withPerms(1, perm.MotionCanSee),
-	// )
+		motion_submitter/4/user_id: 2
+		motion_submitter/5/user_id: 2
+		`,
+		withPerms(1, perm.MotionCanSee),
+	)
+
+	testCase(
+		"see all_derived_motion_ids",
+		t,
+		f,
+		true,
+		`---
+		motion:
+			1:
+				meeting_id: 1
+				state_id: 3
+				submitter_ids: [4]
+				all_derived_motion_ids: [2]
+			2:
+				meeting_id: 1
+				state_id: 3
+				submitter_ids: [5]
+
+		motion_state/3/restrictions:
+		- is_submitter
+
+		motion_submitter/4/user_id: 2
+		motion_submitter/5/user_id: 1
+		`,
+		withPerms(1, perm.MotionCanSee),
+	)
+
+	testCase(
+		"not see all_derived_motion_ids",
+		t,
+		f,
+		false,
+		`---
+		motion:
+			1:
+				meeting_id: 1
+				state_id: 3
+				submitter_ids: [4]
+				all_derived_motion_ids: [2]
+			2:
+				meeting_id: 1
+				state_id: 3
+				submitter_ids: [5]
+
+		motion_state/3/restrictions:
+		- is_submitter
+
+		motion_submitter/4/user_id: 2
+		motion_submitter/5/user_id: 2
+		`,
+		withPerms(1, perm.MotionCanSee),
+	)
 }
 
 func TestMotionModeD(t *testing.T) {
