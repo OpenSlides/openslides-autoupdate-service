@@ -188,50 +188,6 @@ func String(ctx context.Context, fetch FetchFunc, keyFmt string, a ...interface{
 	return value
 }
 
-// get returns a value from the datastore and unpacks it in to the argument
-// value.
-//
-// The argument value has to be an non nil pointer.
-//
-// get returns a DoesNotExistError if the value des not exist in the datastore.
-func get(ctx context.Context, ds Getter, fqfield string, value interface{}) error {
-	fields, err := ds.Get(ctx, fqfield)
-	if err != nil {
-		return fmt.Errorf("getting %q from datastore: %w", fqfield, err)
-	}
-
-	if fields[0] == nil {
-		return DoesNotExistError(fqfield)
-	}
-
-	if err := json.Unmarshal(fields[0], value); err != nil {
-		return fmt.Errorf("unpacking value: %w", err)
-	}
-	return nil
-}
-
-// object returns a json object for the given fqid with all given fields.
-//
-// If one field does not exist in the datastore, then it is returned as nil.
-func object(ctx context.Context, ds Getter, fqid string, fields []string) (map[string]json.RawMessage, []string, error) {
-	keys := make([]string, len(fields))
-	for i := 0; i < len(fields); i++ {
-		keys[i] = fqid + "/" + fields[i]
-	}
-
-	vals, err := ds.Get(ctx, keys...)
-	if err != nil {
-		return nil, keys, fmt.Errorf("fetching data: %w", err)
-	}
-
-	object := make(map[string]json.RawMessage, len(fields))
-	for i := 0; i < len(fields); i++ {
-		object[fields[i]] = vals[i]
-	}
-
-	return object, keys, nil
-}
-
 // DoesNotExistError is thrown by the methods of a Fetcher when an object does
 // not exist.
 type DoesNotExistError string
