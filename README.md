@@ -165,8 +165,6 @@ The Service uses the following environment variables:
 * `AUTH_HOST`: Host of the auth service. The default is `localhost`.
 * `AUTH_PORT`: Port of the auth service. The default is `9004`.
 * `AUTH_PROTOCOL`: Protocol of the auth servicer. The default is `http`.
-* `DEACTIVATE_PERMISSION`: Deactivate requests to the permission service. The
-  result is, that every user can see everything. The default is `false`.
 * `OPENSLIDES_DEVELOPMENT`: If set, the service starts, even when secrets (see
   below) are not given. The default is `false`.
 

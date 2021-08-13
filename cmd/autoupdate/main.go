@@ -15,8 +15,6 @@ import (
 	autoupdateHttp "github.com/OpenSlides/openslides-autoupdate-service/internal/http"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/permission"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -55,7 +53,6 @@ func defaultEnv() map[string]string {
 		"AUTH_HOST":     "localhost",
 		"AUTH_PORT":     "9004",
 
-		"DEACTIVATE_PERMISSION":  "false",
 		"OPENSLIDES_DEVELOPMENT": "false",
 	}
 
@@ -115,22 +112,6 @@ func run() error {
 		return fmt.Errorf("creating datastore adapter: %w", err)
 	}
 
-	// Permission Service.
-	var perms restrict.Permissioner = &test.MockPermission{Default: true}
-	var updater autoupdate.UserUpdater = new(test.UserUpdater)
-	permService := "fake"
-	if env["DEACTIVATE_PERMISSION"] == "false" {
-		permService = "permission"
-		p := permission.New(datastoreService)
-		perms = p
-		updater = p
-	}
-	fmt.Println("Permission-Service: " + permService)
-
-	// Restricter Service.
-	checker := restrict.RelationChecker(restrict.RelationLists, perms)
-	restricter := restrict.New(perms, checker)
-
 	// Create http mux to add urls.
 	mux := http.NewServeMux()
 	autoupdateHttp.Health(mux)
@@ -142,7 +123,7 @@ func run() error {
 	}
 
 	// Autoupdate Service.
-	service := autoupdate.New(datastoreService, restricter, updater, closed)
+	service := autoupdate.New(datastoreService, closed)
 	autoupdateHttp.Complex(mux, authService, service, service)
 	autoupdateHttp.Simple(mux, authService, service)
 

@@ -18,7 +18,7 @@ import (
 
 // Restrict changes the keys and values in data for the user with the given user
 // id.
-func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[string][]byte) error {
+func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[string]json.RawMessage) error {
 	isSuperAdmin, err := perm.HasOrganizationManagementLevel(ctx, fetch, uid, perm.OMLSuperadmin)
 	if err != nil {
 		return fmt.Errorf("checking for superadmin: %w", err)

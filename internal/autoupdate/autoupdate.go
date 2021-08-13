@@ -13,6 +13,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/ostcar/topic"
 )
 
@@ -42,17 +44,15 @@ const fullUpdateFormat = "fullupdate/%d"
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
 // with autoupdate.New().
 type Autoupdate struct {
-	datastore  Datastore
-	restricter Restricter
-	topic      *topic.Topic
+	datastore Datastore
+	topic     *topic.Topic
 }
 
 // New creates a new autoupdate service.
-func New(datastore Datastore, restricter Restricter, userUpater UserUpdater, closed <-chan struct{}) *Autoupdate {
+func New(datastore Datastore, closed <-chan struct{}) *Autoupdate {
 	a := &Autoupdate{
-		datastore:  datastore,
-		restricter: restricter,
-		topic:      topic.New(topic.WithClosed(closed)),
+		datastore: datastore,
+		topic:     topic.New(topic.WithClosed(closed)),
 	}
 
 	// Update the topic when an data update is received.
@@ -60,15 +60,6 @@ func New(datastore Datastore, restricter Restricter, userUpater UserUpdater, clo
 		keys := make([]string, 0, len(data))
 		for k := range data {
 			keys = append(keys, k)
-		}
-
-		uids, err := userUpater.AdditionalUpdate(context.Background(), data)
-		if err != nil {
-			return fmt.Errorf("getting addition user ids: %w", err)
-		}
-
-		for _, uid := range uids {
-			keys = append(keys, fmt.Sprintf(fullUpdateFormat, uid))
 		}
 
 		a.topic.Publish(keys...)
@@ -172,7 +163,9 @@ func (a *Autoupdate) RestrictedData(ctx context.Context, uid int, keys ...string
 		data[key] = values[i]
 	}
 
-	if err := a.restricter.Restrict(ctx, uid, data); err != nil {
+	fetch := datastore.NewFetcher(a.datastore)
+
+	if err := restrict.Restrict(ctx, fetch, uid, data); err != nil {
 		return nil, fmt.Errorf("restrict data: %w", err)
 	}
 	return data, nil
