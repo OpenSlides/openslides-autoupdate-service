@@ -107,7 +107,7 @@ func constName(perm string) string {
 	return string(bs)
 }
 
-const tpl = `// Code generated with generated/main.go DO NOT EDIT.
+const tpl = `// Code generated from models.yml DO NOT EDIT.
 package perm
 
 const (

@@ -118,7 +118,7 @@ func reduceKey(key string) string {
 	return key[:i+1]
 }
 
-const tpl = `// Code generated with models.txt DO NOT EDIT.
+const tpl = `// Code generated with models.yml DO NOT EDIT.
 package restrict
 
 var relationFields = map[string]string{

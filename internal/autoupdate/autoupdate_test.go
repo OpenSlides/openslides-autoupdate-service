@@ -40,10 +40,8 @@ func TestLiveFlushBetweenUpdates(t *testing.T) {
 	defer close(closed)
 
 	ds := dsmock.NewMockDatastore(closed, map[string]string{
-		"collection/1/foo":                     `"Foo Value"`,
-		"collection/1/bar":                     `"Bar Value"`,
-		"user/1/id":                            `1`,
-		"user/1/organization_management_level": `"superadmin"`,
+		"collection/1/foo": `"Foo Value"`,
+		"collection/1/bar": `"Bar Value"`,
 	})
 	s := autoupdate.New(ds, test.RestrictAllowed, closed)
 	kb := test.KeysBuilder{K: []string{"collection/1/foo", "collection/1/bar"}}

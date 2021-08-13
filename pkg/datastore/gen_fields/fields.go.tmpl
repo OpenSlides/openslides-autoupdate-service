@@ -1,4 +1,4 @@
-// Code generated with go generate DO NOT EDIT.
+// Code generated from models.yml DO NOT EDIT.
 package datastore
 
 import (
