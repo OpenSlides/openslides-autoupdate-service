@@ -21,6 +21,10 @@ import (
 func Restrict(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[string]json.RawMessage) error {
 	isSuperAdmin, err := perm.HasOrganizationManagementLevel(ctx, fetch, uid, perm.OMLSuperadmin)
 	if err != nil {
+		var errDoesNotExist datastore.DoesNotExistError
+		if errors.As(err, &errDoesNotExist) {
+			return fmt.Errorf("request user %d does not exist", uid)
+		}
 		return fmt.Errorf("checking for superadmin: %w", err)
 	}
 
