@@ -75,7 +75,7 @@ func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) (
 	values := make([]json.RawMessage, len(keys))
 	for i, key := range keys {
 		// Gets a value and waits until a pending value is ready.
-		v, err := c.data.get(key).get(ctx)
+		v, err := c.data.get(ctx, key)
 		if err != nil {
 			return nil, fmt.Errorf("waiting for key %s: %w", key, err)
 		}
@@ -117,27 +117,6 @@ func (c *cache) SetIfExistMany(data map[string]json.RawMessage) {
 	c.data.setIfExistMany(data)
 }
 
-// pendingValue holds a value that can be accessed after a channel is closed.
-type pendingValue struct {
-	pending chan struct{}
-	value   []byte
-}
-
-// get waits for the channel and afterwards returns the value.
-func (v *pendingValue) get(ctx context.Context) ([]byte, error) {
-	if v.pending == nil {
-		return v.value, nil
-	}
-
-	select {
-	case <-v.pending:
-	case <-ctx.Done():
-		return nil, fmt.Errorf("waiting for value: %w", ctx.Err())
-	}
-	<-v.pending
-	return v.value, nil
-}
-
 // pendingMap is like a map but values are returned as pendingValues.
 type pendingMap struct {
 	mu      sync.RWMutex
@@ -159,19 +138,27 @@ func newPendingMap() *pendingMap {
 // pending anymore.
 //
 // Returns nil for a value that does not exist.
-func (d *pendingMap) get(key string) *pendingValue {
+func (d *pendingMap) get(ctx context.Context, key string) ([]byte, error) {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	v := pendingValue{
-		value: d.data[key],
+	pending, isPending := d.pending[key]
+
+	if !isPending {
+		return d.data[key], nil
 	}
 
-	if pending, isPending := d.pending[key]; isPending {
-		v.pending = pending
+	d.mu.RUnlock()
+
+	select {
+	case <-pending:
+	case <-ctx.Done():
+		return nil, fmt.Errorf("waiting for value: %w", ctx.Err())
 	}
 
-	return &v
+	d.mu.RLock()
+
+	return d.data[key], nil
 }
 
 // markPending marks one or more keys as pending.
