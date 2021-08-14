@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
+	"sync"
 	"testing"
 	"time"
 
@@ -246,4 +248,36 @@ func TestCacheErrorOnFetching(t *testing.T) {
 	case <-timer.C:
 		t.Errorf("Second GetOrSet-Call was not done one Millisecond")
 	}
+}
+
+func TestCacheConcurency(t *testing.T) {
+	const count = 100
+	c := newCache()
+	var wg sync.WaitGroup
+
+	for i := 0; i < count; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+
+			v, err := c.GetOrSet(context.Background(), []string{"key1"}, func(keys []string, set func(k string, v []byte)) error {
+				log.Printf("called from %d", i)
+				time.Sleep(time.Millisecond)
+				for _, k := range keys {
+					set(k, []byte("value"))
+				}
+				return nil
+			})
+			if err != nil {
+				t.Errorf("goroutine %d returned error: %v", i, err)
+			}
+
+			if string(v[0]) != "value" {
+				t.Errorf("goroutine %d returned %q", i, v)
+			}
+
+		}(i)
+	}
+
+	wg.Wait()
 }
