@@ -50,31 +50,15 @@ func newCache() *cache {
 // If the context is done, GetOrSet returns. But the set() call is not stopped.
 // Other calls to GetOrSet may wait for its result.
 func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) ([]json.RawMessage, error) {
-	missingKeys := c.data.markPending(keys...)
-
-	// Fetch missing keys.
-	if len(missingKeys) > 0 {
-		// Fetch missing keys in the background. Do not stop the fetching. Even
-		// when the context is done. Other calls could also request it.
-		errChan := make(chan error)
-		go func() {
-			errChan <- c.fetchMissing(missingKeys, set)
-		}()
-
-		select {
-		case err := <-errChan:
-			if err != nil {
-				return nil, fmt.Errorf("fetching key: %w", err)
-			}
-		case <-ctx.Done():
-			return nil, fmt.Errorf("waiting for fetch missing: %w", ctx.Err())
-		}
+	// Blocks until all missing keys are fetched.
+	if err := c.fetchMissing(ctx, keys, set); err != nil {
+		return nil, fmt.Errorf("fetching missing keys: %w", err)
 	}
 
-	// Build return values. Blocks until pending keys are fetched.
+	// Blocks until all keys that are requested by other callers are fetched.
 	values := make([]json.RawMessage, len(keys))
 	for i, key := range keys {
-		// Gets a value and waits until a pending value is ready.
+		// Gets a value and waits until it is ready.
 		v, err := c.data.get(ctx, key)
 		if err != nil {
 			return nil, fmt.Errorf("waiting for key %s: %w", key, err)
@@ -87,22 +71,41 @@ func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) (
 
 // fetchMissing loads the given keys with the set method. Does not update keys
 // that are already in the cache.
-//
-// Sets all keys to not pending, even when an error happens.
-func (c *cache) fetchMissing(keys []string, set cacheSetFunc) error {
-	// Make sure all pending keys are closed. Make also sure, that
-	// missing keys are set to nil.
-	defer func() {
+func (c *cache) fetchMissing(ctx context.Context, keys []string, set cacheSetFunc) error {
+	missingKeys := c.data.markPending(keys...)
+
+	if len(missingKeys) == 0 {
+		return nil
+	}
+
+	// Fetch missing keys in the background. Do not stop the fetching. Even
+	// when the context is done. Other calls could also request it.
+	errChan := make(chan error)
+	go func() {
+		err := set(keys, func(key string, value []byte) {
+			c.data.setIfPending(key, value)
+		})
+
+		// Make sure all pending keys are closed. Make also sure, that
+		// missing keys are set to nil.
 		c.data.setEmptyIfPending(keys...)
+
+		if err != nil {
+			errChan <- fmt.Errorf("fetching missing keys: %w", err)
+			return
+		}
+		errChan <- nil
 	}()
 
-	err := set(keys, func(key string, value []byte) {
-		c.data.setIfPending(key, value)
-	})
-
-	if err != nil {
-		return fmt.Errorf("fetching missing keys: %w", err)
+	select {
+	case err := <-errChan:
+		if err != nil {
+			return fmt.Errorf("fetching key: %w", err)
+		}
+	case <-ctx.Done():
+		return fmt.Errorf("waiting for fetch missing: %w", ctx.Err())
 	}
+
 	return nil
 }
 
@@ -119,7 +122,7 @@ func (c *cache) SetIfExistMany(data map[string]json.RawMessage) {
 
 // pendingMap is like a map but values are returned as pendingValues.
 type pendingMap struct {
-	mu      sync.RWMutex
+	sync.RWMutex
 	data    map[string][]byte
 	pending map[string]chan struct{}
 }
@@ -127,8 +130,8 @@ type pendingMap struct {
 // newPendingMap initializes a pendingDict.
 func newPendingMap() *pendingMap {
 	return &pendingMap{
-		data:    make(map[string][]byte),
-		pending: make(map[string]chan struct{}),
+		data:    map[string][]byte{},
+		pending: map[string]chan struct{}{},
 	}
 }
 
@@ -138,17 +141,17 @@ func newPendingMap() *pendingMap {
 // pending anymore.
 //
 // Returns nil for a value that does not exist.
-func (d *pendingMap) get(ctx context.Context, key string) ([]byte, error) {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
+func (pm *pendingMap) get(ctx context.Context, key string) ([]byte, error) {
+	var value []byte
+	var pending chan struct{}
+	reading(pm, func() {
+		pending = pm.pending[key]
+		value = pm.data[key]
+	})
 
-	pending, isPending := d.pending[key]
-
-	if !isPending {
-		return d.data[key], nil
+	if pending == nil {
+		return value, nil
 	}
-
-	d.mu.RUnlock()
 
 	select {
 	case <-pending:
@@ -156,9 +159,11 @@ func (d *pendingMap) get(ctx context.Context, key string) ([]byte, error) {
 		return nil, fmt.Errorf("waiting for value: %w", ctx.Err())
 	}
 
-	d.mu.RLock()
+	reading(pm, func() {
+		value = pm.data[key]
+	})
 
-	return d.data[key], nil
+	return value, nil
 }
 
 // markPending marks one or more keys as pending.
@@ -166,20 +171,20 @@ func (d *pendingMap) get(ctx context.Context, key string) ([]byte, error) {
 // Skips keys that are already pending or are already in the database.
 //
 // Returns all keys that where marked as pending (did not exist).
-func (d *pendingMap) markPending(keys ...string) []string {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+func (pm *pendingMap) markPending(keys ...string) []string {
+	pm.Lock()
+	defer pm.Unlock()
 
 	var marked []string
 	for _, key := range keys {
-		if _, ok := d.data[key]; ok {
+		if _, ok := pm.data[key]; ok {
 			continue
 		}
-		if _, ok := d.pending[key]; ok {
+		if _, ok := pm.pending[key]; ok {
 			continue
 		}
 
-		d.pending[key] = make(chan struct{})
+		pm.pending[key] = make(chan struct{})
 		marked = append(marked, key)
 	}
 	return marked
@@ -187,19 +192,19 @@ func (d *pendingMap) markPending(keys ...string) []string {
 
 // setIfExiists is like setIfExist but without setting a lock. Should not be
 // used directly.
-func (d *pendingMap) setIfExistUnlocked(key string, value []byte) {
-	pending, isPending := d.pending[key]
-	_, exists := d.data[key]
+func (pm *pendingMap) setIfExistUnlocked(key string, value []byte) {
+	pending := pm.pending[key]
+	_, exists := pm.data[key]
 
-	if !isPending && !exists {
+	if pending == nil && !exists {
 		return
 	}
 
-	d.data[key] = value
+	pm.data[key] = value
 
-	if isPending {
+	if pending != nil {
 		close(pending)
-		delete(d.pending, key)
+		delete(pm.pending, key)
 	}
 }
 
@@ -207,48 +212,59 @@ func (d *pendingMap) setIfExistUnlocked(key string, value []byte) {
 // pending.
 //
 // If the key is pending, informs all listeners.
-func (d *pendingMap) setIfExist(key string, value []byte) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+func (pm *pendingMap) setIfExist(key string, value []byte) {
+	pm.Lock()
+	defer pm.Unlock()
 
-	d.setIfExistUnlocked(key, value)
+	pm.setIfExistUnlocked(key, value)
 }
 
 // setIfExistMany is like setIfExists but for many values
-func (d *pendingMap) setIfExistMany(data map[string]json.RawMessage) {
+func (pm *pendingMap) setIfExistMany(data map[string]json.RawMessage) {
 	// TODO: change data value to []byte.
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	pm.Lock()
+	defer pm.Unlock()
 
 	for k, v := range data {
-		d.setIfExistUnlocked(k, v)
+		pm.setIfExistUnlocked(k, v)
 	}
 }
 
 // setIfPending updates values but only if the key is pending.
 //
 // Informs all listeners.
-func (d *pendingMap) setIfPending(key string, value []byte) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+func (pm *pendingMap) setIfPending(key string, value []byte) {
+	pm.Lock()
+	defer pm.Unlock()
 
-	if pending, isPending := d.pending[key]; isPending {
-		d.data[key] = value
+	if pending, isPending := pm.pending[key]; isPending {
+		pm.data[key] = value
 		close(pending)
-		delete(d.pending, key)
+		delete(pm.pending, key)
 	}
 }
 
 // setIfPendingMany like setIfPending but with many keys.
-func (d *pendingMap) setEmptyIfPending(keys ...string) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+func (pm *pendingMap) setEmptyIfPending(keys ...string) {
+	pm.Lock()
+	defer pm.Unlock()
 
 	for _, key := range keys {
-		if pending, isPending := d.pending[key]; isPending {
-			d.data[key] = nil
+		if pending, isPending := pm.pending[key]; isPending {
+			pm.data[key] = nil
 			close(pending)
-			delete(d.pending, key)
+			delete(pm.pending, key)
 		}
 	}
+}
+
+type rlocker interface {
+	RLock()
+	RUnlock()
+}
+
+func reading(l rlocker, cmd func()) {
+	l.RLock()
+	defer l.RUnlock()
+	cmd()
 }
