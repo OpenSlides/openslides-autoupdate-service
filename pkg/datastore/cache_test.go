@@ -2,7 +2,6 @@ package datastore
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"log"
 	"sync"
@@ -116,8 +115,8 @@ func TestCacheSetIfExist(t *testing.T) {
 
 	// Set key1 and key2. key1 is in the cache. key2 should be ignored.
 	c.SetIfExistMany(map[string][]byte{
-		"key1": json.RawMessage("new_value"),
-		"key2": json.RawMessage("new_value"),
+		"key1": []byte("new_value"),
+		"key2": []byte("new_value"),
 	})
 
 	// Get key1 and key2 from the cache. The existing key1 should not be set.

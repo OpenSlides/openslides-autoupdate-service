@@ -225,7 +225,7 @@ func (d *Datastore) calculateField(field string, key string, updated map[string]
 //
 // The returned map contains exacply the given keys. If a key does not exist in
 // the datastore, then the value of this key is <nil>.
-func (d *Datastore) requestKeys(keys []string) (map[string]json.RawMessage, error) {
+func (d *Datastore) requestKeys(keys []string) (map[string][]byte, error) {
 	requestData, err := keysToGetManyRequest(keys)
 	if err != nil {
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)
@@ -269,7 +269,7 @@ func (d *Datastore) requestKeys(keys []string) (map[string]json.RawMessage, erro
 }
 
 // keysToGetManyRequest a json envoding of the get_many request.
-func keysToGetManyRequest(keys []string) (json.RawMessage, error) {
+func keysToGetManyRequest(keys []string) ([]byte, error) {
 	request := struct {
 		Requests []string `json:"requests"`
 	}{keys}
@@ -278,13 +278,13 @@ func keysToGetManyRequest(keys []string) (json.RawMessage, error) {
 
 // getManyResponceToKeyValue reads the responce from the getMany request and
 // returns the content as key-values.
-func getManyResponceToKeyValue(r io.Reader) (map[string]json.RawMessage, error) {
+func getManyResponceToKeyValue(r io.Reader) (map[string][]byte, error) {
 	var data map[string]map[string]map[string]json.RawMessage
 	if err := json.NewDecoder(r).Decode(&data); err != nil {
 		return nil, fmt.Errorf("decoding responce: %w", err)
 	}
 
-	keyValue := make(map[string]json.RawMessage)
+	keyValue := make(map[string][]byte)
 	for collection, idField := range data {
 		for id, fieldValue := range idField {
 			for field, value := range fieldValue {

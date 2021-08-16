@@ -174,7 +174,7 @@ func newDatastoreValues(data map[string]string) *datastoreValues {
 
 // value returns a value for a key. If the value does not exist, the second
 // return value is false.
-func (d *datastoreValues) value(key string) (json.RawMessage, error) {
+func (d *datastoreValues) value(key string) ([]byte, error) {
 	if d == nil {
 		return nil, nil
 	}
