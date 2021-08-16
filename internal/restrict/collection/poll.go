@@ -45,30 +45,20 @@ func (m Poll) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 
 	switch parts[0] {
 	case "motion":
-		meetingID := fetch.Field().Motion_MeetingID(ctx, id)
-		if err := fetch.Err(); err != nil {
-			return false, fmt.Errorf("gettin meeting id of motion %d: %w", id, err)
-		}
-
-		perms, err := mperms.Meeting(ctx, meetingID)
+		see, err := Motion{}.see(ctx, fetch, mperms, id)
 		if err != nil {
-			return false, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
+			return false, fmt.Errorf("checking see motion %d: %w", id, err)
 		}
 
-		return perms.Has(perm.MotionCanSee), nil
+		return see, nil
 
 	case "assignment":
-		meetingID := fetch.Field().Assignment_MeetingID(ctx, id)
-		if err := fetch.Err(); err != nil {
-			return false, fmt.Errorf("gettin meeting id of assignment %d: %w", id, err)
-		}
-
-		perms, err := mperms.Meeting(ctx, meetingID)
+		see, err := Assignment{}.see(ctx, fetch, mperms, id)
 		if err != nil {
-			return false, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
+			return false, fmt.Errorf("checking see assignment %d: %w", id, err)
 		}
 
-		return perms.Has(perm.AssignmentCanSee), nil
+		return see, nil
 
 	default:
 		meetingID := fetch.Field().Poll_MeetingID(ctx, pollID)
