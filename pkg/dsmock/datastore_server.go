@@ -22,14 +22,14 @@ type DatastoreServer struct {
 	RequestCount int
 	Values       *datastoreValues
 
-	c chan map[string]json.RawMessage
+	c chan map[string][]byte
 }
 
 // NewDatastoreServer creates a new DatastoreServer.
 func NewDatastoreServer(close <-chan struct{}, data map[string]string) *DatastoreServer {
 	d := &DatastoreServer{
 		Values: newDatastoreValues(data),
-		c:      make(chan map[string]json.RawMessage),
+		c:      make(chan map[string][]byte),
 	}
 
 	d.TS = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +68,7 @@ func NewDatastoreServer(close <-chan struct{}, data map[string]string) *Datastor
 			if _, ok := responceData[keyParts[0]][keyParts[1]]; !ok {
 				responceData[keyParts[0]][keyParts[1]] = make(map[string]json.RawMessage)
 			}
-			responceData[keyParts[0]][keyParts[1]][keyParts[2]] = json.RawMessage(value)
+			responceData[keyParts[0]][keyParts[1]][keyParts[2]] = value
 		}
 
 		if err := json.NewEncoder(w).Encode(responceData); err != nil {
@@ -87,7 +87,7 @@ func NewDatastoreServer(close <-chan struct{}, data map[string]string) *Datastor
 
 // Update returnes keys that have changed. Blocks until keys are send with
 // the Send-method.
-func (d *DatastoreServer) Update(closing <-chan struct{}) (map[string]json.RawMessage, error) {
+func (d *DatastoreServer) Update(closing <-chan struct{}) (map[string][]byte, error) {
 	select {
 	case v := <-d.c:
 		d.Values.set(v)
@@ -99,7 +99,7 @@ func (d *DatastoreServer) Update(closing <-chan struct{}) (map[string]json.RawMe
 
 // Send sends keys to the mock that can be received with Update().
 func (d *DatastoreServer) Send(values map[string]string) {
-	conv := make(map[string]json.RawMessage)
+	conv := make(map[string][]byte)
 	for k, v := range values {
 		conv[k] = nil
 		if v != "" {

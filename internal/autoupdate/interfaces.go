@@ -2,13 +2,12 @@ package autoupdate
 
 import (
 	"context"
-	"encoding/json"
 )
 
 // Datastore gets values for keys and informs, if they change.
 type Datastore interface {
 	Get(ctx context.Context, keys ...string) (map[string][]byte, error)
-	RegisterChangeListener(f func(map[string]json.RawMessage) error)
+	RegisterChangeListener(f func(map[string][]byte) error)
 	ResetCache()
 }
 

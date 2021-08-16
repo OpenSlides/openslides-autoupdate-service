@@ -13,13 +13,13 @@ import (
 // Datastore gets values for keys and informs, if they change.
 type Datastore interface {
 	Get(ctx context.Context, keys ...string) (map[string][]byte, error)
-	RegisterCalculatedField(field string, f func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error))
+	RegisterCalculatedField(field string, f func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error))
 }
 
 // Register initializes a new projector.
 func Register(ds Datastore, slides *SlideStore) {
 	hotKeys := make(map[string][]string)
-	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield string, changed map[string]json.RawMessage) (bs []byte, err error) {
+	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield string, changed map[string][]byte) (bs []byte, err error) {
 		if changed != nil {
 			var needUpdate bool
 			for _, k := range hotKeys[fqfield] {

@@ -2,7 +2,6 @@ package datastore
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 )
@@ -112,8 +111,7 @@ func (c *cache) SetIfExist(key string, value []byte) {
 }
 
 // SetIfExistMany is like SetIfExist but with many keys.
-func (c *cache) SetIfExistMany(data map[string]json.RawMessage) {
-	// TODO: Change json.RawMessage to []byte
+func (c *cache) SetIfExistMany(data map[string][]byte) {
 	c.data.setIfExistMany(data)
 }
 
@@ -215,8 +213,7 @@ func (d *pendingMap) setIfExist(key string, value []byte) {
 }
 
 // setIfExistMany is like setIfExists but for many values
-func (d *pendingMap) setIfExistMany(data map[string]json.RawMessage) {
-	// TODO: change data value to []byte.
+func (d *pendingMap) setIfExistMany(data map[string][]byte) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 

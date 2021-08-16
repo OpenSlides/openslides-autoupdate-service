@@ -60,7 +60,7 @@ func New(datastore Datastore, restricter RestricterFunc, closed <-chan struct{})
 	}
 
 	// Update the topic when an data update is received.
-	a.datastore.RegisterChangeListener(func(data map[string]json.RawMessage) error {
+	a.datastore.RegisterChangeListener(func(data map[string][]byte) error {
 		keys := make([]string, 0, len(data))
 		for k := range data {
 			keys = append(keys, k)
