@@ -23,6 +23,10 @@ type Getter interface {
 // internaly. As soon, as an error happens, all later calls to methods of that
 // fetcher are noops.
 //
+// The method Fetcher.Err() can be used to get the error. After it is called
+// once, the error is cleared. So the next call to Fether after Err() is not a
+// noop.
+//
 // Make sure to call Fetcher.Err() at the end to see, if an error happend.
 type Fetcher struct {
 	ds   Getter
@@ -59,7 +63,7 @@ func (f *Fetcher) Fetch(ctx context.Context, value interface{}, keyFmt string, a
 	}
 
 	if err := json.Unmarshal(fields[0], value); err != nil {
-		f.err = fmt.Errorf("unpacking value: %w", err)
+		f.err = fmt.Errorf("unpacking value of %q: %w", fqfield, err)
 	}
 	return
 }
@@ -97,7 +101,7 @@ func (f *Fetcher) FetchIfExist(ctx context.Context, value interface{}, keyFmt st
 	}
 
 	if err := json.Unmarshal(fields[1], value); err != nil {
-		f.err = fmt.Errorf("unpacking value: %w", err)
+		f.err = fmt.Errorf("unpacking value of %q: %w", fqfield, err)
 	}
 	return
 }
@@ -138,6 +142,11 @@ func (f *Fetcher) Object(ctx context.Context, fqID string, fields ...string) map
 	return object
 }
 
+// Field returns function to fetch all existing field.
+func (f *Fetcher) Field() Fields {
+	return Fields{f}
+}
+
 // Keys returns all datastore keys that where fetched in the process.
 func (f *Fetcher) Keys() []string {
 	return f.keys
@@ -145,8 +154,13 @@ func (f *Fetcher) Keys() []string {
 
 // Err returns the error that happend at a method call. If no error happend,
 // then Err() returns nil.
+//
+// Calling this method clears the error. So a second call to Err() does not
+// return the error anymore.
 func (f *Fetcher) Err() error {
-	return f.err
+	err := f.err
+	f.err = nil
+	return err
 }
 
 // FetchFunc is a function that fetches a value. It has the signature of

@@ -93,6 +93,24 @@ func YAMLData(input string) map[string]string {
 	return data
 }
 
+// Stub are data that can be used as a datastore value.
+type Stub map[string]string
+
+// Get implements the Getter interface.
+func (s Stub) Get(_ context.Context, keys ...string) ([]json.RawMessage, error) {
+	values := make([]json.RawMessage, len(keys))
+	data := map[string]string(s)
+	for i, k := range keys {
+		element, ok := data[k]
+		if !ok {
+			continue
+		}
+
+		values[i] = []byte(element)
+	}
+	return values, nil
+}
+
 // MockDatastore implements the autoupdate.Datastore interface.
 type MockDatastore struct {
 	*datastore.Datastore

@@ -5,106 +5,144 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
+	restrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
 
 func TestRestrict(t *testing.T) {
-	perms := new(test.MockPermission)
-	perms.Data = map[string]bool{
-		"user/1/name":     true,
-		"user/1/password": false,
-	}
-	r := restrict.New(perms, nil)
-	data := map[string]json.RawMessage{
-		"user/1/name":     []byte("uwe"),
-		"user/1/password": []byte("easy"),
-	}
-	if err := r.Restrict(context.Background(), 1, data); err != nil {
-		t.Errorf("Restrict returned unexpected error: %v", err)
+	fetch := datastore.NewFetcher(dsmock.Stub(dsmock.YAMLData(`---
+	meeting/1/enable_anonymous: true
+	meeting/2/enable_anonymous: false
+
+	user/1:
+		group_$_ids: ["1"]
+		group_$1_ids: [10]
+	group:
+		1:
+			meeting_id: 1
+		2:
+			meeting_id: 2
+		10:
+			meeting_id: 1
+			permissions:
+			- agenda_item.can_manage
+	agenda_item:
+		1:
+			meeting_id: 1
+		10:
+			meeting_id: 2
+	tag:
+		1:
+			meeting_id: 1
+		2:
+			meeting_id: 2
+	`)))
+
+	data := map[string]string{
+		"agenda_item/1/item_number":   `"numberOne"`,
+		"agenda_item/1/unknown_field": `"numberOne"`,
+		"agenda_item/1/tag_ids":       `[1,2]`,
+		"agenda_item/404/item_number": `"numberA"`,
+		"agenda_item/10/item_number":  `"numberB"`,
+		"unknown_collection/1/field":  "404",
+		"tag/1/tagged_ids":            `["agenda_item/1","agenda_item/10"]`,
+		"user/1/group_$_ids":          `["1","2"]`,
+		"user/1/group_$1_ids":         `[1]`,
+		"user/1/group_$2_ids":         `[2]`,
 	}
 
-	if got := string(data["user/1/name"]); got != "uwe" {
-		t.Errorf("data[user/1/name] = `%s`, expected `uwe`", got)
+	got := make(map[string]json.RawMessage, len(data))
+	for k, v := range data {
+		got[k] = []byte(v)
 	}
 
-	if got := data["user/1/password"]; got != nil {
-		t.Errorf("data[user/1/password] = `%s`, expected nil", got)
+	err := restrict.Restrict(context.Background(), fetch, 1, got)
+
+	if err != nil {
+		t.Fatalf("Restrict returned: %v", err)
+	}
+
+	if got["agenda_item/1/item_number"] == nil {
+		t.Errorf("agenda_item/1/item_number was removed")
+	}
+
+	if got["agenda_item/1/unknown_field"] != nil {
+		t.Errorf("agenda_item/1/item_number was not removed")
+	}
+
+	if got["agenda_item/404/item_number"] != nil {
+		t.Errorf("agenda_item/404/item_number was not removed")
+	}
+
+	if got["agenda_item/10/item_number"] != nil {
+		t.Errorf("agenda_item/404/item_number was not removed")
+	}
+
+	if got["unknown_collection/1/field"] != nil {
+		t.Errorf("unknown_collection/1/field was not removed")
+	}
+
+	if got := string(got["tag/1/tagged_ids"]); got != `["agenda_item/1"]` {
+		t.Errorf("tag/1/tagged_ids was restricted to %q, expedted %q", got, `["agenda_item/1"]`)
+	}
+
+	if got := string(got["agenda_item/1/tag_ids"]); got != `[1]` {
+		t.Errorf("agenda_item/1/tag_ids was restricted to %q, expedted %q", got, `[1]`)
+	}
+
+	// This should change in the future. meeting 2 is not visible
+	if got := string(got["user/1/group_$_ids"]); got != `["1","2"]` {
+		t.Errorf("user/1/group_$_ids was restricted to %q, did not expect it", got)
+	}
+
+	if got := string(got["user/1/group_$1_ids"]); got != `[1]` {
+		t.Errorf("user/1/group_$1_ids was restricted to %q, did not expect it", got)
+	}
+
+	if got := string(got["user/1/group_$2_ids"]); got != `null` {
+		t.Errorf("user/1/group_$2_ids is %q, expected a empty list", got)
 	}
 }
 
-func TestRestrictDeletedFields(t *testing.T) {
-	perms := new(test.MockPermission)
-	perms.Default = true
-	r := restrict.New(perms, nil)
-	data := map[string]json.RawMessage{
-		"tag/1/name": nil,
-	}
-	if err := r.Restrict(context.Background(), 1, data); err != nil {
-		t.Errorf("Restrict returned unexpected error: %v", err)
+func TestRestrictSuperAdmin(t *testing.T) {
+	fetch := datastore.NewFetcher(dsmock.Stub(dsmock.YAMLData(`---
+	user/1/organization_management_level: superadmin
+	personal_note/1/user_id: 1
+	personal_note/2/user_id: 2
+	`)))
+
+	data := map[string]string{
+		"unknown_collection/404/field": "404",
+		"user/404/unknown_field":       "404",
+		"personal_note/1/id":           "1",
+		"personal_note/2/id":           "2",
 	}
 
-	if got := data["tag/1/name"]; got != nil {
-		t.Errorf("data[tag/1/name] = `%s`, expected nil", got)
+	got := make(map[string]json.RawMessage, len(data))
+	for k, v := range data {
+		got[k] = []byte(v)
 	}
 
-	if len(perms.Called) != 0 {
-		t.Errorf("Permission api was caled")
+	err := restrict.Restrict(context.Background(), fetch, 1, got)
+
+	if err != nil {
+		t.Fatalf("Restrict returned: %v", err)
 	}
 
-}
-
-func TestChecker(t *testing.T) {
-	perms := new(test.MockPermission)
-	perms.Data = map[string]bool{
-		"user/1/name":       true,
-		"user/1/password":   false,
-		"user/1/first_name": true,
+	if got["unknown_collection/404/field"] == nil {
+		t.Errorf("unknown_collection/404/field was restricted")
 	}
 
-	called := make(map[string]bool)
-	checker := map[string]restrict.Checker{
-		"user/name": restrict.CheckerFunc(func(ctx context.Context, uid int, key string, value json.RawMessage) (json.RawMessage, error) {
-			called[key] = true
-			return []byte("touched"), nil
-		}),
-		"user/password": restrict.CheckerFunc(func(ctx context.Context, uid int, key string, value json.RawMessage) (json.RawMessage, error) {
-			called[key] = true
-			return []byte("touched"), nil
-		}),
-		"user/first_name": restrict.CheckerFunc(func(ctx context.Context, uid int, key string, value json.RawMessage) (json.RawMessage, error) {
-			called[key] = true
-			return []byte("touched"), nil
-		}),
+	if got["user/404/unknown_field"] == nil {
+		t.Errorf("user/404/unknown_field was restricted")
 	}
 
-	r := restrict.New(perms, checker)
-	data := map[string]json.RawMessage{
-		"user/1/name":       []byte("uwe"),
-		"user/1/password":   []byte("easy"),
-		"user/1/first_name": nil,
-	}
-	if err := r.Restrict(context.Background(), 1, data); err != nil {
-		t.Errorf("Restrict returned unexpected error: %v", err)
+	if got["personal_note/1/id"] == nil {
+		t.Errorf("personal_note/1/id got restricted")
 	}
 
-	if got := string(data["user/1/name"]); got != "touched" {
-		t.Errorf("data[user/1/name] = `%s`, expected `touched`", got)
-	}
-
-	if got := data["user/1/password"]; got != nil {
-		t.Errorf("data[user/1/password] = `%s`, expected nil", got)
-	}
-
-	if !called["user/1/name"] {
-		t.Errorf("checker for key user/1/name was not called")
-	}
-
-	if called["user/1/password"] {
-		t.Errorf("checker for key user/1/password was called")
-	}
-
-	if called["user/1/first_name"] {
-		t.Errorf("checker for key user/1/first_name was called")
+	if got["personal_note/2/id"] != nil {
+		t.Errorf("personal_note/2/id got not restricted")
 	}
 }

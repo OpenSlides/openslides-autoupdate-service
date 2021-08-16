@@ -21,13 +21,16 @@ func TestLive(t *testing.T) {
 		"collection/1/foo": `"Foo Value"`,
 		"collection/1/bar": `"Bar Value"`,
 	})
-	s := autoupdate.New(ds, test.RestrictAllowed(), test.UserUpdater{}, closed)
+	s := autoupdate.New(ds, test.RestrictAllowed, closed)
 	kb := test.KeysBuilder{K: []string{"collection/1/foo", "collection/1/bar"}}
 
 	w := lineWriter{maxLines: 1}
 	err := s.Live(context.Background(), 1, &w, kb)
 
-	require.True(t, errors.Is(err, errWriterFull))
+	if !errors.Is(err, errWriterFull) {
+		t.Errorf("err == %q, expected errWriterFull", err)
+	}
+
 	require.Len(t, w.lines, 1)
 	assert.JSONEq(t, `{"collection/1/bar":"Bar Value","collection/1/foo":"Foo Value"}`, w.lines[0])
 }
@@ -40,7 +43,7 @@ func TestLiveFlushBetweenUpdates(t *testing.T) {
 		"collection/1/foo": `"Foo Value"`,
 		"collection/1/bar": `"Bar Value"`,
 	})
-	s := autoupdate.New(ds, test.RestrictAllowed(), test.UserUpdater{}, closed)
+	s := autoupdate.New(ds, test.RestrictAllowed, closed)
 	kb := test.KeysBuilder{K: []string{"collection/1/foo", "collection/1/bar"}}
 
 	receiving := make(chan struct{})

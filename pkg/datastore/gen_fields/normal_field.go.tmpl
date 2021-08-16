@@ -1,0 +1,5 @@
+func (f Fields) {{ .GoName }}(ctx context.Context, {{ .Collection }}ID int) {{ .GoType }} {
+    var v {{ .GoType }}
+    f.fetch.FetchIfExist(ctx, &v, "{{ .FQField }}", {{ .Collection }}ID)
+    return v
+}

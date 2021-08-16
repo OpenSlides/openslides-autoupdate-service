@@ -13,6 +13,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/ostcar/topic"
 )
 
@@ -31,10 +32,6 @@ const (
 	// A high value means more memory and cpu usage after some time. A lower
 	// value means more Requests to the Datastore Service and therefore a slower
 	// responce time for the clients.
-	//
-	// TODO: This should be a high value, for example time.Hour. It is only a
-	// smal value, so it happens more often in development and we might find
-	// some bugs.
 	datastoreCacheResetTime = 24 * time.Hour
 )
 
@@ -47,16 +44,19 @@ const fullUpdateFormat = "fullupdate/%d"
 // with autoupdate.New().
 type Autoupdate struct {
 	datastore  Datastore
-	restricter Restricter
 	topic      *topic.Topic
+	restricter RestricterFunc
 }
 
+// RestricterFunc is a function that can restrict data.
+type RestricterFunc func(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[string]json.RawMessage) error
+
 // New creates a new autoupdate service.
-func New(datastore Datastore, restricter Restricter, userUpater UserUpdater, closed <-chan struct{}) *Autoupdate {
+func New(datastore Datastore, restricter RestricterFunc, closed <-chan struct{}) *Autoupdate {
 	a := &Autoupdate{
 		datastore:  datastore,
-		restricter: restricter,
 		topic:      topic.New(topic.WithClosed(closed)),
+		restricter: restricter,
 	}
 
 	// Update the topic when an data update is received.
@@ -64,15 +64,6 @@ func New(datastore Datastore, restricter Restricter, userUpater UserUpdater, clo
 		keys := make([]string, 0, len(data))
 		for k := range data {
 			keys = append(keys, k)
-		}
-
-		uids, err := userUpater.AdditionalUpdate(context.TODO(), data)
-		if err != nil {
-			return fmt.Errorf("getting addition user ids: %w", err)
-		}
-
-		for _, uid := range uids {
-			keys = append(keys, fmt.Sprintf(fullUpdateFormat, uid))
 		}
 
 		a.topic.Publish(keys...)
@@ -176,7 +167,9 @@ func (a *Autoupdate) RestrictedData(ctx context.Context, uid int, keys ...string
 		data[key] = values[i]
 	}
 
-	if err := a.restricter.Restrict(ctx, uid, data); err != nil {
+	fetch := datastore.NewFetcher(a.datastore)
+
+	if err := a.restricter(ctx, fetch, uid, data); err != nil {
 		return nil, fmt.Errorf("restrict data: %w", err)
 	}
 	return data, nil
