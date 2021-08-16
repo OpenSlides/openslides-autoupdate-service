@@ -49,7 +49,7 @@ type Autoupdate struct {
 }
 
 // RestricterFunc is a function that can restrict data.
-type RestricterFunc func(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[string][]byte) error
+type RestricterFunc func(ctx context.Context, getter datastore.Getter, uid int, data map[string][]byte) error
 
 // New creates a new autoupdate service.
 func New(datastore Datastore, restricter RestricterFunc, closed <-chan struct{}) *Autoupdate {
@@ -167,9 +167,7 @@ func (a *Autoupdate) RestrictedData(ctx context.Context, uid int, keys ...string
 		return nil, fmt.Errorf("get values for keys `%v` from datastore: %w", keys, err)
 	}
 
-	fetch := datastore.NewFetcher(a.datastore)
-
-	if err := a.restricter(ctx, fetch, uid, data); err != nil {
+	if err := a.restricter(ctx, a.datastore, uid, data); err != nil {
 		return nil, fmt.Errorf("restrict data: %w", err)
 	}
 	return data, nil

@@ -20,9 +20,7 @@ type Getter interface {
 // internaly. As soon, as an error happens, all later calls to methods of that
 // fetcher are noops.
 //
-// The method Fetcher.Err() can be used to get the error. After it is called
-// once, the error is cleared. So the next call to Fether after Err() is not a
-// noop.
+// The method Fetcher.Err() can be used to get the error.
 //
 // Make sure to call Fetcher.Err() at the end to see, if an error happend.
 type Fetcher struct {
@@ -141,12 +139,8 @@ func (f *Fetcher) Field() Fields {
 
 // Err returns the error that happend at a method call. If no error happend,
 // then Err() returns nil.
-//
-// Calling this method clears the error. So a second call to Err() does not
-// return the error anymore.
 func (f *Fetcher) Err() error {
 	err := f.err
-	f.err = nil
 	return err
 }
 

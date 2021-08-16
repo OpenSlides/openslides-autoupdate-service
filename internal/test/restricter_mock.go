@@ -7,12 +7,12 @@ import (
 )
 
 // RestrictAllowed is a restricter that allows everything
-func RestrictAllowed(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[string][]byte) error {
+func RestrictAllowed(ctx context.Context, getter datastore.Getter, uid int, data map[string][]byte) error {
 	return nil
 }
 
 // RestrictNotAllowed is a restricter that removes everythin
-func RestrictNotAllowed(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[string][]byte) error {
+func RestrictNotAllowed(ctx context.Context, getter datastore.Getter, uid int, data map[string][]byte) error {
 	for k := range data {
 		data[k] = nil
 	}
