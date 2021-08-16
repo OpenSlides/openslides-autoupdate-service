@@ -37,12 +37,13 @@ func Register(ds Datastore, slides *SlideStore) {
 			}
 		}
 
-		fetch := datastore.NewFetcher(ds)
+		recorder := datastore.NewRecorder(ds)
+		fetch := datastore.NewFetcher(recorder)
 
 		defer func() {
 			// At the end, save all requested keys to check later if one has
 			// changed.
-			hotKeys[fqfield] = fetch.Keys()
+			hotKeys[fqfield] = recorder.Keys()
 		}()
 
 		parts := strings.SplitN(fqfield, "/", 3)
