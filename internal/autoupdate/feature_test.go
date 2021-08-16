@@ -312,12 +312,17 @@ func TestFeatures(t *testing.T) {
 				t.Fatalf("Can not get data: %v", err)
 			}
 
+			converted := make(map[string]json.RawMessage, len(data))
+			for k, v := range data {
+				converted[k] = v
+			}
+
 			var expect map[string]json.RawMessage
 			if err := json.Unmarshal([]byte(tt.result), &expect); err != nil {
 				t.Fatalf("Can not decode keys from expected data: %v", err)
 			}
 
-			cmpMap(t, data, expect)
+			cmpMap(t, converted, expect)
 		})
 	}
 }

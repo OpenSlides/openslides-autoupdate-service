@@ -98,7 +98,7 @@ func TestErrors(t *testing.T) {
 		content: strings.NewReader(`"content"`),
 	}
 	db := &test.DataProvider{
-		Data: map[string]json.RawMessage{
+		Data: map[string][]byte{
 			"foo/1/name": []byte(`"hugo"`),
 		},
 	}

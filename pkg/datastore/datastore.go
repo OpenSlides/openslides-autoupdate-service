@@ -73,7 +73,7 @@ func invalidKeys(keys ...string) []string {
 // Get returns the value for one or many keys.
 //
 // If a key does not exist, the value nil is returned for that key.
-func (d *Datastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage, error) {
+func (d *Datastore) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
 	values, err := d.cache.GetOrSet(ctx, keys, func(keys []string, set func(key string, value []byte)) error {
 		if invalid := invalidKeys(keys...); invalid != nil {
 			return invalidKeyError{keys: invalid}

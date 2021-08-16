@@ -2,7 +2,6 @@ package autoupdate
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 )
 
@@ -23,9 +22,9 @@ type Connection struct {
 //
 // On every other call, it blocks until there is new data. In this case, the map
 // is never empty.
-func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, error) {
+func (c *Connection) Next(ctx context.Context) (map[string][]byte, error) {
 	firstTime := c.filter.empty()
-	var data map[string]json.RawMessage
+	var data map[string][]byte
 
 	for len(data) == 0 {
 		keys, err := c.keys(ctx)

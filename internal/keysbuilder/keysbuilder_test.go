@@ -2,7 +2,6 @@ package keysbuilder_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -16,7 +15,7 @@ func TestKeys(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		request string
-		data    map[string]json.RawMessage
+		data    map[string][]byte
 		keys    []string
 	}{
 		{
@@ -68,7 +67,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{"user/1/note_id": []byte("1")},
+			map[string][]byte{"user/1/note_id": []byte("1")},
 			strs("user/1/note_id", "note/1/important"),
 		},
 		{
@@ -84,7 +83,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{"user/1/group_ids": []byte("[1,2]")},
+			map[string][]byte{"user/1/group_ids": []byte("[1,2]")},
 			strs("user/1/group_ids", "group/1/admin", "group/2/admin"),
 		},
 		{
@@ -106,7 +105,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{
+			map[string][]byte{
 				"user/1/note_id":   []byte("1"),
 				"note/1/motion_id": []byte("1"),
 			},
@@ -131,7 +130,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{
+			map[string][]byte{
 				"user/1/group_ids": []byte("[1,2]"),
 				"group/1/perm_ids": []byte("[1,2]"),
 				"group/2/perm_ids": []byte("[1,2]"),
@@ -196,7 +195,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{
+			map[string][]byte{
 				"user/1/group_$_ids":  []byte(`["1","2"]`),
 				"user/1/group_$1_ids": []byte("[1,2]"),
 				"user/1/group_$2_ids": []byte("[1,2]"),
@@ -215,7 +214,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{
+			map[string][]byte{
 				"user/1/likes": []byte(`"other/1"`),
 			},
 			strs("user/1/likes", "other/1/name"),
@@ -238,7 +237,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{
+			map[string][]byte{
 				"user/1/likes":    []byte(`"other/1"`),
 				"other/1/tag_ids": []byte("[1,2]"),
 			},
@@ -256,7 +255,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{
+			map[string][]byte{
 				"user/1/likes": []byte(`["other/1","other/2"]`),
 			},
 			strs("user/1/likes", "other/1/name", "other/2/name"),
@@ -286,8 +285,8 @@ func TestUpdate(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		request string
-		data    map[string]json.RawMessage
-		newData map[string]json.RawMessage
+		data    map[string][]byte
+		newData map[string][]byte
 		got     []string
 		count   int
 	}{
@@ -304,8 +303,8 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{"user/1/note_id": []byte("1")},
-			map[string]json.RawMessage{"user/1/note_id": []byte("2")},
+			map[string][]byte{"user/1/note_id": []byte("1")},
+			map[string][]byte{"user/1/note_id": []byte("2")},
 			strs("user/1/note_id", "note/2/important"),
 			1,
 		},
@@ -322,8 +321,8 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{"user/1/note_id": []byte("1")},
-			map[string]json.RawMessage{"user/1/note_id": []byte("1")},
+			map[string][]byte{"user/1/note_id": []byte("1")},
+			map[string][]byte{"user/1/note_id": []byte("1")},
 			strs("user/1/note_id", "note/1/important"),
 			0,
 		},
@@ -340,8 +339,8 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{"user/1/note_id": []byte("1"), "user/2/note_id": []byte("1")},
-			map[string]json.RawMessage{"user/1/note_id": []byte("2"), "user/2/note_id": []byte("1")},
+			map[string][]byte{"user/1/note_id": []byte("1"), "user/2/note_id": []byte("1")},
+			map[string][]byte{"user/1/note_id": []byte("2"), "user/2/note_id": []byte("1")},
 			strs("user/1/note_id", "user/2/note_id", "note/1/important", "note/2/important"),
 			1,
 		},
@@ -363,12 +362,12 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{
+			map[string][]byte{
 				"user/1/note_id":   []byte("1"),
 				"user/1/group_ids": []byte("[1,2]"),
 				"user/2/group_ids": []byte("[1,2]"),
 			},
-			map[string]json.RawMessage{
+			map[string][]byte{
 				"user/1/note_id":   []byte("2"),
 				"user/1/group_ids": []byte("[1,2]"),
 				"user/2/group_ids": []byte("[1,2]"),
@@ -394,8 +393,8 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{"user/1/note_id": []byte("1"), "group_ids": []byte("[1,2]")},
-			map[string]json.RawMessage{"user/1/note_id": []byte("2"), "user/1/group_ids": []byte("[2]")},
+			map[string][]byte{"user/1/note_id": []byte("1"), "group_ids": []byte("[1,2]")},
+			map[string][]byte{"user/1/note_id": []byte("2"), "user/1/group_ids": []byte("[2]")},
 			strs("user/1/note_id", "note/2/important", "user/1/group_ids", "group/2/admin"),
 			2,
 		},
@@ -418,12 +417,12 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{
+			map[string][]byte{
 				"user/1/group_ids": []byte("[1,2]"),
 				"group/1/perm_ids": []byte("[1,2]"),
 				"group/2/perm_ids": []byte("[1,2]"),
 			},
-			map[string]json.RawMessage{
+			map[string][]byte{
 				"user/1/group_ids": []byte("[2]"),
 				"group/1/perm_ids": []byte("[1,2]"),
 				"group/2/perm_ids": []byte("[1,2]"),
@@ -471,7 +470,7 @@ func TestConcurency(t *testing.T) {
 		}
 
 	}`
-	data := map[string]json.RawMessage{
+	data := map[string][]byte{
 		"user/1/group_ids": []byte("[1,2]"),
 		"user/2/group_ids": []byte("[1,2]"),
 		"user/3/group_ids": []byte("[1,2]"),
@@ -528,7 +527,7 @@ func TestManyRequests(t *testing.T) {
 			}
 		}
 	]`
-	data := map[string]json.RawMessage{
+	data := map[string][]byte{
 		"user/1/note_id": []byte("1"),
 		"user/2/note_id": []byte("1"),
 	}
@@ -625,7 +624,7 @@ func TestRequestCount(t *testing.T) {
 
 func TestLazy(t *testing.T) {
 	dataProvider := new(test.DataProvider)
-	dataProvider.Data = map[string]json.RawMessage{
+	dataProvider.Data = map[string][]byte{
 		"user/1/note_id": []byte("1"),
 	}
 
@@ -647,7 +646,7 @@ func TestLazy(t *testing.T) {
 	}
 
 	// Change data after kb was created
-	dataProvider.Data = map[string]json.RawMessage{
+	dataProvider.Data = map[string][]byte{
 		"user/1/note_id": []byte("2"),
 	}
 

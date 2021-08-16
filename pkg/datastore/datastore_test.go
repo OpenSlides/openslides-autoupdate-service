@@ -28,7 +28,7 @@ func TestDataStoreGet(t *testing.T) {
 	assert.NoError(t, err, "Get() returned an unexpected error")
 
 	expect := test.Str(`"Hello World"`)
-	if len(got) != 1 || string(got[0]) != expect[0] {
+	if len(got) != 1 || string(got["collection/1/field"]) != expect[0] {
 		t.Errorf("Get() returned `%v`, expected `%v`", got, expect)
 	}
 }
@@ -47,7 +47,7 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 	assert.NoError(t, err, "Get() returned an unexpected error")
 
 	expect := test.Str(`"v1"`, `"v2"`)
-	if len(got) != 2 || string(got[0]) != expect[0] || string(got[1]) != expect[1] {
+	if len(got) != 2 || string(got["collection/1/field"]) != expect[0] || string(got["collection/2/field"]) != expect[1] {
 		t.Errorf("Get() returned %s, expected %s", got, expect)
 	}
 
@@ -69,7 +69,7 @@ func TestDataStoreGetKeyTwice(t *testing.T) {
 	assert.NoError(t, err, "Get() returned an unexpected error")
 
 	expect := test.Str(`"v1"`, `"v1"`)
-	if len(got) != 2 || string(got[0]) != expect[0] || string(got[1]) != expect[1] {
+	if len(got) != 1 || string(got["collection/1/field"]) != expect[0] {
 		t.Errorf("Get() returned %s, expected %s", got, expect)
 	}
 
@@ -117,7 +117,7 @@ func TestCalculatedFields(t *testing.T) {
 		got, err := ds.Get(context.Background(), "collection/1/myfield")
 		require.NoError(t, err, "Get returned unexpected error")
 		assert.Len(t, got, 1)
-		assert.Equal(t, "my value", string(got[0]))
+		assert.Equal(t, "my value", string(got["collection/1/myfield"]))
 	})
 
 	t.Run("Fetch second time", func(t *testing.T) {
@@ -125,7 +125,7 @@ func TestCalculatedFields(t *testing.T) {
 		got, err := ds.Get(context.Background(), "collection/1/myfield")
 		require.NoError(t, err, "Get returned unexpected error")
 		assert.Len(t, got, 1)
-		assert.Equal(t, "my value", string(got[0]))
+		assert.Equal(t, "my value", string(got["collection/1/myfield"]))
 	})
 }
 
@@ -142,7 +142,7 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 		if err != nil {
 			return nil, err
 		}
-		return []byte(fmt.Sprintf(`"normal_field is %s"`, fields[0])), nil
+		return []byte(fmt.Sprintf(`"normal_field is %s"`, fields["collection/1/normal_field"])), nil
 	})
 
 	done := make(chan struct{})
@@ -159,7 +159,7 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 
 	got, err := ds.Get(context.Background(), "collection/1/myfield")
 	require.NoError(t, err, "Get returned unexpected error")
-	assert.Equal(t, "\"normal_field is \"new value\"\"", string(got[0]))
+	assert.Equal(t, "\"normal_field is \"new value\"\"", string(got["collection/1/myfield"]))
 }
 
 func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
@@ -174,7 +174,7 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 		if err != nil {
 			return nil, err
 		}
-		return []byte(fmt.Sprintf(`"normal_field is %s"`, fields[0])), nil
+		return []byte(fmt.Sprintf(`"normal_field is %s"`, fields["collection/1/normal_field"])), nil
 	})
 
 	// Call Get once to fill the cache
@@ -194,7 +194,7 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 
 	got, err := ds.Get(context.Background(), "collection/1/myfield")
 	require.NoError(t, err, "Get returned unexpected error")
-	assert.Equal(t, "\"normal_field is \"new value\"\"", string(got[0]))
+	assert.Equal(t, "\"normal_field is \"new value\"\"", string(got["collection/1/myfield"]))
 }
 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
@@ -209,7 +209,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 		if err != nil {
 			return nil, fmt.Errorf("getting normal field: %w", err)
 		}
-		return field[0], nil
+		return field["collection/1/normal_field"], nil
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -230,7 +230,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.
 		if err != nil {
 			return nil, fmt.Errorf("getting normal field: %w", err)
 		}
-		return append(fields[0], fields[1]...), nil
+		return append(fields["collection/1/normal_field"], fields["collection/1/normal_field"]...), nil
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -249,7 +249,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExist(t 
 		if err != nil {
 			return nil, fmt.Errorf("getting normal field: %w", err)
 		}
-		return field[0], nil
+		return field["collection/1/normal_field"], nil
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -268,7 +268,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExistTwi
 		if err != nil {
 			return nil, fmt.Errorf("getting normal field: %w", err)
 		}
-		return append(fields[0], fields[1]...), nil
+		return append(fields["collection/1/normal_field"], fields["collection/1/normal_field"]...), nil
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)

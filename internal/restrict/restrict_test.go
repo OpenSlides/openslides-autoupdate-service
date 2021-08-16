@@ -2,7 +2,6 @@ package restrict_test
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	restrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
@@ -52,7 +51,7 @@ func TestRestrict(t *testing.T) {
 		"user/1/group_$2_ids":         `[2]`,
 	}
 
-	got := make(map[string]json.RawMessage, len(data))
+	got := make(map[string][]byte, len(data))
 	for k, v := range data {
 		got[k] = []byte(v)
 	}
@@ -119,7 +118,7 @@ func TestRestrictSuperAdmin(t *testing.T) {
 		"personal_note/2/id":           "2",
 	}
 
-	got := make(map[string]json.RawMessage, len(data))
+	got := make(map[string][]byte, len(data))
 	for k, v := range data {
 		got[k] = []byte(v)
 	}

@@ -12,7 +12,7 @@ import (
 
 // Datastore gets values for keys and informs, if they change.
 type Datastore interface {
-	Get(ctx context.Context, keys ...string) ([]json.RawMessage, error)
+	Get(ctx context.Context, keys ...string) (map[string][]byte, error)
 	RegisterCalculatedField(field string, f func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error))
 }
 
@@ -33,7 +33,7 @@ func Register(ds Datastore, slides *SlideStore) {
 				if err != nil {
 					return nil, fmt.Errorf("getting old value: %w", err)
 				}
-				return old[0], nil
+				return old[fqfield], nil
 			}
 		}
 

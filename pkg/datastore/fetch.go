@@ -11,7 +11,7 @@ import (
 //
 // The Datastore object implements this interface.
 type Getter interface {
-	Get(ctx context.Context, keys ...string) ([]json.RawMessage, error)
+	Get(ctx context.Context, keys ...string) (map[string][]byte, error)
 }
 
 // Fetcher is a helper to fetch many keys from the datastore.
@@ -58,11 +58,11 @@ func (f *Fetcher) Fetch(ctx context.Context, value interface{}, keyFmt string, a
 		return
 	}
 
-	if fields[0] == nil {
+	if fields[fqfield] == nil {
 		return
 	}
 
-	if err := json.Unmarshal(fields[0], value); err != nil {
+	if err := json.Unmarshal(fields[fqfield], value); err != nil {
 		f.err = fmt.Errorf("unpacking value of %q: %w", fqfield, err)
 	}
 	return
@@ -92,15 +92,15 @@ func (f *Fetcher) FetchIfExist(ctx context.Context, value interface{}, keyFmt st
 		return
 	}
 
-	if fields[0] == nil {
+	if fields[idField] == nil {
 		f.err = DoesNotExistError(fqid)
 		return
 	}
-	if fields[1] == nil {
+	if fields[fqfield] == nil {
 		return
 	}
 
-	if err := json.Unmarshal(fields[1], value); err != nil {
+	if err := json.Unmarshal(fields[fqfield], value); err != nil {
 		f.err = fmt.Errorf("unpacking value of %q: %w", fqfield, err)
 	}
 	return
@@ -129,16 +129,15 @@ func (f *Fetcher) Object(ctx context.Context, fqID string, fields ...string) map
 		return nil
 	}
 
-	if vals[0] == nil {
+	if vals[fqID+"/id"] == nil {
 		f.err = DoesNotExistError(fqID)
 		return nil
 	}
 
 	object := make(map[string]json.RawMessage, len(fields))
 	for i := 0; i < len(fields); i++ {
-		object[fields[i]] = vals[i+1]
+		object[fields[i]] = vals[fqID+"/"+fields[i]]
 	}
-
 	return object
 }
 

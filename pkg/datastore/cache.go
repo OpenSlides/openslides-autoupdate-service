@@ -49,7 +49,7 @@ func newCache() *cache {
 //
 // If the context is done, GetOrSet returns. But the set() call is not stopped.
 // Other calls to GetOrSet may wait for its result.
-func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) ([]json.RawMessage, error) {
+func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) (map[string][]byte, error) {
 	missingKeys := c.data.markPending(keys...)
 
 	// Fetch missing keys.
@@ -72,15 +72,15 @@ func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) (
 	}
 
 	// Build return values. Blocks until pending keys are fetched.
-	values := make([]json.RawMessage, len(keys))
-	for i, key := range keys {
+	values := make(map[string][]byte, len(keys))
+	for _, key := range keys {
 		// Gets a value and waits until a pending value is ready.
 		v, err := c.data.get(ctx, key)
 		if err != nil {
 			return nil, fmt.Errorf("waiting for key %s: %w", key, err)
 		}
 
-		values[i] = v
+		values[key] = v
 	}
 	return values, nil
 }
