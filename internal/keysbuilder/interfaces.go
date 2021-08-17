@@ -7,7 +7,7 @@ import (
 
 // DataProvider decodes a restricted value for an key.
 type DataProvider interface {
-	RestrictedData(ctx context.Context, uid int, keys ...string) (map[string]json.RawMessage, error)
+	RestrictedData(ctx context.Context, uid int, keys ...string) (map[string][]byte, error)
 }
 
 type fieldDescription interface {

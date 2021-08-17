@@ -97,18 +97,12 @@ func YAMLData(input string) map[string]string {
 type Stub map[string]string
 
 // Get implements the Getter interface.
-func (s Stub) Get(_ context.Context, keys ...string) ([]json.RawMessage, error) {
-	values := make([]json.RawMessage, len(keys))
-	data := map[string]string(s)
-	for i, k := range keys {
-		element, ok := data[k]
-		if !ok {
-			continue
-		}
-
-		values[i] = []byte(element)
+func (s Stub) Get(_ context.Context, keys ...string) (map[string][]byte, error) {
+	converted := make(map[string][]byte, len(keys))
+	for k, v := range map[string]string(s) {
+		converted[k] = []byte(v)
 	}
-	return values, nil
+	return converted, nil
 }
 
 // MockDatastore implements the autoupdate.Datastore interface.
@@ -132,7 +126,7 @@ func NewMockDatastore(closed <-chan struct{}, data map[string]string) *MockDatas
 }
 
 // Get calls the Get() method of the datastore.
-func (d *MockDatastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage, error) {
+func (d *MockDatastore) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
 	if d.err != nil {
 		return nil, d.err
 	}
@@ -154,7 +148,7 @@ func (d *MockDatastore) Send(data map[string]string) {
 }
 
 // Update implements the datastore.Updater interface.
-func (d *MockDatastore) Update(close <-chan struct{}) (map[string]json.RawMessage, error) {
+func (d *MockDatastore) Update(close <-chan struct{}) (map[string][]byte, error) {
 	return d.server.Update(close)
 }
 
@@ -164,11 +158,11 @@ func (d *MockDatastore) Update(close <-chan struct{}) (map[string]json.RawMessag
 // If OnlyData is false, fake data is generated.
 type datastoreValues struct {
 	mu   sync.RWMutex
-	Data map[string]json.RawMessage
+	Data map[string][]byte
 }
 
 func newDatastoreValues(data map[string]string) *datastoreValues {
-	conv := make(map[string]json.RawMessage)
+	conv := make(map[string][]byte)
 	for k, v := range data {
 		conv[k] = []byte(v)
 	}
@@ -180,7 +174,7 @@ func newDatastoreValues(data map[string]string) *datastoreValues {
 
 // value returns a value for a key. If the value does not exist, the second
 // return value is false.
-func (d *datastoreValues) value(key string) (json.RawMessage, error) {
+func (d *datastoreValues) value(key string) ([]byte, error) {
 	if d == nil {
 		return nil, nil
 	}
@@ -199,7 +193,7 @@ func (d *datastoreValues) value(key string) (json.RawMessage, error) {
 // set updates the values from the Datastore.
 //
 // This does not send a signal to the listeners.
-func (d *datastoreValues) set(data map[string]json.RawMessage) {
+func (d *datastoreValues) set(data map[string][]byte) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 

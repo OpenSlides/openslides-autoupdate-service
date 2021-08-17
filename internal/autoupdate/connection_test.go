@@ -2,7 +2,6 @@ package autoupdate_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"testing"
 
@@ -134,7 +133,7 @@ func TestConnectionEmptyData(t *testing.T) {
 
 			datastore.Send(tt.update)
 
-			var data map[string]json.RawMessage
+			var data map[string][]byte
 			var err error
 			isBlocking := blocking(func() {
 				data, err = c.Next(context.Background())
@@ -264,7 +263,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 	c := s.Connect(1, kb)
 
 	t.Run("first call", func(t *testing.T) {
-		var data map[string]json.RawMessage
+		var data map[string][]byte
 		var err error
 		isBlocked := blocking(func() {
 			data, err = c.Next(context.Background())
@@ -276,7 +275,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 	})
 
 	t.Run("next call", func(t *testing.T) {
-		var data map[string]json.RawMessage
+		var data map[string][]byte
 		var err error
 		isBlocked := blocking(func() {
 			data, err = c.Next(context.Background())

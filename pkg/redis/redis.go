@@ -3,7 +3,6 @@
 package redis
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -31,13 +30,13 @@ type Redis struct {
 }
 
 // Update is a blocking function that returns, when there is new data.
-func (r *Redis) Update(closing <-chan struct{}) (map[string]json.RawMessage, error) {
+func (r *Redis) Update(closing <-chan struct{}) (map[string][]byte, error) {
 	id := r.lastAutoupdateID
 	if id == "" {
 		id = "$"
 	}
 
-	var data map[string]json.RawMessage
+	var data map[string][]byte
 	err := closingFunc(closing, func() error {
 		newID, d, err := autoupdateStream(r.Conn.XREAD(maxMessages, fieldChangedTopic, id))
 		if err != nil {

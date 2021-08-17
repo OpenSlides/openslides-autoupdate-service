@@ -12,14 +12,14 @@ import (
 
 // Datastore gets values for keys and informs, if they change.
 type Datastore interface {
-	Get(ctx context.Context, keys ...string) ([]json.RawMessage, error)
-	RegisterCalculatedField(field string, f func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error))
+	Get(ctx context.Context, keys ...string) (map[string][]byte, error)
+	RegisterCalculatedField(field string, f func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error))
 }
 
 // Register initializes a new projector.
 func Register(ds Datastore, slides *SlideStore) {
 	hotKeys := make(map[string][]string)
-	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield string, changed map[string]json.RawMessage) (bs []byte, err error) {
+	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield string, changed map[string][]byte) (bs []byte, err error) {
 		if changed != nil {
 			var needUpdate bool
 			for _, k := range hotKeys[fqfield] {
@@ -33,16 +33,17 @@ func Register(ds Datastore, slides *SlideStore) {
 				if err != nil {
 					return nil, fmt.Errorf("getting old value: %w", err)
 				}
-				return old[0], nil
+				return old[fqfield], nil
 			}
 		}
 
-		fetch := datastore.NewFetcher(ds)
+		recorder := datastore.NewRecorder(ds)
+		fetch := datastore.NewFetcher(recorder)
 
 		defer func() {
 			// At the end, save all requested keys to check later if one has
 			// changed.
-			hotKeys[fqfield] = fetch.Keys()
+			hotKeys[fqfield] = recorder.Keys()
 		}()
 
 		parts := strings.SplitN(fqfield, "/", 3)

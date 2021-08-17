@@ -28,8 +28,8 @@ type Datastore struct {
 	url              string
 	cache            *cache
 	keychanger       Updater
-	changeListeners  []func(map[string]json.RawMessage) error
-	calculatedFields map[string]func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error)
+	changeListeners  []func(map[string][]byte) error
+	calculatedFields map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)
 	calculatedKeys   map[string]string
 	closed           <-chan struct{}
 	errHandler       func(error)
@@ -44,7 +44,7 @@ func New(url string, closed <-chan struct{}, errHandler func(error), keychanger 
 		url:              url + urlPath,
 		keychanger:       keychanger,
 		closed:           closed,
-		calculatedFields: make(map[string]func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error)),
+		calculatedFields: make(map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)),
 		calculatedKeys:   make(map[string]string),
 		errHandler:       errHandler,
 	}
@@ -73,7 +73,7 @@ func invalidKeys(keys ...string) []string {
 // Get returns the value for one or many keys.
 //
 // If a key does not exist, the value nil is returned for that key.
-func (d *Datastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage, error) {
+func (d *Datastore) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
 	values, err := d.cache.GetOrSet(ctx, keys, func(keys []string, set func(key string, value []byte)) error {
 		if invalid := invalidKeys(keys...); invalid != nil {
 			return invalidKeyError{keys: invalid}
@@ -89,7 +89,7 @@ func (d *Datastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage,
 
 // RegisterChangeListener registers a function that is called whenever an
 // datastore update happens.
-func (d *Datastore) RegisterChangeListener(f func(map[string]json.RawMessage) error) {
+func (d *Datastore) RegisterChangeListener(f func(map[string][]byte) error) {
 	d.changeListeners = append(d.changeListeners, f)
 }
 
@@ -102,7 +102,7 @@ func (d *Datastore) RegisterChangeListener(f func(map[string]json.RawMessage) er
 // When a fqfield, that matches the field, is fetched for the first time, then f
 // is called with `changed==nil`. On every ds-update, `f` is called again with the
 // data, that has changed.
-func (d *Datastore) RegisterCalculatedField(field string, f func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error)) {
+func (d *Datastore) RegisterCalculatedField(field string, f func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)) {
 	d.calculatedFields[field] = f
 }
 
@@ -199,7 +199,7 @@ func (d *Datastore) loadKeys(keys []string, set func(string, []byte)) error {
 	return nil
 }
 
-func (d *Datastore) calculateField(field string, key string, updated map[string]json.RawMessage) []byte {
+func (d *Datastore) calculateField(field string, key string, updated map[string][]byte) []byte {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
@@ -225,7 +225,7 @@ func (d *Datastore) calculateField(field string, key string, updated map[string]
 //
 // The returned map contains exacply the given keys. If a key does not exist in
 // the datastore, then the value of this key is <nil>.
-func (d *Datastore) requestKeys(keys []string) (map[string]json.RawMessage, error) {
+func (d *Datastore) requestKeys(keys []string) (map[string][]byte, error) {
 	requestData, err := keysToGetManyRequest(keys)
 	if err != nil {
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)
@@ -269,7 +269,7 @@ func (d *Datastore) requestKeys(keys []string) (map[string]json.RawMessage, erro
 }
 
 // keysToGetManyRequest a json envoding of the get_many request.
-func keysToGetManyRequest(keys []string) (json.RawMessage, error) {
+func keysToGetManyRequest(keys []string) ([]byte, error) {
 	request := struct {
 		Requests []string `json:"requests"`
 	}{keys}
@@ -278,13 +278,13 @@ func keysToGetManyRequest(keys []string) (json.RawMessage, error) {
 
 // getManyResponceToKeyValue reads the responce from the getMany request and
 // returns the content as key-values.
-func getManyResponceToKeyValue(r io.Reader) (map[string]json.RawMessage, error) {
+func getManyResponceToKeyValue(r io.Reader) (map[string][]byte, error) {
 	var data map[string]map[string]map[string]json.RawMessage
 	if err := json.NewDecoder(r).Decode(&data); err != nil {
 		return nil, fmt.Errorf("decoding responce: %w", err)
 	}
 
-	keyValue := make(map[string]json.RawMessage)
+	keyValue := make(map[string][]byte)
 	for collection, idField := range data {
 		for id, fieldValue := range idField {
 			for field, value := range fieldValue {

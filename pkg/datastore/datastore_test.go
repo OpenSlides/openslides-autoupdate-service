@@ -2,7 +2,6 @@ package datastore_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -28,7 +27,7 @@ func TestDataStoreGet(t *testing.T) {
 	assert.NoError(t, err, "Get() returned an unexpected error")
 
 	expect := test.Str(`"Hello World"`)
-	if len(got) != 1 || string(got[0]) != expect[0] {
+	if len(got) != 1 || string(got["collection/1/field"]) != expect[0] {
 		t.Errorf("Get() returned `%v`, expected `%v`", got, expect)
 	}
 }
@@ -47,7 +46,7 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 	assert.NoError(t, err, "Get() returned an unexpected error")
 
 	expect := test.Str(`"v1"`, `"v2"`)
-	if len(got) != 2 || string(got[0]) != expect[0] || string(got[1]) != expect[1] {
+	if len(got) != 2 || string(got["collection/1/field"]) != expect[0] || string(got["collection/2/field"]) != expect[1] {
 		t.Errorf("Get() returned %s, expected %s", got, expect)
 	}
 
@@ -69,7 +68,7 @@ func TestDataStoreGetKeyTwice(t *testing.T) {
 	assert.NoError(t, err, "Get() returned an unexpected error")
 
 	expect := test.Str(`"v1"`, `"v1"`)
-	if len(got) != 2 || string(got[0]) != expect[0] || string(got[1]) != expect[1] {
+	if len(got) != 1 || string(got["collection/1/field"]) != expect[0] {
 		t.Errorf("Get() returned %s, expected %s", got, expect)
 	}
 
@@ -105,7 +104,7 @@ func TestCalculatedFields(t *testing.T) {
 	ts := dsmock.NewDatastoreServer(closed, nil)
 	url := ts.TS.URL
 	ds := datastore.New(url, closed, func(error) {}, ts)
-	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
+	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		if changed == nil {
 			return []byte("my value"), nil
 		}
@@ -117,7 +116,7 @@ func TestCalculatedFields(t *testing.T) {
 		got, err := ds.Get(context.Background(), "collection/1/myfield")
 		require.NoError(t, err, "Get returned unexpected error")
 		assert.Len(t, got, 1)
-		assert.Equal(t, "my value", string(got[0]))
+		assert.Equal(t, "my value", string(got["collection/1/myfield"]))
 	})
 
 	t.Run("Fetch second time", func(t *testing.T) {
@@ -125,7 +124,7 @@ func TestCalculatedFields(t *testing.T) {
 		got, err := ds.Get(context.Background(), "collection/1/myfield")
 		require.NoError(t, err, "Get returned unexpected error")
 		assert.Len(t, got, 1)
-		assert.Equal(t, "my value", string(got[0]))
+		assert.Equal(t, "my value", string(got["collection/1/myfield"]))
 	})
 }
 
@@ -137,16 +136,16 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 	})
 	url := ts.TS.URL
 	ds := datastore.New(url, closed, func(error) {}, ts)
-	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
+	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		fields, err := ds.Get(context.Background(), "collection/1/normal_field")
 		if err != nil {
 			return nil, err
 		}
-		return []byte(fmt.Sprintf(`"normal_field is %s"`, fields[0])), nil
+		return []byte(fmt.Sprintf(`"normal_field is %s"`, fields["collection/1/normal_field"])), nil
 	})
 
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(map[string]json.RawMessage) error {
+	ds.RegisterChangeListener(func(map[string][]byte) error {
 		// Signal, that the data is updated.
 		close(done)
 		return nil
@@ -159,7 +158,7 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 
 	got, err := ds.Get(context.Background(), "collection/1/myfield")
 	require.NoError(t, err, "Get returned unexpected error")
-	assert.Equal(t, "\"normal_field is \"new value\"\"", string(got[0]))
+	assert.Equal(t, "\"normal_field is \"new value\"\"", string(got["collection/1/myfield"]))
 }
 
 func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
@@ -169,19 +168,19 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 		"collection/1/normal_field": `"original value"`,
 	})
 	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
-	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
+	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		fields, err := ds.Get(context.Background(), "collection/1/normal_field")
 		if err != nil {
 			return nil, err
 		}
-		return []byte(fmt.Sprintf(`"normal_field is %s"`, fields[0])), nil
+		return []byte(fmt.Sprintf(`"normal_field is %s"`, fields["collection/1/normal_field"])), nil
 	})
 
 	// Call Get once to fill the cache
 	ds.Get(context.Background(), "collection/1/myfield")
 
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(map[string]json.RawMessage) error {
+	ds.RegisterChangeListener(func(map[string][]byte) error {
 		// Signal, that the data is updated.
 		close(done)
 		return nil
@@ -194,7 +193,7 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 
 	got, err := ds.Get(context.Background(), "collection/1/myfield")
 	require.NoError(t, err, "Get returned unexpected error")
-	assert.Equal(t, "\"normal_field is \"new value\"\"", string(got[0]))
+	assert.Equal(t, "\"normal_field is \"new value\"\"", string(got["collection/1/myfield"]))
 }
 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
@@ -204,12 +203,12 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 		"collection/1/normal_field": `"original value"`,
 	})
 	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
-	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
+	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		field, err := ds.Get(ctx, "collection/1/normal_field")
 		if err != nil {
 			return nil, fmt.Errorf("getting normal field: %w", err)
 		}
-		return field[0], nil
+		return field["collection/1/normal_field"], nil
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -225,12 +224,12 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.
 		"collection/1/normal_field": `"original value"`,
 	})
 	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
-	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
+	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		fields, err := ds.Get(ctx, "collection/1/normal_field", "collection/1/normal_field")
 		if err != nil {
 			return nil, fmt.Errorf("getting normal field: %w", err)
 		}
-		return append(fields[0], fields[1]...), nil
+		return append(fields["collection/1/normal_field"], fields["collection/1/normal_field"]...), nil
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -244,12 +243,12 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExist(t 
 	defer close(closed)
 	ts := dsmock.NewDatastoreServer(closed, nil)
 	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
-	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
+	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		field, err := ds.Get(ctx, "collection/1/normal_field")
 		if err != nil {
 			return nil, fmt.Errorf("getting normal field: %w", err)
 		}
-		return field[0], nil
+		return field["collection/1/normal_field"], nil
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -263,12 +262,12 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExistTwi
 	defer close(closed)
 	ts := dsmock.NewDatastoreServer(closed, nil)
 	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
-	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
+	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		fields, err := ds.Get(ctx, "collection/1/normal_field", "collection/1/normal_field")
 		if err != nil {
 			return nil, fmt.Errorf("getting normal field: %w", err)
 		}
-		return append(fields[0], fields[1]...), nil
+		return append(fields["collection/1/normal_field"], fields["collection/1/normal_field"]...), nil
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -282,7 +281,7 @@ func TestCalculatedFieldsNoDBQuery(t *testing.T) {
 	defer close(closed)
 	ts := dsmock.NewDatastoreServer(closed, nil)
 	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
-	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
+	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		return []byte("foobar"), nil
 	})
 
@@ -299,10 +298,10 @@ func TestChangeListeners(t *testing.T) {
 	ts := dsmock.NewDatastoreServer(closed, nil)
 	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
 
-	var receivedData map[string]json.RawMessage
+	var receivedData map[string][]byte
 	received := make(chan struct{}, 1)
 
-	ds.RegisterChangeListener(func(data map[string]json.RawMessage) error {
+	ds.RegisterChangeListener(func(data map[string][]byte) error {
 		receivedData = data
 		close(received)
 		return nil
@@ -311,7 +310,7 @@ func TestChangeListeners(t *testing.T) {
 	ts.Send(map[string]string{"my/1/key": `"my value"`})
 
 	<-received
-	assert.Equal(t, map[string]json.RawMessage{"my/1/key": []byte(`"my value"`)}, receivedData)
+	assert.Equal(t, map[string][]byte{"my/1/key": []byte(`"my value"`)}, receivedData)
 }
 
 func TestChangeListenersWithCalculatedFields(t *testing.T) {
@@ -321,7 +320,7 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
 
 	var callCounter int
-	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error) {
+	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		callCounter++
 		return []byte("foobar" + strconv.Itoa(callCounter)), nil
 	})
@@ -329,10 +328,10 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 	// Load calculated field in cache.
 	ds.Get(context.Background(), "collection/1/myfield")
 
-	var receivedData map[string]json.RawMessage
+	var receivedData map[string][]byte
 	received := make(chan struct{}, 1)
 
-	ds.RegisterChangeListener(func(data map[string]json.RawMessage) error {
+	ds.RegisterChangeListener(func(data map[string][]byte) error {
 		receivedData = data
 		close(received)
 		return nil
@@ -341,7 +340,7 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 	ts.Send(map[string]string{"my/1/key": `"my value"`})
 
 	<-received
-	assert.Equal(t, map[string]json.RawMessage{
+	assert.Equal(t, map[string][]byte{
 		"my/1/key":             []byte(`"my value"`),
 		"collection/1/myfield": []byte("foobar2"),
 	}, receivedData)

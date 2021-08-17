@@ -1,7 +1,6 @@
 package redis_test
 
 import (
-	"encoding/json"
 	"errors"
 	"testing"
 
@@ -21,7 +20,7 @@ func TestUpdateOnce(t *testing.T) {
 		t.Errorf("Update() returned an unexpected error %v", err)
 	}
 
-	expect := map[string]json.RawMessage{
+	expect := map[string][]byte{
 		"user/1/name": []byte("Hubert"),
 		"user/2/name": []byte("Isolde"),
 		"user/3/name": []byte("Igor"),
@@ -45,7 +44,7 @@ func TestUpdateTwice(t *testing.T) {
 		t.Errorf("Update() returned an unexpected error %v", err)
 	}
 
-	expect := map[string]json.RawMessage{}
+	expect := map[string][]byte{}
 	if !cmpMap(keys, expect) {
 		t.Errorf("Update() returned %v, expected %v", keys, expect)
 	}

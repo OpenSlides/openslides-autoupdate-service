@@ -49,7 +49,7 @@ type Autoupdate struct {
 }
 
 // RestricterFunc is a function that can restrict data.
-type RestricterFunc func(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[string]json.RawMessage) error
+type RestricterFunc func(ctx context.Context, getter datastore.Getter, uid int, data map[string][]byte) error
 
 // New creates a new autoupdate service.
 func New(datastore Datastore, restricter RestricterFunc, closed <-chan struct{}) *Autoupdate {
@@ -60,7 +60,7 @@ func New(datastore Datastore, restricter RestricterFunc, closed <-chan struct{})
 	}
 
 	// Update the topic when an data update is received.
-	a.datastore.RegisterChangeListener(func(data map[string]json.RawMessage) error {
+	a.datastore.RegisterChangeListener(func(data map[string][]byte) error {
 		keys := make([]string, 0, len(data))
 		for k := range data {
 			keys = append(keys, k)
@@ -107,7 +107,12 @@ func (a *Autoupdate) Live(ctx context.Context, userID int, w io.Writer, kb KeysB
 			return err
 		}
 
-		if err := encoder.Encode(data); err != nil {
+		converted := make(map[string]json.RawMessage, len(data))
+		for k, v := range data {
+			converted[k] = v
+		}
+
+		if err := encoder.Encode(converted); err != nil {
 			return err
 		}
 
@@ -156,20 +161,13 @@ func (a *Autoupdate) resetCache(closed <-chan struct{}) {
 // RestrictedData returns a map containing the restricted values for the given
 // keys. If a key does not exist or the user has not the permission to see it,
 // the value in the returned map is nil.
-func (a *Autoupdate) RestrictedData(ctx context.Context, uid int, keys ...string) (map[string]json.RawMessage, error) {
-	values, err := a.datastore.Get(ctx, keys...)
+func (a *Autoupdate) RestrictedData(ctx context.Context, uid int, keys ...string) (map[string][]byte, error) {
+	data, err := a.datastore.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("get values for keys `%v` from datastore: %w", keys, err)
 	}
 
-	data := make(map[string]json.RawMessage, len(keys))
-	for i, key := range keys {
-		data[key] = values[i]
-	}
-
-	fetch := datastore.NewFetcher(a.datastore)
-
-	if err := a.restricter(ctx, fetch, uid, data); err != nil {
+	if err := a.restricter(ctx, a.datastore, uid, data); err != nil {
 		return nil, fmt.Errorf("restrict data: %w", err)
 	}
 	return data, nil

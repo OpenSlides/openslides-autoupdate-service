@@ -2,16 +2,14 @@ package restrict_test
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	restrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
 
 func TestRestrict(t *testing.T) {
-	fetch := datastore.NewFetcher(dsmock.Stub(dsmock.YAMLData(`---
+	ds := dsmock.Stub(dsmock.YAMLData(`---
 	meeting/1/enable_anonymous: true
 	meeting/2/enable_anonymous: false
 
@@ -37,7 +35,7 @@ func TestRestrict(t *testing.T) {
 			meeting_id: 1
 		2:
 			meeting_id: 2
-	`)))
+	`))
 
 	data := map[string]string{
 		"agenda_item/1/item_number":   `"numberOne"`,
@@ -52,12 +50,12 @@ func TestRestrict(t *testing.T) {
 		"user/1/group_$2_ids":         `[2]`,
 	}
 
-	got := make(map[string]json.RawMessage, len(data))
+	got := make(map[string][]byte, len(data))
 	for k, v := range data {
 		got[k] = []byte(v)
 	}
 
-	err := restrict.Restrict(context.Background(), fetch, 1, got)
+	err := restrict.Restrict(context.Background(), ds, 1, got)
 
 	if err != nil {
 		t.Fatalf("Restrict returned: %v", err)
@@ -106,11 +104,11 @@ func TestRestrict(t *testing.T) {
 }
 
 func TestRestrictSuperAdmin(t *testing.T) {
-	fetch := datastore.NewFetcher(dsmock.Stub(dsmock.YAMLData(`---
+	ds := dsmock.Stub(dsmock.YAMLData(`---
 	user/1/organization_management_level: superadmin
 	personal_note/1/user_id: 1
 	personal_note/2/user_id: 2
-	`)))
+	`))
 
 	data := map[string]string{
 		"unknown_collection/404/field": "404",
@@ -119,12 +117,12 @@ func TestRestrictSuperAdmin(t *testing.T) {
 		"personal_note/2/id":           "2",
 	}
 
-	got := make(map[string]json.RawMessage, len(data))
+	got := make(map[string][]byte, len(data))
 	for k, v := range data {
 		got[k] = []byte(v)
 	}
 
-	err := restrict.Restrict(context.Background(), fetch, 1, got)
+	err := restrict.Restrict(context.Background(), ds, 1, got)
 
 	if err != nil {
 		t.Fatalf("Restrict returned: %v", err)
