@@ -69,7 +69,7 @@ func TestFeatures(t *testing.T) {
 	defer close(closed)
 
 	datastore := dsmock.NewMockDatastore(closed, dataSet)
-	s := autoupdate.New(datastore, test.RestrictAllowed, closed)
+	service := autoupdate.New(datastore, test.RestrictAllowed, closed)
 
 	for _, tt := range []struct {
 		name string
@@ -302,11 +302,11 @@ func TestFeatures(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			b, err := keysbuilder.FromJSON(strings.NewReader(tt.request), s, 1)
+			builder, err := keysbuilder.FromJSON(strings.NewReader(tt.request))
 			if err != nil {
 				t.Fatalf("FromJSON() returned an unexpected error: %v", err)
 			}
-			c := s.Connect(1, b)
+			c := service.Connect(1, builder)
 			data, err := c.Next(context.Background())
 			if err != nil {
 				t.Fatalf("Can not get data: %v", err)

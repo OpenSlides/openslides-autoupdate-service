@@ -45,14 +45,14 @@ const fullUpdateFormat = "fullupdate/%d"
 type Autoupdate struct {
 	datastore  Datastore
 	topic      *topic.Topic
-	restricter RestricterFunc
+	restricter RestrictMiddleware
 }
 
-// RestricterFunc is a function that can restrict data.
-type RestricterFunc func(ctx context.Context, getter datastore.Getter, uid int, data map[string][]byte) error
+// RestrictMiddleware is a function that can restrict data.
+type RestrictMiddleware func(getter datastore.Getter, uid int) datastore.Getter
 
 // New creates a new autoupdate service.
-func New(datastore Datastore, restricter RestricterFunc, closed <-chan struct{}) *Autoupdate {
+func New(datastore Datastore, restricter RestrictMiddleware, closed <-chan struct{}) *Autoupdate {
 	a := &Autoupdate{
 		datastore:  datastore,
 		topic:      topic.New(topic.WithClosed(closed)),
@@ -156,19 +156,4 @@ func (a *Autoupdate) resetCache(closed <-chan struct{}) {
 			a.topic.Publish(fmt.Sprintf(fullUpdateFormat, -1))
 		}
 	}
-}
-
-// RestrictedData returns a map containing the restricted values for the given
-// keys. If a key does not exist or the user has not the permission to see it,
-// the value in the returned map is nil.
-func (a *Autoupdate) RestrictedData(ctx context.Context, uid int, keys ...string) (map[string][]byte, error) {
-	data, err := a.datastore.Get(ctx, keys...)
-	if err != nil {
-		return nil, fmt.Errorf("get values for keys `%v` from datastore: %w", keys, err)
-	}
-
-	if err := a.restricter(ctx, a.datastore, uid, data); err != nil {
-		return nil, fmt.Errorf("restrict data: %w", err)
-	}
-	return data, nil
 }

@@ -56,11 +56,11 @@ func New(url string, closed <-chan struct{}, errHandler func(error), keychanger 
 
 var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*/[a-z][a-z0-9_]*\$?[a-z0-9_]*$`)
 
-// invalidKeys checks if all of the given keys are valid. Invalid keys are
+// InvalidKeys checks if all of the given keys are valid. Invalid keys are
 // returned.
 //
 // A return value of nil means, that all keys are valid.
-func invalidKeys(keys ...string) []string {
+func InvalidKeys(keys ...string) []string {
 	var invalid []string
 	for _, key := range keys {
 		if ok := reValidKeys.MatchString(key); !ok {
@@ -75,7 +75,7 @@ func invalidKeys(keys ...string) []string {
 // If a key does not exist, the value nil is returned for that key.
 func (d *Datastore) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
 	values, err := d.cache.GetOrSet(ctx, keys, func(keys []string, set func(key string, value []byte)) error {
-		if invalid := invalidKeys(keys...); invalid != nil {
+		if invalid := InvalidKeys(keys...); invalid != nil {
 			return invalidKeyError{keys: invalid}
 		}
 		return d.loadKeys(keys, set)

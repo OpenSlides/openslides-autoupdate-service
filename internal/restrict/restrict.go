@@ -16,9 +16,36 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
-// Restrict changes the keys and values in data for the user with the given user
+// Middleware can be used as a datastore.Getter that restrict the data for a
+// user.
+func Middleware(getter datastore.Getter, uid int) datastore.Getter {
+	return restricter{
+		getter: getter,
+		uid:    uid,
+	}
+}
+
+type restricter struct {
+	getter datastore.Getter
+	uid    int
+}
+
+// Get returns restricted data.
+func (r restricter) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+	data, err := r.getter.Get(ctx, keys...)
+	if err != nil {
+		return nil, fmt.Errorf("getting data: %w", err)
+	}
+
+	if err := restrict(ctx, r.getter, r.uid, data); err != nil {
+		return nil, fmt.Errorf("restricting data: %w", err)
+	}
+	return data, nil
+}
+
+// restrict changes the keys and values in data for the user with the given user
 // id.
-func Restrict(ctx context.Context, getter datastore.Getter, uid int, data map[string][]byte) error {
+func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[string][]byte) error {
 	fetch := datastore.NewFetcher(getter)
 	isSuperAdmin, err := perm.HasOrganizationManagementLevel(ctx, fetch, uid, perm.OMLSuperadmin)
 	if err != nil {

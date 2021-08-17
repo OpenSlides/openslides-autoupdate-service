@@ -122,8 +122,8 @@ func run() error {
 	}
 
 	// Autoupdate Service.
-	service := autoupdate.New(datastoreService, restrict.Restrict, closed)
-	autoupdateHttp.Complex(mux, authService, service, service)
+	service := autoupdate.New(datastoreService, restrict.Middleware, closed)
+	autoupdateHttp.Complex(mux, authService, service)
 	autoupdateHttp.Simple(mux, authService, service)
 
 	// Projector Service.
