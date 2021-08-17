@@ -470,8 +470,13 @@ func fillAmendments(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 		if err != nil {
 			return fmt.Errorf("motionFromMap: %w", err)
 		}
+
 		fillAmendmentParagraphs(ctx, fetch, motionAmend)
-		fillChangeRecommendations(ctx, fetch, motionAmend)
+
+		if err := fillChangeRecommendations(ctx, fetch, motionAmend); err != nil {
+			return fmt.Errorf("fill change recommendations: %w", err)
+		}
+
 		var amendment amendmentsType
 		amendment.ID = id
 		amendment.Title = motionAmend.Title
