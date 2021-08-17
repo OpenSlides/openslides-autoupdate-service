@@ -10,27 +10,25 @@ import (
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
 const prefix = "/system/autoupdate"
 
 // Complex builds the requested keys from the body of a request. The
 // body has to be in the format specified in the keysbuilder package.
-func Complex(mux *http.ServeMux, auth Authenticater, db keysbuilder.DataProvider, liver Liver) {
+func Complex(mux *http.ServeMux, auth Authenticater, liver Liver) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 
 		defer r.Body.Close()
 		uid := auth.FromContext(r.Context())
 
-		kb, err := keysbuilder.ManyFromJSON(r.Body, db, uid)
+		kb, err := keysbuilder.ManyFromJSON(r.Body)
 		if err != nil {
 			handleError(w, err, true)
 			return
 		}
-
-		// TODO: This should not be run here. This is only for development
-		kb.Update(r.Context())
 
 		// This blocks until the request is done.
 		if err := liver.Live(r.Context(), uid, w, kb); err != nil {
@@ -51,8 +49,8 @@ func Simple(mux *http.ServeMux, auth Authenticater, liver Liver) {
 
 		keys := strings.Split(r.URL.RawQuery, ",")
 		kb := &keysbuilder.Simple{K: keys}
-		if err := kb.Validate(); err != nil {
-			handleError(w, err, true)
+		if invalid := datastore.InvalidKeys(keys...); len(invalid) != 0 {
+			handleError(w, fmt.Errorf("Invalid keys: %v", invalid), true)
 			return
 		}
 

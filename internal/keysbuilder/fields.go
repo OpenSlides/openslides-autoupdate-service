@@ -33,6 +33,10 @@ const (
 	ftTemplate            = "template"
 )
 
+type fieldDescription interface {
+	keys(key string, value json.RawMessage, data map[string]fieldDescription) error
+}
+
 // body holds the information which keys are requested by the client.
 type body struct {
 	ids        []int

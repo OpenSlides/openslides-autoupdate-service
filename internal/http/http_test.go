@@ -53,7 +53,7 @@ func TestComplexHandler(t *testing.T) {
 	liver := &liverMock{
 		content: strings.NewReader("content"),
 	}
-	ahttp.Complex(mux, test.Auth(1), new(test.DataProvider), liver)
+	ahttp.Complex(mux, test.Auth(1), liver)
 
 	req, _ := http.NewRequest("GET", "/system/autoupdate", strings.NewReader(`[{"ids":[1],"collection":"user","fields":{"name":null}}]`))
 	req.ProtoMajor = 2
@@ -97,12 +97,7 @@ func TestErrors(t *testing.T) {
 	liver := &liverMock{
 		content: strings.NewReader(`"content"`),
 	}
-	db := &test.DataProvider{
-		Data: map[string][]byte{
-			"foo/1/name": []byte(`"hugo"`),
-		},
-	}
-	ahttp.Complex(mux, test.Auth(1), db, liver)
+	ahttp.Complex(mux, test.Auth(1), liver)
 
 	for _, tt := range []struct {
 		name    string

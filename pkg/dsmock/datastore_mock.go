@@ -98,9 +98,14 @@ type Stub map[string]string
 
 // Get implements the Getter interface.
 func (s Stub) Get(_ context.Context, keys ...string) (map[string][]byte, error) {
+	data := map[string]string(s)
 	converted := make(map[string][]byte, len(keys))
-	for k, v := range map[string]string(s) {
-		converted[k] = []byte(v)
+	for _, k := range keys {
+		v := []byte(data[k])
+		if data[k] == "" {
+			v = nil
+		}
+		converted[k] = v
 	}
 	return converted, nil
 }
@@ -110,6 +115,9 @@ type MockDatastore struct {
 	*datastore.Datastore
 	server *DatastoreServer
 	err    error
+
+	muRequests sync.Mutex
+	requests   [][]string
 }
 
 // NewMockDatastore create a MockDatastore with data.
@@ -127,6 +135,10 @@ func NewMockDatastore(closed <-chan struct{}, data map[string]string) *MockDatas
 
 // Get calls the Get() method of the datastore.
 func (d *MockDatastore) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+	d.muRequests.Lock()
+	d.requests = append(d.requests, keys)
+	d.muRequests.Unlock()
+
 	if d.err != nil {
 		return nil, d.err
 	}
@@ -137,6 +149,13 @@ func (d *MockDatastore) Get(ctx context.Context, keys ...string) (map[string][]b
 // InjectError lets the next calls to Get() return the injected error.
 func (d *MockDatastore) InjectError(err error) {
 	d.err = err
+}
+
+// Requests returns a list of all requested keys.
+func (d *MockDatastore) Requests() [][]string {
+	d.muRequests.Lock()
+	defer d.muRequests.Unlock()
+	return d.requests
 }
 
 // Send updates the data.

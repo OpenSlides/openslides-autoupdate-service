@@ -2,6 +2,8 @@ package autoupdate
 
 import (
 	"context"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
 // Datastore gets values for keys and informs, if they change.
@@ -13,6 +15,6 @@ type Datastore interface {
 
 // KeysBuilder holds the keys that are requested by a user.
 type KeysBuilder interface {
-	Update(ctx context.Context) error
+	Update(ctx context.Context, ds datastore.Getter) error
 	Keys() []string
 }

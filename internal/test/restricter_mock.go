@@ -2,19 +2,38 @@ package test
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
 // RestrictAllowed is a restricter that allows everything
-func RestrictAllowed(ctx context.Context, getter datastore.Getter, uid int, data map[string][]byte) error {
-	return nil
+func RestrictAllowed(getter datastore.Getter, uid int) datastore.Getter {
+	return mockRestricter{getter, true}
 }
 
 // RestrictNotAllowed is a restricter that removes everythin
-func RestrictNotAllowed(ctx context.Context, getter datastore.Getter, uid int, data map[string][]byte) error {
+func RestrictNotAllowed(getter datastore.Getter, uid int) datastore.Getter {
+	return mockRestricter{getter, false}
+}
+
+type mockRestricter struct {
+	getter datastore.Getter
+	allow  bool
+}
+
+func (r mockRestricter) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+	data, err := r.getter.Get(ctx, keys...)
+	if err != nil {
+		return nil, fmt.Errorf("getting data: %w", err)
+	}
+
+	if r.allow {
+		return data, nil
+	}
+
 	for k := range data {
 		data[k] = nil
 	}
-	return nil
+	return data, nil
 }

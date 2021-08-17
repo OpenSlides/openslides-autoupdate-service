@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
 const keySep = "/"
@@ -18,10 +20,8 @@ const keySep = "/"
 //
 // Has to be created with keysbuilder.FromJSON() or keysbuilder.ManyFromJSON().
 type Builder struct {
-	dataProvider DataProvider
-	uid          int
-	bodies       []body
-	keys         []string
+	bodies []body
+	keys   []string
 }
 
 // Update triggers a key update. It generates the list of keys, that can be
@@ -29,7 +29,7 @@ type Builder struct {
 // tree.
 //
 // It is not allowed to call builder.Keys() after Update returned an error.
-func (b *Builder) Update(ctx context.Context) (err error) {
+func (b *Builder) Update(ctx context.Context, getter datastore.Getter) (err error) {
 	defer func() {
 		// Reset keys if an error happens
 		if err != nil {
@@ -63,7 +63,7 @@ func (b *Builder) Update(ctx context.Context) (err error) {
 		}
 
 		// Get values for all special (not none) fields.
-		data, err := b.dataProvider.RestrictedData(ctx, b.uid, needed...)
+		data, err := getter.Get(ctx, needed...)
 		if err != nil {
 			return fmt.Errorf("load needed keys: %w", err)
 		}
