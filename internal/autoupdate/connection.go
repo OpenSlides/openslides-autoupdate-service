@@ -53,6 +53,7 @@ func (c *Connection) Next(ctx context.Context) (map[string][]byte, error) {
 	return data, nil
 }
 
+// keys returns all keys that should be send to the user.
 func (c *Connection) keys(ctx context.Context, getter datastore.Getter) ([]string, error) {
 	if c.filter.empty() {
 		keys, err := c.allKeys(ctx, getter)
@@ -69,6 +70,7 @@ func (c *Connection) keys(ctx context.Context, getter datastore.Getter) ([]strin
 	return keys, nil
 }
 
+// allKeys returns all keys from the keysbuilder.
 func (c *Connection) allKeys(ctx context.Context, getter datastore.Getter) ([]string, error) {
 	if c.tid == 0 {
 		c.tid = c.autoupdate.topic.LastID()
