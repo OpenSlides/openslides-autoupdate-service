@@ -215,12 +215,12 @@ func buildAuth(env map[string]string, receiver auth.LogoutEventer, closed <-chan
 	switch method {
 	case "ticket":
 		fmt.Println("Auth Method: ticket")
-		tokenKey, err := secret("auth_token_key", env["OPENSLIDES_DEVELOPMENT"] == "false")
+		tokenKey, err := secret("auth_token_key", env["OPENSLIDES_DEVELOPMENT"] != "false")
 		if err != nil {
 			return nil, fmt.Errorf("getting token secret: %w", err)
 		}
 
-		cookieKey, err := secret("auth_cookie_key", env["OPENSLIDES_DEVELOPMENT"] == "false")
+		cookieKey, err := secret("auth_cookie_key", env["OPENSLIDES_DEVELOPMENT"] != "false")
 		if err != nil {
 			return nil, fmt.Errorf("getting cookie secret: %w", err)
 		}

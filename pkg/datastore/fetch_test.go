@@ -28,7 +28,15 @@ func TestFetchObject(t *testing.T) {
 	assert.Equal(t, json.RawMessage([]byte("456")), object["number"])
 	assert.Equal(t, json.RawMessage([]byte(`"my text"`)), object["text"])
 	assert.Equal(t, json.RawMessage([]byte("[1,2,3]")), object["friend_ids"])
-	assert.ElementsMatch(t, []string{"testmodel/1/id", "testmodel/1/number", "testmodel/1/text", "testmodel/1/friend_ids"}, recorder.Keys())
+	assert.ElementsMatch(t, []string{"testmodel/1/id", "testmodel/1/number", "testmodel/1/text", "testmodel/1/friend_ids"}, toSlice(recorder.Keys()))
+}
+
+func toSlice(in map[string]bool) []string {
+	out := make([]string, 0, len(in))
+	for k := range in {
+		out = append(out, k)
+	}
+	return out
 }
 
 func TestFetchObjectOnError(t *testing.T) {
@@ -278,17 +286,22 @@ func ExampleString() {
 	// <nil>
 }
 
-func keysEqual(t *testing.T, got []string, expect ...string) {
+func keysEqual(t *testing.T, got map[string]bool, expect ...string) {
 	t.Helper()
 
+	gotkeys := make([]string, 0, len(got))
+	for k := range got {
+		gotkeys = append(gotkeys, k)
+	}
+
 	if len(got) != len(expect) {
-		t.Errorf("Got %d keys, expected %d\nGot:\n%v\nExpected:\n%v", len(got), len(expect), got, expect)
+		t.Errorf("Got %d keys, expected %d\nGot:\n%v\nExpected:\n%v", len(got), len(expect), gotkeys, expect)
 		return
 	}
 
-	for i := range got {
-		if got[i] != expect[i] {
-			t.Errorf("Key[%d] == %q, expected %q", i, got[i], expect[i])
+	for _, k := range expect {
+		if !got[k] {
+			t.Errorf("did not get expected key %q", k)
 		}
 	}
 }

@@ -15,6 +15,7 @@ type Connection struct {
 	kb         KeysBuilder
 	tid        uint64
 	filter     filter
+	hotkeys    map[string]bool
 }
 
 // Next returns the next data for the user.
@@ -25,68 +26,15 @@ type Connection struct {
 // On every other call, it blocks until there is new data. In this case, the map
 // is never empty.
 func (c *Connection) Next(ctx context.Context) (map[string][]byte, error) {
-	firstTime := c.filter.empty()
-	var data map[string][]byte
-
-	for len(data) == 0 {
-		recorder := datastore.NewRecorder(c.autoupdate.datastore)
-		restricter := c.autoupdate.restricter(recorder, c.uid)
-
-		keys, err := c.keys(ctx, restricter)
-		if err != nil {
-			return nil, fmt.Errorf("getting keys: %w", err)
-		}
-
-		data, err = restricter.Get(ctx, keys...)
-		if err != nil {
-			return nil, fmt.Errorf("get first time restricted data: %w", err)
-		}
-
-		c.filter.filter(data)
-
-		if firstTime {
-			// On firstTime return the data, even when it is empty.
-			return data, nil
-		}
-	}
-
-	return data, nil
-}
-
-// keys returns all keys that should be send to the user.
-func (c *Connection) keys(ctx context.Context, getter datastore.Getter) ([]string, error) {
 	if c.filter.empty() {
-		keys, err := c.allKeys(ctx, getter)
+		data, err := c.data(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("get all keys: %w", err)
+			return nil, fmt.Errorf("creating first time data: %w", err)
 		}
-		return keys, nil
+		return data, nil
 	}
 
-	keys, err := c.nextKeys(ctx, getter)
-	if err != nil {
-		return nil, fmt.Errorf("get next keys: %w", err)
-	}
-	return keys, nil
-}
-
-// allKeys returns all keys from the keysbuilder.
-func (c *Connection) allKeys(ctx context.Context, getter datastore.Getter) ([]string, error) {
-	if c.tid == 0 {
-		c.tid = c.autoupdate.topic.LastID()
-	}
-
-	if err := c.kb.Update(ctx, getter); err != nil {
-		return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
-	}
-
-	return c.kb.Keys(), nil
-}
-
-// nextKeys blocks until there are new keys for the user.
-func (c *Connection) nextKeys(ctx context.Context, getter datastore.Getter) ([]string, error) {
-	var keys []string
-	for len(keys) == 0 {
+	for {
 		// Blocks until the topic is closed (on server exit) or the context is done.
 		tid, changedKeys, err := c.autoupdate.topic.Receive(ctx, c.tid)
 		if err != nil {
@@ -94,56 +42,40 @@ func (c *Connection) nextKeys(ctx context.Context, getter datastore.Getter) ([]s
 		}
 		c.tid = tid
 
-		changedSlice := make(map[string]bool, len(changedKeys))
 		for _, key := range changedKeys {
-			var uid int
-			if _, err := fmt.Sscanf(key, fullUpdateFormat, &uid); err == nil {
-				// The key is a fullUpdate key. Do not use it, exept of a full
-				// update.
-				if uid == -1 || uid == c.uid {
-					return c.allKeys(ctx, getter)
+			if c.hotkeys[key] {
+				data, err := c.data(ctx)
+				if err != nil {
+					return nil, fmt.Errorf("creating later data: %w", err)
 				}
-				continue
+				if len(data) > 0 {
+					return data, nil
+				}
 			}
-
-			changedSlice[key] = true
-		}
-
-		oldKeys := c.kb.Keys()
-
-		// Update keysbuilder get new list of keys.
-		if err := c.kb.Update(ctx, getter); err != nil {
-			return nil, fmt.Errorf("update keysbuilder: %w", err)
-		}
-
-		// Start with keys hat are new for the user.
-		keys = keysDiff(oldKeys, c.kb.Keys())
-
-		// Append keys that are old but have been changed.
-		for _, key := range oldKeys {
-			if !changedSlice[key] {
-				continue
-			}
-			keys = append(keys, key)
 		}
 	}
-
-	return keys, nil
 }
 
-func keysDiff(old []string, new []string) []string {
-	keySet := make(map[string]bool, len(old))
-	for _, key := range old {
-		keySet[key] = true
+// data returns all values from the datastore.getter.
+func (c *Connection) data(ctx context.Context) (map[string][]byte, error) {
+	if c.tid == 0 {
+		c.tid = c.autoupdate.topic.LastID()
 	}
 
-	added := []string{}
-	for _, key := range new {
-		if keySet[key] {
-			continue
-		}
-		added = append(added, key)
+	recorder := datastore.NewRecorder(c.autoupdate.datastore)
+	restricter := c.autoupdate.restricter(recorder, c.uid)
+
+	if err := c.kb.Update(ctx, restricter); err != nil {
+		return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
 	}
 
-	return added
+	data, err := restricter.Get(ctx, c.kb.Keys()...)
+	if err != nil {
+		return nil, fmt.Errorf("get restricted data: %w", err)
+	}
+	c.hotkeys = recorder.Keys()
+
+	c.filter.filter(data)
+
+	return data, nil
 }
