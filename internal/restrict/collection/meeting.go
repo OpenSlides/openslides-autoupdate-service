@@ -28,7 +28,19 @@ func (m Meeting) Modes(mode string) FieldRestricter {
 
 func (m Meeting) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, meetingID int) (bool, error) {
 	enableAnonymous := fetch.Field().Meeting_EnableAnonymous(ctx, meetingID)
+	if err := fetch.Err(); err != nil {
+		return false, fmt.Errorf("checking enabled anonymous: %w", err)
+	}
 	if enableAnonymous {
+		return true, nil
+	}
+
+	oml, err := perm.HasOrganizationManagementLevel(ctx, fetch, mperms.UserID(), perm.OMLCanManageOrganization)
+	if err != nil {
+		return false, fmt.Errorf("checking organization management level: %w", err)
+	}
+
+	if oml {
 		return true, nil
 	}
 
