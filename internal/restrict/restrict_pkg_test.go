@@ -6,8 +6,6 @@ import (
 )
 
 func TestRestrictModeForAll(t *testing.T) {
-	// TODO: unskip
-	t.Skip()
 	for field := range restrictionModes {
 		parts := strings.Split(field, "/")
 
