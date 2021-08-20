@@ -38,7 +38,12 @@ func Complex(mux *http.ServeMux, auth Authenticater, connecter Connecter) {
 			return
 		}
 
-		if err := sendMessages(r.Context(), w, uid, kb, connecter); err != nil {
+		sender := sendMessages
+		if r.URL.Query().Has("single") {
+			sender = sendSingleMessage
+		}
+
+		if err := sender(r.Context(), w, uid, kb, connecter); err != nil {
 			handleError(w, err, false)
 			return
 		}
@@ -96,6 +101,28 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 		w.(http.Flusher).Flush()
 	}
 	return ctx.Err()
+}
+
+func sendSingleMessage(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter) error {
+	next := connecter.Connect(uid, kb)
+	encoder := json.NewEncoder(w)
+
+	// conn.Next() blocks, until there is new data. It also unblocks,
+	// when the client context or the server is closed.
+	data, err := next(ctx)
+	if err != nil {
+		return fmt.Errorf("getting next message: %w", err)
+	}
+
+	converted := make(map[string]json.RawMessage, len(data))
+	for k, v := range data {
+		converted[k] = v
+	}
+
+	if err := encoder.Encode(converted); err != nil {
+		return fmt.Errorf("encoding end sending next message: %w", err)
+	}
+	return nil
 }
 
 // Health tells, if the service is running.
