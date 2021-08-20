@@ -8,15 +8,15 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
 
-func getConnection(closed <-chan struct{}) (*autoupdate.Connection, *dsmock.MockDatastore) {
+func getConnection(closed <-chan struct{}) (autoupdate.DataProvider, *dsmock.MockDatastore) {
 	datastore := dsmock.NewMockDatastore(closed, map[string]string{
 		"user/1/name": `"Hello World"`,
 	})
 	s := autoupdate.New(datastore, test.RestrictAllowed, closed)
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
-	c := s.Connect(1, kb)
+	next := s.Connect(1, kb)
 
-	return c, datastore
+	return next, datastore
 }
 
 func blocking(f func()) bool {

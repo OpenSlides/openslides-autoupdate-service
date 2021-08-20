@@ -8,9 +8,7 @@ package autoupdate
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -76,52 +74,26 @@ func New(datastore Datastore, restricter RestrictMiddleware, closed <-chan struc
 	return a
 }
 
+// DataProvider is a function that returns the next data for a user.
+type DataProvider func(ctx context.Context) (map[string][]byte, error)
+
 // Connect has to be called by a client to register to the service. The method
 // returns a Connection object, that can be used to receive the data.
 //
 // There is no need to "close" the Connection object.
-func (a *Autoupdate) Connect(userID int, kb KeysBuilder) *Connection {
-	return &Connection{
+func (a *Autoupdate) Connect(userID int, kb KeysBuilder) DataProvider {
+	c := &Connection{
 		autoupdate: a,
 		uid:        userID,
 		kb:         kb,
 	}
+
+	return c.Next
 }
 
 // LastID returns the id of the last data update.
 func (a *Autoupdate) LastID() uint64 {
 	return a.topic.LastID()
-}
-
-// Live writes data in json-format to the given writer until it closes. It
-// flushes after each message.
-func (a *Autoupdate) Live(ctx context.Context, userID int, w io.Writer, kb KeysBuilder) error {
-	conn := a.Connect(userID, kb)
-	encoder := json.NewEncoder(w)
-
-	for {
-		// connection.Next() blocks, until there is new data. It also unblocks,
-		// when the client context or the server is closed.
-		data, err := conn.Next(ctx)
-		if err != nil {
-			return err
-		}
-
-		converted := make(map[string]json.RawMessage, len(data))
-		for k, v := range data {
-			converted[k] = v
-		}
-
-		if err := encoder.Encode(converted); err != nil {
-			return err
-		}
-
-		w.(flusher).Flush()
-	}
-}
-
-type flusher interface {
-	Flush()
 }
 
 // pruneTopic removes old data from the topic. Blocks until the service is
