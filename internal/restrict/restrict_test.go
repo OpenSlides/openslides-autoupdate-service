@@ -32,6 +32,10 @@ func TestRestrict(t *testing.T) {
 			item_number: five
 			unknown_field: unknown
 			tag_ids: [1,2]
+		2:
+			meeting_id: 1
+			content_object_id: topic/1
+			parent_id: 1
 		10:
 			meeting_id: 2
 			item_number: six
@@ -41,6 +45,8 @@ func TestRestrict(t *testing.T) {
 			tagged_ids: ["agenda_item/1","agenda_item/10"]
 		2:
 			meeting_id: 2
+	
+	topic/1/id: 1
 
 	unknown_collection/1/field: 404
 	`))
@@ -57,6 +63,8 @@ func TestRestrict(t *testing.T) {
 		"user/1/group_$_ids",
 		"user/1/group_$1_ids",
 		"user/1/group_$2_ids",
+		"agenda_item/2/content_object_id",
+		"agenda_item/2/parent_id",
 	}
 
 	data, err := restricter.Get(context.Background(), keys...)
