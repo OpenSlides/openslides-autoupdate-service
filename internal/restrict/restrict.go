@@ -130,12 +130,12 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 			}
 
 			parts := strings.Split(genericID, "/")
-			modeFunc, err := restrictMode(toCollectionfield, parts[2], isSuperAdmin)
+			modeFunc, err := restrictMode(parts[0], toCollectionfield, isSuperAdmin)
 			if err != nil {
 				return fmt.Errorf("getting restict func: %w", err)
 			}
 
-			id, err := strconv.Atoi(parts[0])
+			id, err := strconv.Atoi(parts[1])
 			if err != nil {
 				return fmt.Errorf("decoding genericID: %w", err)
 			}
