@@ -82,7 +82,7 @@ type DataProvider func(ctx context.Context) (map[string][]byte, error)
 //
 // There is no need to "close" the Connection object.
 func (a *Autoupdate) Connect(userID int, kb KeysBuilder) DataProvider {
-	c := &Connection{
+	c := &connection{
 		autoupdate: a,
 		uid:        userID,
 		kb:         kb,

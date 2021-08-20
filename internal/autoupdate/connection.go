@@ -7,9 +7,9 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
-// Connection holds the state of a client. It has to be created by colling
+// connection holds the state of a client. It has to be created by colling
 // Connect() on a autoupdate.Service instance.
-type Connection struct {
+type connection struct {
 	autoupdate *Autoupdate
 	uid        int
 	kb         KeysBuilder
@@ -25,7 +25,7 @@ type Connection struct {
 //
 // On every other call, it blocks until there is new data. In this case, the map
 // is never empty.
-func (c *Connection) Next(ctx context.Context) (map[string][]byte, error) {
+func (c *connection) Next(ctx context.Context) (map[string][]byte, error) {
 	if c.filter.empty() {
 		data, err := c.data(ctx)
 		if err != nil {
@@ -57,7 +57,7 @@ func (c *Connection) Next(ctx context.Context) (map[string][]byte, error) {
 }
 
 // data returns all values from the datastore.getter.
-func (c *Connection) data(ctx context.Context) (map[string][]byte, error) {
+func (c *connection) data(ctx context.Context) (map[string][]byte, error) {
 	if c.tid == 0 {
 		c.tid = c.autoupdate.topic.LastID()
 	}
