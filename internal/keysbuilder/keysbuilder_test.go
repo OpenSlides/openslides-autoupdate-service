@@ -474,9 +474,10 @@ func TestConcurency(t *testing.T) {
 
 	}`
 
-	closed := make(chan struct{})
-	defer close(closed)
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ds := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"user/1/group_ids": "[1,2]",
 		"user/2/group_ids": "[1,2]",
 		"user/3/group_ids": "[1,2]",
@@ -531,9 +532,9 @@ func TestManyRequests(t *testing.T) {
 			}
 		}
 	]`
-	closed := make(chan struct{})
-	defer close(closed)
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ds := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"user/1/note_id": "1",
 		"user/2/note_id": "1",
 	})
@@ -557,9 +558,9 @@ func TestManyRequests(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ds := dsmock.NewMockDatastore(closed, nil)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ds := dsmock.NewMockDatastore(shutdownCtx, nil)
 	ds.InjectError(errors.New("Some Error"))
 	json := `
 	{
@@ -589,9 +590,9 @@ func TestError(t *testing.T) {
 }
 
 func TestRequestCount(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ds := dsmock.NewMockDatastore(closed, nil)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ds := dsmock.NewMockDatastore(shutdownCtx, nil)
 	json := `{
 		"ids": [1],
 		"collection": "user",

@@ -35,7 +35,6 @@ const authPath = "/internal/auth/authenticate"
 type Auth struct {
 	logoutEventer    LogoutEventer
 	logedoutSessions *topic.Topic
-	closed           <-chan struct{}
 	errHandler       func(error)
 
 	authServiceURL string
@@ -45,12 +44,18 @@ type Auth struct {
 }
 
 // New initializes an Auth service.
-func New(authServiceURL string, logoutEventer LogoutEventer, closed <-chan struct{}, errHandler func(error), tokenKey, cookieKey []byte) (*Auth, error) {
+func New(
+	ctx context.Context,
+	authServiceURL string,
+	logoutEventer LogoutEventer,
+	errHandler func(error),
+	tokenKey,
+	cookieKey []byte,
+) (*Auth, error) {
 	a := &Auth{
-		closed:           closed,
 		errHandler:       errHandler,
 		logoutEventer:    logoutEventer,
-		logedoutSessions: topic.New(topic.WithClosed(closed)),
+		logedoutSessions: topic.New(topic.WithClosed(ctx.Done())),
 		authServiceURL:   authServiceURL,
 		tokenKey:         tokenKey,
 		cookieKey:        cookieKey,
@@ -60,10 +65,10 @@ func New(authServiceURL string, logoutEventer LogoutEventer, closed <-chan struc
 	a.logedoutSessions.Publish("")
 
 	if logoutEventer != nil {
-		go a.receiveLogoutEvent(errHandler)
+		go a.receiveLogoutEvent(ctx, errHandler)
 	}
 
-	go a.pruneLogoutEvent(closed)
+	go a.pruneLogoutEvent(ctx)
 
 	return a, nil
 }
@@ -129,19 +134,13 @@ func (a *Auth) FromContext(ctx context.Context) int {
 	return v.(int)
 }
 
-func (a *Auth) receiveLogoutEvent(errHandler func(error)) {
+func (a *Auth) receiveLogoutEvent(ctx context.Context, errHandler func(error)) {
 	if errHandler == nil {
 		errHandler = func(error) {}
 	}
 
 	for {
-		select {
-		case <-a.closed:
-			return
-		default:
-		}
-
-		data, err := a.logoutEventer.LogoutEvent(a.closed)
+		data, err := a.logoutEventer.LogoutEvent(ctx)
 		if err != nil {
 			errHandler(fmt.Errorf("receiving logout event: %w", err))
 			time.Sleep(time.Second)
@@ -152,13 +151,13 @@ func (a *Auth) receiveLogoutEvent(errHandler func(error)) {
 	}
 }
 
-func (a *Auth) pruneLogoutEvent(closed <-chan struct{}) {
+func (a *Auth) pruneLogoutEvent(ctx context.Context) {
 	tick := time.NewTicker(5 * time.Minute)
 	defer tick.Stop()
 
 	for {
 		select {
-		case <-closed:
+		case <-ctx.Done():
 			return
 		case <-tick.C:
 			a.logedoutSessions.Prune(time.Now().Add(-pruneTime))

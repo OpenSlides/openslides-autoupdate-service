@@ -13,9 +13,9 @@ import (
 )
 
 func TestConnect(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	next, _ := getConnection(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	next, _ := getConnection(shutdownCtx)
 
 	data, err := next(context.Background())
 	if err != nil {
@@ -28,9 +28,9 @@ func TestConnect(t *testing.T) {
 }
 
 func TestConnectionReadNoNewData(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	next, _ := getConnection(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	next, _ := getConnection(shutdownCtx)
 	ctx, disconnect := context.WithCancel(context.Background())
 
 	if _, err := next(ctx); err != nil {
@@ -48,9 +48,9 @@ func TestConnectionReadNoNewData(t *testing.T) {
 }
 
 func TestConnectionReadNewData(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	next, datastore := getConnection(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	next, datastore := getConnection(shutdownCtx)
 
 	if _, err := next(context.Background()); err != nil {
 		t.Errorf("next() returned an error: %v", err)
@@ -76,13 +76,13 @@ func TestConnectionEmptyData(t *testing.T) {
 		doesExistKey    = "user/1/name"
 	)
 
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(closed, map[string]string{
+	datastore := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		doesExistKey: `"Hello World"`,
 	})
-	s := autoupdate.New(datastore, test.RestrictAllowed, closed)
+	s := autoupdate.New(datastore, test.RestrictAllowed, shutdownCtx.Done())
 	kb := test.KeysBuilder{K: test.Str(doesExistKey, doesNotExistKey)}
 
 	t.Run("First responce", func(t *testing.T) {
@@ -188,14 +188,14 @@ func TestConnectionEmptyData(t *testing.T) {
 
 func TestConnectionFilterData(t *testing.T) {
 	t.Skipf("TODO")
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(closed, map[string]string{
+	datastore := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"user/1/name": `"Hello World"`,
 	})
 
-	s := autoupdate.New(datastore, test.RestrictAllowed, closed)
+	s := autoupdate.New(datastore, test.RestrictAllowed, shutdownCtx.Done())
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 	next := s.Connect(1, kb)
 	if _, err := next(context.Background()); err != nil {
@@ -218,14 +218,14 @@ func TestConnectionFilterData(t *testing.T) {
 }
 
 func TestConntectionFilterOnlyOneKey(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(closed, map[string]string{
+	datastore := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"user/1/name": `"Hello World"`,
 	})
 
-	s := autoupdate.New(datastore, test.RestrictAllowed, closed)
+	s := autoupdate.New(datastore, test.RestrictAllowed, shutdownCtx.Done())
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 	next := s.Connect(1, kb)
 	if _, err := next(context.Background()); err != nil {
@@ -250,14 +250,14 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 }
 
 func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(closed, map[string]string{
+	datastore := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"user/1/name": `"Hello World"`,
 	})
 
-	s := autoupdate.New(datastore, test.RestrictNotAllowed, closed)
+	s := autoupdate.New(datastore, test.RestrictNotAllowed, shutdownCtx.Done())
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 
 	next := s.Connect(1, kb)

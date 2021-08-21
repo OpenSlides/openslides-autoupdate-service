@@ -40,9 +40,10 @@ func toSlice(in map[string]bool) []string {
 }
 
 func TestFetchObjectOnError(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ds := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"testmodel/1/id":         "1",
 		"testmodel/1/number":     "456",
 		"testmodel/1/text":       `"my text"`,
@@ -61,9 +62,10 @@ func TestFetchObjectOnError(t *testing.T) {
 }
 
 func TestFetchObjectDoesNotExist(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, map[string]string{}))
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx, map[string]string{}))
 
 	fetch.Object(context.Background(), "testmodel/1", "text")
 
@@ -109,9 +111,10 @@ func TestFetchValueDoesNotExist(t *testing.T) {
 }
 
 func TestFetchValueAfterError(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ds := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"testmodel/1/text": `"my text"`,
 	})
 	recorder := datastore.NewRecorder(ds)
@@ -168,9 +171,10 @@ func TestFetchIfExistObjectDoesNotExist(t *testing.T) {
 }
 
 func TestFetchIfExistAfterError(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ds := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"testmodel/1/id":   "1",
 		"testmodel/1/text": `"some test"`,
 	})
@@ -195,9 +199,10 @@ func TestFetchIfExistAfterError(t *testing.T) {
 }
 
 func ExampleInt() {
-	closed := make(chan struct{})
-	defer close(closed)
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, map[string]string{
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"testmodel/1/id": "1",
 	}))
 
@@ -211,9 +216,10 @@ func ExampleInt() {
 }
 
 func ExampleInt_doesNotExist() {
-	closed := make(chan struct{})
-	defer close(closed)
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, nil))
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx, nil))
 
 	i := datastore.Int(context.Background(), fetch.Fetch, "testmodel/%d/number", 1)
 
@@ -225,9 +231,10 @@ func ExampleInt_doesNotExist() {
 }
 
 func ExampleInt_wrongType() {
-	closed := make(chan struct{})
-	defer close(closed)
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, map[string]string{
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"testmodel/1/id": `"a string"`,
 	}))
 
@@ -241,9 +248,10 @@ func ExampleInt_wrongType() {
 }
 
 func ExampleInt_ifExist() {
-	closed := make(chan struct{})
-	defer close(closed)
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, nil))
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx, nil))
 
 	i := datastore.Int(context.Background(), fetch.FetchIfExist, "testmodel/%d/number", 1)
 
@@ -255,9 +263,10 @@ func ExampleInt_ifExist() {
 }
 
 func ExampleInts() {
-	closed := make(chan struct{})
-	defer close(closed)
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, map[string]string{
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"testmodel/1/ids": "[1,2,3]",
 	}))
 
@@ -271,9 +280,10 @@ func ExampleInts() {
 }
 
 func ExampleString() {
-	closed := make(chan struct{})
-	defer close(closed)
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, map[string]string{
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"testmodel/1/name": `"hugo"`,
 	}))
 

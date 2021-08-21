@@ -31,25 +31,23 @@ type Datastore struct {
 	changeListeners  []func(map[string][]byte) error
 	calculatedFields map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)
 	calculatedKeys   map[string]string
-	closed           <-chan struct{}
 	errHandler       func(error)
 
 	resetMu sync.Mutex
 }
 
 // New returns a new Datastore object.
-func New(url string, closed <-chan struct{}, errHandler func(error), keychanger Updater) *Datastore {
+func New(ctx context.Context, url string, errHandler func(error), keychanger Updater) *Datastore {
 	d := &Datastore{
 		cache:            newCache(),
 		url:              url + urlPath,
 		keychanger:       keychanger,
-		closed:           closed,
 		calculatedFields: make(map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)),
 		calculatedKeys:   make(map[string]string),
 		errHandler:       errHandler,
 	}
 
-	go d.receiveKeyChanges(errHandler)
+	go d.receiveKeyChanges(ctx, errHandler)
 
 	return d
 }
@@ -138,19 +136,13 @@ func (d *Datastore) ResetCache() {
 
 // receiveKeyChanges listens for updates and saves then into the topic. This
 // function blocks until the service is closed.
-func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
+func (d *Datastore) receiveKeyChanges(ctx context.Context, errHandler func(error)) {
 	if d.keychanger == nil {
 		return
 	}
 
 	for {
-		select {
-		case <-d.closed:
-			return
-		default:
-		}
-
-		data, err := d.keychanger.Update(d.closed)
+		data, err := d.keychanger.Update(ctx)
 		if err != nil {
 			errHandler(fmt.Errorf("update data: %w", err))
 			time.Sleep(time.Second)

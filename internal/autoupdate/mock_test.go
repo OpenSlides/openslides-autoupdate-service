@@ -1,6 +1,7 @@
 package autoupdate_test
 
 import (
+	"context"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
@@ -8,11 +9,11 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
 
-func getConnection(closed <-chan struct{}) (autoupdate.DataProvider, *dsmock.MockDatastore) {
-	datastore := dsmock.NewMockDatastore(closed, map[string]string{
+func getConnection(ctx context.Context) (autoupdate.DataProvider, *dsmock.MockDatastore) {
+	datastore := dsmock.NewMockDatastore(ctx, map[string]string{
 		"user/1/name": `"Hello World"`,
 	})
-	s := autoupdate.New(datastore, test.RestrictAllowed, closed)
+	s := autoupdate.New(datastore, test.RestrictAllowed, ctx.Done())
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 	next := s.Connect(1, kb)
 

@@ -65,11 +65,11 @@ var dataSet = map[string]string{
 }
 
 func TestFeatures(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(closed, dataSet)
-	service := autoupdate.New(datastore, test.RestrictAllowed, closed)
+	datastore := dsmock.NewMockDatastore(shutdownCtx, dataSet)
+	service := autoupdate.New(datastore, test.RestrictAllowed, shutdownCtx.Done())
 
 	for _, tt := range []struct {
 		name string

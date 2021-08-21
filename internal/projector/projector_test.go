@@ -14,10 +14,10 @@ import (
 )
 
 func TestProjectionDoesNotExist(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, nil)
+	ds := dsmock.NewMockDatastore(shutdownCtx, nil)
 	projector.Register(ds, testSlides())
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
@@ -28,10 +28,10 @@ func TestProjectionDoesNotExist(t *testing.T) {
 }
 
 func TestProjectionFromContentObject(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"test_model/1"`,
 	})
@@ -44,10 +44,10 @@ func TestProjectionFromContentObject(t *testing.T) {
 }
 
 func TestProjectionFromType(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/1"`,
 		"projection/1/type":              `"test1"`,
@@ -61,10 +61,10 @@ func TestProjectionFromType(t *testing.T) {
 }
 
 func TestProjectionUpdateProjection(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/1"`,
 		"projection/1/type":              `"test1"`,
@@ -94,10 +94,10 @@ func TestProjectionUpdateProjection(t *testing.T) {
 }
 
 func TestProjectionUpdateProjectionMetaData(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"projection/1/id":                "1",
 		"projection/1/type":              `"projection"`,
 		"projection/1/content_object_id": `"meeting/1"`,
@@ -126,10 +126,10 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 }
 
 func TestProjectionWithOptionsData(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/6"`,
 		"projection/1/type":              `"projection"`,
@@ -145,10 +145,10 @@ func TestProjectionWithOptionsData(t *testing.T) {
 }
 
 func TestProjectionUpdateSlide(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/6"`,
 		"projection/1/type":              `"test_model"`,
@@ -178,10 +178,10 @@ func TestProjectionUpdateSlide(t *testing.T) {
 }
 
 func TestProjectionUpdateOtherKey(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/1"`,
 		"projection/1/type":              `"test_model"`,
@@ -210,10 +210,10 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 }
 
 func TestProjectionTypeDoesNotExist(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
 		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/1"`,
 		"projection/1/type":              `"unexistingTestSlide"`,

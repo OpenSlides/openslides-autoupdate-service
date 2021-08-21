@@ -16,12 +16,13 @@ import (
 )
 
 func TestDataStoreGet(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ts := dsmock.NewDatastoreServer(closed, map[string]string{
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ts := dsmock.NewDatastoreServer(ctx, map[string]string{
 		"collection/1/field": `"Hello World"`,
 	})
-	d := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	d := datastore.New(ctx, ts.TS.URL, nil, ts)
 
 	got, err := d.Get(context.Background(), "collection/1/field")
 	assert.NoError(t, err, "Get() returned an unexpected error")
@@ -33,14 +34,14 @@ func TestDataStoreGet(t *testing.T) {
 }
 
 func TestDataStoreGetMultiValue(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ts := dsmock.NewDatastoreServer(closed, map[string]string{
+	ts := dsmock.NewDatastoreServer(shutdownCtx, map[string]string{
 		"collection/1/field": `"v1"`,
 		"collection/2/field": `"v2"`,
 	})
-	d := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	d := datastore.New(shutdownCtx, ts.TS.URL, func(error) {}, ts)
 
 	got, err := d.Get(context.Background(), "collection/1/field", "collection/2/field")
 	assert.NoError(t, err, "Get() returned an unexpected error")
@@ -56,13 +57,13 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 }
 
 func TestDataStoreGetKeyTwice(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ts := dsmock.NewDatastoreServer(closed, map[string]string{
+	ts := dsmock.NewDatastoreServer(shutdownCtx, map[string]string{
 		"collection/1/field": `"v1"`,
 	})
-	d := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	d := datastore.New(shutdownCtx, ts.TS.URL, func(error) {}, ts)
 
 	got, err := d.Get(context.Background(), "collection/1/field", "collection/1/field")
 	assert.NoError(t, err, "Get() returned an unexpected error")
@@ -78,11 +79,11 @@ func TestDataStoreGetKeyTwice(t *testing.T) {
 }
 
 func TestDataStoreGetInvalidKey(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ts := dsmock.NewDatastoreServer(closed, map[string]string{})
-	d := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	ts := dsmock.NewDatastoreServer(shutdownCtx, map[string]string{})
+	d := datastore.New(shutdownCtx, ts.TS.URL, func(error) {}, ts)
 
 	_, err := d.Get(context.Background(), "collection/1/Field")
 
@@ -99,11 +100,11 @@ func TestDataStoreGetInvalidKey(t *testing.T) {
 }
 
 func TestCalculatedFields(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ts := dsmock.NewDatastoreServer(closed, nil)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ts := dsmock.NewDatastoreServer(shutdownCtx, nil)
 	url := ts.TS.URL
-	ds := datastore.New(url, closed, func(error) {}, ts)
+	ds := datastore.New(shutdownCtx, url, func(error) {}, ts)
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		if changed == nil {
 			return []byte("my value"), nil
@@ -129,13 +130,14 @@ func TestCalculatedFields(t *testing.T) {
 }
 
 func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ts := dsmock.NewDatastoreServer(closed, map[string]string{
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ts := dsmock.NewDatastoreServer(shutdownCtx, map[string]string{
 		"collection/1/normal_field": `"original value"`,
 	})
 	url := ts.TS.URL
-	ds := datastore.New(url, closed, func(error) {}, ts)
+	ds := datastore.New(shutdownCtx, url, func(error) {}, ts)
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		fields, err := ds.Get(context.Background(), "collection/1/normal_field")
 		if err != nil {
@@ -162,12 +164,12 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 }
 
 func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ts := dsmock.NewDatastoreServer(closed, map[string]string{
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ts := dsmock.NewDatastoreServer(shutdownCtx, map[string]string{
 		"collection/1/normal_field": `"original value"`,
 	})
-	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	ds := datastore.New(shutdownCtx, ts.TS.URL, func(error) {}, ts)
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		fields, err := ds.Get(context.Background(), "collection/1/normal_field")
 		if err != nil {
@@ -197,12 +199,12 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 }
 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ts := dsmock.NewDatastoreServer(closed, map[string]string{
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ts := dsmock.NewDatastoreServer(shutdownCtx, map[string]string{
 		"collection/1/normal_field": `"original value"`,
 	})
-	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	ds := datastore.New(shutdownCtx, ts.TS.URL, func(error) {}, ts)
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		field, err := ds.Get(ctx, "collection/1/normal_field")
 		if err != nil {
@@ -218,12 +220,12 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 }
 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ts := dsmock.NewDatastoreServer(closed, map[string]string{
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ts := dsmock.NewDatastoreServer(shutdownCtx, map[string]string{
 		"collection/1/normal_field": `"original value"`,
 	})
-	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	ds := datastore.New(shutdownCtx, ts.TS.URL, func(error) {}, ts)
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		fields, err := ds.Get(ctx, "collection/1/normal_field", "collection/1/normal_field")
 		if err != nil {
@@ -239,10 +241,10 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.
 }
 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExist(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ts := dsmock.NewDatastoreServer(closed, nil)
-	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ts := dsmock.NewDatastoreServer(shutdownCtx, nil)
+	ds := datastore.New(shutdownCtx, ts.TS.URL, func(error) {}, ts)
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		field, err := ds.Get(ctx, "collection/1/normal_field")
 		if err != nil {
@@ -258,10 +260,10 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExist(t 
 }
 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExistTwice(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ts := dsmock.NewDatastoreServer(closed, nil)
-	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ts := dsmock.NewDatastoreServer(shutdownCtx, nil)
+	ds := datastore.New(shutdownCtx, ts.TS.URL, func(error) {}, ts)
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		fields, err := ds.Get(ctx, "collection/1/normal_field", "collection/1/normal_field")
 		if err != nil {
@@ -277,10 +279,10 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExistTwi
 }
 
 func TestCalculatedFieldsNoDBQuery(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ts := dsmock.NewDatastoreServer(closed, nil)
-	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ts := dsmock.NewDatastoreServer(shutdownCtx, nil)
+	ds := datastore.New(shutdownCtx, ts.TS.URL, func(error) {}, ts)
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		return []byte("foobar"), nil
 	})
@@ -293,10 +295,10 @@ func TestCalculatedFieldsNoDBQuery(t *testing.T) {
 }
 
 func TestChangeListeners(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ts := dsmock.NewDatastoreServer(closed, nil)
-	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ts := dsmock.NewDatastoreServer(shutdownCtx, nil)
+	ds := datastore.New(shutdownCtx, ts.TS.URL, func(error) {}, ts)
 
 	var receivedData map[string][]byte
 	received := make(chan struct{}, 1)
@@ -314,10 +316,10 @@ func TestChangeListeners(t *testing.T) {
 }
 
 func TestChangeListenersWithCalculatedFields(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ts := dsmock.NewDatastoreServer(closed, nil)
-	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ts := dsmock.NewDatastoreServer(shutdownCtx, nil)
+	ds := datastore.New(shutdownCtx, ts.TS.URL, func(error) {}, ts)
 
 	var callCounter int
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
@@ -347,10 +349,10 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 }
 
 func TestResetCache(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ts := dsmock.NewDatastoreServer(closed, nil)
-	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ts := dsmock.NewDatastoreServer(shutdownCtx, nil)
+	ds := datastore.New(shutdownCtx, ts.TS.URL, func(error) {}, ts)
 
 	// Fetch key to fill the cache.
 	ds.Get(context.Background(), "some/1/key")
@@ -363,10 +365,10 @@ func TestResetCache(t *testing.T) {
 }
 
 func TestResetWhileUpdate(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
-	ts := dsmock.NewDatastoreServer(closed, nil)
-	ds := datastore.New(ts.TS.URL, closed, func(error) {}, ts)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ts := dsmock.NewDatastoreServer(shutdownCtx, nil)
+	ds := datastore.New(shutdownCtx, ts.TS.URL, func(error) {}, ts)
 
 	// Fetch key to fill the cache.
 	ds.Get(context.Background(), "some/1/key")

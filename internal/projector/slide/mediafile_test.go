@@ -37,9 +37,10 @@ func TestMediafile(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			closed := make(chan struct{})
-			defer close(closed)
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, tt.data))
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(ctx, tt.data))
 
 			p7on := &projector.Projection{
 				ContentObjectID: "mediafile/1",

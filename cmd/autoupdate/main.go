@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	autoupdateHttp "github.com/OpenSlides/openslides-autoupdate-service/internal/http"
@@ -88,7 +87,9 @@ func secret(name string, dev bool) (string, error) {
 func run() error {
 	env := defaultEnv()
 
-	closed := make(chan struct{})
+	ctx, cancel := interruptContext()
+	defer cancel()
+
 	errHandler := func(err error) {
 		// If an error happend, we just close the session.
 		var closing interface {
@@ -106,7 +107,7 @@ func run() error {
 	}
 
 	// Datastore Service.
-	datastoreService, err := buildDatastore(env, r, closed, errHandler)
+	datastoreService, err := buildDatastore(ctx, env, r, errHandler)
 	if err != nil {
 		return fmt.Errorf("creating datastore adapter: %w", err)
 	}
@@ -116,13 +117,13 @@ func run() error {
 	autoupdateHttp.Health(mux)
 
 	// Auth Service.
-	authService, err := buildAuth(env, r, closed, errHandler)
+	authService, err := buildAuth(ctx, env, r, errHandler)
 	if err != nil {
 		return fmt.Errorf("creating auth adapter: %w", err)
 	}
 
 	// Autoupdate Service.
-	service := autoupdate.New(datastoreService, restrict.Middleware, closed)
+	service := autoupdate.New(datastoreService, restrict.Middleware, ctx.Done())
 	autoupdateHttp.Complex(mux, authService, service)
 	autoupdateHttp.Simple(mux, authService, service)
 
@@ -136,9 +137,7 @@ func run() error {
 	// Shutdown logic in separate goroutine.
 	wait := make(chan error)
 	go func() {
-		waitForShutdown()
-
-		close(closed)
+		<-ctx.Done()
 		if err := srv.Shutdown(context.Background()); err != nil {
 			wait <- fmt.Errorf("HTTP server shutdown: %w", err)
 			return
@@ -154,30 +153,37 @@ func run() error {
 	return <-wait
 }
 
-// waitForShutdown blocks until the service exists.
+// interruptContext works like signal.NotifyContext
 //
-// It listens on SIGINT and SIGTERM. If the signal is received for a second
-// time, the process is killed with statuscode 1.
-func waitForShutdown() {
-	sigint := make(chan os.Signal, 1)
-	// syscall.SIGTERM is not pressent on all plattforms. Since the autoupdate
-	// service is only run on linux, this is ok. If other plattforms should be
-	// supported, os.Interrupt should be used instead.
-	signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM)
-	<-sigint
+// In only listens on os.Interrupt. If the signal is received two times,
+// os.Exit(1) is called.
+func interruptContext() (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)
+		<-sigint
+		cancel()
+
+		// If the signal was send for the second time, make a hard cut.
 		<-sigint
 		os.Exit(1)
 	}()
+	return ctx, cancel
 }
 
 // buildDatastore configures the datastore service.
-func buildDatastore(env map[string]string, receiver datastore.Updater, closed <-chan struct{}, errHandler func(error)) (*datastore.Datastore, error) {
+func buildDatastore(
+	ctx context.Context,
+	env map[string]string,
+	receiver datastore.Updater,
+	errHandler func(error),
+) (*datastore.Datastore, error) {
 	protocol := env["DATASTORE_READER_PROTOCOL"]
 	host := env["DATASTORE_READER_HOST"]
 	port := env["DATASTORE_READER_PORT"]
 	url := protocol + "://" + host + ":" + port
-	return datastore.New(url, closed, errHandler, receiver), nil
+	return datastore.New(ctx, url, errHandler, receiver), nil
 }
 
 // buildReceiver builds the receiver needed by the datastore service. It uses
@@ -210,7 +216,15 @@ func buildReceiver(env map[string]string) (messageBus, error) {
 }
 
 // buildAuth returns the auth service needed by the http server.
-func buildAuth(env map[string]string, receiver auth.LogoutEventer, closed <-chan struct{}, errHandler func(error)) (autoupdateHttp.Authenticater, error) {
+//
+// This function is not blocking. The context is used to give it to auth.New
+// that uses it to stop background goroutines.
+func buildAuth(
+	ctx context.Context,
+	env map[string]string,
+	receiver auth.LogoutEventer,
+	errHandler func(error),
+) (autoupdateHttp.Authenticater, error) {
 	method := env["AUTH"]
 	switch method {
 	case "ticket":
@@ -235,7 +249,7 @@ func buildAuth(env map[string]string, receiver auth.LogoutEventer, closed <-chan
 		url := protocol + "://" + host + ":" + port
 
 		fmt.Printf("Auth Service: %s\n", url)
-		return auth.New(url, receiver, closed, errHandler, []byte(tokenKey), []byte(cookieKey))
+		return auth.New(ctx, url, receiver, errHandler, []byte(tokenKey), []byte(cookieKey))
 	case "fake":
 		fmt.Println("Auth Method: FakeAuth (User ID 1 for all requests)")
 		return test.Auth(1), nil

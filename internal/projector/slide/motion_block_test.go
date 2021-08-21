@@ -106,10 +106,11 @@ func TestMotionBlock(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			closed := make(chan struct{})
-			defer close(closed)
+			shutdownCtx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
 			ctx := context.Background()
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, tt.data))
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx, tt.data))
 
 			p7on := &projector.Projection{
 				ContentObjectID: "motion_block/1",
