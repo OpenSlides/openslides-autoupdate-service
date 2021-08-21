@@ -22,6 +22,7 @@ package keysbuilder
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -31,6 +32,11 @@ const (
 	ftGenericRelation     = "generic-relation"
 	ftGenericRelationList = "generic-relation-list"
 	ftTemplate            = "template"
+)
+
+var (
+	reCollection = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])$`)
+	reField      = regexp.MustCompile(`^[a-z][a-z0-9_]*\$?[a-z0-9_]*$`)
 )
 
 type fieldDescription interface {
@@ -62,15 +68,18 @@ func (b *body) UnmarshalJSON(data []byte) error {
 	}
 	for _, id := range field.IDs {
 		if id <= 0 {
-			return InvalidError{msg: "id has to be a positve number"}
+			return InvalidError{msg: "id has to be a positive number"}
 		}
 	}
 
 	if field.Collection == "" {
-		return InvalidError{msg: "no collection"}
+		return InvalidError{msg: "attribute collection is missing"}
 	}
 	if field.Fields.fields == nil {
-		return InvalidError{msg: "no fields"}
+		return InvalidError{msg: "attribte fields is missing"}
+	}
+	if !reCollection.MatchString(field.Collection) {
+		return InvalidError{msg: "invalid collection name"}
 	}
 
 	// Set the body fields.
@@ -119,6 +128,9 @@ func (r *relationField) UnmarshalJSON(data []byte) error {
 	}
 	if field.Fields.fields == nil {
 		return InvalidError{msg: "no fields"}
+	}
+	if !reCollection.MatchString(field.Collection) {
+		return InvalidError{msg: "invalid collection name"}
 	}
 	r.collection = field.Collection
 	r.fieldsMap = field.Fields
@@ -353,6 +365,10 @@ func (f *fieldsMap) UnmarshalJSON(data []byte) error {
 
 	f.fields = make(map[string]fieldDescription, len(fm))
 	for name, field := range fm {
+		if !reField.MatchString(name) {
+			return InvalidError{msg: "fieldname is invalid", field: name}
+		}
+
 		fd, err := unmarshalField(field)
 		if err != nil {
 			if sub, ok := err.(InvalidError); ok {

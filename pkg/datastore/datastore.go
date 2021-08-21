@@ -20,6 +20,7 @@ import (
 )
 
 const urlPath = "/internal/datastore/reader/get_many"
+const messageBusReconnectPause = time.Second
 
 // Datastore can be used to get values from the datastore-service.
 //
@@ -145,7 +146,7 @@ func (d *Datastore) receiveKeyChanges(ctx context.Context, errHandler func(error
 		data, err := d.keychanger.Update(ctx)
 		if err != nil {
 			errHandler(fmt.Errorf("update data: %w", err))
-			time.Sleep(time.Second)
+			time.Sleep(messageBusReconnectPause)
 			continue
 		}
 

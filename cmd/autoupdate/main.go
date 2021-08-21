@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -95,9 +96,20 @@ func run() error {
 		var closing interface {
 			Closing()
 		}
-		if !errors.As(err, &closing) {
-			log.Printf("Error: %v", err)
+		if errors.As(err, &closing) {
+			// TODO: The same for ctx cancel and ctx timeout
+			return
 		}
+
+		var errNet *net.OpError
+		if errors.As(err, &errNet) {
+			if errNet.Op == "dial" {
+				log.Printf("Can not connect to redis.")
+				return
+			}
+		}
+
+		log.Printf("Error: %v", err)
 	}
 
 	// Receiver for datastore and logout events.
@@ -209,7 +221,7 @@ func buildReceiver(env map[string]string) (messageBus, error) {
 	case "fake":
 		conn = redis.BlockingConn{}
 	default:
-		return nil, fmt.Errorf("unknown messagin service %s", serviceName)
+		return nil, fmt.Errorf("unknown messagin service %q", serviceName)
 	}
 
 	return &redis.Redis{Conn: conn}, nil

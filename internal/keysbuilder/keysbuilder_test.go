@@ -598,7 +598,7 @@ func TestRequestCount(t *testing.T) {
 		"collection": "user",
 		"fields": {
 			"name": null,
-			"goodLocking": null,
+			"goodlooking": null,
 			"note_ids": {
 				"type": "relation-list",
 				"collection": "note",
