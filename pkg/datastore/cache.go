@@ -89,19 +89,16 @@ func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) (
 //
 // Sets all keys to not pending, even when an error happens.
 func (c *cache) fetchMissing(keys []string, set cacheSetFunc) error {
-	// Make sure all pending keys are closed. Make also sure, that
-	// missing keys are set to nil.
-	defer func() {
-		c.data.setEmptyIfPending(keys...)
-	}()
-
 	err := set(keys, func(key string, value []byte) {
 		c.data.setIfPending(key, value)
 	})
 
 	if err != nil {
+		c.data.unMarkPending(keys...)
 		return fmt.Errorf("fetching missing keys: %w", err)
 	}
+
+	c.data.setEmptyIfPending(keys...)
 	return nil
 }
 
@@ -181,6 +178,29 @@ func (d *pendingMap) markPending(keys ...string) []string {
 		marked = append(marked, key)
 	}
 	return marked
+}
+
+// unMarkPending sets any key that is still pending not to be pending.
+//
+// Skips keys that are already pending or are already in the database.
+
+func (d *pendingMap) unMarkPending(keys ...string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	for _, key := range keys {
+		if _, ok := d.data[key]; ok {
+			continue
+		}
+		pending := d.pending[key]
+
+		if pending == nil {
+			continue
+		}
+
+		close(pending)
+		delete(d.pending, key)
+	}
 }
 
 // setIfExiists is like setIfExist but without setting a lock. Should not be

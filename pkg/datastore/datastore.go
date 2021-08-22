@@ -20,7 +20,11 @@ import (
 )
 
 const urlPath = "/internal/datastore/reader/get_many"
-const messageBusReconnectPause = time.Second
+
+const (
+	messageBusReconnectPause = time.Second
+	httpTimeout              = 10 * time.Second
+)
 
 // Datastore can be used to get values from the datastore-service.
 //
@@ -33,6 +37,7 @@ type Datastore struct {
 	calculatedFields map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)
 	calculatedKeys   map[string]string
 	errHandler       func(error)
+	client           *http.Client
 
 	resetMu sync.Mutex
 }
@@ -46,6 +51,9 @@ func New(ctx context.Context, url string, errHandler func(error), keychanger Upd
 		calculatedFields: make(map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)),
 		calculatedKeys:   make(map[string]string),
 		errHandler:       errHandler,
+		client: &http.Client{
+			Timeout: httpTimeout,
+		},
 	}
 
 	go d.receiveKeyChanges(ctx, errHandler)
@@ -142,6 +150,10 @@ func (d *Datastore) receiveKeyChanges(ctx context.Context, errHandler func(error
 		return
 	}
 
+	if errHandler == nil {
+		errHandler = func(error) {}
+	}
+
 	for {
 		data, err := d.keychanger.Update(ctx)
 		if err != nil {
@@ -231,7 +243,7 @@ func (d *Datastore) requestKeys(keys []string) (map[string][]byte, error) {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := d.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("requesting keys `%v`: %w", keys, err)
 	}
