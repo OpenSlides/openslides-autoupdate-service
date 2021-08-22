@@ -262,7 +262,7 @@ func buildAuth(
 		url := protocol + "://" + host + ":" + port
 
 		fmt.Printf("Auth Service: %s\n", url)
-		a, err := auth.New(url, ctx.Done(), errHandler, []byte(tokenKey), []byte(cookieKey))
+		a, err := auth.New(url, ctx.Done(), []byte(tokenKey), []byte(cookieKey))
 		if err != nil {
 			return nil, fmt.Errorf("creating auth service: %w", err)
 		}

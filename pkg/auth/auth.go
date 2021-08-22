@@ -45,7 +45,6 @@ type Auth struct {
 func New(
 	authServiceURL string,
 	closed <-chan struct{},
-	errHandler func(error),
 	tokenKey,
 	cookieKey []byte,
 ) (*Auth, error) {
