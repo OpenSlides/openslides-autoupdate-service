@@ -3,6 +3,7 @@ package autoupdate_test
 import (
 	"context"
 	"errors"
+	"log"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
@@ -15,7 +16,7 @@ import (
 func TestConnect(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	next, _ := getConnection(shutdownCtx)
+	next, _ := getConnection(shutdownCtx.Done())
 
 	data, err := next(context.Background())
 	if err != nil {
@@ -30,7 +31,7 @@ func TestConnect(t *testing.T) {
 func TestConnectionReadNoNewData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	next, _ := getConnection(shutdownCtx)
+	next, _ := getConnection(shutdownCtx.Done())
 	ctx, disconnect := context.WithCancel(context.Background())
 
 	if _, err := next(ctx); err != nil {
@@ -50,7 +51,9 @@ func TestConnectionReadNoNewData(t *testing.T) {
 func TestConnectionReadNewData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	next, datastore := getConnection(shutdownCtx)
+
+	next, datastore := getConnection(shutdownCtx.Done())
+	go datastore.ListenOnUpdates(shutdownCtx, datastore, func(err error) { log.Println(err) })
 
 	if _, err := next(context.Background()); err != nil {
 		t.Errorf("next() returned an error: %v", err)
@@ -79,9 +82,11 @@ func TestConnectionEmptyData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
+	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		doesExistKey: `"Hello World"`,
 	})
+	go datastore.ListenOnUpdates(shutdownCtx, datastore, func(err error) { log.Println(err) })
+
 	s := autoupdate.New(datastore, test.RestrictAllowed, shutdownCtx.Done())
 	kb := test.KeysBuilder{K: test.Str(doesExistKey, doesNotExistKey)}
 
@@ -191,7 +196,7 @@ func TestConnectionFilterData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
+	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"user/1/name": `"Hello World"`,
 	})
 
@@ -221,9 +226,10 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
+	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"user/1/name": `"Hello World"`,
 	})
+	go datastore.ListenOnUpdates(shutdownCtx, datastore, func(err error) { log.Println(err) })
 
 	s := autoupdate.New(datastore, test.RestrictAllowed, shutdownCtx.Done())
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
@@ -253,7 +259,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
+	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"user/1/name": `"Hello World"`,
 	})
 

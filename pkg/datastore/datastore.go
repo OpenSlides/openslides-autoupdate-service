@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -36,27 +37,22 @@ type Datastore struct {
 	changeListeners  []func(map[string][]byte) error
 	calculatedFields map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)
 	calculatedKeys   map[string]string
-	errHandler       func(error)
 	client           *http.Client
 
 	resetMu sync.Mutex
 }
 
 // New returns a new Datastore object.
-func New(ctx context.Context, url string, errHandler func(error), keychanger Updater) *Datastore {
+func New(url string) *Datastore {
 	d := &Datastore{
 		cache:            newCache(),
 		url:              url + urlPath,
-		keychanger:       keychanger,
 		calculatedFields: make(map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)),
 		calculatedKeys:   make(map[string]string),
-		errHandler:       errHandler,
 		client: &http.Client{
 			Timeout: httpTimeout,
 		},
 	}
-
-	go d.receiveKeyChanges(ctx, errHandler)
 
 	return d
 }
@@ -143,20 +139,18 @@ func (d *Datastore) ResetCache() {
 	d.resetMu.Unlock()
 }
 
-// receiveKeyChanges listens for updates and saves then into the topic. This
-// function blocks until the service is closed.
-func (d *Datastore) receiveKeyChanges(ctx context.Context, errHandler func(error)) {
-	if d.keychanger == nil {
-		return
-	}
-
+// ListenOnUpdates listens for updates and informs all listeners.
+func (d *Datastore) ListenOnUpdates(ctx context.Context, keychanger Updater, errHandler func(error)) {
 	if errHandler == nil {
 		errHandler = func(error) {}
 	}
 
 	for {
-		data, err := d.keychanger.Update(ctx)
+		data, err := keychanger.Update(ctx)
 		if err != nil {
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return
+			}
 			errHandler(fmt.Errorf("update data: %w", err))
 			time.Sleep(messageBusReconnectPause)
 			continue
@@ -211,7 +205,7 @@ func (d *Datastore) calculateField(field string, key string, updated map[string]
 
 	calculated, err := d.calculatedFields[field](ctx, key, updated)
 	if err != nil {
-		d.errHandler(fmt.Errorf("calculating key %s: %w", key, err))
+		log.Printf("Error calculating key %s: %v", key, err)
 
 		msg := fmt.Sprintf("calculating key %s", key)
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {

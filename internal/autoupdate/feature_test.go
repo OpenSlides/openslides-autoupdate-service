@@ -68,7 +68,7 @@ func TestFeatures(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(shutdownCtx, dataSet)
+	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), dataSet)
 	service := autoupdate.New(datastore, test.RestrictAllowed, shutdownCtx.Done())
 
 	for _, tt := range []struct {

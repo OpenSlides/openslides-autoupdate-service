@@ -33,9 +33,7 @@ const authPath = "/internal/auth/authenticate"
 //
 // Has to be initialized with auth.New().
 type Auth struct {
-	logoutEventer    LogoutEventer
 	logedoutSessions *topic.Topic
-	errHandler       func(error)
 
 	authServiceURL string
 
@@ -45,17 +43,14 @@ type Auth struct {
 
 // New initializes an Auth service.
 func New(
-	ctx context.Context,
 	authServiceURL string,
-	logoutEventer LogoutEventer,
+	closed <-chan struct{},
 	errHandler func(error),
 	tokenKey,
 	cookieKey []byte,
 ) (*Auth, error) {
 	a := &Auth{
-		errHandler:       errHandler,
-		logoutEventer:    logoutEventer,
-		logedoutSessions: topic.New(topic.WithClosed(ctx.Done())),
+		logedoutSessions: topic.New(topic.WithClosed(closed)),
 		authServiceURL:   authServiceURL,
 		tokenKey:         tokenKey,
 		cookieKey:        cookieKey,
@@ -63,12 +58,6 @@ func New(
 
 	// Make sure the topic is not empty
 	a.logedoutSessions.Publish("")
-
-	if logoutEventer != nil {
-		go a.receiveLogoutEvent(ctx, errHandler)
-	}
-
-	go a.pruneLogoutEvent(ctx)
 
 	return a, nil
 }
@@ -134,13 +123,14 @@ func (a *Auth) FromContext(ctx context.Context) int {
 	return v.(int)
 }
 
-func (a *Auth) receiveLogoutEvent(ctx context.Context, errHandler func(error)) {
+// ListenOnLogouts listen on logout events and closes the connections.
+func (a *Auth) ListenOnLogouts(ctx context.Context, logoutEventer LogoutEventer, errHandler func(error)) {
 	if errHandler == nil {
 		errHandler = func(error) {}
 	}
 
 	for {
-		data, err := a.logoutEventer.LogoutEvent(ctx)
+		data, err := logoutEventer.LogoutEvent(ctx)
 		if err != nil {
 			errHandler(fmt.Errorf("receiving logout event: %w", err))
 			time.Sleep(time.Second)
@@ -151,7 +141,8 @@ func (a *Auth) receiveLogoutEvent(ctx context.Context, errHandler func(error)) {
 	}
 }
 
-func (a *Auth) pruneLogoutEvent(ctx context.Context) {
+// PruneOldData removes old logout events.
+func (a *Auth) PruneOldData(ctx context.Context) {
 	tick := time.NewTicker(5 * time.Minute)
 	defer tick.Stop()
 

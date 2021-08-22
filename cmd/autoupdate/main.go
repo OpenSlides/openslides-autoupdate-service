@@ -113,29 +113,33 @@ func run() error {
 	}
 
 	// Receiver for datastore and logout events.
-	r, err := buildReceiver(env)
+	messageBus, err := buildMessagebus(env)
 	if err != nil {
 		return fmt.Errorf("creating messsaging adapter: %w", err)
 	}
 
 	// Datastore Service.
-	datastoreService, err := buildDatastore(ctx, env, r, errHandler)
+	datastoreService, err := buildDatastore(env)
 	if err != nil {
 		return fmt.Errorf("creating datastore adapter: %w", err)
 	}
+	go datastoreService.ListenOnUpdates(ctx, messageBus, errHandler)
 
 	// Create http mux to add urls.
 	mux := http.NewServeMux()
 	autoupdateHttp.Health(mux)
 
 	// Auth Service.
-	authService, err := buildAuth(ctx, env, r, errHandler)
+	authService, err := buildAuth(ctx, env, messageBus, errHandler)
 	if err != nil {
 		return fmt.Errorf("creating auth adapter: %w", err)
 	}
 
 	// Autoupdate Service.
 	service := autoupdate.New(datastoreService, restrict.Middleware, ctx.Done())
+	go service.PruneOldData(ctx)
+	go service.ResetCache(ctx)
+
 	autoupdateHttp.Complex(mux, authService, service)
 	autoupdateHttp.Simple(mux, authService, service)
 
@@ -186,22 +190,19 @@ func interruptContext() (context.Context, context.CancelFunc) {
 
 // buildDatastore configures the datastore service.
 func buildDatastore(
-	ctx context.Context,
 	env map[string]string,
-	receiver datastore.Updater,
-	errHandler func(error),
 ) (*datastore.Datastore, error) {
 	protocol := env["DATASTORE_READER_PROTOCOL"]
 	host := env["DATASTORE_READER_HOST"]
 	port := env["DATASTORE_READER_PORT"]
 	url := protocol + "://" + host + ":" + port
-	return datastore.New(ctx, url, errHandler, receiver), nil
+	return datastore.New(url), nil
 }
 
-// buildReceiver builds the receiver needed by the datastore service. It uses
+// buildMessagebus builds the receiver needed by the datastore service. It uses
 // environment variables to make the decission. Per default, the given faker is
 // used.
-func buildReceiver(env map[string]string) (messageBus, error) {
+func buildMessagebus(env map[string]string) (messageBus, error) {
 	serviceName := env["MESSAGING"]
 	fmt.Printf("Messaging Service: %s\n", serviceName)
 
@@ -234,7 +235,7 @@ func buildReceiver(env map[string]string) (messageBus, error) {
 func buildAuth(
 	ctx context.Context,
 	env map[string]string,
-	receiver auth.LogoutEventer,
+	messageBus auth.LogoutEventer,
 	errHandler func(error),
 ) (autoupdateHttp.Authenticater, error) {
 	method := env["AUTH"]
@@ -261,7 +262,15 @@ func buildAuth(
 		url := protocol + "://" + host + ":" + port
 
 		fmt.Printf("Auth Service: %s\n", url)
-		return auth.New(ctx, url, receiver, errHandler, []byte(tokenKey), []byte(cookieKey))
+		a, err := auth.New(url, ctx.Done(), errHandler, []byte(tokenKey), []byte(cookieKey))
+		if err != nil {
+			return nil, fmt.Errorf("creating auth service: %w", err)
+		}
+		go a.ListenOnLogouts(ctx, messageBus, errHandler)
+		go a.PruneOldData(ctx)
+
+		return a, nil
+
 	case "fake":
 		fmt.Println("Auth Method: FakeAuth (User ID 1 for all requests)")
 		return test.Auth(1), nil

@@ -43,10 +43,10 @@ func TestProjectorCountdown(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			shutdownCtx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(ctx, tt.data))
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), tt.data))
 
 			p7on := &projector.Projection{
 				ContentObjectID: "projector_countdown/1",
@@ -82,10 +82,10 @@ func TestProjectorMessage(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			shutdownCtx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(ctx, tt.data))
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), tt.data))
 
 			p7on := &projector.Projection{
 				ContentObjectID: "projector_message/1",

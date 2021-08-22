@@ -43,7 +43,7 @@ func TestFetchObjectOnError(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"testmodel/1/id":         "1",
 		"testmodel/1/number":     "456",
 		"testmodel/1/text":       `"my text"`,
@@ -65,7 +65,7 @@ func TestFetchObjectDoesNotExist(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx, map[string]string{}))
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{}))
 
 	fetch.Object(context.Background(), "testmodel/1", "text")
 
@@ -114,7 +114,7 @@ func TestFetchValueAfterError(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"testmodel/1/text": `"my text"`,
 	})
 	recorder := datastore.NewRecorder(ds)
@@ -174,7 +174,7 @@ func TestFetchIfExistAfterError(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"testmodel/1/id":   "1",
 		"testmodel/1/text": `"some test"`,
 	})
@@ -202,7 +202,7 @@ func ExampleInt() {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx, map[string]string{
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"testmodel/1/id": "1",
 	}))
 
@@ -219,7 +219,7 @@ func ExampleInt_doesNotExist() {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx, nil))
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), nil))
 
 	i := datastore.Int(context.Background(), fetch.Fetch, "testmodel/%d/number", 1)
 
@@ -234,7 +234,7 @@ func ExampleInt_wrongType() {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx, map[string]string{
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"testmodel/1/id": `"a string"`,
 	}))
 
@@ -251,7 +251,7 @@ func ExampleInt_ifExist() {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx, nil))
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), nil))
 
 	i := datastore.Int(context.Background(), fetch.FetchIfExist, "testmodel/%d/number", 1)
 
@@ -266,7 +266,7 @@ func ExampleInts() {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx, map[string]string{
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"testmodel/1/ids": "[1,2,3]",
 	}))
 
@@ -283,7 +283,7 @@ func ExampleString() {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx, map[string]string{
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"testmodel/1/name": `"hugo"`,
 	}))
 

@@ -27,7 +27,7 @@ type DatastoreServer struct {
 }
 
 // NewDatastoreServer creates a new DatastoreServer.
-func NewDatastoreServer(ctx context.Context, data map[string]string) *DatastoreServer {
+func NewDatastoreServer(closed <-chan struct{}, data map[string]string) *DatastoreServer {
 	d := &DatastoreServer{
 		Values: newDatastoreValues(data),
 		c:      make(chan map[string][]byte),
@@ -80,7 +80,7 @@ func NewDatastoreServer(ctx context.Context, data map[string]string) *DatastoreS
 	}))
 
 	go func() {
-		<-ctx.Done()
+		<-closed
 		d.TS.Close()
 	}()
 	return d

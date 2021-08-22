@@ -151,7 +151,7 @@ func TestAgendaItemListAllContentObjectTypes(t *testing.T) {
 			shutdownCtx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx, tt.data))
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), tt.data))
 
 			p7on := &projector.Projection{
 				ContentObjectID: "meeting/1",
@@ -348,7 +348,7 @@ func TestAgendaItemListWithDepthItems(t *testing.T) {
 			shutdownCtx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx, tt.data))
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), tt.data))
 
 			p7on := &projector.Projection{
 				ContentObjectID: "meeting/1",
