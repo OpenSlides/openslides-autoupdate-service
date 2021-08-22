@@ -24,7 +24,7 @@ jobs:
     - name: Start With golang
       run: |
         go build ./cmd/autoupdate
-        timeout --preserve-status 2s ./autoupdate 
+        timeout --preserve-status --signal=SIGINT 2s ./autoupdate
 
     - name: Start With Docker
       run: |
