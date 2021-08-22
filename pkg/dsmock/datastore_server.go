@@ -26,7 +26,12 @@ type DatastoreServer struct {
 	c chan map[string][]byte
 }
 
-// NewDatastoreServer creates a new DatastoreServer.
+// NewDatastoreServer creates a new fake DatastoreServer.
+//
+// It creates a webserver that handels get_many requests like the reald
+// datastore-reader.
+//
+// If the given channel is closed, the server shuts down.
 func NewDatastoreServer(closed <-chan struct{}, data map[string]string) *DatastoreServer {
 	d := &DatastoreServer{
 		Values: newDatastoreValues(data),

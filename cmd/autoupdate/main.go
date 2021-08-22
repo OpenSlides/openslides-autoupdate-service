@@ -85,32 +85,32 @@ func secret(name string, dev bool) (string, error) {
 	return s, nil
 }
 
+// errHandler is called by some background tasts.
+func errHandler(err error) {
+	// If an error happend, we just close the session.
+	var closing interface {
+		Closing()
+	}
+	if errors.As(err, &closing) {
+		return
+	}
+
+	var errNet *net.OpError
+	if errors.As(err, &errNet) {
+		if errNet.Op == "dial" {
+			log.Printf("Can not connect to redis.")
+			return
+		}
+	}
+
+	log.Printf("Error: %v", err)
+}
+
 func run() error {
 	env := defaultEnv()
 
 	ctx, cancel := interruptContext()
 	defer cancel()
-
-	errHandler := func(err error) {
-		// If an error happend, we just close the session.
-		var closing interface {
-			Closing()
-		}
-		if errors.As(err, &closing) {
-			// TODO: The same for ctx cancel and ctx timeout
-			return
-		}
-
-		var errNet *net.OpError
-		if errors.As(err, &errNet) {
-			if errNet.Op == "dial" {
-				log.Printf("Can not connect to redis.")
-				return
-			}
-		}
-
-		log.Printf("Error: %v", err)
-	}
 
 	// Receiver for datastore and logout events.
 	messageBus, err := buildMessagebus(env)
