@@ -76,7 +76,7 @@ func cmpSlice(one, two []string) bool {
 	return true
 }
 
-func cmpMap(one, two map[string]json.RawMessage) bool {
+func cmpMap(one, two map[string][]byte) bool {
 	if len(one) != len(two) {
 		return false
 	}

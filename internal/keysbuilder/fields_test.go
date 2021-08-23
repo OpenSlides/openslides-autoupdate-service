@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 )
 
 func TestJSONValid(t *testing.T) {
@@ -23,14 +22,14 @@ func TestJSONValid(t *testing.T) {
 		}
 	}
 	`)
-	if _, err := keysbuilder.FromJSON(json, new(test.DataProvider), 1); err != nil {
+	if _, err := keysbuilder.FromJSON(json); err != nil {
 		t.Errorf("Got unexpected error: %v", err)
 	}
 }
 
 func TestJSONInvalid(t *testing.T) {
 	json := strings.NewReader(`{5`)
-	_, err := keysbuilder.FromJSON(json, new(test.DataProvider), 1)
+	_, err := keysbuilder.FromJSON(json)
 	if err == nil {
 		t.Errorf("FromJSON did not return an error")
 	}
@@ -48,7 +47,7 @@ func TestJSONIDNull(t *testing.T) {
 		"fields": {"name": null}
 	}
 	`)
-	_, err := keysbuilder.FromJSON(json, new(test.DataProvider), 1)
+	_, err := keysbuilder.FromJSON(json)
 	if err == nil {
 		t.Errorf("Expected an error, got none")
 	}
@@ -66,7 +65,7 @@ func TestJSONSingleID(t *testing.T) {
 		"fields": {"name": null}
 	}
 	`)
-	_, err := keysbuilder.FromJSON(json, new(test.DataProvider), 1)
+	_, err := keysbuilder.FromJSON(json)
 	if err == nil {
 		t.Errorf("Expected an error, got none")
 	}
@@ -87,7 +86,7 @@ func TestJSONSuffixNoFields(t *testing.T) {
 		}
 	}
 	`)
-	_, err := keysbuilder.FromJSON(json, new(test.DataProvider), 1)
+	_, err := keysbuilder.FromJSON(json)
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -106,7 +105,7 @@ func TestRequestErrors(t *testing.T) {
 				"ids": [5],
 				"fields": {"name": null}
 			}`,
-			"no collection",
+			"attribute collection is missing",
 			strs(),
 		},
 		{
@@ -231,9 +230,65 @@ func TestRequestErrors(t *testing.T) {
 			`field "group_ids.perm_ids": no fields`,
 			strs("group_ids", "perm_ids"),
 		},
+		{
+			"collection has upper letter",
+			`{
+				"ids": [1],
+				"collection": "User",
+				"fields": {"username": null}
+			}
+			`,
+			"invalid collection name",
+			strs(),
+		},
+		{
+			"field with upper letter",
+			`{
+				"ids": [1],
+				"collection": "user",
+				"fields": {"Username": null}
+			}
+			`,
+			"field \"Username\": fieldname is invalid",
+			strs("Username"),
+		},
+		{
+			"collection in relation-field has upper letter",
+			`{
+				"ids": [1],
+				"collection": "user",
+				"fields": {
+					"group_id": {
+						"type": "relation",
+						"collection": "Group",
+						"fields": {"name": null}
+					}
+				}
+			}
+			`,
+			"field \"group_id\": invalid collection name",
+			strs("group_id"),
+		},
+		{
+			"collection in relation-list-field has upper letter",
+			`{
+				"ids": [1],
+				"collection": "user",
+				"fields": {
+					"group_ids": {
+						"type": "relation-list",
+						"collection": "Group",
+						"fields": {"name": null}
+					}
+				}
+			}
+			`,
+			"field \"group_ids\": invalid collection name",
+			strs("group_ids"),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := keysbuilder.FromJSON(strings.NewReader(tt.input), new(test.DataProvider), 1)
+			_, err := keysbuilder.FromJSON(strings.NewReader(tt.input))
 			if err == nil {
 				t.Errorf("Expected an error, got none")
 			}
@@ -242,7 +297,7 @@ func TestRequestErrors(t *testing.T) {
 				t.Errorf("Expected err to be %T, got: %v", kErr, err)
 			}
 			if got := kErr.Error(); got != tt.msg {
-				t.Errorf("Expected error message \"%s\", got: \"%s\"", tt.msg, got)
+				t.Errorf("Expected error message %q, got: %q", tt.msg, got)
 			}
 			if fields := kErr.Fields(); !cmpSlice(fields, tt.fields) {
 				t.Errorf("Expected error to be on field \"%v\", got %v", tt.fields, fields)
@@ -274,7 +329,7 @@ func TestManyFromJSON(t *testing.T) {
 		}
 	}]`)
 
-	_, err := keysbuilder.ManyFromJSON(json, new(test.DataProvider), 1)
+	_, err := keysbuilder.ManyFromJSON(json)
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -300,7 +355,7 @@ func TestManyFromJSONInvalidJSON(t *testing.T) {
 		"collection": "user",
 		"fi
 	}]`)
-	_, err := keysbuilder.ManyFromJSON(json, new(test.DataProvider), 1)
+	_, err := keysbuilder.ManyFromJSON(json)
 	if err == nil {
 		t.Error("Expected ManyFromJSON() to return an error, got not")
 	}
@@ -337,7 +392,7 @@ func TestManyFromJSONInvalidInput(t *testing.T) {
 			}
 		}
 	}]`)
-	_, err := keysbuilder.ManyFromJSON(json, new(test.DataProvider), 1)
+	_, err := keysbuilder.ManyFromJSON(json)
 	if err == nil {
 		t.Error("Expected ManyFromJSON() to return an error, got not")
 	}

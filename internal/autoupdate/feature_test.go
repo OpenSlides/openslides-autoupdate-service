@@ -65,11 +65,11 @@ var dataSet = map[string]string{
 }
 
 func TestFeatures(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(closed, dataSet)
-	s := autoupdate.New(datastore, test.RestrictAllowed, closed)
+	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), dataSet)
+	service := autoupdate.New(datastore, test.RestrictAllowed, shutdownCtx.Done())
 
 	for _, tt := range []struct {
 		name string
@@ -302,14 +302,19 @@ func TestFeatures(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			b, err := keysbuilder.FromJSON(strings.NewReader(tt.request), s, 1)
+			builder, err := keysbuilder.FromJSON(strings.NewReader(tt.request))
 			if err != nil {
 				t.Fatalf("FromJSON() returned an unexpected error: %v", err)
 			}
-			c := s.Connect(1, b)
-			data, err := c.Next(context.Background())
+			next := service.Connect(1, builder)
+			data, err := next(context.Background())
 			if err != nil {
 				t.Fatalf("Can not get data: %v", err)
+			}
+
+			converted := make(map[string]json.RawMessage, len(data))
+			for k, v := range data {
+				converted[k] = v
 			}
 
 			var expect map[string]json.RawMessage
@@ -317,7 +322,7 @@ func TestFeatures(t *testing.T) {
 				t.Fatalf("Can not decode keys from expected data: %v", err)
 			}
 
-			cmpMap(t, data, expect)
+			cmpMap(t, converted, expect)
 		})
 	}
 }

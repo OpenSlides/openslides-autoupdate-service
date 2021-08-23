@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -97,18 +96,17 @@ func YAMLData(input string) map[string]string {
 type Stub map[string]string
 
 // Get implements the Getter interface.
-func (s Stub) Get(_ context.Context, keys ...string) ([]json.RawMessage, error) {
-	values := make([]json.RawMessage, len(keys))
+func (s Stub) Get(_ context.Context, keys ...string) (map[string][]byte, error) {
 	data := map[string]string(s)
-	for i, k := range keys {
-		element, ok := data[k]
-		if !ok {
-			continue
+	converted := make(map[string][]byte, len(keys))
+	for _, k := range keys {
+		v := []byte(data[k])
+		if data[k] == "" {
+			v = nil
 		}
-
-		values[i] = []byte(element)
+		converted[k] = v
 	}
-	return values, nil
+	return converted, nil
 }
 
 // MockDatastore implements the autoupdate.Datastore interface.
@@ -116,9 +114,15 @@ type MockDatastore struct {
 	*datastore.Datastore
 	server *DatastoreServer
 	err    error
+
+	muRequests sync.Mutex
+	requests   [][]string
 }
 
 // NewMockDatastore create a MockDatastore with data.
+//
+// The function starts a mock datastore server in the background. It gets
+// closed, when the closed channel is closed.
 func NewMockDatastore(closed <-chan struct{}, data map[string]string) *MockDatastore {
 	dsServer := NewDatastoreServer(closed, data)
 
@@ -126,13 +130,17 @@ func NewMockDatastore(closed <-chan struct{}, data map[string]string) *MockDatas
 		server: dsServer,
 	}
 
-	s.Datastore = datastore.New(dsServer.TS.URL, closed, func(err error) { log.Println(err) }, s.server)
+	s.Datastore = datastore.New(dsServer.TS.URL)
 
 	return s
 }
 
 // Get calls the Get() method of the datastore.
-func (d *MockDatastore) Get(ctx context.Context, keys ...string) ([]json.RawMessage, error) {
+func (d *MockDatastore) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+	d.muRequests.Lock()
+	d.requests = append(d.requests, keys)
+	d.muRequests.Unlock()
+
 	if d.err != nil {
 		return nil, d.err
 	}
@@ -145,6 +153,13 @@ func (d *MockDatastore) InjectError(err error) {
 	d.err = err
 }
 
+// Requests returns a list of all requested keys.
+func (d *MockDatastore) Requests() [][]string {
+	d.muRequests.Lock()
+	defer d.muRequests.Unlock()
+	return d.requests
+}
+
 // Send updates the data.
 //
 // This method is unblocking. If you want to fetch data afterwards, make sure to
@@ -154,8 +169,8 @@ func (d *MockDatastore) Send(data map[string]string) {
 }
 
 // Update implements the datastore.Updater interface.
-func (d *MockDatastore) Update(close <-chan struct{}) (map[string]json.RawMessage, error) {
-	return d.server.Update(close)
+func (d *MockDatastore) Update(ctx context.Context) (map[string][]byte, error) {
+	return d.server.Update(ctx)
 }
 
 // datastoreValues returns data for the test.MockDatastore and the
@@ -164,11 +179,11 @@ func (d *MockDatastore) Update(close <-chan struct{}) (map[string]json.RawMessag
 // If OnlyData is false, fake data is generated.
 type datastoreValues struct {
 	mu   sync.RWMutex
-	Data map[string]json.RawMessage
+	Data map[string][]byte
 }
 
 func newDatastoreValues(data map[string]string) *datastoreValues {
-	conv := make(map[string]json.RawMessage)
+	conv := make(map[string][]byte)
 	for k, v := range data {
 		conv[k] = []byte(v)
 	}
@@ -180,7 +195,7 @@ func newDatastoreValues(data map[string]string) *datastoreValues {
 
 // value returns a value for a key. If the value does not exist, the second
 // return value is false.
-func (d *datastoreValues) value(key string) (json.RawMessage, error) {
+func (d *datastoreValues) value(key string) ([]byte, error) {
 	if d == nil {
 		return nil, nil
 	}
@@ -199,7 +214,7 @@ func (d *datastoreValues) value(key string) (json.RawMessage, error) {
 // set updates the values from the Datastore.
 //
 // This does not send a signal to the listeners.
-func (d *datastoreValues) set(data map[string]json.RawMessage) {
+func (d *datastoreValues) set(data map[string][]byte) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 

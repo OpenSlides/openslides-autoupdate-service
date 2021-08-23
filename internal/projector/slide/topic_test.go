@@ -57,9 +57,10 @@ func TestTopic(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			closed := make(chan struct{})
-			defer close(closed)
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(closed, tt.data))
+			shutdownCtx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), tt.data))
 
 			p7on := &projector.Projection{
 				ContentObjectID: "topic/1",

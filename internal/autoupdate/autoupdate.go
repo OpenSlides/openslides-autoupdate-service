@@ -8,9 +8,7 @@ package autoupdate
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -45,14 +43,17 @@ const fullUpdateFormat = "fullupdate/%d"
 type Autoupdate struct {
 	datastore  Datastore
 	topic      *topic.Topic
-	restricter RestricterFunc
+	restricter RestrictMiddleware
 }
 
-// RestricterFunc is a function that can restrict data.
-type RestricterFunc func(ctx context.Context, fetch *datastore.Fetcher, uid int, data map[string]json.RawMessage) error
+// RestrictMiddleware is a function that can restrict data.
+type RestrictMiddleware func(getter datastore.Getter, uid int) datastore.Getter
 
 // New creates a new autoupdate service.
-func New(datastore Datastore, restricter RestricterFunc, closed <-chan struct{}) *Autoupdate {
+//
+// The attribute closed is a channel that should be closed when the server shuts
+// down. In this case, all connections get closed.
+func New(datastore Datastore, restricter RestrictMiddleware, closed <-chan struct{}) *Autoupdate {
 	a := &Autoupdate{
 		datastore:  datastore,
 		topic:      topic.New(topic.WithClosed(closed)),
@@ -60,7 +61,7 @@ func New(datastore Datastore, restricter RestricterFunc, closed <-chan struct{})
 	}
 
 	// Update the topic when an data update is received.
-	a.datastore.RegisterChangeListener(func(data map[string]json.RawMessage) error {
+	a.datastore.RegisterChangeListener(func(data map[string][]byte) error {
 		keys := make([]string, 0, len(data))
 		for k := range data {
 			keys = append(keys, k)
@@ -70,22 +71,24 @@ func New(datastore Datastore, restricter RestricterFunc, closed <-chan struct{})
 		return nil
 	})
 
-	go a.pruneTopic(closed)
-	go a.resetCache(closed)
-
 	return a
 }
+
+// DataProvider is a function that returns the next data for a user.
+type DataProvider func(ctx context.Context) (map[string][]byte, error)
 
 // Connect has to be called by a client to register to the service. The method
 // returns a Connection object, that can be used to receive the data.
 //
 // There is no need to "close" the Connection object.
-func (a *Autoupdate) Connect(userID int, kb KeysBuilder) *Connection {
-	return &Connection{
+func (a *Autoupdate) Connect(userID int, kb KeysBuilder) DataProvider {
+	c := &connection{
 		autoupdate: a,
 		uid:        userID,
 		kb:         kb,
 	}
+
+	return c.Next
 }
 
 // LastID returns the id of the last data update.
@@ -93,41 +96,15 @@ func (a *Autoupdate) LastID() uint64 {
 	return a.topic.LastID()
 }
 
-// Live writes data in json-format to the given writer until it closes. It
-// flushes after each message.
-func (a *Autoupdate) Live(ctx context.Context, userID int, w io.Writer, kb KeysBuilder) error {
-	conn := a.Connect(userID, kb)
-	encoder := json.NewEncoder(w)
-
-	for {
-		// connection.Next() blocks, until there is new data. It also unblocks,
-		// when the client context or the server is closed.
-		data, err := conn.Next(ctx)
-		if err != nil {
-			return err
-		}
-
-		if err := encoder.Encode(data); err != nil {
-			return err
-		}
-
-		w.(flusher).Flush()
-	}
-}
-
-type flusher interface {
-	Flush()
-}
-
-// pruneTopic removes old data from the topic. Blocks until the service is
+// PruneOldData removes old data from the topic. Blocks until the service is
 // closed.
-func (a *Autoupdate) pruneTopic(closed <-chan struct{}) {
+func (a *Autoupdate) PruneOldData(ctx context.Context) {
 	tick := time.NewTicker(time.Minute)
 	defer tick.Stop()
 
 	for {
 		select {
-		case <-closed:
+		case <-ctx.Done():
 			return
 		case <-tick.C:
 			a.topic.Prune(time.Now().Add(-pruneTime))
@@ -135,15 +112,15 @@ func (a *Autoupdate) pruneTopic(closed <-chan struct{}) {
 	}
 }
 
-// resetCache runs in the background and cleans the cache from time to time.
+// ResetCache runs in the background and cleans the cache from time to time.
 // Blocks until the service is closed.
-func (a *Autoupdate) resetCache(closed <-chan struct{}) {
+func (a *Autoupdate) ResetCache(ctx context.Context) {
 	tick := time.NewTicker(datastoreCacheResetTime)
 	defer tick.Stop()
 
 	for {
 		select {
-		case <-closed:
+		case <-ctx.Done():
 			return
 		case <-tick.C:
 			a.datastore.ResetCache()
@@ -151,26 +128,4 @@ func (a *Autoupdate) resetCache(closed <-chan struct{}) {
 			a.topic.Publish(fmt.Sprintf(fullUpdateFormat, -1))
 		}
 	}
-}
-
-// RestrictedData returns a map containing the restricted values for the given
-// keys. If a key does not exist or the user has not the permission to see it,
-// the value in the returned map is nil.
-func (a *Autoupdate) RestrictedData(ctx context.Context, uid int, keys ...string) (map[string]json.RawMessage, error) {
-	values, err := a.datastore.Get(ctx, keys...)
-	if err != nil {
-		return nil, fmt.Errorf("get values for keys `%v` from datastore: %w", keys, err)
-	}
-
-	data := make(map[string]json.RawMessage, len(keys))
-	for i, key := range keys {
-		data[key] = values[i]
-	}
-
-	fetch := datastore.NewFetcher(a.datastore)
-
-	if err := a.restricter(ctx, fetch, uid, data); err != nil {
-		return nil, fmt.Errorf("restrict data: %w", err)
-	}
-	return data, nil
 }

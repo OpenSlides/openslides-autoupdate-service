@@ -1,7 +1,6 @@
 package autoupdate
 
 import (
-	"encoding/json"
 	"hash/maphash"
 )
 
@@ -13,7 +12,7 @@ type filter struct {
 // filter has to be called on a reader that contains a decoded json object. It
 // removes nil values from a map. Filter is called multiple times it removes
 // values from the map, that did not chance.
-func (f *filter) filter(data map[string]json.RawMessage) {
+func (f *filter) filter(data map[string][]byte) {
 	if f.history == nil {
 		f.history = make(map[string]uint64)
 	}

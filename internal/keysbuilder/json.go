@@ -8,7 +8,7 @@ import (
 )
 
 // FromJSON creates a Keysbuilder from json.
-func FromJSON(r io.Reader, dataProvider DataProvider, uid int) (*Builder, error) {
+func FromJSON(r io.Reader) (*Builder, error) {
 	var b body
 	if err := json.NewDecoder(r).Decode(&b); err != nil {
 		if err == io.EOF {
@@ -21,15 +21,13 @@ func FromJSON(r io.Reader, dataProvider DataProvider, uid int) (*Builder, error)
 	}
 
 	kb := &Builder{
-		dataProvider: dataProvider,
-		uid:          uid,
-		bodies:       []body{b},
+		bodies: []body{b},
 	}
 	return kb, nil
 }
 
 // ManyFromJSON creates a list of Keysbuilder objects from a json list.
-func ManyFromJSON(r io.Reader, dataProvider DataProvider, uid int) (*Builder, error) {
+func ManyFromJSON(r io.Reader) (*Builder, error) {
 	var bs []body
 	if err := json.NewDecoder(r).Decode(&bs); err != nil {
 		if err == io.EOF {
@@ -64,9 +62,7 @@ func ManyFromJSON(r io.Reader, dataProvider DataProvider, uid int) (*Builder, er
 	}
 
 	kb := &Builder{
-		dataProvider: dataProvider,
-		uid:          uid,
-		bodies:       bs,
+		bodies: bs,
 	}
 	return kb, nil
 }
