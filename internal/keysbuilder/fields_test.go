@@ -105,7 +105,7 @@ func TestRequestErrors(t *testing.T) {
 				"ids": [5],
 				"fields": {"name": null}
 			}`,
-			"no collection",
+			"attribute collection is missing",
 			strs(),
 		},
 		{
@@ -230,6 +230,62 @@ func TestRequestErrors(t *testing.T) {
 			`field "group_ids.perm_ids": no fields`,
 			strs("group_ids", "perm_ids"),
 		},
+		{
+			"collection has upper letter",
+			`{
+				"ids": [1],
+				"collection": "User",
+				"fields": {"username": null}
+			}
+			`,
+			"invalid collection name",
+			strs(),
+		},
+		{
+			"field with upper letter",
+			`{
+				"ids": [1],
+				"collection": "user",
+				"fields": {"Username": null}
+			}
+			`,
+			"field \"Username\": fieldname is invalid",
+			strs("Username"),
+		},
+		{
+			"collection in relation-field has upper letter",
+			`{
+				"ids": [1],
+				"collection": "user",
+				"fields": {
+					"group_id": {
+						"type": "relation",
+						"collection": "Group",
+						"fields": {"name": null}
+					}
+				}
+			}
+			`,
+			"field \"group_id\": invalid collection name",
+			strs("group_id"),
+		},
+		{
+			"collection in relation-list-field has upper letter",
+			`{
+				"ids": [1],
+				"collection": "user",
+				"fields": {
+					"group_ids": {
+						"type": "relation-list",
+						"collection": "Group",
+						"fields": {"name": null}
+					}
+				}
+			}
+			`,
+			"field \"group_ids\": invalid collection name",
+			strs("group_ids"),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := keysbuilder.FromJSON(strings.NewReader(tt.input))
@@ -241,7 +297,7 @@ func TestRequestErrors(t *testing.T) {
 				t.Errorf("Expected err to be %T, got: %v", kErr, err)
 			}
 			if got := kErr.Error(); got != tt.msg {
-				t.Errorf("Expected error message \"%s\", got: \"%s\"", tt.msg, got)
+				t.Errorf("Expected error message %q, got: %q", tt.msg, got)
 			}
 			if fields := kErr.Fields(); !cmpSlice(fields, tt.fields) {
 				t.Errorf("Expected error to be on field \"%v\", got %v", tt.fields, fields)

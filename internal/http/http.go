@@ -77,7 +77,7 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 		}
 
 		if err := encoder.Encode(converted); err != nil {
-			return fmt.Errorf("encoding end sending next message: %w", err)
+			return fmt.Errorf("encoding and sending next message: %w", err)
 		}
 
 		w.(http.Flusher).Flush()

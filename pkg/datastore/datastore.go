@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -20,6 +21,11 @@ import (
 )
 
 const urlPath = "/internal/datastore/reader/get_many"
+
+const (
+	messageBusReconnectPause = time.Second
+	httpTimeout              = 10 * time.Second
+)
 
 // Datastore can be used to get values from the datastore-service.
 //
@@ -31,25 +37,22 @@ type Datastore struct {
 	changeListeners  []func(map[string][]byte) error
 	calculatedFields map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)
 	calculatedKeys   map[string]string
-	closed           <-chan struct{}
-	errHandler       func(error)
+	client           *http.Client
 
 	resetMu sync.Mutex
 }
 
 // New returns a new Datastore object.
-func New(url string, closed <-chan struct{}, errHandler func(error), keychanger Updater) *Datastore {
+func New(url string) *Datastore {
 	d := &Datastore{
 		cache:            newCache(),
 		url:              url + urlPath,
-		keychanger:       keychanger,
-		closed:           closed,
 		calculatedFields: make(map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)),
 		calculatedKeys:   make(map[string]string),
-		errHandler:       errHandler,
+		client: &http.Client{
+			Timeout: httpTimeout,
+		},
 	}
-
-	go d.receiveKeyChanges(errHandler)
 
 	return d
 }
@@ -136,24 +139,20 @@ func (d *Datastore) ResetCache() {
 	d.resetMu.Unlock()
 }
 
-// receiveKeyChanges listens for updates and saves then into the topic. This
-// function blocks until the service is closed.
-func (d *Datastore) receiveKeyChanges(errHandler func(error)) {
-	if d.keychanger == nil {
-		return
+// ListenOnUpdates listens for updates and informs all listeners.
+func (d *Datastore) ListenOnUpdates(ctx context.Context, keychanger Updater, errHandler func(error)) {
+	if errHandler == nil {
+		errHandler = func(error) {}
 	}
 
 	for {
-		select {
-		case <-d.closed:
-			return
-		default:
-		}
-
-		data, err := d.keychanger.Update(d.closed)
+		data, err := keychanger.Update(ctx)
 		if err != nil {
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return
+			}
 			errHandler(fmt.Errorf("update data: %w", err))
-			time.Sleep(time.Second)
+			time.Sleep(messageBusReconnectPause)
 			continue
 		}
 
@@ -206,7 +205,7 @@ func (d *Datastore) calculateField(field string, key string, updated map[string]
 
 	calculated, err := d.calculatedFields[field](ctx, key, updated)
 	if err != nil {
-		d.errHandler(fmt.Errorf("calculating key %s: %w", key, err))
+		log.Printf("Error calculating key %s: %v", key, err)
 
 		msg := fmt.Sprintf("calculating key %s", key)
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
@@ -238,7 +237,7 @@ func (d *Datastore) requestKeys(keys []string) (map[string][]byte, error) {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := d.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("requesting keys `%v`: %w", keys, err)
 	}

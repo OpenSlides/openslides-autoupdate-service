@@ -154,7 +154,7 @@ func TestErrors(t *testing.T) {
 			),
 			400,
 			`SyntaxError`,
-			`no collection`,
+			`attribute collection is missing`,
 		},
 		{
 			"No list",

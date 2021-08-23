@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -121,6 +120,9 @@ type MockDatastore struct {
 }
 
 // NewMockDatastore create a MockDatastore with data.
+//
+// The function starts a mock datastore server in the background. It gets
+// closed, when the closed channel is closed.
 func NewMockDatastore(closed <-chan struct{}, data map[string]string) *MockDatastore {
 	dsServer := NewDatastoreServer(closed, data)
 
@@ -128,7 +130,7 @@ func NewMockDatastore(closed <-chan struct{}, data map[string]string) *MockDatas
 		server: dsServer,
 	}
 
-	s.Datastore = datastore.New(dsServer.TS.URL, closed, func(err error) { log.Println(err) }, s.server)
+	s.Datastore = datastore.New(dsServer.TS.URL)
 
 	return s
 }
@@ -167,8 +169,8 @@ func (d *MockDatastore) Send(data map[string]string) {
 }
 
 // Update implements the datastore.Updater interface.
-func (d *MockDatastore) Update(close <-chan struct{}) (map[string][]byte, error) {
-	return d.server.Update(close)
+func (d *MockDatastore) Update(ctx context.Context) (map[string][]byte, error) {
+	return d.server.Update(ctx)
 }
 
 // datastoreValues returns data for the test.MockDatastore and the

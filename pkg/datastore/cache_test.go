@@ -228,24 +228,27 @@ func TestCacheErrorOnFetching(t *testing.T) {
 		t.Errorf("GetOrSet returned err `%v`, expected `%v`", err, rErr)
 	}
 
-	done := make(chan struct{})
+	done := make(chan map[string][]byte)
 	go func() {
-		_, err := c.GetOrSet(context.Background(), []string{"key1"}, func(key []string, set func(string, []byte)) error {
+		data, err := c.GetOrSet(context.Background(), []string{"key1"}, func(key []string, set func(string, []byte)) error {
 			set("key1", []byte("value"))
 			return nil
 		})
 		if err != nil {
 			t.Errorf("Second GetOrSet returned unexpected err: %v", err)
 		}
-		close(done)
+		done <- data
 	}()
 
 	timer := time.NewTimer(time.Millisecond)
 	defer timer.Stop()
 	select {
-	case <-done:
+	case data := <-done:
+		if string(data["key1"]) != "value" {
+			t.Errorf("Second GetOrSet-Call returnd value %q, expected value", data["key1"])
+		}
 	case <-timer.C:
-		t.Errorf("Second GetOrSet-Call was not done one Millisecond")
+		t.Errorf("Second GetOrSet-Call was not done after one Millisecond")
 	}
 }
 
