@@ -52,9 +52,20 @@ func TestMeetingModeB(t *testing.T) {
 		m.Modes("B"),
 		true,
 		`---
-			meeting/1/committee_id: 4
-			user/1/committee_$4_management_level: can_manage
-			`,
+		meeting/1/committee_id: 4
+		user/1/committee_$4_management_level: can_manage
+		`,
+	)
+
+	testCase(
+		"CML can manage organization",
+		t,
+		m.Modes("B"),
+		true,
+		`---
+		user/1/organization_management_level: can_manage_organization
+		meeting/1/id: 1
+		`,
 	)
 }
 
