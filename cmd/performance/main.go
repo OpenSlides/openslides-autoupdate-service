@@ -18,7 +18,7 @@ const (
 	connections = 5000
 
 	// The url of the request.
-	url = "http://localhost:9012/system/autoupdate/keys?" + keyName
+	url = "http://localhost:9012/system/autoupdate?k=" + keyName
 
 	// The addr of redis server.
 	redisAddr = "localhost:6379"
