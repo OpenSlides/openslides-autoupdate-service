@@ -11,28 +11,26 @@ import (
 //
 // The Datastore object implements this interface.
 type Getter interface {
-	Get(ctx context.Context, keys ...string) ([]json.RawMessage, error)
+	Get(ctx context.Context, keys ...string) (map[string][]byte, error)
 }
 
 // Fetcher is a helper to fetch many keys from the datastore.
-//
-// This object is meant to be called like a function. Do not store it in a
-// struct.
 //
 // The methods do not return an error. If an error happens, it is saved
 // internaly. As soon, as an error happens, all later calls to methods of that
 // fetcher are noops.
 //
+// The method Fetcher.Err() can be used to get the error.
+//
 // Make sure to call Fetcher.Err() at the end to see, if an error happend.
 type Fetcher struct {
-	ds   Getter
-	keys []string
-	err  error
+	getter Getter
+	err    error
 }
 
 // NewFetcher initializes a Fetcher object.
-func NewFetcher(ds Getter) *Fetcher {
-	return &Fetcher{ds: ds}
+func NewFetcher(getter Getter) *Fetcher {
+	return &Fetcher{getter: getter}
 }
 
 // Fetch gets a value from the datastore and saves it into the argument `value`.
@@ -46,20 +44,19 @@ func (f *Fetcher) Fetch(ctx context.Context, value interface{}, keyFmt string, a
 	}
 
 	fqfield := fmt.Sprintf(keyFmt, a...)
-	f.keys = append(f.keys, fqfield)
 
-	fields, err := f.ds.Get(ctx, fqfield)
+	fields, err := f.getter.Get(ctx, fqfield)
 	if err != nil {
 		f.err = fmt.Errorf("getting data from datastore: %w", err)
 		return
 	}
 
-	if fields[0] == nil {
+	if fields[fqfield] == nil {
 		return
 	}
 
-	if err := json.Unmarshal(fields[0], value); err != nil {
-		f.err = fmt.Errorf("unpacking value: %w", err)
+	if err := json.Unmarshal(fields[fqfield], value); err != nil {
+		f.err = fmt.Errorf("unpacking value of %q: %w", fqfield, err)
 	}
 	return
 }
@@ -81,23 +78,22 @@ func (f *Fetcher) FetchIfExist(ctx context.Context, value interface{}, keyFmt st
 	fqid := keyParts[0] + "/" + keyParts[1]
 	idField := fqid + "/id"
 
-	f.keys = append(f.keys, idField, fqfield)
-	fields, err := f.ds.Get(ctx, idField, fqfield)
+	fields, err := f.getter.Get(ctx, idField, fqfield)
 	if err != nil {
 		f.err = fmt.Errorf("getting data from datastore: %w", err)
 		return
 	}
 
-	if fields[0] == nil {
+	if fields[idField] == nil {
 		f.err = DoesNotExistError(fqid)
 		return
 	}
-	if fields[1] == nil {
+	if fields[fqfield] == nil {
 		return
 	}
 
-	if err := json.Unmarshal(fields[1], value); err != nil {
-		f.err = fmt.Errorf("unpacking value: %w", err)
+	if err := json.Unmarshal(fields[fqfield], value); err != nil {
+		f.err = fmt.Errorf("unpacking value of %q: %w", fqfield, err)
 	}
 	return
 }
@@ -118,35 +114,34 @@ func (f *Fetcher) Object(ctx context.Context, fqID string, fields ...string) map
 		keys[i+1] = fqID + "/" + fields[i]
 	}
 
-	f.keys = append(f.keys, keys...)
-	vals, err := f.ds.Get(ctx, keys...)
+	vals, err := f.getter.Get(ctx, keys...)
 	if err != nil {
 		f.err = fmt.Errorf("fetching data: %w", err)
 		return nil
 	}
 
-	if vals[0] == nil {
+	if vals[fqID+"/id"] == nil {
 		f.err = DoesNotExistError(fqID)
 		return nil
 	}
 
 	object := make(map[string]json.RawMessage, len(fields))
 	for i := 0; i < len(fields); i++ {
-		object[fields[i]] = vals[i+1]
+		object[fields[i]] = vals[fqID+"/"+fields[i]]
 	}
-
 	return object
 }
 
-// Keys returns all datastore keys that where fetched in the process.
-func (f *Fetcher) Keys() []string {
-	return f.keys
+// Field returns function to fetch all existing field.
+func (f *Fetcher) Field() Fields {
+	return Fields{f}
 }
 
 // Err returns the error that happend at a method call. If no error happend,
 // then Err() returns nil.
 func (f *Fetcher) Err() error {
-	return f.err
+	err := f.err
+	return err
 }
 
 // FetchFunc is a function that fetches a value. It has the signature of

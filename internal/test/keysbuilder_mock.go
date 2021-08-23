@@ -1,6 +1,10 @@
 package test
 
-import "context"
+import (
+	"context"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+)
 
 // KeysBuilder is a mock that impelements the autoupdate.KeysBuilder interface.
 type KeysBuilder struct {
@@ -8,7 +12,7 @@ type KeysBuilder struct {
 }
 
 // Update does nothing.
-func (m KeysBuilder) Update(context.Context) error {
+func (m KeysBuilder) Update(context.Context, datastore.Getter) error {
 	return nil
 }
 

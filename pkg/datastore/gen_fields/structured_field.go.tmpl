@@ -1,0 +1,30 @@
+
+{{ if eq .TemplateAttrType "int" }}
+    func (f Fields) {{ .GoName }}Tmpl(ctx context.Context, {{ .Collection }}ID int) []int {
+        var v []string
+        f.fetch.FetchIfExist(ctx, &v, "{{ .FQField }}", {{ .Collection }}ID)
+
+        var ints []int
+        for _, e := range v {
+            i, err := strconv.Atoi(e)
+            if err != nil {
+                f.fetch.err = fmt.Errorf("converting value %q: %w", e, err)
+                return nil
+            }
+            ints = append(ints, i)
+        }
+        return ints
+    }
+{{ else }}
+    func (f Fields) {{ .GoName }}Tmpl(ctx context.Context, {{ .Collection }}ID int) []string {
+        var v []string
+        f.fetch.FetchIfExist(ctx, &v, "{{ .FQField }}", {{ .Collection }}ID)
+        return v
+    }
+{{ end }}
+
+func (f Fields) {{ .GoName }}(ctx context.Context, {{ .Collection }}ID int, {{ .TemplateAttr }} {{ .TemplateAttrType }}) {{ .GoType }} {
+    var v {{ .GoType }}
+    f.fetch.FetchIfExist(ctx, &v, "{{ .TemplateFQField }}", {{ .Collection }}ID, {{ .TemplateAttr }})
+    return v
+}

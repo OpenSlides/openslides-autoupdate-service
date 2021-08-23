@@ -17,6 +17,9 @@ func TestAuth(t *testing.T) {
 	const cookieName = "refreshId"
 	const authHeader = "Authentication"
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	validCookie, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sessionId": "123",
 	}).SignedString([]byte(auth.DebugCookieKey))
@@ -63,7 +66,7 @@ func TestAuth(t *testing.T) {
 
 	authSRV := httptest.NewServer(&mockAuth{token: "NEWTOKEN"})
 	defer authSRV.Close()
-	a, err := auth.New(authSRV.URL, nil, nil, nil, []byte(auth.DebugTokenKey), []byte(auth.DebugCookieKey))
+	a, err := auth.New(authSRV.URL, ctx.Done(), []byte(auth.DebugTokenKey), []byte(auth.DebugCookieKey))
 	if err != nil {
 		t.Fatalf("Can not create auth service: %v", err)
 	}
@@ -198,7 +201,10 @@ func TestAuth(t *testing.T) {
 }
 
 func TestFromContext(t *testing.T) {
-	a, err := auth.New("", nil, nil, nil, []byte(""), []byte(""))
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	a, err := auth.New("", shutdownCtx.Done(), []byte(""), []byte(""))
 	if err != nil {
 		t.Fatalf("Can not create auth serivce: %v", err)
 	}
@@ -224,8 +230,8 @@ func TestFromContext(t *testing.T) {
 }
 
 func TestLogout(t *testing.T) {
-	closing := make(chan struct{})
-	defer close(closing)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	var lastErr error
 	errHandler := func(err error) {
@@ -235,10 +241,11 @@ func TestLogout(t *testing.T) {
 	logouter := NewLockoutEventMock()
 	defer logouter.Close()
 
-	a, err := auth.New("", logouter, closing, errHandler, []byte(""), []byte(""))
+	a, err := auth.New("", shutdownCtx.Done(), []byte(""), []byte(""))
 	if err != nil {
 		t.Fatalf("Can not create auth serivce: %v", err)
 	}
+	go a.ListenOnLogouts(shutdownCtx, logouter, errHandler)
 
 	t.Run("Closing session", func(t *testing.T) {
 		ctx, err := a.Authenticate(validSession(t, withSessionID("session1")))

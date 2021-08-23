@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
@@ -14,24 +15,26 @@ import (
 )
 
 func TestProjectionDoesNotExist(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, nil)
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), nil)
+	go ds.ListenOnUpdates(shutdownCtx, ds, func(err error) { log.Println(err) })
+
 	projector.Register(ds, testSlides())
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
-	if fields[0] != nil {
-		t.Errorf("Content was calculated, should be nil, got: %q", fields[0])
+	if fields["projection/1/content"] != nil {
+		t.Errorf("Content was calculated, should be nil, got: %q", fields["projection/1/content"])
 	}
 }
 
 func TestProjectionFromContentObject(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"test_model/1"`,
 	})
@@ -40,14 +43,14 @@ func TestProjectionFromContentObject(t *testing.T) {
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
 	expect := `"test_model"` + "\n"
-	assert.JSONEq(t, expect, string(fields[0]))
+	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
 }
 
 func TestProjectionFromType(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/1"`,
 		"projection/1/type":              `"test1"`,
@@ -57,18 +60,20 @@ func TestProjectionFromType(t *testing.T) {
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
 	expect := `"abc"` + "\n"
-	assert.JSONEq(t, expect, string(fields[0]))
+	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
 }
 
 func TestProjectionUpdateProjection(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/1"`,
 		"projection/1/type":              `"test1"`,
 	})
+	go ds.ListenOnUpdates(shutdownCtx, ds, func(err error) { log.Println(err) })
+
 	projector.Register(ds, testSlides())
 
 	// Fetch data once to fill the test.
@@ -76,7 +81,7 @@ func TestProjectionUpdateProjection(t *testing.T) {
 	require.NoError(t, err, "Get returned unexpected error")
 
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(map[string]json.RawMessage) error {
+	ds.RegisterChangeListener(func(map[string][]byte) error {
 		close(done)
 		return nil
 	})
@@ -90,18 +95,20 @@ func TestProjectionUpdateProjection(t *testing.T) {
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
 	expect := `"test_model"` + "\n"
-	assert.JSONEq(t, expect, string(fields[0]))
+	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
 }
 
 func TestProjectionUpdateProjectionMetaData(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"projection/1/id":                "1",
 		"projection/1/type":              `"projection"`,
 		"projection/1/content_object_id": `"meeting/1"`,
 	})
+	go ds.ListenOnUpdates(shutdownCtx, ds, func(err error) { log.Println(err) })
+
 	projector.Register(ds, testSlides())
 
 	// Fetch data once to fill the test.
@@ -109,7 +116,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 	require.NoError(t, err, "Get returned unexpected error")
 
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(map[string]json.RawMessage) error {
+	ds.RegisterChangeListener(func(map[string][]byte) error {
 		close(done)
 		return nil
 	})
@@ -122,14 +129,14 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
 	expect := `{"id": 1, "content_object_id": "meeting/1", "meeting_id":0, "type":"projection", "options": null}` + "\n"
-	assert.JSONEq(t, expect, string(fields[0]))
+	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
 }
 
 func TestProjectionWithOptionsData(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/6"`,
 		"projection/1/type":              `"projection"`,
@@ -141,18 +148,20 @@ func TestProjectionWithOptionsData(t *testing.T) {
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
 	expect := `{"id": 1, "content_object_id": "meeting/6", "type":"projection", "meeting_id": 1, "options": {"only_main_items": true}}` + "\n"
-	assert.JSONEq(t, expect, string(fields[0]))
+	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
 }
 
 func TestProjectionUpdateSlide(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/6"`,
 		"projection/1/type":              `"test_model"`,
 	})
+	go ds.ListenOnUpdates(shutdownCtx, ds, func(err error) { log.Println(err) })
+
 	projector.Register(ds, testSlides())
 
 	// Fetch data once to fill the test.
@@ -161,7 +170,7 @@ func TestProjectionUpdateSlide(t *testing.T) {
 
 	// Register a listener that tells, when cache is updated.
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(data map[string]json.RawMessage) error {
+	ds.RegisterChangeListener(func(data map[string][]byte) error {
 		close(done)
 		return nil
 	})
@@ -174,18 +183,20 @@ func TestProjectionUpdateSlide(t *testing.T) {
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
 	expect := `"calculated with new value"` + "\n"
-	assert.JSONEq(t, expect, string(fields[0]))
+	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
 }
 
 func TestProjectionUpdateOtherKey(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/1"`,
 		"projection/1/type":              `"test_model"`,
 	})
+	go ds.ListenOnUpdates(shutdownCtx, ds, func(err error) { log.Println(err) })
+
 	projector.Register(ds, testSlides())
 
 	// Call once to add field to cache.
@@ -193,7 +204,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 
 	// Register a listener that tells, when cache is updated.
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(data map[string]json.RawMessage) error {
+	ds.RegisterChangeListener(func(data map[string][]byte) error {
 		close(done)
 		return nil
 	})
@@ -206,14 +217,14 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
 	expect := `"test_model"` + "\n"
-	assert.JSONEq(t, expect, string(fields[0]))
+	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
 }
 
 func TestProjectionTypeDoesNotExist(t *testing.T) {
-	closed := make(chan struct{})
-	defer close(closed)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	ds := dsmock.NewMockDatastore(closed, map[string]string{
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
 		"projection/1/id":                "1",
 		"projection/1/content_object_id": `"meeting/1"`,
 		"projection/1/type":              `"unexistingTestSlide"`,
@@ -228,8 +239,8 @@ func TestProjectionTypeDoesNotExist(t *testing.T) {
 	var content struct {
 		Error string `json:"error"`
 	}
-	if err := json.Unmarshal(fields[0], &content); err != nil {
-		t.Fatalf("Can not unmarshal field[0] `%s`: %v", fields[0], err)
+	if err := json.Unmarshal(fields["projection/1/content"], &content); err != nil {
+		t.Fatalf("Can not unmarshal field projection/1/content `%s`: %v", fields["projection/1/content"], err)
 	}
 
 	if content.Error == "" {

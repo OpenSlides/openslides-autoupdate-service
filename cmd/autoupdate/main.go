@@ -6,17 +6,16 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	autoupdateHttp "github.com/OpenSlides/openslides-autoupdate-service/internal/http"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/permission"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -53,7 +52,6 @@ func defaultEnv() map[string]string {
 		"AUTH_HOST":     "localhost",
 		"AUTH_PORT":     "9004",
 
-		"DEACTIVATE_PERMISSION":  "false",
 		"OPENSLIDES_DEVELOPMENT": "false",
 	}
 
@@ -87,61 +85,62 @@ func secret(name string, dev bool) (string, error) {
 	return s, nil
 }
 
-func run() error {
-	env := defaultEnv()
+// errHandler is called by some background tasts.
+func errHandler(err error) {
+	// If an error happend, we just close the session.
+	var closing interface {
+		Closing()
+	}
+	if errors.As(err, &closing) {
+		return
+	}
 
-	closed := make(chan struct{})
-	errHandler := func(err error) {
-		// If an error happend, we just close the session.
-		var closing interface {
-			Closing()
-		}
-		if !errors.As(err, &closing) {
-			log.Printf("Error: %v", err)
+	var errNet *net.OpError
+	if errors.As(err, &errNet) {
+		if errNet.Op == "dial" {
+			log.Printf("Can not connect to redis.")
+			return
 		}
 	}
 
+	log.Printf("Error: %v", err)
+}
+
+func run() error {
+	env := defaultEnv()
+
+	ctx, cancel := interruptContext()
+	defer cancel()
+
 	// Receiver for datastore and logout events.
-	r, err := buildReceiver(env)
+	messageBus, err := buildMessagebus(env)
 	if err != nil {
 		return fmt.Errorf("creating messsaging adapter: %w", err)
 	}
 
 	// Datastore Service.
-	datastoreService, err := buildDatastore(env, r, closed, errHandler)
+	datastoreService, err := buildDatastore(env)
 	if err != nil {
 		return fmt.Errorf("creating datastore adapter: %w", err)
 	}
-
-	// Permission Service.
-	var perms restrict.Permissioner = &test.MockPermission{Default: true}
-	var updater autoupdate.UserUpdater = new(test.UserUpdater)
-	permService := "fake"
-	if env["DEACTIVATE_PERMISSION"] == "false" {
-		permService = "permission"
-		p := permission.New(datastoreService)
-		perms = p
-		updater = p
-	}
-	fmt.Println("Permission-Service: " + permService)
-
-	// Restricter Service.
-	checker := restrict.RelationChecker(restrict.RelationLists, perms)
-	restricter := restrict.New(perms, checker)
+	go datastoreService.ListenOnUpdates(ctx, messageBus, errHandler)
 
 	// Create http mux to add urls.
 	mux := http.NewServeMux()
 	autoupdateHttp.Health(mux)
 
 	// Auth Service.
-	authService, err := buildAuth(env, r, closed, errHandler)
+	authService, err := buildAuth(ctx, env, messageBus, errHandler)
 	if err != nil {
 		return fmt.Errorf("creating auth adapter: %w", err)
 	}
 
 	// Autoupdate Service.
-	service := autoupdate.New(datastoreService, restricter, updater, closed)
-	autoupdateHttp.Complex(mux, authService, service, service)
+	service := autoupdate.New(datastoreService, restrict.Middleware, ctx.Done())
+	go service.PruneOldData(ctx)
+	go service.ResetCache(ctx)
+
+	autoupdateHttp.Complex(mux, authService, service)
 	autoupdateHttp.Simple(mux, authService, service)
 
 	// Projector Service.
@@ -154,9 +153,7 @@ func run() error {
 	// Shutdown logic in separate goroutine.
 	wait := make(chan error)
 	go func() {
-		waitForShutdown()
-
-		close(closed)
+		<-ctx.Done()
 		if err := srv.Shutdown(context.Background()); err != nil {
 			wait <- fmt.Errorf("HTTP server shutdown: %w", err)
 			return
@@ -172,36 +169,40 @@ func run() error {
 	return <-wait
 }
 
-// waitForShutdown blocks until the service exists.
+// interruptContext works like signal.NotifyContext
 //
-// It listens on SIGINT and SIGTERM. If the signal is received for a second
-// time, the process is killed with statuscode 1.
-func waitForShutdown() {
-	sigint := make(chan os.Signal, 1)
-	// syscall.SIGTERM is not pressent on all plattforms. Since the autoupdate
-	// service is only run on linux, this is ok. If other plattforms should be
-	// supported, os.Interrupt should be used instead.
-	signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM)
-	<-sigint
+// In only listens on os.Interrupt. If the signal is received two times,
+// os.Exit(1) is called.
+func interruptContext() (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)
+		<-sigint
+		cancel()
+
+		// If the signal was send for the second time, make a hard cut.
 		<-sigint
 		os.Exit(1)
 	}()
+	return ctx, cancel
 }
 
 // buildDatastore configures the datastore service.
-func buildDatastore(env map[string]string, receiver datastore.Updater, closed <-chan struct{}, errHandler func(error)) (*datastore.Datastore, error) {
+func buildDatastore(
+	env map[string]string,
+) (*datastore.Datastore, error) {
 	protocol := env["DATASTORE_READER_PROTOCOL"]
 	host := env["DATASTORE_READER_HOST"]
 	port := env["DATASTORE_READER_PORT"]
 	url := protocol + "://" + host + ":" + port
-	return datastore.New(url, closed, errHandler, receiver), nil
+	return datastore.New(url), nil
 }
 
-// buildReceiver builds the receiver needed by the datastore service. It uses
+// buildMessagebus builds the receiver needed by the datastore service. It uses
 // environment variables to make the decission. Per default, the given faker is
 // used.
-func buildReceiver(env map[string]string) (messageBus, error) {
+func buildMessagebus(env map[string]string) (messageBus, error) {
 	serviceName := env["MESSAGING"]
 	fmt.Printf("Messaging Service: %s\n", serviceName)
 
@@ -221,14 +222,22 @@ func buildReceiver(env map[string]string) (messageBus, error) {
 	case "fake":
 		conn = redis.BlockingConn{}
 	default:
-		return nil, fmt.Errorf("unknown messagin service %s", serviceName)
+		return nil, fmt.Errorf("unknown messagin service %q", serviceName)
 	}
 
 	return &redis.Redis{Conn: conn}, nil
 }
 
 // buildAuth returns the auth service needed by the http server.
-func buildAuth(env map[string]string, receiver auth.LogoutEventer, closed <-chan struct{}, errHandler func(error)) (autoupdateHttp.Authenticater, error) {
+//
+// This function is not blocking. The context is used to give it to auth.New
+// that uses it to stop background goroutines.
+func buildAuth(
+	ctx context.Context,
+	env map[string]string,
+	messageBus auth.LogoutEventer,
+	errHandler func(error),
+) (autoupdateHttp.Authenticater, error) {
 	method := env["AUTH"]
 	switch method {
 	case "ticket":
@@ -253,7 +262,15 @@ func buildAuth(env map[string]string, receiver auth.LogoutEventer, closed <-chan
 		url := protocol + "://" + host + ":" + port
 
 		fmt.Printf("Auth Service: %s\n", url)
-		return auth.New(url, receiver, closed, errHandler, []byte(tokenKey), []byte(cookieKey))
+		a, err := auth.New(url, ctx.Done(), []byte(tokenKey), []byte(cookieKey))
+		if err != nil {
+			return nil, fmt.Errorf("creating auth service: %w", err)
+		}
+		go a.ListenOnLogouts(ctx, messageBus, errHandler)
+		go a.PruneOldData(ctx)
+
+		return a, nil
+
 	case "fake":
 		fmt.Println("Auth Method: FakeAuth (User ID 1 for all requests)")
 		return test.Auth(1), nil

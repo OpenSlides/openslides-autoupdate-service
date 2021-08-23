@@ -2,7 +2,6 @@ package datastore
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"log"
 	"sync"
@@ -23,7 +22,7 @@ func TestCacheGetOrSet(t *testing.T) {
 		t.Errorf("GetOrSet() returned the unexpected error: %v", err)
 	}
 	expect := []string{"value"}
-	if len(got) != 1 || string(got[0]) != expect[0] {
+	if len(got) != 1 || string(got["key1"]) != expect[0] {
 		t.Errorf("GetOrSet() returned `%v`, expected `%v`", got, expect)
 	}
 }
@@ -38,7 +37,7 @@ func TestCacheGetOrSetMissingKeys(t *testing.T) {
 	if err != nil {
 		t.Errorf("GetOrSet() returned the unexpected error: %v", err)
 	}
-	expect := []json.RawMessage{[]byte("value"), nil}
+	expect := map[string][]byte{"key1": []byte("value"), "key2": nil}
 	require.Equal(t, expect, got)
 }
 
@@ -60,9 +59,9 @@ func TestCacheGetOrSetNoSecondCall(t *testing.T) {
 	if err != nil {
 		t.Errorf("GetOrSet() returned the unexpected error %v", err)
 	}
-	expect := []string{"value"}
-	if len(got) != 1 || string(got[0]) != expect[0] {
-		t.Errorf("GetOrSet() returned %v, expected %v", got, expect)
+
+	if len(got) != 1 || string(got["key1"]) != "value" {
+		t.Errorf("GetOrSet() returned %q, expected %q", got, "value")
 	}
 	if called {
 		t.Errorf("GetOrSet() called the set method")
@@ -115,9 +114,9 @@ func TestCacheSetIfExist(t *testing.T) {
 	})
 
 	// Set key1 and key2. key1 is in the cache. key2 should be ignored.
-	c.SetIfExistMany(map[string]json.RawMessage{
-		"key1": json.RawMessage("new_value"),
-		"key2": json.RawMessage("new_value"),
+	c.SetIfExistMany(map[string][]byte{
+		"key1": []byte("new_value"),
+		"key2": []byte("new_value"),
 	})
 
 	// Get key1 and key2 from the cache. The existing key1 should not be set.
@@ -130,7 +129,7 @@ func TestCacheSetIfExist(t *testing.T) {
 	})
 
 	expect := []string{"new_value", "key2"}
-	if len(got) != 2 || string(got[0]) != expect[0] || string(got[1]) != expect[1] {
+	if len(got) != 2 || string(got["key1"]) != expect[0] || string(got["key2"]) != expect[1] {
 		t.Errorf("Got %v, expected %v", got, expect)
 	}
 }
@@ -154,7 +153,7 @@ func TestCacheSetIfExistParallelToGetOrSet(t *testing.T) {
 	<-waitForGetOrSet
 
 	// Set key1 to new value and stop the ongoing GetOrSet-Call
-	c.SetIfExistMany(map[string]json.RawMessage{"key1": json.RawMessage("new value")})
+	c.SetIfExistMany(map[string][]byte{"key1": []byte("new value")})
 
 	got, _ := c.GetOrSet(context.Background(), []string{"key1"}, func(key []string, set func(string, []byte)) error {
 		set("key1", []byte("Expect values in cache"))
@@ -162,7 +161,7 @@ func TestCacheSetIfExistParallelToGetOrSet(t *testing.T) {
 	})
 
 	expect := []string{"new value"}
-	if len(got) != 1 || string(got[0]) != expect[0] {
+	if len(got) != 1 || string(got["key1"]) != expect[0] {
 		t.Errorf("Got `%s`, expected `%s`", got, expect)
 	}
 }
@@ -190,7 +189,7 @@ func TestCacheGetOrSetOldData(t *testing.T) {
 	}()
 
 	<-waitForGetOrSetStart
-	c.SetIfExistMany(map[string]json.RawMessage{
+	c.SetIfExistMany(map[string][]byte{
 		"key1": []byte("v2"),
 		"key2": []byte("v2"),
 	})
@@ -207,11 +206,11 @@ func TestCacheGetOrSetOldData(t *testing.T) {
 		t.Errorf("GetOrSet returned unexpected error: %v", err)
 	}
 
-	if string(data[0]) != "v2" {
-		t.Errorf("value for key1 is %s, expected `v2`", data[0])
+	if string(data["key1"]) != "v2" {
+		t.Errorf("value for key1 is %s, expected `v2`", data["key1"])
 	}
 
-	if string(data[1]) == "v1" {
+	if string(data["keys2"]) == "v1" {
 		t.Errorf("value for key2 is `v1`, expected `v2` or `key not in cache`")
 	}
 }
@@ -229,24 +228,27 @@ func TestCacheErrorOnFetching(t *testing.T) {
 		t.Errorf("GetOrSet returned err `%v`, expected `%v`", err, rErr)
 	}
 
-	done := make(chan struct{})
+	done := make(chan map[string][]byte)
 	go func() {
-		_, err := c.GetOrSet(context.Background(), []string{"key1"}, func(key []string, set func(string, []byte)) error {
+		data, err := c.GetOrSet(context.Background(), []string{"key1"}, func(key []string, set func(string, []byte)) error {
 			set("key1", []byte("value"))
 			return nil
 		})
 		if err != nil {
 			t.Errorf("Second GetOrSet returned unexpected err: %v", err)
 		}
-		close(done)
+		done <- data
 	}()
 
 	timer := time.NewTimer(time.Millisecond)
 	defer timer.Stop()
 	select {
-	case <-done:
+	case data := <-done:
+		if string(data["key1"]) != "value" {
+			t.Errorf("Second GetOrSet-Call returnd value %q, expected value", data["key1"])
+		}
 	case <-timer.C:
-		t.Errorf("Second GetOrSet-Call was not done one Millisecond")
+		t.Errorf("Second GetOrSet-Call was not done after one Millisecond")
 	}
 }
 
@@ -272,7 +274,7 @@ func TestCacheConcurency(t *testing.T) {
 				t.Errorf("goroutine %d returned error: %v", i, err)
 			}
 
-			if string(v[0]) != "value" {
+			if string(v["key1"]) != "value" {
 				t.Errorf("goroutine %d returned %q", i, v)
 			}
 

@@ -1,6 +1,7 @@
 package dsmock
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -22,14 +23,19 @@ type DatastoreServer struct {
 	RequestCount int
 	Values       *datastoreValues
 
-	c chan map[string]json.RawMessage
+	c chan map[string][]byte
 }
 
-// NewDatastoreServer creates a new DatastoreServer.
-func NewDatastoreServer(close <-chan struct{}, data map[string]string) *DatastoreServer {
+// NewDatastoreServer creates a new fake DatastoreServer.
+//
+// It creates a webserver that handels get_many requests like the reald
+// datastore-reader.
+//
+// If the given channel is closed, the server shuts down.
+func NewDatastoreServer(closed <-chan struct{}, data map[string]string) *DatastoreServer {
 	d := &DatastoreServer{
 		Values: newDatastoreValues(data),
-		c:      make(chan map[string]json.RawMessage),
+		c:      make(chan map[string][]byte),
 	}
 
 	d.TS = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +74,7 @@ func NewDatastoreServer(close <-chan struct{}, data map[string]string) *Datastor
 			if _, ok := responceData[keyParts[0]][keyParts[1]]; !ok {
 				responceData[keyParts[0]][keyParts[1]] = make(map[string]json.RawMessage)
 			}
-			responceData[keyParts[0]][keyParts[1]][keyParts[2]] = json.RawMessage(value)
+			responceData[keyParts[0]][keyParts[1]][keyParts[2]] = value
 		}
 
 		if err := json.NewEncoder(w).Encode(responceData); err != nil {
@@ -79,7 +85,7 @@ func NewDatastoreServer(close <-chan struct{}, data map[string]string) *Datastor
 	}))
 
 	go func() {
-		<-close
+		<-closed
 		d.TS.Close()
 	}()
 	return d
@@ -87,19 +93,19 @@ func NewDatastoreServer(close <-chan struct{}, data map[string]string) *Datastor
 
 // Update returnes keys that have changed. Blocks until keys are send with
 // the Send-method.
-func (d *DatastoreServer) Update(closing <-chan struct{}) (map[string]json.RawMessage, error) {
+func (d *DatastoreServer) Update(ctx context.Context) (map[string][]byte, error) {
 	select {
 	case v := <-d.c:
 		d.Values.set(v)
 		return v, nil
-	case <-closing:
-		return nil, closingError{}
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	}
 }
 
 // Send sends keys to the mock that can be received with Update().
 func (d *DatastoreServer) Send(values map[string]string) {
-	conv := make(map[string]json.RawMessage)
+	conv := make(map[string][]byte)
 	for k, v := range values {
 		conv[k] = nil
 		if v != "" {
@@ -109,11 +115,6 @@ func (d *DatastoreServer) Send(values map[string]string) {
 	}
 	d.c <- conv
 }
-
-type closingError struct{}
-
-func (e closingError) Closing()      {}
-func (e closingError) Error() string { return "closing" }
 
 func validKey(key string) bool {
 	match, err := regexp.MatchString(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*/[a-z][a-z0-9_]*\$?[a-z0-9_]*$`, key)

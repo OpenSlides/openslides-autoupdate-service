@@ -2,7 +2,6 @@ package datastore
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 )
@@ -49,22 +48,22 @@ func newCache() *cache {
 //
 // If the context is done, GetOrSet returns. But the set() call is not stopped.
 // Other calls to GetOrSet may wait for its result.
-func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) ([]json.RawMessage, error) {
+func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) (map[string][]byte, error) {
 	// Blocks until all missing keys are fetched.
 	if err := c.fetchMissing(ctx, keys, set); err != nil {
 		return nil, fmt.Errorf("fetching missing keys: %w", err)
 	}
 
 	// Blocks until all keys that are requested by other callers are fetched.
-	values := make([]json.RawMessage, len(keys))
-	for i, key := range keys {
+	values := make(map[string][]byte, len(keys))
+	for _, key := range keys {
 		// Gets a value and waits until it is ready.
 		v, err := c.data.get(ctx, key)
 		if err != nil {
 			return nil, fmt.Errorf("waiting for key %s: %w", key, err)
 		}
 
-		values[i] = v
+		values[key] = v
 	}
 	return values, nil
 }
@@ -86,14 +85,16 @@ func (c *cache) fetchMissing(ctx context.Context, keys []string, set cacheSetFun
 			c.data.setIfPending(key, value)
 		})
 
+		if err != nil {
+			c.data.unMarkPending(keys...)
+			errChan <- fmt.Errorf("fetching missing keys: %w", err)
+			return
+		}
+
 		// Make sure all pending keys are closed. Make also sure, that
 		// missing keys are set to nil.
 		c.data.setEmptyIfPending(keys...)
 
-		if err != nil {
-			errChan <- fmt.Errorf("fetching missing keys: %w", err)
-			return
-		}
 		errChan <- nil
 	}()
 
@@ -115,8 +116,7 @@ func (c *cache) SetIfExist(key string, value []byte) {
 }
 
 // SetIfExistMany is like SetIfExist but with many keys.
-func (c *cache) SetIfExistMany(data map[string]json.RawMessage) {
-	// TODO: Change json.RawMessage to []byte
+func (c *cache) SetIfExistMany(data map[string][]byte) {
 	c.data.setIfExistMany(data)
 }
 
@@ -190,6 +190,28 @@ func (pm *pendingMap) markPending(keys ...string) []string {
 	return marked
 }
 
+// unMarkPending sets any key that is still pending not to be pending.
+//
+// Skips keys that are already pending or are already in the database.
+func (pm *pendingMap) unMarkPending(keys ...string) {
+	pm.Lock()
+	defer pm.Unlock()
+
+	for _, key := range keys {
+		if _, ok := pm.data[key]; ok {
+			continue
+		}
+		pending := pm.pending[key]
+
+		if pending == nil {
+			continue
+		}
+
+		close(pending)
+		delete(pm.pending, key)
+	}
+}
+
 // setIfExiists is like setIfExist but without setting a lock. Should not be
 // used directly.
 func (pm *pendingMap) setIfExistUnlocked(key string, value []byte) {
@@ -220,7 +242,7 @@ func (pm *pendingMap) setIfExist(key string, value []byte) {
 }
 
 // setIfExistMany is like setIfExists but for many values
-func (pm *pendingMap) setIfExistMany(data map[string]json.RawMessage) {
+func (pm *pendingMap) setIfExistMany(data map[string][]byte) {
 	// TODO: change data value to []byte.
 	pm.Lock()
 	defer pm.Unlock()

@@ -1,10 +1,8 @@
 package redis
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 )
 
 var errNil = errors.New("nil returned")
@@ -76,21 +74,12 @@ func stream(reply interface{}, err error) (string, map[string][]byte, error) {
 //
 // The first return value is the redis autoupdateStream id. The second one is the data and
 // the third is an error.
-func autoupdateStream(reply interface{}, err error) (string, map[string]json.RawMessage, error) {
+func autoupdateStream(reply interface{}, err error) (string, map[string][]byte, error) {
 	id, data, err := stream(reply, err)
 	if err != nil {
 		return "", nil, err
 	}
-
-	converted := make(map[string]json.RawMessage, len(data))
-	for key, value := range data {
-		if strings.Count(key, "/") != 2 {
-			return "", nil, fmt.Errorf("invalid key %s", key)
-		}
-
-		converted[key] = json.RawMessage(value)
-	}
-	return id, converted, nil
+	return id, data, nil
 }
 
 // logoutStream parses a redis logoutStream object to an list of sessionsIDs.
