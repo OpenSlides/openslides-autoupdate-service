@@ -79,7 +79,7 @@ func (c *cache) fetchMissing(ctx context.Context, keys []string, set cacheSetFun
 
 	// Fetch missing keys in the background. Do not stop the fetching. Even
 	// when the context is done. Other calls could also request it.
-	errChan := make(chan error)
+	errChan := make(chan error, 1)
 	go func() {
 		err := set(keys, func(key string, value []byte) {
 			c.data.setIfPending(key, value)
