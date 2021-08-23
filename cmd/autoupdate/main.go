@@ -123,8 +123,7 @@ func run() error {
 
 	// Autoupdate Service.
 	service := autoupdate.New(datastoreService, restrict.Middleware, closed)
-	autoupdateHttp.Complex(mux, authService, service)
-	autoupdateHttp.Simple(mux, authService, service)
+	autoupdateHttp.Autoupdate(mux, authService, service)
 
 	// Projector Service.
 	projector.Register(datastoreService, slide.Slides())
