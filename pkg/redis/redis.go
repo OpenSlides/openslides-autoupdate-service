@@ -3,6 +3,7 @@
 package redis
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"time"
@@ -30,14 +31,14 @@ type Redis struct {
 }
 
 // Update is a blocking function that returns, when there is new data.
-func (r *Redis) Update(closing <-chan struct{}) (map[string][]byte, error) {
+func (r *Redis) Update(ctx context.Context) (map[string][]byte, error) {
 	id := r.lastAutoupdateID
 	if id == "" {
 		id = "$"
 	}
 
 	var data map[string][]byte
-	err := closingFunc(closing, func() error {
+	err := contextFunc(ctx, func() error {
 		newID, d, err := autoupdateStream(r.Conn.XREAD(maxMessages, fieldChangedTopic, id))
 		if err != nil {
 			return err
@@ -61,7 +62,7 @@ func (r *Redis) Update(closing <-chan struct{}) (map[string][]byte, error) {
 }
 
 // LogoutEvent is a blocking function that returns, when a session was revoked.
-func (r *Redis) LogoutEvent(closing <-chan struct{}) ([]string, error) {
+func (r *Redis) LogoutEvent(ctx context.Context) ([]string, error) {
 	id := r.lastLogoutID
 	if id == "" {
 		// Generate an redis ID to get the logout events from the since `lastLogoutDuration`.
@@ -69,7 +70,7 @@ func (r *Redis) LogoutEvent(closing <-chan struct{}) ([]string, error) {
 	}
 
 	var sessionIDs []string
-	err := closingFunc(closing, func() error {
+	err := contextFunc(ctx, func() error {
 		newID, sIDs, err := logoutStream(r.Conn.XREAD(maxMessages, logoutTopic, id))
 		if err != nil {
 			return err
@@ -92,22 +93,23 @@ func (r *Redis) LogoutEvent(closing <-chan struct{}) ([]string, error) {
 	return sessionIDs, nil
 }
 
-// closingFunc calls f in a separat goroutine. If closing is closed, the
-// function returned, leaving the goroutine behind.
+// contextFunc calls f in a separat goroutine. If the given context is done,
+// return and leave the goroutine behind.
 //
-// The returned error is either the error returned by f() or an closingError.
-func closingFunc(closing <-chan struct{}, f func() error) error {
-	received := make(chan struct{})
-	var err error
+// This is usefull if a blocking function does not support context and has no
+// other way to cancel it.
+//
+// The returned error is either the error returned by f() or the context.
+func contextFunc(ctx context.Context, f func() error) error {
+	done := make(chan error)
 	go func() {
-		err = f()
-		close(received)
+		done <- f()
 	}()
 
 	select {
-	case <-received:
+	case err := <-done:
 		return err
-	case <-closing:
-		return closingError{}
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 }

@@ -50,6 +50,9 @@ type Autoupdate struct {
 type RestrictMiddleware func(getter datastore.Getter, uid int) datastore.Getter
 
 // New creates a new autoupdate service.
+//
+// The attribute closed is a channel that should be closed when the server shuts
+// down. In this case, all connections get closed.
 func New(datastore Datastore, restricter RestrictMiddleware, closed <-chan struct{}) *Autoupdate {
 	a := &Autoupdate{
 		datastore:  datastore,
@@ -67,9 +70,6 @@ func New(datastore Datastore, restricter RestrictMiddleware, closed <-chan struc
 		a.topic.Publish(keys...)
 		return nil
 	})
-
-	go a.pruneTopic(closed)
-	go a.resetCache(closed)
 
 	return a
 }
@@ -96,15 +96,15 @@ func (a *Autoupdate) LastID() uint64 {
 	return a.topic.LastID()
 }
 
-// pruneTopic removes old data from the topic. Blocks until the service is
+// PruneOldData removes old data from the topic. Blocks until the service is
 // closed.
-func (a *Autoupdate) pruneTopic(closed <-chan struct{}) {
+func (a *Autoupdate) PruneOldData(ctx context.Context) {
 	tick := time.NewTicker(time.Minute)
 	defer tick.Stop()
 
 	for {
 		select {
-		case <-closed:
+		case <-ctx.Done():
 			return
 		case <-tick.C:
 			a.topic.Prune(time.Now().Add(-pruneTime))
@@ -112,15 +112,15 @@ func (a *Autoupdate) pruneTopic(closed <-chan struct{}) {
 	}
 }
 
-// resetCache runs in the background and cleans the cache from time to time.
+// ResetCache runs in the background and cleans the cache from time to time.
 // Blocks until the service is closed.
-func (a *Autoupdate) resetCache(closed <-chan struct{}) {
+func (a *Autoupdate) ResetCache(ctx context.Context) {
 	tick := time.NewTicker(datastoreCacheResetTime)
 	defer tick.Stop()
 
 	for {
 		select {
-		case <-closed:
+		case <-ctx.Done():
 			return
 		case <-tick.C:
 			a.datastore.ResetCache()

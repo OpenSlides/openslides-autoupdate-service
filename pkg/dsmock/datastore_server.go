@@ -1,6 +1,7 @@
 package dsmock
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -25,8 +26,13 @@ type DatastoreServer struct {
 	c chan map[string][]byte
 }
 
-// NewDatastoreServer creates a new DatastoreServer.
-func NewDatastoreServer(close <-chan struct{}, data map[string]string) *DatastoreServer {
+// NewDatastoreServer creates a new fake DatastoreServer.
+//
+// It creates a webserver that handels get_many requests like the reald
+// datastore-reader.
+//
+// If the given channel is closed, the server shuts down.
+func NewDatastoreServer(closed <-chan struct{}, data map[string]string) *DatastoreServer {
 	d := &DatastoreServer{
 		Values: newDatastoreValues(data),
 		c:      make(chan map[string][]byte),
@@ -79,7 +85,7 @@ func NewDatastoreServer(close <-chan struct{}, data map[string]string) *Datastor
 	}))
 
 	go func() {
-		<-close
+		<-closed
 		d.TS.Close()
 	}()
 	return d
@@ -87,13 +93,13 @@ func NewDatastoreServer(close <-chan struct{}, data map[string]string) *Datastor
 
 // Update returnes keys that have changed. Blocks until keys are send with
 // the Send-method.
-func (d *DatastoreServer) Update(closing <-chan struct{}) (map[string][]byte, error) {
+func (d *DatastoreServer) Update(ctx context.Context) (map[string][]byte, error) {
 	select {
 	case v := <-d.c:
 		d.Values.set(v)
 		return v, nil
-	case <-closing:
-		return nil, closingError{}
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	}
 }
 
@@ -109,11 +115,6 @@ func (d *DatastoreServer) Send(values map[string]string) {
 	}
 	d.c <- conv
 }
-
-type closingError struct{}
-
-func (e closingError) Closing()      {}
-func (e closingError) Error() string { return "closing" }
 
 func validKey(key string) bool {
 	match, err := regexp.MatchString(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*/[a-z][a-z0-9_]*\$?[a-z0-9_]*$`, key)
