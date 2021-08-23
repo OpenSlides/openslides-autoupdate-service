@@ -33,7 +33,6 @@ func ManyFromJSON(r io.Reader) (*Builder, error) {
 	if err := json.NewDecoder(r).Decode(&bs); err != nil {
 		if err == io.EOF {
 			return &Builder{}, nil
-			//return nil, InvalidError{msg: "No data"}
 		}
 		if errors.Is(err, io.ErrUnexpectedEOF) {
 			return nil, InvalidError{msg: "Body is not complete"}

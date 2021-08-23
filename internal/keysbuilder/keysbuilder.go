@@ -76,7 +76,6 @@ func (b *Builder) Update(ctx context.Context, getter datastore.Getter) (err erro
 	}()
 
 	if len(b.bodies) == 0 {
-		b.keys = []string{}
 		return nil
 	}
 
