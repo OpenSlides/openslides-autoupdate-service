@@ -22,7 +22,7 @@ func (c *connecterMock) Connect(userID int, kb autoupdate.KeysBuilder) autoupdat
 	return c.f
 }
 
-func TestSimpleHandler(t *testing.T) {
+func TestKeysHandler(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -34,9 +34,9 @@ func TestSimpleHandler(t *testing.T) {
 		},
 	}
 
-	ahttp.Simple(mux, test.Auth(1), connecter)
+	ahttp.Autoupdate(mux, test.Auth(1), connecter)
 
-	req := httptest.NewRequest("GET", "/system/autoupdate/keys?user/1/name,user/2/name", nil).WithContext(ctx)
+	req := httptest.NewRequest("GET", "/system/autoupdate?k=user/1/name,user/2/name", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 
@@ -65,7 +65,7 @@ func TestComplexHandler(t *testing.T) {
 		},
 	}
 
-	ahttp.Complex(mux, test.Auth(1), connecter)
+	ahttp.Autoupdate(mux, test.Auth(1), connecter)
 
 	req := httptest.NewRequest(
 		"GET",
@@ -109,8 +109,12 @@ func TestHealth(t *testing.T) {
 
 func TestErrors(t *testing.T) {
 	mux := http.NewServeMux()
-	liver := &connecterMock{}
-	ahttp.Complex(mux, test.Auth(1), liver)
+	liver := &connecterMock{
+		func(ctx context.Context) (map[string][]byte, error) {
+			return map[string][]byte{"foo": []byte(`"bar"`)}, nil
+		},
+	}
+	ahttp.Autoupdate(mux, test.Auth(1), liver)
 
 	for _, tt := range []struct {
 		name    string
@@ -119,17 +123,6 @@ func TestErrors(t *testing.T) {
 		errType string
 		errMsg  string
 	}{
-		{
-			"No Body",
-			httptest.NewRequest(
-				"",
-				"/system/autoupdate",
-				nil,
-			),
-			400,
-			`SyntaxError`,
-			`No data`,
-		},
 		{
 			"Empty List",
 			httptest.NewRequest(
@@ -187,15 +180,15 @@ func TestErrors(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.request.ProtoMajor = 2
-			req := httptest.NewRecorder()
-			mux.ServeHTTP(req, tt.request)
+			resp := httptest.NewRecorder()
 
-			if req.Result().StatusCode != tt.status {
-				t.Errorf("Got status %s, expected %s", req.Result().Status, http.StatusText(tt.status))
+			mux.ServeHTTP(resp, tt.request)
+
+			if resp.Result().StatusCode != tt.status {
+				t.Errorf("Got status %s, expected %s", resp.Result().Status, http.StatusText(tt.status))
 			}
 
-			body, _ := io.ReadAll(req.Body)
+			body, _ := io.ReadAll(resp.Body)
 
 			var data struct {
 				Error struct {

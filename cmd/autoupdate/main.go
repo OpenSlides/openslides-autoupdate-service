@@ -140,8 +140,7 @@ func run() error {
 	go service.PruneOldData(ctx)
 	go service.ResetCache(ctx)
 
-	autoupdateHttp.Complex(mux, authService, service)
-	autoupdateHttp.Simple(mux, authService, service)
+	autoupdateHttp.Autoupdate(mux, authService, service)
 
 	// Projector Service.
 	projector.Register(datastoreService, slide.Slides())
