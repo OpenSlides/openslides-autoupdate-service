@@ -1,6 +1,7 @@
 package dsmock
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -17,7 +18,7 @@ import (
 // It is expected, that the input is a constant string. So there can not be any
 // error at runtime. Therefore this function does not return an error but panics
 // to get the developer a fast feetback.
-func YAMLData(input string) map[string]string {
+func YAMLData(input string) map[string][]byte {
 	input = strings.ReplaceAll(input, "\t", "  ")
 
 	var db map[string]interface{}
@@ -25,7 +26,7 @@ func YAMLData(input string) map[string]string {
 		panic(err)
 	}
 
-	data := make(map[string]string)
+	data := make(map[string][]byte)
 	for dbKey, dbValue := range db {
 		parts := strings.Split(dbKey, "/")
 		switch len(parts) {
@@ -50,11 +51,11 @@ func YAMLData(input string) map[string]string {
 					if err != nil {
 						panic(fmt.Errorf("creating test db. Key %s: %w", fqfield, err))
 					}
-					data[fqfield] = string(bs)
+					data[fqfield] = bs
 				}
 
 				idField := fmt.Sprintf("%s/%d/id", dbKey, id)
-				data[idField] = strconv.Itoa(id)
+				data[idField] = []byte(strconv.Itoa(id))
 			}
 
 		case 2:
@@ -69,23 +70,29 @@ func YAMLData(input string) map[string]string {
 				if err != nil {
 					panic(fmt.Errorf("creating test db. Key %s: %w", fqfield, err))
 				}
-				data[fqfield] = string(bs)
+				data[fqfield] = bs
 			}
 
 			idField := fmt.Sprintf("%s/%s/id", parts[0], parts[1])
-			data[idField] = parts[1]
+			data[idField] = []byte(parts[1])
 
 		case 3:
 			bs, err := json.Marshal(dbValue)
 			if err != nil {
 				panic(fmt.Errorf("creating test db. Key %s: %w", dbKey, err))
 			}
-			data[dbKey] = string(bs)
+			data[dbKey] = bs
 
 			idField := fmt.Sprintf("%s/%s/id", parts[0], parts[1])
-			data[idField] = parts[1]
+			data[idField] = []byte(parts[1])
 		default:
 			panic(fmt.Errorf("invalid db key %s", dbKey))
+		}
+	}
+
+	for k, v := range data {
+		if bytes.Equal(v, []byte("null")) {
+			data[k] = nil
 		}
 	}
 
@@ -93,20 +100,16 @@ func YAMLData(input string) map[string]string {
 }
 
 // Stub are data that can be used as a datastore value.
-type Stub map[string]string
+type Stub map[string][]byte
 
 // Get implements the Getter interface.
 func (s Stub) Get(_ context.Context, keys ...string) (map[string][]byte, error) {
-	data := map[string]string(s)
-	converted := make(map[string][]byte, len(keys))
+	data := map[string][]byte(s)
+	requested := make(map[string][]byte, len(keys))
 	for _, k := range keys {
-		v := []byte(data[k])
-		if data[k] == "" {
-			v = nil
-		}
-		converted[k] = v
+		requested[k] = data[k]
 	}
-	return converted, nil
+	return requested, nil
 }
 
 // MockDatastore implements the autoupdate.Datastore interface.
@@ -123,7 +126,7 @@ type MockDatastore struct {
 //
 // The function starts a mock datastore server in the background. It gets
 // closed, when the closed channel is closed.
-func NewMockDatastore(closed <-chan struct{}, data map[string]string) *MockDatastore {
+func NewMockDatastore(closed <-chan struct{}, data map[string][]byte) *MockDatastore {
 	dsServer := NewDatastoreServer(closed, data)
 
 	s := &MockDatastore{
@@ -182,9 +185,13 @@ type datastoreValues struct {
 	Data map[string][]byte
 }
 
-func newDatastoreValues(data map[string]string) *datastoreValues {
+func newDatastoreValues(data map[string][]byte) *datastoreValues {
 	conv := make(map[string][]byte)
 	for k, v := range data {
+		if bytes.Equal(v, []byte("null")) {
+			conv[k] = nil
+			continue
+		}
 		conv[k] = []byte(v)
 	}
 

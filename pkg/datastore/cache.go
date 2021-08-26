@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"sync"
@@ -222,6 +223,10 @@ func (pm *pendingMap) setIfExistUnlocked(key string, value []byte) {
 		return
 	}
 
+	if bytes.Equal(value, []byte("null")) {
+		value = nil
+	}
+
 	pm.data[key] = value
 
 	if pending != nil {
@@ -260,6 +265,10 @@ func (pm *pendingMap) setIfPending(key string, value []byte) {
 	defer pm.Unlock()
 
 	if pending, isPending := pm.pending[key]; isPending {
+		if bytes.Equal(value, []byte("null")) {
+			value = nil
+		}
+
 		pm.data[key] = value
 		close(pending)
 		delete(pm.pending, key)

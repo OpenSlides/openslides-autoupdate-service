@@ -58,6 +58,10 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 	mperms := perm.NewMeetingPermission(fetch, uid)
 
 	for key := range data {
+		if data[key] == nil {
+			continue
+		}
+
 		fetch := datastore.NewFetcher(getter)
 		fqfield, err := parseFQField(key)
 		if err != nil {

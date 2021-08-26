@@ -9,8 +9,8 @@ import (
 )
 
 func getConnection(closed <-chan struct{}) (autoupdate.DataProvider, *dsmock.MockDatastore) {
-	datastore := dsmock.NewMockDatastore(closed, map[string]string{
-		"user/1/name": `"Hello World"`,
+	datastore := dsmock.NewMockDatastore(closed, map[string][]byte{
+		"user/1/name": []byte(`"Hello World"`),
 	})
 	s := autoupdate.New(datastore, test.RestrictAllowed, closed)
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}

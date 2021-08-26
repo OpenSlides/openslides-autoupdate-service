@@ -283,3 +283,65 @@ func TestCacheConcurency(t *testing.T) {
 
 	wg.Wait()
 }
+
+func TestGetNull(t *testing.T) {
+	c := newCache()
+	got, err := c.GetOrSet(context.Background(), []string{"key1"}, func(key []string, set func(string, []byte)) error {
+		set("key1", []byte("null"))
+		return nil
+	})
+
+	if err != nil {
+		t.Errorf("GetOrSet() returned the unexpected error: %v", err)
+	}
+
+	if k1, ok := got["key1"]; k1 != nil || !ok {
+		t.Errorf("GetOrSet() returned (%q, %t) for key1, expected (nil, true)", k1, ok)
+	}
+}
+
+func TestUpdateNull(t *testing.T) {
+	c := newCache()
+	c.GetOrSet(context.Background(), []string{"key1"}, func(key []string, set func(string, []byte)) error {
+		set("key1", []byte("value"))
+		return nil
+	})
+
+	c.SetIfExist("key1", []byte("null"))
+
+	got, err := c.GetOrSet(context.Background(), []string{"key1"}, func(key []string, set func(string, []byte)) error {
+		set("key1", []byte("value that should not be fetched"))
+		return nil
+	})
+
+	if err != nil {
+		t.Errorf("GetOrSet() returned the unexpected error: %v", err)
+	}
+
+	if k1, ok := got["key1"]; k1 != nil || !ok {
+		t.Errorf("GetOrSet() returned (%q, %t) for key1, expected (nil, true)", k1, ok)
+	}
+}
+
+func TestUpdateManyNull(t *testing.T) {
+	c := newCache()
+	c.GetOrSet(context.Background(), []string{"key1"}, func(key []string, set func(string, []byte)) error {
+		set("key1", []byte("value"))
+		return nil
+	})
+
+	c.SetIfExistMany(map[string][]byte{"key1": []byte("null")})
+
+	got, err := c.GetOrSet(context.Background(), []string{"key1"}, func(key []string, set func(string, []byte)) error {
+		set("key1", []byte("value that should not be fetched"))
+		return nil
+	})
+
+	if err != nil {
+		t.Errorf("GetOrSet() returned the unexpected error: %v", err)
+	}
+
+	if k1, ok := got["key1"]; k1 != nil || !ok {
+		t.Errorf("GetOrSet() returned (%q, %t) for key1, expected (nil, true)", k1, ok)
+	}
+}

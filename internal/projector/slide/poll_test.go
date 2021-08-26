@@ -81,7 +81,7 @@ func TestPoll(t *testing.T) {
 
 	for _, tt := range []struct {
 		name   string
-		data   map[string]string
+		data   map[string][]byte
 		expect string
 	}{
 		{
@@ -152,8 +152,8 @@ func TestPoll(t *testing.T) {
 		},
 		{
 			"Poll state finished",
-			changeData(data, map[string]string{
-				"poll/1/state": `"finished"`,
+			changeData(data, map[string][]byte{
+				"poll/1/state": []byte(`"finished"`),
 			}),
 			`{
                 "id":1,
