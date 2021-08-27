@@ -12,63 +12,75 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
 
-var dataSet = map[string]string{
-	"a/1/a":                   `"a1"`,
-	"a/1/title":               `"a1"`,
-	"a/1/b_id":                `1`,
-	"a/1/c_ids":               `[]`,
-	"a/1/ga_ids":              `[1,2]`,
-	"a/2/a":                   `"a2"`,
-	"a/2/title":               `"a2"`,
-	"a/2/c_ids":               `[1,2]`,
-	"a/2/ga_ids":              `[]`,
-	"b/1/b":                   `"b1"`,
-	"b/1/title":               `"b1"`,
-	"b/1/a_id":                `1`,
-	"b/1/c_ids":               `[1]`,
-	"b/1/gb_id":               `1`,
-	"b/1/b_children_ids":      `[2]`,
-	"b/1/d_ids":               `[1]`,
-	"b/2/b":                   `"b2"`,
-	"b/2/title":               `"b2"`,
-	"b/2/c_ids":               `[1,2]`,
-	"b/2/b_parent_id":         `1`,
-	"b/2/b_children_ids":      `[]`,
-	"b/2/d_ids":               `[1,2]`,
-	"c/1/c":                   `"c1"`,
-	"c/1/title":               `"c1"`,
-	"c/1/a_id":                `2`,
-	"c/1/b_ids":               `[1,2]`,
-	"c/1/ga_ids":              `[2,3]`,
-	"c/2/c":                   `"c2"`,
-	"c/2/title":               `"c2"`,
-	"c/2/a_id":                `2`,
-	"c/2/b_ids":               `[2]`,
-	"c/2/ga_ids":              `[2,3]`,
-	"d/1/d":                   `"d1"`,
-	"d/1/b_$_ids":             `["1","2","3"]`,
-	"d/1/b_$1_ids":            `[1,2]`,
-	"d/1/b_$2_ids":            `[1]`,
-	"d/1/b_$3_ids":            `[]`,
-	"d/2/d":                   `"d2"`,
-	"d/2/b_$_ids":             `["1","4"]`,
-	"d/2/b_$1_ids":            `[]`,
-	"d/2/b_$4_ids":            `[2]`,
-	"ga/1/ga":                 `"ga.1"`,
-	"ga/1/content_object_ids": `["a/1"]`,
-	"ga/2/ga":                 `"ga.2"`,
-	"ga/2/content_object_ids": `["a/1","c/1","c/2"]`,
-	"ga/3/ga":                 `"ga.3"`,
-	"ga/3/content_object_ids": `["c/1","c/2"]`,
-	"gb/1/gb":                 `"gb.1"`,
-	"gb/1/content_object_id":  `"b/1"`,
-}
+const dataSet = `---
+a/1:
+	a: a1
+	title: a1
+	b_id: 1
+	c_ids: []
+	ga_ids: [1,2]
+a/2:
+	a: a2
+	title: a2
+	c_ids: [1,2]
+	ga_ids: []
+b/1:
+	b: b1
+	title: b1
+	a_id: 1
+	c_ids: [1]
+	gb_id: 1
+	b_children_ids: [2]
+	d_ids: [1]
+b/2:
+	b: b2
+	title: b2
+	c_ids: [1,2]
+	b_parent_id: 1
+	b_children_ids: []
+	d_ids: [1,2]
+c/1:
+	c: c1
+	title: c1
+	a_id: 2
+	b_ids: [1,2]
+	ga_ids: [2,3]
+c/2:
+	c: c2
+	title: c2
+	a_id: 2
+	b_ids: [2]
+	ga_ids: [2,3]
+d/1:
+	d: d1
+	b_$_ids: ["1","2","3"]
+	b_$1_ids: [1,2]
+	b_$2_ids: [1]
+	b_$3_ids: []
+d/2:
+	d: d2
+	b_$_ids: ["1","4"]
+	b_$1_ids: []
+	b_$4_ids: [2]
+ga/1:
+	ga: ga.1
+	content_object_ids: ["a/1"]
+ga/2:
+	ga: ga.2
+	content_object_ids: ["a/1","c/1","c/2"]
+ga/3:
+	ga: ga.3
+	content_object_ids: ["c/1","c/2"]
+gb/1:
+	gb: gb.1
+	content_object_id: b/1
+`
 
 func TestFeatures(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), dataSet)
+	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), dsmock.YAMLData(dataSet))
 	service := autoupdate.New(datastore, test.RestrictAllowed, shutdownCtx.Done())
 
 	for _, tt := range []struct {

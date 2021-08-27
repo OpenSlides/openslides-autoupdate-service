@@ -34,9 +34,9 @@ func TestProjectionFromContentObject(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
-		"projection/1/id":                "1",
-		"projection/1/content_object_id": `"test_model/1"`,
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
+		"projection/1/id":                []byte("1"),
+		"projection/1/content_object_id": []byte(`"test_model/1"`),
 	})
 	projector.Register(ds, testSlides())
 
@@ -50,10 +50,10 @@ func TestProjectionFromType(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
-		"projection/1/id":                "1",
-		"projection/1/content_object_id": `"meeting/1"`,
-		"projection/1/type":              `"test1"`,
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
+		"projection/1/id":                []byte("1"),
+		"projection/1/content_object_id": []byte(`"meeting/1"`),
+		"projection/1/type":              []byte(`"test1"`),
 	})
 	projector.Register(ds, testSlides())
 
@@ -67,10 +67,10 @@ func TestProjectionUpdateProjection(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
-		"projection/1/id":                "1",
-		"projection/1/content_object_id": `"meeting/1"`,
-		"projection/1/type":              `"test1"`,
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
+		"projection/1/id":                []byte("1"),
+		"projection/1/content_object_id": []byte(`"meeting/1"`),
+		"projection/1/type":              []byte(`"test1"`),
 	})
 	go ds.ListenOnUpdates(shutdownCtx, ds, func(err error) { log.Println(err) })
 
@@ -102,10 +102,10 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
-		"projection/1/id":                "1",
-		"projection/1/type":              `"projection"`,
-		"projection/1/content_object_id": `"meeting/1"`,
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
+		"projection/1/id":                []byte("1"),
+		"projection/1/type":              []byte(`"projection"`),
+		"projection/1/content_object_id": []byte(`"meeting/1"`),
 	})
 	go ds.ListenOnUpdates(shutdownCtx, ds, func(err error) { log.Println(err) })
 
@@ -136,12 +136,12 @@ func TestProjectionWithOptionsData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
-		"projection/1/id":                "1",
-		"projection/1/content_object_id": `"meeting/6"`,
-		"projection/1/type":              `"projection"`,
-		"projection/1/meeting_id":        `1`,
-		"projection/1/options":           `{"only_main_items": true}`,
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
+		"projection/1/id":                []byte("1"),
+		"projection/1/content_object_id": []byte(`"meeting/6"`),
+		"projection/1/type":              []byte(`"projection"`),
+		"projection/1/meeting_id":        []byte(`1`),
+		"projection/1/options":           []byte(`{"only_main_items": true}`),
 	})
 	projector.Register(ds, testSlides())
 
@@ -155,10 +155,10 @@ func TestProjectionUpdateSlide(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
-		"projection/1/id":                "1",
-		"projection/1/content_object_id": `"meeting/6"`,
-		"projection/1/type":              `"test_model"`,
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
+		"projection/1/id":                []byte("1"),
+		"projection/1/content_object_id": []byte(`"meeting/6"`),
+		"projection/1/type":              []byte(`"test_model"`),
 	})
 	go ds.ListenOnUpdates(shutdownCtx, ds, func(err error) { log.Println(err) })
 
@@ -190,10 +190,10 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
-		"projection/1/id":                "1",
-		"projection/1/content_object_id": `"meeting/1"`,
-		"projection/1/type":              `"test_model"`,
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
+		"projection/1/id":                []byte("1"),
+		"projection/1/content_object_id": []byte(`"meeting/1"`),
+		"projection/1/type":              []byte(`"test_model"`),
 	})
 	go ds.ListenOnUpdates(shutdownCtx, ds, func(err error) { log.Println(err) })
 
@@ -224,10 +224,10 @@ func TestProjectionTypeDoesNotExist(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
-		"projection/1/id":                "1",
-		"projection/1/content_object_id": `"meeting/1"`,
-		"projection/1/type":              `"unexistingTestSlide"`,
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
+		"projection/1/id":                []byte("1"),
+		"projection/1/content_object_id": []byte(`"meeting/1"`),
+		"projection/1/type":              []byte(`"unexistingTestSlide"`),
 	})
 	projector.Register(ds, testSlides())
 
