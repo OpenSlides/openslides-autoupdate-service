@@ -16,7 +16,7 @@ import (
 	models "github.com/OpenSlides/openslides-models-to-go"
 )
 
-const defURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/models.yml"
+const defURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/master/docs/models.yml"
 
 func main() {
 	r, err := loadDefition()

@@ -14,7 +14,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const permURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/permission.yml"
+const permURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/master/docs/permission.yml"
 
 func main() {
 	if err := run(); err != nil {
