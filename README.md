@@ -80,7 +80,7 @@ Curl needs the flag `-N / --no-buffer` or it can happen, that the output is not
 printed immediately.
 
 
-### Without redis
+### HTTP requests
 
 When the server is started, clients can listen for keys to do so, they have to
 send a keyrequest in the body of the request. An example request is:
@@ -90,11 +90,13 @@ send a keyrequest in the body of the request. An example request is:
 To see a list of possible json-strings see the file
 internal/autoupdate/keysbuilder/keysbuilder_test.go
 
-There is a simpler method to request keys:
+Keys can also defined with the query parameter `k`:
 
-`curl -N localhost:9012/system/autoupdate/keys?user/1/username,user/2/username`
+`curl -N localhost:9012/system/autoupdate?k=user/1/username,user/2/username`
 
-With this simpler method, it is not possible to request related keys.
+With this query method, it is not possible to request related keys.
+
+A request can have a body and the `k`-query parameter.
 
 After the request is send, the values to the keys are returned as a json-object
 without a newline:
@@ -103,7 +105,7 @@ without a newline:
 ```
 
 
-### With redis
+### Updates via redis
 
 When redis is installed, it can be used to update keys. Start the autoupdate
 service with the envirnmentvariable `MESSAGING_SERVICE=redis`. Afterwards it is

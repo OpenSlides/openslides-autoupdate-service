@@ -60,7 +60,7 @@ func TestMotionBlock(t *testing.T) {
 
 	for _, tt := range []struct {
 		name   string
-		data   map[string]string
+		data   map[string][]byte
 		expect string
 	}{
 		{

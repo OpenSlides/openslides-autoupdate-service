@@ -15,7 +15,7 @@ import (
 
 type testData struct {
 	name          string
-	data          map[string]string
+	data          map[string][]byte
 	expect        bool
 	requestUserID int
 	elementID     int
@@ -34,7 +34,7 @@ func testCase(name string, t *testing.T, f collection.FieldRestricter, expect bo
 		o(&td)
 	}
 
-	td.data[fmt.Sprintf("user/%d/id", td.requestUserID)] = strconv.Itoa(td.requestUserID)
+	td.data[fmt.Sprintf("user/%d/id", td.requestUserID)] = []byte(strconv.Itoa(td.requestUserID))
 
 	td.test(t, f)
 }
@@ -75,9 +75,9 @@ func withPerms(meetingID int, perms ...perm.TPermission) testCaseOption {
 
 		groupsKey := fmt.Sprintf("user/1/group_$%d_ids", meetingID)
 		td.data[groupsKey] = jsonAppend(td.data[groupsKey], groupID)
-		td.data[fmt.Sprintf("group/%d/id", groupID)] = strconv.Itoa(groupID)
-		td.data[fmt.Sprintf("group/%d/permissions", groupID)] = permString
-		td.data[fmt.Sprintf("meeting/%d/id", meetingID)] = strconv.Itoa(meetingID)
+		td.data[fmt.Sprintf("group/%d/id", groupID)] = []byte(strconv.Itoa(groupID))
+		td.data[fmt.Sprintf("group/%d/permissions", groupID)] = []byte(permString)
+		td.data[fmt.Sprintf("meeting/%d/id", meetingID)] = []byte(strconv.Itoa(meetingID))
 	}
 }
 
@@ -93,9 +93,9 @@ func withElementID(id int) testCaseOption {
 	}
 }
 
-func jsonAppend(value string, element ...int) string {
+func jsonAppend(value []byte, element ...int) []byte {
 	var list []int
-	if value != "" {
+	if value != nil {
 		if err := json.Unmarshal([]byte(value), &list); err != nil {
 			panic(err)
 		}
@@ -105,6 +105,6 @@ func jsonAppend(value string, element ...int) string {
 	if err != nil {
 		panic(err)
 	}
-	return string(newValue)
+	return newValue
 
 }

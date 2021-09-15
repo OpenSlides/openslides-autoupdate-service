@@ -32,7 +32,7 @@ type DatastoreServer struct {
 // datastore-reader.
 //
 // If the given channel is closed, the server shuts down.
-func NewDatastoreServer(closed <-chan struct{}, data map[string]string) *DatastoreServer {
+func NewDatastoreServer(closed <-chan struct{}, data map[string][]byte) *DatastoreServer {
 	d := &DatastoreServer{
 		Values: newDatastoreValues(data),
 		c:      make(chan map[string][]byte),

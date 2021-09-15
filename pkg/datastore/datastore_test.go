@@ -20,8 +20,8 @@ func TestDataStoreGet(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ts := dsmock.NewDatastoreServer(shutdownCtx.Done(), map[string]string{
-		"collection/1/field": `"Hello World"`,
+	ts := dsmock.NewDatastoreServer(shutdownCtx.Done(), map[string][]byte{
+		"collection/1/field": []byte(`"Hello World"`),
 	})
 	d := datastore.New(ts.TS.URL)
 
@@ -38,9 +38,9 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ts := dsmock.NewDatastoreServer(shutdownCtx.Done(), map[string]string{
-		"collection/1/field": `"v1"`,
-		"collection/2/field": `"v2"`,
+	ts := dsmock.NewDatastoreServer(shutdownCtx.Done(), map[string][]byte{
+		"collection/1/field": []byte(`"v1"`),
+		"collection/2/field": []byte(`"v2"`),
 	})
 	d := datastore.New(ts.TS.URL)
 
@@ -61,8 +61,8 @@ func TestDataStoreGetKeyTwice(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ts := dsmock.NewDatastoreServer(shutdownCtx.Done(), map[string]string{
-		"collection/1/field": `"v1"`,
+	ts := dsmock.NewDatastoreServer(shutdownCtx.Done(), map[string][]byte{
+		"collection/1/field": []byte(`"v1"`),
 	})
 	d := datastore.New(ts.TS.URL)
 
@@ -83,7 +83,7 @@ func TestDataStoreGetInvalidKey(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ts := dsmock.NewDatastoreServer(shutdownCtx.Done(), map[string]string{})
+	ts := dsmock.NewDatastoreServer(shutdownCtx.Done(), map[string][]byte{})
 	d := datastore.New(ts.TS.URL)
 
 	_, err := d.Get(context.Background(), "collection/1/Field")
@@ -134,8 +134,8 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ts := dsmock.NewDatastoreServer(shutdownCtx.Done(), map[string]string{
-		"collection/1/normal_field": `"original value"`,
+	ts := dsmock.NewDatastoreServer(shutdownCtx.Done(), map[string][]byte{
+		"collection/1/normal_field": []byte(`"original value"`),
 	})
 
 	ds := datastore.New(ts.TS.URL)
@@ -170,8 +170,8 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ts := dsmock.NewDatastoreServer(shutdownCtx.Done(), map[string]string{
-		"collection/1/normal_field": `"original value"`,
+	ts := dsmock.NewDatastoreServer(shutdownCtx.Done(), map[string][]byte{
+		"collection/1/normal_field": []byte(`"original value"`),
 	})
 
 	ds := datastore.New(ts.TS.URL)
@@ -209,8 +209,8 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ts := dsmock.NewDatastoreServer(shutdownCtx.Done(), map[string]string{
-		"collection/1/normal_field": `"original value"`,
+	ts := dsmock.NewDatastoreServer(shutdownCtx.Done(), map[string][]byte{
+		"collection/1/normal_field": []byte(`"original value"`),
 	})
 
 	ds := datastore.New(ts.TS.URL)
@@ -234,8 +234,8 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ts := dsmock.NewDatastoreServer(shutdownCtx.Done(), map[string]string{
-		"collection/1/normal_field": `"original value"`,
+	ts := dsmock.NewDatastoreServer(shutdownCtx.Done(), map[string][]byte{
+		"collection/1/normal_field": []byte(`"original value"`),
 	})
 	ds := datastore.New(ts.TS.URL)
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {

@@ -14,7 +14,7 @@ func TestKeys(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		request string
-		data    map[string]string
+		data    string
 		keys    []string
 	}{
 		{
@@ -24,7 +24,7 @@ func TestKeys(t *testing.T) {
 				"collection": "user",
 				"fields": {"name": null}
 			}`,
-			nil,
+			"",
 			strs("user/1/name"),
 		},
 		{
@@ -37,7 +37,7 @@ func TestKeys(t *testing.T) {
 					"last": null
 				}
 			}`,
-			nil,
+			"",
 			strs("user/1/first", "user/1/last"),
 		},
 		{
@@ -50,7 +50,7 @@ func TestKeys(t *testing.T) {
 					"last": null
 				}
 			}`,
-			nil,
+			"",
 			strs("user/1/first", "user/1/last", "user/2/first", "user/2/last"),
 		},
 		{
@@ -66,7 +66,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{"user/1/note_id": "1"},
+			"user/1/note_id: 1",
 			strs("user/1/note_id", "note/1/important"),
 		},
 		{
@@ -82,7 +82,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{"user/1/group_ids": "[1,2]"},
+			"user/1/group_ids: [1,2]",
 			strs("user/1/group_ids", "group/1/admin", "group/2/admin"),
 		},
 		{
@@ -104,10 +104,10 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{
-				"user/1/note_id":   "1",
-				"note/1/motion_id": "1",
-			},
+			`---
+			user/1/note_id: 1
+			note/1/motion_id: 1
+			`,
 			strs("user/1/note_id", "note/1/motion_id", "motion/1/name"),
 		},
 		{
@@ -129,11 +129,11 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{
-				"user/1/group_ids": "[1,2]",
-				"group/1/perm_ids": "[1,2]",
-				"group/2/perm_ids": "[1,2]",
-			},
+			`---
+			user/1/group_ids: [1,2]
+			group/1/perm_ids: [1,2]
+			group/2/perm_ids: [1,2]
+			`,
 			strs("user/1/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name"),
 		},
 		{
@@ -143,7 +143,7 @@ func TestKeys(t *testing.T) {
 				"collection": "user",
 				"fields": {"note_id": null}
 			}`,
-			nil,
+			"",
 			strs("user/1/note_id"),
 		},
 		{
@@ -159,7 +159,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			nil,
+			"",
 			strs("not_exist/1/note_id"),
 		},
 		{
@@ -175,7 +175,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			nil,
+			"",
 			strs("not_exist/1/group_ids"),
 		},
 		{
@@ -194,11 +194,12 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{
-				"user/1/group_$_ids":  `["1","2"]`,
-				"user/1/group_$1_ids": "[1,2]",
-				"user/1/group_$2_ids": "[1,2]",
-			},
+			`---
+			user/1:
+				group_$_ids:  ["1","2"]
+				group_$1_ids: [1,2]
+				group_$2_ids: [1,2]
+			`,
 			strs("user/1/group_$_ids", "user/1/group_$1_ids", "user/1/group_$2_ids", "group/1/name", "group/2/name"),
 		},
 		{
@@ -213,9 +214,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{
-				"user/1/likes": `"other/1"`,
-			},
+			"user/1/likes: other/1",
 			strs("user/1/likes", "other/1/name"),
 		},
 		{
@@ -236,10 +235,10 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{
-				"user/1/likes":    `"other/1"`,
-				"other/1/tag_ids": "[1,2]",
-			},
+			`---
+			user/1/likes:    other/1
+			other/1/tag_ids: [1,2]
+			`,
 			strs("user/1/likes", "other/1/tag_ids", "tag/1/name", "tag/2/name"),
 		},
 		{
@@ -254,14 +253,12 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{
-				"user/1/likes": `["other/1","other/2"]`,
-			},
+			`user/1/likes: ["other/1","other/2"]`,
 			strs("user/1/likes", "other/1/name", "other/2/name"),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ds := dsmock.Stub(tt.data)
+			ds := dsmock.Stub(dsmock.YAMLData(tt.data))
 			b, err := keysbuilder.FromJSON(strings.NewReader(tt.request))
 			if err != nil {
 				t.Fatalf("FromJSON returned the unexpected error: %v", err)
@@ -284,8 +281,8 @@ func TestUpdate(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		request string
-		data    map[string]string
-		newData map[string]string
+		data    string
+		newData string
 		got     []string
 		count   int
 	}{
@@ -302,8 +299,8 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{"user/1/note_id": "1"},
-			map[string]string{"user/1/note_id": "2"},
+			"user/1/note_id: 1",
+			"user/1/note_id: 2",
 			strs("user/1/note_id", "note/2/important"),
 			1,
 		},
@@ -320,8 +317,8 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{"user/1/note_id": "1"},
-			map[string]string{"user/1/note_id": "1"},
+			"user/1/note_id: 1",
+			"user/1/note_id: 1",
 			strs("user/1/note_id", "note/1/important"),
 			0,
 		},
@@ -338,8 +335,14 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{"user/1/note_id": "1", "user/2/note_id": "1"},
-			map[string]string{"user/1/note_id": "2", "user/2/note_id": "1"},
+			`---
+			user/1/note_id: 1
+			user/2/note_id: 1
+			`,
+			`---
+			user/1/note_id: 2
+			user/2/note_id: 1
+			`,
 			strs("user/1/note_id", "user/2/note_id", "note/1/important", "note/2/important"),
 			1,
 		},
@@ -361,16 +364,16 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{
-				"user/1/note_id":   "1",
-				"user/1/group_ids": "[1,2]",
-				"user/2/group_ids": "[1,2]",
-			},
-			map[string]string{
-				"user/1/note_id":   "2",
-				"user/1/group_ids": "[1,2]",
-				"user/2/group_ids": "[1,2]",
-			},
+			`---
+			user/1/note_id:   1
+			user/1/group_ids: [1,2]
+			user/2/group_ids: [1,2]
+			`,
+			`---
+			user/1/note_id:   2
+			user/1/group_ids: [1,2]
+			user/2/group_ids: [1,2]
+			`,
 			strs("user/1/note_id", "user/1/group_ids", "note/2/important", "group/1/admin", "group/2/admin"),
 			1,
 		},
@@ -392,8 +395,14 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{"user/1/note_id": "1", "group_ids": "[1,2]"},
-			map[string]string{"user/1/note_id": "2", "user/1/group_ids": "[2]"},
+			`---
+			user/1/note_id: 1
+			user/1/group_ids: [1,2]
+			`,
+			`---
+			user/1/note_id: 2
+			user/1/group_ids: [2]
+			`,
 			strs("user/1/note_id", "note/2/important", "user/1/group_ids", "group/2/admin"),
 			2,
 		},
@@ -416,22 +425,22 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]string{
-				"user/1/group_ids": "[1,2]",
-				"group/1/perm_ids": "[1,2]",
-				"group/2/perm_ids": "[1,2]",
-			},
-			map[string]string{
-				"user/1/group_ids": "[2]",
-				"group/1/perm_ids": "[1,2]",
-				"group/2/perm_ids": "[1,2]",
-			},
+			`---
+			user/1/group_ids: [1,2]
+			group/1/perm_ids: [1,2]
+			group/2/perm_ids: [1,2]
+			`,
+			`---
+			user/1/group_ids: [2]
+			group/1/perm_ids: [1,2]
+			group/2/perm_ids: [1,2]
+			`,
 			strs("user/1/group_ids", "group/2/perm_ids", "perm/2/name", "perm/1/name"),
 			1,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ds := dsmock.Stub(tt.data)
+			ds := dsmock.Stub(dsmock.YAMLData(tt.data))
 			b, err := keysbuilder.FromJSON(strings.NewReader(tt.request))
 			if err != nil {
 				t.Fatalf("FromJSON() returned an unexpected error: %v", err)
@@ -440,7 +449,7 @@ func TestUpdate(t *testing.T) {
 				t.Errorf("Update() returned an unexpect error: %v", err)
 			}
 
-			ds = dsmock.Stub(tt.newData)
+			ds = dsmock.Stub(dsmock.YAMLData(tt.newData))
 
 			if err := b.Update(context.Background(), ds); err != nil {
 				t.Errorf("Update() returned an unexpect error: %v", err)
@@ -477,13 +486,13 @@ func TestConcurency(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
-		"user/1/group_ids": "[1,2]",
-		"user/2/group_ids": "[1,2]",
-		"user/3/group_ids": "[1,2]",
-		"group/1/perm_ids": "[1,2]",
-		"group/2/perm_ids": "[1,2]",
-	})
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), dsmock.YAMLData(`---
+	user/1/group_ids: [1,2]
+	user/2/group_ids: [1,2]
+	user/3/group_ids: [1,2]
+	group/1/perm_ids: [1,2]
+	group/2/perm_ids: [1,2]
+	`))
 
 	b, err := keysbuilder.FromJSON(strings.NewReader(jsonData))
 	if err != nil {
@@ -534,10 +543,10 @@ func TestManyRequests(t *testing.T) {
 	]`
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
-		"user/1/note_id": "1",
-		"user/2/note_id": "1",
-	})
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), dsmock.YAMLData(`---
+	user/1/note_id: 1
+	user/2/note_id: 1
+	`))
 
 	b, err := keysbuilder.ManyFromJSON(strings.NewReader(jsonData))
 	if err != nil {

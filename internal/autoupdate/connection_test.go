@@ -82,8 +82,8 @@ func TestConnectionEmptyData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
-		doesExistKey: `"Hello World"`,
+	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
+		doesExistKey: []byte(`"Hello World"`),
 	})
 	go datastore.ListenOnUpdates(shutdownCtx, datastore, func(err error) { log.Println(err) })
 
@@ -196,8 +196,8 @@ func TestConnectionFilterData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
-		"user/1/name": `"Hello World"`,
+	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
+		"user/1/name": []byte(`"Hello World"`),
 	})
 
 	s := autoupdate.New(datastore, test.RestrictAllowed, shutdownCtx.Done())
@@ -226,8 +226,8 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
-		"user/1/name": `"Hello World"`,
+	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
+		"user/1/name": []byte(`"Hello World"`),
 	})
 	go datastore.ListenOnUpdates(shutdownCtx, datastore, func(err error) { log.Println(err) })
 
@@ -259,8 +259,8 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string]string{
-		"user/1/name": `"Hello World"`,
+	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
+		"user/1/name": []byte(`"Hello World"`),
 	})
 
 	s := autoupdate.New(datastore, test.RestrictNotAllowed, shutdownCtx.Done())

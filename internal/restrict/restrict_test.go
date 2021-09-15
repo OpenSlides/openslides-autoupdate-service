@@ -26,6 +26,7 @@ func TestRestrict(t *testing.T) {
 			meeting_id: 1
 			permissions:
 			- agenda_item.can_manage
+			- motion.can_see
 	agenda_item:
 		1:
 			meeting_id: 1
@@ -39,6 +40,12 @@ func TestRestrict(t *testing.T) {
 		10:
 			meeting_id: 2
 			item_number: six
+	motion/1:
+		id: 1
+		meeting_id: 1
+		origin_id: null
+		state_id: 1
+	motion_state/1/id: 1
 	tag:
 		1:
 			meeting_id: 1
@@ -65,6 +72,7 @@ func TestRestrict(t *testing.T) {
 		"user/1/group_$2_ids",
 		"agenda_item/2/content_object_id",
 		"agenda_item/2/parent_id",
+		"motion/1/origin_id",
 	}
 
 	data, err := restricter.Get(context.Background(), keys...)
@@ -151,3 +159,25 @@ func TestRestrictSuperAdmin(t *testing.T) {
 		t.Errorf("personal_note/2/id got not restricted")
 	}
 }
+
+// func TestNullValue(t *testing.T) {
+// 	ctx, close := context.WithCancel(context.Background())
+// 	defer close()
+// 	ds := dsmock.NewMockDatastore(ctx.Done(), dsmock.YAMLData(`---
+// 	meeting/1/enable_anonymous
+// 	user/1/id: 1
+// 	motion/1/origin_id: null
+// 	`))
+
+// 	restricter := restrict.Middleware(ds, 1)
+
+// 	got, err := restricter.Get(ctx, "motion/1/origin_id")
+// 	if err != nil {
+// 		t.Fatalf("restricter.Get() returned: %v", err)
+// 	}
+
+// 	if v, ok := got["motion/1/origin_id"]; v != nil || !ok {
+// 		t.Errorf("restricter.Get()[motion/1/origin_id] returned (%v, %t), expected (nil, true)", v, ok)
+// 	}
+
+// }

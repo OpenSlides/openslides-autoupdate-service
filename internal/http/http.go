@@ -13,7 +13,6 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
 const prefix = "/system/autoupdate"
@@ -23,53 +22,41 @@ type Connecter interface {
 	Connect(userID int, kb autoupdate.KeysBuilder) autoupdate.DataProvider
 }
 
-// Complex builds the requested keys from the body of a request. The
+// Autoupdate builds the requested keys from the body of a request. The
 // body has to be in the format specified in the keysbuilder package.
-func Complex(mux *http.ServeMux, auth Authenticater, connecter Connecter) {
+func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 
 		defer r.Body.Close()
 		uid := auth.FromContext(r.Context())
 
-		kb, err := keysbuilder.ManyFromJSON(r.Body)
+		queryBuilder, err := keysbuilder.FromKeys(strings.Split(r.URL.Query().Get("k"), ","))
 		if err != nil {
-			handleError(w, err, true)
+			handleError(w, fmt.Errorf("building keysbuilder from query: %w", err), true)
 			return
 		}
 
-		if err := sendMessages(r.Context(), w, uid, kb, connecter); err != nil {
+		bodyBuilder, err := keysbuilder.ManyFromJSON(r.Body)
+		if err != nil {
+			handleError(w, fmt.Errorf("building keysbuilder from body: %w", err), true)
+			return
+		}
+
+		builder := keysbuilder.FromBuilders(queryBuilder, bodyBuilder)
+
+		sender := sendMessages
+		if r.URL.Query().Has("single") {
+			sender = sendSingleMessage
+		}
+
+		if err := sender(r.Context(), w, uid, builder, connecter); err != nil {
 			handleError(w, err, false)
 			return
 		}
 	})
 
 	mux.Handle(prefix, validRequest(authMiddleware(handler, auth)))
-}
-
-// Simple builds a keysbuilder from the url query. It expects a comma
-// separated list of keysname.
-func Simple(mux *http.ServeMux, auth Authenticater, connecter Connecter) {
-	url := prefix + "/keys"
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/octet-stream")
-
-		keys := strings.Split(r.URL.RawQuery, ",")
-		kb := &keysbuilder.Simple{K: keys}
-		if invalid := datastore.InvalidKeys(keys...); len(invalid) != 0 {
-			handleError(w, invalidRequestError{fmt.Errorf("Invalid keys: %v", invalid)}, true)
-			return
-		}
-
-		uid := auth.FromContext(r.Context())
-
-		if err := sendMessages(r.Context(), w, uid, kb, connecter); err != nil {
-			handleError(w, err, false)
-			return
-		}
-	})
-
-	mux.Handle(url, validRequest(authMiddleware(handler, auth)))
 }
 
 func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter) error {
@@ -96,6 +83,28 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 		w.(http.Flusher).Flush()
 	}
 	return ctx.Err()
+}
+
+func sendSingleMessage(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter) error {
+	next := connecter.Connect(uid, kb)
+	encoder := json.NewEncoder(w)
+
+	// conn.Next() blocks, until there is new data. It also unblocks,
+	// when the client context or the server is closed.
+	data, err := next(ctx)
+	if err != nil {
+		return fmt.Errorf("getting next message: %w", err)
+	}
+
+	converted := make(map[string]json.RawMessage, len(data))
+	for k, v := range data {
+		converted[k] = v
+	}
+
+	if err := encoder.Encode(converted); err != nil {
+		return fmt.Errorf("encoding end sending next message: %w", err)
+	}
+	return nil
 }
 
 // Health tells, if the service is running.
