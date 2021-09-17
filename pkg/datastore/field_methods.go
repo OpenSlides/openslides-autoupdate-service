@@ -944,6 +944,12 @@ func (f Fields) Meeting_ImportedAt(ctx context.Context, meetingID int) int {
 	return v
 }
 
+func (f Fields) Meeting_IsActiveInOrganizationID(ctx context.Context, meetingID int) int {
+	var v int
+	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/is_active_in_organization_id", meetingID)
+	return v
+}
+
 func (f Fields) Meeting_JitsiDomain(ctx context.Context, meetingID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/jitsi_domain", meetingID)
@@ -2450,6 +2456,12 @@ func (f Fields) OrganizationTag_TaggedIDs(ctx context.Context, organizationTagID
 	return v
 }
 
+func (f Fields) Organization_ActiveMeetingIDs(ctx context.Context, organizationID int) []int {
+	var v []int
+	f.fetch.FetchIfExist(ctx, &v, "organization/%d/active_meeting_ids", organizationID)
+	return v
+}
+
 func (f Fields) Organization_CommitteeIDs(ctx context.Context, organizationID int) []int {
 	var v []int
 	f.fetch.FetchIfExist(ctx, &v, "organization/%d/committee_ids", organizationID)
@@ -2477,6 +2489,12 @@ func (f Fields) Organization_ID(ctx context.Context, organizationID int) int {
 func (f Fields) Organization_LegalNotice(ctx context.Context, organizationID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "organization/%d/legal_notice", organizationID)
+	return v
+}
+
+func (f Fields) Organization_LimitOfMeetings(ctx context.Context, organizationID int) int {
+	var v int
+	f.fetch.FetchIfExist(ctx, &v, "organization/%d/limit_of_meetings", organizationID)
 	return v
 }
 
