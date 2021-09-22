@@ -4,8 +4,14 @@ import (
 	"hash/maphash"
 )
 
+func createHash(hasher *maphash.Hash, value []byte) uint64 {
+	hasher.Reset()
+	hasher.Write(value)
+	return hasher.Sum64()
+}
+
 type filter struct {
-	hash    maphash.Hash
+	hasher  maphash.Hash
 	history map[string]uint64
 }
 
@@ -15,6 +21,18 @@ type filter struct {
 func (f *filter) filter(data map[string][]byte) {
 	if f.history == nil {
 		f.history = make(map[string]uint64)
+	}
+
+	// Keys that are in oldHashes but not in data.
+	//
+	// They have to be added to data as nil, so the client gets informed, that
+	// they are removed.
+	for key := range f.history {
+		if _, ok := data[key]; ok {
+			continue
+		}
+
+		data[key] = nil
 	}
 
 	for key, value := range data {
@@ -28,15 +46,14 @@ func (f *filter) filter(data map[string][]byte) {
 			continue
 		}
 
-		f.hash.Reset()
-		f.hash.Write(value)
-		new := f.hash.Sum64()
-		if old, ok := f.history[key]; ok && new == old {
+		newHash := createHash(&f.hasher, value)
+		if old, inHistory := f.history[key]; inHistory && newHash == old {
 			delete(data, key)
 			continue
 		}
-		f.history[key] = new
+		f.history[key] = newHash
 	}
+
 	return
 }
 
