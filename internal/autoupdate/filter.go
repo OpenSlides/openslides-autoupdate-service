@@ -23,7 +23,7 @@ func (f *filter) filter(data map[string][]byte) {
 		f.history = make(map[string]uint64)
 	}
 
-	// Keys that are in oldHashes but not in data.
+	// Keys that are in the history but not in data.
 	//
 	// They have to be added to data as nil, so the client gets informed, that
 	// they are removed.
@@ -37,9 +37,9 @@ func (f *filter) filter(data map[string][]byte) {
 
 	for key, value := range data {
 		if len(value) == 0 {
-			// Delete empty data
+			// Value does not exist or user has no permission to see it.
 			if f.history[key] == 0 {
-				// Data was empty before
+				// Data was empty before. Do not sent it to the user.
 				delete(data, key)
 			}
 			f.history[key] = 0
@@ -47,7 +47,7 @@ func (f *filter) filter(data map[string][]byte) {
 		}
 
 		newHash := createHash(&f.hasher, value)
-		if old, inHistory := f.history[key]; inHistory && newHash == old {
+		if oldHash, inHistory := f.history[key]; inHistory && newHash == oldHash {
 			delete(data, key)
 			continue
 		}
