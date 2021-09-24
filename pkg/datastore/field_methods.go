@@ -1892,6 +1892,12 @@ func (f Fields) MotionState_CssClass(ctx context.Context, motionStateID int) str
 	return v
 }
 
+func (f Fields) MotionState_DontSetIDentifier(ctx context.Context, motionStateID int) bool {
+	var v bool
+	f.fetch.FetchIfExist(ctx, &v, "motion_state/%d/dont_set_identifier", motionStateID)
+	return v
+}
+
 func (f Fields) MotionState_FirstStateOfWorkflowID(ctx context.Context, motionStateID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_state/%d/first_state_of_workflow_id", motionStateID)
