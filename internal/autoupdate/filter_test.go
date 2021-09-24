@@ -81,6 +81,7 @@ func TestFilterChange(t *testing.T) {
 				"k1": []byte("v1"),
 			},
 			map[string][]byte{
+				"k1": []byte("v1"),
 				"k2": []byte("v2"),
 			},
 			map[string][]byte{
@@ -106,7 +107,52 @@ func TestFilterChange(t *testing.T) {
 				"k1": []byte("v1"),
 			},
 			map[string][]byte{
+				"k1": []byte("v1"),
 				"k2": nil,
+			},
+			map[string][]byte{},
+		},
+		{
+			"don't ask for second key",
+			map[string][]byte{
+				"k1": []byte("v1"),
+			},
+			map[string][]byte{
+				"k2": []byte("v2"),
+			},
+			map[string][]byte{
+				"k1": nil,
+				"k2": []byte("v2"),
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var f filter
+			f.filter(tt.origian)
+			f.filter(tt.new)
+			assert.Equal(t, tt.expect, tt.new)
+		})
+	}
+}
+
+func TestFilterChangeTwice(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		origian     map[string][]byte
+		firstChange map[string][]byte
+		new         map[string][]byte
+		expect      map[string][]byte
+	}{
+		{
+			"Key does not change",
+			map[string][]byte{
+				"k1": []byte("v1"),
+			},
+			map[string][]byte{
+				"k1": []byte("v1"),
+			},
+			map[string][]byte{
+				"k1": []byte("v1"),
 			},
 			map[string][]byte{},
 		},
@@ -114,6 +160,7 @@ func TestFilterChange(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var f filter
 			f.filter(tt.origian)
+			f.filter(tt.firstChange)
 			f.filter(tt.new)
 			assert.Equal(t, tt.expect, tt.new)
 		})

@@ -51,6 +51,7 @@ func (c *connection) Next(ctx context.Context) (map[string][]byte, error) {
 				if len(data) > 0 {
 					return data, nil
 				}
+				break
 			}
 		}
 	}
