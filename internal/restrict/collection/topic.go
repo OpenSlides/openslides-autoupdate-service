@@ -23,7 +23,7 @@ func (t Topic) Modes(mode string) FieldRestricter {
 }
 
 func (t Topic) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, topicID int) (bool, error) {
-	meetingID := fetch.Field().Topic_ID(ctx, topicID)
+	meetingID := fetch.Field().Topic_MeetingID(ctx, topicID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("fetching meeting_id %d: %w", topicID, err)
 	}
