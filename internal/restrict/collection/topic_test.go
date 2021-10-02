@@ -26,9 +26,9 @@ func TestTopicModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		topic/1/meeting_id: 1
+		topic/1/meeting_id: 2
 		`,
-		withPerms(1, perm.AgendaItemCanSee),
+		withPerms(2, perm.AgendaItemCanSee),
 	)
 
 	testCase(
