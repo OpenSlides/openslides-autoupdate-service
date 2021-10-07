@@ -1,5 +1,25 @@
-func (f Fields) {{ .GoName }}(ctx context.Context, {{ .Collection }}ID int) {{ .GoType }} {
-    var v {{ .GoType }}
-    f.fetch.FetchIfExist(ctx, &v, "{{ .FQField }}", {{ .Collection }}ID)
-    return v
-}
+{{- if .SingleRelation}}
+    func (f Fields) {{ .GoName }}(ctx context.Context, {{ .Collection }}ID int) ({{ .GoType }} {{ if not .Required}}, bool{{end}}) {
+        var v {{ .GoType }}
+        f.fetch.FetchIfExist(ctx, &v, "{{ .FQField }}", {{ .Collection }}ID)
+        {{- if .Required}}
+            if v == {{if eq .GoType "string"}} "" {{else}} 0 {{end}} {
+                field := fmt.Sprintf("{{ .FQField }}", {{ .Collection }}ID)
+                f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+            }
+            return v       
+        {{- else }}
+            if v == {{if eq .GoType "string"}} "" {{else}} 0 {{end}} {
+                return v, false
+            }
+
+            return v, true
+        {{- end }}
+    }
+{{- else }}
+    func (f Fields) {{ .GoName }}(ctx context.Context, {{ .Collection }}ID int) {{ .GoType }} {
+        var v {{ .GoType }}
+        f.fetch.FetchIfExist(ctx, &v, "{{ .FQField }}", {{ .Collection }}ID)
+        return v
+    }
+{{- end }}

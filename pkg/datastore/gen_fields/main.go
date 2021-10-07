@@ -74,6 +74,11 @@ func parse(r io.Reader) ([]field, error) {
 			f.GoType = goType(modelField.Type)
 			f.Collection = firstLower(goName(collectionName))
 			f.FQField = collectionName + "/%d/" + fieldName
+			f.Required = modelField.Required
+
+			if modelField.Type == "relation" || modelField.Type == "generic-relation" {
+				f.SingleRelation = true
+			}
 
 			if strings.Contains(fieldName, "$") {
 				f.TemplateAttr = "replacement"
@@ -109,6 +114,8 @@ type field struct {
 	TemplateFQField  string
 	TemplateAttr     string
 	TemplateAttrType string
+	Required         bool
+	SingleRelation   bool
 }
 
 func (f field) template() (string, error) {
