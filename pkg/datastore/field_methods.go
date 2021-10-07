@@ -116,14 +116,14 @@ func (f Fields) AgendaItem_Weight(ctx context.Context, agendaItemID int) int {
 	return v
 }
 
-func (f Fields) AssignmentCandidate_AssignmentID(ctx context.Context, assignmentCandidateID int) (int, bool) {
+func (f Fields) AssignmentCandidate_AssignmentID(ctx context.Context, assignmentCandidateID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "assignment_candidate/%d/assignment_id", assignmentCandidateID)
 	if v == 0 {
-		return v, false
+		field := fmt.Sprintf("assignment_candidate/%d/assignment_id", assignmentCandidateID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
 	}
-
-	return v, true
+	return v
 }
 
 func (f Fields) AssignmentCandidate_ID(ctx context.Context, assignmentCandidateID int) int {
@@ -142,14 +142,14 @@ func (f Fields) AssignmentCandidate_MeetingID(ctx context.Context, assignmentCan
 	return v
 }
 
-func (f Fields) AssignmentCandidate_UserID(ctx context.Context, assignmentCandidateID int) (int, bool) {
+func (f Fields) AssignmentCandidate_UserID(ctx context.Context, assignmentCandidateID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "assignment_candidate/%d/user_id", assignmentCandidateID)
 	if v == 0 {
-		return v, false
+		field := fmt.Sprintf("assignment_candidate/%d/user_id", assignmentCandidateID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
 	}
-
-	return v, true
+	return v
 }
 
 func (f Fields) AssignmentCandidate_Weight(ctx context.Context, assignmentCandidateID int) int {
@@ -608,14 +608,14 @@ func (f Fields) Mediafile_IsPublic(ctx context.Context, mediafileID int) bool {
 	return v
 }
 
-func (f Fields) Mediafile_ListOfSpeakersID(ctx context.Context, mediafileID int) (int, bool) {
+func (f Fields) Mediafile_ListOfSpeakersID(ctx context.Context, mediafileID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "mediafile/%d/list_of_speakers_id", mediafileID)
 	if v == 0 {
-		return v, false
+		field := fmt.Sprintf("mediafile/%d/list_of_speakers_id", mediafileID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
 	}
-
-	return v, true
+	return v
 }
 
 func (f Fields) Mediafile_MeetingID(ctx context.Context, mediafileID int) int {
@@ -2178,12 +2178,6 @@ func (f Fields) MotionState_ShowStateExtensionField(ctx context.Context, motionS
 	return v
 }
 
-func (f Fields) MotionState_Weight(ctx context.Context, motionStateID int) int {
-	var v int
-	f.fetch.FetchIfExist(ctx, &v, "motion_state/%d/weight", motionStateID)
-	return v
-}
-
 func (f Fields) MotionState_WorkflowID(ctx context.Context, motionStateID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_state/%d/workflow_id", motionStateID)
@@ -2250,24 +2244,24 @@ func (f Fields) MotionSubmitter_MeetingID(ctx context.Context, motionSubmitterID
 	return v
 }
 
-func (f Fields) MotionSubmitter_MotionID(ctx context.Context, motionSubmitterID int) (int, bool) {
+func (f Fields) MotionSubmitter_MotionID(ctx context.Context, motionSubmitterID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_submitter/%d/motion_id", motionSubmitterID)
 	if v == 0 {
-		return v, false
+		field := fmt.Sprintf("motion_submitter/%d/motion_id", motionSubmitterID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
 	}
-
-	return v, true
+	return v
 }
 
-func (f Fields) MotionSubmitter_UserID(ctx context.Context, motionSubmitterID int) (int, bool) {
+func (f Fields) MotionSubmitter_UserID(ctx context.Context, motionSubmitterID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_submitter/%d/user_id", motionSubmitterID)
 	if v == 0 {
-		return v, false
+		field := fmt.Sprintf("motion_submitter/%d/user_id", motionSubmitterID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
 	}
-
-	return v, true
+	return v
 }
 
 func (f Fields) MotionSubmitter_Weight(ctx context.Context, motionSubmitterID int) int {
@@ -2752,14 +2746,14 @@ func (f Fields) OrganizationTag_Name(ctx context.Context, organizationTagID int)
 	return v
 }
 
-func (f Fields) OrganizationTag_OrganizationID(ctx context.Context, organizationTagID int) (int, bool) {
+func (f Fields) OrganizationTag_OrganizationID(ctx context.Context, organizationTagID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "organization_tag/%d/organization_id", organizationTagID)
 	if v == 0 {
-		return v, false
+		field := fmt.Sprintf("organization_tag/%d/organization_id", organizationTagID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
 	}
-
-	return v, true
+	return v
 }
 
 func (f Fields) OrganizationTag_TaggedIDs(ctx context.Context, organizationTagID int) []string {
@@ -2890,14 +2884,14 @@ func (f Fields) PersonalNote_Star(ctx context.Context, personalNoteID int) bool 
 	return v
 }
 
-func (f Fields) PersonalNote_UserID(ctx context.Context, personalNoteID int) (int, bool) {
+func (f Fields) PersonalNote_UserID(ctx context.Context, personalNoteID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "personal_note/%d/user_id", personalNoteID)
 	if v == 0 {
-		return v, false
+		field := fmt.Sprintf("personal_note/%d/user_id", personalNoteID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
 	}
-
-	return v, true
+	return v
 }
 
 func (f Fields) Poll_Backend(ctx context.Context, pollID int) string {
@@ -2980,14 +2974,14 @@ func (f Fields) Poll_MaxVotesAmount(ctx context.Context, pollID int) int {
 	return v
 }
 
-func (f Fields) Poll_MeetingID(ctx context.Context, pollID int) (int, bool) {
+func (f Fields) Poll_MeetingID(ctx context.Context, pollID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "poll/%d/meeting_id", pollID)
 	if v == 0 {
-		return v, false
+		field := fmt.Sprintf("poll/%d/meeting_id", pollID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
 	}
-
-	return v, true
+	return v
 }
 
 func (f Fields) Poll_MinVotesAmount(ctx context.Context, pollID int) int {
@@ -3172,14 +3166,14 @@ func (f Fields) ProjectorCountdown_ID(ctx context.Context, projectorCountdownID 
 	return v
 }
 
-func (f Fields) ProjectorCountdown_MeetingID(ctx context.Context, projectorCountdownID int) (int, bool) {
+func (f Fields) ProjectorCountdown_MeetingID(ctx context.Context, projectorCountdownID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "projector_countdown/%d/meeting_id", projectorCountdownID)
 	if v == 0 {
-		return v, false
+		field := fmt.Sprintf("projector_countdown/%d/meeting_id", projectorCountdownID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
 	}
-
-	return v, true
+	return v
 }
 
 func (f Fields) ProjectorCountdown_ProjectionIDs(ctx context.Context, projectorCountdownID int) []int {
@@ -3226,14 +3220,14 @@ func (f Fields) ProjectorMessage_ID(ctx context.Context, projectorMessageID int)
 	return v
 }
 
-func (f Fields) ProjectorMessage_MeetingID(ctx context.Context, projectorMessageID int) (int, bool) {
+func (f Fields) ProjectorMessage_MeetingID(ctx context.Context, projectorMessageID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "projector_message/%d/meeting_id", projectorMessageID)
 	if v == 0 {
-		return v, false
+		field := fmt.Sprintf("projector_message/%d/meeting_id", projectorMessageID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
 	}
-
-	return v, true
+	return v
 }
 
 func (f Fields) ProjectorMessage_Message(ctx context.Context, projectorMessageID int) string {
@@ -3320,14 +3314,14 @@ func (f Fields) Projector_ID(ctx context.Context, projectorID int) int {
 	return v
 }
 
-func (f Fields) Projector_MeetingID(ctx context.Context, projectorID int) (int, bool) {
+func (f Fields) Projector_MeetingID(ctx context.Context, projectorID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "projector/%d/meeting_id", projectorID)
 	if v == 0 {
-		return v, false
+		field := fmt.Sprintf("projector/%d/meeting_id", projectorID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
 	}
-
-	return v, true
+	return v
 }
 
 func (f Fields) Projector_Name(ctx context.Context, projectorID int) string {
@@ -3424,14 +3418,14 @@ func (f Fields) Resource_Mimetype(ctx context.Context, resourceID int) string {
 	return v
 }
 
-func (f Fields) Resource_OrganizationID(ctx context.Context, resourceID int) (int, bool) {
+func (f Fields) Resource_OrganizationID(ctx context.Context, resourceID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "resource/%d/organization_id", resourceID)
 	if v == 0 {
-		return v, false
+		field := fmt.Sprintf("resource/%d/organization_id", resourceID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
 	}
-
-	return v, true
+	return v
 }
 
 func (f Fields) Resource_Token(ctx context.Context, resourceID int) string {

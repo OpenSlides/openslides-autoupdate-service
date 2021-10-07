@@ -17,6 +17,7 @@ func TestGroupModeA(t *testing.T) {
 		`---
 		group/1/meeting_id: 1
 		meeting/1/id: 1
+		meeting/1/committee_id: 404
 		`,
 	)
 

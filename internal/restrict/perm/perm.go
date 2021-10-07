@@ -76,16 +76,18 @@ func newAnonymous(ctx context.Context, fetch *datastore.Fetcher, meetingID int) 
 }
 
 func isAdmin(ctx context.Context, fetch *datastore.Fetcher, meetingID int, groupIDs []int) (bool, error) {
-	adminGroupID := fetch.Field().Meeting_AdminGroupID(ctx, meetingID)
+	adminGroupID, exist := fetch.Field().Meeting_AdminGroupID(ctx, meetingID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("check for admin group: %w", err)
 	}
 
-	if adminGroupID != 0 {
-		for _, id := range groupIDs {
-			if id == adminGroupID {
-				return true, nil
-			}
+	if !exist {
+		return false, nil
+	}
+
+	for _, id := range groupIDs {
+		if id == adminGroupID {
+			return true, nil
 		}
 	}
 	return false, nil

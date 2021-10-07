@@ -15,7 +15,11 @@ func TestMotionChangeRecommendationModeA(t *testing.T) {
 		t,
 		f,
 		false,
-		"motion_change_recommendation/1/id: 1",
+		`---
+		motion_change_recommendation/1:
+			id: 1
+			meeting_id: 1
+		`,
 	)
 
 	testCase(

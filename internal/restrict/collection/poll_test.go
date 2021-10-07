@@ -17,7 +17,9 @@ func TestPollModeA(t *testing.T) {
 		false,
 		`---
 		poll/1/meeting_id: 1
-		meeting/1/id: 1
+		meeting/1:
+			id: 1
+			committee_id: 300
 		`,
 	)
 
@@ -82,6 +84,9 @@ func TestPollModeA(t *testing.T) {
 		
 		assignment/1:
 			meeting_id: 1
+			list_of_speakers_id: 300
+		
+		list_of_speakers/300/meeting_id: 1
 		`,
 	)
 
@@ -93,7 +98,7 @@ func TestPollModeA(t *testing.T) {
 		`---
 		poll/1:
 			meeting_id: 1
-			content_object_id: topic/1
+			content_object_id: null
 		
 		meeting/1/enable_anonymous: true
 		`,
@@ -107,9 +112,11 @@ func TestPollModeA(t *testing.T) {
 		`---
 		poll/1:
 			meeting_id: 1
-			content_object_id: topic/1
+			content_object_id: null
 		
-		meeting/1/enable_anonymous: false
+		meeting/1:
+			enable_anonymous: false
+			committee_id: 404
 		`,
 	)
 }
@@ -224,7 +231,7 @@ func TestPollModeB(t *testing.T) {
 		`---
 		poll/1:
 			meeting_id: 1
-			content_object_id: topic/1
+			content_object_id: null
 			state: finished
 		`,
 		withPerms(1, perm.PollCanManage),
@@ -237,8 +244,9 @@ func TestPollModeB(t *testing.T) {
 		false,
 		`---
 		poll/1:
-			content_object_id: topic/1
+			content_object_id: null
 			state: finished
+			meeting_id: 1
 		`,
 	)
 
@@ -269,6 +277,7 @@ func TestPollModeD(t *testing.T) {
 		poll/1:
 			content_object_id: motion/2
 			state: published
+			meeting_id: 1
 		
 		motion/2:
 			meeting_id: 1
@@ -288,6 +297,7 @@ func TestPollModeD(t *testing.T) {
 		poll/1:
 			content_object_id: motion/1
 			state: published
+			meeting_id: 1
 		
 		motion/1:
 			meeting_id: 1
@@ -303,6 +313,7 @@ func TestPollModeD(t *testing.T) {
 		poll/1:
 			content_object_id: motion/1
 			state: finished
+			meeting_id: 1
 		
 		motion/1:
 			meeting_id: 1
@@ -319,6 +330,7 @@ func TestPollModeD(t *testing.T) {
 		poll/1:
 			content_object_id: motion/1
 			state: finished
+			meeting_id: 1
 		
 		motion/1:
 			meeting_id: 1

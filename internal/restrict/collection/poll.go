@@ -27,20 +27,29 @@ func (m Poll) Modes(mode string) FieldRestricter {
 }
 
 func (m Poll) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, pollID int) (bool, error) {
-	contentObjectID := fetch.Field().Poll_ContentObjectID(ctx, pollID)
+	contentObjectID, exist := fetch.Field().Poll_ContentObjectID(ctx, pollID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("getting content object id: %w", err)
 	}
 
-	parts := strings.Split(contentObjectID, "/")
-
-	var id int
-	if len(parts) == 2 {
-		var err error
-		id, err = strconv.Atoi(parts[1])
-		if err != nil {
-			return false, fmt.Errorf("decoding id of content object id %q: %w", contentObjectID, err)
+	if !exist {
+		meetingID := fetch.Field().Poll_MeetingID(ctx, pollID)
+		if err := fetch.Err(); err != nil {
+			return false, fmt.Errorf("getting meeting id of poll %d: %w", pollID, err)
 		}
+
+		see, err := Meeting{}.see(ctx, fetch, mperms, meetingID)
+		if err != nil {
+			return false, fmt.Errorf("checking see for meeting %d: %w", meetingID, err)
+		}
+
+		return see, nil
+	}
+
+	parts := strings.Split(contentObjectID, "/")
+	id, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return false, fmt.Errorf("decoding id of content object id %q: %w", contentObjectID, err)
 	}
 
 	switch parts[0] {
@@ -61,42 +70,41 @@ func (m Poll) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 		return see, nil
 
 	default:
-		meetingID := fetch.Field().Poll_MeetingID(ctx, pollID)
-		if err := fetch.Err(); err != nil {
-			return false, fmt.Errorf("gettin meeting id of poll %d: %w", pollID, err)
-		}
-
-		see, err := Meeting{}.see(ctx, fetch, mperms, meetingID)
-		if err != nil {
-			return false, fmt.Errorf("checking see for meeting %d: %w", meetingID, err)
-		}
-
-		return see, nil
+		return false, fmt.Errorf("unsupported collection for poll %d: %s", pollID, parts[0])
 	}
 }
 
 func (m Poll) manage(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, pollID int) (bool, error) {
-	contentObjectID := fetch.Field().Poll_ContentObjectID(ctx, pollID)
+	contentObjectID, exist := fetch.Field().Poll_ContentObjectID(ctx, pollID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("getting content object id: %w", err)
 	}
 
-	parts := strings.Split(contentObjectID, "/")
-
-	var id int
-	if len(parts) == 2 {
-		var err error
-		id, err = strconv.Atoi(parts[1])
-		if err != nil {
-			return false, fmt.Errorf("decoding id of content object id %q: %w", contentObjectID, err)
+	if !exist {
+		meetingID := fetch.Field().Poll_MeetingID(ctx, pollID)
+		if err := fetch.Err(); err != nil {
+			return false, fmt.Errorf("getting meeting id of poll %d: %w", pollID, err)
 		}
+
+		perms, err := mperms.Meeting(ctx, meetingID)
+		if err != nil {
+			return false, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
+		}
+
+		return perms.Has(perm.PollCanManage), nil
+	}
+
+	parts := strings.Split(contentObjectID, "/")
+	id, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return false, fmt.Errorf("decoding id of content object id %q: %w", contentObjectID, err)
 	}
 
 	switch parts[0] {
 	case "motion":
 		meetingID := fetch.Field().Motion_MeetingID(ctx, id)
 		if err := fetch.Err(); err != nil {
-			return false, fmt.Errorf("gettin meeting id of motion %d: %w", id, err)
+			return false, fmt.Errorf("getting meeting id of motion %d: %w", id, err)
 		}
 
 		perms, err := mperms.Meeting(ctx, meetingID)
@@ -109,7 +117,7 @@ func (m Poll) manage(ctx context.Context, fetch *datastore.Fetcher, mperms *perm
 	case "assignment":
 		meetingID := fetch.Field().Assignment_MeetingID(ctx, id)
 		if err := fetch.Err(); err != nil {
-			return false, fmt.Errorf("gettin meeting id of assignment %d: %w", id, err)
+			return false, fmt.Errorf("getting meeting id of assignment %d: %w", id, err)
 		}
 
 		perms, err := mperms.Meeting(ctx, meetingID)
@@ -120,17 +128,7 @@ func (m Poll) manage(ctx context.Context, fetch *datastore.Fetcher, mperms *perm
 		return perms.Has(perm.AssignmentCanManage), nil
 
 	default:
-		meetingID := fetch.Field().Poll_MeetingID(ctx, pollID)
-		if err := fetch.Err(); err != nil {
-			return false, fmt.Errorf("gettin meeting id of poll %d: %w", pollID, err)
-		}
-
-		perms, err := mperms.Meeting(ctx, meetingID)
-		if err != nil {
-			return false, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
-		}
-
-		return perms.Has(perm.PollCanManage), nil
+		return false, fmt.Errorf("unsupported collection for poll %d: %s", pollID, parts[0])
 	}
 }
 
@@ -186,7 +184,7 @@ func (m Poll) modeD(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.
 
 		meetingID := fetch.Field().Poll_MeetingID(ctx, pollID)
 		if err := fetch.Err(); err != nil {
-			return false, fmt.Errorf("gettin meeting id of poll %d: %w", pollID, err)
+			return false, fmt.Errorf("getting meeting id of poll %d: %w", pollID, err)
 		}
 
 		perms, err := mperms.Meeting(ctx, meetingID)

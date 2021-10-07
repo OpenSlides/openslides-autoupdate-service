@@ -15,7 +15,11 @@ func TestMotionCommentSectionModeA(t *testing.T) {
 		t,
 		f,
 		false,
-		"motion_comment_section/1/id: 1",
+		`---
+		motion_comment_section/1:
+			id: 1
+			meeting_id: 1
+		`,
 	)
 
 	testCase(

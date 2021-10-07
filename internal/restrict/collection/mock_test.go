@@ -43,6 +43,7 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 	t.Helper()
 
 	t.Run(tt.name, func(t *testing.T) {
+		t.Helper()
 		fetch := datastore.NewFetcher(dsmock.Stub(tt.data))
 		perms := perm.NewMeetingPermission(fetch, tt.requestUserID)
 

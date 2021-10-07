@@ -54,8 +54,7 @@ func (m Mediafile) see(ctx context.Context, fetch *datastore.Fetcher, mperms *pe
 	if perms.Has(perm.ProjectorCanSee) {
 		p7onIDs := fetch.Field().Mediafile_ProjectionIDs(ctx, mediafileID)
 		for _, p7onID := range p7onIDs {
-			current := fetch.Field().Projection_CurrentProjectorID(ctx, p7onID)
-			if current != 0 {
+			if _, exist := fetch.Field().Projection_CurrentProjectorID(ctx, p7onID); exist {
 				return true, nil
 			}
 		}

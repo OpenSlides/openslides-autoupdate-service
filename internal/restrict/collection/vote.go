@@ -24,7 +24,11 @@ func (v Vote) Modes(mode string) FieldRestricter {
 
 func (v Vote) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, voteID int) (bool, error) {
 	optionID := fetch.Field().Vote_OptionID(ctx, voteID)
-	pollID := fetch.Field().Option_PollID(ctx, optionID)
+	pollID, err := pollID(ctx, fetch, optionID)
+	if err != nil {
+		return false, fmt.Errorf("getting poll id: %w", err)
+	}
+
 	state := fetch.Field().Poll_State(ctx, pollID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("getting poll id and state: %w", err)
@@ -43,21 +47,21 @@ func (v Vote) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 		return true, nil
 	}
 
-	voteUser := fetch.Field().Vote_UserID(ctx, voteID)
+	voteUser, exist := fetch.Field().Vote_UserID(ctx, voteID)
 	if err != nil {
 		return false, fmt.Errorf("getting vote user: %w", err)
 	}
 
-	if voteUser == mperms.UserID() {
+	if exist && voteUser == mperms.UserID() {
 		return true, nil
 	}
 
-	delegatedUser := fetch.Field().Vote_DelegatedUserID(ctx, voteID)
+	delegatedUser, exist := fetch.Field().Vote_DelegatedUserID(ctx, voteID)
 	if err != nil {
 		return false, fmt.Errorf("getting delegated user: %w", err)
 	}
 
-	if delegatedUser == mperms.UserID() {
+	if exist && delegatedUser == mperms.UserID() {
 		return true, nil
 	}
 
@@ -66,7 +70,10 @@ func (v Vote) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 
 func (v Vote) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, voteID int) (bool, error) {
 	optionID := fetch.Field().Vote_OptionID(ctx, voteID)
-	pollID := fetch.Field().Option_PollID(ctx, optionID)
+	pollID, err := pollID(ctx, fetch, optionID)
+	if err != nil {
+		return false, fmt.Errorf("getting poll id: %w", err)
+	}
 	state := fetch.Field().Poll_State(ctx, pollID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("getting poll id and state: %w", err)
