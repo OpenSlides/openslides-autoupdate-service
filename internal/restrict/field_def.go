@@ -609,6 +609,7 @@ var restrictionModes = map[string]string{
 	"motion_state/allow_submitter_edit":                                "A",
 	"motion_state/allow_support":                                       "A",
 	"motion_state/css_class":                                           "A",
+	"motion_state/dont_set_identifier":                                 "A",
 	"motion_state/first_state_of_workflow_id":                          "A",
 	"motion_state/id":                                                  "A",
 	"motion_state/meeting_id":                                          "A",
