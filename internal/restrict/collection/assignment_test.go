@@ -16,9 +16,16 @@ func TestAssignmentModeA(t *testing.T) {
 		a.Modes("A"),
 		false,
 		`---
-			assignment/1:
-				meeting_id: 1
-			`,
+		assignment/1:
+			meeting_id: 1
+			list_of_speakers_id: 15
+		
+		list_of_speakers/15:
+			id: 15
+			meeting_id: 1
+		
+		meeting/1/committee_id: 404
+		`,
 	)
 
 	testCase(
@@ -27,9 +34,10 @@ func TestAssignmentModeA(t *testing.T) {
 		a.Modes("A"),
 		true,
 		`---
-			assignment/1:
-				meeting_id: 1
-			`,
+		assignment/1:
+			meeting_id: 1
+			list_of_speakers_id: 404
+		`,
 		withPerms(1, perm.AssignmentCanSee),
 	)
 
@@ -39,14 +47,14 @@ func TestAssignmentModeA(t *testing.T) {
 		a.Modes("A"),
 		true,
 		`---
-			assignment/1:
-				list_of_speakers_id: 15
-				meeting_id: 1
+		assignment/1:
+			list_of_speakers_id: 15
+			meeting_id: 1
 
-			list_of_speakers/15:
-				id: 15
-				meeting_id: 1
-			`,
+		list_of_speakers/15:
+			id: 15
+			meeting_id: 1
+		`,
 		withPerms(1, perm.ListOfSpeakersCanSee),
 	)
 
@@ -56,30 +64,14 @@ func TestAssignmentModeA(t *testing.T) {
 		a.Modes("A"),
 		false,
 		`---
-			assignment/1:
-				list_of_speakers_id: 15
-				meeting_id: 1
+		assignment/1:
+			list_of_speakers_id: 15
+			meeting_id: 1
 
-			list_of_speakers/15:
-				id: 15
-				meeting_id: 1
-			`,
-	)
-
-	testCase(
-		"Can see list of speakers but assignment has no list",
-		t,
-		a.Modes("A"),
-		false,
-		`---
-			assignment/1:
-				meeting_id: 1
-
-			list_of_speakers/15: 
-				id: 15
-				meeting_id: 1
-			`,
-		withPerms(1, perm.ListOfSpeakersCanSee),
+		list_of_speakers/15:
+			id: 15
+			meeting_id: 1
+		`,
 	)
 
 	testCase(
@@ -88,13 +80,18 @@ func TestAssignmentModeA(t *testing.T) {
 		a.Modes("A"),
 		true,
 		`---
-			assignment/1:
-				agenda_item_id: 30
-				meeting_id: 1
+		assignment/1:
+			agenda_item_id: 30
+			meeting_id: 1
+			list_of_speakers_id: 15
 
-			agenda_item/30:
-				meeting_id: 1
-			`,
+		agenda_item/30:
+			meeting_id: 1
+
+		list_of_speakers/15:
+			id: 15
+			meeting_id: 1
+		`,
 		withPerms(1, perm.AgendaItemCanSee),
 	)
 
@@ -104,12 +101,17 @@ func TestAssignmentModeA(t *testing.T) {
 		a.Modes("A"),
 		false,
 		`---
-			assignment/1:
-				agenda_item_id: 30
-				meeting_id: 1
+		assignment/1:
+			agenda_item_id: 30
+			meeting_id: 1
+			list_of_speakers_id: 15
 
-			agenda_item/30:
-				meeting_id: 1
+		agenda_item/30:
+			meeting_id: 1
+
+		list_of_speakers/15:
+			id: 15
+			meeting_id: 1
 			`,
 	)
 
@@ -119,11 +121,16 @@ func TestAssignmentModeA(t *testing.T) {
 		a.Modes("A"),
 		false,
 		`---
-			assignment/1:
-				meeting_id: 1
+		assignment/1:
+			meeting_id: 1
+			list_of_speakers_id: 15
+			
+		agenda_item/30:
+			meeting_id: 1
 
-			agenda_item/30:
-				meeting_id: 1
+		list_of_speakers/15:
+			id: 15
+			meeting_id: 1
 			`,
 		withPerms(1, perm.AgendaItemCanSee),
 	)
@@ -140,6 +147,7 @@ func TestAssignmentModeB(t *testing.T) {
 		`---
 		assignment/1:
 			meeting_id: 1
+			list_of_speakers_id: 404
 		`,
 	)
 
@@ -151,6 +159,7 @@ func TestAssignmentModeB(t *testing.T) {
 		`---
 		assignment/1:
 			meeting_id: 1
+			list_of_speakers_id: 404
 		`,
 		withPerms(1, perm.AssignmentCanSee),
 	)
@@ -168,6 +177,7 @@ func TestAssignmentModeB(t *testing.T) {
 		list_of_speakers/15:
 			id: 15
 			meeting_id: 1
+			list_of_speakers_id: 404
 		`,
 		withPerms(1, perm.ListOfSpeakersCanSee),
 	)
@@ -181,9 +191,11 @@ func TestAssignmentModeB(t *testing.T) {
 		assignment/1:
 			agenda_item_id: 30
 			meeting_id: 1
+			list_of_speakers_id: 404
 
 		agenda_item/30:
 			meeting_id: 1
+			list_of_speakers_id: 404
 		`,
 		withPerms(1, perm.AgendaItemCanSee),
 	)

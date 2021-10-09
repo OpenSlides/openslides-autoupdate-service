@@ -624,6 +624,7 @@ var restrictionModes = map[string]string{
 	"motion_state/set_number":                                          "A",
 	"motion_state/show_recommendation_extension_field":                 "A",
 	"motion_state/show_state_extension_field":                          "A",
+	"motion_state/weight":                                              "A",
 	"motion_state/workflow_id":                                         "A",
 	"motion_statute_paragraph/id":                                      "A",
 	"motion_statute_paragraph/meeting_id":                              "A",

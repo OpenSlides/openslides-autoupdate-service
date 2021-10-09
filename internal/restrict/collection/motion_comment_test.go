@@ -29,6 +29,7 @@ func TestMotionCommentModeA(t *testing.T) {
 
 		motion_comment_section/7:
 			read_group_ids: [2]
+			meeting_id: 1
 		
 		user/1/group_$1_ids: [2]
 		group/2/id: 2
@@ -55,6 +56,7 @@ func TestMotionCommentModeA(t *testing.T) {
 
 		motion_comment_section/7:
 			read_group_ids: []
+			meeting_id: 1
 		
 		user/1/group_$1_ids: [2]
 		group/2/id: 2
@@ -83,6 +85,7 @@ func TestMotionCommentModeA(t *testing.T) {
 
 		motion_comment_section/7:
 			read_group_ids: [2]
+			meeting_id: 1
 
 		motion_submitter/4/user_id: 2
 		

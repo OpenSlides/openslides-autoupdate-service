@@ -11,7 +11,9 @@ import (
 func TestRestrict(t *testing.T) {
 	ds := dsmock.Stub(dsmock.YAMLData(`---
 	meeting/1/enable_anonymous: true
-	meeting/2/enable_anonymous: false
+	meeting/2:
+		enable_anonymous: false
+		committee_id: 404
 
 	user/1:
 		group_$_ids: ["1","2"]
@@ -53,7 +55,9 @@ func TestRestrict(t *testing.T) {
 		2:
 			meeting_id: 2
 	
-	topic/1/id: 1
+	topic/1:
+		id: 1
+		meeting_id: 1
 
 	unknown_collection/1/field: 404
 	`))

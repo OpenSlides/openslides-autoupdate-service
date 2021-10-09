@@ -63,12 +63,12 @@ func (m MotionBlock) modeA(ctx context.Context, fetch *datastore.Fetcher, mperms
 		return true, nil
 	}
 
-	agendaItemID := fetch.Field().MotionBlock_AgendaItemID(ctx, motionBlockID)
+	agendaItemID, exist := fetch.Field().MotionBlock_AgendaItemID(ctx, motionBlockID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("getting agendaItem: %w", err)
 	}
 
-	if agendaItemID != 0 {
+	if exist {
 		see, err = AgendaItem{}.see(ctx, fetch, mperms, agendaItemID)
 		if err != nil {
 			return false, fmt.Errorf("checking agendaItem %d: %w", agendaItemID, err)

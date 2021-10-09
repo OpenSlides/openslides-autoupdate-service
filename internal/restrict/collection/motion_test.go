@@ -15,7 +15,11 @@ func TestMotionModeC(t *testing.T) {
 		t,
 		f,
 		false,
-		`motion/1/id: 1`,
+		`---
+		motion/1:
+			id: 1
+			meeting_id: 1
+		`,
 	)
 
 	testCase(
@@ -114,7 +118,14 @@ func TestMotionModeA(t *testing.T) {
 		t,
 		f,
 		false,
-		`motion/1/id: 1`,
+		`---
+		motion/1:
+			id: 1
+			meeting_id: 1
+			list_of_speakers_id: 300
+		
+		list_of_speakers/300/meeting_id: 1
+		`,
 	)
 
 	testCase(
@@ -175,7 +186,13 @@ func TestMotionModeB(t *testing.T) {
 		t,
 		f,
 		false,
-		`motion/1/id: 1`,
+		`---
+		motion/1:
+			id: 1
+			meeting_id: 1
+		
+		meeting/1/committee_id: 300
+		`,
 	)
 
 	testCase(

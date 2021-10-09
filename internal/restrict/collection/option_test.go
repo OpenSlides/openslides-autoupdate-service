@@ -18,7 +18,9 @@ func TestOptionModeA(t *testing.T) {
 		`---
 		option/1/poll_id: 3
 		poll/3/meeting_id: 1
-		meeting/1/enable_anonymous: false
+		meeting/1:
+			enable_anonymous: false
+			committee_id: 300
 		`,
 	)
 

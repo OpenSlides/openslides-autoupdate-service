@@ -42,23 +42,21 @@ func (a Assignment) see(ctx context.Context, fetch *datastore.Fetcher, mperms *p
 		return false, fmt.Errorf("fetching losID: %w", err)
 	}
 
-	if losID != 0 {
-		canSeeLOS, err := ListOfSpeakers{}.see(ctx, fetch, mperms, losID)
-		if err != nil {
-			return false, fmt.Errorf("calculating los see: %w", err)
-		}
-
-		if canSeeLOS {
-			return true, nil
-		}
+	canSeeLOS, err := ListOfSpeakers{}.see(ctx, fetch, mperms, losID)
+	if err != nil {
+		return false, fmt.Errorf("calculating los see: %w", err)
 	}
 
-	agendaID := fetch.Field().Assignment_AgendaItemID(ctx, assignmentID)
+	if canSeeLOS {
+		return true, nil
+	}
+
+	agendaID, exist := fetch.Field().Assignment_AgendaItemID(ctx, assignmentID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("fetching agendaID: %w", err)
 	}
 
-	if agendaID != 0 {
+	if exist {
 		canSeeAgenda, err := AgendaItem{}.see(ctx, fetch, mperms, agendaID)
 		if err != nil {
 			return false, fmt.Errorf("calculating agendaItem see: %w", err)

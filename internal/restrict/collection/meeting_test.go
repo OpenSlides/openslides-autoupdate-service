@@ -27,7 +27,11 @@ func TestMeetingModeB(t *testing.T) {
 		t,
 		m.Modes("B"),
 		false,
-		`meeting/1/id: 1`,
+		`---
+		meeting/1:
+			id: 1
+			committee_id: 300
+		`,
 	)
 
 	testCase(

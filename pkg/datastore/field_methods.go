@@ -29,6 +29,10 @@ func (f Fields) AgendaItem_Comment(ctx context.Context, agendaItemID int) string
 func (f Fields) AgendaItem_ContentObjectID(ctx context.Context, agendaItemID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "agenda_item/%d/content_object_id", agendaItemID)
+	if v == "" {
+		field := fmt.Sprintf("agenda_item/%d/content_object_id", agendaItemID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -71,13 +75,21 @@ func (f Fields) AgendaItem_Level(ctx context.Context, agendaItemID int) int {
 func (f Fields) AgendaItem_MeetingID(ctx context.Context, agendaItemID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "agenda_item/%d/meeting_id", agendaItemID)
+	if v == 0 {
+		field := fmt.Sprintf("agenda_item/%d/meeting_id", agendaItemID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
-func (f Fields) AgendaItem_ParentID(ctx context.Context, agendaItemID int) int {
+func (f Fields) AgendaItem_ParentID(ctx context.Context, agendaItemID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "agenda_item/%d/parent_id", agendaItemID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) AgendaItem_ProjectionIDs(ctx context.Context, agendaItemID int) []int {
@@ -107,6 +119,10 @@ func (f Fields) AgendaItem_Weight(ctx context.Context, agendaItemID int) int {
 func (f Fields) AssignmentCandidate_AssignmentID(ctx context.Context, assignmentCandidateID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "assignment_candidate/%d/assignment_id", assignmentCandidateID)
+	if v == 0 {
+		field := fmt.Sprintf("assignment_candidate/%d/assignment_id", assignmentCandidateID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -119,12 +135,20 @@ func (f Fields) AssignmentCandidate_ID(ctx context.Context, assignmentCandidateI
 func (f Fields) AssignmentCandidate_MeetingID(ctx context.Context, assignmentCandidateID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "assignment_candidate/%d/meeting_id", assignmentCandidateID)
+	if v == 0 {
+		field := fmt.Sprintf("assignment_candidate/%d/meeting_id", assignmentCandidateID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
 func (f Fields) AssignmentCandidate_UserID(ctx context.Context, assignmentCandidateID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "assignment_candidate/%d/user_id", assignmentCandidateID)
+	if v == 0 {
+		field := fmt.Sprintf("assignment_candidate/%d/user_id", assignmentCandidateID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -134,10 +158,14 @@ func (f Fields) AssignmentCandidate_Weight(ctx context.Context, assignmentCandid
 	return v
 }
 
-func (f Fields) Assignment_AgendaItemID(ctx context.Context, assignmentID int) int {
+func (f Fields) Assignment_AgendaItemID(ctx context.Context, assignmentID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "assignment/%d/agenda_item_id", assignmentID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Assignment_AttachmentIDs(ctx context.Context, assignmentID int) []int {
@@ -173,12 +201,20 @@ func (f Fields) Assignment_ID(ctx context.Context, assignmentID int) int {
 func (f Fields) Assignment_ListOfSpeakersID(ctx context.Context, assignmentID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "assignment/%d/list_of_speakers_id", assignmentID)
+	if v == 0 {
+		field := fmt.Sprintf("assignment/%d/list_of_speakers_id", assignmentID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
 func (f Fields) Assignment_MeetingID(ctx context.Context, assignmentID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "assignment/%d/meeting_id", assignmentID)
+	if v == 0 {
+		field := fmt.Sprintf("assignment/%d/meeting_id", assignmentID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -233,6 +269,10 @@ func (f Fields) ChatGroup_ID(ctx context.Context, chatGroupID int) int {
 func (f Fields) ChatGroup_MeetingID(ctx context.Context, chatGroupID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "chat_group/%d/meeting_id", chatGroupID)
+	if v == 0 {
+		field := fmt.Sprintf("chat_group/%d/meeting_id", chatGroupID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -260,10 +300,14 @@ func (f Fields) ChatGroup_WriteGroupIDs(ctx context.Context, chatGroupID int) []
 	return v
 }
 
-func (f Fields) Committee_DefaultMeetingID(ctx context.Context, committeeID int) int {
+func (f Fields) Committee_DefaultMeetingID(ctx context.Context, committeeID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "committee/%d/default_meeting_id", committeeID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Committee_Description(ctx context.Context, committeeID int) string {
@@ -299,6 +343,10 @@ func (f Fields) Committee_Name(ctx context.Context, committeeID int) string {
 func (f Fields) Committee_OrganizationID(ctx context.Context, committeeID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "committee/%d/organization_id", committeeID)
+	if v == 0 {
+		field := fmt.Sprintf("committee/%d/organization_id", committeeID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -314,10 +362,14 @@ func (f Fields) Committee_ReceiveForwardingsFromCommitteeIDs(ctx context.Context
 	return v
 }
 
-func (f Fields) Committee_TemplateMeetingID(ctx context.Context, committeeID int) int {
+func (f Fields) Committee_TemplateMeetingID(ctx context.Context, committeeID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "committee/%d/template_meeting_id", committeeID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Committee_UserIDs(ctx context.Context, committeeID int) []int {
@@ -326,16 +378,24 @@ func (f Fields) Committee_UserIDs(ctx context.Context, committeeID int) []int {
 	return v
 }
 
-func (f Fields) Group_AdminGroupForMeetingID(ctx context.Context, groupID int) int {
+func (f Fields) Group_AdminGroupForMeetingID(ctx context.Context, groupID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "group/%d/admin_group_for_meeting_id", groupID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
-func (f Fields) Group_DefaultGroupForMeetingID(ctx context.Context, groupID int) int {
+func (f Fields) Group_DefaultGroupForMeetingID(ctx context.Context, groupID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "group/%d/default_group_for_meeting_id", groupID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Group_ID(ctx context.Context, groupID int) int {
@@ -359,6 +419,10 @@ func (f Fields) Group_MediafileInheritedAccessGroupIDs(ctx context.Context, grou
 func (f Fields) Group_MeetingID(ctx context.Context, groupID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "group/%d/meeting_id", groupID)
+	if v == 0 {
+		field := fmt.Sprintf("group/%d/meeting_id", groupID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -392,22 +456,34 @@ func (f Fields) Group_ReadCommentSectionIDs(ctx context.Context, groupID int) []
 	return v
 }
 
-func (f Fields) Group_UsedAsAssignmentPollDefaultID(ctx context.Context, groupID int) int {
+func (f Fields) Group_UsedAsAssignmentPollDefaultID(ctx context.Context, groupID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "group/%d/used_as_assignment_poll_default_id", groupID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
-func (f Fields) Group_UsedAsMotionPollDefaultID(ctx context.Context, groupID int) int {
+func (f Fields) Group_UsedAsMotionPollDefaultID(ctx context.Context, groupID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "group/%d/used_as_motion_poll_default_id", groupID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
-func (f Fields) Group_UsedAsPollDefaultID(ctx context.Context, groupID int) int {
+func (f Fields) Group_UsedAsPollDefaultID(ctx context.Context, groupID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "group/%d/used_as_poll_default_id", groupID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Group_UserIDs(ctx context.Context, groupID int) []int {
@@ -437,6 +513,10 @@ func (f Fields) ListOfSpeakers_Closed(ctx context.Context, listOfSpeakersID int)
 func (f Fields) ListOfSpeakers_ContentObjectID(ctx context.Context, listOfSpeakersID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "list_of_speakers/%d/content_object_id", listOfSpeakersID)
+	if v == "" {
+		field := fmt.Sprintf("list_of_speakers/%d/content_object_id", listOfSpeakersID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -449,6 +529,10 @@ func (f Fields) ListOfSpeakers_ID(ctx context.Context, listOfSpeakersID int) int
 func (f Fields) ListOfSpeakers_MeetingID(ctx context.Context, listOfSpeakersID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "list_of_speakers/%d/meeting_id", listOfSpeakersID)
+	if v == 0 {
+		field := fmt.Sprintf("list_of_speakers/%d/meeting_id", listOfSpeakersID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -527,12 +611,20 @@ func (f Fields) Mediafile_IsPublic(ctx context.Context, mediafileID int) bool {
 func (f Fields) Mediafile_ListOfSpeakersID(ctx context.Context, mediafileID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "mediafile/%d/list_of_speakers_id", mediafileID)
+	if v == 0 {
+		field := fmt.Sprintf("mediafile/%d/list_of_speakers_id", mediafileID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
 func (f Fields) Mediafile_MeetingID(ctx context.Context, mediafileID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "mediafile/%d/meeting_id", mediafileID)
+	if v == 0 {
+		field := fmt.Sprintf("mediafile/%d/meeting_id", mediafileID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -542,10 +634,14 @@ func (f Fields) Mediafile_Mimetype(ctx context.Context, mediafileID int) string 
 	return v
 }
 
-func (f Fields) Mediafile_ParentID(ctx context.Context, mediafileID int) int {
+func (f Fields) Mediafile_ParentID(ctx context.Context, mediafileID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "mediafile/%d/parent_id", mediafileID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Mediafile_PdfInformation(ctx context.Context, mediafileID int) json.RawMessage {
@@ -590,10 +686,14 @@ func (f Fields) Mediafile_UsedAsLogoInMeetingID(ctx context.Context, mediafileID
 	return v
 }
 
-func (f Fields) Meeting_AdminGroupID(ctx context.Context, meetingID int) int {
+func (f Fields) Meeting_AdminGroupID(ctx context.Context, meetingID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/admin_group_id", meetingID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Meeting_AgendaEnableNumbering(ctx context.Context, meetingID int) bool {
@@ -773,6 +873,10 @@ func (f Fields) Meeting_ChatGroupIDs(ctx context.Context, meetingID int) []int {
 func (f Fields) Meeting_CommitteeID(ctx context.Context, meetingID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/committee_id", meetingID)
+	if v == 0 {
+		field := fmt.Sprintf("meeting/%d/committee_id", meetingID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -839,13 +943,21 @@ func (f Fields) Meeting_CustomTranslations(ctx context.Context, meetingID int) j
 func (f Fields) Meeting_DefaultGroupID(ctx context.Context, meetingID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/default_group_id", meetingID)
+	if v == 0 {
+		field := fmt.Sprintf("meeting/%d/default_group_id", meetingID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
-func (f Fields) Meeting_DefaultMeetingForCommitteeID(ctx context.Context, meetingID int) int {
+func (f Fields) Meeting_DefaultMeetingForCommitteeID(ctx context.Context, meetingID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/default_meeting_for_committee_id", meetingID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Meeting_DefaultProjectorIDTmpl(ctx context.Context, meetingID int) []string {
@@ -944,10 +1056,14 @@ func (f Fields) Meeting_ImportedAt(ctx context.Context, meetingID int) int {
 	return v
 }
 
-func (f Fields) Meeting_IsActiveInOrganizationID(ctx context.Context, meetingID int) int {
+func (f Fields) Meeting_IsActiveInOrganizationID(ctx context.Context, meetingID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/is_active_in_organization_id", meetingID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Meeting_JitsiDomain(ctx context.Context, meetingID int) string {
@@ -986,10 +1102,14 @@ func (f Fields) Meeting_ListOfSpeakersCanSetContributionSelf(ctx context.Context
 	return v
 }
 
-func (f Fields) Meeting_ListOfSpeakersCountdownID(ctx context.Context, meetingID int) int {
+func (f Fields) Meeting_ListOfSpeakersCountdownID(ctx context.Context, meetingID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/list_of_speakers_countdown_id", meetingID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Meeting_ListOfSpeakersCoupleCountdown(ctx context.Context, meetingID int) bool {
@@ -1199,6 +1319,10 @@ func (f Fields) Meeting_MotionsAmendmentsTextMode(ctx context.Context, meetingID
 func (f Fields) Meeting_MotionsDefaultAmendmentWorkflowID(ctx context.Context, meetingID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/motions_default_amendment_workflow_id", meetingID)
+	if v == 0 {
+		field := fmt.Sprintf("meeting/%d/motions_default_amendment_workflow_id", meetingID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -1217,12 +1341,20 @@ func (f Fields) Meeting_MotionsDefaultSorting(ctx context.Context, meetingID int
 func (f Fields) Meeting_MotionsDefaultStatuteAmendmentWorkflowID(ctx context.Context, meetingID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/motions_default_statute_amendment_workflow_id", meetingID)
+	if v == 0 {
+		field := fmt.Sprintf("meeting/%d/motions_default_statute_amendment_workflow_id", meetingID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
 func (f Fields) Meeting_MotionsDefaultWorkflowID(ctx context.Context, meetingID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/motions_default_workflow_id", meetingID)
+	if v == 0 {
+		field := fmt.Sprintf("meeting/%d/motions_default_workflow_id", meetingID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -1388,10 +1520,14 @@ func (f Fields) Meeting_PollBallotPaperSelection(ctx context.Context, meetingID 
 	return v
 }
 
-func (f Fields) Meeting_PollCountdownID(ctx context.Context, meetingID int) int {
+func (f Fields) Meeting_PollCountdownID(ctx context.Context, meetingID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/poll_countdown_id", meetingID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Meeting_PollCoupleCountdown(ctx context.Context, meetingID int) bool {
@@ -1481,6 +1617,10 @@ func (f Fields) Meeting_ProjectorMessageIDs(ctx context.Context, meetingID int) 
 func (f Fields) Meeting_ReferenceProjectorID(ctx context.Context, meetingID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/reference_projector_id", meetingID)
+	if v == 0 {
+		field := fmt.Sprintf("meeting/%d/reference_projector_id", meetingID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -1502,10 +1642,14 @@ func (f Fields) Meeting_TagIDs(ctx context.Context, meetingID int) []int {
 	return v
 }
 
-func (f Fields) Meeting_TemplateForCommitteeID(ctx context.Context, meetingID int) int {
+func (f Fields) Meeting_TemplateForCommitteeID(ctx context.Context, meetingID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "meeting/%d/template_for_committee_id", meetingID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Meeting_TopicIDs(ctx context.Context, meetingID int) []int {
@@ -1628,10 +1772,14 @@ func (f Fields) Meeting_WelcomeTitle(ctx context.Context, meetingID int) string 
 	return v
 }
 
-func (f Fields) MotionBlock_AgendaItemID(ctx context.Context, motionBlockID int) int {
+func (f Fields) MotionBlock_AgendaItemID(ctx context.Context, motionBlockID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_block/%d/agenda_item_id", motionBlockID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) MotionBlock_ID(ctx context.Context, motionBlockID int) int {
@@ -1649,12 +1797,20 @@ func (f Fields) MotionBlock_Internal(ctx context.Context, motionBlockID int) boo
 func (f Fields) MotionBlock_ListOfSpeakersID(ctx context.Context, motionBlockID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_block/%d/list_of_speakers_id", motionBlockID)
+	if v == 0 {
+		field := fmt.Sprintf("motion_block/%d/list_of_speakers_id", motionBlockID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
 func (f Fields) MotionBlock_MeetingID(ctx context.Context, motionBlockID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_block/%d/meeting_id", motionBlockID)
+	if v == 0 {
+		field := fmt.Sprintf("motion_block/%d/meeting_id", motionBlockID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -1697,6 +1853,10 @@ func (f Fields) MotionCategory_Level(ctx context.Context, motionCategoryID int) 
 func (f Fields) MotionCategory_MeetingID(ctx context.Context, motionCategoryID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_category/%d/meeting_id", motionCategoryID)
+	if v == 0 {
+		field := fmt.Sprintf("motion_category/%d/meeting_id", motionCategoryID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -1712,10 +1872,14 @@ func (f Fields) MotionCategory_Name(ctx context.Context, motionCategoryID int) s
 	return v
 }
 
-func (f Fields) MotionCategory_ParentID(ctx context.Context, motionCategoryID int) int {
+func (f Fields) MotionCategory_ParentID(ctx context.Context, motionCategoryID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_category/%d/parent_id", motionCategoryID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) MotionCategory_Prefix(ctx context.Context, motionCategoryID int) string {
@@ -1763,12 +1927,20 @@ func (f Fields) MotionChangeRecommendation_LineTo(ctx context.Context, motionCha
 func (f Fields) MotionChangeRecommendation_MeetingID(ctx context.Context, motionChangeRecommendationID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_change_recommendation/%d/meeting_id", motionChangeRecommendationID)
+	if v == 0 {
+		field := fmt.Sprintf("motion_change_recommendation/%d/meeting_id", motionChangeRecommendationID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
 func (f Fields) MotionChangeRecommendation_MotionID(ctx context.Context, motionChangeRecommendationID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_change_recommendation/%d/motion_id", motionChangeRecommendationID)
+	if v == 0 {
+		field := fmt.Sprintf("motion_change_recommendation/%d/motion_id", motionChangeRecommendationID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -1811,6 +1983,10 @@ func (f Fields) MotionCommentSection_ID(ctx context.Context, motionCommentSectio
 func (f Fields) MotionCommentSection_MeetingID(ctx context.Context, motionCommentSectionID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_comment_section/%d/meeting_id", motionCommentSectionID)
+	if v == 0 {
+		field := fmt.Sprintf("motion_comment_section/%d/meeting_id", motionCommentSectionID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -1853,18 +2029,30 @@ func (f Fields) MotionComment_ID(ctx context.Context, motionCommentID int) int {
 func (f Fields) MotionComment_MeetingID(ctx context.Context, motionCommentID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_comment/%d/meeting_id", motionCommentID)
+	if v == 0 {
+		field := fmt.Sprintf("motion_comment/%d/meeting_id", motionCommentID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
 func (f Fields) MotionComment_MotionID(ctx context.Context, motionCommentID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_comment/%d/motion_id", motionCommentID)
+	if v == 0 {
+		field := fmt.Sprintf("motion_comment/%d/motion_id", motionCommentID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
 func (f Fields) MotionComment_SectionID(ctx context.Context, motionCommentID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_comment/%d/section_id", motionCommentID)
+	if v == 0 {
+		field := fmt.Sprintf("motion_comment/%d/section_id", motionCommentID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -1898,10 +2086,14 @@ func (f Fields) MotionState_DontSetIDentifier(ctx context.Context, motionStateID
 	return v
 }
 
-func (f Fields) MotionState_FirstStateOfWorkflowID(ctx context.Context, motionStateID int) int {
+func (f Fields) MotionState_FirstStateOfWorkflowID(ctx context.Context, motionStateID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_state/%d/first_state_of_workflow_id", motionStateID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) MotionState_ID(ctx context.Context, motionStateID int) int {
@@ -1913,6 +2105,10 @@ func (f Fields) MotionState_ID(ctx context.Context, motionStateID int) int {
 func (f Fields) MotionState_MeetingID(ctx context.Context, motionStateID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_state/%d/meeting_id", motionStateID)
+	if v == 0 {
+		field := fmt.Sprintf("motion_state/%d/meeting_id", motionStateID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -1985,6 +2181,10 @@ func (f Fields) MotionState_ShowStateExtensionField(ctx context.Context, motionS
 func (f Fields) MotionState_WorkflowID(ctx context.Context, motionStateID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_state/%d/workflow_id", motionStateID)
+	if v == 0 {
+		field := fmt.Sprintf("motion_state/%d/workflow_id", motionStateID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -1997,6 +2197,10 @@ func (f Fields) MotionStatuteParagraph_ID(ctx context.Context, motionStatutePara
 func (f Fields) MotionStatuteParagraph_MeetingID(ctx context.Context, motionStatuteParagraphID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_statute_paragraph/%d/meeting_id", motionStatuteParagraphID)
+	if v == 0 {
+		field := fmt.Sprintf("motion_statute_paragraph/%d/meeting_id", motionStatuteParagraphID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -2033,18 +2237,30 @@ func (f Fields) MotionSubmitter_ID(ctx context.Context, motionSubmitterID int) i
 func (f Fields) MotionSubmitter_MeetingID(ctx context.Context, motionSubmitterID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_submitter/%d/meeting_id", motionSubmitterID)
+	if v == 0 {
+		field := fmt.Sprintf("motion_submitter/%d/meeting_id", motionSubmitterID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
 func (f Fields) MotionSubmitter_MotionID(ctx context.Context, motionSubmitterID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_submitter/%d/motion_id", motionSubmitterID)
+	if v == 0 {
+		field := fmt.Sprintf("motion_submitter/%d/motion_id", motionSubmitterID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
 func (f Fields) MotionSubmitter_UserID(ctx context.Context, motionSubmitterID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_submitter/%d/user_id", motionSubmitterID)
+	if v == 0 {
+		field := fmt.Sprintf("motion_submitter/%d/user_id", motionSubmitterID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -2054,27 +2270,43 @@ func (f Fields) MotionSubmitter_Weight(ctx context.Context, motionSubmitterID in
 	return v
 }
 
-func (f Fields) MotionWorkflow_DefaultAmendmentWorkflowMeetingID(ctx context.Context, motionWorkflowID int) int {
+func (f Fields) MotionWorkflow_DefaultAmendmentWorkflowMeetingID(ctx context.Context, motionWorkflowID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_workflow/%d/default_amendment_workflow_meeting_id", motionWorkflowID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
-func (f Fields) MotionWorkflow_DefaultStatuteAmendmentWorkflowMeetingID(ctx context.Context, motionWorkflowID int) int {
+func (f Fields) MotionWorkflow_DefaultStatuteAmendmentWorkflowMeetingID(ctx context.Context, motionWorkflowID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_workflow/%d/default_statute_amendment_workflow_meeting_id", motionWorkflowID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
-func (f Fields) MotionWorkflow_DefaultWorkflowMeetingID(ctx context.Context, motionWorkflowID int) int {
+func (f Fields) MotionWorkflow_DefaultWorkflowMeetingID(ctx context.Context, motionWorkflowID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_workflow/%d/default_workflow_meeting_id", motionWorkflowID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) MotionWorkflow_FirstStateID(ctx context.Context, motionWorkflowID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_workflow/%d/first_state_id", motionWorkflowID)
+	if v == 0 {
+		field := fmt.Sprintf("motion_workflow/%d/first_state_id", motionWorkflowID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -2087,6 +2319,10 @@ func (f Fields) MotionWorkflow_ID(ctx context.Context, motionWorkflowID int) int
 func (f Fields) MotionWorkflow_MeetingID(ctx context.Context, motionWorkflowID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_workflow/%d/meeting_id", motionWorkflowID)
+	if v == 0 {
+		field := fmt.Sprintf("motion_workflow/%d/meeting_id", motionWorkflowID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -2102,10 +2338,14 @@ func (f Fields) MotionWorkflow_StateIDs(ctx context.Context, motionWorkflowID in
 	return v
 }
 
-func (f Fields) Motion_AgendaItemID(ctx context.Context, motionID int) int {
+func (f Fields) Motion_AgendaItemID(ctx context.Context, motionID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion/%d/agenda_item_id", motionID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Motion_AllDerivedMotionIDs(ctx context.Context, motionID int) []int {
@@ -2144,16 +2384,24 @@ func (f Fields) Motion_AttachmentIDs(ctx context.Context, motionID int) []int {
 	return v
 }
 
-func (f Fields) Motion_BlockID(ctx context.Context, motionID int) int {
+func (f Fields) Motion_BlockID(ctx context.Context, motionID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion/%d/block_id", motionID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
-func (f Fields) Motion_CategoryID(ctx context.Context, motionID int) int {
+func (f Fields) Motion_CategoryID(ctx context.Context, motionID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion/%d/category_id", motionID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Motion_CategoryWeight(ctx context.Context, motionID int) int {
@@ -2198,21 +2446,33 @@ func (f Fields) Motion_LastModified(ctx context.Context, motionID int) int {
 	return v
 }
 
-func (f Fields) Motion_LeadMotionID(ctx context.Context, motionID int) int {
+func (f Fields) Motion_LeadMotionID(ctx context.Context, motionID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion/%d/lead_motion_id", motionID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Motion_ListOfSpeakersID(ctx context.Context, motionID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion/%d/list_of_speakers_id", motionID)
+	if v == 0 {
+		field := fmt.Sprintf("motion/%d/list_of_speakers_id", motionID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
 func (f Fields) Motion_MeetingID(ctx context.Context, motionID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion/%d/meeting_id", motionID)
+	if v == 0 {
+		field := fmt.Sprintf("motion/%d/meeting_id", motionID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -2240,10 +2500,14 @@ func (f Fields) Motion_OptionIDs(ctx context.Context, motionID int) []int {
 	return v
 }
 
-func (f Fields) Motion_OriginID(ctx context.Context, motionID int) int {
+func (f Fields) Motion_OriginID(ctx context.Context, motionID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion/%d/origin_id", motionID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Motion_PersonalNoteIDs(ctx context.Context, motionID int) []int {
@@ -2282,10 +2546,14 @@ func (f Fields) Motion_RecommendationExtensionReferenceIDs(ctx context.Context, 
 	return v
 }
 
-func (f Fields) Motion_RecommendationID(ctx context.Context, motionID int) int {
+func (f Fields) Motion_RecommendationID(ctx context.Context, motionID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion/%d/recommendation_id", motionID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Motion_ReferencedInMotionRecommendationExtensionIDs(ctx context.Context, motionID int) []int {
@@ -2306,10 +2574,14 @@ func (f Fields) Motion_SortChildIDs(ctx context.Context, motionID int) []int {
 	return v
 }
 
-func (f Fields) Motion_SortParentID(ctx context.Context, motionID int) int {
+func (f Fields) Motion_SortParentID(ctx context.Context, motionID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion/%d/sort_parent_id", motionID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Motion_SortWeight(ctx context.Context, motionID int) int {
@@ -2327,13 +2599,21 @@ func (f Fields) Motion_StateExtension(ctx context.Context, motionID int) string 
 func (f Fields) Motion_StateID(ctx context.Context, motionID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion/%d/state_id", motionID)
+	if v == 0 {
+		field := fmt.Sprintf("motion/%d/state_id", motionID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
-func (f Fields) Motion_StatuteParagraphID(ctx context.Context, motionID int) int {
+func (f Fields) Motion_StatuteParagraphID(ctx context.Context, motionID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion/%d/statute_paragraph_id", motionID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Motion_SubmitterIDs(ctx context.Context, motionID int) []int {
@@ -2372,10 +2652,14 @@ func (f Fields) Option_Abstain(ctx context.Context, optionID int) int {
 	return v
 }
 
-func (f Fields) Option_ContentObjectID(ctx context.Context, optionID int) string {
+func (f Fields) Option_ContentObjectID(ctx context.Context, optionID int) (string, bool) {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "option/%d/content_object_id", optionID)
-	return v
+	if v == "" {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Option_ID(ctx context.Context, optionID int) int {
@@ -2387,6 +2671,10 @@ func (f Fields) Option_ID(ctx context.Context, optionID int) int {
 func (f Fields) Option_MeetingID(ctx context.Context, optionID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "option/%d/meeting_id", optionID)
+	if v == 0 {
+		field := fmt.Sprintf("option/%d/meeting_id", optionID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -2396,10 +2684,14 @@ func (f Fields) Option_No(ctx context.Context, optionID int) int {
 	return v
 }
 
-func (f Fields) Option_PollID(ctx context.Context, optionID int) int {
+func (f Fields) Option_PollID(ctx context.Context, optionID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "option/%d/poll_id", optionID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Option_Text(ctx context.Context, optionID int) string {
@@ -2408,10 +2700,14 @@ func (f Fields) Option_Text(ctx context.Context, optionID int) string {
 	return v
 }
 
-func (f Fields) Option_UsedAsGlobalOptionInPollID(ctx context.Context, optionID int) int {
+func (f Fields) Option_UsedAsGlobalOptionInPollID(ctx context.Context, optionID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "option/%d/used_as_global_option_in_poll_id", optionID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Option_VoteIDs(ctx context.Context, optionID int) []int {
@@ -2453,6 +2749,10 @@ func (f Fields) OrganizationTag_Name(ctx context.Context, organizationTagID int)
 func (f Fields) OrganizationTag_OrganizationID(ctx context.Context, organizationTagID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "organization_tag/%d/organization_id", organizationTagID)
+	if v == 0 {
+		field := fmt.Sprintf("organization_tag/%d/organization_id", organizationTagID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -2546,10 +2846,14 @@ func (f Fields) Organization_Theme(ctx context.Context, organizationID int) stri
 	return v
 }
 
-func (f Fields) PersonalNote_ContentObjectID(ctx context.Context, personalNoteID int) string {
+func (f Fields) PersonalNote_ContentObjectID(ctx context.Context, personalNoteID int) (string, bool) {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "personal_note/%d/content_object_id", personalNoteID)
-	return v
+	if v == "" {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) PersonalNote_ID(ctx context.Context, personalNoteID int) int {
@@ -2561,6 +2865,10 @@ func (f Fields) PersonalNote_ID(ctx context.Context, personalNoteID int) int {
 func (f Fields) PersonalNote_MeetingID(ctx context.Context, personalNoteID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "personal_note/%d/meeting_id", personalNoteID)
+	if v == 0 {
+		field := fmt.Sprintf("personal_note/%d/meeting_id", personalNoteID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -2579,6 +2887,10 @@ func (f Fields) PersonalNote_Star(ctx context.Context, personalNoteID int) bool 
 func (f Fields) PersonalNote_UserID(ctx context.Context, personalNoteID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "personal_note/%d/user_id", personalNoteID)
+	if v == 0 {
+		field := fmt.Sprintf("personal_note/%d/user_id", personalNoteID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -2588,10 +2900,14 @@ func (f Fields) Poll_Backend(ctx context.Context, pollID int) string {
 	return v
 }
 
-func (f Fields) Poll_ContentObjectID(ctx context.Context, pollID int) string {
+func (f Fields) Poll_ContentObjectID(ctx context.Context, pollID int) (string, bool) {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "poll/%d/content_object_id", pollID)
-	return v
+	if v == "" {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Poll_Description(ctx context.Context, pollID int) string {
@@ -2624,10 +2940,14 @@ func (f Fields) Poll_GlobalNo(ctx context.Context, pollID int) bool {
 	return v
 }
 
-func (f Fields) Poll_GlobalOptionID(ctx context.Context, pollID int) int {
+func (f Fields) Poll_GlobalOptionID(ctx context.Context, pollID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "poll/%d/global_option_id", pollID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Poll_GlobalYes(ctx context.Context, pollID int) bool {
@@ -2657,6 +2977,10 @@ func (f Fields) Poll_MaxVotesAmount(ctx context.Context, pollID int) int {
 func (f Fields) Poll_MeetingID(ctx context.Context, pollID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "poll/%d/meeting_id", pollID)
+	if v == 0 {
+		field := fmt.Sprintf("poll/%d/meeting_id", pollID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -2738,22 +3062,34 @@ func (f Fields) Projection_Content(ctx context.Context, projectionID int) json.R
 	return v
 }
 
-func (f Fields) Projection_ContentObjectID(ctx context.Context, projectionID int) string {
+func (f Fields) Projection_ContentObjectID(ctx context.Context, projectionID int) (string, bool) {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "projection/%d/content_object_id", projectionID)
-	return v
+	if v == "" {
+		return v, false
+	}
+
+	return v, true
 }
 
-func (f Fields) Projection_CurrentProjectorID(ctx context.Context, projectionID int) int {
+func (f Fields) Projection_CurrentProjectorID(ctx context.Context, projectionID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "projection/%d/current_projector_id", projectionID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
-func (f Fields) Projection_HistoryProjectorID(ctx context.Context, projectionID int) int {
+func (f Fields) Projection_HistoryProjectorID(ctx context.Context, projectionID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "projection/%d/history_projector_id", projectionID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Projection_ID(ctx context.Context, projectionID int) int {
@@ -2765,6 +3101,10 @@ func (f Fields) Projection_ID(ctx context.Context, projectionID int) int {
 func (f Fields) Projection_MeetingID(ctx context.Context, projectionID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "projection/%d/meeting_id", projectionID)
+	if v == 0 {
+		field := fmt.Sprintf("projection/%d/meeting_id", projectionID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -2774,10 +3114,14 @@ func (f Fields) Projection_Options(ctx context.Context, projectionID int) json.R
 	return v
 }
 
-func (f Fields) Projection_PreviewProjectorID(ctx context.Context, projectionID int) int {
+func (f Fields) Projection_PreviewProjectorID(ctx context.Context, projectionID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "projection/%d/preview_projector_id", projectionID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Projection_Stable(ctx context.Context, projectionID int) bool {
@@ -2825,6 +3169,10 @@ func (f Fields) ProjectorCountdown_ID(ctx context.Context, projectorCountdownID 
 func (f Fields) ProjectorCountdown_MeetingID(ctx context.Context, projectorCountdownID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "projector_countdown/%d/meeting_id", projectorCountdownID)
+	if v == 0 {
+		field := fmt.Sprintf("projector_countdown/%d/meeting_id", projectorCountdownID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -2846,16 +3194,24 @@ func (f Fields) ProjectorCountdown_Title(ctx context.Context, projectorCountdown
 	return v
 }
 
-func (f Fields) ProjectorCountdown_UsedAsListOfSpeakerCountdownMeetingID(ctx context.Context, projectorCountdownID int) int {
+func (f Fields) ProjectorCountdown_UsedAsListOfSpeakerCountdownMeetingID(ctx context.Context, projectorCountdownID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "projector_countdown/%d/used_as_list_of_speaker_countdown_meeting_id", projectorCountdownID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
-func (f Fields) ProjectorCountdown_UsedAsPollCountdownMeetingID(ctx context.Context, projectorCountdownID int) int {
+func (f Fields) ProjectorCountdown_UsedAsPollCountdownMeetingID(ctx context.Context, projectorCountdownID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "projector_countdown/%d/used_as_poll_countdown_meeting_id", projectorCountdownID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) ProjectorMessage_ID(ctx context.Context, projectorMessageID int) int {
@@ -2867,6 +3223,10 @@ func (f Fields) ProjectorMessage_ID(ctx context.Context, projectorMessageID int)
 func (f Fields) ProjectorMessage_MeetingID(ctx context.Context, projectorMessageID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "projector_message/%d/meeting_id", projectorMessageID)
+	if v == 0 {
+		field := fmt.Sprintf("projector_message/%d/meeting_id", projectorMessageID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -2957,6 +3317,10 @@ func (f Fields) Projector_ID(ctx context.Context, projectorID int) int {
 func (f Fields) Projector_MeetingID(ctx context.Context, projectorID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "projector/%d/meeting_id", projectorID)
+	if v == 0 {
+		field := fmt.Sprintf("projector/%d/meeting_id", projectorID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -3020,10 +3384,14 @@ func (f Fields) Projector_UsedAsDefaultInMeetingID(ctx context.Context, projecto
 	return v
 }
 
-func (f Fields) Projector_UsedAsReferenceProjectorMeetingID(ctx context.Context, projectorID int) int {
+func (f Fields) Projector_UsedAsReferenceProjectorMeetingID(ctx context.Context, projectorID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "projector/%d/used_as_reference_projector_meeting_id", projectorID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Projector_Width(ctx context.Context, projectorID int) int {
@@ -3053,6 +3421,10 @@ func (f Fields) Resource_Mimetype(ctx context.Context, resourceID int) string {
 func (f Fields) Resource_OrganizationID(ctx context.Context, resourceID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "resource/%d/organization_id", resourceID)
+	if v == 0 {
+		field := fmt.Sprintf("resource/%d/organization_id", resourceID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -3083,12 +3455,20 @@ func (f Fields) Speaker_ID(ctx context.Context, speakerID int) int {
 func (f Fields) Speaker_ListOfSpeakersID(ctx context.Context, speakerID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "speaker/%d/list_of_speakers_id", speakerID)
+	if v == 0 {
+		field := fmt.Sprintf("speaker/%d/list_of_speakers_id", speakerID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
 func (f Fields) Speaker_MeetingID(ctx context.Context, speakerID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "speaker/%d/meeting_id", speakerID)
+	if v == 0 {
+		field := fmt.Sprintf("speaker/%d/meeting_id", speakerID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -3113,6 +3493,10 @@ func (f Fields) Speaker_SpeechState(ctx context.Context, speakerID int) string {
 func (f Fields) Speaker_UserID(ctx context.Context, speakerID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "speaker/%d/user_id", speakerID)
+	if v == 0 {
+		field := fmt.Sprintf("speaker/%d/user_id", speakerID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -3131,6 +3515,10 @@ func (f Fields) Tag_ID(ctx context.Context, tagID int) int {
 func (f Fields) Tag_MeetingID(ctx context.Context, tagID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "tag/%d/meeting_id", tagID)
+	if v == 0 {
+		field := fmt.Sprintf("tag/%d/meeting_id", tagID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -3149,6 +3537,10 @@ func (f Fields) Tag_TaggedIDs(ctx context.Context, tagID int) []string {
 func (f Fields) Topic_AgendaItemID(ctx context.Context, topicID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "topic/%d/agenda_item_id", topicID)
+	if v == 0 {
+		field := fmt.Sprintf("topic/%d/agenda_item_id", topicID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -3167,12 +3559,20 @@ func (f Fields) Topic_ID(ctx context.Context, topicID int) int {
 func (f Fields) Topic_ListOfSpeakersID(ctx context.Context, topicID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "topic/%d/list_of_speakers_id", topicID)
+	if v == 0 {
+		field := fmt.Sprintf("topic/%d/list_of_speakers_id", topicID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
 func (f Fields) Topic_MeetingID(ctx context.Context, topicID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "topic/%d/meeting_id", topicID)
+	if v == 0 {
+		field := fmt.Sprintf("topic/%d/meeting_id", topicID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
@@ -3750,10 +4150,14 @@ func (f Fields) User_VoteWeight(ctx context.Context, userID int, meetingID int) 
 	return v
 }
 
-func (f Fields) Vote_DelegatedUserID(ctx context.Context, voteID int) int {
+func (f Fields) Vote_DelegatedUserID(ctx context.Context, voteID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "vote/%d/delegated_user_id", voteID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Vote_ID(ctx context.Context, voteID int) int {
@@ -3765,19 +4169,31 @@ func (f Fields) Vote_ID(ctx context.Context, voteID int) int {
 func (f Fields) Vote_MeetingID(ctx context.Context, voteID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "vote/%d/meeting_id", voteID)
+	if v == 0 {
+		field := fmt.Sprintf("vote/%d/meeting_id", voteID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
 func (f Fields) Vote_OptionID(ctx context.Context, voteID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "vote/%d/option_id", voteID)
+	if v == 0 {
+		field := fmt.Sprintf("vote/%d/option_id", voteID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
 	return v
 }
 
-func (f Fields) Vote_UserID(ctx context.Context, voteID int) int {
+func (f Fields) Vote_UserID(ctx context.Context, voteID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "vote/%d/user_id", voteID)
-	return v
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
 }
 
 func (f Fields) Vote_UserToken(ctx context.Context, voteID int) string {

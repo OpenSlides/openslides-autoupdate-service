@@ -56,7 +56,7 @@ func TestVoteModeA(t *testing.T) {
 		option/2/poll_id: 3
 		poll/3:
 			meeting_id: 1
-			content_object_id: topic/1
+			content_object_id: null
 		`,
 		withPerms(1, perm.PollCanManage),
 	)
@@ -74,7 +74,7 @@ func TestVoteModeA(t *testing.T) {
 		option/2/poll_id: 3
 		poll/3:
 			meeting_id: 1
-			content_object_id: topic/1
+			content_object_id: null
 		`,
 		withRequestUser(5),
 	)
@@ -92,7 +92,7 @@ func TestVoteModeA(t *testing.T) {
 		option/2/poll_id: 3
 		poll/3:
 			meeting_id: 1
-			content_object_id: topic/1
+			content_object_id: null
 		`,
 		withRequestUser(6),
 	)
@@ -127,7 +127,7 @@ func TestVoteModeB(t *testing.T) {
 		poll/3:
 			meeting_id: 1
 			state: published
-			content_object_id: topic/1
+			content_object_id: null
 		`,
 		withRequestUser(5),
 	)
@@ -143,7 +143,7 @@ func TestVoteModeB(t *testing.T) {
 		poll/3:
 			meeting_id: 1
 			state: finished
-			content_object_id: topic/1
+			content_object_id: null
 		`,
 		withPerms(1, perm.PollCanManage),
 	)
