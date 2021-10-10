@@ -2,6 +2,7 @@
 package http
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -15,16 +16,25 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 )
 
-const prefix = "/system/autoupdate"
+const (
+	prefixPublic   = "/system/autoupdate"
+	prefixInternal = "/internal/autoupdate"
+)
 
 // Connecter returns an connect object.
 type Connecter interface {
 	Connect(userID int, kb autoupdate.KeysBuilder) autoupdate.DataProvider
 }
 
+// RequestMetricer saves metrics about requests.
+type RequestMetricer interface {
+	RequestMeticSave(r []byte) error
+	RequestMetricGet(w io.Writer) error
+}
+
 // Autoupdate builds the requested keys from the body of a request. The
 // body has to be in the format specified in the keysbuilder package.
-func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter) {
+func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, metric RequestMetricer) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 
@@ -37,7 +47,19 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter) {
 			return
 		}
 
-		bodyBuilder, err := keysbuilder.ManyFromJSON(r.Body)
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			handleError(w, fmt.Errorf("reading body: %w", err), true)
+			return
+		}
+
+		if metric != nil {
+			if err := metric.RequestMeticSave(body); err != nil {
+				log.Printf("Warning: building metric: %v", err)
+			}
+		}
+
+		bodyBuilder, err := keysbuilder.ManyFromJSON(bytes.NewReader(body))
 		if err != nil {
 			handleError(w, fmt.Errorf("building keysbuilder from body: %w", err), true)
 			return
@@ -56,7 +78,17 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter) {
 		}
 	})
 
-	mux.Handle(prefix, validRequest(authMiddleware(handler, auth)))
+	mux.Handle(prefixPublic, validRequest(authMiddleware(handler, auth)))
+}
+
+// MetricRequest returns the request metrics.
+func MetricRequest(mux *http.ServeMux, metric RequestMetricer) {
+	mux.Handle(prefixInternal+"/metric/request", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if err := metric.RequestMetricGet(w); err != nil {
+			handleError(w, err, true)
+		}
+	}))
 }
 
 func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter) error {
@@ -109,7 +141,7 @@ func sendSingleMessage(ctx context.Context, w io.Writer, uid int, kb autoupdate.
 
 // Health tells, if the service is running.
 func Health(mux *http.ServeMux) {
-	url := prefix + "/health"
+	url := prefixPublic + "/health"
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		fmt.Fprintln(w, `{"healthy": true}`)
