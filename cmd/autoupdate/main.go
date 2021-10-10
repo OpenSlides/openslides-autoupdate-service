@@ -128,7 +128,6 @@ func run() error {
 
 	// Create http mux to add urls.
 	mux := http.NewServeMux()
-	autoupdateHttp.Health(mux)
 
 	// Auth Service.
 	authService, err := buildAuth(ctx, env, messageBus, errHandler)
@@ -141,6 +140,7 @@ func run() error {
 	go service.PruneOldData(ctx)
 	go service.ResetCache(ctx)
 
+	autoupdateHttp.Health(mux)
 	autoupdateHttp.Autoupdate(mux, authService, service, messageBus)
 	autoupdateHttp.MetricRequest(mux, messageBus)
 

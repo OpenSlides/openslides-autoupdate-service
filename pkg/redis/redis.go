@@ -123,7 +123,7 @@ func (r *Redis) RequestMeticSave(request []byte) error {
 
 // RequestMetricGet writes all request with there count as json.
 func (r *Redis) RequestMetricGet(w io.Writer) error {
-	values, err := redis.IntMap(r.Conn.ZRANGE(requestMetricKey))
+	values, err := redis.Strings(r.Conn.ZRANGE(requestMetricKey))
 	if err != nil {
 		return fmt.Errorf("reading data: %w", err)
 	}
