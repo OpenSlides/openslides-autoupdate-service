@@ -136,8 +136,8 @@ func (r *Redis) RequestMetricGet(w io.Writer) error {
 	var requests []request
 	for i := 0; i < len(values); i += 2 {
 		requests = append(requests, request{
-			Request: values[0],
-			Count:   values[1],
+			Request: values[i],
+			Count:   values[i+1],
 		})
 	}
 
