@@ -141,7 +141,10 @@ func (r *Redis) RequestMetricGet(w io.Writer) error {
 		})
 	}
 
-	if err := json.NewEncoder(w).Encode(requests); err != nil {
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+
+	if err := enc.Encode(requests); err != nil {
 		return fmt.Errorf("encoding and sending data: %w", err)
 	}
 
