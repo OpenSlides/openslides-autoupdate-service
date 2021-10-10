@@ -56,7 +56,7 @@ func (s *Pool) ZINCR(key string, value []byte) error {
 func (s *Pool) ZRANGE(key string) (interface{}, error) {
 	conn := s.pool.Get()
 	defer conn.Close()
-	return conn.Do("ZRANGE", key, 0, -1, "WITHSCORES")
+	return conn.Do("ZREVRANGE", key, 0, -1, "WITHSCORES")
 }
 
 // BlockingConn is a fake implementation of the redis connection. It does not
