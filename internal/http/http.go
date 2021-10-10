@@ -84,6 +84,7 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, met
 // MetricRequest returns the request metrics.
 func MetricRequest(mux *http.ServeMux, metric RequestMetricer) {
 	mux.Handle(prefixInternal+"/metric/request", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		if err := metric.RequestMetricGet(w); err != nil {
 			handleError(w, err, true)
 		}
