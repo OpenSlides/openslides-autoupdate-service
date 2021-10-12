@@ -36,6 +36,38 @@ func (o Option) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.
 	return see, nil
 }
 
+func (o Option) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, optionID int) (bool, error) {
+	pollID, err := pollID(ctx, fetch, optionID)
+	if err != nil {
+		return false, fmt.Errorf("getting poll id: %w", err)
+	}
+
+	see, err := Poll{}.see(ctx, fetch, mperms, pollID)
+	if err != nil {
+		return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
+	}
+
+	if !see {
+		return false, nil
+	}
+
+	canManage, err := Poll{}.manage(ctx, fetch, mperms, pollID)
+	if err != nil {
+		return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
+	}
+
+	if canManage {
+		return true, nil
+	}
+
+	pollState := fetch.Field().Poll_State(ctx, pollID)
+	if err := fetch.Err(); err != nil {
+		return false, fmt.Errorf("getting poll state: %w", err)
+	}
+
+	return pollState == "published", nil
+}
+
 func pollID(ctx context.Context, fetch *datastore.Fetcher, optionID int) (int, error) {
 	pollID, exist := fetch.Field().Option_PollID(ctx, optionID)
 	if err := fetch.Err(); err != nil {
@@ -56,18 +88,4 @@ func pollID(ctx context.Context, fetch *datastore.Fetcher, optionID int) (int, e
 	}
 
 	return 0, fmt.Errorf("database seems corrupted. option %d has no poll id", optionID)
-}
-
-func (o Option) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, optionID int) (bool, error) {
-	pollID, err := pollID(ctx, fetch, optionID)
-	if err != nil {
-		return false, fmt.Errorf("getting poll id: %w", err)
-	}
-
-	see, err := Poll{}.manage(ctx, fetch, mperms, pollID)
-	if err != nil {
-		return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
-	}
-
-	return see, nil
 }
