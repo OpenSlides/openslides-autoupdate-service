@@ -3,8 +3,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"go/format"
 	"io"
 	"log"
 	"net/http"
@@ -13,8 +15,7 @@ import (
 )
 
 const (
-	exampleDataURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/example-data.json"
-	outFile        = "example-data.json.go"
+	exampleDataURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/master/docs/example-data.json"
 	packageName    = "models"
 )
 
@@ -30,17 +31,7 @@ func main() {
 		log.Fatalf("Can not decode example data: %v", err)
 	}
 
-	f, err := os.Create(outFile)
-	if err != nil {
-		log.Fatalf("Can not create output file: %v", err)
-	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			log.Fatalf("Can not close file: %v", err)
-		}
-	}()
-
-	if err := writeFile(f, data); err != nil {
+	if err := writeFile(os.Stdout, data); err != nil {
 		log.Fatalf("Can not write result: %v", err)
 	}
 }
@@ -57,21 +48,25 @@ func loadExampleData() (io.ReadCloser, error) {
 }
 
 func decode(r io.Reader) (map[string]string, error) {
-	var d map[string][]map[string]json.RawMessage
-	if err := json.NewDecoder(r).Decode(&d); err != nil {
+	var decoded map[string]json.RawMessage
+	if err := json.NewDecoder(r).Decode(&decoded); err != nil {
 		return nil, fmt.Errorf("decoding full file: %w", err)
 	}
 
 	data := make(map[string]string)
-	for collection, v := range d {
-		for i, element := range v {
-			var id int
-			if err := json.Unmarshal(element["id"], &id); err != nil {
-				return nil, fmt.Errorf("decoding id of %dth element in collection %s", i, collection)
-			}
+	for collection, collectionData := range decoded {
+		if collection == "_migration_index" {
+			continue
+		}
 
-			for k, v := range element {
-				data[fmt.Sprintf("%s/%d/%s", collection, id, k)] = string(v)
+		var decodedCollection map[string]map[string]json.RawMessage
+		if err := json.Unmarshal(collectionData, &decodedCollection); err != nil {
+			return nil, fmt.Errorf("decoding collection %s: %w", collection, err)
+		}
+
+		for id, w := range decodedCollection {
+			for field, value := range w {
+				data[fmt.Sprintf("%s/%s/%s", collection, id, field)] = string(value)
 			}
 		}
 	}
@@ -106,9 +101,21 @@ func writeFile(w io.Writer, eData map[string]string) error {
 		"Data":   eData,
 	}
 
-	if err := t.Execute(replacer{w}, data); err != nil {
+	buf := new(bytes.Buffer)
+
+	if err := t.Execute(replacer{buf}, data); err != nil {
 		return fmt.Errorf("writing template: %w", err)
 	}
+
+	formated, err := format.Source(buf.Bytes())
+	if err != nil {
+		return fmt.Errorf("formating code: %w", err)
+	}
+
+	if _, err := w.Write(formated); err != nil {
+		return fmt.Errorf("writing output: %w", err)
+	}
+
 	return nil
 }
 
