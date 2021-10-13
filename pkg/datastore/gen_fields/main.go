@@ -16,7 +16,7 @@ import (
 	"strings"
 	"text/template"
 
-	models "github.com/OpenSlides/openslides-models-to-go"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/models"
 )
 
 const defURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/master/docs/models.yml"
