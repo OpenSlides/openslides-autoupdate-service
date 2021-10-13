@@ -23,18 +23,6 @@ func (f *filter) filter(data map[string][]byte) {
 		f.history = make(map[string]uint64)
 	}
 
-	// Keys that are in the history but not in data.
-	//
-	// They have to be added to data as nil, so the client gets informed, that
-	// they are removed.
-	for key := range f.history {
-		if _, ok := data[key]; ok {
-			continue
-		}
-
-		data[key] = nil
-	}
-
 	for key, value := range data {
 		if len(value) == 0 {
 			// Value does not exist or user has no permission to see it.
