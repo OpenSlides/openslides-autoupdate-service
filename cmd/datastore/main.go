@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	models "github.com/OpenSlides/openslides-models-to-go"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/models"
 	"github.com/gomodule/redigo/redis"
 )
 
