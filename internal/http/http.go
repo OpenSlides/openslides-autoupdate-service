@@ -37,6 +37,7 @@ type RequestMetricer interface {
 func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, metric RequestMetricer) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Header().Set("Cache-Control", "no-store, max-age=0")
 
 		defer r.Body.Close()
 		uid := auth.FromContext(r.Context())
