@@ -121,7 +121,6 @@ func TestFilterChange(t *testing.T) {
 				"k2": []byte("v2"),
 			},
 			map[string][]byte{
-				"k1": nil,
 				"k2": []byte("v2"),
 			},
 		},

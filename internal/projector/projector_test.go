@@ -86,10 +86,10 @@ func TestProjectionUpdateProjection(t *testing.T) {
 		return nil
 	})
 
-	ds.Send(map[string]string{
-		"projection/1/type":              "",
-		"projection/1/content_object_id": `"test_model/1"`,
-	})
+	ds.Send(dsmock.YAMLData(`---
+	projection/1/type: null
+	projection/1/content_object_id: test_model/1
+	`))
 	<-done
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
@@ -121,9 +121,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 		return nil
 	})
 
-	ds.Send(map[string]string{
-		"projection/1/stable": "true",
-	})
+	ds.Send(dsmock.YAMLData("projection/1/stable: true"))
 	<-done
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
@@ -175,9 +173,7 @@ func TestProjectionUpdateSlide(t *testing.T) {
 		return nil
 	})
 
-	ds.Send(map[string]string{
-		"test_model/1/field": `"new value"`,
-	})
+	ds.Send(dsmock.YAMLData("test_model/1/field: new value"))
 	<-done
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
@@ -209,9 +205,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 		return nil
 	})
 
-	ds.Send(map[string]string{
-		"some_other/1/field": `"new value"`,
-	})
+	ds.Send(dsmock.YAMLData("some_other/1/field: new value"))
 	<-done
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
