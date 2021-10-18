@@ -156,9 +156,7 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 		return nil
 	})
 
-	ts.Send(map[string]string{
-		"collection/1/normal_field": `"new value"`,
-	})
+	ts.Send(dsmock.YAMLData("collection/1/normal_field: new value"))
 	<-done
 
 	got, err := ds.Get(context.Background(), "collection/1/myfield")
@@ -195,9 +193,7 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 		return nil
 	})
 
-	ts.Send(map[string]string{
-		"collection/1/normal_field": `"new value"`,
-	})
+	ts.Send(dsmock.YAMLData("collection/1/normal_field: new value"))
 	<-done
 
 	got, err := ds.Get(context.Background(), "collection/1/myfield")
@@ -326,10 +322,10 @@ func TestChangeListeners(t *testing.T) {
 		return nil
 	})
 
-	ts.Send(map[string]string{"my/1/key": `"my value"`})
+	ts.Send(dsmock.YAMLData("my/1/key: my value"))
 
 	<-received
-	assert.Equal(t, map[string][]byte{"my/1/key": []byte(`"my value"`)}, receivedData)
+	assert.Equal(t, []byte(`"my value"`), receivedData["my/1/key"])
 }
 
 func TestChangeListenersWithCalculatedFields(t *testing.T) {
@@ -358,7 +354,7 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 		return nil
 	})
 
-	ts.Send(map[string]string{"my/1/key": `"my value"`})
+	ts.Send(map[string][]byte{"my/1/key": []byte(`"my value"`)})
 
 	<-received
 	assert.Equal(t, map[string][]byte{
@@ -399,9 +395,7 @@ func TestResetWhileUpdate(t *testing.T) {
 		ds.ResetCache()
 		close(doneReset)
 	}()
-	ts.Send(map[string]string{
-		"some/1/key": "value",
-	})
+	ts.Send(dsmock.YAMLData("some/1/key: value"))
 
 	<-doneReset
 	// There is nothing to assert. This test is only for the race detector. Make

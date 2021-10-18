@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"log"
+	"strings"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
@@ -59,7 +61,7 @@ func TestConnectionReadNewData(t *testing.T) {
 		t.Errorf("next() returned an error: %v", err)
 	}
 
-	datastore.Send(map[string]string{"user/1/name": `"new value"`})
+	datastore.Send(map[string][]byte{"user/1/name": []byte(`"new value"`)})
 	data, err := next(context.Background())
 
 	if err != nil {
@@ -101,31 +103,31 @@ func TestConnectionEmptyData(t *testing.T) {
 
 	for _, tt := range []struct {
 		name           string
-		update         map[string]string
+		update         map[string][]byte
 		expectBlocking bool
 		expectExist    bool
 		expectNotExist bool
 	}{
 		{
 			name:           "not exist->not exist",
-			update:         map[string]string{doesNotExistKey: ""},
+			update:         map[string][]byte{doesNotExistKey: nil},
 			expectBlocking: true,
 		},
 		{
 			name:           "not exist->exist",
-			update:         map[string]string{doesNotExistKey: "value"},
+			update:         map[string][]byte{doesNotExistKey: []byte("value")},
 			expectExist:    false, // existing key gets filtered.
 			expectNotExist: true,
 		},
 		{
 			name:           "exist->not exist",
-			update:         map[string]string{doesExistKey: ""},
+			update:         map[string][]byte{doesExistKey: nil},
 			expectExist:    true,
 			expectNotExist: false,
 		},
 		{
 			name:           "exist->exist",
-			update:         map[string]string{doesExistKey: "new value"},
+			update:         map[string][]byte{doesExistKey: []byte("new value")},
 			expectExist:    true,
 			expectNotExist: false,
 		},
@@ -172,14 +174,14 @@ func TestConnectionEmptyData(t *testing.T) {
 		}
 
 		// First time not exist
-		datastore.Send(map[string]string{doesExistKey: ""})
+		datastore.Send(map[string][]byte{doesExistKey: nil})
 
 		blocking(func() {
 			next(context.Background())
 		})
 
 		// Second time not exist
-		datastore.Send(map[string]string{doesExistKey: ""})
+		datastore.Send(map[string][]byte{doesExistKey: nil})
 
 		var err error
 		isBlocking := blocking(func() {
@@ -208,7 +210,7 @@ func TestConnectionFilterData(t *testing.T) {
 	}
 
 	// send again, value did not change in restricter
-	datastore.Send(map[string]string{"user/1/name": `"Hello World"`})
+	datastore.Send(map[string][]byte{"user/1/name": []byte(`"Hello World"`)})
 	data, err := next(context.Background())
 
 	if err != nil {
@@ -238,7 +240,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 		t.Errorf("next() returned an error: %v", err)
 	}
 
-	datastore.Send(map[string]string{"user/1/name": `"newname"`})
+	datastore.Send(map[string][]byte{"user/1/name": []byte(`"newname"`)})
 	data, err := next(context.Background())
 
 	if err != nil {
@@ -291,5 +293,81 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 		assert.Empty(t, data, "next() returned data")
 		assert.True(t, isBlocked, "next() did not block")
 	})
+}
+
+// TestKeyNotRequestedAnymore tests the case, that an object that was indirectly
+// requested gets deleted.
+//
+// This happens, when a object is requested by a keysbuilder not on the first
+// level, but on a second level though a relation-list.
+//
+// In this case the deleted object is removed from the relation-list-field and
+// therefore not requested anymore. So the deleted object is not send to the
+// client anymore.
+//
+// The result is, that the client does not get an update, that the object was
+// deleted. Only be looking in the relation-list-field the client knows, that it
+// should not be interessted in the object anymore.
+//
+// See Issue https://github.com/OpenSlides/openslides-autoupdate-service/issues/321
+func TestKeyNotRequestedAnymore(t *testing.T) {
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), dsmock.YAMLData(`---
+	organization/1/organization_tag_ids: [1,2]
+	organization_tag/1/id: 1
+	organization_tag/2/id: 2
+	`))
+	go datastore.ListenOnUpdates(shutdownCtx, datastore, nil)
+
+	s := autoupdate.New(datastore, test.RestrictAllowed, shutdownCtx.Done())
+	kb, err := keysbuilder.FromJSON(strings.NewReader(`{
+		"collection":"organization",
+		"ids":[
+		  1
+		],
+		"fields":{
+		  "organization_tag_ids":{
+			"type":"relation-list",
+			"collection":"organization_tag",
+			"fields":{
+			  "id":null
+			}
+		  }
+		}
+	  }`))
+
+	if err != nil {
+		t.Fatalf("Can not build request: %v", err)
+	}
+
+	next := s.Connect(1, kb)
+
+	if _, err := next(shutdownCtx); err != nil {
+		t.Fatalf("Getting first data: %v", err)
+	}
+
+	datastore.Send(dsmock.YAMLData(`
+	organization_tag/2/id: null
+	organization/1/organization_tag_ids: [1]
+	`))
+
+	secondData, err := next(shutdownCtx)
+	if err != nil {
+		t.Fatalf("Getting second data: %v", err)
+	}
+
+	if len(secondData) != 1 {
+		t.Errorf("second data contained 2 values, expected only one. Got: %v", secondData)
+	}
+
+	if v := string(secondData["organization/1/organization_tag_ids"]); v != "[1]" {
+		t.Errorf("Got organization/1/organization_tag_ids: %q, expected [1]", v)
+	}
+
+	if v, ok := secondData["organization_tag/2/id"]; ok {
+		t.Errorf("Got value for deleted object organization_tag/2/id: %s", v)
+	}
 
 }

@@ -167,7 +167,7 @@ func (d *MockDatastore) Requests() [][]string {
 //
 // This method is unblocking. If you want to fetch data afterwards, make sure to
 // block until data is processed. For example with RegisterChanceListener.
-func (d *MockDatastore) Send(data map[string]string) {
+func (d *MockDatastore) Send(data map[string][]byte) {
 	d.server.Send(data)
 }
 
