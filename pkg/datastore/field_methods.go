@@ -608,14 +608,14 @@ func (f Fields) Mediafile_IsPublic(ctx context.Context, mediafileID int) bool {
 	return v
 }
 
-func (f Fields) Mediafile_ListOfSpeakersID(ctx context.Context, mediafileID int) int {
+func (f Fields) Mediafile_ListOfSpeakersID(ctx context.Context, mediafileID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "mediafile/%d/list_of_speakers_id", mediafileID)
 	if v == 0 {
-		field := fmt.Sprintf("mediafile/%d/list_of_speakers_id", mediafileID)
-		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+		return v, false
 	}
-	return v
+
+	return v, true
 }
 
 func (f Fields) Mediafile_MeetingID(ctx context.Context, mediafileID int) int {
@@ -2178,6 +2178,12 @@ func (f Fields) MotionState_ShowStateExtensionField(ctx context.Context, motionS
 	return v
 }
 
+func (f Fields) MotionState_Weight(ctx context.Context, motionStateID int) int {
+	var v int
+	f.fetch.FetchIfExist(ctx, &v, "motion_state/%d/weight", motionStateID)
+	return v
+}
+
 func (f Fields) MotionState_WorkflowID(ctx context.Context, motionStateID int) int {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "motion_state/%d/workflow_id", motionStateID)
@@ -2840,9 +2846,19 @@ func (f Fields) Organization_ResourceIDs(ctx context.Context, organizationID int
 	return v
 }
 
-func (f Fields) Organization_Theme(ctx context.Context, organizationID int) string {
-	var v string
-	f.fetch.FetchIfExist(ctx, &v, "organization/%d/theme", organizationID)
+func (f Fields) Organization_ThemeID(ctx context.Context, organizationID int) int {
+	var v int
+	f.fetch.FetchIfExist(ctx, &v, "organization/%d/theme_id", organizationID)
+	if v == 0 {
+		field := fmt.Sprintf("organization/%d/theme_id", organizationID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
+	return v
+}
+
+func (f Fields) Organization_ThemeIDs(ctx context.Context, organizationID int) []int {
+	var v []int
+	f.fetch.FetchIfExist(ctx, &v, "organization/%d/theme_ids", organizationID)
 	return v
 }
 
@@ -3531,6 +3547,290 @@ func (f Fields) Tag_Name(ctx context.Context, tagID int) string {
 func (f Fields) Tag_TaggedIDs(ctx context.Context, tagID int) []string {
 	var v []string
 	f.fetch.FetchIfExist(ctx, &v, "tag/%d/tagged_ids", tagID)
+	return v
+}
+
+func (f Fields) Theme_Accent100(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/accent_100", themeID)
+	return v
+}
+
+func (f Fields) Theme_Accent200(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/accent_200", themeID)
+	return v
+}
+
+func (f Fields) Theme_Accent300(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/accent_300", themeID)
+	return v
+}
+
+func (f Fields) Theme_Accent400(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/accent_400", themeID)
+	return v
+}
+
+func (f Fields) Theme_Accent50(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/accent_50", themeID)
+	return v
+}
+
+func (f Fields) Theme_Accent500(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/accent_500", themeID)
+	return v
+}
+
+func (f Fields) Theme_Accent600(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/accent_600", themeID)
+	return v
+}
+
+func (f Fields) Theme_Accent700(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/accent_700", themeID)
+	return v
+}
+
+func (f Fields) Theme_Accent800(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/accent_800", themeID)
+	return v
+}
+
+func (f Fields) Theme_Accent900(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/accent_900", themeID)
+	return v
+}
+
+func (f Fields) Theme_AccentA100(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/accent_a100", themeID)
+	return v
+}
+
+func (f Fields) Theme_AccentA200(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/accent_a200", themeID)
+	return v
+}
+
+func (f Fields) Theme_AccentA400(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/accent_a400", themeID)
+	return v
+}
+
+func (f Fields) Theme_AccentA700(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/accent_a700", themeID)
+	return v
+}
+
+func (f Fields) Theme_ID(ctx context.Context, themeID int) int {
+	var v int
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/id", themeID)
+	return v
+}
+
+func (f Fields) Theme_Name(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/name", themeID)
+	return v
+}
+
+func (f Fields) Theme_OrganizationID(ctx context.Context, themeID int) int {
+	var v int
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/organization_id", themeID)
+	if v == 0 {
+		field := fmt.Sprintf("theme/%d/organization_id", themeID)
+		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+	}
+	return v
+}
+
+func (f Fields) Theme_Primary100(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/primary_100", themeID)
+	return v
+}
+
+func (f Fields) Theme_Primary200(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/primary_200", themeID)
+	return v
+}
+
+func (f Fields) Theme_Primary300(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/primary_300", themeID)
+	return v
+}
+
+func (f Fields) Theme_Primary400(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/primary_400", themeID)
+	return v
+}
+
+func (f Fields) Theme_Primary50(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/primary_50", themeID)
+	return v
+}
+
+func (f Fields) Theme_Primary500(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/primary_500", themeID)
+	return v
+}
+
+func (f Fields) Theme_Primary600(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/primary_600", themeID)
+	return v
+}
+
+func (f Fields) Theme_Primary700(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/primary_700", themeID)
+	return v
+}
+
+func (f Fields) Theme_Primary800(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/primary_800", themeID)
+	return v
+}
+
+func (f Fields) Theme_Primary900(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/primary_900", themeID)
+	return v
+}
+
+func (f Fields) Theme_PrimaryA100(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/primary_a100", themeID)
+	return v
+}
+
+func (f Fields) Theme_PrimaryA200(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/primary_a200", themeID)
+	return v
+}
+
+func (f Fields) Theme_PrimaryA400(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/primary_a400", themeID)
+	return v
+}
+
+func (f Fields) Theme_PrimaryA700(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/primary_a700", themeID)
+	return v
+}
+
+func (f Fields) Theme_ThemeForOrganizationID(ctx context.Context, themeID int) (int, bool) {
+	var v int
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/theme_for_organization_id", themeID)
+	if v == 0 {
+		return v, false
+	}
+
+	return v, true
+}
+
+func (f Fields) Theme_Warn100(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/warn_100", themeID)
+	return v
+}
+
+func (f Fields) Theme_Warn200(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/warn_200", themeID)
+	return v
+}
+
+func (f Fields) Theme_Warn300(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/warn_300", themeID)
+	return v
+}
+
+func (f Fields) Theme_Warn400(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/warn_400", themeID)
+	return v
+}
+
+func (f Fields) Theme_Warn50(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/warn_50", themeID)
+	return v
+}
+
+func (f Fields) Theme_Warn500(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/warn_500", themeID)
+	return v
+}
+
+func (f Fields) Theme_Warn600(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/warn_600", themeID)
+	return v
+}
+
+func (f Fields) Theme_Warn700(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/warn_700", themeID)
+	return v
+}
+
+func (f Fields) Theme_Warn800(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/warn_800", themeID)
+	return v
+}
+
+func (f Fields) Theme_Warn900(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/warn_900", themeID)
+	return v
+}
+
+func (f Fields) Theme_WarnA100(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/warn_a100", themeID)
+	return v
+}
+
+func (f Fields) Theme_WarnA200(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/warn_a200", themeID)
+	return v
+}
+
+func (f Fields) Theme_WarnA400(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/warn_a400", themeID)
+	return v
+}
+
+func (f Fields) Theme_WarnA700(ctx context.Context, themeID int) string {
+	var v string
+	f.fetch.FetchIfExist(ctx, &v, "theme/%d/warn_a700", themeID)
 	return v
 }
 

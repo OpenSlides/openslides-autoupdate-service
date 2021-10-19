@@ -366,7 +366,7 @@ func (f *fieldsMap) UnmarshalJSON(data []byte) error {
 	f.fields = make(map[string]fieldDescription, len(fm))
 	for name, field := range fm {
 		if !reField.MatchString(name) {
-			return InvalidError{msg: "fieldname is invalid", field: name}
+			return InvalidError{msg: fmt.Sprintf("fieldname %q is not a valid fieldname", name), field: name}
 		}
 
 		fd, err := unmarshalField(field)

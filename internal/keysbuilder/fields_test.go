@@ -249,7 +249,7 @@ func TestRequestErrors(t *testing.T) {
 				"fields": {"Username": null}
 			}
 			`,
-			"field \"Username\": fieldname is invalid",
+			"field \"Username\": fieldname \"Username\" is not a valid fieldname",
 			strs("Username"),
 		},
 		{

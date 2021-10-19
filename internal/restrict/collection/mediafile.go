@@ -94,12 +94,12 @@ func (m Mediafile) modeA(ctx context.Context, fetch *datastore.Fetcher, mperms *
 		return true, nil
 	}
 
-	losID := fetch.Field().Mediafile_ListOfSpeakersID(ctx, mediafileID)
+	losID, exist := fetch.Field().Mediafile_ListOfSpeakersID(ctx, mediafileID)
 	if err := fetch.Err(); err != nil {
 		return false, fmt.Errorf("getting list of speakers id: %w", err)
 	}
 
-	if losID == 0 {
+	if !exist {
 		return false, nil
 	}
 
