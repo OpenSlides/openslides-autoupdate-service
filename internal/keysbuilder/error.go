@@ -18,7 +18,7 @@ func (e InvalidError) Error() string {
 	if fields == nil {
 		return e.msg
 	}
-	return fmt.Sprintf("field \"%s\": %s", strings.Join(fields, "."), last.msg)
+	return fmt.Sprintf("field %q: %s", strings.Join(fields, "."), last.msg)
 }
 
 // Type returns the name of the error.
@@ -36,14 +36,13 @@ func (e InvalidError) fields() ([]string, *InvalidError) {
 	if e.field == "" {
 		return nil, nil
 	}
-	if e.sub == nil {
-		return []string{e.field}, &e
-	}
-	var fields []string
+	fields := []string{e.field}
 	last := &e
 	for last.sub != nil {
-		fields = append(fields, last.field)
 		last = last.sub
+		if last.field != "" {
+			fields = append(fields, last.field)
+		}
 	}
 	return fields, last
 }
