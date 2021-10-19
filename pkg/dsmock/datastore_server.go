@@ -104,16 +104,8 @@ func (d *DatastoreServer) Update(ctx context.Context) (map[string][]byte, error)
 }
 
 // Send sends keys to the mock that can be received with Update().
-func (d *DatastoreServer) Send(values map[string]string) {
-	conv := make(map[string][]byte)
-	for k, v := range values {
-		conv[k] = nil
-		if v != "" {
-			conv[k] = []byte(v)
-		}
-
-	}
-	d.c <- conv
+func (d *DatastoreServer) Send(values map[string][]byte) {
+	d.c <- values
 }
 
 func validKey(key string) bool {
