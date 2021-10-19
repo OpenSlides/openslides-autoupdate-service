@@ -36,33 +36,46 @@ func (m Motion) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.
 		return false, nil
 	}
 
-	for _, restriction := range fetch.Field().MotionState_Restrictions(ctx, fetch.Field().Motion_StateID(ctx, motionID)) {
+	restrictions := fetch.Field().MotionState_Restrictions(ctx, fetch.Field().Motion_StateID(ctx, motionID))
+	if err := fetch.Err(); err != nil {
+		return false, fmt.Errorf("getting restrictions: %w", err)
+	}
+
+	if len(restrictions) == 0 {
+		return true, nil
+	}
+
+	for _, restriction := range restrictions {
 		if restriction == "is_submitter" {
-			isSubmitter := false
-			for _, submitterID := range fetch.Field().Motion_SubmitterIDs(ctx, motionID) {
-				if fetch.Field().MotionSubmitter_UserID(ctx, submitterID) == mperms.UserID() {
-					isSubmitter = true
-					break
-				}
-			}
-			if err := fetch.Err(); err != nil {
-				return false, fmt.Errorf("getting submitter: %w", err)
+			submitter, err := isSubmitter(ctx, fetch, mperms, motionID)
+			if err != nil {
+				return false, fmt.Errorf("checking for motion submitter: %w", err)
 			}
 
-			if !isSubmitter {
-				return false, nil
+			if submitter {
+				return true, nil
 			}
 			continue
 		}
 
-		if !perms.Has(perm.TPermission(restriction)) {
-			return false, nil
+		if perms.Has(perm.TPermission(restriction)) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func isSubmitter(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, motionID int) (bool, error) {
+	for _, submitterID := range fetch.Field().Motion_SubmitterIDs(ctx, motionID) {
+		if fetch.Field().MotionSubmitter_UserID(ctx, submitterID) == mperms.UserID() {
+			return true, nil
 		}
 	}
 	if err := fetch.Err(); err != nil {
-		return false, fmt.Errorf("checking restrictions: %w", err)
+		return false, fmt.Errorf("getting submitter: %w", err)
 	}
-	return true, nil
+	return false, nil
 }
 
 func (m Motion) modeA(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, motionID int) (bool, error) {

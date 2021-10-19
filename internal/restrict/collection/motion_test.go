@@ -87,8 +87,7 @@ func TestMotionModeC(t *testing.T) {
 		
 		motion_state/3/restrictions:
 		- motion.can_manage
-
-	`,
+		`,
 		withPerms(1, perm.MotionCanSee, perm.MotionCanManage),
 	)
 
@@ -104,9 +103,82 @@ func TestMotionModeC(t *testing.T) {
 		
 		motion_state/3/restrictions:
 		- motion.can_manage
-
-	`,
+		`,
 		withPerms(1, perm.MotionCanSee),
+	)
+
+	testCase(
+		"motion.can_see with two restrictions, non fullfield",
+		t,
+		f,
+		false,
+		`---
+		motion/1:
+			meeting_id: 1
+			state_id: 3
+		
+		motion_state/3/restrictions:
+		- motion.can_manage
+		- is_submitter
+		`,
+		withPerms(1, perm.MotionCanSee),
+	)
+
+	testCase(
+		"motion.can_see with two restrictions, is_submitter fullfield",
+		t,
+		f,
+		true,
+		`---
+		motion/1:
+			meeting_id: 1
+			state_id: 3
+			submitter_ids: [4]
+		
+		motion_state/3/restrictions:
+		- motion.can_manage
+		- is_submitter
+
+		motion_submitter/4/user_id: 1
+		`,
+		withPerms(1, perm.MotionCanSee),
+	)
+
+	testCase(
+		"motion.can_see with two restrictions, motion.can_manage fullfield",
+		t,
+		f,
+		true,
+		`---
+		motion/1:
+			meeting_id: 1
+			state_id: 3
+		
+		motion_state/3/restrictions:
+		- motion.can_manage
+		- is_submitter
+		`,
+		withPerms(1, perm.MotionCanManage),
+	)
+
+	testCase(
+		"motion.can_see with two restrictions, both fullfield",
+		t,
+		f,
+		true,
+		`---
+		motion/1:
+			meeting_id: 1
+			state_id: 3
+			submitter_ids: [4]
+		
+		motion_state/3/restrictions:
+		- motion.can_manage
+		- is_submitter
+
+		motion_submitter/4/user_id: 1
+		`,
+		withPerms(1, perm.MotionCanManage),
 	)
 }
 
