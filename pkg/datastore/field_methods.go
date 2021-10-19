@@ -608,14 +608,14 @@ func (f Fields) Mediafile_IsPublic(ctx context.Context, mediafileID int) bool {
 	return v
 }
 
-func (f Fields) Mediafile_ListOfSpeakersID(ctx context.Context, mediafileID int) int {
+func (f Fields) Mediafile_ListOfSpeakersID(ctx context.Context, mediafileID int) (int, bool) {
 	var v int
 	f.fetch.FetchIfExist(ctx, &v, "mediafile/%d/list_of_speakers_id", mediafileID)
 	if v == 0 {
-		field := fmt.Sprintf("mediafile/%d/list_of_speakers_id", mediafileID)
-		f.fetch.err = fmt.Errorf("Database is corrupted. Field %q is required but has no value.", field)
+		return v, false
 	}
-	return v
+
+	return v, true
 }
 
 func (f Fields) Mediafile_MeetingID(ctx context.Context, mediafileID int) int {
