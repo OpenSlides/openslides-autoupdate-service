@@ -92,6 +92,8 @@ func Collection(collection string) Restricter {
 		return Speaker{}
 	case "tag":
 		return Tag{}
+	case "theme":
+		return Theme{}
 	case "topic":
 		return Topic{}
 	case "user":
