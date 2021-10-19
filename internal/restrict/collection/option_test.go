@@ -48,6 +48,7 @@ func TestOptionModeB(t *testing.T) {
 		`---
 		option/1/poll_id: 3
 		poll/3/meeting_id: 1
+		meeting/1/committee_id: 1
 		`,
 	)
 
@@ -55,11 +56,67 @@ func TestOptionModeB(t *testing.T) {
 		"can see poll",
 		t,
 		f,
+		false,
+		`---
+		option/1/poll_id: 3
+		poll/3/meeting_id: 1
+		meeting/1/user_ids: [1]
+		`,
+	)
+
+	testCase(
+		"can manage poll",
+		t,
+		f,
 		true,
 		`---
 		option/1/poll_id: 3
 		poll/3/meeting_id: 1
+		meeting/1:
+			committee_id: 1
+			user_ids: [1]
 		`,
 		withPerms(1, perm.PollCanManage),
+	)
+
+	testCase(
+		"can manage poll no see",
+		t,
+		f,
+		false,
+		`---
+		option/1/poll_id: 3
+		poll/3/meeting_id: 1
+		meeting/1/committee_id: 1
+		`,
+		withPerms(1, perm.PollCanManage),
+	)
+
+	testCase(
+		"poll is published",
+		t,
+		f,
+		true,
+		`---
+		option/1/poll_id: 3
+		poll/3:
+			state: published
+			meeting_id: 1
+		meeting/1/user_ids: [1]
+		`,
+	)
+
+	testCase(
+		"poll is published not see",
+		t,
+		f,
+		false,
+		`---
+		option/1/poll_id: 3
+		poll/3:
+			state: published
+			meeting_id: 1
+		meeting/1/committee_id: 1
+		`,
 	)
 }
