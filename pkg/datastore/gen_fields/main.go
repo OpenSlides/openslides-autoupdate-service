@@ -202,10 +202,10 @@ func firstLower(s string) string {
 
 func goType(modelsType string) string {
 	switch modelsType {
-	case "number", "decimal(6)", "relation", "timestamp":
+	case "number", "relation", "timestamp":
 		return "int"
 
-	case "string", "HTMLStrict", "color", "HTMLPermissive", "generic-relation", "template":
+	case "string", "HTMLStrict", "color", "HTMLPermissive", "generic-relation", "template", "decimal(6)":
 		return "string"
 
 	case "boolean":
