@@ -10,6 +10,7 @@ RUN go mod download
 COPY cmd cmd
 COPY internal internal
 COPY pkg pkg
+COPY models-yml-version.go models-yml-version.go
 
 # Build service in seperate stage.
 FROM basis as builder
