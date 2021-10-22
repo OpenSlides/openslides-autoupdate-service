@@ -19,8 +19,6 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/models"
 )
 
-const defURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/master/docs/models.yml"
-
 //go:embed fields.go.tmpl
 var tmplFields string
 
@@ -48,7 +46,7 @@ func main() {
 }
 
 func loadDefition() (io.ReadCloser, error) {
-	r, err := http.Get(defURL)
+	r, err := http.Get(models.URLModelsYML())
 	if err != nil {
 		return nil, fmt.Errorf("request defition: %w", err)
 	}
