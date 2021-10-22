@@ -13,7 +13,6 @@ import (
 	"strings"
 	"text/template"
 
-	modelsversion "github.com/OpenSlides/openslides-autoupdate-service"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/models"
 )
 
@@ -35,7 +34,7 @@ func main() {
 }
 
 func loadDefition() (io.ReadCloser, error) {
-	r, err := http.Get(modelsversion.ModelsYMLURL())
+	r, err := http.Get(models.URLModelsYML())
 	if err != nil {
 		return nil, fmt.Errorf("request defition: %w", err)
 	}

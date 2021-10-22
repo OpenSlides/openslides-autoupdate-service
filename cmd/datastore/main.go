@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/models"
 	"github.com/gomodule/redigo/redis"
 )
 
@@ -21,6 +20,8 @@ const (
 	redisAddr  = "localhost:6379"
 	redisKey   = "ModifiedFields"
 )
+
+//go:generate sh -c "go run gen_example_data/main.go > example-data.json.go"
 
 func main() {
 	go updater(os.Stdin)
@@ -55,7 +56,7 @@ func updater(r io.Reader) {
 		args := []interface{}{redisKey, "*"}
 		for key, value := range data {
 			args = append(args, key, string(value))
-			models.ExampleData[key] = value
+			exampleData[key] = value
 		}
 
 		if _, err := conn.Do("XADD", args...); err != nil {
@@ -83,7 +84,7 @@ func exampleHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Key is invalid: "+key, 400)
 		}
 
-		value, ok := models.ExampleData[key]
+		value, ok := exampleData[key]
 
 		if !ok {
 			continue

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"text/template"
 
-	modelsversion "github.com/OpenSlides/openslides-autoupdate-service"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/models"
 	"gopkg.in/yaml.v3"
 )
 
@@ -41,7 +41,7 @@ func run() error {
 }
 
 func loadPermissions() (io.ReadCloser, error) {
-	r, err := http.Get(modelsversion.PermissionURL())
+	r, err := http.Get(models.URLPermission())
 	if err != nil {
 		return nil, fmt.Errorf("request defition: %w", err)
 	}

@@ -1,0 +1,5 @@
+// Git-tag to use for the models.yml file for code generation.
+//
+// Can be the name of a branch like "master" or the name of a tag like
+// "v1.0.1" or a commit id.
+master
