@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"go/format"
 	"io"
 	"log"
 	"net/http"
@@ -141,8 +142,20 @@ func write(w io.Writer, data permFile) error {
 		"Consts":   consts,
 	}
 
-	if err := t.Execute(w, tdata); err != nil {
+	buf := new(bytes.Buffer)
+
+	if err := t.Execute(buf, tdata); err != nil {
 		return fmt.Errorf("writing template: %w", err)
 	}
+
+	formated, err := format.Source(buf.Bytes())
+	if err != nil {
+		return fmt.Errorf("formating code: %w", err)
+	}
+
+	if _, err := w.Write(formated); err != nil {
+		return fmt.Errorf("writing output: %w", err)
+	}
+
 	return nil
 }
