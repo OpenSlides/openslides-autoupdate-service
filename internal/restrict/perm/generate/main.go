@@ -11,10 +11,9 @@ import (
 	"strings"
 	"text/template"
 
+	modelsversion "github.com/OpenSlides/openslides-autoupdate-service"
 	"gopkg.in/yaml.v3"
 )
-
-const permURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/master/docs/permission.yml"
 
 func main() {
 	if err := run(); err != nil {
@@ -41,7 +40,7 @@ func run() error {
 }
 
 func loadPermissions() (io.ReadCloser, error) {
-	r, err := http.Get(permURL)
+	r, err := http.Get(modelsversion.PermissionURL())
 	if err != nil {
 		return nil, fmt.Errorf("request defition: %w", err)
 	}

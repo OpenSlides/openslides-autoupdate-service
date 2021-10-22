@@ -13,10 +13,9 @@ import (
 	"strings"
 	"text/template"
 
+	modelsversion "github.com/OpenSlides/openslides-autoupdate-service"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/models"
 )
-
-const defURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/master/docs/models.yml"
 
 func main() {
 	r, err := loadDefition()
@@ -36,7 +35,7 @@ func main() {
 }
 
 func loadDefition() (io.ReadCloser, error) {
-	r, err := http.Get(defURL)
+	r, err := http.Get(modelsversion.ModelsYMLURL())
 	if err != nil {
 		return nil, fmt.Errorf("request defition: %w", err)
 	}

@@ -12,11 +12,12 @@ import (
 	"net/http"
 	"os"
 	"text/template"
+
+	modelsversion "github.com/OpenSlides/openslides-autoupdate-service"
 )
 
 const (
-	exampleDataURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/master/docs/example-data.json"
-	packageName    = "models"
+	packageName = "models"
 )
 
 func main() {
@@ -37,7 +38,7 @@ func main() {
 }
 
 func loadExampleData() (io.ReadCloser, error) {
-	r, err := http.Get(exampleDataURL)
+	r, err := http.Get(modelsversion.ExampleDataURL())
 	if err != nil {
 		return nil, fmt.Errorf("request defition: %w", err)
 	}
