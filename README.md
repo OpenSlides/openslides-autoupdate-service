@@ -179,3 +179,9 @@ environment variable `OPENSLIDES_DEVELOPMENT` is set.
 
 * `auth_token_key`: Key to sign the JWT auth tocken. Default `auth-dev-key`.
 * `auth_cookie_key`: Key to sign the JWT auth cookie. Default `auth-dev-key`.
+
+
+## Update models.yml
+
+To use a new models.yml update the value in the file `models-version`.
+Afterwards call `go generate ./...` to update the generated files.

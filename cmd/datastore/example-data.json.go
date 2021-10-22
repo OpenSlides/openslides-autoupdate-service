@@ -1,12 +1,12 @@
 // Code generated with example-data.json DO NOT EDIT.
-package models
+package main
 
 import "encoding/json"
 
 // ExampleData is a generated value from the OpenSlides example data.
 //
 // It is a map from key (fqfield) to the value encoded to json.
-var ExampleData = map[string]json.RawMessage{
+var exampleData = map[string]json.RawMessage{
 	"agenda_item/1/child_ids":          []byte(`[]`),
 	"agenda_item/1/closed":             []byte(`false`),
 	"agenda_item/1/comment":            []byte(`null`),
