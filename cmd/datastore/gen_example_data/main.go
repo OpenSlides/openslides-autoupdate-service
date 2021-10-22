@@ -12,11 +12,12 @@ import (
 	"net/http"
 	"os"
 	"text/template"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/models"
 )
 
 const (
-	exampleDataURL = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/master/docs/example-data.json"
-	packageName    = "models"
+	packageName = "main"
 )
 
 func main() {
@@ -37,7 +38,7 @@ func main() {
 }
 
 func loadExampleData() (io.ReadCloser, error) {
-	r, err := http.Get(exampleDataURL)
+	r, err := http.Get(models.URLExampleData())
 	if err != nil {
 		return nil, fmt.Errorf("request defition: %w", err)
 	}
@@ -81,7 +82,7 @@ import "encoding/json"
 // ExampleData is a generated value from the OpenSlides example data.
 //
 // It is a map from key (fqfield) to the value encoded to json.
-var ExampleData = map[string]json.RawMessage{
+var exampleData = map[string]json.RawMessage{
 	{{- range $key, $value := .Data}}
 	"{{$key}}": []byte({{$.Escape}}{{$value}}{{$.Escape}}),
 	{{- end}}

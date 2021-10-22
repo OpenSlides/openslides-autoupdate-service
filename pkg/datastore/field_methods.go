@@ -2652,8 +2652,8 @@ func (f Fields) Motion_Title(ctx context.Context, motionID int) string {
 	return v
 }
 
-func (f Fields) Option_Abstain(ctx context.Context, optionID int) int {
-	var v int
+func (f Fields) Option_Abstain(ctx context.Context, optionID int) string {
+	var v string
 	f.fetch.FetchIfExist(ctx, &v, "option/%d/abstain", optionID)
 	return v
 }
@@ -2684,8 +2684,8 @@ func (f Fields) Option_MeetingID(ctx context.Context, optionID int) int {
 	return v
 }
 
-func (f Fields) Option_No(ctx context.Context, optionID int) int {
-	var v int
+func (f Fields) Option_No(ctx context.Context, optionID int) string {
+	var v string
 	f.fetch.FetchIfExist(ctx, &v, "option/%d/no", optionID)
 	return v
 }
@@ -2728,8 +2728,8 @@ func (f Fields) Option_Weight(ctx context.Context, optionID int) int {
 	return v
 }
 
-func (f Fields) Option_Yes(ctx context.Context, optionID int) int {
-	var v int
+func (f Fields) Option_Yes(ctx context.Context, optionID int) string {
+	var v string
 	f.fetch.FetchIfExist(ctx, &v, "option/%d/yes", optionID)
 	return v
 }
@@ -3054,20 +3054,20 @@ func (f Fields) Poll_VotedIDs(ctx context.Context, pollID int) []int {
 	return v
 }
 
-func (f Fields) Poll_Votescast(ctx context.Context, pollID int) int {
-	var v int
+func (f Fields) Poll_Votescast(ctx context.Context, pollID int) string {
+	var v string
 	f.fetch.FetchIfExist(ctx, &v, "poll/%d/votescast", pollID)
 	return v
 }
 
-func (f Fields) Poll_Votesinvalid(ctx context.Context, pollID int) int {
-	var v int
+func (f Fields) Poll_Votesinvalid(ctx context.Context, pollID int) string {
+	var v string
 	f.fetch.FetchIfExist(ctx, &v, "poll/%d/votesinvalid", pollID)
 	return v
 }
 
-func (f Fields) Poll_Votesvalid(ctx context.Context, pollID int) int {
-	var v int
+func (f Fields) Poll_Votesvalid(ctx context.Context, pollID int) string {
+	var v string
 	f.fetch.FetchIfExist(ctx, &v, "poll/%d/votesvalid", pollID)
 	return v
 }
@@ -4024,8 +4024,8 @@ func (f Fields) User_DefaultStructureLevel(ctx context.Context, userID int) stri
 	return v
 }
 
-func (f Fields) User_DefaultVoteWeight(ctx context.Context, userID int) int {
-	var v int
+func (f Fields) User_DefaultVoteWeight(ctx context.Context, userID int) string {
+	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/default_vote_weight", userID)
 	return v
 }
@@ -4444,8 +4444,8 @@ func (f Fields) User_VoteWeightTmpl(ctx context.Context, userID int) []int {
 	return ints
 }
 
-func (f Fields) User_VoteWeight(ctx context.Context, userID int, meetingID int) int {
-	var v int
+func (f Fields) User_VoteWeight(ctx context.Context, userID int, meetingID int) string {
+	var v string
 	f.fetch.FetchIfExist(ctx, &v, "user/%d/vote_weight_$%d", userID, meetingID)
 	return v
 }
@@ -4508,8 +4508,8 @@ func (f Fields) Vote_Value(ctx context.Context, voteID int) string {
 	return v
 }
 
-func (f Fields) Vote_Weight(ctx context.Context, voteID int) int {
-	var v int
+func (f Fields) Vote_Weight(ctx context.Context, voteID int) string {
+	var v string
 	f.fetch.FetchIfExist(ctx, &v, "vote/%d/weight", voteID)
 	return v
 }
