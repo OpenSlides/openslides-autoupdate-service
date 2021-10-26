@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go/v4"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/ostcar/topic"
 )
 
@@ -122,6 +122,14 @@ func (a *Auth) FromContext(ctx context.Context) int {
 	return v.(int)
 }
 
+// LogoutEventer tells, when a sessionID gets revoked.
+//
+// The method LogoutEvent has to block until there are new data. The returned
+// data is a list of sessionIDs that are revoked.
+type LogoutEventer interface {
+	LogoutEvent(context.Context) ([]string, error)
+}
+
 // ListenOnLogouts listen on logout events and closes the connections.
 func (a *Auth) ListenOnLogouts(ctx context.Context, logoutEventer LogoutEventer, errHandler func(error)) {
 	if errHandler == nil {
@@ -181,35 +189,40 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 
 	encodedCookie := strings.TrimPrefix(cookie.Value, "bearer%20")
 
-	_, err = jwt.Parse(encodedCookie, jwt.KnownKeyfunc(jwt.SigningMethodHS256, a.cookieKey))
+	_, err = jwt.Parse(encodedCookie, func(token *jwt.Token) (interface{}, error) {
+		return a.cookieKey, nil
+	})
 	if err != nil {
-		var invalid *jwt.InvalidSignatureError
+		var invalid *jwt.ValidationError
 		if errors.As(err, &invalid) {
 			return authError{"Invalid auth ticket", err}
 		}
 		return fmt.Errorf("validating auth cookie: %w", err)
 	}
 
-	_, err = jwt.ParseWithClaims(encodedToken, payload, jwt.KnownKeyfunc(jwt.SigningMethodHS256, a.tokenKey))
+	_, err = jwt.ParseWithClaims(encodedToken, payload, func(token *jwt.Token) (interface{}, error) {
+		return a.tokenKey, nil
+	})
 	if err != nil {
-		var invalid *jwt.InvalidSignatureError
+		var invalid *jwt.ValidationError
 		if errors.As(err, &invalid) {
+			if tokenExpired(invalid.Errors) {
+				token, err := a.refreshToken(r.Context(), encodedToken, encodedCookie)
+				if err != nil {
+					return fmt.Errorf("refreshing token: %w", err)
+				}
+				w.Header().Set(authHeader, "bearer "+token)
+				return nil
+			}
 			return authError{"Invalid auth ticket", err}
 		}
-
-		var expired *jwt.TokenExpiredError
-		if !errors.As(err, &expired) {
-			return fmt.Errorf("validating auth token: %w", err)
-		}
-
-		token, err := a.refreshToken(r.Context(), encodedToken, encodedCookie)
-		if err != nil {
-			return fmt.Errorf("refreshing token: %w", err)
-		}
-		w.Header().Set(authHeader, "bearer "+token)
 	}
 
 	return nil
+}
+
+func tokenExpired(errNo uint32) bool {
+	return errNo&(jwt.ValidationErrorExpired|jwt.ValidationErrorNotValidYet) != 0
 }
 
 func (a *Auth) refreshToken(ctx context.Context, token, cookie string) (string, error) {
