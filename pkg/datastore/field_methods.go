@@ -2810,6 +2810,12 @@ func (f Fields) Organization_LimitOfMeetings(ctx context.Context, organizationID
 	return v
 }
 
+func (f Fields) Organization_LimitOfUsers(ctx context.Context, organizationID int) int {
+	var v int
+	f.fetch.FetchIfExist(ctx, &v, "organization/%d/limit_of_users", organizationID)
+	return v
+}
+
 func (f Fields) Organization_LoginText(ctx context.Context, organizationID int) string {
 	var v string
 	f.fetch.FetchIfExist(ctx, &v, "organization/%d/login_text", organizationID)
