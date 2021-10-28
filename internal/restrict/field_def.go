@@ -667,6 +667,7 @@ var restrictionModes = map[string]string{
 	"organization/id":                                                  "A",
 	"organization/legal_notice":                                        "A",
 	"organization/limit_of_meetings":                                   "B",
+	"organization/limit_of_users":                                      "B",
 	"organization/login_text":                                          "A",
 	"organization/name":                                                "A",
 	"organization/organization_tag_ids":                                "B",
