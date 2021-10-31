@@ -22,9 +22,9 @@ func (m MotionBlock) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionBlock) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, motionBlockID int) (bool, error) {
-	meetingID := fetch.Field().MotionBlock_MeetingID(ctx, motionBlockID)
-	if err := fetch.Err(); err != nil {
+func (m MotionBlock) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, motionBlockID int) (bool, error) {
+	meetingID, err := ds.MotionBlock_MeetingID(motionBlockID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)
 	}
 
@@ -41,8 +41,8 @@ func (m MotionBlock) see(ctx context.Context, fetch *datastore.Fetcher, mperms *
 		return false, nil
 	}
 
-	internal := fetch.Field().MotionBlock_Internal(ctx, motionBlockID)
-	if err := fetch.Err(); err != nil {
+	internal, err := ds.MotionBlock_Internal(motionBlockID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting internal: %w", err)
 	}
 
@@ -53,8 +53,8 @@ func (m MotionBlock) see(ctx context.Context, fetch *datastore.Fetcher, mperms *
 	return false, nil
 }
 
-func (m MotionBlock) modeA(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, motionBlockID int) (bool, error) {
-	see, err := m.see(ctx, fetch, mperms, motionBlockID)
+func (m MotionBlock) modeA(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, motionBlockID int) (bool, error) {
+	see, err := m.see(ctx, ds, mperms, motionBlockID)
 	if err != nil {
 		return false, fmt.Errorf("checking see: %w", err)
 	}
@@ -63,13 +63,13 @@ func (m MotionBlock) modeA(ctx context.Context, fetch *datastore.Fetcher, mperms
 		return true, nil
 	}
 
-	agendaItemID, exist := fetch.Field().MotionBlock_AgendaItemID(ctx, motionBlockID)
-	if err := fetch.Err(); err != nil {
+	agendaItemID, exist, err := ds.MotionBlock_AgendaItemID(motionBlockID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting agendaItem: %w", err)
 	}
 
 	if exist {
-		see, err = AgendaItem{}.see(ctx, fetch, mperms, agendaItemID)
+		see, err = AgendaItem{}.see(ctx, ds, mperms, agendaItemID)
 		if err != nil {
 			return false, fmt.Errorf("checking agendaItem %d: %w", agendaItemID, err)
 		}
@@ -79,13 +79,13 @@ func (m MotionBlock) modeA(ctx context.Context, fetch *datastore.Fetcher, mperms
 		}
 	}
 
-	losID := fetch.Field().MotionBlock_ListOfSpeakersID(ctx, motionBlockID)
-	if err := fetch.Err(); err != nil {
+	losID, err := ds.MotionBlock_ListOfSpeakersID(motionBlockID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting list of speakers: %w", err)
 	}
 
 	if losID != 0 {
-		see, err = ListOfSpeakers{}.see(ctx, fetch, mperms, losID)
+		see, err = ListOfSpeakers{}.see(ctx, ds, mperms, losID)
 		if err != nil {
 			return false, fmt.Errorf("checking list of speakers %d: %w", losID, err)
 		}

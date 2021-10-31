@@ -44,10 +44,10 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 
 	t.Run(tt.name, func(t *testing.T) {
 		t.Helper()
-		fetch := datastore.NewFetcher(dsmock.Stub(tt.data))
-		perms := perm.NewMeetingPermission(fetch, tt.requestUserID)
+		ds := datastore.NewRequest(dsmock.Stub(tt.data))
+		perms := perm.NewMeetingPermission(ds, tt.requestUserID)
 
-		got, err := f(context.Background(), fetch, perms, tt.elementID)
+		got, err := f(context.Background(), ds, perms, tt.elementID)
 
 		if err != nil {
 			t.Fatalf("See returned unexpected error: %v", err)

@@ -26,19 +26,19 @@ func (m Poll) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m Poll) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, pollID int) (bool, error) {
-	contentObjectID, exist := fetch.Field().Poll_ContentObjectID(ctx, pollID)
-	if err := fetch.Err(); err != nil {
+func (m Poll) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
+	contentObjectID, exist, err := ds.Poll_ContentObjectID(pollID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting content object id: %w", err)
 	}
 
 	if !exist {
-		meetingID := fetch.Field().Poll_MeetingID(ctx, pollID)
-		if err := fetch.Err(); err != nil {
+		meetingID, err := ds.Poll_MeetingID(pollID).Value(ctx)
+		if err != nil {
 			return false, fmt.Errorf("getting meeting id of poll %d: %w", pollID, err)
 		}
 
-		see, err := Meeting{}.see(ctx, fetch, mperms, meetingID)
+		see, err := Meeting{}.see(ctx, ds, mperms, meetingID)
 		if err != nil {
 			return false, fmt.Errorf("checking see for meeting %d: %w", meetingID, err)
 		}
@@ -54,7 +54,7 @@ func (m Poll) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 
 	switch parts[0] {
 	case "motion":
-		see, err := Motion{}.see(ctx, fetch, mperms, id)
+		see, err := Motion{}.see(ctx, ds, mperms, id)
 		if err != nil {
 			return false, fmt.Errorf("checking see motion %d: %w", id, err)
 		}
@@ -62,7 +62,7 @@ func (m Poll) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 		return see, nil
 
 	case "assignment":
-		see, err := Assignment{}.see(ctx, fetch, mperms, id)
+		see, err := Assignment{}.see(ctx, ds, mperms, id)
 		if err != nil {
 			return false, fmt.Errorf("checking see assignment %d: %w", id, err)
 		}
@@ -74,15 +74,15 @@ func (m Poll) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 	}
 }
 
-func (m Poll) manage(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, pollID int) (bool, error) {
-	contentObjectID, exist := fetch.Field().Poll_ContentObjectID(ctx, pollID)
-	if err := fetch.Err(); err != nil {
+func (m Poll) manage(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
+	contentObjectID, exist, err := ds.Poll_ContentObjectID(pollID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting content object id: %w", err)
 	}
 
 	if !exist {
-		meetingID := fetch.Field().Poll_MeetingID(ctx, pollID)
-		if err := fetch.Err(); err != nil {
+		meetingID, err := ds.Poll_MeetingID(pollID).Value(ctx)
+		if err != nil {
 			return false, fmt.Errorf("getting meeting id of poll %d: %w", pollID, err)
 		}
 
@@ -102,8 +102,8 @@ func (m Poll) manage(ctx context.Context, fetch *datastore.Fetcher, mperms *perm
 
 	switch parts[0] {
 	case "motion":
-		meetingID := fetch.Field().Motion_MeetingID(ctx, id)
-		if err := fetch.Err(); err != nil {
+		meetingID, err := ds.Motion_MeetingID(id).Value(ctx)
+		if err != nil {
 			return false, fmt.Errorf("getting meeting id of motion %d: %w", id, err)
 		}
 
@@ -115,8 +115,8 @@ func (m Poll) manage(ctx context.Context, fetch *datastore.Fetcher, mperms *perm
 		return perms.Has(perm.MotionCanManagePolls), nil
 
 	case "assignment":
-		meetingID := fetch.Field().Assignment_MeetingID(ctx, id)
-		if err := fetch.Err(); err != nil {
+		meetingID, err := ds.Assignment_MeetingID(id).Value(ctx)
+		if err != nil {
 			return false, fmt.Errorf("getting meeting id of assignment %d: %w", id, err)
 		}
 
@@ -132,22 +132,22 @@ func (m Poll) manage(ctx context.Context, fetch *datastore.Fetcher, mperms *perm
 	}
 }
 
-func (m Poll) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, pollID int) (bool, error) {
-	state := fetch.Field().Poll_State(ctx, pollID)
-	if err := fetch.Err(); err != nil {
+func (m Poll) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
+	state, err := ds.Poll_State(pollID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting poll state: %w", err)
 	}
 
 	switch state {
 	case "published":
-		see, err := m.see(ctx, fetch, mperms, pollID)
+		see, err := m.see(ctx, ds, mperms, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking see: %w", err)
 		}
 		return see, nil
 
 	case "finished":
-		manage, err := m.manage(ctx, fetch, mperms, pollID)
+		manage, err := m.manage(ctx, ds, mperms, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking manage: %w", err)
 		}
@@ -159,22 +159,22 @@ func (m Poll) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.
 	}
 }
 
-func (m Poll) modeD(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, pollID int) (bool, error) {
-	state := fetch.Field().Poll_State(ctx, pollID)
-	if err := fetch.Err(); err != nil {
+func (m Poll) modeD(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
+	state, err := ds.Poll_State(pollID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting poll state: %w", err)
 	}
 
 	switch state {
 	case "published":
-		see, err := m.see(ctx, fetch, mperms, pollID)
+		see, err := m.see(ctx, ds, mperms, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking see: %w", err)
 		}
 		return see, nil
 
 	case "finished":
-		manage, err := m.manage(ctx, fetch, mperms, pollID)
+		manage, err := m.manage(ctx, ds, mperms, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking manage: %w", err)
 		}
@@ -182,8 +182,8 @@ func (m Poll) modeD(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.
 			return true, nil
 		}
 
-		meetingID := fetch.Field().Poll_MeetingID(ctx, pollID)
-		if err := fetch.Err(); err != nil {
+		meetingID, err := ds.Poll_MeetingID(pollID).Value(ctx)
+		if err != nil {
 			return false, fmt.Errorf("getting meeting id of poll %d: %w", pollID, err)
 		}
 

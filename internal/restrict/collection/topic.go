@@ -22,9 +22,9 @@ func (t Topic) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (t Topic) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, topicID int) (bool, error) {
-	meetingID := fetch.Field().Topic_MeetingID(ctx, topicID)
-	if err := fetch.Err(); err != nil {
+func (t Topic) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, topicID int) (bool, error) {
+	meetingID, err := ds.Topic_MeetingID(topicID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("fetching meeting_id %d: %w", topicID, err)
 	}
 
@@ -36,8 +36,8 @@ func (t Topic) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.M
 	return perms.Has(perm.AgendaItemCanSee), nil
 }
 
-func (t Topic) modeA(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, topicID int) (bool, error) {
-	see, err := t.see(ctx, fetch, mperms, topicID)
+func (t Topic) modeA(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, topicID int) (bool, error) {
+	see, err := t.see(ctx, ds, mperms, topicID)
 	if err != nil {
 		return false, fmt.Errorf("checking see: %w", err)
 	}
@@ -46,13 +46,13 @@ func (t Topic) modeA(ctx context.Context, fetch *datastore.Fetcher, mperms *perm
 		return true, nil
 	}
 
-	losID := fetch.Field().Topic_ListOfSpeakersID(ctx, topicID)
-	if err := fetch.Err(); err != nil {
+	losID, err := ds.Topic_ListOfSpeakersID(topicID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting list of speakers id: %w", err)
 	}
 
 	if losID != 0 {
-		see, err := ListOfSpeakers{}.see(ctx, fetch, mperms, losID)
+		see, err := ListOfSpeakers{}.see(ctx, ds, mperms, losID)
 		if err != nil {
 			return false, fmt.Errorf("checking list of speakers %d: %w", losID, err)
 		}

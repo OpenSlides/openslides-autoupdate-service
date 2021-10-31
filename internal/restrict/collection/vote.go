@@ -22,15 +22,19 @@ func (v Vote) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (v Vote) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, voteID int) (bool, error) {
-	optionID := fetch.Field().Vote_OptionID(ctx, voteID)
-	pollID, err := pollID(ctx, fetch, optionID)
+func (v Vote) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, voteID int) (bool, error) {
+	optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
+	if err != nil {
+		return false, fmt.Errorf("fetching option_id: %w", err)
+	}
+
+	pollID, err := pollID(ctx, ds, optionID)
 	if err != nil {
 		return false, fmt.Errorf("getting poll id: %w", err)
 	}
 
-	state := fetch.Field().Poll_State(ctx, pollID)
-	if err := fetch.Err(); err != nil {
+	state, err := ds.Poll_State(pollID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting poll id and state: %w", err)
 	}
 
@@ -38,7 +42,7 @@ func (v Vote) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 		return true, nil
 	}
 
-	manage, err := Poll{}.manage(ctx, fetch, mperms, pollID)
+	manage, err := Poll{}.manage(ctx, ds, mperms, pollID)
 	if err != nil {
 		return false, fmt.Errorf("checking manage poll %d: %w", pollID, err)
 	}
@@ -47,7 +51,7 @@ func (v Vote) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 		return true, nil
 	}
 
-	voteUser, exist := fetch.Field().Vote_UserID(ctx, voteID)
+	voteUser, exist, err := ds.Vote_UserID(voteID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting vote user: %w", err)
 	}
@@ -56,7 +60,7 @@ func (v Vote) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 		return true, nil
 	}
 
-	delegatedUser, exist := fetch.Field().Vote_DelegatedUserID(ctx, voteID)
+	delegatedUser, exist, err := ds.Vote_DelegatedUserID(ctx, voteID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting delegated user: %w", err)
 	}
@@ -68,20 +72,24 @@ func (v Vote) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 	return false, nil
 }
 
-func (v Vote) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, voteID int) (bool, error) {
-	optionID := fetch.Field().Vote_OptionID(ctx, voteID)
-	pollID, err := pollID(ctx, fetch, optionID)
+func (v Vote) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, voteID int) (bool, error) {
+	optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
+	if err != nil {
+		return false, fmt.Errorf("fetching option_id: %w", err)
+	}
+
+	pollID, err := pollID(ctx, ds, optionID)
 	if err != nil {
 		return false, fmt.Errorf("getting poll id: %w", err)
 	}
-	state := fetch.Field().Poll_State(ctx, pollID)
-	if err := fetch.Err(); err != nil {
+	state, err := ds.Poll_State(pollID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting poll id and state: %w", err)
 	}
 
 	switch state {
 	case "published":
-		see, err := v.see(ctx, fetch, mperms, voteID)
+		see, err := v.see(ctx, ds, mperms, voteID)
 		if err != nil {
 			return false, fmt.Errorf("checking see vote: %w", err)
 		}
@@ -89,7 +97,7 @@ func (v Vote) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.
 		return see, nil
 
 	case "finished":
-		manage, err := Poll{}.manage(ctx, fetch, mperms, pollID)
+		manage, err := Poll{}.manage(ctx, ds, mperms, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking manage poll %d: %w", pollID, err)
 		}

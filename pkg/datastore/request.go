@@ -69,6 +69,11 @@ func (r *Request) Execute(ctx context.Context) error {
 	return nil
 }
 
+// Err returns an error from a previous call.
+func (r *Request) Err() error {
+	return r.err
+}
+
 type executer interface {
 	execute([]byte) error
 }

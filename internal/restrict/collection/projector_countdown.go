@@ -20,9 +20,9 @@ func (p ProjectorCountdown) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p ProjectorCountdown) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, projectorCountdownID int) (bool, error) {
-	meetingID := fetch.Field().ProjectorCountdown_ID(ctx, projectorCountdownID)
-	if err := fetch.Err(); err != nil {
+func (p ProjectorCountdown) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, projectorCountdownID int) (bool, error) {
+	meetingID, err := ds.ProjectorCountdown_ID(projectorCountdownID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("fetching meeting_id %d: %w", projectorCountdownID, err)
 	}
 

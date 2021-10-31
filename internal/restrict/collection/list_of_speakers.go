@@ -20,8 +20,8 @@ func (los ListOfSpeakers) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (los ListOfSpeakers) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, losID int) (bool, error) {
-	mid, err := los.meetingID(ctx, fetch, losID)
+func (los ListOfSpeakers) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, losID int) (bool, error) {
+	mid, err := los.meetingID(ctx, ds, losID)
 	if err != nil {
 		return false, fmt.Errorf("fetching meeting id for los %d: %w", losID, err)
 	}
@@ -34,9 +34,9 @@ func (los ListOfSpeakers) see(ctx context.Context, fetch *datastore.Fetcher, mpe
 	return perms.Has(perm.ListOfSpeakersCanSee), nil
 }
 
-func (los ListOfSpeakers) meetingID(ctx context.Context, fetch *datastore.Fetcher, id int) (int, error) {
-	mid := fetch.Field().ListOfSpeakers_MeetingID(ctx, id)
-	if err := fetch.Err(); err != nil {
+func (los ListOfSpeakers) meetingID(ctx context.Context, ds *datastore.Request, id int) (int, error) {
+	mid, err := ds.ListOfSpeakers_MeetingID(id).Value(ctx)
+	if err != nil {
 		return 0, fmt.Errorf("fetching meeting_id for the list of speakers %d: %w", id, err)
 	}
 	return mid, nil

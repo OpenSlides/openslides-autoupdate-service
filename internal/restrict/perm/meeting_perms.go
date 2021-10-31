@@ -12,15 +12,15 @@ import (
 // Can be used if fields from different meetings are checked.
 type MeetingPermission struct {
 	perms map[int]*Permission
-	fetch *datastore.Fetcher
+	ds    *datastore.Request
 	uid   int
 }
 
 // NewMeetingPermission initializes a new MeetingPermission.
-func NewMeetingPermission(fetch *datastore.Fetcher, uid int) *MeetingPermission {
+func NewMeetingPermission(ds *datastore.Request, uid int) *MeetingPermission {
 	p := MeetingPermission{
 		perms: make(map[int]*Permission),
-		fetch: fetch,
+		ds:    ds,
 		uid:   uid,
 	}
 	return &p
@@ -33,7 +33,7 @@ func (p MeetingPermission) Meeting(ctx context.Context, meetingID int) (*Permiss
 		return perms, nil
 	}
 
-	perms, err := New(ctx, p.fetch, p.uid, meetingID)
+	perms, err := New(ctx, p.ds, p.uid, meetingID)
 	if err != nil {
 		return nil, err
 	}

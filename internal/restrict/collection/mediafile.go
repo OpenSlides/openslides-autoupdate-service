@@ -22,9 +22,9 @@ func (m Mediafile) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m Mediafile) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, mediafileID int) (bool, error) {
-	meetingID := fetch.Field().Mediafile_MeetingID(ctx, mediafileID)
-	if err := fetch.Err(); err != nil {
+func (m Mediafile) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, mediafileID int) (bool, error) {
+	meetingID, err := ds.Mediafile_MeetingID(mediafileID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("fetching meeting_id of mediafile %d: %w", mediafileID, err)
 	}
 
@@ -37,14 +37,14 @@ func (m Mediafile) see(ctx context.Context, fetch *datastore.Fetcher, mperms *pe
 		return true, nil
 	}
 
-	canSeeMeeting, err := Meeting{}.see(ctx, fetch, mperms, meetingID)
+	canSeeMeeting, err := Meeting{}.see(ctx, ds, mperms, meetingID)
 	if err != nil {
 		return false, fmt.Errorf("can see meeting %d: %w", meetingID, err)
 	}
 
-	usedAsLogo := fetch.Field().Mediafile_UsedAsLogoInMeetingIDTmpl(ctx, mediafileID)
-	usedAsFont := fetch.Field().Mediafile_UsedAsFontInMeetingIDTmpl(ctx, mediafileID)
-	if err := fetch.Err(); err != nil {
+	usedAsLogo := ds.Mediafile_UsedAsLogoInMeetingIDTmpl(mediafileID).ErrorLater(ctx)
+	usedAsFont := ds.Mediafile_UsedAsFontInMeetingIDTmpl(mediafileID).ErrorLater(ctx)
+	if err := ds.Err(); err != nil {
 		return false, fmt.Errorf("fetching as logo and as font: %w", err)
 	}
 	if canSeeMeeting && (len(usedAsFont)+len(usedAsLogo) > 0) {
@@ -52,40 +52,40 @@ func (m Mediafile) see(ctx context.Context, fetch *datastore.Fetcher, mperms *pe
 	}
 
 	if perms.Has(perm.ProjectorCanSee) {
-		p7onIDs := fetch.Field().Mediafile_ProjectionIDs(ctx, mediafileID)
+		p7onIDs := ds.Mediafile_ProjectionIDs(mediafileID).ErrorLater(ctx)
 		for _, p7onID := range p7onIDs {
-			if _, exist := fetch.Field().Projection_CurrentProjectorID(ctx, p7onID); exist {
+			if _, exist := ds.Projection_CurrentProjectorID(p7onID).ErrorLater(ctx); exist {
 				return true, nil
 			}
 		}
 
-		if err := fetch.Err(); err != nil {
+		if err := ds.Err(); err != nil {
 			return false, fmt.Errorf("checking projections: %w", err)
 		}
 	}
 
 	if perms.Has(perm.MediafileCanSee) {
-		public := fetch.Field().Mediafile_IsPublic(ctx, mediafileID)
+		public := ds.Mediafile_IsPublic(mediafileID).ErrorLater(ctx)
 		if public {
 			return true, nil
 		}
 
-		inheritedGroups := fetch.Field().Mediafile_InheritedAccessGroupIDs(ctx, mediafileID)
+		inheritedGroups := ds.Mediafile_InheritedAccessGroupIDs(mediafileID).ErrorLater(ctx)
 		for _, id := range inheritedGroups {
 			if perms.InGroup(id) {
 				return true, nil
 			}
 		}
 
-		if err := fetch.Err(); err != nil {
+		if err := ds.Err(); err != nil {
 			return false, fmt.Errorf("checking can see conditions: %w", err)
 		}
 	}
 	return false, nil
 }
 
-func (m Mediafile) modeA(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, mediafileID int) (bool, error) {
-	canSee, err := m.see(ctx, fetch, mperms, mediafileID)
+func (m Mediafile) modeA(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, mediafileID int) (bool, error) {
+	canSee, err := m.see(ctx, ds, mperms, mediafileID)
 	if err != nil {
 		return false, fmt.Errorf("see property: %w", err)
 	}
@@ -94,8 +94,8 @@ func (m Mediafile) modeA(ctx context.Context, fetch *datastore.Fetcher, mperms *
 		return true, nil
 	}
 
-	losID, exist := fetch.Field().Mediafile_ListOfSpeakersID(ctx, mediafileID)
-	if err := fetch.Err(); err != nil {
+	losID, exist, err := ds.Mediafile_ListOfSpeakersID(mediafileID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting list of speakers id: %w", err)
 	}
 
@@ -103,7 +103,7 @@ func (m Mediafile) modeA(ctx context.Context, fetch *datastore.Fetcher, mperms *
 		return false, nil
 	}
 
-	canSeeLOS, err := ListOfSpeakers{}.see(ctx, fetch, mperms, losID)
+	canSeeLOS, err := ListOfSpeakers{}.see(ctx, ds, mperms, losID)
 	if err != nil {
 		return false, fmt.Errorf("can see los: %w", err)
 	}
