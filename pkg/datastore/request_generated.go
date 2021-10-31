@@ -212,8 +212,12 @@ func (v *ValueIDSlice) ErrorLater(ctx context.Context) []int {
 // execute will be called from request.
 func (v *ValueIDSlice) execute(p []byte) error {
 	var values []string
-	if err := json.Unmarshal(p, &values); err != nil {
-		return fmt.Errorf("decoding value %q: %v", p, err)
+	if p == nil {
+		v.isNull = true
+	} else {
+		if err := json.Unmarshal(p, &values); err != nil {
+			return fmt.Errorf("decoding value %q: %v", p, err)
+		}
 	}
 
 	for _, e := range values {

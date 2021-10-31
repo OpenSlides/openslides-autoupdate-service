@@ -100,8 +100,12 @@ type {{.TypeName}} struct {
 func (v *{{.TypeName}}) execute(p []byte) error {
 	{{- if eq .TypeName  "ValueIDSlice"}}
 		var values []string
-		if err := json.Unmarshal(p, &values); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+		if p == nil {
+			v.isNull = true
+		} else {
+			if err := json.Unmarshal(p, &values); err != nil {
+				return fmt.Errorf("decoding value %q: %v", p, err)
+			}
 		}
 
 		for _, e := range values {
