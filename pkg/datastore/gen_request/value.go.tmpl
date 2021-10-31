@@ -9,49 +9,92 @@ type {{.TypeName}} struct {
 	request *Request
 }
 
-// Value returns the value.
-func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, error) {
-	if v.request.err != nil {
-		return {{.Zero}}, v.request.err
-	}
+{{if not .MaybeType}}
+	// Value returns the value.
+	func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, error) {
+		if v.request.err != nil {
+			return {{.Zero}}, v.request.err
+		}
 
-	if v.executed {
+		if v.executed {
+			return v.value, nil
+		}
+
+		if err := v.request.Execute(ctx); err != nil {
+			return {{.Zero}}, fmt.Errorf("executing request: %w", err)
+		}
+
 		return v.value, nil
 	}
+{{else}}
+	// Value returns the value.
+	func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, bool, error) {
+		if v.request.err != nil {
+			return {{.Zero}}, false, v.request.err
+		}
 
-	if err := v.request.Execute(ctx); err != nil {
-		return {{.Zero}}, fmt.Errorf("executing request: %w", err)
+		if v.executed {
+			return v.value, !v.isNull, nil
+		}
+
+		if err := v.request.Execute(ctx); err != nil {
+			return {{.Zero}}, false, fmt.Errorf("executing request: %w", err)
+		}
+
+		return v.value, !v.isNull, nil
 	}
+{{end}}
 
-	return v.value, nil
-}
+{{if not .MaybeType}}
+	// Lazy sets a value as soon as it es executed.
+	//
+	// Make sure to call request.Execute() before using the value.
+	func (v *{{.TypeName}}) Lazy(value *{{.GoType}}) {
+		v.lazies = append(v.lazies, value)
+	}
+{{end}}
 
-// Lazy sets a value as soon as it es executed.
-//
-// Make sure to call request.Execute() before using the value.
-func (v *{{.TypeName}}) Lazy(value *{{.GoType}}) {
-	v.lazies = append(v.lazies, value)
-}
+{{if not .MaybeType}}
+	// ErrorLater is like Value but does not return an error.
+	//
+	// If an error happs, it is saved internaly. Make sure to call request.Err() later to
+	// access it.
+	func (v *{{.TypeName}}) ErrorLater(ctx context.Context) {{.GoType}} {
+		if v.request.err != nil {
+			return {{.Zero}}
+		}
 
+		if v.executed {
+			return v.value
+		}
+
+		if err := v.request.Execute(ctx); err != nil {
+			return {{.Zero}}
+		}
+
+		return v.value
+	}
+{{else}}
 // ErrorLater is like Value but does not return an error.
 //
 // If an error happs, it is saved internaly. Make sure to call request.Err() later to
 // access it.
-func (v *{{.TypeName}}) ErrorLater(ctx context.Context) {{.GoType}} {
-	if v.request.err != nil {
-		return {{.Zero}}
-	}
+	func (v *{{.TypeName}}) ErrorLater(ctx context.Context) ({{.GoType}}, bool) {
+		if v.request.err != nil {
+			return {{.Zero}}, false
+		}
 
-	if v.executed {
-		return v.value
-	}
+		if v.executed {
+			return v.value, !v.isNull
+		}
 
-	if err := v.request.Execute(ctx); err != nil {
-		return {{.Zero}}
-	}
+		if err := v.request.Execute(ctx); err != nil {
+			return {{.Zero}}, false
+		}
 
-	return v.value
-}
+		return v.value, !v.isNull
+	}
+{{end}}
 
 // execute will be called from request.
 func (v *{{.TypeName}}) execute(p []byte) error {
@@ -69,8 +112,12 @@ func (v *{{.TypeName}}) execute(p []byte) error {
 			v.value = append(v.value, i)
 		}
 	{{- else}}
-		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+		if p == nil {
+			v.isNull = true
+		} else {
+			if err := json.Unmarshal(p, &v.value); err != nil {
+				return fmt.Errorf("decoding value %q: %v", p, err)
+			}
 		}
 	{{- end}}
 

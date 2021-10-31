@@ -65,8 +65,12 @@ func (v *ValueBool) ErrorLater(ctx context.Context) bool {
 
 // execute will be called from request.
 func (v *ValueBool) execute(p []byte) error {
-	if err := json.Unmarshal(p, &v.value); err != nil {
-		return fmt.Errorf("decoding value %q: %v", p, err)
+	if p == nil {
+		v.isNull = true
+	} else {
+		if err := json.Unmarshal(p, &v.value); err != nil {
+			return fmt.Errorf("decoding value %q: %v", p, err)
+		}
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
@@ -134,8 +138,12 @@ func (v *ValueFloat) ErrorLater(ctx context.Context) float32 {
 
 // execute will be called from request.
 func (v *ValueFloat) execute(p []byte) error {
-	if err := json.Unmarshal(p, &v.value); err != nil {
-		return fmt.Errorf("decoding value %q: %v", p, err)
+	if p == nil {
+		v.isNull = true
+	} else {
+		if err := json.Unmarshal(p, &v.value); err != nil {
+			return fmt.Errorf("decoding value %q: %v", p, err)
+		}
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
@@ -281,8 +289,12 @@ func (v *ValueInt) ErrorLater(ctx context.Context) int {
 
 // execute will be called from request.
 func (v *ValueInt) execute(p []byte) error {
-	if err := json.Unmarshal(p, &v.value); err != nil {
-		return fmt.Errorf("decoding value %q: %v", p, err)
+	if p == nil {
+		v.isNull = true
+	} else {
+		if err := json.Unmarshal(p, &v.value); err != nil {
+			return fmt.Errorf("decoding value %q: %v", p, err)
+		}
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
@@ -350,8 +362,12 @@ func (v *ValueIntSlice) ErrorLater(ctx context.Context) []int {
 
 // execute will be called from request.
 func (v *ValueIntSlice) execute(p []byte) error {
-	if err := json.Unmarshal(p, &v.value); err != nil {
-		return fmt.Errorf("decoding value %q: %v", p, err)
+	if p == nil {
+		v.isNull = true
+	} else {
+		if err := json.Unmarshal(p, &v.value); err != nil {
+			return fmt.Errorf("decoding value %q: %v", p, err)
+		}
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
@@ -419,8 +435,144 @@ func (v *ValueJSON) ErrorLater(ctx context.Context) json.RawMessage {
 
 // execute will be called from request.
 func (v *ValueJSON) execute(p []byte) error {
-	if err := json.Unmarshal(p, &v.value); err != nil {
-		return fmt.Errorf("decoding value %q: %v", p, err)
+	if p == nil {
+		v.isNull = true
+	} else {
+		if err := json.Unmarshal(p, &v.value); err != nil {
+			return fmt.Errorf("decoding value %q: %v", p, err)
+		}
+	}
+
+	for i := 0; i < len(v.lazies); i++ {
+		*v.lazies[i] = v.value
+	}
+
+	v.executed = true
+	return nil
+}
+
+// ValueMaybeInt is a lazy value from the datastore.
+type ValueMaybeInt struct {
+	value    int
+	isNull   bool
+	executed bool
+
+	lazies []*int
+
+	request *Request
+}
+
+// Value returns the value.
+func (v *ValueMaybeInt) Value(ctx context.Context) (int, bool, error) {
+	if v.request.err != nil {
+		return 0, false, v.request.err
+	}
+
+	if v.executed {
+		return v.value, !v.isNull, nil
+	}
+
+	if err := v.request.Execute(ctx); err != nil {
+		return 0, false, fmt.Errorf("executing request: %w", err)
+	}
+
+	return v.value, !v.isNull, nil
+}
+
+// ErrorLater is like Value but does not return an error.
+//
+// If an error happs, it is saved internaly. Make sure to call request.Err() later to
+// access it.
+func (v *ValueMaybeInt) ErrorLater(ctx context.Context) (int, bool) {
+	if v.request.err != nil {
+		return 0, false
+	}
+
+	if v.executed {
+		return v.value, !v.isNull
+	}
+
+	if err := v.request.Execute(ctx); err != nil {
+		return 0, false
+	}
+
+	return v.value, !v.isNull
+}
+
+// execute will be called from request.
+func (v *ValueMaybeInt) execute(p []byte) error {
+	if p == nil {
+		v.isNull = true
+	} else {
+		if err := json.Unmarshal(p, &v.value); err != nil {
+			return fmt.Errorf("decoding value %q: %v", p, err)
+		}
+	}
+
+	for i := 0; i < len(v.lazies); i++ {
+		*v.lazies[i] = v.value
+	}
+
+	v.executed = true
+	return nil
+}
+
+// ValueMaybeString is a lazy value from the datastore.
+type ValueMaybeString struct {
+	value    string
+	isNull   bool
+	executed bool
+
+	lazies []*string
+
+	request *Request
+}
+
+// Value returns the value.
+func (v *ValueMaybeString) Value(ctx context.Context) (string, bool, error) {
+	if v.request.err != nil {
+		return "", false, v.request.err
+	}
+
+	if v.executed {
+		return v.value, !v.isNull, nil
+	}
+
+	if err := v.request.Execute(ctx); err != nil {
+		return "", false, fmt.Errorf("executing request: %w", err)
+	}
+
+	return v.value, !v.isNull, nil
+}
+
+// ErrorLater is like Value but does not return an error.
+//
+// If an error happs, it is saved internaly. Make sure to call request.Err() later to
+// access it.
+func (v *ValueMaybeString) ErrorLater(ctx context.Context) (string, bool) {
+	if v.request.err != nil {
+		return "", false
+	}
+
+	if v.executed {
+		return v.value, !v.isNull
+	}
+
+	if err := v.request.Execute(ctx); err != nil {
+		return "", false
+	}
+
+	return v.value, !v.isNull
+}
+
+// execute will be called from request.
+func (v *ValueMaybeString) execute(p []byte) error {
+	if p == nil {
+		v.isNull = true
+	} else {
+		if err := json.Unmarshal(p, &v.value); err != nil {
+			return fmt.Errorf("decoding value %q: %v", p, err)
+		}
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
@@ -488,8 +640,12 @@ func (v *ValueString) ErrorLater(ctx context.Context) string {
 
 // execute will be called from request.
 func (v *ValueString) execute(p []byte) error {
-	if err := json.Unmarshal(p, &v.value); err != nil {
-		return fmt.Errorf("decoding value %q: %v", p, err)
+	if p == nil {
+		v.isNull = true
+	} else {
+		if err := json.Unmarshal(p, &v.value); err != nil {
+			return fmt.Errorf("decoding value %q: %v", p, err)
+		}
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
@@ -557,8 +713,12 @@ func (v *ValueStringSlice) ErrorLater(ctx context.Context) []string {
 
 // execute will be called from request.
 func (v *ValueStringSlice) execute(p []byte) error {
-	if err := json.Unmarshal(p, &v.value); err != nil {
-		return fmt.Errorf("decoding value %q: %v", p, err)
+	if p == nil {
+		v.isNull = true
+	} else {
+		if err := json.Unmarshal(p, &v.value); err != nil {
+			return fmt.Errorf("decoding value %q: %v", p, err)
+		}
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
@@ -635,8 +795,8 @@ func (r *Request) AgendaItem_MeetingID(agendaItemID int) *ValueInt {
 	return v
 }
 
-func (r *Request) AgendaItem_ParentID(agendaItemID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) AgendaItem_ParentID(agendaItemID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("agenda_item/%d/parent_id", agendaItemID)] = v
 	return v
 }
@@ -695,8 +855,8 @@ func (r *Request) AssignmentCandidate_Weight(assignmentCandidateID int) *ValueIn
 	return v
 }
 
-func (r *Request) Assignment_AgendaItemID(assignmentID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Assignment_AgendaItemID(assignmentID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("assignment/%d/agenda_item_id", assignmentID)] = v
 	return v
 }
@@ -821,8 +981,8 @@ func (r *Request) ChatGroup_WriteGroupIDs(chatGroupID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Request) Committee_DefaultMeetingID(committeeID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Committee_DefaultMeetingID(committeeID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("committee/%d/default_meeting_id", committeeID)] = v
 	return v
 }
@@ -875,8 +1035,8 @@ func (r *Request) Committee_ReceiveForwardingsFromCommitteeIDs(committeeID int) 
 	return v
 }
 
-func (r *Request) Committee_TemplateMeetingID(committeeID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Committee_TemplateMeetingID(committeeID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("committee/%d/template_meeting_id", committeeID)] = v
 	return v
 }
@@ -887,14 +1047,14 @@ func (r *Request) Committee_UserIDs(committeeID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Request) Group_AdminGroupForMeetingID(groupID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Group_AdminGroupForMeetingID(groupID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("group/%d/admin_group_for_meeting_id", groupID)] = v
 	return v
 }
 
-func (r *Request) Group_DefaultGroupForMeetingID(groupID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Group_DefaultGroupForMeetingID(groupID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("group/%d/default_group_for_meeting_id", groupID)] = v
 	return v
 }
@@ -953,20 +1113,20 @@ func (r *Request) Group_ReadCommentSectionIDs(groupID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Request) Group_UsedAsAssignmentPollDefaultID(groupID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Group_UsedAsAssignmentPollDefaultID(groupID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("group/%d/used_as_assignment_poll_default_id", groupID)] = v
 	return v
 }
 
-func (r *Request) Group_UsedAsMotionPollDefaultID(groupID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Group_UsedAsMotionPollDefaultID(groupID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("group/%d/used_as_motion_poll_default_id", groupID)] = v
 	return v
 }
 
-func (r *Request) Group_UsedAsPollDefaultID(groupID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Group_UsedAsPollDefaultID(groupID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("group/%d/used_as_poll_default_id", groupID)] = v
 	return v
 }
@@ -1085,8 +1245,8 @@ func (r *Request) Mediafile_IsPublic(mediafileID int) *ValueBool {
 	return v
 }
 
-func (r *Request) Mediafile_ListOfSpeakersID(mediafileID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Mediafile_ListOfSpeakersID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("mediafile/%d/list_of_speakers_id", mediafileID)] = v
 	return v
 }
@@ -1103,8 +1263,8 @@ func (r *Request) Mediafile_Mimetype(mediafileID int) *ValueString {
 	return v
 }
 
-func (r *Request) Mediafile_ParentID(mediafileID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Mediafile_ParentID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("mediafile/%d/parent_id", mediafileID)] = v
 	return v
 }
@@ -1151,8 +1311,8 @@ func (r *Request) Mediafile_UsedAsLogoInMeetingID(mediafileID int, replacement s
 	return v
 }
 
-func (r *Request) Meeting_AdminGroupID(meetingID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Meeting_AdminGroupID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/admin_group_id", meetingID)] = v
 	return v
 }
@@ -1403,8 +1563,8 @@ func (r *Request) Meeting_DefaultGroupID(meetingID int) *ValueInt {
 	return v
 }
 
-func (r *Request) Meeting_DefaultMeetingForCommitteeID(meetingID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Meeting_DefaultMeetingForCommitteeID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/default_meeting_for_committee_id", meetingID)] = v
 	return v
 }
@@ -1505,8 +1665,8 @@ func (r *Request) Meeting_ImportedAt(meetingID int) *ValueInt {
 	return v
 }
 
-func (r *Request) Meeting_IsActiveInOrganizationID(meetingID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Meeting_IsActiveInOrganizationID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/is_active_in_organization_id", meetingID)] = v
 	return v
 }
@@ -1547,8 +1707,8 @@ func (r *Request) Meeting_ListOfSpeakersCanSetContributionSelf(meetingID int) *V
 	return v
 }
 
-func (r *Request) Meeting_ListOfSpeakersCountdownID(meetingID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Meeting_ListOfSpeakersCountdownID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/list_of_speakers_countdown_id", meetingID)] = v
 	return v
 }
@@ -1949,8 +2109,8 @@ func (r *Request) Meeting_PollBallotPaperSelection(meetingID int) *ValueString {
 	return v
 }
 
-func (r *Request) Meeting_PollCountdownID(meetingID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Meeting_PollCountdownID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/poll_countdown_id", meetingID)] = v
 	return v
 }
@@ -2063,8 +2223,8 @@ func (r *Request) Meeting_TagIDs(meetingID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Request) Meeting_TemplateForCommitteeID(meetingID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Meeting_TemplateForCommitteeID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/template_for_committee_id", meetingID)] = v
 	return v
 }
@@ -2189,8 +2349,8 @@ func (r *Request) Meeting_WelcomeTitle(meetingID int) *ValueString {
 	return v
 }
 
-func (r *Request) MotionBlock_AgendaItemID(motionBlockID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) MotionBlock_AgendaItemID(motionBlockID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("motion_block/%d/agenda_item_id", motionBlockID)] = v
 	return v
 }
@@ -2273,8 +2433,8 @@ func (r *Request) MotionCategory_Name(motionCategoryID int) *ValueString {
 	return v
 }
 
-func (r *Request) MotionCategory_ParentID(motionCategoryID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) MotionCategory_ParentID(motionCategoryID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("motion_category/%d/parent_id", motionCategoryID)] = v
 	return v
 }
@@ -2459,8 +2619,8 @@ func (r *Request) MotionState_DontSetIDentifier(motionStateID int) *ValueBool {
 	return v
 }
 
-func (r *Request) MotionState_FirstStateOfWorkflowID(motionStateID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) MotionState_FirstStateOfWorkflowID(motionStateID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("motion_state/%d/first_state_of_workflow_id", motionStateID)] = v
 	return v
 }
@@ -2621,20 +2781,20 @@ func (r *Request) MotionSubmitter_Weight(motionSubmitterID int) *ValueInt {
 	return v
 }
 
-func (r *Request) MotionWorkflow_DefaultAmendmentWorkflowMeetingID(motionWorkflowID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) MotionWorkflow_DefaultAmendmentWorkflowMeetingID(motionWorkflowID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("motion_workflow/%d/default_amendment_workflow_meeting_id", motionWorkflowID)] = v
 	return v
 }
 
-func (r *Request) MotionWorkflow_DefaultStatuteAmendmentWorkflowMeetingID(motionWorkflowID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) MotionWorkflow_DefaultStatuteAmendmentWorkflowMeetingID(motionWorkflowID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("motion_workflow/%d/default_statute_amendment_workflow_meeting_id", motionWorkflowID)] = v
 	return v
 }
 
-func (r *Request) MotionWorkflow_DefaultWorkflowMeetingID(motionWorkflowID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) MotionWorkflow_DefaultWorkflowMeetingID(motionWorkflowID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("motion_workflow/%d/default_workflow_meeting_id", motionWorkflowID)] = v
 	return v
 }
@@ -2669,8 +2829,8 @@ func (r *Request) MotionWorkflow_StateIDs(motionWorkflowID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Request) Motion_AgendaItemID(motionID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Motion_AgendaItemID(motionID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("motion/%d/agenda_item_id", motionID)] = v
 	return v
 }
@@ -2711,14 +2871,14 @@ func (r *Request) Motion_AttachmentIDs(motionID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Request) Motion_BlockID(motionID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Motion_BlockID(motionID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("motion/%d/block_id", motionID)] = v
 	return v
 }
 
-func (r *Request) Motion_CategoryID(motionID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Motion_CategoryID(motionID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("motion/%d/category_id", motionID)] = v
 	return v
 }
@@ -2765,8 +2925,8 @@ func (r *Request) Motion_LastModified(motionID int) *ValueInt {
 	return v
 }
 
-func (r *Request) Motion_LeadMotionID(motionID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Motion_LeadMotionID(motionID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("motion/%d/lead_motion_id", motionID)] = v
 	return v
 }
@@ -2807,8 +2967,8 @@ func (r *Request) Motion_OptionIDs(motionID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Request) Motion_OriginID(motionID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Motion_OriginID(motionID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("motion/%d/origin_id", motionID)] = v
 	return v
 }
@@ -2849,8 +3009,8 @@ func (r *Request) Motion_RecommendationExtensionReferenceIDs(motionID int) *Valu
 	return v
 }
 
-func (r *Request) Motion_RecommendationID(motionID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Motion_RecommendationID(motionID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("motion/%d/recommendation_id", motionID)] = v
 	return v
 }
@@ -2873,8 +3033,8 @@ func (r *Request) Motion_SortChildIDs(motionID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Request) Motion_SortParentID(motionID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Motion_SortParentID(motionID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("motion/%d/sort_parent_id", motionID)] = v
 	return v
 }
@@ -2897,8 +3057,8 @@ func (r *Request) Motion_StateID(motionID int) *ValueInt {
 	return v
 }
 
-func (r *Request) Motion_StatuteParagraphID(motionID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Motion_StatuteParagraphID(motionID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("motion/%d/statute_paragraph_id", motionID)] = v
 	return v
 }
@@ -2939,8 +3099,8 @@ func (r *Request) Option_Abstain(optionID int) *ValueString {
 	return v
 }
 
-func (r *Request) Option_ContentObjectID(optionID int) *ValueString {
-	v := &ValueString{request: r}
+func (r *Request) Option_ContentObjectID(optionID int) *ValueMaybeString {
+	v := &ValueMaybeString{request: r}
 	r.requested[fmt.Sprintf("option/%d/content_object_id", optionID)] = v
 	return v
 }
@@ -2963,8 +3123,8 @@ func (r *Request) Option_No(optionID int) *ValueString {
 	return v
 }
 
-func (r *Request) Option_PollID(optionID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Option_PollID(optionID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("option/%d/poll_id", optionID)] = v
 	return v
 }
@@ -2975,8 +3135,8 @@ func (r *Request) Option_Text(optionID int) *ValueString {
 	return v
 }
 
-func (r *Request) Option_UsedAsGlobalOptionInPollID(optionID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Option_UsedAsGlobalOptionInPollID(optionID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("option/%d/used_as_global_option_in_poll_id", optionID)] = v
 	return v
 }
@@ -3125,8 +3285,8 @@ func (r *Request) Organization_ThemeIDs(organizationID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Request) PersonalNote_ContentObjectID(personalNoteID int) *ValueString {
-	v := &ValueString{request: r}
+func (r *Request) PersonalNote_ContentObjectID(personalNoteID int) *ValueMaybeString {
+	v := &ValueMaybeString{request: r}
 	r.requested[fmt.Sprintf("personal_note/%d/content_object_id", personalNoteID)] = v
 	return v
 }
@@ -3167,8 +3327,8 @@ func (r *Request) Poll_Backend(pollID int) *ValueString {
 	return v
 }
 
-func (r *Request) Poll_ContentObjectID(pollID int) *ValueString {
-	v := &ValueString{request: r}
+func (r *Request) Poll_ContentObjectID(pollID int) *ValueMaybeString {
+	v := &ValueMaybeString{request: r}
 	r.requested[fmt.Sprintf("poll/%d/content_object_id", pollID)] = v
 	return v
 }
@@ -3203,8 +3363,8 @@ func (r *Request) Poll_GlobalNo(pollID int) *ValueBool {
 	return v
 }
 
-func (r *Request) Poll_GlobalOptionID(pollID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Poll_GlobalOptionID(pollID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("poll/%d/global_option_id", pollID)] = v
 	return v
 }
@@ -3317,20 +3477,20 @@ func (r *Request) Projection_Content(projectionID int) *ValueJSON {
 	return v
 }
 
-func (r *Request) Projection_ContentObjectID(projectionID int) *ValueString {
-	v := &ValueString{request: r}
+func (r *Request) Projection_ContentObjectID(projectionID int) *ValueMaybeString {
+	v := &ValueMaybeString{request: r}
 	r.requested[fmt.Sprintf("projection/%d/content_object_id", projectionID)] = v
 	return v
 }
 
-func (r *Request) Projection_CurrentProjectorID(projectionID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Projection_CurrentProjectorID(projectionID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("projection/%d/current_projector_id", projectionID)] = v
 	return v
 }
 
-func (r *Request) Projection_HistoryProjectorID(projectionID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Projection_HistoryProjectorID(projectionID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("projection/%d/history_projector_id", projectionID)] = v
 	return v
 }
@@ -3353,8 +3513,8 @@ func (r *Request) Projection_Options(projectionID int) *ValueJSON {
 	return v
 }
 
-func (r *Request) Projection_PreviewProjectorID(projectionID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Projection_PreviewProjectorID(projectionID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("projection/%d/preview_projector_id", projectionID)] = v
 	return v
 }
@@ -3425,14 +3585,14 @@ func (r *Request) ProjectorCountdown_Title(projectorCountdownID int) *ValueStrin
 	return v
 }
 
-func (r *Request) ProjectorCountdown_UsedAsListOfSpeakerCountdownMeetingID(projectorCountdownID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) ProjectorCountdown_UsedAsListOfSpeakerCountdownMeetingID(projectorCountdownID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("projector_countdown/%d/used_as_list_of_speaker_countdown_meeting_id", projectorCountdownID)] = v
 	return v
 }
 
-func (r *Request) ProjectorCountdown_UsedAsPollCountdownMeetingID(projectorCountdownID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) ProjectorCountdown_UsedAsPollCountdownMeetingID(projectorCountdownID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("projector_countdown/%d/used_as_poll_countdown_meeting_id", projectorCountdownID)] = v
 	return v
 }
@@ -3599,8 +3759,8 @@ func (r *Request) Projector_UsedAsDefaultInMeetingID(projectorID int, replacemen
 	return v
 }
 
-func (r *Request) Projector_UsedAsReferenceProjectorMeetingID(projectorID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Projector_UsedAsReferenceProjectorMeetingID(projectorID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("projector/%d/used_as_reference_projector_meeting_id", projectorID)] = v
 	return v
 }
@@ -3911,8 +4071,8 @@ func (r *Request) Theme_PrimaryA700(themeID int) *ValueString {
 	return v
 }
 
-func (r *Request) Theme_ThemeForOrganizationID(themeID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Theme_ThemeForOrganizationID(themeID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("theme/%d/theme_for_organization_id", themeID)] = v
 	return v
 }
@@ -4415,8 +4575,8 @@ func (r *Request) User_VoteWeight(userID int, meetingID int) *ValueString {
 	return v
 }
 
-func (r *Request) Vote_DelegatedUserID(voteID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Vote_DelegatedUserID(voteID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("vote/%d/delegated_user_id", voteID)] = v
 	return v
 }
@@ -4439,8 +4599,8 @@ func (r *Request) Vote_OptionID(voteID int) *ValueInt {
 	return v
 }
 
-func (r *Request) Vote_UserID(voteID int) *ValueInt {
-	v := &ValueInt{request: r}
+func (r *Request) Vote_UserID(voteID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("vote/%d/user_id", voteID)] = v
 	return v
 }

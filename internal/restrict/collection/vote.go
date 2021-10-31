@@ -60,7 +60,7 @@ func (v Vote) see(ctx context.Context, ds *datastore.Request, mperms *perm.Meeti
 		return true, nil
 	}
 
-	delegatedUser, exist, err := ds.Vote_DelegatedUserID(ctx, voteID).Value(ctx)
+	delegatedUser, exist, err := ds.Vote_DelegatedUserID(voteID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting delegated user: %w", err)
 	}

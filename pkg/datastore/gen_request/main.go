@@ -79,7 +79,9 @@ func genHeader(buf *bytes.Buffer) error {
 func genValueTypes(buf *bytes.Buffer) error {
 	typesToGo := map[string]string{
 		"ValueInt":         "int",
+		"ValueMaybeInt":    "int",
 		"ValueString":      "string",
+		"ValueMaybeString": "string",
 		"ValueBool":        "bool",
 		"ValueFloat":       "float32",
 		"ValueJSON":        "json.RawMessage",
@@ -88,6 +90,7 @@ func genValueTypes(buf *bytes.Buffer) error {
 		"ValueIDSlice":     "[]int",
 	}
 
+	// Make sure the types are in the same order every time go generate runs.
 	var types []string
 	for k := range typesToGo {
 		types = append(types, k)
@@ -101,13 +104,15 @@ func genValueTypes(buf *bytes.Buffer) error {
 
 	for _, name := range types {
 		data := struct {
-			TypeName string
-			GoType   string
-			Zero     string
+			TypeName  string
+			GoType    string
+			Zero      string
+			MaybeType bool
 		}{
 			name,
 			typesToGo[name],
 			zeroValue(typesToGo[name]),
+			strings.HasPrefix(name, "ValueMaybe"),
 		}
 		if err := tmpl.Execute(buf, data); err != nil {
 			return fmt.Errorf("executing template: %w", err)
@@ -181,7 +186,7 @@ func parse(r io.Reader) ([]field, error) {
 			f := field{}
 			f.Name = collectionName + "/" + fieldName
 			f.GoName = goName(collectionName) + "_" + goName(fieldName)
-			f.ValueType = valueType(modelField.Type)
+			f.ValueType = valueType(modelField.Type, modelField.Required)
 			f.Collection = firstLower(goName(collectionName))
 			f.FQField = collectionName + "/%d/" + fieldName
 			f.Required = modelField.Required
@@ -194,7 +199,7 @@ func parse(r io.Reader) ([]field, error) {
 				f.TemplateAttr = "replacement"
 				f.TemplateAttrType = "string"
 				f.TemplateFQField = collectionName + "/%d/" + strings.Replace(fieldName, "$", "$%s", 1)
-				f.ValueType = valueType(modelField.Template.Fields.Type)
+				f.ValueType = valueType(modelField.Template.Fields.Type, true)
 
 				if modelField.Template.Replacement != "" {
 					f.TemplateAttr = modelField.Template.Replacement + "ID"
@@ -249,7 +254,15 @@ func firstLower(s string) string {
 	return strings.ToLower(string(s[0])) + s[1:]
 }
 
-func valueType(modelsType string) string {
+func valueType(modelsType string, required bool) string {
+	if !required && modelsType == "relation" {
+		return "ValueMaybeInt"
+	}
+
+	if !required && modelsType == "generic-relation" {
+		return "ValueMaybeString"
+	}
+
 	switch modelsType {
 	case "number", "relation", "timestamp":
 		return "ValueInt"
