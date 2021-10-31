@@ -117,9 +117,6 @@ type MockDatastore struct {
 	*datastore.Datastore
 	server *DatastoreServer
 	err    error
-
-	muRequests sync.Mutex
-	requests   [][]string
 }
 
 // NewMockDatastore create a MockDatastore with data.
@@ -140,10 +137,6 @@ func NewMockDatastore(closed <-chan struct{}, data map[string][]byte) *MockDatas
 
 // Get calls the Get() method of the datastore.
 func (d *MockDatastore) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
-	d.muRequests.Lock()
-	d.requests = append(d.requests, keys)
-	d.muRequests.Unlock()
-
 	if d.err != nil {
 		return nil, d.err
 	}
@@ -158,9 +151,30 @@ func (d *MockDatastore) InjectError(err error) {
 
 // Requests returns a list of all requested keys.
 func (d *MockDatastore) Requests() [][]string {
-	d.muRequests.Lock()
-	defer d.muRequests.Unlock()
-	return d.requests
+	return d.server.Requests()
+}
+
+// ResetRequests resets the list returned by Requests().
+func (d *MockDatastore) ResetRequests() {
+	d.server.ResetRequests()
+}
+
+// KeysRequested returns true, if all given keys where requested.
+func (d *MockDatastore) KeysRequested(keys ...string) bool {
+	requestedKeys := make(map[string]bool)
+	for _, l := range d.Requests() {
+		for _, k := range l {
+			requestedKeys[k] = true
+		}
+	}
+
+	for _, k := range keys {
+		if !requestedKeys[k] {
+			return false
+		}
+	}
+	return true
+
 }
 
 // Send updates the data.
