@@ -26,16 +26,16 @@ func (m Meeting) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m Meeting) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, meetingID int) (bool, error) {
-	enableAnonymous := fetch.Field().Meeting_EnableAnonymous(ctx, meetingID)
-	if err := fetch.Err(); err != nil {
+func (m Meeting) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, meetingID int) (bool, error) {
+	enableAnonymous, err := ds.Meeting_EnableAnonymous(meetingID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("checking enabled anonymous: %w", err)
 	}
 	if enableAnonymous {
 		return true, nil
 	}
 
-	oml, err := perm.HasOrganizationManagementLevel(ctx, fetch, mperms.UserID(), perm.OMLCanManageOrganization)
+	oml, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageOrganization)
 	if err != nil {
 		return false, fmt.Errorf("checking organization management level: %w", err)
 	}
@@ -44,27 +44,27 @@ func (m Meeting) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm
 		return true, nil
 	}
 
-	userIDs := fetch.Field().Meeting_UserIDs(ctx, meetingID)
+	userIDs := ds.Meeting_UserIDs(meetingID).ErrorLater(ctx)
 	for _, id := range userIDs {
 		if mperms.UserID() == id {
 			return true, nil
 		}
 	}
 
-	committeeID := fetch.Field().Meeting_CommitteeID(ctx, meetingID)
-	userManagementLvl := fetch.Field().User_CommitteeManagementLevel(ctx, mperms.UserID(), committeeID)
+	committeeID := ds.Meeting_CommitteeID(meetingID).ErrorLater(ctx)
+	userManagementLvl := ds.User_CommitteeManagementLevel(mperms.UserID(), committeeID).ErrorLater(ctx)
 	if userManagementLvl == "can_manage" {
 		return true, nil
 	}
 
-	if err := fetch.Err(); err != nil {
+	if err := ds.Err(); err != nil {
 		return false, fmt.Errorf("fetching meeting/%d: %w", meetingID, err)
 	}
 
 	return false, nil
 }
 
-func (m Meeting) modeC(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, meetingID int) (bool, error) {
+func (m Meeting) modeC(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, meetingID int) (bool, error) {
 	perms, err := mperms.Meeting(ctx, meetingID)
 	if err != nil {
 		return false, fmt.Errorf("getting permissions: %w", err)
@@ -73,7 +73,7 @@ func (m Meeting) modeC(ctx context.Context, fetch *datastore.Fetcher, mperms *pe
 	return perms.Has(perm.MeetingCanSeeFrontpage), nil
 }
 
-func (m Meeting) modeD(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, meetingID int) (bool, error) {
+func (m Meeting) modeD(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, meetingID int) (bool, error) {
 	perms, err := mperms.Meeting(ctx, meetingID)
 	if err != nil {
 		return false, fmt.Errorf("getting permissions: %w", err)

@@ -20,8 +20,8 @@ func (c ChatGroup) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (c ChatGroup) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, chatGroupID int) (bool, error) {
-	meetingID, err := c.meetingID(ctx, fetch, chatGroupID)
+func (c ChatGroup) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, chatGroupID int) (bool, error) {
+	meetingID, err := c.meetingID(ctx, ds, chatGroupID)
 	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)
 	}
@@ -31,8 +31,8 @@ func (c ChatGroup) see(ctx context.Context, fetch *datastore.Fetcher, mperms *pe
 		return false, fmt.Errorf("getting permissions: %w", err)
 	}
 
-	adminGroup, exist := fetch.Field().Meeting_AdminGroupID(ctx, meetingID)
-	if err := fetch.Err(); err != nil {
+	adminGroup, exist, err := ds.Meeting_AdminGroupID(meetingID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting admin group id: %w", err)
 	}
 
@@ -40,7 +40,10 @@ func (c ChatGroup) see(ctx context.Context, fetch *datastore.Fetcher, mperms *pe
 		return true, nil
 	}
 
-	readGroups := fetch.Field().ChatGroup_ReadGroupIDs(ctx, chatGroupID)
+	readGroups, err := ds.ChatGroup_ReadGroupIDs(chatGroupID).Value(ctx)
+	if err != nil {
+		return false, fmt.Errorf("getting chat read group ids: %w", err)
+	}
 	for _, gid := range readGroups {
 		if perms.InGroup(gid) {
 			return true, nil
@@ -50,9 +53,9 @@ func (c ChatGroup) see(ctx context.Context, fetch *datastore.Fetcher, mperms *pe
 	return false, nil
 }
 
-func (c ChatGroup) meetingID(ctx context.Context, fetch *datastore.Fetcher, id int) (int, error) {
-	mid := fetch.Field().ChatGroup_MeetingID(ctx, id)
-	if err := fetch.Err(); err != nil {
+func (c ChatGroup) meetingID(ctx context.Context, ds *datastore.Request, id int) (int, error) {
+	mid, err := ds.ChatGroup_MeetingID(id).Value(ctx)
+	if err != nil {
 		return 0, fmt.Errorf("fetching meeting_id for chat_group %d: %w", id, err)
 	}
 	return mid, nil

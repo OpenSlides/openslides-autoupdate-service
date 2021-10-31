@@ -20,9 +20,9 @@ func (m MotionChangeRecommendation) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionChangeRecommendation) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, motionChangeRecommendationID int) (bool, error) {
-	meetingID := fetch.Field().MotionChangeRecommendation_MeetingID(ctx, motionChangeRecommendationID)
-	if err := fetch.Err(); err != nil {
+func (m MotionChangeRecommendation) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, motionChangeRecommendationID int) (bool, error) {
+	meetingID, err := ds.MotionChangeRecommendation_MeetingID(motionChangeRecommendationID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)
 	}
 
@@ -39,8 +39,8 @@ func (m MotionChangeRecommendation) see(ctx context.Context, fetch *datastore.Fe
 		return false, nil
 	}
 
-	internal := fetch.Field().MotionChangeRecommendation_Internal(ctx, motionChangeRecommendationID)
-	if err := fetch.Err(); err != nil {
+	internal, err := ds.MotionChangeRecommendation_Internal(motionChangeRecommendationID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting internal: %w", err)
 	}
 

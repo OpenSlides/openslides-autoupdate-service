@@ -22,8 +22,8 @@ func (a Assignment) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a Assignment) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, assignmentID int) (bool, error) {
-	meetingID, err := a.meetingID(ctx, fetch, assignmentID)
+func (a Assignment) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, assignmentID int) (bool, error) {
+	meetingID, err := a.meetingID(ctx, ds, assignmentID)
 	if err != nil {
 		return false, fmt.Errorf("fetching meeting id: %w", err)
 	}
@@ -37,12 +37,12 @@ func (a Assignment) see(ctx context.Context, fetch *datastore.Fetcher, mperms *p
 		return true, nil
 	}
 
-	losID := fetch.Field().Assignment_ListOfSpeakersID(ctx, assignmentID)
-	if err := fetch.Err(); err != nil {
+	losID, err := ds.Assignment_ListOfSpeakersID(assignmentID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("fetching losID: %w", err)
 	}
 
-	canSeeLOS, err := ListOfSpeakers{}.see(ctx, fetch, mperms, losID)
+	canSeeLOS, err := ListOfSpeakers{}.see(ctx, ds, mperms, losID)
 	if err != nil {
 		return false, fmt.Errorf("calculating los see: %w", err)
 	}
@@ -51,13 +51,13 @@ func (a Assignment) see(ctx context.Context, fetch *datastore.Fetcher, mperms *p
 		return true, nil
 	}
 
-	agendaID, exist := fetch.Field().Assignment_AgendaItemID(ctx, assignmentID)
-	if err := fetch.Err(); err != nil {
+	agendaID, exist, err := ds.Assignment_AgendaItemID(assignmentID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("fetching agendaID: %w", err)
 	}
 
 	if exist {
-		canSeeAgenda, err := AgendaItem{}.see(ctx, fetch, mperms, agendaID)
+		canSeeAgenda, err := AgendaItem{}.see(ctx, ds, mperms, agendaID)
 		if err != nil {
 			return false, fmt.Errorf("calculating agendaItem see: %w", err)
 		}
@@ -70,8 +70,8 @@ func (a Assignment) see(ctx context.Context, fetch *datastore.Fetcher, mperms *p
 	return false, nil
 }
 
-func (a Assignment) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, assignmentID int) (bool, error) {
-	meetingID, err := a.meetingID(ctx, fetch, assignmentID)
+func (a Assignment) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, assignmentID int) (bool, error) {
+	meetingID, err := a.meetingID(ctx, ds, assignmentID)
 	if err != nil {
 		return false, fmt.Errorf("fetching meeting id: %w", err)
 	}
@@ -84,9 +84,9 @@ func (a Assignment) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms 
 	return perms.Has(perm.AssignmentCanSee), nil
 }
 
-func (a Assignment) meetingID(ctx context.Context, fetch *datastore.Fetcher, id int) (int, error) {
-	mid := fetch.Field().Assignment_MeetingID(ctx, id)
-	if err := fetch.Err(); err != nil {
+func (a Assignment) meetingID(ctx context.Context, ds *datastore.Request, id int) (int, error) {
+	mid, err := ds.Assignment_MeetingID(id).Value(ctx)
+	if err != nil {
 		return 0, fmt.Errorf("fetching meeting_id for assignment %d: %w", id, err)
 	}
 	return mid, nil

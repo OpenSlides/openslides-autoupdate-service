@@ -132,11 +132,6 @@ func (f *Fetcher) Object(ctx context.Context, fqID string, fields ...string) map
 	return object
 }
 
-// Field returns function to fetch all existing field.
-func (f *Fetcher) Field() Fields {
-	return Fields{f}
-}
-
 // Err returns the error that happend at a method call. If no error happend,
 // then Err() returns nil.
 func (f *Fetcher) Err() error {

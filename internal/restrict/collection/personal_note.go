@@ -20,9 +20,9 @@ func (p PersonalNote) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p PersonalNote) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, personalNoteID int) (bool, error) {
-	pUserID := fetch.Field().PersonalNote_UserID(ctx, personalNoteID)
-	if err := fetch.Err(); err != nil {
+func (p PersonalNote) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, personalNoteID int) (bool, error) {
+	pUserID, err := ds.PersonalNote_UserID(personalNoteID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("fetching user id of personal note: %w", err)
 	}
 	return mperms.UserID() == pUserID, nil

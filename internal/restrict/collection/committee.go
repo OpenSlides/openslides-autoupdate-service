@@ -22,9 +22,9 @@ func (a Committee) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a Committee) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, committeeID int) (bool, error) {
-	userIDs := fetch.Field().Committee_UserIDs(ctx, committeeID)
-	if err := fetch.Err(); err != nil {
+func (a Committee) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, committeeID int) (bool, error) {
+	userIDs, err := ds.Committee_UserIDs(committeeID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting committee users: %w", err)
 	}
 
@@ -34,7 +34,7 @@ func (a Committee) see(ctx context.Context, fetch *datastore.Fetcher, mperms *pe
 		}
 	}
 
-	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, fetch, mperms.UserID(), perm.OMLCanManageUsers)
+	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
 	if err != nil {
 		return false, fmt.Errorf("checking oml perm: %w", err)
 	}
@@ -42,8 +42,8 @@ func (a Committee) see(ctx context.Context, fetch *datastore.Fetcher, mperms *pe
 	return hasOMLPerm, nil
 }
 
-func (a Committee) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, committeeID int) (bool, error) {
-	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, fetch, mperms.UserID(), perm.OMLCanManageOrganization)
+func (a Committee) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, committeeID int) (bool, error) {
+	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageOrganization)
 	if err != nil {
 		return false, fmt.Errorf("checking oml: %w", err)
 	}

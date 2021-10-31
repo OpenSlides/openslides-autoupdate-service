@@ -20,13 +20,13 @@ func (m MotionSubmitter) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionSubmitter) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, motionSubmitterID int) (bool, error) {
-	motionID := fetch.Field().MotionSubmitter_MotionID(ctx, motionSubmitterID)
-	if err := fetch.Err(); err != nil {
+func (m MotionSubmitter) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, motionSubmitterID int) (bool, error) {
+	motionID, err := ds.MotionSubmitter_MotionID(motionSubmitterID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting motion id id: %w", err)
 	}
 
-	seeMotion, err := Motion{}.see(ctx, fetch, mperms, motionID)
+	seeMotion, err := Motion{}.see(ctx, ds, mperms, motionID)
 	if err != nil {
 		return false, fmt.Errorf("checking motion %d can see: %w", motionID, err)
 	}

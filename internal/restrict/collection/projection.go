@@ -20,9 +20,9 @@ func (p Projection) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p Projection) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, projectionID int) (bool, error) {
-	meetingID := fetch.Field().Projection_MeetingID(ctx, projectionID)
-	if err := fetch.Err(); err != nil {
+func (p Projection) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, projectionID int) (bool, error) {
+	meetingID, err := ds.Projection_MeetingID(projectionID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("fetching meeting_id %d: %w", projectionID, err)
 	}
 

@@ -40,12 +40,12 @@ func (u User) SuperAdmin(mode string) FieldRestricter {
 	return Allways
 }
 
-func (u User) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, userID int) (bool, error) {
+func (u User) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, userID int) (bool, error) {
 	if mperms.UserID() == userID {
 		return true, nil
 	}
 
-	canManageUsers, err := perm.HasOrganizationManagementLevel(ctx, fetch, mperms.UserID(), perm.OMLCanManageUsers)
+	canManageUsers, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
 	if err != nil {
 		return false, fmt.Errorf("get organization level: %w", err)
 	}
@@ -55,25 +55,25 @@ func (u User) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 	}
 
 	committeeManager := make(map[int]bool)
-	for _, committeeID := range fetch.Field().User_CommitteeManagementLevelTmpl(ctx, mperms.UserID()) {
-		committeeManagementLevel := fetch.Field().User_CommitteeManagementLevel(ctx, mperms.UserID(), committeeID)
+	for _, committeeID := range ds.User_CommitteeManagementLevelTmpl(mperms.UserID()).ErrorLater(ctx) {
+		committeeManagementLevel := ds.User_CommitteeManagementLevel(mperms.UserID(), committeeID).ErrorLater(ctx)
 		if committeeManagementLevel != "can_manage" {
 			continue
 		}
 		committeeManager[committeeID] = true
 
-		userIDs := fetch.Field().Committee_UserIDs(ctx, committeeID)
+		userIDs := ds.Committee_UserIDs(committeeID).ErrorLater(ctx)
 		for _, uid := range userIDs {
 			if userID == uid {
 				return true, nil
 			}
 		}
 	}
-	if err := fetch.Err(); err != nil {
+	if err := ds.Err(); err != nil {
 		return false, fmt.Errorf("checking committee management level: %w", err)
 	}
 
-	meetingIDs := fetch.Field().User_GroupIDsTmpl(ctx, userID)
+	meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
 	for _, meetingID := range meetingIDs {
 		perms, err := mperms.Meeting(ctx, meetingID)
 		if err != nil {
@@ -84,8 +84,8 @@ func (u User) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 			return true, nil
 		}
 
-		cid := fetch.Field().Meeting_CommitteeID(ctx, meetingID)
-		if err := fetch.Err(); err != nil {
+		cid, err := ds.Meeting_CommitteeID(meetingID).Value(ctx)
+		if err != nil {
 			return false, fmt.Errorf("getting committee id of meeting %d: %w", meetingID, err)
 		}
 
@@ -94,95 +94,95 @@ func (u User) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 		}
 	}
 
-	for _, meetingID := range fetch.Field().User_VoteDelegatedToIDTmpl(ctx, mperms.UserID()) {
-		delegated := fetch.Field().User_VoteDelegatedToID(ctx, mperms.UserID(), meetingID)
+	for _, meetingID := range ds.User_VoteDelegatedToIDTmpl(mperms.UserID()).ErrorLater(ctx) {
+		delegated := ds.User_VoteDelegatedToID(mperms.UserID(), meetingID).ErrorLater(ctx)
 		if delegated == userID {
 			return true, nil
 		}
 	}
-	if err := fetch.Err(); err != nil {
+	if err := ds.Err(); err != nil {
 		return false, fmt.Errorf("checking vote deleted to: %w", err)
 	}
 
-	for _, meetingID := range fetch.Field().User_VoteDelegationsFromIDsTmpl(ctx, mperms.UserID()) {
-		delegations := fetch.Field().User_VoteDelegationsFromIDs(ctx, mperms.UserID(), meetingID)
+	for _, meetingID := range ds.User_VoteDelegationsFromIDsTmpl(mperms.UserID()).ErrorLater(ctx) {
+		delegations := ds.User_VoteDelegationsFromIDs(mperms.UserID(), meetingID).ErrorLater(ctx)
 		for _, uid := range delegations {
 			if uid == userID {
 				return true, nil
 			}
 		}
 	}
-	if err := fetch.Err(); err != nil {
+	if err := ds.Err(); err != nil {
 		return false, fmt.Errorf("checking vote delegations form: %w", err)
 	}
 
 	requiredObjects := []struct {
 		name     string
-		tmplFunc func(context.Context, int) []int
-		elemFunc func(context.Context, int, int) []int
+		tmplFunc func(int) *datastore.ValueIDSlice
+		elemFunc func(int, int) *datastore.ValueIntSlice
 		seeFunc  FieldRestricter
 	}{
 		{
 			"motion submitter",
-			fetch.Field().User_SubmittedMotionIDsTmpl,
-			fetch.Field().User_SubmittedMotionIDs,
+			ds.User_SubmittedMotionIDsTmpl,
+			ds.User_SubmittedMotionIDs,
 			Motion{}.see,
 		},
 
 		{
 			"motion supporter",
-			fetch.Field().User_SupportedMotionIDsTmpl,
-			fetch.Field().User_SupportedMotionIDs,
+			ds.User_SupportedMotionIDsTmpl,
+			ds.User_SupportedMotionIDs,
 			Motion{}.see,
 		},
 
 		{
 			"option",
-			fetch.Field().User_OptionIDsTmpl,
-			fetch.Field().User_OptionIDs,
+			ds.User_OptionIDsTmpl,
+			ds.User_OptionIDs,
 			Option{}.see,
 		},
 
 		{
 			"assignment candidate",
-			fetch.Field().User_AssignmentCandidateIDsTmpl,
-			fetch.Field().User_AssignmentCandidateIDs,
+			ds.User_AssignmentCandidateIDsTmpl,
+			ds.User_AssignmentCandidateIDs,
 			AssignmentCandidate{}.see,
 		},
 
 		{
 			"speaker",
-			fetch.Field().User_SpeakerIDsTmpl,
-			fetch.Field().User_SpeakerIDs,
+			ds.User_SpeakerIDsTmpl,
+			ds.User_SpeakerIDs,
 			Speaker{}.see,
 		},
 
 		{
 			"poll voted",
-			fetch.Field().User_PollVotedIDsTmpl,
-			fetch.Field().User_PollVotedIDs,
+			ds.User_PollVotedIDsTmpl,
+			ds.User_PollVotedIDs,
 			Poll{}.modeB, // Checking field poll/voted_ids that is in modeB and not in see.
 		},
 
 		{
 			"vote user",
-			fetch.Field().User_VoteIDsTmpl,
-			fetch.Field().User_VoteIDs,
+			ds.User_VoteIDsTmpl,
+			ds.User_VoteIDs,
 			Vote{}.see,
 		},
 
 		{
 			"vote delegated user",
-			fetch.Field().User_VoteDelegatedVoteIDsTmpl,
-			fetch.Field().User_VoteDelegatedVoteIDs,
+			ds.User_VoteDelegatedVoteIDsTmpl,
+			ds.User_VoteDelegatedVoteIDs,
 			Vote{}.see,
 		},
 	}
 
 	for _, r := range requiredObjects {
-		for _, meetingID := range r.tmplFunc(ctx, userID) {
-			for _, elementID := range r.elemFunc(ctx, userID, meetingID) {
-				see, err := r.seeFunc(ctx, fetch, mperms, elementID)
+		for _, meetingID := range r.tmplFunc(userID).ErrorLater(ctx) {
+			for _, elementID := range r.elemFunc(userID, meetingID).ErrorLater(ctx) {
+				see, err := r.seeFunc(ctx, ds, mperms, elementID)
 				if err != nil {
 					return false, fmt.Errorf("checking required object %q: %w", r.name, err)
 				}
@@ -192,7 +192,7 @@ func (u User) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 				}
 			}
 		}
-		if err := fetch.Err(); err != nil {
+		if err := ds.Err(); err != nil {
 			return false, fmt.Errorf("getting object %q: %w", r.name, err)
 		}
 	}
@@ -200,16 +200,16 @@ func (u User) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.Me
 	return false, nil
 }
 
-func (u User) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, UserID int) (bool, error) {
+func (u User) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, UserID int) (bool, error) {
 	return mperms.UserID() == UserID, nil
 }
 
-func (u User) modeC(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, UserID int) (bool, error) {
+func (u User) modeC(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, UserID int) (bool, error) {
 	if mperms.UserID() == UserID {
 		return true, nil
 	}
 
-	canManage, err := perm.HasOrganizationManagementLevel(ctx, fetch, mperms.UserID(), perm.OMLCanManageUsers)
+	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
 	if err != nil {
 		return false, fmt.Errorf("cheching oml: %w", err)
 	}
@@ -218,7 +218,7 @@ func (u User) modeC(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.
 		return true, nil
 	}
 
-	meetingIDs := fetch.Field().User_GroupIDsTmpl(ctx, UserID)
+	meetingIDs := ds.User_GroupIDsTmpl(UserID).ErrorLater(ctx)
 	for _, meetingID := range meetingIDs {
 		perms, err := mperms.Meeting(ctx, meetingID)
 		if err != nil {
@@ -229,12 +229,15 @@ func (u User) modeC(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.
 			return true, nil
 		}
 	}
+	if err := ds.Err(); err != nil {
+		return false, fmt.Errorf("checking extra data in any meeting: %w", err)
+	}
 
 	return false, nil
 }
 
-func (u User) modeD(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, UserID int) (bool, error) {
-	canManage, err := perm.HasOrganizationManagementLevel(ctx, fetch, mperms.UserID(), perm.OMLCanManageUsers)
+func (u User) modeD(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, UserID int) (bool, error) {
+	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
 	if err != nil {
 		return false, fmt.Errorf("cheching oml: %w", err)
 	}
@@ -243,7 +246,7 @@ func (u User) modeD(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.
 		return true, nil
 	}
 
-	meetingIDs := fetch.Field().User_GroupIDsTmpl(ctx, UserID)
+	meetingIDs := ds.User_GroupIDsTmpl(UserID).ErrorLater(ctx)
 	for _, meetingID := range meetingIDs {
 		perms, err := mperms.Meeting(ctx, meetingID)
 		if err != nil {
@@ -254,16 +257,19 @@ func (u User) modeD(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.
 			return true, nil
 		}
 	}
+	if err := ds.Err(); err != nil {
+		return false, fmt.Errorf("checking manage in any meeting: %w", err)
+	}
 
 	return false, nil
 }
 
-func (u User) modeE(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, UserID int) (bool, error) {
+func (u User) modeE(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, UserID int) (bool, error) {
 	if mperms.UserID() == UserID {
 		return true, nil
 	}
 
-	canManage, err := perm.HasOrganizationManagementLevel(ctx, fetch, mperms.UserID(), perm.OMLCanManageUsers)
+	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
 	if err != nil {
 		return false, fmt.Errorf("cheching oml: %w", err)
 	}
@@ -272,32 +278,32 @@ func (u User) modeE(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.
 		return true, nil
 	}
 
-	for _, committeeID := range fetch.Field().User_CommitteeManagementLevelTmpl(ctx, mperms.UserID()) {
-		committeeManagementLevel := fetch.Field().User_CommitteeManagementLevel(ctx, mperms.UserID(), committeeID)
+	for _, committeeID := range ds.User_CommitteeManagementLevelTmpl(mperms.UserID()).ErrorLater(ctx) {
+		committeeManagementLevel := ds.User_CommitteeManagementLevel(mperms.UserID(), committeeID).ErrorLater(ctx)
 		if committeeManagementLevel != "can_manage" {
 			continue
 		}
 
-		userIDs := fetch.Field().Committee_UserIDs(ctx, committeeID)
+		userIDs := ds.Committee_UserIDs(committeeID).ErrorLater(ctx)
 		for _, uid := range userIDs {
 			if UserID == uid {
 				return true, nil
 			}
 		}
 	}
-	if err := fetch.Err(); err != nil {
+	if err := ds.Err(); err != nil {
 		return false, fmt.Errorf("checking committee management level: %w", err)
 	}
 
 	return false, nil
 }
 
-func (u User) modeF(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, UserID int) (bool, error) {
+func (u User) modeF(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, UserID int) (bool, error) {
 	if mperms.UserID() == UserID {
 		return true, nil
 	}
 
-	canManage, err := perm.HasOrganizationManagementLevel(ctx, fetch, mperms.UserID(), perm.OMLCanManageUsers)
+	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
 	if err != nil {
 		return false, fmt.Errorf("cheching oml: %w", err)
 	}
@@ -309,6 +315,6 @@ func (u User) modeF(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.
 	return false, nil
 }
 
-func (u User) modeG(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, UserID int) (bool, error) {
+func (u User) modeG(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, UserID int) (bool, error) {
 	return false, nil
 }

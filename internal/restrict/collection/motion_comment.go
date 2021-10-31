@@ -20,19 +20,19 @@ func (m MotionComment) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionComment) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, motionCommentID int) (bool, error) {
-	motionID := fetch.Field().MotionComment_MotionID(ctx, motionCommentID)
-	commentSectionID := fetch.Field().MotionComment_SectionID(ctx, motionCommentID)
-	if err := fetch.Err(); err != nil {
+func (m MotionComment) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, motionCommentID int) (bool, error) {
+	motionID := ds.MotionComment_MotionID(motionCommentID).ErrorLater(ctx)
+	commentSectionID := ds.MotionComment_SectionID(motionCommentID).ErrorLater(ctx)
+	if err := ds.Err(); err != nil {
 		return false, fmt.Errorf("getting motion id and comment section id: %w", err)
 	}
 
-	seeMotion, err := Motion{}.see(ctx, fetch, mperms, motionID)
+	seeMotion, err := Motion{}.see(ctx, ds, mperms, motionID)
 	if err != nil {
 		return false, fmt.Errorf("checking motion %d can see: %w", motionID, err)
 	}
 
-	seeSection, err := MotionCommentSection{}.see(ctx, fetch, mperms, commentSectionID)
+	seeSection, err := MotionCommentSection{}.see(ctx, ds, mperms, commentSectionID)
 	if err != nil {
 		return false, fmt.Errorf("checking motion comment section %d can see: %w", commentSectionID, err)
 	}

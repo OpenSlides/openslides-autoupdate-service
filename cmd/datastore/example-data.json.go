@@ -1653,7 +1653,7 @@ var exampleData = map[string]json.RawMessage{
 	"motion_state/5/merge_amendment_into_final":                       []byte(`"undefined"`),
 	"motion_state/5/motion_ids":                                       []byte(`[]`),
 	"motion_state/5/motion_recommendation_ids":                        []byte(`[]`),
-	"motion_state/5/name":                                             []byte(`"in_progress"`),
+	"motion_state/5/name":                                             []byte(`"in progress"`),
 	"motion_state/5/next_state_ids":                                   []byte(`[6, 10]`),
 	"motion_state/5/previous_state_ids":                               []byte(`[]`),
 	"motion_state/5/recommendation_label":                             []byte(`null`),
