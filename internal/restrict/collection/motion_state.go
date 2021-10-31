@@ -20,9 +20,9 @@ func (m MotionState) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionState) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, motionStateID int) (bool, error) {
-	meetingID := fetch.Field().MotionState_MeetingID(ctx, motionStateID)
-	if err := fetch.Err(); err != nil {
+func (m MotionState) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, motionStateID int) (bool, error) {
+	meetingID, err := ds.MotionState_MeetingID(motionStateID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)
 	}
 

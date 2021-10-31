@@ -20,13 +20,13 @@ func (a AssignmentCandidate) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a AssignmentCandidate) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, assignmentCandidateID int) (bool, error) {
-	assignmentID := fetch.Field().AssignmentCandidate_AssignmentID(ctx, assignmentCandidateID)
-	if err := fetch.Err(); err != nil {
+func (a AssignmentCandidate) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, assignmentCandidateID int) (bool, error) {
+	assignmentID, err := ds.AssignmentCandidate_AssignmentID(assignmentCandidateID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("fetching assignment id: %w", err)
 	}
 
-	canSeeAssignment, err := Assignment{}.see(ctx, fetch, mperms, assignmentID)
+	canSeeAssignment, err := Assignment{}.see(ctx, ds, mperms, assignmentID)
 	if err != nil {
 		return false, fmt.Errorf("can see assignment: %w", err)
 	}

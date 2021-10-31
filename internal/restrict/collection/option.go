@@ -22,13 +22,13 @@ func (o Option) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (o Option) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, optionID int) (bool, error) {
-	pollID, err := pollID(ctx, fetch, optionID)
+func (o Option) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, optionID int) (bool, error) {
+	pollID, err := pollID(ctx, ds, optionID)
 	if err != nil {
 		return false, fmt.Errorf("getting poll id: %w", err)
 	}
 
-	see, err := Poll{}.see(ctx, fetch, mperms, pollID)
+	see, err := Poll{}.see(ctx, ds, mperms, pollID)
 	if err != nil {
 		return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
 	}
@@ -36,13 +36,13 @@ func (o Option) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.
 	return see, nil
 }
 
-func (o Option) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, optionID int) (bool, error) {
-	pollID, err := pollID(ctx, fetch, optionID)
+func (o Option) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, optionID int) (bool, error) {
+	pollID, err := pollID(ctx, ds, optionID)
 	if err != nil {
 		return false, fmt.Errorf("getting poll id: %w", err)
 	}
 
-	see, err := Poll{}.see(ctx, fetch, mperms, pollID)
+	see, err := Poll{}.see(ctx, ds, mperms, pollID)
 	if err != nil {
 		return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
 	}
@@ -51,7 +51,7 @@ func (o Option) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *per
 		return false, nil
 	}
 
-	canManage, err := Poll{}.manage(ctx, fetch, mperms, pollID)
+	canManage, err := Poll{}.manage(ctx, ds, mperms, pollID)
 	if err != nil {
 		return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
 	}
@@ -60,17 +60,17 @@ func (o Option) modeB(ctx context.Context, fetch *datastore.Fetcher, mperms *per
 		return true, nil
 	}
 
-	pollState := fetch.Field().Poll_State(ctx, pollID)
-	if err := fetch.Err(); err != nil {
+	pollState, err := ds.Poll_State(pollID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting poll state: %w", err)
 	}
 
 	return pollState == "published", nil
 }
 
-func pollID(ctx context.Context, fetch *datastore.Fetcher, optionID int) (int, error) {
-	pollID, exist := fetch.Field().Option_PollID(ctx, optionID)
-	if err := fetch.Err(); err != nil {
+func pollID(ctx context.Context, ds *datastore.Request, optionID int) (int, error) {
+	pollID, exist, err := ds.Option_PollID(optionID).Value(ctx)
+	if err != nil {
 		return 0, fmt.Errorf("getting poll id from field poll_id: %w", err)
 	}
 
@@ -78,8 +78,8 @@ func pollID(ctx context.Context, fetch *datastore.Fetcher, optionID int) (int, e
 		return pollID, nil
 	}
 
-	pollID, exist = fetch.Field().Option_UsedAsGlobalOptionInPollID(ctx, optionID)
-	if err := fetch.Err(); err != nil {
+	pollID, exist, err = ds.Option_UsedAsGlobalOptionInPollID(optionID).Value(ctx)
+	if err != nil {
 		return 0, fmt.Errorf("getting used as global option id in poll id: %w", err)
 	}
 

@@ -20,9 +20,9 @@ func (m MotionCommentSection) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionCommentSection) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, motionCommentSectionID int) (bool, error) {
-	meetingID := fetch.Field().MotionCommentSection_MeetingID(ctx, motionCommentSectionID)
-	if err := fetch.Err(); err != nil {
+func (m MotionCommentSection) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, motionCommentSectionID int) (bool, error) {
+	meetingID, err := ds.MotionCommentSection_MeetingID(motionCommentSectionID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)
 	}
 
@@ -39,8 +39,8 @@ func (m MotionCommentSection) see(ctx context.Context, fetch *datastore.Fetcher,
 		return false, nil
 	}
 
-	readGroups := fetch.Field().MotionCommentSection_ReadGroupIDs(ctx, motionCommentSectionID)
-	if err := fetch.Err(); err != nil {
+	readGroups, err := ds.MotionCommentSection_ReadGroupIDs(motionCommentSectionID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("getting readGroups: %w", err)
 	}
 

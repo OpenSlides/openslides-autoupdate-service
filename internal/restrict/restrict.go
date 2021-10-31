@@ -46,8 +46,8 @@ func (r restricter) Get(ctx context.Context, keys ...string) (map[string][]byte,
 // restrict changes the keys and values in data for the user with the given user
 // id.
 func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[string][]byte) error {
-	fetch := datastore.NewFetcher(getter)
-	isSuperAdmin, err := perm.HasOrganizationManagementLevel(ctx, fetch, uid, perm.OMLSuperadmin)
+	ds := datastore.NewRequest(getter)
+	isSuperAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, uid, perm.OMLSuperadmin)
 	if err != nil {
 		var errDoesNotExist datastore.DoesNotExistError
 		if errors.As(err, &errDoesNotExist) {
@@ -55,14 +55,14 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 		}
 		return fmt.Errorf("checking for superadmin: %w", err)
 	}
-	mperms := perm.NewMeetingPermission(fetch, uid)
+	mperms := perm.NewMeetingPermission(ds, uid)
 
 	for key := range data {
 		if data[key] == nil {
 			continue
 		}
 
-		fetch := datastore.NewFetcher(getter)
+		ds := datastore.NewRequest(getter)
 		fqfield, err := parseFQField(key)
 		if err != nil {
 			return fmt.Errorf("parsing fqfield %s: %w", key, err)
@@ -76,7 +76,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 			continue
 		}
 
-		canSeeMode, err := modeFunc(ctx, fetch, mperms, fqfield.ID)
+		canSeeMode, err := modeFunc(ctx, ds, mperms, fqfield.ID)
 		if err != nil {
 			var errDoesNotExist datastore.DoesNotExistError
 			if !errors.As(err, &errDoesNotExist) {
@@ -107,7 +107,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 				return fmt.Errorf("getting restict func: %w", err)
 			}
 
-			cansee, err := modeFunc(ctx, fetch, mperms, id)
+			cansee, err := modeFunc(ctx, ds, mperms, id)
 			if err != nil {
 				return fmt.Errorf("checking can see: %w", err)
 			}
@@ -119,7 +119,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 		foo := templateKeyPrefix(fqfield.CollectionField())
 		// Relation List fields
 		if toCollectionfield, ok := relationListFields[foo]; ok {
-			value, err := filterRelationList(ctx, fetch, mperms, toCollectionfield, isSuperAdmin, data[key])
+			value, err := filterRelationList(ctx, ds, mperms, toCollectionfield, isSuperAdmin, data[key])
 			if err != nil {
 				return fmt.Errorf("restrict relation-list ids of %q: %w", key, err)
 			}
@@ -144,7 +144,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 				return fmt.Errorf("decoding genericID: %w", err)
 			}
 
-			cansee, err := modeFunc(ctx, fetch, mperms, id)
+			cansee, err := modeFunc(ctx, ds, mperms, id)
 			if err != nil {
 				return fmt.Errorf("checking can see: %w", err)
 			}
@@ -155,7 +155,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 
 		// Generic Relation List fields
 		if toCollectionfield, ok := genericRelationListFields[templateKeyPrefix(fqfield.CollectionField())]; ok {
-			value, err := filterGenericRelationList(ctx, fetch, mperms, toCollectionfield, isSuperAdmin, data[key])
+			value, err := filterGenericRelationList(ctx, ds, mperms, toCollectionfield, isSuperAdmin, data[key])
 			if err != nil {
 				return fmt.Errorf("restrict generic-relation-list ids of %q: %w", key, err)
 			}
@@ -178,7 +178,7 @@ func templateKeyPrefix(collectionField string) string {
 	return collectionField[:i+1]
 }
 
-func filterRelationList(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, toCollectionField string, isSuperAdmin bool, data []byte) ([]byte, error) {
+func filterRelationList(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, toCollectionField string, isSuperAdmin bool, data []byte) ([]byte, error) {
 	var ids []int
 	if err := json.Unmarshal(data, &ids); err != nil {
 		return nil, fmt.Errorf("decoding ids: %w", err)
@@ -195,7 +195,7 @@ func filterRelationList(ctx context.Context, fetch *datastore.Fetcher, mperms *p
 
 	var allowedIDs []int
 	for _, id := range ids {
-		allowed, err := relationListModeFunc(ctx, fetch, mperms, id)
+		allowed, err := relationListModeFunc(ctx, ds, mperms, id)
 		if err != nil {
 			return nil, fmt.Errorf("checking %q for id %d: %w", toCollectionField, id, err)
 		}
@@ -211,7 +211,7 @@ func filterRelationList(ctx context.Context, fetch *datastore.Fetcher, mperms *p
 	return encoded, nil
 }
 
-func filterGenericRelationList(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, toCollectionField string, isSuperAdmin bool, data []byte) ([]byte, error) {
+func filterGenericRelationList(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, toCollectionField string, isSuperAdmin bool, data []byte) ([]byte, error) {
 	var genericIDs []string
 	if err := json.Unmarshal(data, &genericIDs); err != nil {
 		return nil, fmt.Errorf("decoding ids: %w", err)
@@ -232,7 +232,7 @@ func filterGenericRelationList(ctx context.Context, fetch *datastore.Fetcher, mp
 			return nil, nil
 		}
 
-		allowed, err := relationListModeFunc(ctx, fetch, mperms, id)
+		allowed, err := relationListModeFunc(ctx, ds, mperms, id)
 		if err != nil {
 			return nil, fmt.Errorf("checking %q for id %d: %w", toCollectionField, id, err)
 		}

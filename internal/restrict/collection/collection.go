@@ -8,14 +8,14 @@ import (
 )
 
 // FieldRestricter is a function to restrict fields of a collection.
-type FieldRestricter func(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, id int) (bool, error)
+type FieldRestricter func(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, id int) (bool, error)
 
 // Allways is a restricter func that just returns true.
-func Allways(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, elementID int) (bool, error) {
+func Allways(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, elementID int) (bool, error) {
 	return true, nil
 }
 
-func loggedIn(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, elementID int) (bool, error) {
+func loggedIn(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, elementID int) (bool, error) {
 	return mperms.UserID() != 0, nil
 }
 

@@ -20,10 +20,10 @@ func (t Tag) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (t Tag) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, tagID int) (bool, error) {
-	meetingID := fetch.Field().Tag_MeetingID(ctx, tagID)
-	if err := fetch.Err(); err != nil {
+func (t Tag) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, tagID int) (bool, error) {
+	meetingID, err := ds.Tag_MeetingID(tagID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("fetching meeting id of tag %d: %w", tagID, err)
 	}
-	return Meeting{}.see(ctx, fetch, mperms, meetingID)
+	return Meeting{}.see(ctx, ds, mperms, meetingID)
 }

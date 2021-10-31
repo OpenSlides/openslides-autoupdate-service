@@ -20,13 +20,13 @@ func (s Speaker) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (s Speaker) see(ctx context.Context, fetch *datastore.Fetcher, mperms *perm.MeetingPermission, speakerID int) (bool, error) {
-	los := fetch.Field().Speaker_ListOfSpeakersID(ctx, speakerID)
-	if err := fetch.Err(); err != nil {
+func (s Speaker) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, speakerID int) (bool, error) {
+	los, err := ds.Speaker_ListOfSpeakersID(speakerID).Value(ctx)
+	if err != nil {
 		return false, fmt.Errorf("fetch los: %w", err)
 	}
 
-	see, err := ListOfSpeakers{}.see(ctx, fetch, mperms, los)
+	see, err := ListOfSpeakers{}.see(ctx, ds, mperms, los)
 	if err != nil {
 		return false, fmt.Errorf("checking see of los %d: %w", los, err)
 	}
