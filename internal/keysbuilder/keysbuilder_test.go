@@ -587,14 +587,14 @@ func TestError(t *testing.T) {
 	b, err := keysbuilder.FromJSON(strings.NewReader(json))
 	if err != nil {
 		t.Fatalf("Got unexpected error: %v", err)
-
 	}
+
 	if err := b.Update(context.Background(), ds); err == nil {
 		t.Fatalf("Expected Update() to return an error, got none")
 	}
 
-	if got := len(ds.Requests()); got != 1 {
-		t.Errorf("Got %d requests, expected 1: %v", got, ds.Requests())
+	if got := len(ds.Requests()); got != 0 {
+		t.Errorf("Got %d requests, expected 0: %v", got, ds.Requests())
 	}
 }
 

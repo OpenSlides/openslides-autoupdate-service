@@ -19,9 +19,10 @@ type getManyRequest struct {
 //
 // Has to be created with NewDatastoreServer.
 type DatastoreServer struct {
-	TS           *httptest.Server
-	RequestCount int
-	Values       *datastoreValues
+	TS            *httptest.Server
+	RequestCount  int
+	RequestedKeys [][]string
+	Values        *datastoreValues
 
 	c chan map[string][]byte
 }
@@ -45,6 +46,8 @@ func NewDatastoreServer(closed <-chan struct{}, data map[string][]byte) *Datasto
 			return
 		}
 		defer r.Body.Close()
+
+		d.RequestedKeys = append(d.RequestedKeys, data.Keys)
 
 		responceData := make(map[string]map[string]map[string]json.RawMessage)
 		for _, key := range data.Keys {
@@ -106,6 +109,16 @@ func (d *DatastoreServer) Update(ctx context.Context) (map[string][]byte, error)
 // Send sends keys to the mock that can be received with Update().
 func (d *DatastoreServer) Send(values map[string][]byte) {
 	d.c <- values
+}
+
+// Requests returns all keys that where requested.
+func (d *DatastoreServer) Requests() [][]string {
+	return d.RequestedKeys
+}
+
+// ResetRequests resets the returnvalue of Requests().
+func (d *DatastoreServer) ResetRequests() {
+	d.RequestedKeys = make([][]string, 0)
 }
 
 func validKey(key string) bool {
