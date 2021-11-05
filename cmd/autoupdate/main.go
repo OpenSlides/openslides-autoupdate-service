@@ -274,7 +274,7 @@ func buildAuth(
 
 	case "fake":
 		fmt.Println("Auth Method: FakeAuth (User ID 1 for all requests)")
-		return test.Auth(1), nil
+		return test.Auth(2), nil
 	default:
 		return nil, fmt.Errorf("unknown auth method %s", method)
 	}
