@@ -238,20 +238,20 @@ var relationListFields = map[string]string{
 	"user/vote_delegations_$":                                  "user/vote_delegated_$_to_id",
 }
 
-var genericRelationFields = map[string]string{
-	"agenda_item/content_object_id":      "agenda_item_id",
-	"list_of_speakers/content_object_id": "list_of_speakers_id",
-	"option/content_object_id":           "option_ids",
-	"personal_note/content_object_id":    "personal_note_ids",
-	"poll/content_object_id":             "poll_ids",
-	"projection/content_object_id":       "projection_ids",
+var genericRelationFields = map[string]map[string]string{
+	"agenda_item/content_object_id":      {"assignment": "agenda_item_id", "motion": "agenda_item_id", "motion_block": "agenda_item_id", "topic": "agenda_item_id"},
+	"list_of_speakers/content_object_id": {"assignment": "list_of_speakers_id", "mediafile": "list_of_speakers_id", "motion": "list_of_speakers_id", "motion_block": "list_of_speakers_id", "topic": "list_of_speakers_id"},
+	"option/content_object_id":           {"motion": "option_ids", "topic": "option_ids", "user": "option_$_ids"},
+	"personal_note/content_object_id":    {"motion": "personal_note_ids"},
+	"poll/content_object_id":             {"assignment": "poll_ids", "motion": "poll_ids"},
+	"projection/content_object_id":       {"agenda_item": "projection_ids", "assignment": "projection_ids", "list_of_speakers": "projection_ids", "mediafile": "projection_ids", "meeting": "projection_ids", "motion": "projection_ids", "motion_block": "projection_ids", "poll": "projection_ids", "projector_countdown": "projection_ids", "projector_message": "projection_ids", "topic": "projection_ids", "user": "projection_$_ids"},
 }
 
-var genericRelationListFields = map[string]string{
-	"mediafile/attachment_ids":                      "attachment_ids",
-	"motion/recommendation_extension_reference_ids": "referenced_in_motion_recommendation_extension_ids",
-	"organization_tag/tagged_ids":                   "organization_tag_ids",
-	"tag/tagged_ids":                                "tag_ids",
+var genericRelationListFields = map[string]map[string]string{
+	"mediafile/attachment_ids":                      {"assignment": "attachment_ids", "motion": "attachment_ids", "topic": "attachment_ids"},
+	"motion/recommendation_extension_reference_ids": {"motion": "referenced_in_motion_recommendation_extension_ids"},
+	"organization_tag/tagged_ids":                   {"committee": "organization_tag_ids", "meeting": "organization_tag_ids"},
+	"tag/tagged_ids":                                {"agenda_item": "tag_ids", "assignment": "tag_ids", "motion": "tag_ids", "topic": "tag_ids"},
 }
 
 // restrictionModes are all fields to there restriction_mode.

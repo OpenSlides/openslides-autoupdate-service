@@ -47,8 +47,8 @@ func loadDefition() (io.ReadCloser, error) {
 type templateData struct {
 	Relation            map[string]string
 	RelationList        map[string]string
-	GenericRelation     map[string]string
-	GenericRelationList map[string]string
+	GenericRelation     map[string]map[string]string
+	GenericRelationList map[string]map[string]string
 	Restrictions        map[string]string
 }
 
@@ -62,8 +62,8 @@ func parse(r io.Reader) (td templateData, err error) {
 
 	td.Relation = make(map[string]string)
 	td.RelationList = make(map[string]string)
-	td.GenericRelation = make(map[string]string)
-	td.GenericRelationList = make(map[string]string)
+	td.GenericRelation = make(map[string]map[string]string)
+	td.GenericRelationList = make(map[string]map[string]string)
 	td.Restrictions = make(map[string]string)
 	for modelName, model := range inData {
 		for fieldName, field := range model.Fields {
@@ -72,27 +72,30 @@ func parse(r io.Reader) (td templateData, err error) {
 			td.Restrictions[reducedKey] = field.RestrictionMode()
 			td.Restrictions[collectionField] = field.RestrictionMode()
 
-			r := field.Relation()
+			relation := field.Relation()
 
-			if r == nil {
+			if relation == nil {
 				continue
 			}
 
-			switch v := r.(type) {
+			switch v := relation.(type) {
 			case *models.AttributeRelation:
 				to := v.ToCollections()[0].Collection + "/" + v.ToCollections()[0].ToField.Name
-				if r.List() {
+				if relation.List() {
 					td.RelationList[reducedKey] = to
 				} else {
 					td.Relation[reducedKey] = to
 				}
 
 			case *models.AttributeGenericRelation:
-				to := v.ToCollections()[0].ToField.Name
-				if r.List() {
-					td.GenericRelationList[reducedKey] = to
+				fields := make(map[string]string)
+				for _, toField := range v.ToCollections() {
+					fields[toField.Collection] = toField.ToField.Name
+				}
+				if relation.List() {
+					td.GenericRelationList[reducedKey] = fields
 				} else {
-					td.GenericRelation[reducedKey] = to
+					td.GenericRelation[reducedKey] = fields
 				}
 
 			default:
@@ -131,15 +134,15 @@ var relationListFields = map[string]string{
 	{{- end}}
 }
 
-var genericRelationFields = map[string]string{
+var genericRelationFields = map[string]map[string]string{
 	{{- range $key, $value := .GenericRelation}}
-	"{{$key}}": "{{$value}}",
+	"{{$key}}": { {{range $innerKey, $innerValue := $value}} "{{$innerKey}}": "{{$innerValue}}", {{end}} },
 	{{- end}}
 }
 
-var genericRelationListFields = map[string]string{
+var genericRelationListFields = map[string]map[string]string{
 	{{- range $key, $value := .GenericRelationList}}
-	"{{$key}}": "{{$value}}",
+	"{{$key}}": { {{range $innerKey, $innerValue := $value}} "{{$innerKey}}": "{{$innerValue}}", {{end}} },
 	{{- end}}
 }
 

@@ -127,14 +127,19 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 		}
 
 		// Generic Relation fields
-		if toCollectionfield, ok := genericRelationFields[templateKeyPrefix(fqfield.CollectionField())]; ok {
+		if toCollectionFieldMap, ok := genericRelationFields[templateKeyPrefix(fqfield.CollectionField())]; ok {
 			var genericID string
 			if err := json.Unmarshal(data[key], &genericID); err != nil {
 				return fmt.Errorf("decoding %q: %w", key, err)
 			}
 
 			parts := strings.Split(genericID, "/")
-			modeFunc, err := restrictMode(parts[0], toCollectionfield, isSuperAdmin)
+			toField := toCollectionFieldMap[parts[0]]
+			if toField == "" {
+				return fmt.Errorf("invalid generic relation for field %q: %s", fqfield.CollectionField(), parts[0])
+			}
+
+			modeFunc, err := restrictMode(parts[0], toField, isSuperAdmin)
 			if err != nil {
 				return fmt.Errorf("getting restict func: %w", err)
 			}
@@ -154,8 +159,8 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 		}
 
 		// Generic Relation List fields
-		if toCollectionfield, ok := genericRelationListFields[templateKeyPrefix(fqfield.CollectionField())]; ok {
-			value, err := filterGenericRelationList(ctx, ds, mperms, toCollectionfield, isSuperAdmin, data[key])
+		if toCollectionfieldMap, ok := genericRelationListFields[templateKeyPrefix(fqfield.CollectionField())]; ok {
+			value, err := filterGenericRelationList(ctx, ds, mperms, toCollectionfieldMap, isSuperAdmin, data[key])
 			if err != nil {
 				return fmt.Errorf("restrict generic-relation-list ids of %q: %w", key, err)
 			}
@@ -211,7 +216,7 @@ func filterRelationList(ctx context.Context, ds *datastore.Request, mperms *perm
 	return encoded, nil
 }
 
-func filterGenericRelationList(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, toCollectionField string, isSuperAdmin bool, data []byte) ([]byte, error) {
+func filterGenericRelationList(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, toCollectionFieldMap map[string]string, isSuperAdmin bool, data []byte) ([]byte, error) {
 	var genericIDs []string
 	if err := json.Unmarshal(data, &genericIDs); err != nil {
 		return nil, fmt.Errorf("decoding ids: %w", err)
@@ -225,7 +230,12 @@ func filterGenericRelationList(ctx context.Context, ds *datastore.Request, mperm
 			return nil, fmt.Errorf("invalid generic id: %w", err)
 		}
 
-		relationListModeFunc, err := restrictMode(parts[0], toCollectionField, isSuperAdmin)
+		toField := toCollectionFieldMap[parts[0]]
+		if toField == "" {
+			return nil, fmt.Errorf("invalid generic relation: %s", parts[0])
+		}
+
+		relationListModeFunc, err := restrictMode(parts[0], toField, isSuperAdmin)
 		if err != nil {
 			// Collection or field unknown. Handle it as no permission.
 			fmt.Printf("Warning: %v", err)
@@ -234,7 +244,7 @@ func filterGenericRelationList(ctx context.Context, ds *datastore.Request, mperm
 
 		allowed, err := relationListModeFunc(ctx, ds, mperms, id)
 		if err != nil {
-			return nil, fmt.Errorf("checking %q for id %d: %w", toCollectionField, id, err)
+			return nil, fmt.Errorf("checking %q for id %d: %w", toField, id, err)
 		}
 		if allowed {
 			allowedIDs = append(allowedIDs, genericID)
