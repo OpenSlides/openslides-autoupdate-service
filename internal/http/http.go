@@ -54,7 +54,7 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, met
 			return
 		}
 
-		if metric != nil {
+		if metric != nil && len(body) != 0 {
 			if err := metric.RequestMeticSave(body); err != nil {
 				log.Printf("Warning: building metric: %v", err)
 			}
