@@ -42,7 +42,7 @@ func TestProjectionFromContentObject(t *testing.T) {
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
-	expect := `"test_model"` + "\n"
+	expect := `{"collection":"test_model","value":"test_model"}` + "\n"
 	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
 }
 
@@ -59,7 +59,7 @@ func TestProjectionFromType(t *testing.T) {
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
-	expect := `"abc"` + "\n"
+	expect := `{"collection":"test1","value":"abc"}` + "\n"
 	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
 }
 
@@ -94,7 +94,7 @@ func TestProjectionUpdateProjection(t *testing.T) {
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
-	expect := `"test_model"` + "\n"
+	expect := `{"collection":"test_model","value":"test_model"}` + "\n"
 	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
 }
 
@@ -126,7 +126,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
-	expect := `{"id": 1, "content_object_id": "meeting/1", "meeting_id":0, "type":"projection", "options": null}` + "\n"
+	expect := `{"collection":"projection","id": 1, "content_object_id": "meeting/1", "meeting_id":0, "type":"projection", "options": null}` + "\n"
 	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
 }
 
@@ -145,7 +145,7 @@ func TestProjectionWithOptionsData(t *testing.T) {
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
-	expect := `{"id": 1, "content_object_id": "meeting/6", "type":"projection", "meeting_id": 1, "options": {"only_main_items": true}}` + "\n"
+	expect := `{"collection":"projection","id": 1, "content_object_id": "meeting/6", "type":"projection", "meeting_id": 1, "options": {"only_main_items": true}}` + "\n"
 	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
 }
 
@@ -178,7 +178,7 @@ func TestProjectionUpdateSlide(t *testing.T) {
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
-	expect := `"calculated with new value"` + "\n"
+	expect := `{"collection":"test_model","value":"calculated with new value"}` + "\n"
 	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
 }
 
@@ -210,7 +210,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 
 	fields, err := ds.Get(context.Background(), "projection/1/content")
 	require.NoError(t, err, "Get returned unexpected error")
-	expect := `"test_model"` + "\n"
+	expect := `{"collection":"test_model","value":"test_model"}` + "\n"
 	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
 }
 
@@ -245,16 +245,16 @@ func TestProjectionTypeDoesNotExist(t *testing.T) {
 func testSlides() *projector.SlideStore {
 	s := new(projector.SlideStore)
 	s.RegisterSliderFunc("test1", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
-		return []byte(`"abc"`), nil
+		return []byte(`{"value":"abc"}`), nil
 	})
 
 	s.RegisterSliderFunc("test_model", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
 		var field json.RawMessage
 		fetch.Fetch(ctx, &field, "test_model/1/field")
 		if field == nil {
-			return []byte(`"test_model"`), nil
+			return []byte(`{"value":"test_model"}`), nil
 		}
-		return []byte(fmt.Sprintf(`"calculated with %s"`, string(field[1:len(field)-1]))), nil
+		return []byte(fmt.Sprintf(`{"value":"calculated with %s"}`, string(field[1:len(field)-1]))), nil
 	})
 
 	s.RegisterSliderFunc("projection", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {

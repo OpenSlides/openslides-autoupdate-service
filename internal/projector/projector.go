@@ -92,8 +92,32 @@ func Register(ds Datastore, slides *SlideStore) {
 		if err := fetch.Err(); err != nil {
 			return nil, err
 		}
-		return bs, nil
+
+		final, err := addCollection(bs, slideName)
+		if err != nil {
+			return nil, fmt.Errorf("adding name of collection %q to value %q: %w", slideName, bs, err)
+		}
+		return final, nil
 	})
+}
+
+// addCollection adds the collection addribute to the given encoded json.
+//
+// `bs` has to be a encoded json-object. `collection` has to be a valid json
+// string.
+func addCollection(bs []byte, collection string) ([]byte, error) {
+	var decoded map[string]json.RawMessage
+	if err := json.Unmarshal(bs, &decoded); err != nil {
+		return nil, fmt.Errorf("decoding object: %w", err)
+	}
+
+	decoded["collection"] = []byte(`"` + collection + `"`)
+
+	bs, err := json.Marshal(decoded)
+	if err != nil {
+		return nil, fmt.Errorf("encoding object: %w", err)
+	}
+	return bs, nil
 }
 
 // Projection holds the meta data to render a projection on a projecter.
