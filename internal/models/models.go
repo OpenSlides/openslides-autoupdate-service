@@ -31,10 +31,10 @@ func getVersion() string {
 }
 
 const (
-	repo            = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/"
-	modelsPath      = "/docs/models.yml"
-	exampleDataPath = "/docs/example-data.json"
-	permissionPath  = "/docs/permission.yml"
+	repo            = "https://raw.githubusercontent.com/OpenSlides/openslides-backend/"
+	modelsPath      = "/global/meta/models.yml"
+	exampleDataPath = "/global/data/example-data.json"
+	permissionPath  = "/global/meta/permission.yml"
 )
 
 // URLModelsYML return the url to the models.yml.
