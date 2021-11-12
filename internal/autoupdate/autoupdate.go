@@ -71,6 +71,9 @@ func New(datastore Datastore, restricter RestrictMiddleware, closed <-chan struc
 		return nil
 	})
 
+	// Register the calculated field for vote_count.
+	a.datastore.RegisterCalculatedField("poll/vote_count", datastorePollVoteCount)
+
 	return a
 }
 
