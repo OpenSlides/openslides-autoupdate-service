@@ -61,6 +61,10 @@ func (c mockConn) XREAD(count, stream, lastID string) (interface{}, error) {
 	return data, err
 }
 
+func (c mockConn) XADD(key string, value []byte) error {
+	return nil
+}
+
 func (c mockConn) ZINCR(key string, value []byte) error {
 	return nil
 }
