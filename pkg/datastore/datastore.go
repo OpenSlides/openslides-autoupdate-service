@@ -181,7 +181,7 @@ func (d *Datastore) ListenOnUpdates(ctx context.Context, keychanger Updater, err
 func (d *Datastore) loadKeys(keys []string, set func(string, []byte)) error {
 	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
 	if len(normalKeys) > 0 {
-		data, err := d.requestKeys(normalKeys)
+		data, err := d.RequestKeys(d.url, normalKeys)
 		if err != nil {
 			return fmt.Errorf("requesting keys from datastore: %w", err)
 		}
@@ -218,19 +218,19 @@ func (d *Datastore) calculateField(field string, key string, updated map[string]
 
 }
 
-// requestKeys request a list of keys by the datastore.
+// RequestKeys request a list of keys from the datastore.
 //
 // If an error happens, no key is returned.
 //
 // The returned map contains exacply the given keys. If a key does not exist in
 // the datastore, then the value of this key is <nil>.
-func (d *Datastore) requestKeys(keys []string) (map[string][]byte, error) {
+func (d *Datastore) RequestKeys(url string, keys []string) (map[string][]byte, error) {
 	requestData, err := keysToGetManyRequest(keys)
 	if err != nil {
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", d.url, bytes.NewReader(requestData))
+	req, err := http.NewRequest("POST", url, bytes.NewReader(requestData))
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}

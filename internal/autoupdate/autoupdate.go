@@ -44,6 +44,7 @@ type Autoupdate struct {
 	datastore  Datastore
 	topic      *topic.Topic
 	restricter RestrictMiddleware
+	voteAddr   string
 }
 
 // RestrictMiddleware is a function that can restrict data.
@@ -53,11 +54,12 @@ type RestrictMiddleware func(getter datastore.Getter, uid int) datastore.Getter
 //
 // The attribute closed is a channel that should be closed when the server shuts
 // down. In this case, all connections get closed.
-func New(datastore Datastore, restricter RestrictMiddleware, closed <-chan struct{}) *Autoupdate {
+func New(datastore Datastore, restricter RestrictMiddleware, voteAddr string, closed <-chan struct{}) *Autoupdate {
 	a := &Autoupdate{
 		datastore:  datastore,
 		topic:      topic.New(topic.WithClosed(closed)),
 		restricter: restricter,
+		voteAddr:   voteAddr,
 	}
 
 	// Update the topic when an data update is received.
@@ -72,7 +74,7 @@ func New(datastore Datastore, restricter RestrictMiddleware, closed <-chan struc
 	})
 
 	// Register the calculated field for vote_count.
-	a.datastore.RegisterCalculatedField("poll/vote_count", datastorePollVoteCount)
+	a.datastore.RegisterCalculatedField("poll/vote_count", a.datastorePollVoteCount)
 
 	return a
 }

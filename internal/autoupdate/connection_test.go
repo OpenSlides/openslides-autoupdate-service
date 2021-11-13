@@ -89,7 +89,7 @@ func TestConnectionEmptyData(t *testing.T) {
 	})
 	go datastore.ListenOnUpdates(shutdownCtx, datastore, func(err error) { log.Println(err) })
 
-	s := autoupdate.New(datastore, test.RestrictAllowed, shutdownCtx.Done())
+	s := autoupdate.New(datastore, test.RestrictAllowed, "", shutdownCtx.Done())
 	kb := test.KeysBuilder{K: test.Str(doesExistKey, doesNotExistKey)}
 
 	t.Run("First responce", func(t *testing.T) {
@@ -202,7 +202,7 @@ func TestConnectionFilterData(t *testing.T) {
 		"user/1/name": []byte(`"Hello World"`),
 	})
 
-	s := autoupdate.New(datastore, test.RestrictAllowed, shutdownCtx.Done())
+	s := autoupdate.New(datastore, test.RestrictAllowed, "", shutdownCtx.Done())
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 	next := s.Connect(1, kb)
 	if _, err := next(context.Background()); err != nil {
@@ -233,7 +233,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	})
 	go datastore.ListenOnUpdates(shutdownCtx, datastore, func(err error) { log.Println(err) })
 
-	s := autoupdate.New(datastore, test.RestrictAllowed, shutdownCtx.Done())
+	s := autoupdate.New(datastore, test.RestrictAllowed, "", shutdownCtx.Done())
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 	next := s.Connect(1, kb)
 	if _, err := next(context.Background()); err != nil {
@@ -265,7 +265,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 		"user/1/name": []byte(`"Hello World"`),
 	})
 
-	s := autoupdate.New(datastore, test.RestrictNotAllowed, shutdownCtx.Done())
+	s := autoupdate.New(datastore, test.RestrictNotAllowed, "", shutdownCtx.Done())
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
 
 	next := s.Connect(1, kb)
@@ -321,7 +321,7 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 	`))
 	go datastore.ListenOnUpdates(shutdownCtx, datastore, nil)
 
-	s := autoupdate.New(datastore, test.RestrictAllowed, shutdownCtx.Done())
+	s := autoupdate.New(datastore, test.RestrictAllowed, "", shutdownCtx.Done())
 	kb, err := keysbuilder.FromJSON(strings.NewReader(`{
 		"collection":"organization",
 		"ids":[

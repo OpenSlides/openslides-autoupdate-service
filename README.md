@@ -163,6 +163,9 @@ The Service uses the following environment variables:
 * `MESSAGE_BUS_PORT`: Port of the redis server. The default is `6379`.
 * `REDIS_TEST_CONN`: Test the redis connection on startup. Disable on the cloud
   if redis needs more time to start then this service. The default is `true`.
+* `VOTE_HOST`: Host of the vote-service. The default is `localhost`.
+* `VOTE_PORT`: Port of the vote-service. The default is `9013`.
+* `VOTE_PROTOCAL`: Protocol of the vote-service. The default is `http`.
 * `AUTH`: Sets the type of the auth service. `fake` (default) or `ticket`.
 * `AUTH_HOST`: Host of the auth service. The default is `localhost`.
 * `AUTH_PORT`: Port of the auth service. The default is `9004`.
