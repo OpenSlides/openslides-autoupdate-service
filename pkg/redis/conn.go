@@ -44,6 +44,15 @@ func (s *Pool) XREAD(count, stream, id string) (interface{}, error) {
 	return conn.Do("XREAD", "COUNT", count, "BLOCK", "0", "STREAMS", stream, id)
 }
 
+// XADD updates a field with a value.
+func (s *Pool) XADD(field string, value []byte) error {
+	conn := s.pool.Get()
+	defer conn.Close()
+
+	_, err := conn.Do("XADD", "*", field, value)
+	return err
+}
+
 // ZINCR increments a sorted set by one.
 func (s *Pool) ZINCR(key string, value []byte) error {
 	conn := s.pool.Get()
@@ -66,6 +75,11 @@ type BlockingConn struct{}
 // XREAD blocks forever.
 func (BlockingConn) XREAD(count, stream, id string) (interface{}, error) {
 	select {}
+}
+
+// XADD does nothing.
+func (BlockingConn) XADD(key string, value []byte) error {
+	return nil
 }
 
 // ZINCR does nothing.
