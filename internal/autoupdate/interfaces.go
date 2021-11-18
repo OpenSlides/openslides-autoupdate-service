@@ -11,6 +11,8 @@ type Datastore interface {
 	Get(ctx context.Context, keys ...string) (map[string][]byte, error)
 	RegisterChangeListener(f func(map[string][]byte) error)
 	ResetCache()
+	RegisterCalculatedField(field string, f func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error))
+	RequestKeys(url string, keys []string) (map[string][]byte, error)
 }
 
 // KeysBuilder holds the keys that are requested by a user.
