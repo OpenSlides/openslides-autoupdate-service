@@ -48,6 +48,10 @@ func defaultEnv() map[string]string {
 		"MESSAGE_BUS_PORT": "6379",
 		"REDIS_TEST_CONN":  "true",
 
+		"VOTE_HOST":     "localhost",
+		"VOTE_PORT":     "9013",
+		"VOTE_PROTOCAL": "http",
+
 		"AUTH":          "fake",
 		"AUTH_PROTOCOL": "http",
 		"AUTH_HOST":     "localhost",
@@ -135,8 +139,10 @@ func run() error {
 		return fmt.Errorf("creating auth adapter: %w", err)
 	}
 
+	voteAddr := env["VOTE_PROTOCAL"] + "://" + env["VOTE_HOST"] + env["VOTE_PORT"]
+
 	// Autoupdate Service.
-	service := autoupdate.New(datastoreService, restrict.Middleware, ctx.Done())
+	service := autoupdate.New(datastoreService, restrict.Middleware, voteAddr, ctx.Done())
 	go service.PruneOldData(ctx)
 	go service.ResetCache(ctx)
 
