@@ -35,7 +35,7 @@ type Connection interface {
 	XREAD(count, stream, lastID string) (interface{}, error)
 	ZINCR(key string, value []byte) error
 	ZRANGE(key string) (interface{}, error)
-	XADD(field string, value []byte) error
+	XADD(stream, field string, value []byte) error
 }
 
 // Redis holds the state of the redis receiver.
@@ -78,7 +78,7 @@ func (r *Redis) Update(ctx context.Context) (map[string][]byte, error) {
 
 // Publish updates a value on the message bus.
 func (r *Redis) Publish(ctx context.Context, key string, value []byte) error {
-	if err := r.Conn.XADD(key, value); err != nil {
+	if err := r.Conn.XADD(fieldChangedTopic, key, value); err != nil {
 		return fmt.Errorf("publish %s, %v in redis: %w", key, value, err)
 	}
 	return nil

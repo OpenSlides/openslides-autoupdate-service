@@ -45,11 +45,11 @@ func (s *Pool) XREAD(count, stream, id string) (interface{}, error) {
 }
 
 // XADD updates a field with a value.
-func (s *Pool) XADD(field string, value []byte) error {
+func (s *Pool) XADD(stream, field string, value []byte) error {
 	conn := s.pool.Get()
 	defer conn.Close()
 
-	_, err := conn.Do("XADD", "*", field, value)
+	_, err := conn.Do("XADD", stream, "*", field, value)
 	return err
 }
 
@@ -78,7 +78,7 @@ func (BlockingConn) XREAD(count, stream, id string) (interface{}, error) {
 }
 
 // XADD does nothing.
-func (BlockingConn) XADD(key string, value []byte) error {
+func (BlockingConn) XADD(stream, key string, value []byte) error {
 	return nil
 }
 
