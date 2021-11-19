@@ -61,7 +61,7 @@ func (c mockConn) XREAD(count, stream, lastID string) (interface{}, error) {
 	return data, err
 }
 
-func (c mockConn) XADD(key string, value []byte) error {
+func (c mockConn) XADD(stream, key string, value []byte) error {
 	return nil
 }
 
