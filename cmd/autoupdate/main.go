@@ -139,7 +139,7 @@ func run() error {
 		return fmt.Errorf("creating auth adapter: %w", err)
 	}
 
-	voteAddr := env["VOTE_PROTOCAL"] + "://" + env["VOTE_HOST"] + env["VOTE_PORT"]
+	voteAddr := fmt.Sprintf("%s://%s:%s", env["VOTE_PROTOCAL"], env["VOTE_HOST"], env["VOTE_PORT"])
 
 	// Autoupdate Service.
 	service := autoupdate.New(datastoreService, restrict.Middleware, voteAddr, ctx.Done())
