@@ -322,6 +322,7 @@ var exampleData = map[string]json.RawMessage{
 	"assignment_candidate/5/meeting_id":    []byte(`1`),
 	"assignment_candidate/5/user_id":       []byte(`2`),
 	"assignment_candidate/5/weight":        []byte(`2`),
+	"chat_group/1/chat_message_ids":        []byte(`[]`),
 	"chat_group/1/id":                      []byte(`1`),
 	"chat_group/1/meeting_id":              []byte(`1`),
 	"chat_group/1/name":                    []byte(`"General"`),
@@ -336,9 +337,10 @@ var exampleData = map[string]json.RawMessage{
                 2,
                 5
             ]`),
-	"chat_group/2/id":         []byte(`2`),
-	"chat_group/2/meeting_id": []byte(`1`),
-	"chat_group/2/name":       []byte(`"Support"`),
+	"chat_group/2/chat_message_ids": []byte(`[]`),
+	"chat_group/2/id":               []byte(`2`),
+	"chat_group/2/meeting_id":       []byte(`1`),
+	"chat_group/2/name":             []byte(`"Support"`),
 	"chat_group/2/read_group_ids": []byte(`[
                 2,
                 5
@@ -805,6 +807,7 @@ var exampleData = map[string]json.RawMessage{
                 1,
                 2
             ]`),
+	"meeting/1/chat_message_ids":                      []byte(`[]`),
 	"meeting/1/committee_id":                          []byte(`1`),
 	"meeting/1/conference_auto_connect":               []byte(`false`),
 	"meeting/1/conference_auto_connect_next_speakers": []byte(`0`),
@@ -2662,6 +2665,7 @@ var exampleData = map[string]json.RawMessage{
                 "1"
             ]`),
 	"user/1/can_change_own_password": []byte(`true`),
+	"user/1/chat_message_$_ids":      []byte(`[]`),
 	"user/1/comment_$": []byte(`[
                 "1"
             ]`),
@@ -2779,6 +2783,7 @@ var exampleData = map[string]json.RawMessage{
                 "1"
             ]`),
 	"user/2/can_change_own_password": []byte(`true`),
+	"user/2/chat_message_$_ids":      []byte(`[]`),
 	"user/2/comment_$": []byte(`[
                 "1"
             ]`),
@@ -2865,6 +2870,7 @@ var exampleData = map[string]json.RawMessage{
                 "1"
             ]`),
 	"user/3/can_change_own_password": []byte(`true`),
+	"user/3/chat_message_$_ids":      []byte(`[]`),
 	"user/3/comment_$": []byte(`[
                 "1"
             ]`),
