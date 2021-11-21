@@ -24,7 +24,7 @@ const urlPath = "/internal/datastore/reader/get_many"
 
 const (
 	messageBusReconnectPause = time.Second
-	httpTimeout              = 10 * time.Second
+	httpTimeout              = 3 * time.Second
 )
 
 // Datastore can be used to get values from the datastore-service.
