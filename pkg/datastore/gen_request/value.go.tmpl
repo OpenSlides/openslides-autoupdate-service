@@ -12,10 +12,6 @@ type {{.TypeName}} struct {
 {{if not .MaybeType}}
 	// Value returns the value.
 	func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, error) {
-		if v.request.err != nil {
-			return {{.Zero}}, v.request.err
-		}
-
 		if v.executed {
 			return v.value, nil
 		}
@@ -29,10 +25,6 @@ type {{.TypeName}} struct {
 {{else}}
 	// Value returns the value.
 	func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, bool, error) {
-		if v.request.err != nil {
-			return {{.Zero}}, false, v.request.err
-		}
-
 		if v.executed {
 			return v.value, !v.isNull, nil
 		}

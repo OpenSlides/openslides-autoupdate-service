@@ -21,10 +21,6 @@ type ValueBool struct {
 
 // Value returns the value.
 func (v *ValueBool) Value(ctx context.Context) (bool, error) {
-	if v.request.err != nil {
-		return false, v.request.err
-	}
-
 	if v.executed {
 		return v.value, nil
 	}
@@ -94,10 +90,6 @@ type ValueFloat struct {
 
 // Value returns the value.
 func (v *ValueFloat) Value(ctx context.Context) (float32, error) {
-	if v.request.err != nil {
-		return 0, v.request.err
-	}
-
 	if v.executed {
 		return v.value, nil
 	}
@@ -167,10 +159,6 @@ type ValueIDSlice struct {
 
 // Value returns the value.
 func (v *ValueIDSlice) Value(ctx context.Context) ([]int, error) {
-	if v.request.err != nil {
-		return nil, v.request.err
-	}
-
 	if v.executed {
 		return v.value, nil
 	}
@@ -249,10 +237,6 @@ type ValueInt struct {
 
 // Value returns the value.
 func (v *ValueInt) Value(ctx context.Context) (int, error) {
-	if v.request.err != nil {
-		return 0, v.request.err
-	}
-
 	if v.executed {
 		return v.value, nil
 	}
@@ -322,10 +306,6 @@ type ValueIntSlice struct {
 
 // Value returns the value.
 func (v *ValueIntSlice) Value(ctx context.Context) ([]int, error) {
-	if v.request.err != nil {
-		return nil, v.request.err
-	}
-
 	if v.executed {
 		return v.value, nil
 	}
@@ -395,10 +375,6 @@ type ValueJSON struct {
 
 // Value returns the value.
 func (v *ValueJSON) Value(ctx context.Context) (json.RawMessage, error) {
-	if v.request.err != nil {
-		return nil, v.request.err
-	}
-
 	if v.executed {
 		return v.value, nil
 	}
@@ -468,10 +444,6 @@ type ValueMaybeInt struct {
 
 // Value returns the value.
 func (v *ValueMaybeInt) Value(ctx context.Context) (int, bool, error) {
-	if v.request.err != nil {
-		return 0, false, v.request.err
-	}
-
 	if v.executed {
 		return v.value, !v.isNull, nil
 	}
@@ -534,10 +506,6 @@ type ValueMaybeString struct {
 
 // Value returns the value.
 func (v *ValueMaybeString) Value(ctx context.Context) (string, bool, error) {
-	if v.request.err != nil {
-		return "", false, v.request.err
-	}
-
 	if v.executed {
 		return v.value, !v.isNull, nil
 	}
@@ -600,10 +568,6 @@ type ValueString struct {
 
 // Value returns the value.
 func (v *ValueString) Value(ctx context.Context) (string, error) {
-	if v.request.err != nil {
-		return "", v.request.err
-	}
-
 	if v.executed {
 		return v.value, nil
 	}
@@ -673,10 +637,6 @@ type ValueStringSlice struct {
 
 // Value returns the value.
 func (v *ValueStringSlice) Value(ctx context.Context) ([]string, error) {
-	if v.request.err != nil {
-		return nil, v.request.err
-	}
-
 	if v.executed {
 		return v.value, nil
 	}
@@ -949,6 +909,12 @@ func (r *Request) Assignment_Title(assignmentID int) *ValueString {
 	return v
 }
 
+func (r *Request) ChatGroup_ChatMessageIDs(chatGroupID int) *ValueIntSlice {
+	v := &ValueIntSlice{request: r}
+	r.requested[fmt.Sprintf("chat_group/%d/chat_message_ids", chatGroupID)] = v
+	return v
+}
+
 func (r *Request) ChatGroup_ID(chatGroupID int) *ValueInt {
 	v := &ValueInt{request: r}
 	r.requested[fmt.Sprintf("chat_group/%d/id", chatGroupID)] = v
@@ -982,6 +948,42 @@ func (r *Request) ChatGroup_Weight(chatGroupID int) *ValueInt {
 func (r *Request) ChatGroup_WriteGroupIDs(chatGroupID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
 	r.requested[fmt.Sprintf("chat_group/%d/write_group_ids", chatGroupID)] = v
+	return v
+}
+
+func (r *Request) ChatMessage_ChatGroupID(chatMessageID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("chat_message/%d/chat_group_id", chatMessageID)] = v
+	return v
+}
+
+func (r *Request) ChatMessage_Content(chatMessageID int) *ValueString {
+	v := &ValueString{request: r}
+	r.requested[fmt.Sprintf("chat_message/%d/content", chatMessageID)] = v
+	return v
+}
+
+func (r *Request) ChatMessage_Created(chatMessageID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("chat_message/%d/created", chatMessageID)] = v
+	return v
+}
+
+func (r *Request) ChatMessage_ID(chatMessageID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("chat_message/%d/id", chatMessageID)] = v
+	return v
+}
+
+func (r *Request) ChatMessage_MeetingID(chatMessageID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("chat_message/%d/meeting_id", chatMessageID)] = v
+	return v
+}
+
+func (r *Request) ChatMessage_UserID(chatMessageID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("chat_message/%d/user_id", chatMessageID)] = v
 	return v
 }
 
@@ -1492,6 +1494,12 @@ func (r *Request) Meeting_AssignmentsExportTitle(meetingID int) *ValueString {
 func (r *Request) Meeting_ChatGroupIDs(meetingID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/chat_group_ids", meetingID)] = v
+	return v
+}
+
+func (r *Request) Meeting_ChatMessageIDs(meetingID int) *ValueIntSlice {
+	v := &ValueIntSlice{request: r}
+	r.requested[fmt.Sprintf("meeting/%d/chat_message_ids", meetingID)] = v
 	return v
 }
 
@@ -4252,6 +4260,18 @@ func (r *Request) User_AssignmentCandidateIDs(userID int, meetingID int) *ValueI
 func (r *Request) User_CanChangeOwnPassword(userID int) *ValueBool {
 	v := &ValueBool{request: r}
 	r.requested[fmt.Sprintf("user/%d/can_change_own_password", userID)] = v
+	return v
+}
+
+func (r *Request) User_ChatMessageIDsTmpl(userID int) *ValueIDSlice {
+	v := &ValueIDSlice{request: r}
+	r.requested[fmt.Sprintf("user/%d/chat_message_$_ids", userID)] = v
+	return v
+}
+
+func (r *Request) User_ChatMessageIDs(userID int, meetingID int) *ValueIntSlice {
+	v := &ValueIntSlice{request: r}
+	r.requested[fmt.Sprintf("user/%d/chat_message_$%d_ids", userID, meetingID)] = v
 	return v
 }
 
