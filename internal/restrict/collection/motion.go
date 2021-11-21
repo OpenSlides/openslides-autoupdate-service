@@ -114,22 +114,6 @@ func (m Motion) modeA(ctx context.Context, ds *datastore.Request, mperms *perm.M
 		}
 	}
 
-	losID, err := ds.Motion_ListOfSpeakersID(motionID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting agenda item: %w", err)
-	}
-
-	if losID != 0 {
-		seeLOS, err := ListOfSpeakers{}.see(ctx, ds, mperms, losID)
-		if err != nil {
-			return false, fmt.Errorf("checking see for agenda item %d: %w", agendaID, err)
-		}
-
-		if seeLOS {
-			return true, nil
-		}
-	}
-
 	return false, nil
 }
 

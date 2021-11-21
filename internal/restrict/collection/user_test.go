@@ -254,11 +254,16 @@ func TestUserModeA(t *testing.T) {
 			speaker_$1_ids: [4]
 		
 		speaker/4/list_of_speakers_id: 5
-		list_of_speakers/5/meeting_id: 1
+
+		list_of_speakers/5:
+			meeting_id: 1
+			content_object_id: topic/10
+
+		topic/10/meeting_id: 1
 		`,
 		withRequestUser(1),
 		withElementID(2),
-		withPerms(1, perm.ListOfSpeakersCanSee),
+		withPerms(1, perm.ListOfSpeakersCanSee, perm.AgendaItemCanSee),
 	)
 
 	testCase(

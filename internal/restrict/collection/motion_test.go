@@ -194,9 +194,6 @@ func TestMotionModeA(t *testing.T) {
 		motion/1:
 			id: 1
 			meeting_id: 1
-			list_of_speakers_id: 300
-		
-		list_of_speakers/300/meeting_id: 1
 		`,
 	)
 
@@ -213,23 +210,6 @@ func TestMotionModeA(t *testing.T) {
 		motion_state/3/id: 3
 		`,
 		withPerms(1, perm.MotionCanSee),
-	)
-
-	testCase(
-		"See List of speakers",
-		t,
-		f,
-		true,
-		`---
-		motion/1:
-			meeting_id: 1
-			state_id: 3
-			list_of_speakers_id: 7
-		
-		motion_state/3/id: 3
-		list_of_speakers/7/meeting_id: 1
-		`,
-		withPerms(1, perm.ListOfSpeakersCanSee),
 	)
 
 	testCase(
