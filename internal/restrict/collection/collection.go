@@ -40,6 +40,8 @@ func Collection(collection string) Restricter {
 		return ListOfSpeakers{}
 	case "chat_group":
 		return ChatGroup{}
+	case "chat_message":
+		return ChatMessage{}
 	case "committee":
 		return Committee{}
 	case "group":
