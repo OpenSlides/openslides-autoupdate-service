@@ -37,20 +37,6 @@ func (a Assignment) see(ctx context.Context, ds *datastore.Request, mperms *perm
 		return true, nil
 	}
 
-	losID, err := ds.Assignment_ListOfSpeakersID(assignmentID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("fetching losID: %w", err)
-	}
-
-	canSeeLOS, err := ListOfSpeakers{}.see(ctx, ds, mperms, losID)
-	if err != nil {
-		return false, fmt.Errorf("calculating los see: %w", err)
-	}
-
-	if canSeeLOS {
-		return true, nil
-	}
-
 	agendaID, exist, err := ds.Assignment_AgendaItemID(assignmentID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("fetching agendaID: %w", err)

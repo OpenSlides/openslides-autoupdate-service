@@ -18,9 +18,6 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/1:
 			meeting_id: 7
-			list_of_speakers_id: 300
-		
-		list_of_speakers/300/meeting_id: 7
 
 		meeting/7:
 			id: 7
@@ -48,9 +45,7 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/1:
 			meeting_id: 7
-			list_of_speakers_id: 300
 		
-		list_of_speakers/300/meeting_id: 7
 		meeting/7/user_ids: [1]
 		`,
 	)
@@ -64,9 +59,6 @@ func TestMediafileModeA(t *testing.T) {
 		mediafile/1:
 			meeting_id: 7
 			used_as_logo_$_in_meeting_id: ["foo"]
-			list_of_speakers_id: 300
-		
-		list_of_speakers/300/meeting_id: 7
 
 		meeting/7:
 			id: 7
@@ -112,9 +104,6 @@ func TestMediafileModeA(t *testing.T) {
 		mediafile/1:
 			meeting_id: 7
 			projection_ids: [4]
-			list_of_speakers_id: 300
-		
-		list_of_speakers/300/meeting_id: 7
 		
 		meeting/7:
 			id: 7
@@ -133,9 +122,6 @@ func TestMediafileModeA(t *testing.T) {
 		mediafile/1:
 			meeting_id: 7
 			projection_ids: [4]
-			list_of_speakers_id: 300
-	
-		list_of_speakers/300/meeting_id: 7
 
 		meeting/7:
 			id: 7
@@ -154,9 +140,6 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/1:
 			meeting_id: 7
-			list_of_speakers_id: 300
-	
-		list_of_speakers/300/meeting_id: 7
 
 		meeting/7:
 			id: 7
@@ -174,9 +157,7 @@ func TestMediafileModeA(t *testing.T) {
 		mediafile/1:
 			meeting_id: 7
 			is_public: true
-			list_of_speakers_id: 300
 
-		list_of_speakers/300/meeting_id: 7
 		meeting/7:
 			id: 7
 			committee_id: 300
@@ -193,9 +174,7 @@ func TestMediafileModeA(t *testing.T) {
 		mediafile/1:
 			meeting_id: 7
 			inherited_access_group_ids: [3]
-			list_of_speakers_id: 300
 
-		list_of_speakers/300/meeting_id: 7
 		meeting/7:
 			id: 7
 			committee_id: 300
@@ -214,9 +193,7 @@ func TestMediafileModeA(t *testing.T) {
 		mediafile/1:
 			meeting_id: 7
 			inherited_access_group_ids: [3]
-			list_of_speakers_id: 300
 
-		list_of_speakers/300/meeting_id: 7
 		meeting/7:
 			id: 7
 			committee_id: 300
@@ -236,9 +213,7 @@ func TestMediafileModeA(t *testing.T) {
 		mediafile/1:
 			meeting_id: 7
 			inherited_access_group_ids: [3]
-			list_of_speakers_id: 300
 
-		list_of_speakers/300/meeting_id: 7
 		meeting/7:
 			id: 7
 			committee_id: 300
@@ -246,44 +221,5 @@ func TestMediafileModeA(t *testing.T) {
 		user/1/group_$7_ids: [3]
 		group/3/id: 3
 		`,
-	)
-
-	testCase(
-		"can see lists of speakers",
-		t,
-		m.Modes("A"),
-		true,
-		`---
-		mediafile/1:
-			list_of_speakers_id: 3
-			meeting_id: 4
-		
-		list_of_speakers/3/meeting_id: 4
-		meeting/4:
-			id: 4
-			committee_id: 300
-		`,
-		withPerms(4, perm.ListOfSpeakersCanSee),
-	)
-}
-
-func TestMediafileModeB(t *testing.T) {
-	var m collection.Mediafile
-
-	testCase(
-		"can see lists of speakers",
-		t,
-		m.Modes("B"),
-		false,
-		`---
-		mediafile/1:
-			list_of_speakers_id: 3
-			meeting_id: 4
-		list_of_speakers/3/meeting_id: 4
-		meeting/4:
-			id: 4
-			committee_id: 300
-		`,
-		withPerms(4, perm.ListOfSpeakersCanSee),
 	)
 }

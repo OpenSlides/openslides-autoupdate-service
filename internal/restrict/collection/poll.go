@@ -20,6 +20,8 @@ func (m Poll) Modes(mode string) FieldRestricter {
 		return m.see
 	case "B":
 		return m.modeB
+	case "C":
+		return m.modeC
 	case "D":
 		return m.modeD
 	}
@@ -157,6 +159,19 @@ func (m Poll) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.Mee
 		return false, nil
 
 	}
+}
+
+func (m Poll) modeC(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
+	state, err := ds.Poll_State(pollID).Value(ctx)
+	if err != nil {
+		return false, fmt.Errorf("getting poll state: %w", err)
+	}
+
+	if state != "started" {
+		return false, nil
+	}
+
+	return m.manage(ctx, ds, mperms, pollID)
 }
 
 func (m Poll) modeD(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {

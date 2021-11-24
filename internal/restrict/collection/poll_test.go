@@ -265,6 +265,51 @@ func TestPollModeB(t *testing.T) {
 	)
 }
 
+func TestPollModeC(t *testing.T) {
+	f := collection.Poll{}.Modes("C")
+
+	testCase(
+		"No permission",
+		t,
+		f,
+		false,
+		`---
+		poll/1:
+			content_objct_id: null
+			state: started
+			meeting_id: 1
+		`,
+	)
+
+	testCase(
+		"Wrong state",
+		t,
+		f,
+		false,
+		`---
+		poll/1:
+			content_objct_id: null
+			state: published
+			meeting_id: 1
+		`,
+		withPerms(1, perm.PollCanManage),
+	)
+
+	testCase(
+		"Correct",
+		t,
+		f,
+		true,
+		`---
+		poll/1:
+			content_objct_id: null
+			state: started
+			meeting_id: 1
+		`,
+		withPerms(1, perm.PollCanManage),
+	)
+}
+
 func TestPollModeD(t *testing.T) {
 	f := collection.Poll{}.Modes("D")
 

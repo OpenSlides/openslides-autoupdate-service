@@ -15,8 +15,6 @@ type Mediafile struct{}
 func (m Mediafile) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return m.modeA
-	case "B":
 		return m.see
 	}
 	return nil
@@ -82,30 +80,4 @@ func (m Mediafile) see(ctx context.Context, ds *datastore.Request, mperms *perm.
 		}
 	}
 	return false, nil
-}
-
-func (m Mediafile) modeA(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, mediafileID int) (bool, error) {
-	canSee, err := m.see(ctx, ds, mperms, mediafileID)
-	if err != nil {
-		return false, fmt.Errorf("see property: %w", err)
-	}
-
-	if canSee {
-		return true, nil
-	}
-
-	losID, exist, err := ds.Mediafile_ListOfSpeakersID(mediafileID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting list of speakers id: %w", err)
-	}
-
-	if !exist {
-		return false, nil
-	}
-
-	canSeeLOS, err := ListOfSpeakers{}.see(ctx, ds, mperms, losID)
-	if err != nil {
-		return false, fmt.Errorf("can see los: %w", err)
-	}
-	return canSeeLOS, nil
 }
