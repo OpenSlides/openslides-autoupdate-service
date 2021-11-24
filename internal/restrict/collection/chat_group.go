@@ -31,12 +31,7 @@ func (c ChatGroup) see(ctx context.Context, ds *datastore.Request, mperms *perm.
 		return false, fmt.Errorf("getting permissions: %w", err)
 	}
 
-	adminGroup, exist, err := ds.Meeting_AdminGroupID(meetingID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting admin group id: %w", err)
-	}
-
-	if exist && perms.InGroup(adminGroup) {
+	if perms.Has(perm.ChatCanManage) {
 		return true, nil
 	}
 
