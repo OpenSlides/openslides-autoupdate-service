@@ -3459,6 +3459,12 @@ func (r *Request) Poll_Type(pollID int) *ValueString {
 	return v
 }
 
+func (r *Request) Poll_VoteCount(pollID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("poll/%d/vote_count", pollID)] = v
+	return v
+}
+
 func (r *Request) Poll_VotedIDs(pollID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
 	r.requested[fmt.Sprintf("poll/%d/voted_ids", pollID)] = v
