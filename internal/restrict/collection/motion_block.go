@@ -79,20 +79,5 @@ func (m MotionBlock) modeA(ctx context.Context, ds *datastore.Request, mperms *p
 		}
 	}
 
-	losID, err := ds.MotionBlock_ListOfSpeakersID(motionBlockID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting list of speakers: %w", err)
-	}
-
-	if losID != 0 {
-		see, err = ListOfSpeakers{}.see(ctx, ds, mperms, losID)
-		if err != nil {
-			return false, fmt.Errorf("checking list of speakers %d: %w", losID, err)
-		}
-
-		if see {
-			return true, nil
-		}
-	}
 	return false, nil
 }

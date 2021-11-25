@@ -19,8 +19,6 @@ func TestMotionBlockModeA(t *testing.T) {
 		motion_block/1:
 			id: 1
 			meeting_id: 2
-			list_of_speakers_id: 300
-		list_of_speakers/300/meeting_id: 2
 		`,
 	)
 
@@ -59,43 +57,10 @@ func TestMotionBlockModeA(t *testing.T) {
 		motion_block/1:
 			meeting_id: 1
 			agenda_item_id: 3
-			list_of_speakers_id: 300
-
-		list_of_speakers/300/meeting_id: 1
 		
 		agenda_item/3/meeting_id: 2
 		`,
 	)
-
-	testCase(
-		"see list of speakers",
-		t,
-		f,
-		true,
-		`---
-		motion_block/1:
-			meeting_id: 1
-			list_of_speakers_id: 3
-		
-		list_of_speakers/3/meeting_id: 2
-		`,
-		withPerms(2, perm.ListOfSpeakersCanSee),
-	)
-
-	testCase(
-		"not see list of speakers",
-		t,
-		f,
-		false,
-		`---
-		motion_block/1:
-			meeting_id: 1
-			list_of_speakers_id: 3
-		
-		list_of_speakers/3/meeting_id: 2
-		`,
-	)
-
 }
 
 func TestMotionBlockModeB(t *testing.T) {

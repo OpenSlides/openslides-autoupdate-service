@@ -13,10 +13,10 @@ func TestAssignmentCandidateModeA(t *testing.T) {
 	assignment_candidate/1/assignment_id: 7
 	
 	assignment/7:
-		list_of_speakers_id: 9
 		meeting_id: 1
-
-	list_of_speakers/9/meeting_id: 1
+		agenda_item_id: 5
+	
+	agenda_item/5/meeting_id: 1
 	`
 
 	testCase(
@@ -34,7 +34,7 @@ func TestAssignmentCandidateModeA(t *testing.T) {
 		a.Modes("A"),
 		true,
 		ds,
-		withPerms(1, perm.ListOfSpeakersCanSee),
+		withPerms(1, perm.AgendaItemCanSee),
 	)
 
 	testCase(

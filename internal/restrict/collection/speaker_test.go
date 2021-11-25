@@ -37,7 +37,10 @@ func TestSpeakerModeA(t *testing.T) {
 		list_of_speakers/15:
 			id: 15
 			meeting_id: 1
+			content_object_id: topic/5
+		
+		topic/5/meeting_id: 1
 		`,
-		withPerms(1, perm.ListOfSpeakersCanSee),
+		withPerms(1, perm.ListOfSpeakersCanSee, perm.AgendaItemCanSee),
 	)
 }
