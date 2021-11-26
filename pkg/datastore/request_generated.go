@@ -1455,6 +1455,12 @@ func (r *Request) Meeting_AssignmentPollDefault100PercentBase(meetingID int) *Va
 	return v
 }
 
+func (r *Request) Meeting_AssignmentPollDefaultBackend(meetingID int) *ValueString {
+	v := &ValueString{request: r}
+	r.requested[fmt.Sprintf("meeting/%d/assignment_poll_default_backend", meetingID)] = v
+	return v
+}
+
 func (r *Request) Meeting_AssignmentPollDefaultGroupIDs(meetingID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/assignment_poll_default_group_ids", meetingID)] = v
@@ -1857,6 +1863,12 @@ func (r *Request) Meeting_MotionPollDefault100PercentBase(meetingID int) *ValueS
 	return v
 }
 
+func (r *Request) Meeting_MotionPollDefaultBackend(meetingID int) *ValueString {
+	v := &ValueString{request: r}
+	r.requested[fmt.Sprintf("meeting/%d/motion_poll_default_backend", meetingID)] = v
+	return v
+}
+
 func (r *Request) Meeting_MotionPollDefaultGroupIDs(meetingID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/motion_poll_default_group_ids", meetingID)] = v
@@ -2136,6 +2148,12 @@ func (r *Request) Meeting_PollCoupleCountdown(meetingID int) *ValueBool {
 func (r *Request) Meeting_PollDefault100PercentBase(meetingID int) *ValueString {
 	v := &ValueString{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/poll_default_100_percent_base", meetingID)] = v
+	return v
+}
+
+func (r *Request) Meeting_PollDefaultBackend(meetingID int) *ValueString {
+	v := &ValueString{request: r}
+	r.requested[fmt.Sprintf("meeting/%d/poll_default_backend", meetingID)] = v
 	return v
 }
 
@@ -2622,12 +2640,6 @@ func (r *Request) MotionState_AllowSupport(motionStateID int) *ValueBool {
 func (r *Request) MotionState_CssClass(motionStateID int) *ValueString {
 	v := &ValueString{request: r}
 	r.requested[fmt.Sprintf("motion_state/%d/css_class", motionStateID)] = v
-	return v
-}
-
-func (r *Request) MotionState_DontSetIDentifier(motionStateID int) *ValueBool {
-	v := &ValueBool{request: r}
-	r.requested[fmt.Sprintf("motion_state/%d/dont_set_identifier", motionStateID)] = v
 	return v
 }
 
@@ -3216,6 +3228,12 @@ func (r *Request) Organization_CommitteeIDs(organizationID int) *ValueIntSlice {
 func (r *Request) Organization_Description(organizationID int) *ValueString {
 	v := &ValueString{request: r}
 	r.requested[fmt.Sprintf("organization/%d/description", organizationID)] = v
+	return v
+}
+
+func (r *Request) Organization_EnableChat(organizationID int) *ValueBool {
+	v := &ValueBool{request: r}
+	r.requested[fmt.Sprintf("organization/%d/enable_chat", organizationID)] = v
 	return v
 }
 
