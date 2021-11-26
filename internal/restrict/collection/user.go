@@ -177,6 +177,13 @@ func (u User) see(ctx context.Context, ds *datastore.Request, mperms *perm.Meeti
 			ds.User_VoteDelegatedVoteIDs,
 			Vote{}.see,
 		},
+
+		{
+			"chat messages",
+			ds.User_ChatMessageIDsTmpl,
+			ds.User_ChatMessageIDs,
+			ChatMessage{}.see,
+		},
 	}
 
 	for _, r := range requiredObjects {
