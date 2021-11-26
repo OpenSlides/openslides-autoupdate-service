@@ -50,4 +50,21 @@ func TestChatGroupModeA(t *testing.T) {
 		user/1/group_$1_ids: [4]
 		`,
 	)
+
+	testCase(
+		"In chat write group",
+		t,
+		c.Modes("A"),
+		true,
+		`---
+		chat_group/1:
+			meeting_id: 1
+			write_group_ids: [4]
+
+		meeting/1/id: 1
+		group/4/id: 4
+
+		user/1/group_$1_ids: [4]
+		`,
+	)
 }
