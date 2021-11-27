@@ -23,3 +23,9 @@ func TestRequestTwoWithErrors(t *testing.T) {
 		t.Errorf("Title1 returned unexpected error: %v", err)
 	}
 }
+
+func TestRequestTwoWithErrorsOften(t *testing.T) {
+	for i := 0; i < 100; i++ {
+		TestRequestTwoWithErrors(t)
+	}
+}

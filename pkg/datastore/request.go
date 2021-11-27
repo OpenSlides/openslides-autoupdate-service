@@ -31,6 +31,11 @@ func NewRequest(getter Getter) *Request {
 
 // Execute loads all requested keys from the datastore.
 func (r *Request) Execute(ctx context.Context) error {
+	defer func() {
+		// Clear all requested fields in the end. Even if errors happend.
+		r.requested = make(map[string]executer)
+	}()
+
 	keys := make([]string, 0, len(r.requested)*2)
 	for fqfield := range r.requested {
 		keyParts := strings.Split(fqfield, "/")
@@ -64,7 +69,6 @@ func (r *Request) Execute(ctx context.Context) error {
 			r.err = fmt.Errorf("executing field %q: %w", fqfield, err)
 			return r.err
 		}
-		delete(r.requested, fqfield)
 	}
 
 	r.err = nil
