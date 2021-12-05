@@ -292,7 +292,7 @@ func restrictMode(collectionName, fieldName string, isSuperAdmin bool) (collecti
 			// Do not restrict unknown fields that are not implemented.
 			return collection.Allways, nil
 		}
-
+		return modefunc, nil
 	}
 
 	modefunc := restricter.Modes(fieldMode)

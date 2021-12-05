@@ -31,12 +31,7 @@ func (c ChatGroup) see(ctx context.Context, ds *datastore.Request, mperms *perm.
 		return false, fmt.Errorf("getting permissions: %w", err)
 	}
 
-	adminGroup, exist, err := ds.Meeting_AdminGroupID(meetingID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting admin group id: %w", err)
-	}
-
-	if exist && perms.InGroup(adminGroup) {
+	if perms.Has(perm.ChatCanManage) {
 		return true, nil
 	}
 
@@ -44,7 +39,15 @@ func (c ChatGroup) see(ctx context.Context, ds *datastore.Request, mperms *perm.
 	if err != nil {
 		return false, fmt.Errorf("getting chat read group ids: %w", err)
 	}
-	for _, gid := range readGroups {
+
+	writeGroups, err := ds.ChatGroup_WriteGroupIDs(chatGroupID).Value(ctx)
+	if err != nil {
+		return false, fmt.Errorf("getting chat read group ids: %w", err)
+	}
+
+	allGroups := append(readGroups, writeGroups...)
+
+	for _, gid := range allGroups {
 		if perms.InGroup(gid) {
 			return true, nil
 		}

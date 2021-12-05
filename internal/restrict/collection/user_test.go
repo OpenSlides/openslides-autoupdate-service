@@ -330,6 +330,36 @@ func TestUserModeA(t *testing.T) {
 		withRequestUser(1),
 		withElementID(2),
 	)
+
+	testCase(
+		"chat messages",
+		t,
+		f,
+		true,
+		`---
+		user:
+			1:
+				group_$1_ids: [5]
+
+			2:
+				chat_message_$_ids: ["1"]
+				chat_message_$1_ids: [4]
+		
+		meeting/1/id: 1
+		
+		chat_message/4:
+			user_id: 2
+			chat_group_id: 3
+		
+		chat_group/3:
+			read_group_ids: [5]
+			meeting_id: 1
+
+		group/5/id: 5
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
 }
 
 func TestUserModeB(t *testing.T) {

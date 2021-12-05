@@ -20,11 +20,42 @@ func (c ChatMessage) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (ChatMessage) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, chatGroupID int) (bool, error) {
-	chatGroupID, err := ds.ChatMessage_ChatGroupID(chatGroupID).Value(ctx)
+func (ChatMessage) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, chatMessageID int) (bool, error) {
+	chatGroupID, err := ds.ChatMessage_ChatGroupID(chatMessageID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting chat_group_id: %w", err)
 	}
 
-	return ChatGroup{}.see(ctx, ds, mperms, chatGroupID)
+	meetingID, err := ChatGroup{}.meetingID(ctx, ds, chatGroupID)
+	if err != nil {
+		return false, fmt.Errorf("getting meeting id: %w", err)
+	}
+
+	perms, err := mperms.Meeting(ctx, meetingID)
+	if err != nil {
+		return false, fmt.Errorf("getting permissions: %w", err)
+	}
+
+	if perms.Has(perm.ChatCanManage) {
+		return true, nil
+	}
+
+	readGroups, err := ds.ChatGroup_ReadGroupIDs(chatGroupID).Value(ctx)
+	if err != nil {
+		return false, fmt.Errorf("getting chat read group ids: %w", err)
+	}
+
+	for _, gid := range readGroups {
+		if perms.InGroup(gid) {
+			return true, nil
+		}
+	}
+
+	author, err := ds.ChatMessage_UserID(chatMessageID).Value(ctx)
+	if err != nil {
+		return false, fmt.Errorf("reading author of chat message: %w", err)
+	}
+
+	return author == mperms.UserID(), nil
+
 }

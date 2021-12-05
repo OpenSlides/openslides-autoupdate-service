@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 )
 
 func TestChatGroupModeA(t *testing.T) {
@@ -21,17 +22,16 @@ func TestChatGroupModeA(t *testing.T) {
 	)
 
 	testCase(
-		"Admin in meeting",
+		"Chat Manager in meeting",
 		t,
 		c.Modes("A"),
 		true,
 		`---
 		chat_group/1/meeting_id: 1
 
-		meeting/1/admin_group_id: 3
-
-		user/1/group_$1_ids: [3]
+		meeting/1/id: 1
 		`,
+		withPerms(1, perm.ChatCanManage),
 	)
 
 	testCase(
@@ -43,6 +43,23 @@ func TestChatGroupModeA(t *testing.T) {
 		chat_group/1:
 			meeting_id: 1
 			read_group_ids: [4]
+
+		meeting/1/id: 1
+		group/4/id: 4
+
+		user/1/group_$1_ids: [4]
+		`,
+	)
+
+	testCase(
+		"In chat write group",
+		t,
+		c.Modes("A"),
+		true,
+		`---
+		chat_group/1:
+			meeting_id: 1
+			write_group_ids: [4]
 
 		meeting/1/id: 1
 		group/4/id: 4
