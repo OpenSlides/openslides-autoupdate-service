@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"go.opentelemetry.io/otel"
 )
 
 // connection holds the state of a client. It has to be created by colling
@@ -40,6 +41,7 @@ func (c *connection) Next(ctx context.Context) (map[string][]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("get updated keys: %w", err)
 		}
+
 		c.tid = tid
 
 		for _, key := range changedKeys {
@@ -59,6 +61,9 @@ func (c *connection) Next(ctx context.Context) (map[string][]byte, error) {
 
 // data returns all values from the datastore.getter.
 func (c *connection) data(ctx context.Context) (map[string][]byte, error) {
+	ctx, span := otel.Tracer("autoupdate").Start(ctx, "next")
+	defer span.End()
+
 	if c.tid == 0 {
 		c.tid = c.autoupdate.topic.LastID()
 	}

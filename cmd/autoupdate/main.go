@@ -20,6 +20,11 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
 
 type messageBus interface {
@@ -116,6 +121,18 @@ func run() error {
 
 	ctx, cancel := interruptContext()
 	defer cancel()
+
+	exp, err := newExporter(os.Stdout)
+	if err != nil {
+		return fmt.Errorf("creating trace exporter: %w", err)
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(exp),
+		trace.WithResource(newResource()),
+	)
+	defer tp.Shutdown(context.Background())
+	otel.SetTracerProvider(tp)
 
 	// Receiver for datastore and logout events.
 	messageBus, err := buildMessagebus(env)
@@ -298,4 +315,22 @@ func openSecret(name string) (string, error) {
 	}
 
 	return string(secret), nil
+}
+
+// newResource returns a resource describing this application.
+func newResource() *resource.Resource {
+	r, _ := resource.Merge(
+		resource.Default(),
+		resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String("autoupdate"),
+			semconv.ServiceVersionKey.String("v0.1.0"),
+		),
+	)
+	return r
+}
+
+// newExporter returns a console exporter.
+func newExporter(w io.Writer) (trace.SpanExporter, error) {
+	return jaeger.New(jaeger.WithCollectorEndpoint())
 }

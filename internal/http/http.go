@@ -14,11 +14,14 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 const (
 	prefixPublic   = "/system/autoupdate"
 	prefixInternal = "/internal/autoupdate"
+	traceName      = "autoupdate"
 )
 
 // Connecter returns an connect object.
@@ -36,11 +39,14 @@ type RequestMetricer interface {
 // body has to be in the format specified in the keysbuilder package.
 func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, metric RequestMetricer) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, span := otel.Tracer(traceName).Start(r.Context(), "request")
+		defer span.End()
+
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Cache-Control", "no-store, max-age=0")
 
 		defer r.Body.Close()
-		uid := auth.FromContext(r.Context())
+		uid := auth.FromContext(ctx)
 
 		queryBuilder, err := keysbuilder.FromKeys(strings.Split(r.URL.Query().Get("k"), ","))
 		if err != nil {
@@ -60,6 +66,8 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, met
 			}
 		}
 
+		span.SetAttributes(attribute.String("body", string(body)))
+
 		bodyBuilder, err := keysbuilder.ManyFromJSON(bytes.NewReader(body))
 		if err != nil {
 			handleError(w, fmt.Errorf("building keysbuilder from body: %w", err), true)
@@ -73,7 +81,7 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, met
 			sender = sendSingleMessage
 		}
 
-		if err := sender(r.Context(), w, uid, builder, connecter); err != nil {
+		if err := sender(ctx, w, uid, builder, connecter); err != nil {
 			handleError(w, err, false)
 			return
 		}
