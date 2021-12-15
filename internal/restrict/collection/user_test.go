@@ -21,6 +21,16 @@ func TestUserModeA(t *testing.T) {
 	)
 
 	testCase(
+		"With anonymous",
+		t,
+		f,
+		false,
+		`user/2/id: 2`,
+		withRequestUser(0),
+		withElementID(2),
+	)
+
+	testCase(
 		"Request user",
 		t,
 		f,
@@ -400,6 +410,16 @@ func TestUserModeC(t *testing.T) {
 	)
 
 	testCase(
+		"With anonymous",
+		t,
+		u.Modes("C"),
+		false,
+		`user/2/id: 2`,
+		withRequestUser(0),
+		withElementID(2),
+	)
+
+	testCase(
 		"OML can manage users",
 		t,
 		u.Modes("C"),
@@ -510,6 +530,16 @@ func TestUserModeE(t *testing.T) {
 		false,
 		`user/2/id: 2`,
 		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"With anonymous",
+		t,
+		u.Modes("E"),
+		false,
+		`user/2/id: 2`,
+		withRequestUser(0),
 		withElementID(2),
 	)
 
