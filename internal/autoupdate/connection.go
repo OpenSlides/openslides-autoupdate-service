@@ -63,6 +63,8 @@ func (c *connection) data(ctx context.Context) (map[string][]byte, error) {
 		c.tid = c.autoupdate.topic.LastID()
 	}
 
+	oldKeys := c.kb.Keys()
+
 	recorder := datastore.NewRecorder(c.autoupdate.datastore)
 	restricter := c.autoupdate.restricter(recorder, c.uid)
 
@@ -70,7 +72,13 @@ func (c *connection) data(ctx context.Context) (map[string][]byte, error) {
 		return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
 	}
 
-	data, err := restricter.Get(ctx, c.kb.Keys()...)
+	newKeys := c.kb.Keys()
+	removedKeys := notInSlice(oldKeys, newKeys)
+	for _, key := range removedKeys {
+		c.filter.delete(key)
+	}
+
+	data, err := restricter.Get(ctx, newKeys...)
 	if err != nil {
 		return nil, fmt.Errorf("get restricted data: %w", err)
 	}
@@ -79,4 +87,20 @@ func (c *connection) data(ctx context.Context) (map[string][]byte, error) {
 	c.filter.filter(data)
 
 	return data, nil
+}
+
+// notInSlice returns elements that are in slice a but not in b.
+func notInSlice(a, b []string) []string {
+	bSet := make(map[string]struct{}, len(b))
+	for _, k := range b {
+		bSet[k] = struct{}{}
+	}
+
+	var missing []string
+	for _, k := range a {
+		if _, ok := bSet[k]; !ok {
+			missing = append(missing, k)
+		}
+	}
+	return missing
 }

@@ -49,3 +49,10 @@ func (f *filter) filter(data map[string][]byte) {
 func (f *filter) empty() bool {
 	return f.history == nil
 }
+
+// delete removes the key k from the filter.
+//
+// The next time the filter is called with the key, it will not be filtered.
+func (f *filter) delete(k string) {
+	delete(f.history, k)
+}
