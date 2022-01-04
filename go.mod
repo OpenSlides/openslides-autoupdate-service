@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/golang-jwt/jwt/v4 v4.2.0
-	github.com/gomodule/redigo v1.8.6
+	github.com/gomodule/redigo v1.8.8
 	github.com/ostcar/topic v0.3.4
 	github.com/stretchr/testify v1.7.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
