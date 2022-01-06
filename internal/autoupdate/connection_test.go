@@ -369,5 +369,81 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 	if v, ok := secondData["organization_tag/2/id"]; ok {
 		t.Errorf("Got value for deleted object organization_tag/2/id: %s", v)
 	}
+}
+
+// TestKeyRequestedAgain makes sure, that when a key is requested again, it is
+// send to the client, even when it has not changed.
+//
+// See the TestKeyNotRequestedAnymore test and the issue
+//
+// https://github.com/OpenSlides/openslides-autoupdate-service/issues/382
+func TestKeyRequestedAgain(t *testing.T) {
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), dsmock.YAMLData(`---
+	organization/1/organization_tag_ids: [1,2]
+	organization_tag/1/id: 1
+	organization_tag/2/id: 2
+	`))
+	go datastore.ListenOnUpdates(shutdownCtx, datastore, nil)
+
+	s := autoupdate.New(datastore, test.RestrictAllowed, "", shutdownCtx.Done())
+	kb, err := keysbuilder.FromJSON(strings.NewReader(`{
+		"collection":"organization",
+		"ids":[
+		  1
+		],
+		"fields":{
+		  "organization_tag_ids":{
+			"type":"relation-list",
+			"collection":"organization_tag",
+			"fields":{
+			  "id":null
+			}
+		  }
+		}
+	  }`))
+
+	if err != nil {
+		t.Fatalf("Can not build request: %v", err)
+	}
+
+	next := s.Connect(1, kb)
+
+	// Receive the initial data
+	if _, err := next(shutdownCtx); err != nil {
+		t.Fatalf("Getting first data: %v", err)
+	}
+
+	datastore.Send(dsmock.YAMLData(`
+	organization/1/organization_tag_ids: [1]
+	`))
+
+	if _, err := next(shutdownCtx); err != nil {
+		t.Fatalf("Getting second data: %v", err)
+	}
+
+	datastore.Send(dsmock.YAMLData(`
+	organization/1/organization_tag_ids: [1,2]
+	`))
+
+	// Receive the third data
+	testData, err := next(shutdownCtx)
+	if err != nil {
+		t.Fatalf("Getting second data: %v", err)
+	}
+
+	if len(testData) != 2 {
+		t.Errorf("second data contained %d values, expected two. Got: %v", len(testData), testData)
+	}
+
+	if v := string(testData["organization/1/organization_tag_ids"]); v != "[1,2]" {
+		t.Errorf("Got organization/1/organization_tag_ids: %q, expected [1,2]", v)
+	}
+
+	if v := string(testData["organization_tag/2/id"]); v != "2" {
+		t.Errorf("Got organization_tag/2/id: %q, expected 2", v)
+	}
 
 }
