@@ -3315,6 +3315,36 @@ func (r *Request) Organization_ThemeIDs(organizationID int) *ValueIntSlice {
 	return v
 }
 
+func (r *Request) Organization_Url(organizationID int) *ValueString {
+	v := &ValueString{request: r}
+	r.requested[fmt.Sprintf("organization/%d/url", organizationID)] = v
+	return v
+}
+
+func (r *Request) Organization_UsersEmailBody(organizationID int) *ValueString {
+	v := &ValueString{request: r}
+	r.requested[fmt.Sprintf("organization/%d/users_email_body", organizationID)] = v
+	return v
+}
+
+func (r *Request) Organization_UsersEmailReplyto(organizationID int) *ValueString {
+	v := &ValueString{request: r}
+	r.requested[fmt.Sprintf("organization/%d/users_email_replyto", organizationID)] = v
+	return v
+}
+
+func (r *Request) Organization_UsersEmailSender(organizationID int) *ValueString {
+	v := &ValueString{request: r}
+	r.requested[fmt.Sprintf("organization/%d/users_email_sender", organizationID)] = v
+	return v
+}
+
+func (r *Request) Organization_UsersEmailSubject(organizationID int) *ValueString {
+	v := &ValueString{request: r}
+	r.requested[fmt.Sprintf("organization/%d/users_email_subject", organizationID)] = v
+	return v
+}
+
 func (r *Request) PersonalNote_ContentObjectID(personalNoteID int) *ValueMaybeString {
 	v := &ValueMaybeString{request: r}
 	r.requested[fmt.Sprintf("personal_note/%d/content_object_id", personalNoteID)] = v
