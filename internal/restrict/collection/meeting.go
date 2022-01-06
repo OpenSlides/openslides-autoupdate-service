@@ -35,6 +35,10 @@ func (m Meeting) see(ctx context.Context, ds *datastore.Request, mperms *perm.Me
 		return true, nil
 	}
 
+	if mperms.UserID() == 0 {
+		return false, nil
+	}
+
 	oml, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageOrganization)
 	if err != nil {
 		return false, fmt.Errorf("checking organization management level: %w", err)

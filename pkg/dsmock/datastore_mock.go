@@ -104,6 +104,10 @@ type Stub map[string][]byte
 
 // Get implements the Getter interface.
 func (s Stub) Get(_ context.Context, keys ...string) (map[string][]byte, error) {
+	if invalid := datastore.InvalidKeys(keys...); len(invalid) > 0 {
+		return nil, fmt.Errorf("keys %v are invalid", invalid)
+	}
+
 	data := map[string][]byte(s)
 	requested := make(map[string][]byte, len(keys))
 	for _, k := range keys {
