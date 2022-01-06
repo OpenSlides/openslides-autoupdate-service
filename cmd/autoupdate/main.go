@@ -201,7 +201,7 @@ func run() error {
 
 	// Create http server.
 	listenAddr := ":" + env["AUTOUPDATE_PORT"]
-	srv := &http.Server{Addr: listenAddr, Handler: otelhttp.NewHandler(mux, "server")}
+	srv := &http.Server{Addr: listenAddr, Handler: otelhttp.NewHandler(mux, "http")}
 
 	// Shutdown logic in separate goroutine.
 	wait := make(chan error)
