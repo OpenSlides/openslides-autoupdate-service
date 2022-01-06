@@ -13,6 +13,9 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/ostcar/topic"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // DebugTokenKey and DebugCookieKey are non random auth keys for development.
@@ -28,6 +31,7 @@ const pruneTime = 15 * time.Minute
 const cookieName = "refreshId"
 const authHeader = "Authentication"
 const authPath = "/internal/auth/authenticate"
+const httpTimeout = 3 * time.Second
 
 // Auth authenticates a request against the openslides-auth-service.
 //
@@ -39,6 +43,8 @@ type Auth struct {
 
 	tokenKey  []byte
 	cookieKey []byte
+
+	client *http.Client
 }
 
 // New initializes an Auth service.
@@ -53,6 +59,11 @@ func New(
 		authServiceURL:   authServiceURL,
 		tokenKey:         tokenKey,
 		cookieKey:        cookieKey,
+
+		client: &http.Client{
+			Timeout:   httpTimeout,
+			Transport: otelhttp.NewTransport(http.DefaultTransport),
+		},
 	}
 
 	// Make sure the topic is not empty
@@ -64,10 +75,15 @@ func New(
 // Authenticate uses the headers from the given request to get the user id. The
 // returned context will be cancled, if the session is revoked.
 func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (ctx context.Context, err error) {
+	ctx, span := otel.Tracer("autoupdate").Start(r.Context(), "authenticate")
+	defer span.End()
+
 	p := new(payload)
-	if err := a.loadToken(w, r, p); err != nil {
+	if err := a.loadToken(ctx, w, r, p); err != nil {
 		return nil, fmt.Errorf("reading token: %w", err)
 	}
+
+	span.SetAttributes(attribute.Int("User id", p.UserID))
 
 	if p.UserID == 0 {
 		// Empty token or anonymous token. No need to save anything in the
@@ -165,7 +181,7 @@ func (a *Auth) PruneOldData(ctx context.Context) {
 
 // loadToken loads and validates the ticket. If the token is expires, it tries
 // to renews it and writes the new token to the responsewriter.
-func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Claims) error {
+func (a *Auth) loadToken(ctx context.Context, w http.ResponseWriter, r *http.Request, payload jwt.Claims) error {
 	header := r.Header.Get(authHeader)
 	cookie, err := r.Cookie(cookieName)
 	if err != nil && err != http.ErrNoCookie {
@@ -207,7 +223,7 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 		var invalid *jwt.ValidationError
 		if errors.As(err, &invalid) {
 			if tokenExpired(invalid.Errors) {
-				token, err := a.refreshToken(r.Context(), encodedToken, encodedCookie)
+				token, err := a.refreshToken(ctx, encodedToken, encodedCookie)
 				if err != nil {
 					return fmt.Errorf("refreshing token: %w", err)
 				}

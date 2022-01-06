@@ -5,10 +5,13 @@ import (
 	"context"
 	"fmt"
 	"sync"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // cacheSetFunc is a function to update cache keys.
-type cacheSetFunc func(keys []string, set func(key string, value []byte)) error
+type cacheSetFunc func(ctx context.Context, keys []string, set func(key string, value []byte)) error
 
 // cache stores the values to the datastore.
 //
@@ -78,11 +81,17 @@ func (c *cache) fetchMissing(ctx context.Context, keys []string, set cacheSetFun
 		return nil
 	}
 
+	span := trace.SpanFromContext(ctx)
+
+	span.SetAttributes(attribute.StringSlice("cache misses", missingKeys))
+
 	// Fetch missing keys in the background. Do not stop the fetching. Even
 	// when the context is done. Other calls could also request it.
 	errChan := make(chan error, 1)
 	go func() {
-		err := set(keys, func(key string, value []byte) {
+		// Build a new context that does not contain any cancelation
+		ctx := trace.ContextWithSpan(context.Background(), span)
+		err := set(ctx, keys, func(key string, value []byte) {
 			c.data.setIfPending(key, value)
 		})
 

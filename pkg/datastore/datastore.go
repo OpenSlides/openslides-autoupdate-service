@@ -18,6 +18,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const urlPath = "/internal/datastore/reader/get_many"
@@ -34,7 +39,7 @@ type Datastore struct {
 	url              string
 	cache            *cache
 	keychanger       Updater
-	changeListeners  []func(map[string][]byte) error
+	changeListeners  []func(context.Context, map[string][]byte) error
 	calculatedFields map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)
 	calculatedKeys   map[string]string
 	client           *http.Client
@@ -50,7 +55,8 @@ func New(url string) *Datastore {
 		calculatedFields: make(map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)),
 		calculatedKeys:   make(map[string]string),
 		client: &http.Client{
-			Timeout: httpTimeout,
+			Timeout:   httpTimeout,
+			Transport: otelhttp.NewTransport(http.DefaultTransport),
 		},
 	}
 
@@ -77,11 +83,18 @@ func InvalidKeys(keys ...string) []string {
 //
 // If a key does not exist, the value nil is returned for that key.
 func (d *Datastore) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
-	values, err := d.cache.GetOrSet(ctx, keys, func(keys []string, set func(key string, value []byte)) error {
+	ctx, span := otel.Tracer("autoupdate").Start(ctx, "datastore get")
+	defer span.End()
+
+	span.SetAttributes(attribute.StringSlice("Keys", keys))
+
+	values, err := d.cache.GetOrSet(ctx, keys, func(ctx context.Context, keys []string, set func(key string, value []byte)) error {
+		// Attenchen: The given context is not a child context from the context
+		// from the outer Get() function.
 		if invalid := InvalidKeys(keys...); invalid != nil {
 			return invalidKeyError{keys: invalid}
 		}
-		return d.loadKeys(keys, set)
+		return d.loadKeys(ctx, keys, set)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("getOrSet for keys `%s`: %w", keys, err)
@@ -92,7 +105,7 @@ func (d *Datastore) Get(ctx context.Context, keys ...string) (map[string][]byte,
 
 // RegisterChangeListener registers a function that is called whenever an
 // datastore update happens.
-func (d *Datastore) RegisterChangeListener(f func(map[string][]byte) error) {
+func (d *Datastore) RegisterChangeListener(f func(context.Context, map[string][]byte) error) {
 	d.changeListeners = append(d.changeListeners, f)
 }
 
@@ -156,6 +169,26 @@ func (d *Datastore) ListenOnUpdates(ctx context.Context, keychanger Updater, err
 			continue
 		}
 
+		var links []trace.Link
+		for k, v := range data {
+			if k != "span" {
+				continue
+			}
+
+			scc, err := decodeSpanConfig(string(v))
+			if err != nil {
+				errHandler(fmt.Errorf("decoding span: %w", err))
+				continue // ignore this span but continue with the data
+			}
+
+			links = append(links, trace.Link{
+				SpanContext: trace.NewSpanContext(scc),
+			})
+			delete(data, k)
+		}
+
+		spanCtx, span := otel.Tracer("autoupdate").Start(context.Background(), "datastore data update", trace.WithLinks(links...))
+
 		// The lock prefents a cache reset while data is updating.
 		d.resetMu.Lock()
 		d.cache.SetIfExistMany(data)
@@ -170,18 +203,42 @@ func (d *Datastore) ListenOnUpdates(ctx context.Context, keychanger Updater, err
 		}
 
 		for _, f := range d.changeListeners {
-			if err := f(data); err != nil {
+			if err := f(spanCtx, data); err != nil {
 				errHandler(err)
 			}
 		}
 		d.resetMu.Unlock()
+		span.End()
 	}
 }
 
-func (d *Datastore) loadKeys(keys []string, set func(string, []byte)) error {
+func decodeSpanConfig(encoded string) (trace.SpanContextConfig, error) {
+	parts := strings.Split(encoded, ":")
+	scc := trace.SpanContextConfig{}
+
+	traceID, err := trace.TraceIDFromHex(parts[0])
+	if err != nil {
+		return scc, fmt.Errorf("decoding trace id: %w", err)
+	}
+
+	spanID, err := trace.SpanIDFromHex(parts[1])
+	if err != nil {
+		return scc, fmt.Errorf("decoding span id: %w", err)
+	}
+
+	traceFlags := trace.TraceFlags([]byte(parts[2])[0])
+
+	scc.TraceID = traceID
+	scc.SpanID = spanID
+	scc.TraceFlags = traceFlags
+	scc.Remote = true
+	return scc, nil
+}
+
+func (d *Datastore) loadKeys(ctx context.Context, keys []string, set func(string, []byte)) error {
 	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
 	if len(normalKeys) > 0 {
-		data, err := d.RequestKeys(d.url, normalKeys)
+		data, err := d.RequestKeys(ctx, d.url, normalKeys)
 		if err != nil {
 			return fmt.Errorf("requesting keys from datastore: %w", err)
 		}
@@ -222,15 +279,15 @@ func (d *Datastore) calculateField(field string, key string, updated map[string]
 //
 // If an error happens, no key is returned.
 //
-// The returned map contains exacply the given keys. If a key does not exist in
+// The returned map contains exacly the given keys. If a key does not exist in
 // the datastore, then the value of this key is <nil>.
-func (d *Datastore) RequestKeys(url string, keys []string) (map[string][]byte, error) {
+func (d *Datastore) RequestKeys(ctx context.Context, url string, keys []string) (map[string][]byte, error) {
 	requestData, err := keysToGetManyRequest(keys)
 	if err != nil {
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewReader(requestData))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(requestData))
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}

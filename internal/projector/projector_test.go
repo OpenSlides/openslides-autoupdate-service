@@ -81,7 +81,7 @@ func TestProjectionUpdateProjection(t *testing.T) {
 	require.NoError(t, err, "Get returned unexpected error")
 
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(map[string][]byte) error {
+	ds.RegisterChangeListener(func(context.Context, map[string][]byte) error {
 		close(done)
 		return nil
 	})
@@ -116,7 +116,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 	require.NoError(t, err, "Get returned unexpected error")
 
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(map[string][]byte) error {
+	ds.RegisterChangeListener(func(context.Context, map[string][]byte) error {
 		close(done)
 		return nil
 	})
@@ -168,7 +168,7 @@ func TestProjectionUpdateSlide(t *testing.T) {
 
 	// Register a listener that tells, when cache is updated.
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(data map[string][]byte) error {
+	ds.RegisterChangeListener(func(_ context.Context, data map[string][]byte) error {
 		close(done)
 		return nil
 	})
@@ -200,7 +200,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 
 	// Register a listener that tells, when cache is updated.
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(data map[string][]byte) error {
+	ds.RegisterChangeListener(func(_ context.Context, data map[string][]byte) error {
 		close(done)
 		return nil
 	})

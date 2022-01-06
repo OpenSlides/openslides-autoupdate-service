@@ -12,7 +12,7 @@ func (a *Autoupdate) datastorePollVoteCount(ctx context.Context, fqfield string,
 		return changed[fqfield], nil
 	}
 
-	values, err := a.datastore.RequestKeys(a.voteAddr+path, []string{fqfield})
+	values, err := a.datastore.RequestKeys(ctx, a.voteAddr+path, []string{fqfield})
 	if err != nil {
 		return nil, fmt.Errorf("loading key %q from vote-service: %w", fqfield, err)
 	}

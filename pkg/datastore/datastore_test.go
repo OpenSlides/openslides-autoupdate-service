@@ -150,7 +150,7 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 	})
 
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(map[string][]byte) error {
+	ds.RegisterChangeListener(func(context.Context, map[string][]byte) error {
 		// Signal, that the data is updated.
 		close(done)
 		return nil
@@ -187,7 +187,7 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 	ds.Get(context.Background(), "collection/1/myfield")
 
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(map[string][]byte) error {
+	ds.RegisterChangeListener(func(context.Context, map[string][]byte) error {
 		// Signal, that the data is updated.
 		close(done)
 		return nil
@@ -316,7 +316,7 @@ func TestChangeListeners(t *testing.T) {
 	var receivedData map[string][]byte
 	received := make(chan struct{}, 1)
 
-	ds.RegisterChangeListener(func(data map[string][]byte) error {
+	ds.RegisterChangeListener(func(_ context.Context, data map[string][]byte) error {
 		receivedData = data
 		close(received)
 		return nil
@@ -348,7 +348,7 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 	var receivedData map[string][]byte
 	received := make(chan struct{}, 1)
 
-	ds.RegisterChangeListener(func(data map[string][]byte) error {
+	ds.RegisterChangeListener(func(_ context.Context, data map[string][]byte) error {
 		receivedData = data
 		close(received)
 		return nil

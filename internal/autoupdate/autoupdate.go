@@ -13,6 +13,8 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/ostcar/topic"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 const (
@@ -63,11 +65,22 @@ func New(datastore Datastore, restricter RestrictMiddleware, voteAddr string, cl
 	}
 
 	// Update the topic when an data update is received.
-	a.datastore.RegisterChangeListener(func(data map[string][]byte) error {
-		keys := make([]string, 0, len(data))
+	a.datastore.RegisterChangeListener(func(ctx context.Context, data map[string][]byte) error {
+		keys := make([]string, 0, len(data)+1)
 		for k := range data {
 			keys = append(keys, k)
 		}
+
+		_, span := otel.Tracer("autoupdate").Start(ctx, "autoupdate data update")
+		defer span.End()
+
+		kv := make([]string, 0, len(data))
+		for k, v := range data {
+			kv = append(kv, fmt.Sprintf("%s: %s", k, v))
+		}
+		span.SetAttributes(attribute.StringSlice("data", kv))
+
+		keys = append(keys, "span:"+encodeSpanContext(span.SpanContext()))
 
 		a.topic.Publish(keys...)
 		return nil

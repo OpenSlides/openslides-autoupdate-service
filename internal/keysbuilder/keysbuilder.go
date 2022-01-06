@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"go.opentelemetry.io/otel"
 )
 
 const keySep = "/"
@@ -68,6 +69,9 @@ func FromBuilders(builders ...*Builder) *Builder {
 //
 // It is not allowed to call builder.Keys() after Update returned an error.
 func (b *Builder) Update(ctx context.Context, getter datastore.Getter) (err error) {
+	ctx, span := otel.Tracer("autoupdate").Start(ctx, "keysbuilder update")
+	defer span.End()
+
 	defer func() {
 		// Reset keys if an error happens
 		if err != nil {

@@ -16,6 +16,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -39,8 +40,8 @@ type RequestMetricer interface {
 // body has to be in the format specified in the keysbuilder package.
 func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, metric RequestMetricer) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := otel.Tracer(traceName).Start(r.Context(), "request")
-		defer span.End()
+		ctx := r.Context()
+		span := trace.SpanFromContext(ctx)
 
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Cache-Control", "no-store, max-age=0")
@@ -68,11 +69,14 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, met
 
 		span.SetAttributes(attribute.String("body", string(body)))
 
+		_, spanBuilder := otel.Tracer(traceName).Start(r.Context(), "request parser")
 		bodyBuilder, err := keysbuilder.ManyFromJSON(bytes.NewReader(body))
 		if err != nil {
 			handleError(w, fmt.Errorf("building keysbuilder from body: %w", err), true)
+			spanBuilder.End()
 			return
 		}
+		spanBuilder.End()
 
 		builder := keysbuilder.FromBuilders(queryBuilder, bodyBuilder)
 

@@ -14,6 +14,8 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // Middleware can be used as a datastore.Getter that restrict the data for a
@@ -32,6 +34,11 @@ type restricter struct {
 
 // Get returns restricted data.
 func (r restricter) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+	ctx, span := otel.Tracer("autoupdate").Start(ctx, "restrictor get")
+	defer span.End()
+
+	span.SetAttributes(attribute.StringSlice("Keys", keys))
+
 	data, err := r.getter.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("getting data: %w", err)

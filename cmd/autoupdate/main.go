@@ -20,8 +20,11 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
@@ -122,17 +125,43 @@ func run() error {
 	ctx, cancel := interruptContext()
 	defer cancel()
 
-	exp, err := newExporter(os.Stdout)
-	if err != nil {
-		return fmt.Errorf("creating trace exporter: %w", err)
+	otelAgentAddr, ok := os.LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if !ok {
+		otelAgentAddr = "collector:4318"
 	}
 
+	traceClient := otlptracehttp.NewClient(
+		otlptracehttp.WithInsecure(),
+		otlptracehttp.WithEndpoint(otelAgentAddr),
+	)
+
+	traceExporter, err := otlptrace.New(ctx, traceClient)
+	if err != nil {
+		return fmt.Errorf("creating connection to collector: %w", err)
+	}
+
+	res, err := resource.New(ctx,
+		resource.WithFromEnv(),
+		resource.WithProcess(),
+		resource.WithTelemetrySDK(),
+		resource.WithHost(),
+		resource.WithAttributes(
+			// the service name used to display traces in backends
+			semconv.ServiceNameKey.String("autoupdate"),
+		),
+	)
+	if err != nil {
+		return fmt.Errorf("creating otlp resouce: %w", err)
+	}
+
+	bsp := trace.NewBatchSpanProcessor(traceExporter)
 	tp := trace.NewTracerProvider(
-		trace.WithBatcher(exp),
-		trace.WithResource(newResource()),
+		trace.WithSpanProcessor(bsp),
+		trace.WithResource(res),
 	)
 	defer tp.Shutdown(context.Background())
 	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 	// Receiver for datastore and logout events.
 	messageBus, err := buildMessagebus(env)
@@ -172,7 +201,7 @@ func run() error {
 
 	// Create http server.
 	listenAddr := ":" + env["AUTOUPDATE_PORT"]
-	srv := &http.Server{Addr: listenAddr, Handler: mux}
+	srv := &http.Server{Addr: listenAddr, Handler: otelhttp.NewHandler(mux, "server")}
 
 	// Shutdown logic in separate goroutine.
 	wait := make(chan error)
@@ -315,22 +344,4 @@ func openSecret(name string) (string, error) {
 	}
 
 	return string(secret), nil
-}
-
-// newResource returns a resource describing this application.
-func newResource() *resource.Resource {
-	r, _ := resource.Merge(
-		resource.Default(),
-		resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceNameKey.String("autoupdate"),
-			semconv.ServiceVersionKey.String("v0.1.0"),
-		),
-	)
-	return r
-}
-
-// newExporter returns a console exporter.
-func newExporter(w io.Writer) (trace.SpanExporter, error) {
-	return jaeger.New(jaeger.WithCollectorEndpoint())
 }
