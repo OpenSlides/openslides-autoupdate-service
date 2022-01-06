@@ -45,32 +45,34 @@ func (u User) see(ctx context.Context, ds *datastore.Request, mperms *perm.Meeti
 		return true, nil
 	}
 
-	canManageUsers, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
-	if err != nil {
-		return false, fmt.Errorf("get organization level: %w", err)
-	}
-
-	if canManageUsers {
-		return true, nil
-	}
-
 	committeeManager := make(map[int]bool)
-	for _, committeeID := range ds.User_CommitteeManagementLevelTmpl(mperms.UserID()).ErrorLater(ctx) {
-		committeeManagementLevel := ds.User_CommitteeManagementLevel(mperms.UserID(), committeeID).ErrorLater(ctx)
-		if committeeManagementLevel != "can_manage" {
-			continue
+	if mperms.UserID() != 0 {
+		canManageUsers, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
+		if err != nil {
+			return false, fmt.Errorf("get organization level: %w", err)
 		}
-		committeeManager[committeeID] = true
 
-		userIDs := ds.Committee_UserIDs(committeeID).ErrorLater(ctx)
-		for _, uid := range userIDs {
-			if userID == uid {
-				return true, nil
+		if canManageUsers {
+			return true, nil
+		}
+
+		for _, committeeID := range ds.User_CommitteeManagementLevelTmpl(mperms.UserID()).ErrorLater(ctx) {
+			committeeManagementLevel := ds.User_CommitteeManagementLevel(mperms.UserID(), committeeID).ErrorLater(ctx)
+			if committeeManagementLevel != "can_manage" {
+				continue
+			}
+			committeeManager[committeeID] = true
+
+			userIDs := ds.Committee_UserIDs(committeeID).ErrorLater(ctx)
+			for _, uid := range userIDs {
+				if userID == uid {
+					return true, nil
+				}
 			}
 		}
-	}
-	if err := ds.Err(); err != nil {
-		return false, fmt.Errorf("checking committee management level: %w", err)
+		if err := ds.Err(); err != nil {
+			return false, fmt.Errorf("checking committee management level: %w", err)
+		}
 	}
 
 	meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
@@ -94,26 +96,28 @@ func (u User) see(ctx context.Context, ds *datastore.Request, mperms *perm.Meeti
 		}
 	}
 
-	for _, meetingID := range ds.User_VoteDelegatedToIDTmpl(mperms.UserID()).ErrorLater(ctx) {
-		delegated := ds.User_VoteDelegatedToID(mperms.UserID(), meetingID).ErrorLater(ctx)
-		if delegated == userID {
-			return true, nil
-		}
-	}
-	if err := ds.Err(); err != nil {
-		return false, fmt.Errorf("checking vote deleted to: %w", err)
-	}
-
-	for _, meetingID := range ds.User_VoteDelegationsFromIDsTmpl(mperms.UserID()).ErrorLater(ctx) {
-		delegations := ds.User_VoteDelegationsFromIDs(mperms.UserID(), meetingID).ErrorLater(ctx)
-		for _, uid := range delegations {
-			if uid == userID {
+	if mperms.UserID() != 0 {
+		for _, meetingID := range ds.User_VoteDelegatedToIDTmpl(mperms.UserID()).ErrorLater(ctx) {
+			delegated := ds.User_VoteDelegatedToID(mperms.UserID(), meetingID).ErrorLater(ctx)
+			if delegated == userID {
 				return true, nil
 			}
 		}
-	}
-	if err := ds.Err(); err != nil {
-		return false, fmt.Errorf("checking vote delegations form: %w", err)
+		if err := ds.Err(); err != nil {
+			return false, fmt.Errorf("checking vote deleted to: %w", err)
+		}
+
+		for _, meetingID := range ds.User_VoteDelegationsFromIDsTmpl(mperms.UserID()).ErrorLater(ctx) {
+			delegations := ds.User_VoteDelegationsFromIDs(mperms.UserID(), meetingID).ErrorLater(ctx)
+			for _, uid := range delegations {
+				if uid == userID {
+					return true, nil
+				}
+			}
+		}
+		if err := ds.Err(); err != nil {
+			return false, fmt.Errorf("checking vote delegations form: %w", err)
+		}
 	}
 
 	requiredObjects := []struct {
@@ -274,6 +278,10 @@ func (u User) modeD(ctx context.Context, ds *datastore.Request, mperms *perm.Mee
 func (u User) modeE(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, UserID int) (bool, error) {
 	if mperms.UserID() == UserID {
 		return true, nil
+	}
+
+	if mperms.UserID() == 0 {
+		return false, nil
 	}
 
 	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)

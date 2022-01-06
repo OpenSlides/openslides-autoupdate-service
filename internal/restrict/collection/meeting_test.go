@@ -71,6 +71,15 @@ func TestMeetingModeB(t *testing.T) {
 		meeting/1/id: 1
 		`,
 	)
+
+	testCase(
+		"Request with anonymous",
+		t,
+		m.Modes("B"),
+		false,
+		`meeting/1/id: 1`,
+		withRequestUser(0),
+	)
 }
 
 func TestMeetingModeC(t *testing.T) {
