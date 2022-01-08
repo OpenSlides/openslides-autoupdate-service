@@ -18,8 +18,6 @@ func (u User) Modes(mode string) FieldRestricter {
 		return u.see
 	case "B":
 		return u.modeB
-	case "C":
-		return u.modeC
 	case "D":
 		return u.modeD
 	case "E":
@@ -213,38 +211,6 @@ func (u User) see(ctx context.Context, ds *datastore.Request, mperms *perm.Meeti
 
 func (u User) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, UserID int) (bool, error) {
 	return mperms.UserID() == UserID, nil
-}
-
-func (u User) modeC(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, UserID int) (bool, error) {
-	if mperms.UserID() == UserID {
-		return true, nil
-	}
-
-	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
-	if err != nil {
-		return false, fmt.Errorf("cheching oml: %w", err)
-	}
-
-	if canManage {
-		return true, nil
-	}
-
-	meetingIDs := ds.User_GroupIDsTmpl(UserID).ErrorLater(ctx)
-	for _, meetingID := range meetingIDs {
-		perms, err := mperms.Meeting(ctx, meetingID)
-		if err != nil {
-			return false, fmt.Errorf("checking permissions of meeting %d: %w", meetingID, err)
-		}
-
-		if perms.Has(perm.UserCanSeeExtraData) {
-			return true, nil
-		}
-	}
-	if err := ds.Err(); err != nil {
-		return false, fmt.Errorf("checking extra data in any meeting: %w", err)
-	}
-
-	return false, nil
 }
 
 func (u User) modeD(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, UserID int) (bool, error) {
