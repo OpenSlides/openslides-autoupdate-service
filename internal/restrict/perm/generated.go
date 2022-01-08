@@ -35,8 +35,8 @@ const (
 	ProjectorCanSee                 TPermission = "projector.can_see"
 	TagCanManage                    TPermission = "tag.can_manage"
 	UserCanManage                   TPermission = "user.can_manage"
+	UserCanManagePresence           TPermission = "user.can_manage_presence"
 	UserCanSee                      TPermission = "user.can_see"
-	UserCanSeeExtraData             TPermission = "user.can_see_extra_data"
 )
 
 var derivatePerms = map[TPermission][]TPermission{
@@ -72,7 +72,7 @@ var derivatePerms = map[TPermission][]TPermission{
 	"projector.can_manage":                 {"projector.can_see"},
 	"projector.can_see":                    {},
 	"tag.can_manage":                       {},
-	"user.can_manage":                      {"user.can_see", "user.can_see_extra_data"},
+	"user.can_manage":                      {"user.can_manage_presence", "user.can_see"},
+	"user.can_manage_presence":             {"user.can_see"},
 	"user.can_see":                         {},
-	"user.can_see_extra_data":              {"user.can_see"},
 }
