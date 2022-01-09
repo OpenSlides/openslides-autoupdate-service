@@ -49,6 +49,10 @@ func (r *Request) Execute(ctx context.Context) error {
 		keys = append(keys, fqfield, idField)
 	}
 
+	if len(keys) == 0 {
+		return nil
+	}
+
 	data, err := r.getter.Get(ctx, keys...)
 	if err != nil {
 		r.err = fmt.Errorf("fetching all requested keys: %w", err)
