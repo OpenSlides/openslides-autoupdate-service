@@ -29,3 +29,16 @@ func TestRequestTwoWithErrorsOften(t *testing.T) {
 		TestRequestTwoWithErrors(t)
 	}
 }
+
+func TestRequestEmpty(t *testing.T) {
+	counter := dsmock.NewCounter(dsmock.Stub(nil))
+	ds := datastore.NewRequest(counter)
+
+	if err := ds.Execute(context.Background()); err != nil {
+		t.Fatalf("Execute returned: %v", err)
+	}
+
+	if got := counter.Value(); got != 0 {
+		t.Errorf("Got %d requests, expected 0: %v", got, counter.Requests())
+	}
+}
