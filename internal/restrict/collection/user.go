@@ -276,6 +276,21 @@ func (u User) modeE(ctx context.Context, ds *datastore.Request, mperms *perm.Mee
 		return false, fmt.Errorf("checking committee management level: %w", err)
 	}
 
+	meetingIDs := ds.User_GroupIDsTmpl(UserID).ErrorLater(ctx)
+	for _, meetingID := range meetingIDs {
+		perms, err := mperms.Meeting(ctx, meetingID)
+		if err != nil {
+			return false, fmt.Errorf("checking permissions of meeting %d: %w", meetingID, err)
+		}
+
+		if perms.Has(perm.UserCanManage) {
+			return true, nil
+		}
+	}
+	if err := ds.Err(); err != nil {
+		return false, fmt.Errorf("checking manage in any meeting: %w", err)
+	}
+
 	return false, nil
 }
 
