@@ -524,6 +524,32 @@ func TestUserModeE(t *testing.T) {
 		withRequestUser(1),
 		withElementID(1),
 	)
+
+	testCase(
+		"user.can_manage in meeting",
+		t,
+		u.Modes("E"),
+		true,
+		`---
+		user/2/group_$_ids: ["5"]
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(5, perm.UserCanManage),
+	)
+
+	testCase(
+		"user.can_manage not in meeting",
+		t,
+		u.Modes("E"),
+		false,
+		`---
+		user/2/group_$_ids: []
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(5, perm.UserCanManage),
+	)
 }
 
 func TestUserModeF(t *testing.T) {
