@@ -37,14 +37,13 @@ type {{.TypeName}} struct {
 	}
 {{end}}
 
-{{if not .MaybeType}}
-	// Lazy sets a value as soon as it es executed.
-	//
-	// Make sure to call request.Execute() before using the value.
-	func (v *{{.TypeName}}) Lazy(value *{{.GoType}}) {
-		v.lazies = append(v.lazies, value)
-	}
-{{end}}
+
+// Lazy sets a value as soon as it es executed.
+//
+// Make sure to call request.Execute() before using the value.
+func (v *{{.TypeName}}) Lazy(value *{{.GoType}}) {
+	v.lazies = append(v.lazies, value)
+}
 
 {{if not .MaybeType}}
 	// ErrorLater is like Value but does not return an error.
@@ -67,10 +66,10 @@ type {{.TypeName}} struct {
 		return v.value
 	}
 {{else}}
-// ErrorLater is like Value but does not return an error.
-//
-// If an error happs, it is saved internaly. Make sure to call request.Err() later to
-// access it.
+	// ErrorLater is like Value but does not return an error.
+	//
+	// If an error happs, it is saved internaly. Make sure to call request.Err() later to
+	// access it.
 	func (v *{{.TypeName}}) ErrorLater(ctx context.Context) ({{.GoType}}, bool) {
 		if v.request.err != nil {
 			return {{.Zero}}, false

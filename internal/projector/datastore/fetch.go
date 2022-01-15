@@ -5,14 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-)
 
-// Getter can get values from keys.
-//
-// The Datastore object implements this interface.
-type Getter interface {
-	Get(ctx context.Context, keys ...string) (map[string][]byte, error)
-}
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+)
 
 // Fetcher is a helper to fetch many keys from the datastore.
 //
@@ -24,12 +19,12 @@ type Getter interface {
 //
 // Make sure to call Fetcher.Err() at the end to see, if an error happend.
 type Fetcher struct {
-	getter Getter
+	getter datastore.Getter
 	err    error
 }
 
 // NewFetcher initializes a Fetcher object.
-func NewFetcher(getter Getter) *Fetcher {
+func NewFetcher(getter datastore.Getter) *Fetcher {
 	return &Fetcher{getter: getter}
 }
 
@@ -85,7 +80,7 @@ func (f *Fetcher) FetchIfExist(ctx context.Context, value interface{}, keyFmt st
 	}
 
 	if fields[idField] == nil {
-		f.err = DoesNotExistError(fqid)
+		f.err = datastore.DoesNotExistError(fqid)
 		return
 	}
 	if fields[fqfield] == nil {
@@ -121,7 +116,7 @@ func (f *Fetcher) Object(ctx context.Context, fqID string, fields ...string) map
 	}
 
 	if vals[fqID+"/id"] == nil {
-		f.err = DoesNotExistError(fqID)
+		f.err = datastore.DoesNotExistError(fqID)
 		return nil
 	}
 
@@ -162,12 +157,4 @@ func String(ctx context.Context, fetch FetchFunc, keyFmt string, a ...interface{
 	var value string
 	fetch(ctx, &value, keyFmt, a...)
 	return value
-}
-
-// DoesNotExistError is thrown by the methods of a Fetcher when an object does
-// not exist.
-type DoesNotExistError string
-
-func (e DoesNotExistError) Error() string {
-	return fmt.Sprintf("%s does not exist.", string(e))
 }

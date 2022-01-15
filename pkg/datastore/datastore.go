@@ -27,6 +27,19 @@ const (
 	httpTimeout              = 3 * time.Second
 )
 
+// Updater returns keys that have changes. Blocks until there is
+// changed data.
+type Updater interface {
+	Update(context.Context) (map[string][]byte, error)
+}
+
+// Getter can get values from keys.
+//
+// The Datastore object implements this interface.
+type Getter interface {
+	Get(ctx context.Context, keys ...string) (map[string][]byte, error)
+}
+
 // Datastore can be used to get values from the datastore-service.
 //
 // Has to be created with datastore.New().

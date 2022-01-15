@@ -455,6 +455,13 @@ func (v *ValueMaybeInt) Value(ctx context.Context) (int, bool, error) {
 	return v.value, !v.isNull, nil
 }
 
+// Lazy sets a value as soon as it es executed.
+//
+// Make sure to call request.Execute() before using the value.
+func (v *ValueMaybeInt) Lazy(value *int) {
+	v.lazies = append(v.lazies, value)
+}
+
 // ErrorLater is like Value but does not return an error.
 //
 // If an error happs, it is saved internaly. Make sure to call request.Err() later to
@@ -515,6 +522,13 @@ func (v *ValueMaybeString) Value(ctx context.Context) (string, bool, error) {
 	}
 
 	return v.value, !v.isNull, nil
+}
+
+// Lazy sets a value as soon as it es executed.
+//
+// Make sure to call request.Execute() before using the value.
+func (v *ValueMaybeString) Lazy(value *string) {
+	v.lazies = append(v.lazies, value)
 }
 
 // ErrorLater is like Value but does not return an error.

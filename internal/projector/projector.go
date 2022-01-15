@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 )
 
 // Datastore gets values for keys and informs, if they change.

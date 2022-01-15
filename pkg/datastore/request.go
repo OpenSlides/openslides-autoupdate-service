@@ -153,3 +153,10 @@ func (v *ValueRequiredInt) execute(p []byte) error {
 	v.executed = true
 	return nil
 }
+
+// DoesNotExistError is thrown when an object does not exist.
+type DoesNotExistError string
+
+func (e DoesNotExistError) Error() string {
+	return fmt.Sprintf("%s does not exist.", string(e))
+}
