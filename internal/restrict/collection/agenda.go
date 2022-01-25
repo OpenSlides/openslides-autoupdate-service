@@ -15,11 +15,11 @@ import (
 //     The user has `agenda_item.can_see_internal` in the meeting and the item has `is_hidden` set to `false`.
 //     The user has `agenda_item.can_see` in the meeting and the item has `is_hidden` and `is_internal` set to `false`.
 //
-// Mode A: The user can see the agenda item
+// Mode A: The user can see the agenda item.
 //
-// Mode B: The user has agenda_item.can_see_internal
+// Mode B: The user has agenda_item.can_see_internal.
 //
-// Mode C: The user has agenda_item.can_manage
+// Mode C: The user has agenda_item.can_manage.
 type AgendaItem struct{}
 
 // Modes returns a map from all known modes to there restricter.

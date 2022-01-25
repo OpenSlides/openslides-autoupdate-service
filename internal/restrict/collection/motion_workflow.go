@@ -9,6 +9,10 @@ import (
 )
 
 // MotionWorkflow handels restrictions of the collection motion_workflow.
+//
+// The user can see a motion workflow if the user has motion.can_see.
+//
+// Mode A: The user can see the motion workflow.
 type MotionWorkflow struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

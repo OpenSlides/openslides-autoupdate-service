@@ -9,6 +9,10 @@ import (
 )
 
 // MotionState handels restrictions of the collection motion_state.
+//
+// The user can see a motion state if the user has motion.can_see.
+//
+// Mode A: The user can see the motion state.
 type MotionState struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

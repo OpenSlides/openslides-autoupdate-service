@@ -9,6 +9,10 @@ import (
 )
 
 // MotionComment handels restrictions of the collection motion_comment.
+//
+// The user can see a motion comment if the user can see the linked motion and motion comment section.
+//
+// Mode A: The user can see the motion comment.
 type MotionComment struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

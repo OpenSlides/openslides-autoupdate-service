@@ -9,6 +9,10 @@ import (
 )
 
 // MotionSubmitter handels restrictions of the collection motion_submitter.
+//
+// The user can see a motion submitter if the user can see the linked motion.
+//
+// Mode A: The user can see the motion submitter.
 type MotionSubmitter struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

@@ -9,6 +9,21 @@ import (
 )
 
 // Meeting handels restrictions of the collection meeting.
+//
+// The user can see a meeting if one of the following is True:
+
+//     `meeting/enable_anonymous`.
+//     The user is in meeting/user_ids.
+//     The user has the CML can_manage of the meeting's committee.
+//     The user has the OML can_manage_organization.
+//
+// Mode A: Always visible to everyone.
+//
+// Mode B: The user can see the meeting.
+//
+// Mode C: The user has meeting.can_see_frontpage.
+//
+// Mode D: The user has meeting.can_see_livestream.
 type Meeting struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

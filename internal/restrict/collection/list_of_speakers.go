@@ -11,6 +11,11 @@ import (
 )
 
 // ListOfSpeakers handels the restriction for the list_of_speakers collection.
+//
+// The user can see a list of speakers if the user has list_of_speakers.can_see
+// in the meeting and can see the content_object.
+//
+// Mode A: The user can see the list of speakers.
 type ListOfSpeakers struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

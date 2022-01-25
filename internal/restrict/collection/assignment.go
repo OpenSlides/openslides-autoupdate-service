@@ -9,6 +9,13 @@ import (
 )
 
 // Assignment handels restrictions for the assignment collection.
+//
+// The user can see an assignment, if the user has assignment.can_see
+// or the user can see the agenda item (assignment/agenda_item_id).
+//
+// Mode A: User can see the assignment.
+//
+// Mode B: The has assignment.can_see.
 type Assignment struct{}
 
 // Modes returns the restricter for the a restriction mode.
