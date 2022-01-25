@@ -9,6 +9,18 @@ import (
 )
 
 // Vote handels restrictions of the collection vote.
+// The user can see a vote if any of:
+//     The associated poll/state is published.
+//     The user can manage the associated poll.
+//     The user's id is equal to vote/user_id.
+//     The user's id is equal to vote/delegated_user_id.
+//
+// Group A: The user can see the vote.
+//
+// Group B: Depends on poll/state:
+//     published: Accessible if the user can see the vote.
+//     finished: Accessible if the user can manage the associated poll.
+//     others: Not accessible for anyone.
 type Vote struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

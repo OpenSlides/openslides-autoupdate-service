@@ -9,6 +9,10 @@ import (
 )
 
 // Topic handels the restrictions for the topic collection.
+//
+// The user can see a topic, if the user has agenda_item.can_see.
+//
+// Mode A: The user can see the topic.
 type Topic struct{}
 
 // Modes returns the field restriction for each mode.

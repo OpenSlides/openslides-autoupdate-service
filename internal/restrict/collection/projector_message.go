@@ -9,6 +9,10 @@ import (
 )
 
 // ProjectorMessage handels the restriction for the projector_message collection.
+//
+// The user can see a projector message, if the user has projector.can_see.
+//
+// Mode A: The user can see the projector message.
 type ProjectorMessage struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

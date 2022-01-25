@@ -8,7 +8,13 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
-// PersonalNote handels restriction for the personal_node collection
+// PersonalNote handels restriction for the personal_node collection.
+//
+// The user can see a personal node, if personal_note/user_id is the same as the id of the requested user.
+//
+// The superadmin can not see personal_notes from other users.
+//
+// Mode A: The user can see the personal note.
 type PersonalNote struct{}
 
 // Modes returns the field restriction for each mode.

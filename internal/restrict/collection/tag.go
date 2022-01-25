@@ -9,6 +9,10 @@ import (
 )
 
 // Tag handels the restrictions for the tag collection.
+//
+// The user can see a tag, if the user can see the tag's meeting.
+//
+// Mode A: The user can see the tag.
 type Tag struct{}
 
 // Modes returns the field restriction for each mode.
