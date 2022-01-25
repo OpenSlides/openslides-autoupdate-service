@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -44,12 +45,17 @@ func loadDefition() (io.ReadCloser, error) {
 	return r.Body, nil
 }
 
+type restriction struct {
+	Field string
+	Mode  string
+}
+
 type templateData struct {
 	Relation            map[string]string
 	RelationList        map[string]string
 	GenericRelation     map[string]map[string]string
 	GenericRelationList map[string]map[string]string
-	Restrictions        map[string]string
+	Restrictions        map[string][]restriction
 }
 
 // parse returns all relation-list and generic-relation-list fields and where
@@ -64,13 +70,15 @@ func parse(r io.Reader) (td templateData, err error) {
 	td.RelationList = make(map[string]string)
 	td.GenericRelation = make(map[string]map[string]string)
 	td.GenericRelationList = make(map[string]map[string]string)
-	td.Restrictions = make(map[string]string)
+	td.Restrictions = make(map[string][]restriction)
 	for modelName, model := range inData {
 		for fieldName, field := range model.Fields {
 			collectionField := fmt.Sprintf("%s/%s", modelName, fieldName)
 			reducedKey := reduceKey(collectionField)
-			td.Restrictions[reducedKey] = field.RestrictionMode()
-			td.Restrictions[collectionField] = field.RestrictionMode()
+			td.Restrictions[modelName] = append(td.Restrictions[modelName], restriction{Field: reducedKey, Mode: field.RestrictionMode()})
+			if reducedKey != collectionField {
+				td.Restrictions[modelName] = append(td.Restrictions[modelName], restriction{Field: collectionField, Mode: field.RestrictionMode()})
+			}
 
 			relation := field.Relation()
 
@@ -103,6 +111,13 @@ func parse(r io.Reader) (td templateData, err error) {
 			}
 
 		}
+
+		sort.Slice(td.Restrictions[modelName], func(i, j int) bool {
+			if td.Restrictions[modelName][i].Mode == td.Restrictions[modelName][j].Mode {
+				return td.Restrictions[modelName][i].Field < td.Restrictions[modelName][j].Field
+			}
+			return td.Restrictions[modelName][i].Mode < td.Restrictions[modelName][j].Mode
+		})
 	}
 
 	return td, nil
@@ -124,33 +139,36 @@ package restrict
 
 var relationFields = map[string]string{
 	{{- range $key, $value := .Relation}}
-	"{{$key}}": "{{$value}}",
+		"{{$key}}": "{{$value}}",
 	{{- end}}
 }
 
 var relationListFields = map[string]string{
 	{{- range $key, $value := .RelationList}}
-	"{{$key}}": "{{$value}}",
+		"{{$key}}": "{{$value}}",
 	{{- end}}
 }
 
 var genericRelationFields = map[string]map[string]string{
 	{{- range $key, $value := .GenericRelation}}
-	"{{$key}}": { {{range $innerKey, $innerValue := $value}} "{{$innerKey}}": "{{$innerValue}}", {{end}} },
+		"{{$key}}": { {{range $innerKey, $innerValue := $value}} "{{$innerKey}}": "{{$innerValue}}", {{end}} },
 	{{- end}}
 }
 
 var genericRelationListFields = map[string]map[string]string{
 	{{- range $key, $value := .GenericRelationList}}
-	"{{$key}}": { {{range $innerKey, $innerValue := $value}} "{{$innerKey}}": "{{$innerValue}}", {{end}} },
+		"{{$key}}": { {{range $innerKey, $innerValue := $value}} "{{$innerKey}}": "{{$innerValue}}", {{end}} },
 	{{- end}}
 }
 
 // restrictionModes are all fields to there restriction_mode.
 var restrictionModes = map[string]string{
-	{{- range $key, $value := .Restrictions}}
-	"{{$key}}": "{{$value}}",
-	{{- end}}
+	{{- range $modelName, $model := .Restrictions}}
+		// {{$modelName}}
+		{{- range $field := $model}}
+			"{{$field.Field}}": "{{$field.Mode}}",
+		{{- end}}
+	{{end}}
 }
 `
 

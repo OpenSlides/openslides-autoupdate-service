@@ -9,6 +9,10 @@ import (
 )
 
 // Speaker handels restrictions of the collection speaker.
+//
+// The user can see a speaker if the user can see the linked list of speakers.
+//
+// Mode A: The user can see the speaker.
 type Speaker struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

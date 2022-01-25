@@ -9,6 +9,10 @@ import (
 )
 
 // MotionStatuteParagraph handels restrictions of the collection motion_statute_paragraph.
+//
+// The user can see a motion statute paragraph if the user has motion.can_see.
+//
+// Mode A: The user can see the motion statute paragraph.
 type MotionStatuteParagraph struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

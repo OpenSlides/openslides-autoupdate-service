@@ -9,6 +9,12 @@ import (
 )
 
 // MotionChangeRecommendation handels restrictions of the collection motion_change_recommendation.
+//
+// The user can see a motion change recommendation if any of:
+//     The user has motion.can_manage.
+//     The user has motion.can_see and the motion change recommendation has internal set to false.
+//
+// Mode A: The user can see the motion change recommendation.
 type MotionChangeRecommendation struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

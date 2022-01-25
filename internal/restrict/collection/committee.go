@@ -9,6 +9,12 @@ import (
 )
 
 // Committee handels permission for committees.
+//
+// The user must be in committee/user_ids or have the OML can_manage_users or higher.
+//
+// Mode A: The user can see the committee.
+//
+// Mode B: The user must have the OML `can_manage_organization` or higher.
 type Committee struct{}
 
 // Modes returns a map from all known modes to there restricter.

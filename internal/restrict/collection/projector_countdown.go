@@ -9,6 +9,10 @@ import (
 )
 
 // ProjectorCountdown handels the restriction for the projector_countdown collection.
+//
+// The user can see a projector countdown, if the user has projector.can_see.
+//
+// Group A: The user can see the projector countdown.
 type ProjectorCountdown struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

@@ -9,6 +9,10 @@ import (
 )
 
 // AssignmentCandidate handels the permissions for assignment_candiate collections.
+//
+// The user can see an assignment candidate, if the user can see the linked assignment.
+//
+// Mode A: The user can see the assignment candidate.
 type AssignmentCandidate struct{}
 
 // Modes returns the restrictions modes for assignment_candidate.

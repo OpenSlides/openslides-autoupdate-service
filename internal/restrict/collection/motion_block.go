@@ -9,6 +9,14 @@ import (
 )
 
 // MotionBlock handels restrictions of the collection motion_block.
+//
+// The user can see a motion block if any of:
+//     The user has motion.can_manage.
+//     The user has motion.can_see and the motion block has internal set to false.
+//
+// Mode A: Mode B restrictions or the user can see the agenda item (motion_block/agenda_item_id).
+//
+// Mode B: The user can see the motion block.
 type MotionBlock struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

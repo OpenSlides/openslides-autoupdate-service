@@ -9,6 +9,10 @@ import (
 )
 
 // Projector handels the restriction for the projector collection.
+//
+// The user can see a projector, if the user has projector.can_see.
+//
+// Mode A: The user can see the projector.
 type Projector struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

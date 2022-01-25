@@ -9,6 +9,12 @@ import (
 )
 
 // Option handels restrictions of the collection option.
+//
+// The user can see an option if the user can see the linked poll.
+//
+// Mode A: The user can see the option.
+//
+// Mode B: The user can see the poll and (manage the linked poll or poll/state is published).
 type Option struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

@@ -9,6 +9,10 @@ import (
 )
 
 // Group handels restrictions of the collection group.
+//
+// The user can see a group, if the user can see the group's meeting.
+//
+// Mode A: The user can see the group.
 type Group struct{}
 
 // Modes returns the field restricters for the collection group.

@@ -9,6 +9,12 @@ import (
 )
 
 // MotionCommentSection handels restrictions of the collection motion_comment_section.
+//
+// The user can see a motion comment section if any of:
+//     The user has motion.can_see and has at least one group in common with motion_comment_section/read_group_ids
+//     The user has motion.can_manage.
+//
+// The user can see the motion comment section.
 type MotionCommentSection struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

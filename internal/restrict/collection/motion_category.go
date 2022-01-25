@@ -9,6 +9,10 @@ import (
 )
 
 // MotionCategory handels restrictions of the collection motion_category.
+//
+// The user can see a motion category if the user has motion.can_see.
+//
+// Mode A: The user can see the motion category.
 type MotionCategory struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

@@ -9,6 +9,21 @@ import (
 )
 
 // Motion handels restrictions of the collection motion.
+//
+// The user can see a motion if:
+//
+//     The user has motion.can_see in the meeting, and
+//     For one `restriction` in the motion's state `state/restriction` field:
+//         If: `restriction` is `is_submitter`: The user needs to be a submitter of the motion
+//         Else: (a permission string): The user needs the permission
+//
+// Mode A: Mode B restrictions or the user can see the agenda item (motion/agenda_item_id).
+//
+// Mode B: Mode C restrictions or can see a referenced motion in motion/all_origin_ids and motion/all_derived_motion_ids.
+//
+// Mode C: The user can see the motion.
+//
+// Mode D: Never published to any user.
 type Motion struct{}
 
 // Modes returns the restrictions modes for the meeting collection.

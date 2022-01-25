@@ -11,6 +11,26 @@ import (
 )
 
 // Poll handels restrictions of the collection poll.
+// If the user can see a poll depends on the content object:
+//     motion: The user can see the linked motion.
+//     assignment: The user can see the linked assignment.
+//     Other/no content object: The user can see the poll if he can see the meeting.
+//
+// If the user can manage the poll depends on the content object:
+//     motion: The user needs motion.can_manage_polls.
+//     assignment: The user needs assignment.can_manage.
+//     Other/no content object: The user needs poll.can_manage.
+//
+// Mode A: The user can see the poll.
+//
+// Mode B: Depends on poll/state:
+//     published: Accessible if the user can see the poll.
+//     finished: Accessible if the user can manage the poll.
+//     others: Not accessible for anyone.
+//
+// Mode C: The user can manage the poll and it is in the started state.
+//
+// Mode D: Same as Mode B, but for `finished`: Accessible if the user can manage the poll or the user has list_of_speakers.can_manage.
 type Poll struct{}
 
 // Modes returns the restrictions modes for the meeting collection.
