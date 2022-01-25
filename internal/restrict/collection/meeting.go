@@ -11,7 +11,6 @@ import (
 // Meeting handels restrictions of the collection meeting.
 //
 // The user can see a meeting if one of the following is True:
-
 //     `meeting/enable_anonymous`.
 //     The user is in meeting/user_ids.
 //     The user has the CML can_manage of the meeting's committee.
