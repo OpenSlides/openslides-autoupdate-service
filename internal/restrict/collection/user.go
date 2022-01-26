@@ -199,7 +199,7 @@ func (u User) see(ctx context.Context, ds *datastore.Request, mperms *perm.Meeti
 			"poll voted",
 			ds.User_PollVotedIDsTmpl,
 			ds.User_PollVotedIDs,
-			Poll{}.modeB, // Checking field poll/voted_ids that is in modeB and not in see.
+			Poll{}.see,
 		},
 
 		{

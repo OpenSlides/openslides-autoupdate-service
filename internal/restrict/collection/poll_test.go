@@ -16,7 +16,12 @@ func TestPollModeA(t *testing.T) {
 		f,
 		false,
 		`---
-		poll/1/meeting_id: 1
+		poll/1:
+			meeting_id: 1
+			content_object_id: topic/5
+
+		topic/5/id: 5
+
 		meeting/1:
 			id: 1
 			committee_id: 300
@@ -91,32 +96,39 @@ func TestPollModeA(t *testing.T) {
 	)
 
 	testCase(
-		"other can see meeting",
+		"topic can see",
 		t,
 		f,
 		true,
 		`---
 		poll/1:
 			meeting_id: 1
-			content_object_id: null
+			content_object_id: topic/5
 		
-		meeting/1/enable_anonymous: true
+		topic/5:
+			meeting_id: 1
+			agenda_item_id: 3
+
+		agenda_item_id/3/meeting_id: 1
 		`,
+		withPerms(1, perm.AgendaItemCanSee),
 	)
 
 	testCase(
-		"other can not see meeting",
+		"other can not see agenda",
 		t,
 		f,
 		false,
 		`---
 		poll/1:
 			meeting_id: 1
-			content_object_id: null
+			content_object_id: topic/5
 		
-		meeting/1:
-			enable_anonymous: false
-			committee_id: 404
+		topic/5:
+			meeting_id: 1
+			agenda_item_id: 3
+
+		agenda_item_id/3/meeting_id: 1
 		`,
 	)
 }
@@ -224,29 +236,31 @@ func TestPollModeB(t *testing.T) {
 	)
 
 	testCase(
-		"finished can manage other",
+		"finished can manage poll",
 		t,
 		f,
 		true,
 		`---
 		poll/1:
 			meeting_id: 1
-			content_object_id: null
+			content_object_id: topic/5
 			state: finished
+		topic/5/meeting_id: 1
 		`,
 		withPerms(1, perm.PollCanManage),
 	)
 
 	testCase(
-		"finished can not manage other",
+		"finished can not manage poll",
 		t,
 		f,
 		false,
 		`---
 		poll/1:
-			content_object_id: null
-			state: finished
 			meeting_id: 1
+			content_object_id: topic/5
+			state: finished
+		topic/5/meeting_id: 1
 		`,
 	)
 
@@ -257,9 +271,10 @@ func TestPollModeB(t *testing.T) {
 		false,
 		`---
 		poll/1:
-			content_object_id: motion/1
-			state: other
 			meeting_id: 1
+			content_object_id: topic/5
+			state: other
+		topic/5/meeting_id: 1
 		`,
 		withPerms(1, perm.PollCanManage),
 	)
@@ -275,9 +290,10 @@ func TestPollModeC(t *testing.T) {
 		false,
 		`---
 		poll/1:
-			content_objct_id: null
+			content_object_id: topic/5
 			state: started
 			meeting_id: 1
+		topic/5/meeting_id: 1
 		`,
 	)
 
@@ -288,9 +304,10 @@ func TestPollModeC(t *testing.T) {
 		false,
 		`---
 		poll/1:
-			content_objct_id: null
+			content_object_id: topic/5
 			state: published
 			meeting_id: 1
+		topic/5/meeting_id: 1
 		`,
 		withPerms(1, perm.PollCanManage),
 	)
@@ -302,9 +319,10 @@ func TestPollModeC(t *testing.T) {
 		true,
 		`---
 		poll/1:
-			content_objct_id: null
+			content_object_id: topic/5
 			state: started
 			meeting_id: 1
+		topic/5/meeting_id: 1
 		`,
 		withPerms(1, perm.PollCanManage),
 	)
