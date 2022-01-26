@@ -911,6 +911,12 @@ func (r *Request) Assignment_ProjectionIDs(assignmentID int) *ValueIntSlice {
 	return v
 }
 
+func (r *Request) Assignment_SequentialNumber(assignmentID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("assignment/%d/sequential_number", assignmentID)] = v
+	return v
+}
+
 func (r *Request) Assignment_TagIDs(assignmentID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
 	r.requested[fmt.Sprintf("assignment/%d/tag_ids", assignmentID)] = v
@@ -1196,6 +1202,12 @@ func (r *Request) ListOfSpeakers_MeetingID(listOfSpeakersID int) *ValueInt {
 func (r *Request) ListOfSpeakers_ProjectionIDs(listOfSpeakersID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
 	r.requested[fmt.Sprintf("list_of_speakers/%d/projection_ids", listOfSpeakersID)] = v
+	return v
+}
+
+func (r *Request) ListOfSpeakers_SequentialNumber(listOfSpeakersID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("list_of_speakers/%d/sequential_number", listOfSpeakersID)] = v
 	return v
 }
 
@@ -2435,6 +2447,12 @@ func (r *Request) MotionBlock_ProjectionIDs(motionBlockID int) *ValueIntSlice {
 	return v
 }
 
+func (r *Request) MotionBlock_SequentialNumber(motionBlockID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("motion_block/%d/sequential_number", motionBlockID)] = v
+	return v
+}
+
 func (r *Request) MotionBlock_Title(motionBlockID int) *ValueString {
 	v := &ValueString{request: r}
 	r.requested[fmt.Sprintf("motion_block/%d/title", motionBlockID)] = v
@@ -2486,6 +2504,12 @@ func (r *Request) MotionCategory_ParentID(motionCategoryID int) *ValueMaybeInt {
 func (r *Request) MotionCategory_Prefix(motionCategoryID int) *ValueString {
 	v := &ValueString{request: r}
 	r.requested[fmt.Sprintf("motion_category/%d/prefix", motionCategoryID)] = v
+	return v
+}
+
+func (r *Request) MotionCategory_SequentialNumber(motionCategoryID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("motion_category/%d/sequential_number", motionCategoryID)] = v
 	return v
 }
 
@@ -2588,6 +2612,12 @@ func (r *Request) MotionCommentSection_Name(motionCommentSectionID int) *ValueSt
 func (r *Request) MotionCommentSection_ReadGroupIDs(motionCommentSectionID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
 	r.requested[fmt.Sprintf("motion_comment_section/%d/read_group_ids", motionCommentSectionID)] = v
+	return v
+}
+
+func (r *Request) MotionCommentSection_SequentialNumber(motionCommentSectionID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("motion_comment_section/%d/sequential_number", motionCommentSectionID)] = v
 	return v
 }
 
@@ -2771,6 +2801,12 @@ func (r *Request) MotionStatuteParagraph_MotionIDs(motionStatuteParagraphID int)
 	return v
 }
 
+func (r *Request) MotionStatuteParagraph_SequentialNumber(motionStatuteParagraphID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("motion_statute_paragraph/%d/sequential_number", motionStatuteParagraphID)] = v
+	return v
+}
+
 func (r *Request) MotionStatuteParagraph_Text(motionStatuteParagraphID int) *ValueString {
 	v := &ValueString{request: r}
 	r.requested[fmt.Sprintf("motion_statute_paragraph/%d/text", motionStatuteParagraphID)] = v
@@ -2858,6 +2894,12 @@ func (r *Request) MotionWorkflow_MeetingID(motionWorkflowID int) *ValueInt {
 func (r *Request) MotionWorkflow_Name(motionWorkflowID int) *ValueString {
 	v := &ValueString{request: r}
 	r.requested[fmt.Sprintf("motion_workflow/%d/name", motionWorkflowID)] = v
+	return v
+}
+
+func (r *Request) MotionWorkflow_SequentialNumber(motionWorkflowID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("motion_workflow/%d/sequential_number", motionWorkflowID)] = v
 	return v
 }
 
@@ -3401,8 +3443,8 @@ func (r *Request) Poll_Backend(pollID int) *ValueString {
 	return v
 }
 
-func (r *Request) Poll_ContentObjectID(pollID int) *ValueMaybeString {
-	v := &ValueMaybeString{request: r}
+func (r *Request) Poll_ContentObjectID(pollID int) *ValueString {
+	v := &ValueString{request: r}
 	r.requested[fmt.Sprintf("poll/%d/content_object_id", pollID)] = v
 	return v
 }
@@ -3500,6 +3542,12 @@ func (r *Request) Poll_Pollmethod(pollID int) *ValueString {
 func (r *Request) Poll_ProjectionIDs(pollID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
 	r.requested[fmt.Sprintf("poll/%d/projection_ids", pollID)] = v
+	return v
+}
+
+func (r *Request) Poll_SequentialNumber(pollID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("poll/%d/sequential_number", pollID)] = v
 	return v
 }
 
@@ -3665,9 +3713,9 @@ func (r *Request) ProjectorCountdown_Title(projectorCountdownID int) *ValueStrin
 	return v
 }
 
-func (r *Request) ProjectorCountdown_UsedAsListOfSpeakerCountdownMeetingID(projectorCountdownID int) *ValueMaybeInt {
+func (r *Request) ProjectorCountdown_UsedAsListOfSpeakersCountdownMeetingID(projectorCountdownID int) *ValueMaybeInt {
 	v := &ValueMaybeInt{request: r}
-	r.requested[fmt.Sprintf("projector_countdown/%d/used_as_list_of_speaker_countdown_meeting_id", projectorCountdownID)] = v
+	r.requested[fmt.Sprintf("projector_countdown/%d/used_as_list_of_speakers_countdown_meeting_id", projectorCountdownID)] = v
 	return v
 }
 
@@ -3800,6 +3848,12 @@ func (r *Request) Projector_Scale(projectorID int) *ValueInt {
 func (r *Request) Projector_Scroll(projectorID int) *ValueInt {
 	v := &ValueInt{request: r}
 	r.requested[fmt.Sprintf("projector/%d/scroll", projectorID)] = v
+	return v
+}
+
+func (r *Request) Projector_SequentialNumber(projectorID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("projector/%d/sequential_number", projectorID)] = v
 	return v
 }
 
@@ -4271,15 +4325,21 @@ func (r *Request) Topic_MeetingID(topicID int) *ValueInt {
 	return v
 }
 
-func (r *Request) Topic_OptionIDs(topicID int) *ValueIntSlice {
+func (r *Request) Topic_PollIDs(topicID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
-	r.requested[fmt.Sprintf("topic/%d/option_ids", topicID)] = v
+	r.requested[fmt.Sprintf("topic/%d/poll_ids", topicID)] = v
 	return v
 }
 
 func (r *Request) Topic_ProjectionIDs(topicID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
 	r.requested[fmt.Sprintf("topic/%d/projection_ids", topicID)] = v
+	return v
+}
+
+func (r *Request) Topic_SequentialNumber(topicID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("topic/%d/sequential_number", topicID)] = v
 	return v
 }
 
@@ -4544,6 +4604,12 @@ func (r *Request) User_ProjectionIDsTmpl(userID int) *ValueIDSlice {
 func (r *Request) User_ProjectionIDs(userID int, meetingID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
 	r.requested[fmt.Sprintf("user/%d/projection_$%d_ids", userID, meetingID)] = v
+	return v
+}
+
+func (r *Request) User_Pronoun(userID int) *ValueString {
+	v := &ValueString{request: r}
+	r.requested[fmt.Sprintf("user/%d/pronoun", userID)] = v
 	return v
 }
 

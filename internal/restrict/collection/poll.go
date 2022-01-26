@@ -14,12 +14,12 @@ import (
 // If the user can see a poll depends on the content object:
 //     motion: The user can see the linked motion.
 //     assignment: The user can see the linked assignment.
-//     Other/no content object: The user can see the poll if he can see the meeting.
+//     topic: The user can see the topic.
 //
 // If the user can manage the poll depends on the content object:
 //     motion: The user needs motion.can_manage_polls.
 //     assignment: The user needs assignment.can_manage.
-//     Other/no content object: The user needs poll.can_manage.
+//     topic: The user needs poll.can_manage.
 //
 // Mode A: The user can see the poll.
 //
@@ -49,74 +49,58 @@ func (m Poll) Modes(mode string) FieldRestricter {
 }
 
 func (m Poll) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
-	contentObjectID, exist, err := ds.Poll_ContentObjectID(pollID).Value(ctx)
+	contentObjectID, err := ds.Poll_ContentObjectID(pollID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting content object id: %w", err)
 	}
 
-	if !exist {
-		meetingID, err := ds.Poll_MeetingID(pollID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("getting meeting id of poll %d: %w", pollID, err)
-		}
-
-		see, err := Meeting{}.see(ctx, ds, mperms, meetingID)
-		if err != nil {
-			return false, fmt.Errorf("checking see for meeting %d: %w", meetingID, err)
-		}
-
-		return see, nil
+	parts := strings.Split(contentObjectID, "/")
+	if len(parts) != 2 {
+		return false, fmt.Errorf("invalid value for poll/content_object_id: `%s`", contentObjectID)
 	}
 
-	parts := strings.Split(contentObjectID, "/")
 	id, err := strconv.Atoi(parts[1])
 	if err != nil {
 		return false, fmt.Errorf("decoding id of content object id %q: %w", contentObjectID, err)
 	}
 
+	var collection interface {
+		see(context.Context, *datastore.Request, *perm.MeetingPermission, int) (bool, error)
+	}
+
 	switch parts[0] {
 	case "motion":
-		see, err := Motion{}.see(ctx, ds, mperms, id)
-		if err != nil {
-			return false, fmt.Errorf("checking see motion %d: %w", id, err)
-		}
-
-		return see, nil
+		collection = Motion{}
 
 	case "assignment":
-		see, err := Assignment{}.see(ctx, ds, mperms, id)
-		if err != nil {
-			return false, fmt.Errorf("checking see assignment %d: %w", id, err)
-		}
+		collection = Assignment{}
 
-		return see, nil
+	case "topic":
+		collection = Topic{}
 
 	default:
 		return false, fmt.Errorf("unsupported collection for poll %d: %s", pollID, parts[0])
 	}
+
+	see, err := collection.see(ctx, ds, mperms, id)
+	if err != nil {
+		return false, fmt.Errorf("checking see of content objet %d: %w", id, err)
+	}
+
+	return see, nil
 }
 
 func (m Poll) manage(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
-	contentObjectID, exist, err := ds.Poll_ContentObjectID(pollID).Value(ctx)
+	contentObjectID, err := ds.Poll_ContentObjectID(pollID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting content object id: %w", err)
 	}
 
-	if !exist {
-		meetingID, err := ds.Poll_MeetingID(pollID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("getting meeting id of poll %d: %w", pollID, err)
-		}
-
-		perms, err := mperms.Meeting(ctx, meetingID)
-		if err != nil {
-			return false, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
-		}
-
-		return perms.Has(perm.PollCanManage), nil
+	parts := strings.Split(contentObjectID, "/")
+	if len(parts) != 2 {
+		return false, fmt.Errorf("invalid value for poll/content_object_id: `%s`", contentObjectID)
 	}
 
-	parts := strings.Split(contentObjectID, "/")
 	id, err := strconv.Atoi(parts[1])
 	if err != nil {
 		return false, fmt.Errorf("decoding id of content object id %q: %w", contentObjectID, err)
@@ -148,6 +132,19 @@ func (m Poll) manage(ctx context.Context, ds *datastore.Request, mperms *perm.Me
 		}
 
 		return perms.Has(perm.AssignmentCanManage), nil
+
+	case "topic":
+		meetingID, err := ds.Topic_MeetingID(id).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting meeting id of topic %d: %w", id, err)
+		}
+
+		perms, err := mperms.Meeting(ctx, meetingID)
+		if err != nil {
+			return false, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
+		}
+
+		return perms.Has(perm.PollCanManage), nil
 
 	default:
 		return false, fmt.Errorf("unsupported collection for poll %d: %s", pollID, parts[0])

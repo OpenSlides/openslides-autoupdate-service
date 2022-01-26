@@ -21,7 +21,10 @@ func TestVoteModeA(t *testing.T) {
 			user_id: 5
 			delegated_user_id: 6
 		option/2/poll_id: 3
-		poll/3/meeting_id: 1
+		poll/3:
+			meeting_id: 1
+			content_object_id: topic/5
+		topic/5/meeting_id: 1
 		meeting/1/enable_anonymous: false
 		`,
 	)
@@ -56,7 +59,8 @@ func TestVoteModeA(t *testing.T) {
 		option/2/poll_id: 3
 		poll/3:
 			meeting_id: 1
-			content_object_id: null
+			content_object_id: topic/5
+		topic/5/meeting_id: 1
 		`,
 		withPerms(1, perm.PollCanManage),
 	)
@@ -74,13 +78,14 @@ func TestVoteModeA(t *testing.T) {
 		option/2/poll_id: 3
 		poll/3:
 			meeting_id: 1
-			content_object_id: null
+			content_object_id: topic/5
+		topic/5/meeting_id: 1
 		`,
 		withRequestUser(5),
 	)
 
 	testCase(
-		"vote user",
+		"vote user from delegated",
 		t,
 		f,
 		true,
@@ -92,7 +97,8 @@ func TestVoteModeA(t *testing.T) {
 		option/2/poll_id: 3
 		poll/3:
 			meeting_id: 1
-			content_object_id: null
+			content_object_id: topic/5
+		topic/5/meeting_id: 1
 		`,
 		withRequestUser(6),
 	)
@@ -127,7 +133,8 @@ func TestVoteModeB(t *testing.T) {
 		poll/3:
 			meeting_id: 1
 			state: published
-			content_object_id: null
+			content_object_id: topic/5
+		topic/5/meeting_id: 1
 		`,
 		withRequestUser(5),
 	)
@@ -143,7 +150,8 @@ func TestVoteModeB(t *testing.T) {
 		poll/3:
 			meeting_id: 1
 			state: finished
-			content_object_id: null
+			content_object_id: topic/5
+		topic/5/meeting_id: 1
 		`,
 		withPerms(1, perm.PollCanManage),
 	)

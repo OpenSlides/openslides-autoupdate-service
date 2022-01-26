@@ -228,11 +228,15 @@ func TestUserModeA(t *testing.T) {
 			option_$1_ids: [4]
 		
 		option/4/poll_id: 5
-		poll/5/meeting_id: 1
+		poll/5:
+			meeting_id: 1
+			content_object_id: topic/5
+		topic/5/meeting_id: 1
 		meeting/1/enable_anonymous: true
 		`,
 		withRequestUser(1),
 		withElementID(2),
+		withPerms(1, perm.AgendaItemCanSee),
 	)
 
 	testCase(
@@ -277,7 +281,7 @@ func TestUserModeA(t *testing.T) {
 	)
 
 	testCase(
-		"vote",
+		"poll vote",
 		t,
 		f,
 		true,
@@ -289,12 +293,15 @@ func TestUserModeA(t *testing.T) {
 		poll/4:
 			state: finished
 			meeting_id: 1
+			content_object_id: topic/5
+		
+		topic/5/meeting_id: 1
 		
 		meeting/1/id: 1
 		`,
 		withRequestUser(1),
 		withElementID(2),
-		withPerms(1, perm.PollCanManage),
+		withPerms(1, perm.AgendaItemCanSee),
 	)
 
 	testCase(
