@@ -131,6 +131,7 @@ var relationListFields = map[string]string{
 	"committee/meeting_ids":                                    "meeting/committee_id",
 	"committee/organization_tag_ids":                           "organization_tag/tagged_ids",
 	"committee/receive_forwardings_from_committee_ids":         "committee/forward_to_committee_ids",
+	"committee/user_$":                                         "user/committee_$_management_level",
 	"committee/user_ids":                                       "user/committee_ids",
 	"group/mediafile_access_group_ids":                         "mediafile/access_group_ids",
 	"group/mediafile_inherited_access_group_ids":               "mediafile/inherited_access_group_ids",
@@ -229,6 +230,7 @@ var relationListFields = map[string]string{
 	"topic/tag_ids":                                            "tag/tagged_ids",
 	"user/assignment_candidate_$":                              "assignment_candidate/user_id",
 	"user/chat_message_$":                                      "chat_message/user_id",
+	"user/committee_$":                                         "committee/user_$_management_level",
 	"user/committee_ids":                                       "committee/user_ids",
 	"user/group_$":                                             "group/user_ids",
 	"user/is_present_in_meeting_ids":                           "meeting/present_user_ids",
@@ -334,6 +336,8 @@ var restrictionModes = map[string]string{
 	"committee/user_ids":                               "A",
 	"committee/forward_to_committee_ids":               "B",
 	"committee/receive_forwardings_from_committee_ids": "B",
+	"committee/user_$":                                 "B",
+	"committee/user_$_management_level":                "B",
 
 	// group
 	"group/admin_group_for_meeting_id":           "A",
