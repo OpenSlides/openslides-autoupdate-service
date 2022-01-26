@@ -1073,6 +1073,18 @@ func (r *Request) Committee_UserIDs(committeeID int) *ValueIntSlice {
 	return v
 }
 
+func (r *Request) Committee_UserManagementLevelTmpl(committeeID int) *ValueStringSlice {
+	v := &ValueStringSlice{request: r}
+	r.requested[fmt.Sprintf("committee/%d/user_$_management_level", committeeID)] = v
+	return v
+}
+
+func (r *Request) Committee_UserManagementLevel(committeeID int, replacement string) *ValueIntSlice {
+	v := &ValueIntSlice{request: r}
+	r.requested[fmt.Sprintf("committee/%d/user_$%s_management_level", committeeID, replacement)] = v
+	return v
+}
+
 func (r *Request) Group_AdminGroupForMeetingID(groupID int) *ValueMaybeInt {
 	v := &ValueMaybeInt{request: r}
 	r.requested[fmt.Sprintf("group/%d/admin_group_for_meeting_id", groupID)] = v
@@ -4421,15 +4433,15 @@ func (r *Request) User_CommitteeIDs(userID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Request) User_CommitteeManagementLevelTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{request: r}
+func (r *Request) User_CommitteeManagementLevelTmpl(userID int) *ValueStringSlice {
+	v := &ValueStringSlice{request: r}
 	r.requested[fmt.Sprintf("user/%d/committee_$_management_level", userID)] = v
 	return v
 }
 
-func (r *Request) User_CommitteeManagementLevel(userID int, committeeID int) *ValueString {
-	v := &ValueString{request: r}
-	r.requested[fmt.Sprintf("user/%d/committee_$%d_management_level", userID, committeeID)] = v
+func (r *Request) User_CommitteeManagementLevel(userID int, replacement string) *ValueIntSlice {
+	v := &ValueIntSlice{request: r}
+	r.requested[fmt.Sprintf("user/%d/committee_$%s_management_level", userID, replacement)] = v
 	return v
 }
 

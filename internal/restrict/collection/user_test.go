@@ -61,8 +61,7 @@ func TestUserModeA(t *testing.T) {
 		`---
 		user/2/committee_ids: [5]
 		user/1:
-			committee_$_management_level: ["5"]
-			committee_$5_management_level: can_manage
+			committee_$can_manage_management_level: [5]
 		committee/5/user_ids: [2]
 		`,
 		withRequestUser(1),
@@ -77,8 +76,7 @@ func TestUserModeA(t *testing.T) {
 		`---
 		user/2/committee_ids: [5]
 		user/1:
-			committee_$_management_level: ["5"]
-			committee_$5_management_level: can_manage
+			committee_$can_manage_management_level: [5]
 		committee/5/user_ids: []
 		`,
 		withRequestUser(1),
@@ -120,8 +118,7 @@ func TestUserModeA(t *testing.T) {
 		user/2/group_$_ids: ["5"]
 		meeting/5/committee_id: 7
 		user/1:
-			committee_$_management_level: ["7"]
-			committee_$7_management_level: can_manage
+			committee_$can_manage_management_level: [7]
 		committee/7/id: 7
 		`,
 		withRequestUser(1),
@@ -137,8 +134,7 @@ func TestUserModeA(t *testing.T) {
 		user/2/group_$_ids: []
 		meeting/5/committee_id: 7
 		user/1:
-			committee_$_management_level: ["7"]
-			committee_$7_management_level: can_manage
+			committee_$can_manage_management_level: [7]
 		committee/7/id: 7
 		`,
 		withRequestUser(1),
@@ -498,8 +494,7 @@ func TestUserModeE(t *testing.T) {
 		`---
 		user/2/committee_ids: [5]
 		user/1:
-			committee_$_management_level: ["5"]
-			committee_$5_management_level: can_manage
+			committee_$can_manage_management_level: [5]
 		committee/5/user_ids: [2]
 		`,
 		withRequestUser(1),
@@ -514,8 +509,7 @@ func TestUserModeE(t *testing.T) {
 		`---
 		user/2/committee_ids: [5]
 		user/1:
-			committee_$_management_level: ["5"]
-			committee_$5_management_level: can_manage
+			committee_$can_manage_management_level: [5]
 		committee/5/user_ids: []
 		`,
 		withRequestUser(1),

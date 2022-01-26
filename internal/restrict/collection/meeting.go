@@ -62,24 +62,27 @@ func (m Meeting) see(ctx context.Context, ds *datastore.Request, mperms *perm.Me
 		return true, nil
 	}
 
-	userIDs := ds.Meeting_UserIDs(meetingID).ErrorLater(ctx)
+	userIDs, err := ds.Meeting_UserIDs(meetingID).Value(ctx)
+	if err != nil {
+		return false, fmt.Errorf("getting user ids of meeting: %w", err)
+	}
 	for _, id := range userIDs {
 		if mperms.UserID() == id {
 			return true, nil
 		}
 	}
 
-	committeeID := ds.Meeting_CommitteeID(meetingID).ErrorLater(ctx)
-	userManagementLvl := ds.User_CommitteeManagementLevel(mperms.UserID(), committeeID).ErrorLater(ctx)
-	if userManagementLvl == "can_manage" {
-		return true, nil
+	committeeID, err := ds.Meeting_CommitteeID(meetingID).Value(ctx)
+	if err != nil {
+		return false, fmt.Errorf("getting committee id of meeting: %w", err)
 	}
 
-	if err := ds.Err(); err != nil {
-		return false, fmt.Errorf("fetching meeting/%d: %w", meetingID, err)
+	isCommitteeManager, err := perm.HasCommitteeManagementLevel(ctx, ds, mperms.UserID(), committeeID)
+	if err != nil {
+		return false, fmt.Errorf("getting committee management status: %w", err)
 	}
 
-	return false, nil
+	return isCommitteeManager, nil
 }
 
 func (m Meeting) modeC(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, meetingID int) (bool, error) {

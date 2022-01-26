@@ -173,3 +173,33 @@ func HasOrganizationManagementLevel(ctx context.Context, ds *datastore.Request, 
 	}
 	return false, nil
 }
+
+// HasCommitteeManagementLevel returns true, if the user has the manager level
+// in the given committeeID.
+func HasCommitteeManagementLevel(ctx context.Context, ds *datastore.Request, userID int, committeeID int) (bool, error) {
+	ids, err := ManagementLevelCommittees(ctx, ds, userID)
+	if err != nil {
+		return false, fmt.Errorf("fetching list of commitee_ids: %w", err)
+	}
+
+	for _, id := range ids {
+		if id == committeeID {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// ManagementLevelCommittees returns all committee-ids where the given user has
+// the management level.
+func ManagementLevelCommittees(ctx context.Context, ds *datastore.Request, userID int) ([]int, error) {
+	if userID == 0 {
+		return nil, nil
+	}
+
+	commiteeIDs, err := ds.User_CommitteeManagementLevel(userID, "can_manage").Value(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("fetching user/committee_$can_manage_management_level")
+	}
+	return commiteeIDs, nil
+}
