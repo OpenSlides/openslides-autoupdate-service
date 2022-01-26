@@ -57,7 +57,7 @@ func TestMeetingModeB(t *testing.T) {
 		true,
 		`---
 		meeting/1/committee_id: 4
-		user/1/committee_$4_management_level: can_manage
+		user/1/committee_$can_manage_management_level: [4]
 		`,
 	)
 

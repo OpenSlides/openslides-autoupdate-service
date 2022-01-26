@@ -79,7 +79,6 @@ func (u User) see(ctx context.Context, ds *datastore.Request, mperms *perm.Meeti
 		return true, nil
 	}
 
-	committeeManager := make(map[int]bool)
 	if mperms.UserID() != 0 {
 		canManageUsers, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
 		if err != nil {
@@ -90,13 +89,12 @@ func (u User) see(ctx context.Context, ds *datastore.Request, mperms *perm.Meeti
 			return true, nil
 		}
 
-		for _, committeeID := range ds.User_CommitteeManagementLevelTmpl(mperms.UserID()).ErrorLater(ctx) {
-			committeeManagementLevel := ds.User_CommitteeManagementLevel(mperms.UserID(), committeeID).ErrorLater(ctx)
-			if committeeManagementLevel != "can_manage" {
-				continue
-			}
-			committeeManager[committeeID] = true
+		commiteeIDs, err := perm.ManagementLevelCommittees(ctx, ds, mperms.UserID())
+		if err != nil {
+			return false, fmt.Errorf("getting committee ids: %w", err)
+		}
 
+		for _, committeeID := range commiteeIDs {
 			userIDs := ds.Committee_UserIDs(committeeID).ErrorLater(ctx)
 			for _, uid := range userIDs {
 				if userID == uid {
@@ -125,7 +123,12 @@ func (u User) see(ctx context.Context, ds *datastore.Request, mperms *perm.Meeti
 			return false, fmt.Errorf("getting committee id of meeting %d: %w", meetingID, err)
 		}
 
-		if committeeManager[cid] {
+		committeeManager, err := perm.HasCommitteeManagementLevel(ctx, ds, mperms.UserID(), cid)
+		if err != nil {
+			return false, fmt.Errorf("getting committee management level: %w", err)
+		}
+
+		if committeeManager {
 			return true, nil
 		}
 	}
@@ -295,12 +298,12 @@ func (u User) modeE(ctx context.Context, ds *datastore.Request, mperms *perm.Mee
 		return true, nil
 	}
 
-	for _, committeeID := range ds.User_CommitteeManagementLevelTmpl(mperms.UserID()).ErrorLater(ctx) {
-		committeeManagementLevel := ds.User_CommitteeManagementLevel(mperms.UserID(), committeeID).ErrorLater(ctx)
-		if committeeManagementLevel != "can_manage" {
-			continue
-		}
+	commiteeIDs, err := perm.ManagementLevelCommittees(ctx, ds, mperms.UserID())
+	if err != nil {
+		return false, fmt.Errorf("getting committee ids: %w", err)
+	}
 
+	for _, committeeID := range commiteeIDs {
 		userIDs := ds.Committee_UserIDs(committeeID).ErrorLater(ctx)
 		for _, uid := range userIDs {
 			if UserID == uid {
