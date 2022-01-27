@@ -211,7 +211,7 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 				if err != nil {
 					return fmt.Errorf("refreshing token: %w", err)
 				}
-				w.Header().Set(authHeader, "bearer "+token)
+				w.Header().Set(authHeader, token)
 				return nil
 			}
 			return authError{"Invalid auth ticket", err}

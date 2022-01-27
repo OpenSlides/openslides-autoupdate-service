@@ -152,7 +152,7 @@ func TestAuth(t *testing.T) {
 				},
 			},
 			1,
-			"bearer NEWTOKEN",
+			"NEWTOKEN",
 			"",
 		},
 	} {
