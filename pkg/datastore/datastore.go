@@ -126,10 +126,15 @@ func (d *Datastore) ListenOnUpdates(ctx context.Context, errHandler func(error))
 	}
 
 	updatedValues := make(chan map[string][]byte)
-	d.keySource["default"] = d.defaultSource
+	sources := make([]Source, 0, len(d.keySource)+1)
+	sources = append(sources, d.defaultSource)
+	for _, s := range d.keySource {
+		sources = append(sources, s)
+	}
+
 	var wg sync.WaitGroup
-	wg.Add(len(d.keySource))
-	for _, source := range d.keySource {
+	wg.Add(len(sources))
+	for _, source := range sources {
 		go func(source Source) {
 			defer wg.Done()
 			for {
