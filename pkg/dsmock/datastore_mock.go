@@ -114,7 +114,7 @@ func NewMockDatastore(closed <-chan struct{}, data map[string][]byte) *MockDatas
 	source := NewStubWithUpdate(data, NewCounter)
 	ds := &MockDatastore{
 		source:    source,
-		Datastore: datastore.New(source),
+		Datastore: datastore.New(source, nil),
 	}
 
 	ds.counter = source.Middlewares()[0].(*Counter)

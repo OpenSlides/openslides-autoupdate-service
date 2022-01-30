@@ -197,14 +197,13 @@ func interruptContext() (context.Context, context.CancelFunc) {
 
 // buildDatastore configures the datastore service.
 func buildDatastore(env map[string]string, mb messageBus) (*datastore.Datastore, error) {
-	protocol := env["DATASTORE_READER_PROTOCOL"]
-	host := env["DATASTORE_READER_HOST"]
-	port := env["DATASTORE_READER_PORT"]
-	url := protocol + "://" + host + ":" + port
+	datastoreSource := datastore.NewSourceDatastore(env["DATASTORE_READER_PROTOCOL"]+"://"+env["DATASTORE_READER_HOST"]+":"+env["DATASTORE_READER_PORT"], mb)
 
-	source := datastore.NewSourceDatastore(url, mb)
+	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCAL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
 
-	return datastore.New(source), nil
+	return datastore.New(datastoreSource, map[string]datastore.Source{
+		"poll/vote_count": voteCountSource,
+	}), nil
 }
 
 // buildMessagebus builds the receiver needed by the datastore service. It uses
