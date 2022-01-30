@@ -27,12 +27,6 @@ const (
 	httpTimeout              = 3 * time.Second
 )
 
-// Updater returns keys that have changes. Blocks until there is
-// changed data.
-type Updater interface {
-	Update(context.Context) (map[string][]byte, error)
-}
-
 // Getter can get values from keys.
 //
 // The Datastore object implements this interface.
@@ -40,50 +34,42 @@ type Getter interface {
 	Get(ctx context.Context, keys ...string) (map[string][]byte, error)
 }
 
+// Source gives the data for keys.
+type Source interface {
+	// first is called when a key is not in the cache.
+	First(ctx context.Context, key ...string) (map[string][]byte, error)
+
+	// update is called over frequently and should block until there is new
+	// data.
+	Update(ctx context.Context) (map[string][]byte, error)
+}
+
 // Datastore can be used to get values from the datastore-service.
 //
 // Has to be created with datastore.New().
 type Datastore struct {
-	url              string
-	cache            *cache
-	keychanger       Updater
+	cache *cache
+
+	defaultSource Source
+	keySource     map[string]Source
+
 	changeListeners  []func(map[string][]byte) error
 	calculatedFields map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)
 	calculatedKeys   map[string]string
-	client           *http.Client
 
 	resetMu sync.Mutex
 }
 
 // New returns a new Datastore object.
-func New(url string) *Datastore {
+func New(defaultSource Source) *Datastore {
 	d := &Datastore{
 		cache:            newCache(),
-		url:              url + urlPath,
+		defaultSource:    defaultSource,
 		calculatedFields: make(map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)),
 		calculatedKeys:   make(map[string]string),
-		client: &http.Client{
-			Timeout: httpTimeout,
-		},
 	}
 
 	return d
-}
-
-var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*/[a-z][a-z0-9_]*\$?[a-z0-9_]*$`)
-
-// InvalidKeys checks if all of the given keys are valid. Invalid keys are
-// returned.
-//
-// A return value of nil means, that all keys are valid.
-func InvalidKeys(keys ...string) []string {
-	var invalid []string
-	for _, key := range keys {
-		if ok := reValidKeys.MatchString(key); !ok {
-			invalid = append(invalid, key)
-		}
-	}
-	return invalid
 }
 
 // Get returns the value for one or many keys.
@@ -122,29 +108,6 @@ func (d *Datastore) RegisterCalculatedField(field string, f func(ctx context.Con
 	d.calculatedFields[field] = f
 }
 
-// splitCalculatedKeys splits a list of keys in calculated keys and "normal"
-// keys. The calculated keys are returned as map that point to the field name.
-func (d *Datastore) splitCalculatedKeys(keys []string) (map[string]string, []string) {
-	var normal []string
-	calculated := make(map[string]string)
-	for _, k := range keys {
-		parts := strings.SplitN(k, "/", 3)
-		if len(parts) != 3 {
-			normal = append(normal, k)
-			continue
-		}
-
-		field := parts[0] + "/" + parts[2]
-		_, ok := d.calculatedFields[field]
-		if !ok {
-			normal = append(normal, k)
-			continue
-		}
-		calculated[k] = field
-	}
-	return calculated, normal
-}
-
 // ResetCache clears the internal cache.
 func (d *Datastore) ResetCache() {
 	d.resetMu.Lock()
@@ -153,13 +116,13 @@ func (d *Datastore) ResetCache() {
 }
 
 // ListenOnUpdates listens for updates and informs all listeners.
-func (d *Datastore) ListenOnUpdates(ctx context.Context, keychanger Updater, errHandler func(error)) {
+func (d *Datastore) ListenOnUpdates(ctx context.Context, errHandler func(error)) {
 	if errHandler == nil {
 		errHandler = func(error) {}
 	}
 
 	for {
-		data, err := keychanger.Update(ctx)
+		data, err := d.defaultSource.Update(ctx)
 		if err != nil {
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 				return
@@ -191,10 +154,33 @@ func (d *Datastore) ListenOnUpdates(ctx context.Context, keychanger Updater, err
 	}
 }
 
+// splitCalculatedKeys splits a list of keys in calculated keys and "normal"
+// keys. The calculated keys are returned as map that point to the field name.
+func (d *Datastore) splitCalculatedKeys(keys []string) (map[string]string, []string) {
+	var normal []string
+	calculated := make(map[string]string)
+	for _, k := range keys {
+		parts := strings.SplitN(k, "/", 3)
+		if len(parts) != 3 {
+			normal = append(normal, k)
+			continue
+		}
+
+		field := parts[0] + "/" + parts[2]
+		_, ok := d.calculatedFields[field]
+		if !ok {
+			normal = append(normal, k)
+			continue
+		}
+		calculated[k] = field
+	}
+	return calculated, normal
+}
+
 func (d *Datastore) loadKeys(keys []string, set func(string, []byte)) error {
 	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
 	if len(normalKeys) > 0 {
-		data, err := d.RequestKeys(d.url, normalKeys)
+		data, err := d.defaultSource.First(context.Background(), normalKeys...)
 		if err != nil {
 			return fmt.Errorf("requesting keys from datastore: %w", err)
 		}
@@ -231,26 +217,72 @@ func (d *Datastore) calculateField(field string, key string, updated map[string]
 
 }
 
-// RequestKeys request a list of keys from the datastore.
-//
-// If an error happens, no key is returned.
-//
-// The returned map contains exacply the given keys. If a key does not exist in
-// the datastore, then the value of this key is <nil>.
-func (d *Datastore) RequestKeys(url string, keys []string) (map[string][]byte, error) {
+// keysToGetManyRequest a json envoding of the get_many request.
+func keysToGetManyRequest(keys []string) ([]byte, error) {
+	request := struct {
+		Requests []string `json:"requests"`
+	}{keys}
+	return json.Marshal(request)
+}
+
+// getManyResponceToKeyValue reads the responce from the getMany request and
+// returns the content as key-values.
+func getManyResponceToKeyValue(r io.Reader) (map[string][]byte, error) {
+	var data map[string]map[string]map[string]json.RawMessage
+	if err := json.NewDecoder(r).Decode(&data); err != nil {
+		return nil, fmt.Errorf("decoding responce: %w", err)
+	}
+
+	keyValue := make(map[string][]byte)
+	for collection, idField := range data {
+		for id, fieldValue := range idField {
+			for field, value := range fieldValue {
+				keyValue[collection+"/"+id+"/"+field] = value
+			}
+		}
+	}
+	return keyValue, nil
+}
+
+// Updater returns keys that have changes. Blocks until there is
+// changed data.
+type Updater interface {
+	Update(context.Context) (map[string][]byte, error)
+}
+
+// SourceDatastore receives the data from the datastore-reader via http and updates via the redis message bus.
+type SourceDatastore struct {
+	url     string
+	client  *http.Client
+	updater Updater // TODO: Replace this with the real redis backend.
+}
+
+// NewSourceDatastore initializes a SourceDatastore
+func NewSourceDatastore(url string, updater Updater) *SourceDatastore {
+	return &SourceDatastore{
+		url: url + urlPath,
+		client: &http.Client{
+			Timeout: httpTimeout,
+		},
+		updater: updater,
+	}
+}
+
+// First fetches the request keys from the datastore-reader.
+func (s *SourceDatastore) First(ctx context.Context, keys ...string) (map[string][]byte, error) {
 	requestData, err := keysToGetManyRequest(keys)
 	if err != nil {
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewReader(requestData))
+	req, err := http.NewRequest("POST", s.url, bytes.NewReader(requestData))
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := d.client.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("requesting keys `%v`: %w", keys, err)
 	}
@@ -280,29 +312,23 @@ func (d *Datastore) RequestKeys(url string, keys []string) (map[string][]byte, e
 	return responseData, nil
 }
 
-// keysToGetManyRequest a json envoding of the get_many request.
-func keysToGetManyRequest(keys []string) ([]byte, error) {
-	request := struct {
-		Requests []string `json:"requests"`
-	}{keys}
-	return json.Marshal(request)
+// Update updates the data from the redis message bus.
+func (s *SourceDatastore) Update(ctx context.Context) (map[string][]byte, error) {
+	return s.updater.Update(ctx)
 }
 
-// getManyResponceToKeyValue reads the responce from the getMany request and
-// returns the content as key-values.
-func getManyResponceToKeyValue(r io.Reader) (map[string][]byte, error) {
-	var data map[string]map[string]map[string]json.RawMessage
-	if err := json.NewDecoder(r).Decode(&data); err != nil {
-		return nil, fmt.Errorf("decoding responce: %w", err)
-	}
+var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*/[a-z][a-z0-9_]*\$?[a-z0-9_]*$`)
 
-	keyValue := make(map[string][]byte)
-	for collection, idField := range data {
-		for id, fieldValue := range idField {
-			for field, value := range fieldValue {
-				keyValue[collection+"/"+id+"/"+field] = value
-			}
+// InvalidKeys checks if all of the given keys are valid. Invalid keys are
+// returned.
+//
+// A return value of nil means, that all keys are valid.
+func InvalidKeys(keys ...string) []string {
+	var invalid []string
+	for _, key := range keys {
+		if ok := reValidKeys.MatchString(key); !ok {
+			invalid = append(invalid, key)
 		}
 	}
-	return keyValue, nil
+	return invalid
 }

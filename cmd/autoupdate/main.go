@@ -124,11 +124,11 @@ func run() error {
 	}
 
 	// Datastore Service.
-	datastoreService, err := buildDatastore(env)
+	datastoreService, err := buildDatastore(env, messageBus)
 	if err != nil {
 		return fmt.Errorf("creating datastore adapter: %w", err)
 	}
-	go datastoreService.ListenOnUpdates(ctx, messageBus, errHandler)
+	go datastoreService.ListenOnUpdates(ctx, errHandler)
 
 	// Create http mux to add urls.
 	mux := http.NewServeMux()
@@ -196,14 +196,15 @@ func interruptContext() (context.Context, context.CancelFunc) {
 }
 
 // buildDatastore configures the datastore service.
-func buildDatastore(
-	env map[string]string,
-) (*datastore.Datastore, error) {
+func buildDatastore(env map[string]string, mb messageBus) (*datastore.Datastore, error) {
 	protocol := env["DATASTORE_READER_PROTOCOL"]
 	host := env["DATASTORE_READER_HOST"]
 	port := env["DATASTORE_READER_PORT"]
 	url := protocol + "://" + host + ":" + port
-	return datastore.New(url), nil
+
+	source := datastore.NewSourceDatastore(url, mb)
+
+	return datastore.New(source), nil
 }
 
 // buildMessagebus builds the receiver needed by the datastore service. It uses
