@@ -55,7 +55,7 @@ func TestConnectionReadNewData(t *testing.T) {
 	defer cancel()
 
 	next, datastore := getConnection(shutdownCtx.Done())
-	go datastore.ListenOnUpdates(shutdownCtx, datastore, func(err error) { log.Println(err) })
+	go datastore.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	if _, err := next(context.Background()); err != nil {
 		t.Errorf("next() returned an error: %v", err)
@@ -87,7 +87,7 @@ func TestConnectionEmptyData(t *testing.T) {
 	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
 		doesExistKey: []byte(`"Hello World"`),
 	})
-	go datastore.ListenOnUpdates(shutdownCtx, datastore, func(err error) { log.Println(err) })
+	go datastore.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	s := autoupdate.New(datastore, test.RestrictAllowed, "", shutdownCtx.Done())
 	kb := test.KeysBuilder{K: test.Str(doesExistKey, doesNotExistKey)}
@@ -231,7 +231,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
 		"user/1/name": []byte(`"Hello World"`),
 	})
-	go datastore.ListenOnUpdates(shutdownCtx, datastore, func(err error) { log.Println(err) })
+	go datastore.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	s := autoupdate.New(datastore, test.RestrictAllowed, "", shutdownCtx.Done())
 	kb := test.KeysBuilder{K: test.Str("user/1/name")}
@@ -319,7 +319,7 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 	organization_tag/1/id: 1
 	organization_tag/2/id: 2
 	`))
-	go datastore.ListenOnUpdates(shutdownCtx, datastore, nil)
+	go datastore.ListenOnUpdates(shutdownCtx, nil)
 
 	s := autoupdate.New(datastore, test.RestrictAllowed, "", shutdownCtx.Done())
 	kb, err := keysbuilder.FromJSON(strings.NewReader(`{
@@ -386,7 +386,7 @@ func TestKeyRequestedAgain(t *testing.T) {
 	organization_tag/1/id: 1
 	organization_tag/2/id: 2
 	`))
-	go datastore.ListenOnUpdates(shutdownCtx, datastore, nil)
+	go datastore.ListenOnUpdates(shutdownCtx, nil)
 
 	s := autoupdate.New(datastore, test.RestrictAllowed, "", shutdownCtx.Done())
 	kb, err := keysbuilder.FromJSON(strings.NewReader(`{

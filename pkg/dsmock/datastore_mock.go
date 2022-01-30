@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"gopkg.in/yaml.v3"
@@ -102,8 +101,9 @@ func YAMLData(input string) map[string][]byte {
 // MockDatastore implements the autoupdate.Datastore interface.
 type MockDatastore struct {
 	*datastore.Datastore
-	server *DatastoreServer
-	err    error
+	source  *StubWithUpdate
+	counter *Counter
+	err     error
 }
 
 // NewMockDatastore create a MockDatastore with data.
@@ -111,15 +111,15 @@ type MockDatastore struct {
 // The function starts a mock datastore server in the background. It gets
 // closed, when the closed channel is closed.
 func NewMockDatastore(closed <-chan struct{}, data map[string][]byte) *MockDatastore {
-	dsServer := NewDatastoreServer(closed, data)
-
-	s := &MockDatastore{
-		server: dsServer,
+	source := NewStubWithUpdate(data, NewCounter)
+	ds := &MockDatastore{
+		source:    source,
+		Datastore: datastore.New(source, nil),
 	}
 
-	s.Datastore = datastore.New(dsServer.TS.URL)
+	ds.counter = source.Middlewares()[0].(*Counter)
 
-	return s
+	return ds
 }
 
 // Get calls the Get() method of the datastore.
@@ -138,12 +138,12 @@ func (d *MockDatastore) InjectError(err error) {
 
 // Requests returns a list of all requested keys.
 func (d *MockDatastore) Requests() [][]string {
-	return d.server.Requests()
+	return d.counter.Requests()
 }
 
 // ResetRequests resets the list returned by Requests().
 func (d *MockDatastore) ResetRequests() {
-	d.server.ResetRequests()
+	d.counter.Reset()
 }
 
 // KeysRequested returns true, if all given keys where requested.
@@ -161,7 +161,6 @@ func (d *MockDatastore) KeysRequested(keys ...string) bool {
 		}
 	}
 	return true
-
 }
 
 // Send updates the data.
@@ -169,69 +168,10 @@ func (d *MockDatastore) KeysRequested(keys ...string) bool {
 // This method is unblocking. If you want to fetch data afterwards, make sure to
 // block until data is processed. For example with RegisterChanceListener.
 func (d *MockDatastore) Send(data map[string][]byte) {
-	d.server.Send(data)
+	d.source.Send(data)
 }
 
 // Update implements the datastore.Updater interface.
 func (d *MockDatastore) Update(ctx context.Context) (map[string][]byte, error) {
-	return d.server.Update(ctx)
-}
-
-// datastoreValues returns data for the test.MockDatastore and the
-// test.DatastoreServer.
-//
-// If OnlyData is false, fake data is generated.
-type datastoreValues struct {
-	mu   sync.RWMutex
-	Data map[string][]byte
-}
-
-func newDatastoreValues(data map[string][]byte) *datastoreValues {
-	conv := make(map[string][]byte)
-	for k, v := range data {
-		if bytes.Equal(v, []byte("null")) {
-			conv[k] = nil
-			continue
-		}
-		conv[k] = []byte(v)
-	}
-
-	return &datastoreValues{
-		Data: conv,
-	}
-}
-
-// value returns a value for a key. If the value does not exist, the second
-// return value is false.
-func (d *datastoreValues) value(key string) ([]byte, error) {
-	if d == nil {
-		return nil, nil
-	}
-
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-
-	v, ok := d.Data[key]
-	if ok {
-		return v, nil
-	}
-
-	return nil, nil
-}
-
-// set updates the values from the Datastore.
-//
-// This does not send a signal to the listeners.
-func (d *datastoreValues) set(data map[string][]byte) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	if d.Data == nil {
-		d.Data = data
-		return
-	}
-
-	for key, value := range data {
-		d.Data[key] = value
-	}
+	return d.source.Update(ctx)
 }

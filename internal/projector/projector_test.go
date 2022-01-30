@@ -19,7 +19,7 @@ func TestProjectionDoesNotExist(t *testing.T) {
 	defer cancel()
 
 	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), nil)
-	go ds.ListenOnUpdates(shutdownCtx, ds, func(err error) { log.Println(err) })
+	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	projector.Register(ds, testSlides())
 
@@ -72,7 +72,7 @@ func TestProjectionUpdateProjection(t *testing.T) {
 		"projection/1/content_object_id": []byte(`"meeting/1"`),
 		"projection/1/type":              []byte(`"test1"`),
 	})
-	go ds.ListenOnUpdates(shutdownCtx, ds, func(err error) { log.Println(err) })
+	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	projector.Register(ds, testSlides())
 
@@ -107,7 +107,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 		"projection/1/type":              []byte(`"projection"`),
 		"projection/1/content_object_id": []byte(`"meeting/1"`),
 	})
-	go ds.ListenOnUpdates(shutdownCtx, ds, func(err error) { log.Println(err) })
+	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	projector.Register(ds, testSlides())
 
@@ -158,7 +158,7 @@ func TestProjectionUpdateSlide(t *testing.T) {
 		"projection/1/content_object_id": []byte(`"meeting/6"`),
 		"projection/1/type":              []byte(`"test_model"`),
 	})
-	go ds.ListenOnUpdates(shutdownCtx, ds, func(err error) { log.Println(err) })
+	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	projector.Register(ds, testSlides())
 
@@ -191,7 +191,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 		"projection/1/content_object_id": []byte(`"meeting/1"`),
 		"projection/1/type":              []byte(`"test_model"`),
 	})
-	go ds.ListenOnUpdates(shutdownCtx, ds, func(err error) { log.Println(err) })
+	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	projector.Register(ds, testSlides())
 

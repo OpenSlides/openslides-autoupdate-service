@@ -31,7 +31,7 @@ func TestRequestTwoWithErrorsOften(t *testing.T) {
 }
 
 func TestRequestEmpty(t *testing.T) {
-	counter := dsmock.NewCounter(dsmock.Stub(nil))
+	counter := dsmock.NewCounter(dsmock.Stub(nil)).(*dsmock.Counter)
 	ds := datastore.NewRequest(counter)
 
 	if err := ds.Execute(context.Background()); err != nil {
