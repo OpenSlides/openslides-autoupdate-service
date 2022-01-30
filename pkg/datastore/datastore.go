@@ -36,10 +36,10 @@ type Getter interface {
 
 // Source gives the data for keys.
 type Source interface {
-	// first is called when a key is not in the cache.
-	First(ctx context.Context, key ...string) (map[string][]byte, error)
+	// Get is called when a key is not in the cache.
+	Get(ctx context.Context, key ...string) (map[string][]byte, error)
 
-	// update is called over frequently and should block until there is new
+	// Update is called over frequently and should block until there is new
 	// data.
 	Update(ctx context.Context) (map[string][]byte, error)
 }
@@ -180,7 +180,7 @@ func (d *Datastore) splitCalculatedKeys(keys []string) (map[string]string, []str
 func (d *Datastore) loadKeys(keys []string, set func(string, []byte)) error {
 	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
 	if len(normalKeys) > 0 {
-		data, err := d.defaultSource.First(context.Background(), normalKeys...)
+		data, err := d.defaultSource.Get(context.Background(), normalKeys...)
 		if err != nil {
 			return fmt.Errorf("requesting keys from datastore: %w", err)
 		}
@@ -268,8 +268,8 @@ func NewSourceDatastore(url string, updater Updater) *SourceDatastore {
 	}
 }
 
-// First fetches the request keys from the datastore-reader.
-func (s *SourceDatastore) First(ctx context.Context, keys ...string) (map[string][]byte, error) {
+// Get fetches the request keys from the datastore-reader.
+func (s *SourceDatastore) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
 	requestData, err := keysToGetManyRequest(keys)
 	if err != nil {
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)

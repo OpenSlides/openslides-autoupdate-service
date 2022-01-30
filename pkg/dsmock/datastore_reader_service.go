@@ -1,6 +1,7 @@
 package dsmock
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,17 +9,19 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 type getManyRequest struct {
 	Keys []string `json:"requests"`
 }
 
-// DatastoreServer simulates the Datastore-Service. Only the methods required by the
-// autoupdate-service are supported. This is currently only the getMany method.
+// DatastoreReader simulates the datastore-reader-Service. Only the methods
+// required by the autoupdate-service are supported. This is currently only the
+// getMany method.
 //
-// Has to be created with NewDatastoreServer.
-type DatastoreServer struct {
+// Has to be created with NewDatastoreReader.
+type DatastoreReader struct {
 	TS            *httptest.Server
 	RequestCount  int
 	RequestedKeys [][]string
@@ -27,14 +30,14 @@ type DatastoreServer struct {
 	c chan map[string][]byte
 }
 
-// NewDatastoreServer creates a new fake DatastoreServer.
+// NewDatastoreReader creates a new fake DatastoreServer.
 //
 // It creates a webserver that handels get_many requests like the reald
 // datastore-reader.
 //
 // If the given channel is closed, the server shuts down.
-func NewDatastoreServer(closed <-chan struct{}, data map[string][]byte) *DatastoreServer {
-	d := &DatastoreServer{
+func NewDatastoreReader(closed <-chan struct{}, data map[string][]byte) *DatastoreReader {
+	d := &DatastoreReader{
 		Values: newDatastoreValues(data),
 		c:      make(chan map[string][]byte),
 	}
@@ -96,7 +99,7 @@ func NewDatastoreServer(closed <-chan struct{}, data map[string][]byte) *Datasto
 
 // Update returnes keys that have changed. Blocks until keys are send with
 // the Send-method.
-func (d *DatastoreServer) Update(ctx context.Context) (map[string][]byte, error) {
+func (d *DatastoreReader) Update(ctx context.Context) (map[string][]byte, error) {
 	select {
 	case v := <-d.c:
 		d.Values.set(v)
@@ -107,17 +110,17 @@ func (d *DatastoreServer) Update(ctx context.Context) (map[string][]byte, error)
 }
 
 // Send sends keys to the mock that can be received with Update().
-func (d *DatastoreServer) Send(values map[string][]byte) {
+func (d *DatastoreReader) Send(values map[string][]byte) {
 	d.c <- values
 }
 
 // Requests returns all keys that where requested.
-func (d *DatastoreServer) Requests() [][]string {
+func (d *DatastoreReader) Requests() [][]string {
 	return d.RequestedKeys
 }
 
 // ResetRequests resets the returnvalue of Requests().
-func (d *DatastoreServer) ResetRequests() {
+func (d *DatastoreReader) ResetRequests() {
 	d.RequestedKeys = make([][]string, 0)
 }
 
@@ -127,4 +130,63 @@ func validKey(key string) bool {
 		panic(err)
 	}
 	return match
+}
+
+// datastoreValues returns data for the test.MockDatastore and the
+// test.DatastoreServer.
+//
+// If OnlyData is false, fake data is generated.
+type datastoreValues struct {
+	mu   sync.RWMutex
+	Data map[string][]byte
+}
+
+func newDatastoreValues(data map[string][]byte) *datastoreValues {
+	conv := make(map[string][]byte)
+	for k, v := range data {
+		if bytes.Equal(v, []byte("null")) {
+			conv[k] = nil
+			continue
+		}
+		conv[k] = []byte(v)
+	}
+
+	return &datastoreValues{
+		Data: conv,
+	}
+}
+
+// value returns a value for a key. If the value does not exist, the second
+// return value is false.
+func (d *datastoreValues) value(key string) ([]byte, error) {
+	if d == nil {
+		return nil, nil
+	}
+
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	v, ok := d.Data[key]
+	if ok {
+		return v, nil
+	}
+
+	return nil, nil
+}
+
+// set updates the values from the Datastore.
+//
+// This does not send a signal to the listeners.
+func (d *datastoreValues) set(data map[string][]byte) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	if d.Data == nil {
+		d.Data = data
+		return
+	}
+
+	for key, value := range data {
+		d.Data[key] = value
+	}
 }

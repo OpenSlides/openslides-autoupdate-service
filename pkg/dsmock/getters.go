@@ -25,6 +25,77 @@ func (s Stub) Get(_ context.Context, keys ...string) (map[string][]byte, error) 
 	return requested, nil
 }
 
+// StubWithUpdate is like Stub but the values can be changed via the Send
+// method.
+//
+// It implements the datastore.Source interface
+type StubWithUpdate struct {
+	mu sync.RWMutex
+
+	stub Stub
+	ch   chan map[string][]byte
+
+	getter datastore.Getter
+
+	middlewares []datastore.Getter
+}
+
+// NewStubWithUpdate initializes a the object.
+func NewStubWithUpdate(stub Stub, middlewares ...func(datastore.Getter) datastore.Getter) *StubWithUpdate {
+	getter := datastore.Getter(stub)
+	initialized := make([]datastore.Getter, len(middlewares))
+	for i, m := range middlewares {
+		getter = m(getter)
+		initialized[i] = getter
+	}
+
+	return &StubWithUpdate{
+		stub:        stub,
+		ch:          make(chan map[string][]byte),
+		getter:      getter,
+		middlewares: initialized,
+	}
+}
+
+// Get returns the current value for the given keys.
+func (s *StubWithUpdate) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.getter.Get(ctx, keys...)
+}
+
+// Update blocks until new data is received via the Send method.
+func (s *StubWithUpdate) Update(ctx context.Context) (map[string][]byte, error) {
+	select {
+	case newValues := <-s.ch:
+		s.mu.Lock()
+		for k, v := range newValues {
+			s.stub[k] = v
+		}
+		s.mu.Unlock()
+		return newValues, nil
+
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+// Send sends keys to the mock that can be received with Update().
+func (s *StubWithUpdate) Send(values map[string][]byte) {
+	s.ch <- values
+}
+
+// Middlewares returns a list of datastore.Getters that where used in
+// NewStubWithUpdates.
+//
+// For example:
+// ds := NewStubWithUpdate(stub, dsmock.NewCounter)
+// counter := ds.Middlewares()[0].(*dsmock.Counter)
+func (s *StubWithUpdate) Middlewares() []datastore.Getter {
+	return s.middlewares
+}
+
 // Counter counts all keys that where requested.
 type Counter struct {
 	mu sync.Mutex
@@ -34,7 +105,7 @@ type Counter struct {
 }
 
 // NewCounter initializes a Counter.
-func NewCounter(ds datastore.Getter) *Counter {
+func NewCounter(ds datastore.Getter) datastore.Getter {
 	return &Counter{ds: ds}
 }
 
@@ -81,7 +152,7 @@ type Cache struct {
 }
 
 // NewCache initializes a Cache.
-func NewCache(ds datastore.Getter) *Cache {
+func NewCache(ds datastore.Getter) datastore.Getter {
 	return &Cache{ds: ds, cache: make(map[string][]byte)}
 }
 
