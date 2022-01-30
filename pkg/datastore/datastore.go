@@ -129,11 +129,11 @@ func (d *Datastore) ListenOnUpdates(ctx context.Context, errHandler func(error))
 	d.keySource["default"] = d.defaultSource
 	var wg sync.WaitGroup
 	wg.Add(len(d.keySource))
-	for key, source := range d.keySource {
-		go func(key string, source Source) {
+	for _, source := range d.keySource {
+		go func(source Source) {
 			defer wg.Done()
 			for {
-				data, err := d.defaultSource.Update(ctx)
+				data, err := source.Update(ctx)
 				if err != nil {
 					if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 						return
@@ -145,7 +145,7 @@ func (d *Datastore) ListenOnUpdates(ctx context.Context, errHandler func(error))
 				}
 				updatedValues <- data
 			}
-		}(key, source)
+		}(source)
 	}
 
 	go func() {
