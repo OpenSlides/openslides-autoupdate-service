@@ -87,7 +87,7 @@ func (d *Datastore) Get(ctx context.Context, keys ...string) (map[string][]byte,
 		return d.loadKeys(keys, set)
 	})
 	if err != nil {
-		return nil, fmt.Errorf("getOrSet for keys `%s`: %w", keys, err)
+		return nil, fmt.Errorf("getOrSet`: %w", err)
 	}
 
 	return values, nil
@@ -178,20 +178,23 @@ func (d *Datastore) ListenOnUpdates(ctx context.Context, errHandler func(error))
 
 // splitCalculatedKeys splits a list of keys in calculated keys and "normal"
 // keys. The calculated keys are returned as map that point to the field name.
-func (d *Datastore) splitCalculatedKeys(keys []string) (map[string]string, []string) {
-	var normal []string
+func (d *Datastore) splitCalculatedKeys(keys []string) (map[string]string, map[Source][]string) {
+	normal := make(map[Source][]string)
 	calculated := make(map[string]string)
 	for _, k := range keys {
 		parts := strings.SplitN(k, "/", 3)
 		if len(parts) != 3 {
-			normal = append(normal, k)
 			continue
 		}
 
 		field := parts[0] + "/" + parts[2]
 		_, ok := d.calculatedFields[field]
 		if !ok {
-			normal = append(normal, k)
+			source := d.defaultSource
+			if s := d.keySource[field]; s != nil {
+				source = s
+			}
+			normal[source] = append(normal[source], k)
 			continue
 		}
 		calculated[k] = field
@@ -202,13 +205,16 @@ func (d *Datastore) splitCalculatedKeys(keys []string) (map[string]string, []str
 func (d *Datastore) loadKeys(keys []string, set func(string, []byte)) error {
 	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
 	if len(normalKeys) > 0 {
-		data, err := d.defaultSource.Get(context.Background(), normalKeys...)
-		if err != nil {
-			return fmt.Errorf("requesting keys from datastore: %w", err)
+		for source, keys := range normalKeys {
+			data, err := source.Get(context.Background(), keys...)
+			if err != nil {
+				return fmt.Errorf("requesting keys from datastore: %w", err)
+			}
+			for k, v := range data {
+				set(k, v)
+			}
 		}
-		for k, v := range data {
-			set(k, v)
-		}
+
 	}
 
 	for key, field := range calculatedKeys {
