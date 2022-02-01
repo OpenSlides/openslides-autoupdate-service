@@ -16,14 +16,15 @@ type Updater interface {
 	Update(context.Context) (map[string][]byte, error)
 }
 
-// SourceDatastore receives the data from the datastore-reader via http and updates via the redis message bus.
+// SourceDatastore receives the data from the datastore-reader via http and
+// updates via the redis message bus.
 type SourceDatastore struct {
 	url     string
 	client  *http.Client
 	updater Updater // TODO: Replace this with the real redis backend.
 }
 
-// NewSourceDatastore initializes a SourceDatastore
+// NewSourceDatastore initializes a SourceDatastore.
 func NewSourceDatastore(url string, updater Updater) *SourceDatastore {
 	return &SourceDatastore{
 		url: url + urlPath,
@@ -62,9 +63,9 @@ func (s *SourceDatastore) Get(ctx context.Context, keys ...string) (map[string][
 		return nil, fmt.Errorf("datastore returned status %s: %s", resp.Status, body)
 	}
 
-	responseData, err := getManyResponceToKeyValue(resp.Body)
+	responseData, err := getManyResponseToKeyValue(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("parse responce: %w", err)
+		return nil, fmt.Errorf("parse response: %w", err)
 	}
 
 	// Add keys that where not returned.

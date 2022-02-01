@@ -92,7 +92,7 @@ func TestConnectionEmptyData(t *testing.T) {
 	s := autoupdate.New(datastore, test.RestrictAllowed, "", shutdownCtx.Done())
 	kb := test.KeysBuilder{K: test.Str(doesExistKey, doesNotExistKey)}
 
-	t.Run("First responce", func(t *testing.T) {
+	t.Run("First response", func(t *testing.T) {
 		next := s.Connect(1, kb)
 
 		data, err := next(context.Background())
@@ -277,7 +277,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 			data, err = next(context.Background())
 
 		})
-		require.NoError(t, err, "next() returnd an error")
+		require.NoError(t, err, "next() returned an error")
 		assert.Empty(t, data, "next() should return data on first call.")
 		assert.False(t, isBlocked, "next() should not block on first call.")
 	})
@@ -307,7 +307,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 //
 // The result is, that the client does not get an update, that the object was
 // deleted. Only be looking in the relation-list-field the client knows, that it
-// should not be interessted in the object anymore.
+// should not be interested in the object anymore.
 //
 // See Issue https://github.com/OpenSlides/openslides-autoupdate-service/issues/321
 func TestKeyNotRequestedAnymore(t *testing.T) {
@@ -445,5 +445,4 @@ func TestKeyRequestedAgain(t *testing.T) {
 	if v := string(testData["organization_tag/2/id"]); v != "2" {
 		t.Errorf("Got organization_tag/2/id: %q, expected 2", v)
 	}
-
 }

@@ -28,7 +28,7 @@ func (s Stub) Get(_ context.Context, keys ...string) (map[string][]byte, error) 
 // StubWithUpdate is like Stub but the values can be changed via the Send
 // method.
 //
-// It implements the datastore.Source interface
+// It implements the datastore.Source interface.
 type StubWithUpdate struct {
 	mu sync.RWMutex
 
@@ -90,8 +90,8 @@ func (s *StubWithUpdate) Send(values map[string][]byte) {
 // NewStubWithUpdates.
 //
 // For example:
-// ds := NewStubWithUpdate(stub, dsmock.NewCounter)
-// counter := ds.Middlewares()[0].(*dsmock.Counter)
+//     ds := NewStubWithUpdate(stub, dsmock.NewCounter)
+//     counter := ds.Middlewares()[0].(*dsmock.Counter)
 func (s *StubWithUpdate) Middlewares() []datastore.Getter {
 	return s.middlewares
 }

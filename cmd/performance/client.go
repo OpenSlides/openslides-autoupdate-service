@@ -12,7 +12,7 @@ import (
 type client struct{}
 
 // connect creates a new connection to the autoupdate service. It returns the
-// responce of the server to the given keys-channel. The function blocks until
+// response of the server to the given keys-channel. The function blocks until
 // the connection is established. It is held open in the beckgrond.
 func (c *client) connect(ctx context.Context, keys chan<- string) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)

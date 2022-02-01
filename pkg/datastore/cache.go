@@ -246,9 +246,8 @@ func (pm *pendingMap) setIfExist(key string, value []byte) {
 	pm.setIfExistUnlocked(key, value)
 }
 
-// setIfExistMany is like setIfExists but for many values
+// setIfExistMany is like setIfExists but for many values.
 func (pm *pendingMap) setIfExistMany(data map[string][]byte) {
-	// TODO: change data value to []byte.
 	pm.Lock()
 	defer pm.Unlock()
 

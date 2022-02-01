@@ -206,18 +206,24 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 	if err != nil {
 		var invalid *jwt.ValidationError
 		if errors.As(err, &invalid) {
-			if tokenExpired(invalid.Errors) {
-				token, err := a.refreshToken(r.Context(), encodedToken, encodedCookie)
-				if err != nil {
-					return fmt.Errorf("refreshing token: %w", err)
-				}
-				w.Header().Set(authHeader, token)
-				return nil
-			}
-			return authError{"Invalid auth ticket", err}
+			return a.handleInvalidToken(r.Context(), invalid, w, encodedToken, encodedCookie)
 		}
 	}
 
+	return nil
+}
+
+func (a *Auth) handleInvalidToken(ctx context.Context, invalid *jwt.ValidationError, w http.ResponseWriter, encodedToken, encodedCookie string) error {
+	if !tokenExpired(invalid.Errors) {
+		return authError{"Invalid auth ticket:", invalid}
+	}
+
+	token, err := a.refreshToken(ctx, encodedToken, encodedCookie)
+	if err != nil {
+		return fmt.Errorf("refreshing token: %w", err)
+	}
+
+	w.Header().Set(authHeader, token)
 	return nil
 }
 
