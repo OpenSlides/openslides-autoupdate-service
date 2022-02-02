@@ -92,9 +92,9 @@ func (s *VoteCountSource) Update(ctx context.Context) (map[string][]byte, error)
 	return out, nil
 }
 
-func (s *VoteCountSource) url(withID bool) string {
-	if withID {
+func (s *VoteCountSource) url(blocking bool) string {
+	if blocking {
 		return fmt.Sprintf("%s%s?id=%d", s.voteServiceURL, voteCountPath, s.id)
 	}
-	return fmt.Sprintf("%s%s?id=0", s.voteServiceURL, voteCountPath)
+	return fmt.Sprintf("%s%s", s.voteServiceURL, voteCountPath)
 }
