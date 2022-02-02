@@ -108,7 +108,10 @@ func (d *Datastore) RegisterChangeListener(f func(map[string][]byte) error) {
 // When a fqfield, that matches the field, is fetched for the first time, then f
 // is called with `changed==nil`. On every ds-update, `f` is called again with the
 // data, that has changed.
-func (d *Datastore) RegisterCalculatedField(field string, f func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)) {
+func (d *Datastore) RegisterCalculatedField(
+	field string,
+	f func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error),
+) {
 	d.calculatedFields[field] = f
 }
 
@@ -231,7 +234,6 @@ func (d *Datastore) loadKeys(keys []string, set func(string, []byte)) error {
 }
 
 func (d *Datastore) calculateField(field string, key string, updated map[string][]byte) []byte {
-	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
@@ -258,12 +260,12 @@ func keysToGetManyRequest(keys []string) ([]byte, error) {
 	return json.Marshal(request)
 }
 
-// getManyResponceToKeyValue reads the responce from the getMany request and
+// getManyResponseToKeyValue reads the response from the getMany request and
 // returns the content as key-values.
-func getManyResponceToKeyValue(r io.Reader) (map[string][]byte, error) {
+func getManyResponseToKeyValue(r io.Reader) (map[string][]byte, error) {
 	var data map[string]map[string]map[string]json.RawMessage
 	if err := json.NewDecoder(r).Decode(&data); err != nil {
-		return nil, fmt.Errorf("decoding responce: %w", err)
+		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 
 	keyValue := make(map[string][]byte)

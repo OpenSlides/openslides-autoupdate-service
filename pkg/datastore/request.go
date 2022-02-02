@@ -32,7 +32,7 @@ func NewRequest(getter Getter) *Request {
 // Execute loads all requested keys from the datastore.
 func (r *Request) Execute(ctx context.Context) error {
 	defer func() {
-		// Clear all requested fields in the end. Even if errors happend.
+		// Clear all requested fields in the end. Even if errors happened.
 		r.requested = make(map[string]executer)
 	}()
 

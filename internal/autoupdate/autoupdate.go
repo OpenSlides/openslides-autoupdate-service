@@ -29,7 +29,7 @@ const (
 	//
 	// A high value means more memory and cpu usage after some time. A lower
 	// value means more Requests to the Datastore Service and therefore a slower
-	// responce time for the clients.
+	// response time for the clients.
 	datastoreCacheResetTime = 24 * time.Hour
 )
 

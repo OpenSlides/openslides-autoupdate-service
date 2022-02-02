@@ -6,7 +6,9 @@ import (
 
 func createHash(hasher *maphash.Hash, value []byte) uint64 {
 	hasher.Reset()
-	hasher.Write(value)
+
+	// This can not return any error.
+	_, _ = hasher.Write(value)
 	return hasher.Sum64()
 }
 
@@ -41,8 +43,6 @@ func (f *filter) filter(data map[string][]byte) {
 		}
 		f.history[key] = newHash
 	}
-
-	return
 }
 
 // empty returns true, if the filter was not called before.

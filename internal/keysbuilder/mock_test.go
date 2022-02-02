@@ -44,13 +44,4 @@ func set(keys ...string) map[string]bool {
 	return out
 }
 
-func mapKeys(m map[string][]int) []string {
-	out := make([]string, 0, len(m))
-	for key := range m {
-		out = append(out, key)
-	}
-	sort.Strings(out)
-	return out
-}
-
 func strs(str ...string) []string { return str }

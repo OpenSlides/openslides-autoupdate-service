@@ -3,7 +3,6 @@ package redis_test
 import (
 	"bytes"
 	"encoding/json"
-	"sort"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
 )
@@ -73,28 +72,13 @@ func (c mockConn) ZRANGE(key string) (interface{}, error) {
 	return nil, nil
 }
 
-func cmpSlice(one, two []string) bool {
-	if len(one) != len(two) {
-		return false
-	}
-
-	sort.Strings(one)
-	sort.Strings(two)
-	for i := range one {
-		if one[i] != two[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func cmpMap(one, two map[string][]byte) bool {
 	if len(one) != len(two) {
 		return false
 	}
 
 	for key := range one {
-		if bytes.Compare(one[key], two[key]) != 0 {
+		if !bytes.Equal(one[key], two[key]) {
 			return false
 		}
 	}

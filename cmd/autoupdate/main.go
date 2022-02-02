@@ -92,7 +92,7 @@ func secret(name string, dev bool) (string, error) {
 
 // errHandler is called by some background tasts.
 func errHandler(err error) {
-	// If an error happend, we just close the session.
+	// If an error happened, we just close the session.
 	var closing interface {
 		Closing()
 	}

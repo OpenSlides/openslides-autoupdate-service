@@ -89,12 +89,11 @@ func (b *body) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (b *body) keys(data map[string]fieldDescription) error {
+func (b *body) keys(data map[string]fieldDescription) {
 	for _, id := range b.ids {
 		cid := buildCollectionID(b.collection, id)
 		b.fieldsMap.keys(cid, data)
 	}
-	return nil
 }
 
 // relationField is a fieldtype that redirects to one other collection.

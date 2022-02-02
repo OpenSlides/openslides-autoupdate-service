@@ -53,11 +53,11 @@ func loadPermissions() (io.ReadCloser, error) {
 
 type permFile map[string]permission
 
-func (p permFile) derivate() map[string][]string {
+func (p permFile) derivative() map[string][]string {
 	out := make(map[string][]string)
 
 	for k, v := range map[string]permission(p) {
-		v.derivate(out, k)
+		v.derivative(out, k)
 	}
 
 	for k := range out {
@@ -68,14 +68,14 @@ func (p permFile) derivate() map[string][]string {
 
 type permission map[string]permission
 
-func (p permission) derivate(data map[string][]string, collection string) {
+func (p permission) derivative(data map[string][]string, collection string) {
 	if len(p) == 0 {
 		return
 	}
 
 	for k, v := range map[string]permission(p) {
 		data[collection+"."+k] = v.subPerms(collection)
-		v.derivate(data, collection)
+		v.derivative(data, collection)
 	}
 }
 
@@ -130,7 +130,7 @@ func write(w io.Writer, data permFile) error {
 		return fmt.Errorf("parsing template: %w", err)
 	}
 
-	derivate := data.derivate()
+	derivate := data.derivative()
 
 	consts := make(map[string]string, len(derivate))
 	for k := range derivate {

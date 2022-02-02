@@ -93,7 +93,7 @@ func cmpMap(one, two map[string][]byte) bool {
 	}
 
 	for key := range one {
-		if bytes.Compare(one[key], two[key]) != 0 {
+		if !bytes.Equal(one[key], two[key]) {
 			return false
 		}
 	}

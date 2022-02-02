@@ -3,7 +3,7 @@ package datastore
 import "context"
 
 // Recorder implements the datastore.Getter interface. It records all requested
-// keys. They can be get with Recorder.Keys()
+// keys. They can be get with Recorder.Keys().
 type Recorder struct {
 	getter Getter
 	keys   map[string]bool

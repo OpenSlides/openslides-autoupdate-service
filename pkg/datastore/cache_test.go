@@ -245,7 +245,7 @@ func TestCacheErrorOnFetching(t *testing.T) {
 	select {
 	case data := <-done:
 		if string(data["key1"]) != "value" {
-			t.Errorf("Second GetOrSet-Call returnd value %q, expected value", data["key1"])
+			t.Errorf("Second GetOrSet-Call returned value %q, expected value", data["key1"])
 		}
 	case <-timer.C:
 		t.Errorf("Second GetOrSet-Call was not done after one Millisecond")

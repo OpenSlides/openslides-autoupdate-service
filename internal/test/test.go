@@ -19,8 +19,3 @@ func CmpSlice(a, b []string) bool {
 	}
 	return true
 }
-
-type closingError struct{}
-
-func (e closingError) Closing()      {}
-func (e closingError) Error() string { return "closing" }

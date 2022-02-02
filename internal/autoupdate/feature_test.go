@@ -340,6 +340,7 @@ func TestFeatures(t *testing.T) {
 }
 
 func cmpMap(t *testing.T, got, expect map[string]json.RawMessage) {
+	t.Helper()
 	v1, _ := json.Marshal(got)
 	v2, _ := json.Marshal(expect)
 	if string(v1) != string(v2) {

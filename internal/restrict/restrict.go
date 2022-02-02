@@ -183,7 +183,14 @@ func templateKeyPrefix(collectionField string) string {
 	return collectionField[:i+1]
 }
 
-func filterRelationList(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, toCollectionField string, isSuperAdmin bool, data []byte) ([]byte, error) {
+func filterRelationList(
+	ctx context.Context,
+	ds *datastore.Request,
+	mperms *perm.MeetingPermission,
+	toCollectionField string,
+	isSuperAdmin bool,
+	data []byte,
+) ([]byte, error) {
 	var ids []int
 	if err := json.Unmarshal(data, &ids); err != nil {
 		return nil, fmt.Errorf("decoding ids: %w", err)
@@ -216,7 +223,14 @@ func filterRelationList(ctx context.Context, ds *datastore.Request, mperms *perm
 	return encoded, nil
 }
 
-func filterGenericRelationList(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, toCollectionFieldMap map[string]string, isSuperAdmin bool, data []byte) ([]byte, error) {
+func filterGenericRelationList(
+	ctx context.Context,
+	ds *datastore.Request,
+	mperms *perm.MeetingPermission,
+	toCollectionFieldMap map[string]string,
+	isSuperAdmin bool,
+	data []byte,
+) ([]byte, error) {
 	var genericIDs []string
 	if err := json.Unmarshal(data, &genericIDs); err != nil {
 		return nil, fmt.Errorf("decoding ids: %w", err)

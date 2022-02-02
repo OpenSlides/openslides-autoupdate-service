@@ -17,7 +17,7 @@ import (
 //
 // The method Fetcher.Err() can be used to get the error.
 //
-// Make sure to call Fetcher.Err() at the end to see, if an error happend.
+// Make sure to call Fetcher.Err() at the end to see, if an error happened.
 type Fetcher struct {
 	getter datastore.Getter
 	err    error
@@ -53,7 +53,6 @@ func (f *Fetcher) Fetch(ctx context.Context, value interface{}, keyFmt string, a
 	if err := json.Unmarshal(fields[fqfield], value); err != nil {
 		f.err = fmt.Errorf("unpacking value of %q: %w", fqfield, err)
 	}
-	return
 }
 
 // FetchIfExist is like Fetch but if the element that the key belongs to does
@@ -90,7 +89,6 @@ func (f *Fetcher) FetchIfExist(ctx context.Context, value interface{}, keyFmt st
 	if err := json.Unmarshal(fields[fqfield], value); err != nil {
 		f.err = fmt.Errorf("unpacking value of %q: %w", fqfield, err)
 	}
-	return
 }
 
 // Object returns a json object for the given fqid with all given fields.
@@ -127,7 +125,7 @@ func (f *Fetcher) Object(ctx context.Context, fqID string, fields ...string) map
 	return object
 }
 
-// Err returns the error that happend at a method call. If no error happend,
+// Err returns the error that happened at a method call. If no error happened,
 // then Err() returns nil.
 func (f *Fetcher) Err() error {
 	err := f.err

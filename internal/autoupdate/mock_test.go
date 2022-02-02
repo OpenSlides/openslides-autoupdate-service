@@ -23,11 +23,6 @@ func blocking(f func()) bool {
 	return blockingTime(10*time.Millisecond, f)
 }
 
-// blockingDebug can be used in debug sessions.
-func blockingDebug(f func()) bool {
-	return blockingTime(time.Hour, f)
-}
-
 func blockingTime(wait time.Duration, f func()) bool {
 	done := make(chan struct{})
 	go func() {
