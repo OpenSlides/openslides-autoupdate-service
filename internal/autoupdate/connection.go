@@ -31,6 +31,7 @@ func (c *connection) Next(ctx context.Context) (map[string][]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("creating first time data: %w", err)
 		}
+
 		return data, nil
 	}
 
