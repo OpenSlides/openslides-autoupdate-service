@@ -133,6 +133,22 @@ func TestMediafileModeA(t *testing.T) {
 	)
 
 	testCase(
+		"mediafile can_manage",
+		t,
+		m.Modes("A"),
+		true,
+		`---
+		mediafile/1:
+			meeting_id: 7
+
+		meeting/7:
+			id: 7
+			committee_id: 300
+		`,
+		withPerms(7, perm.MediafileCanManage),
+	)
+
+	testCase(
 		"mediafile can_see not public",
 		t,
 		m.Modes("A"),
