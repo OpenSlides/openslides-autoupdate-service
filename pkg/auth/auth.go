@@ -215,7 +215,7 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 
 func (a *Auth) handleInvalidToken(ctx context.Context, invalid *jwt.ValidationError, w http.ResponseWriter, encodedToken, encodedCookie string) error {
 	if !tokenExpired(invalid.Errors) {
-		return authError{"Invalid auth ticket:", invalid}
+		return authError{"Invalid auth ticket", invalid}
 	}
 
 	token, err := a.refreshToken(ctx, encodedToken, encodedCookie)
