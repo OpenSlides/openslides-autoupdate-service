@@ -896,6 +896,7 @@ var exampleData = map[string]json.RawMessage{
 	"meeting/1/id":                                              []byte(`1`),
 	"meeting/1/imported_at":                                     []byte(`null`),
 	"meeting/1/is_active_in_organization_id":                    []byte(`1`),
+	"meeting/1/is_archived_in_organization_id":                  []byte(`null`),
 	"meeting/1/jitsi_domain":                                    []byte(`""`),
 	"meeting/1/jitsi_room_name":                                 []byte(`""`),
 	"meeting/1/jitsi_room_password":                             []byte(`""`),
@@ -2019,6 +2020,7 @@ var exampleData = map[string]json.RawMessage{
 	"organization/1/active_meeting_ids": []byte(`[
                 1
             ]`),
+	"organization/1/archived_meeting_ids": []byte(`[]`),
 	"organization/1/committee_ids": []byte(`[
                 1
             ]`),
