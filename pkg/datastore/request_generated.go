@@ -1727,6 +1727,12 @@ func (r *Request) Meeting_IsActiveInOrganizationID(meetingID int) *ValueMaybeInt
 	return v
 }
 
+func (r *Request) Meeting_IsArchivedInOrganizationID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
+	r.requested[fmt.Sprintf("meeting/%d/is_archived_in_organization_id", meetingID)] = v
+	return v
+}
+
 func (r *Request) Meeting_JitsiDomain(meetingID int) *ValueString {
 	v := &ValueString{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/jitsi_domain", meetingID)] = v
@@ -3284,6 +3290,12 @@ func (r *Request) OrganizationTag_TaggedIDs(organizationTagID int) *ValueStringS
 func (r *Request) Organization_ActiveMeetingIDs(organizationID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
 	r.requested[fmt.Sprintf("organization/%d/active_meeting_ids", organizationID)] = v
+	return v
+}
+
+func (r *Request) Organization_ArchivedMeetingIDs(organizationID int) *ValueIntSlice {
+	v := &ValueIntSlice{request: r}
+	r.requested[fmt.Sprintf("organization/%d/archived_meeting_ids", organizationID)] = v
 	return v
 }
 
