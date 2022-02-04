@@ -1061,9 +1061,9 @@ func (r *Request) Committee_ReceiveForwardingsFromCommitteeIDs(committeeID int) 
 	return v
 }
 
-func (r *Request) Committee_TemplateMeetingID(committeeID int) *ValueMaybeInt {
-	v := &ValueMaybeInt{request: r}
-	r.requested[fmt.Sprintf("committee/%d/template_meeting_id", committeeID)] = v
+func (r *Request) Committee_TemplateMeetingIDs(committeeID int) *ValueIntSlice {
+	v := &ValueIntSlice{request: r}
+	r.requested[fmt.Sprintf("committee/%d/template_meeting_ids", committeeID)] = v
 	return v
 }
 

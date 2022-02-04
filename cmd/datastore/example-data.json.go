@@ -365,7 +365,7 @@ var exampleData = map[string]json.RawMessage{
                 1
             ]`),
 	"committee/1/receive_forwardings_from_committee_ids": []byte(`[]`),
-	"committee/1/template_meeting_id":                    []byte(`null`),
+	"committee/1/template_meeting_ids":                   []byte(`[]`),
 	"committee/1/user_$_management_level":                []byte(`["can_manage"]`),
 	"committee/1/user_$can_manage_management_level":      []byte(`[1]`),
 	"committee/1/user_ids": []byte(`[
