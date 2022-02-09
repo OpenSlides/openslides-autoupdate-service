@@ -14,6 +14,7 @@ import (
 //     `meeting/enable_anonymous`.
 //     The user is in meeting/user_ids.
 //     The user has the CML can_manage of the meeting's committee.
+//     The user has the CML can_manage of any meeting and the meeting is a template meeting.
 //     The user has the OML can_manage_organization.
 //
 // Mode A: Always visible to everyone.
@@ -82,7 +83,25 @@ func (m Meeting) see(ctx context.Context, ds *datastore.Request, mperms *perm.Me
 		return false, fmt.Errorf("getting committee management status: %w", err)
 	}
 
-	return isCommitteeManager, nil
+	if isCommitteeManager {
+		return true, nil
+	}
+
+	_, isTemplateMeeting, err := ds.Meeting_TemplateForCommitteeID(meetingID).Value(ctx)
+	if err != nil {
+		return false, fmt.Errorf("getting template meeting: %w", err)
+	}
+
+	cmlMeetings, err := perm.ManagementLevelCommittees(ctx, ds, mperms.UserID())
+	if err != nil {
+		return false, fmt.Errorf("getting meetings with cml can manage: %w", err)
+	}
+
+	if isTemplateMeeting && len(cmlMeetings) > 0 {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (m Meeting) modeC(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, meetingID int) (bool, error) {
