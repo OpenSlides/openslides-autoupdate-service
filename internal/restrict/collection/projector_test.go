@@ -15,8 +15,8 @@ func TestProjectorModeA(t *testing.T) {
 		t,
 		f,
 		true,
-		"projector/1/meeting_id: 1",
-		withPerms(1, perm.ProjectorCanSee),
+		"projector/1/meeting_id: 30",
+		withPerms(30, perm.ProjectorCanSee),
 	)
 
 	testCase(
@@ -24,6 +24,6 @@ func TestProjectorModeA(t *testing.T) {
 		t,
 		f,
 		false,
-		"projector/1/meeting_id: 1",
+		"projector/1/meeting_id: 30",
 	)
 }

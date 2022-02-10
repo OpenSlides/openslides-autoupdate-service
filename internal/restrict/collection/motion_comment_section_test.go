@@ -18,7 +18,7 @@ func TestMotionCommentSectionModeA(t *testing.T) {
 		`---
 		motion_comment_section/1:
 			id: 1
-			meeting_id: 1
+			meeting_id: 30
 		`,
 	)
 
@@ -28,9 +28,9 @@ func TestMotionCommentSectionModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		motion_comment_section/1/meeting_id: 1
+		motion_comment_section/1/meeting_id: 30
 		`,
-		withPerms(1, perm.MotionCanManage),
+		withPerms(30, perm.MotionCanManage),
 	)
 
 	testCase(
@@ -39,9 +39,9 @@ func TestMotionCommentSectionModeA(t *testing.T) {
 		f,
 		false,
 		`---
-		motion_comment_section/1/meeting_id: 1
+		motion_comment_section/1/meeting_id: 30
 		`,
-		withPerms(1, perm.MotionCanSee),
+		withPerms(30, perm.MotionCanSee),
 	)
 
 	testCase(
@@ -51,10 +51,10 @@ func TestMotionCommentSectionModeA(t *testing.T) {
 		false,
 		`---
 		motion_comment_section/1:
-			meeting_id: 1
+			meeting_id: 30
 			read_group_ids: [2]
 		`,
-		withPerms(1, perm.MotionCanSee),
+		withPerms(30, perm.MotionCanSee),
 	)
 
 	testCase(
@@ -63,13 +63,13 @@ func TestMotionCommentSectionModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		user/1/group_$1_ids: [2]
+		user/1/group_$30_ids: [2]
 		group/2/id: 2
 
 		motion_comment_section/1:
-			meeting_id: 1
+			meeting_id: 30
 			read_group_ids: [2]
 		`,
-		withPerms(1, perm.MotionCanSee),
+		withPerms(30, perm.MotionCanSee),
 	)
 }

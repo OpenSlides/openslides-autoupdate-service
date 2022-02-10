@@ -15,8 +15,8 @@ func TestProjectorCountdownModeA(t *testing.T) {
 		t,
 		f,
 		true,
-		"projector_countdown/1/meeting_id: 1",
-		withPerms(1, perm.ProjectorCanSee),
+		"projector_countdown/1/meeting_id: 30",
+		withPerms(30, perm.ProjectorCanSee),
 	)
 
 	testCase(
@@ -24,6 +24,6 @@ func TestProjectorCountdownModeA(t *testing.T) {
 		t,
 		f,
 		false,
-		"projector_countdown/1/meeting_id: 1",
+		"projector_countdown/1/meeting_id: 30",
 	)
 }

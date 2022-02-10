@@ -15,7 +15,7 @@ func TestMeetingModeA(t *testing.T) {
 		t,
 		m.Modes("A"),
 		true,
-		"meeting/1/id: 1",
+		"meeting/30/id: 30",
 	)
 }
 
@@ -28,10 +28,11 @@ func TestMeetingModeB(t *testing.T) {
 		m.Modes("B"),
 		false,
 		`---
-		meeting/1:
+		meeting/30:
 			id: 1
 			committee_id: 300
 		`,
+		withElementID(30),
 	)
 
 	testCase(
@@ -39,7 +40,8 @@ func TestMeetingModeB(t *testing.T) {
 		t,
 		m.Modes("B"),
 		true,
-		`meeting/1/enable_anonymous: true`,
+		`meeting/30/enable_anonymous: true`,
+		withElementID(30),
 	)
 
 	testCase(
@@ -47,7 +49,8 @@ func TestMeetingModeB(t *testing.T) {
 		t,
 		m.Modes("B"),
 		true,
-		"meeting/1/user_ids: [1]",
+		"meeting/30/user_ids: [1]",
+		withElementID(30),
 	)
 
 	testCase(
@@ -56,9 +59,10 @@ func TestMeetingModeB(t *testing.T) {
 		m.Modes("B"),
 		true,
 		`---
-		meeting/1/committee_id: 4
+		meeting/30/committee_id: 4
 		user/1/committee_$can_manage_management_level: [4]
 		`,
+		withElementID(30),
 	)
 
 	testCase(
@@ -67,9 +71,10 @@ func TestMeetingModeB(t *testing.T) {
 		m.Modes("B"),
 		false,
 		`---
-		meeting/1/committee_id: 4
+		meeting/30/committee_id: 4
 		user/1/committee_$can_manage_management_level: [8]
 		`,
+		withElementID(30),
 	)
 
 	testCase(
@@ -78,8 +83,9 @@ func TestMeetingModeB(t *testing.T) {
 		m.Modes("B"),
 		false,
 		`---
-		meeting/1/template_for_committee_id: 16
+		meeting/30/template_for_committee_id: 16
 		`,
+		withElementID(30),
 	)
 
 	testCase(
@@ -88,11 +94,12 @@ func TestMeetingModeB(t *testing.T) {
 		m.Modes("B"),
 		true,
 		`---
-		meeting/1:
+		meeting/30:
 			committee_id: 4
 			template_for_committee_id: 16
 		user/1/committee_$can_manage_management_level: [8]
 		`,
+		withElementID(30),
 	)
 
 	testCase(
@@ -102,8 +109,9 @@ func TestMeetingModeB(t *testing.T) {
 		true,
 		`---
 		user/1/organization_management_level: can_manage_organization
-		meeting/1/id: 1
+		meeting/30/id: 30
 		`,
+		withElementID(30),
 	)
 
 	testCase(
@@ -111,8 +119,9 @@ func TestMeetingModeB(t *testing.T) {
 		t,
 		m.Modes("B"),
 		false,
-		`meeting/1/id: 1`,
+		`meeting/30/id: 30`,
 		withRequestUser(0),
+		withElementID(30),
 	)
 }
 
@@ -124,7 +133,8 @@ func TestMeetingModeC(t *testing.T) {
 		t,
 		m.Modes("C"),
 		false,
-		`meeting/1/id: 1`,
+		`meeting/30/id: 30`,
+		withElementID(30),
 	)
 
 	testCase(
@@ -132,8 +142,9 @@ func TestMeetingModeC(t *testing.T) {
 		t,
 		m.Modes("C"),
 		true,
-		`meeting/1/id: 1`,
-		withPerms(1, perm.MeetingCanSeeFrontpage),
+		`meeting/30/id: 30`,
+		withPerms(30, perm.MeetingCanSeeFrontpage),
+		withElementID(30),
 	)
 }
 
@@ -145,7 +156,8 @@ func TestMeetingModeD(t *testing.T) {
 		t,
 		m.Modes("D"),
 		false,
-		`meeting/1/id: 1`,
+		`meeting/30/id: 30`,
+		withElementID(30),
 	)
 
 	testCase(
@@ -153,7 +165,8 @@ func TestMeetingModeD(t *testing.T) {
 		t,
 		m.Modes("D"),
 		true,
-		`meeting/1/id: 1`,
-		withPerms(1, perm.MeetingCanSeeLivestream),
+		`meeting/30/id: 30`,
+		withPerms(30, perm.MeetingCanSeeLivestream),
+		withElementID(30),
 	)
 }

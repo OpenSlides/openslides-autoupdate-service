@@ -25,7 +25,7 @@ func (p ProjectorMessage) Modes(mode string) FieldRestricter {
 }
 
 func (p ProjectorMessage) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, projectorMessageID int) (bool, error) {
-	meetingID, err := ds.ProjectorMessage_ID(projectorMessageID).Value(ctx)
+	meetingID, err := ds.ProjectorMessage_MeetingID(projectorMessageID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("fetching meeting_id %d: %w", projectorMessageID, err)
 	}

@@ -15,7 +15,7 @@ func TestMotionWorkflowModeA(t *testing.T) {
 		t,
 		f,
 		false,
-		"motion_workflow/1/meeting_id: 1",
+		"motion_workflow/1/meeting_id: 30",
 	)
 
 	testCase(
@@ -23,7 +23,7 @@ func TestMotionWorkflowModeA(t *testing.T) {
 		t,
 		f,
 		true,
-		"motion_workflow/1/meeting_id: 1",
-		withPerms(1, perm.MotionCanSee),
+		"motion_workflow/1/meeting_id: 30",
+		withPerms(30, perm.MotionCanSee),
 	)
 }
