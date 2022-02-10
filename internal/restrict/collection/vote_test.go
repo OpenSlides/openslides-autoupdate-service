@@ -22,10 +22,10 @@ func TestVoteModeA(t *testing.T) {
 			delegated_user_id: 6
 		option/2/poll_id: 3
 		poll/3:
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 1
-		meeting/1/enable_anonymous: false
+		topic/5/meeting_id: 30
+		meeting/30/enable_anonymous: false
 		`,
 	)
 
@@ -41,7 +41,7 @@ func TestVoteModeA(t *testing.T) {
 			delegated_user_id: 6
 		option/2/poll_id: 3
 		poll/3:
-			meeting_id: 1
+			meeting_id: 30
 			state: published
 		`,
 	)
@@ -58,11 +58,11 @@ func TestVoteModeA(t *testing.T) {
 			delegated_user_id: 6
 		option/2/poll_id: 3
 		poll/3:
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 1
+		topic/5/meeting_id: 30
 		`,
-		withPerms(1, perm.PollCanManage),
+		withPerms(30, perm.PollCanManage),
 	)
 
 	testCase(
@@ -77,9 +77,9 @@ func TestVoteModeA(t *testing.T) {
 			delegated_user_id: 6
 		option/2/poll_id: 3
 		poll/3:
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 1
+		topic/5/meeting_id: 30
 		`,
 		withRequestUser(5),
 	)
@@ -96,9 +96,9 @@ func TestVoteModeA(t *testing.T) {
 			delegated_user_id: 6
 		option/2/poll_id: 3
 		poll/3:
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 1
+		topic/5/meeting_id: 30
 		`,
 		withRequestUser(6),
 	)
@@ -115,7 +115,7 @@ func TestVoteModeB(t *testing.T) {
 		`---
 		vote/1/option_id: 2
 		option/2/poll_id: 3
-		poll/3/meeting_id: 1
+		poll/3/meeting_id: 30
 		`,
 	)
 
@@ -131,10 +131,10 @@ func TestVoteModeB(t *testing.T) {
 			delegated_user_id: 6
 		option/2/poll_id: 3
 		poll/3:
-			meeting_id: 1
+			meeting_id: 30
 			state: published
 			content_object_id: topic/5
-		topic/5/meeting_id: 1
+		topic/5/meeting_id: 30
 		`,
 		withRequestUser(5),
 	)
@@ -148,11 +148,11 @@ func TestVoteModeB(t *testing.T) {
 		vote/1/option_id: 2
 		option/2/poll_id: 3
 		poll/3:
-			meeting_id: 1
+			meeting_id: 30
 			state: finished
 			content_object_id: topic/5
-		topic/5/meeting_id: 1
+		topic/5/meeting_id: 30
 		`,
-		withPerms(1, perm.PollCanManage),
+		withPerms(30, perm.PollCanManage),
 	)
 }

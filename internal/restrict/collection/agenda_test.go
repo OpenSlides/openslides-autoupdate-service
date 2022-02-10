@@ -16,7 +16,7 @@ func TestAgendaModeA(t *testing.T) {
 		a.Modes("A"),
 		false,
 		`---
-		agenda_item/1/meeting_id: 1
+		agenda_item/1/meeting_id: 30
 		`,
 	)
 
@@ -26,9 +26,9 @@ func TestAgendaModeA(t *testing.T) {
 		a.Modes("A"),
 		true,
 		`---
-		agenda_item/1/meeting_id: 1
+		agenda_item/1/meeting_id: 30
 		`,
-		withPerms(1, perm.AgendaItemCanManage),
+		withPerms(30, perm.AgendaItemCanManage),
 	)
 
 	testCase(
@@ -38,10 +38,10 @@ func TestAgendaModeA(t *testing.T) {
 		false,
 		`---
 		agenda_item/1:
-			meeting_id: 1
+			meeting_id: 30
 			is_hidden: true
 		`,
-		withPerms(1, perm.AgendaItemCanSeeInternal),
+		withPerms(30, perm.AgendaItemCanSeeInternal),
 	)
 
 	testCase(
@@ -51,10 +51,10 @@ func TestAgendaModeA(t *testing.T) {
 		true,
 		`---
 		agenda_item/1:
-			meeting_id: 1
+			meeting_id: 30
 			is_hidden: false
 		`,
-		withPerms(1, perm.AgendaItemCanSeeInternal),
+		withPerms(30, perm.AgendaItemCanSeeInternal),
 	)
 
 	testCase(
@@ -64,11 +64,11 @@ func TestAgendaModeA(t *testing.T) {
 		false,
 		`---
 		agenda_item/1:
-			meeting_id: 1
+			meeting_id: 30
 			is_hidden: true
 			is_internal: true
 		`,
-		withPerms(1, perm.AgendaItemCanSee),
+		withPerms(30, perm.AgendaItemCanSee),
 	)
 
 	testCase(
@@ -78,11 +78,11 @@ func TestAgendaModeA(t *testing.T) {
 		false,
 		`---
 		agenda_item/1:
-			meeting_id: 1
+			meeting_id: 30
 			is_hidden: false
 			is_internal: true
 		`,
-		withPerms(1, perm.AgendaItemCanSee),
+		withPerms(30, perm.AgendaItemCanSee),
 	)
 
 	testCase(
@@ -92,11 +92,11 @@ func TestAgendaModeA(t *testing.T) {
 		false,
 		`---
 		agenda_item/1:
-			meeting_id: 1
+			meeting_id: 30
 			is_hidden: true
 			is_internal: false
 		`,
-		withPerms(1, perm.AgendaItemCanSee),
+		withPerms(30, perm.AgendaItemCanSee),
 	)
 
 	testCase(
@@ -106,18 +106,18 @@ func TestAgendaModeA(t *testing.T) {
 		true,
 		`---
 		agenda_item/1:
-			meeting_id: 1
+			meeting_id: 30
 			is_hidden: false
 			is_internal: false
 		`,
-		withPerms(1, perm.AgendaItemCanSee),
+		withPerms(30, perm.AgendaItemCanSee),
 	)
 }
 
 func TestAgendaModeB(t *testing.T) {
 	var a collection.AgendaItem
 	ds := `---
-	agenda_item/1/meeting_id: 1
+	agenda_item/1/meeting_id: 30
 	`
 
 	testCase(
@@ -126,7 +126,7 @@ func TestAgendaModeB(t *testing.T) {
 		a.Modes("B"),
 		true,
 		ds,
-		withPerms(1, perm.AgendaItemCanSeeInternal),
+		withPerms(30, perm.AgendaItemCanSeeInternal),
 	)
 
 	testCase(
@@ -141,7 +141,7 @@ func TestAgendaModeB(t *testing.T) {
 func TestAgendaModeC(t *testing.T) {
 	var a collection.AgendaItem
 	ds := `---
-	agenda_item/1/meeting_id: 1
+	agenda_item/1/meeting_id: 30
 	`
 
 	testCase(
@@ -150,7 +150,7 @@ func TestAgendaModeC(t *testing.T) {
 		a.Modes("C"),
 		false,
 		ds,
-		withPerms(1, perm.AgendaItemCanSeeInternal),
+		withPerms(30, perm.AgendaItemCanSeeInternal),
 	)
 
 	testCase(
@@ -159,7 +159,7 @@ func TestAgendaModeC(t *testing.T) {
 		a.Modes("C"),
 		false,
 		ds,
-		withPerms(1, perm.AgendaItemCanSee),
+		withPerms(30, perm.AgendaItemCanSee),
 	)
 
 	testCase(
@@ -168,7 +168,7 @@ func TestAgendaModeC(t *testing.T) {
 		a.Modes("C"),
 		true,
 		ds,
-		withPerms(1, perm.AgendaItemCanManage),
+		withPerms(30, perm.AgendaItemCanManage),
 	)
 
 	testCase(

@@ -22,6 +22,7 @@ type testData struct {
 }
 
 func testCase(name string, t *testing.T, f collection.FieldRestricter, expect bool, yaml string, op ...testCaseOption) {
+	t.Helper()
 	td := testData{
 		name:          name,
 		expect:        expect,

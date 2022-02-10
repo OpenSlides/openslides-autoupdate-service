@@ -20,7 +20,7 @@ func TestMotionSubmitterModeA(t *testing.T) {
 			motion_id: 5
 		
 		motion/5:
-			meeting_id: 1
+			meeting_id: 30
 			state_id: 3
 		
 		motion_state/3/id: 3
@@ -37,11 +37,11 @@ func TestMotionSubmitterModeA(t *testing.T) {
 			motion_id: 5
 		
 		motion/5:
-			meeting_id: 1
+			meeting_id: 30
 			state_id: 3
 		
 		motion_state/3/id: 3
 		`,
-		withPerms(1, perm.MotionCanSee),
+		withPerms(30, perm.MotionCanSee),
 	)
 }

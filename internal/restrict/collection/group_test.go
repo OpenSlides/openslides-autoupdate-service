@@ -15,9 +15,9 @@ func TestGroupModeA(t *testing.T) {
 		g.Modes("A"),
 		false,
 		`---
-		group/1/meeting_id: 1
-		meeting/1/id: 1
-		meeting/1/committee_id: 404
+		group/1/meeting_id: 30
+		meeting/30/id: 30
+		meeting/30/committee_id: 404
 		`,
 	)
 
@@ -27,8 +27,8 @@ func TestGroupModeA(t *testing.T) {
 		g.Modes("A"),
 		true,
 		`---
-		group/1/meeting_id: 1
-		meeting/1/enable_anonymous: true
+		group/1/meeting_id: 30
+		meeting/30/enable_anonymous: true
 		`,
 	)
 
@@ -38,8 +38,8 @@ func TestGroupModeA(t *testing.T) {
 		g.Modes("A"),
 		true,
 		`---
-		group/1/meeting_id: 1
-		meeting/1/user_ids: [1]
+		group/1/meeting_id: 30
+		meeting/30/user_ids: [1]
 		`,
 	)
 }

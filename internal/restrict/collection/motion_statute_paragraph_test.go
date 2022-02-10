@@ -15,7 +15,7 @@ func TestMotionStatuteParagraphModeA(t *testing.T) {
 		t,
 		f,
 		false,
-		"motion_statute_paragraph/1/meeting_id: 1",
+		"motion_statute_paragraph/1/meeting_id: 30",
 	)
 
 	testCase(
@@ -23,7 +23,7 @@ func TestMotionStatuteParagraphModeA(t *testing.T) {
 		t,
 		f,
 		true,
-		"motion_statute_paragraph/1/meeting_id: 1",
-		withPerms(1, perm.MotionCanSee),
+		"motion_statute_paragraph/1/meeting_id: 30",
+		withPerms(30, perm.MotionCanSee),
 	)
 }
