@@ -195,7 +195,6 @@ func TestAuth(t *testing.T) {
 			if got := a.FromContext(ctx); got != tt.uid {
 				t.Errorf("Got uid %d, expected %d", got, tt.uid)
 			}
-
 		})
 	}
 }
@@ -210,10 +209,13 @@ func TestFromContext(t *testing.T) {
 	}
 
 	t.Run("Empty Context", func(t *testing.T) {
-		got := a.FromContext(context.Background())
-		if got != 0 {
-			t.Errorf("Got uid %d from empty context. Expected 0", got)
-		}
+		defer func() {
+			if r := recover(); r == nil {
+				t.Errorf("FromContext() did not panic")
+			}
+		}()
+
+		a.FromContext(context.Background())
 	})
 
 	t.Run("Context from Authenticate", func(t *testing.T) {
