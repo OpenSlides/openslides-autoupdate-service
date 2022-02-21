@@ -17,10 +17,10 @@ func TestListOfSpeakersModeA(t *testing.T) {
 		false,
 		`---
 		list_of_speakers/1: 
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
 
-		topic/5/meeting_id: 1
+		topic/5/meeting_id: 30
 		`,
 	)
 
@@ -31,12 +31,12 @@ func TestListOfSpeakersModeA(t *testing.T) {
 		false,
 		`---
 		list_of_speakers/1: 
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
 
-		topic/5/meeting_id: 1
+		topic/5/meeting_id: 30
 		`,
-		withPerms(1, perm.ListOfSpeakersCanSee),
+		withPerms(30, perm.ListOfSpeakersCanSee),
 	)
 
 	testCase(
@@ -46,12 +46,12 @@ func TestListOfSpeakersModeA(t *testing.T) {
 		false,
 		`---
 		list_of_speakers/1:
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
 		
-		topic/5/meeting_id: 1
+		topic/5/meeting_id: 30
 		`,
-		withPerms(1, perm.AgendaItemCanSee),
+		withPerms(30, perm.AgendaItemCanSee),
 	)
 
 	testCase(
@@ -61,11 +61,11 @@ func TestListOfSpeakersModeA(t *testing.T) {
 		true,
 		`---
 		list_of_speakers/1:
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
 		
-		topic/5/meeting_id: 1
+		topic/5/meeting_id: 30
 		`,
-		withPerms(1, perm.ListOfSpeakersCanSee, perm.AgendaItemCanSee),
+		withPerms(30, perm.ListOfSpeakersCanSee, perm.AgendaItemCanSee),
 	)
 }

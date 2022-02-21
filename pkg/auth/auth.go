@@ -63,7 +63,9 @@ func New(
 
 // Authenticate uses the headers from the given request to get the user id. The
 // returned context will be cancled, if the session is revoked.
-func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (ctx context.Context, err error) {
+func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Context, error) {
+	ctx := context.WithValue(r.Context(), authenticateCalled, "yes")
+
 	p := new(payload)
 	if err := a.loadToken(w, r, p); err != nil {
 		return nil, fmt.Errorf("reading token: %w", err)
@@ -72,7 +74,7 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (ctx context
 	if p.UserID == 0 {
 		// Empty token or anonymous token. No need to save anything in the
 		// context.
-		return r.Context(), nil
+		return ctx, nil
 	}
 
 	_, sessionIDs, err := a.logedoutSessions.Receive(context.Background(), 0)
@@ -85,7 +87,7 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (ctx context
 		}
 	}
 
-	ctx, cancelCtx := context.WithCancel(context.WithValue(r.Context(), userIDType, p.UserID))
+	ctx, cancelCtx := context.WithCancel(context.WithValue(ctx, userIDType, p.UserID))
 
 	go func() {
 		defer cancelCtx()
@@ -111,9 +113,16 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (ctx context
 }
 
 // FromContext returnes the user id from a context returned by Authenticate().
-// If the context was not returned from Authenticate or the user is an anonymous
-// user, then 0 is returned.
+//
+// If the user is an anonymous user 0 is returned.
+//
+// Panics, if the context was not returned from Authenticate
 func (a *Auth) FromContext(ctx context.Context) int {
+	initialized := ctx.Value(authenticateCalled)
+	if initialized == nil {
+		panic("call to auth.FromContext() without auth.Authenticate()")
+	}
+
 	v := ctx.Value(userIDType)
 	if v == nil {
 		return 0
@@ -271,6 +280,7 @@ func (a *Auth) refreshToken(ctx context.Context, token, cookie string) (string, 
 type authString string
 
 const userIDType authString = "user_id"
+const authenticateCalled authString = "authenticate_called"
 
 type payload struct {
 	jwt.StandardClaims

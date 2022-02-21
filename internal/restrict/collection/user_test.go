@@ -182,14 +182,14 @@ func TestUserModeA(t *testing.T) {
 			submitted_motion_$1_ids: [4]
 		
 		motion/4:
-			meeting_id: 1
+			meeting_id: 30
 			state_id: 5
 		
 		motion_state/5/id: 5
 		`,
 		withRequestUser(1),
 		withElementID(2),
-		withPerms(1, perm.MotionCanSee),
+		withPerms(30, perm.MotionCanSee),
 	)
 
 	testCase(
@@ -203,14 +203,14 @@ func TestUserModeA(t *testing.T) {
 			supported_motion_$1_ids: [4]
 		
 		motion/4:
-			meeting_id: 1
+			meeting_id: 30
 			state_id: 5
 		
 		motion_state/5/id: 5
 		`,
 		withRequestUser(1),
 		withElementID(2),
-		withPerms(1, perm.MotionCanSee),
+		withPerms(30, perm.MotionCanSee),
 	)
 
 	testCase(
@@ -225,14 +225,14 @@ func TestUserModeA(t *testing.T) {
 		
 		option/4/poll_id: 5
 		poll/5:
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 1
-		meeting/1/enable_anonymous: true
+		topic/5/meeting_id: 30
+		meeting/30/enable_anonymous: true
 		`,
 		withRequestUser(1),
 		withElementID(2),
-		withPerms(1, perm.AgendaItemCanSee),
+		withPerms(30, perm.AgendaItemCanSee),
 	)
 
 	testCase(
@@ -246,11 +246,11 @@ func TestUserModeA(t *testing.T) {
 			assignment_candidate_$1_ids: [4]
 		
 		assignment_candidate/4/assignment_id: 5
-		assignment/5/meeting_id: 1
+		assignment/5/meeting_id: 30
 		`,
 		withRequestUser(1),
 		withElementID(2),
-		withPerms(1, perm.AssignmentCanSee),
+		withPerms(30, perm.AssignmentCanSee),
 	)
 
 	testCase(
@@ -266,14 +266,14 @@ func TestUserModeA(t *testing.T) {
 		speaker/4/list_of_speakers_id: 5
 
 		list_of_speakers/5:
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/10
 
-		topic/10/meeting_id: 1
+		topic/10/meeting_id: 30
 		`,
 		withRequestUser(1),
 		withElementID(2),
-		withPerms(1, perm.ListOfSpeakersCanSee, perm.AgendaItemCanSee),
+		withPerms(30, perm.ListOfSpeakersCanSee, perm.AgendaItemCanSee),
 	)
 
 	testCase(
@@ -288,16 +288,16 @@ func TestUserModeA(t *testing.T) {
 		
 		poll/4:
 			state: finished
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
 		
-		topic/5/meeting_id: 1
+		topic/5/meeting_id: 30
 		
-		meeting/1/id: 1
+		meeting/30/id: 30
 		`,
 		withRequestUser(1),
 		withElementID(2),
-		withPerms(1, perm.AgendaItemCanSee),
+		withPerms(30, perm.AgendaItemCanSee),
 	)
 
 	testCase(
@@ -314,9 +314,9 @@ func TestUserModeA(t *testing.T) {
 		option/5/poll_id: 6
 		poll/6:
 			state: published
-			meeting_id: 1
+			meeting_id: 30
 
-		meeting/1/enable_anonymous: true
+		meeting/30/enable_anonymous: true
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -336,9 +336,9 @@ func TestUserModeA(t *testing.T) {
 		option/5/poll_id: 6
 		poll/6:
 			state: published
-			meeting_id: 1
+			meeting_id: 30
 
-		meeting/1/enable_anonymous: true
+		meeting/30/enable_anonymous: true
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -352,13 +352,13 @@ func TestUserModeA(t *testing.T) {
 		`---
 		user:
 			1:
-				group_$1_ids: [5]
+				group_$30_ids: [5]
 
 			2:
 				chat_message_$_ids: ["1"]
 				chat_message_$1_ids: [4]
 		
-		meeting/1/id: 1
+		meeting/30/id: 30
 		
 		chat_message/4:
 			user_id: 2
@@ -366,7 +366,7 @@ func TestUserModeA(t *testing.T) {
 		
 		chat_group/3:
 			read_group_ids: [5]
-			meeting_id: 1
+			meeting_id: 30
 
 		group/5/id: 5
 		`,

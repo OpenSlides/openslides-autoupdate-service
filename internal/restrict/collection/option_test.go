@@ -18,10 +18,10 @@ func TestOptionModeA(t *testing.T) {
 		`---
 		option/1/poll_id: 3
 		poll/3:
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 1
-		meeting/1:
+		topic/5/meeting_id: 30
+		meeting/30:
 			enable_anonymous: false
 			committee_id: 300
 		`,
@@ -35,11 +35,11 @@ func TestOptionModeA(t *testing.T) {
 		`---
 		option/1/poll_id: 3
 		poll/3:
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 1
+		topic/5/meeting_id: 30
 		`,
-		withPerms(1, perm.AgendaItemCanSee),
+		withPerms(30, perm.AgendaItemCanSee),
 	)
 }
 
@@ -54,10 +54,10 @@ func TestOptionModeB(t *testing.T) {
 		`---
 		option/1/poll_id: 3
 		poll/3:
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 1
-		meeting/1/committee_id: 1
+		topic/5/meeting_id: 30
+		meeting/30/committee_id: 1
 		`,
 	)
 
@@ -69,12 +69,12 @@ func TestOptionModeB(t *testing.T) {
 		`---
 		option/1/poll_id: 3
 		poll/3:
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 1
-		meeting/1/user_ids: [1]
+		topic/5/meeting_id: 30
+		meeting/30/user_ids: [1]
 		`,
-		withPerms(1, perm.AgendaItemCanSee),
+		withPerms(30, perm.AgendaItemCanSee),
 	)
 
 	testCase(
@@ -85,12 +85,12 @@ func TestOptionModeB(t *testing.T) {
 		`---
 		option/1/poll_id: 3
 		poll/3:
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 1
-		meeting/1/user_ids: [1]
+		topic/5/meeting_id: 30
+		meeting/30/user_ids: [1]
 		`,
-		withPerms(1, perm.PollCanManage, perm.AgendaItemCanSee),
+		withPerms(30, perm.PollCanManage, perm.AgendaItemCanSee),
 	)
 
 	testCase(
@@ -101,12 +101,12 @@ func TestOptionModeB(t *testing.T) {
 		`---
 		option/1/poll_id: 3
 		poll/3:
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 1
-		meeting/1/user_ids: [1]
+		topic/5/meeting_id: 30
+		meeting/30/user_ids: [1]
 		`,
-		withPerms(1, perm.PollCanManage),
+		withPerms(30, perm.PollCanManage),
 	)
 
 	testCase(
@@ -117,13 +117,13 @@ func TestOptionModeB(t *testing.T) {
 		`---
 		option/1/poll_id: 3
 		poll/3:
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
 			state: published
-		topic/5/meeting_id: 1
-		meeting/1/user_ids: [1]
+		topic/5/meeting_id: 30
+		meeting/30/user_ids: [1]
 		`,
-		withPerms(1, perm.AgendaItemCanSee),
+		withPerms(30, perm.AgendaItemCanSee),
 	)
 
 	testCase(
@@ -134,11 +134,11 @@ func TestOptionModeB(t *testing.T) {
 		`---
 		option/1/poll_id: 3
 		poll/3:
-			meeting_id: 1
+			meeting_id: 30
 			content_object_id: topic/5
 			state: published
-		topic/5/meeting_id: 1
-		meeting/1/user_ids: [1]
+		topic/5/meeting_id: 30
+		meeting/30/user_ids: [1]
 		`,
 	)
 }

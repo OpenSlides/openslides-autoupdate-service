@@ -28,9 +28,9 @@ func TestMotionBlockModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		motion_block/1/meeting_id: 1
+		motion_block/1/meeting_id: 30
 		`,
-		withPerms(1, perm.MotionCanManage),
+		withPerms(30, perm.MotionCanManage),
 	)
 
 	testCase(
@@ -40,7 +40,7 @@ func TestMotionBlockModeA(t *testing.T) {
 		true,
 		`---
 		motion_block/1:
-			meeting_id: 1
+			meeting_id: 30
 			agenda_item_id: 3
 		
 		agenda_item/3/meeting_id: 2
@@ -55,7 +55,7 @@ func TestMotionBlockModeA(t *testing.T) {
 		false,
 		`---
 		motion_block/1:
-			meeting_id: 1
+			meeting_id: 30
 			agenda_item_id: 3
 		
 		agenda_item/3/meeting_id: 2
@@ -74,7 +74,7 @@ func TestMotionBlockModeB(t *testing.T) {
 		`---
 		motion_block/1:
 			id: 1
-			meeting_id: 1
+			meeting_id: 30
 		`,
 	)
 
@@ -84,9 +84,9 @@ func TestMotionBlockModeB(t *testing.T) {
 		f,
 		true,
 		`---
-		motion_block/1/meeting_id: 1
+		motion_block/1/meeting_id: 30
 		`,
-		withPerms(1, perm.MotionCanManage),
+		withPerms(30, perm.MotionCanManage),
 	)
 
 	testCase(
@@ -96,10 +96,10 @@ func TestMotionBlockModeB(t *testing.T) {
 		true,
 		`---
 		motion_block/1:
-			meeting_id: 1
+			meeting_id: 30
 			internal: false
 		`,
-		withPerms(1, perm.MotionCanSee),
+		withPerms(30, perm.MotionCanSee),
 	)
 
 	testCase(
@@ -109,9 +109,9 @@ func TestMotionBlockModeB(t *testing.T) {
 		false,
 		`---
 		motion_block/1:
-			meeting_id: 1
+			meeting_id: 30
 			internal: true
 		`,
-		withPerms(1, perm.MotionCanSee),
+		withPerms(30, perm.MotionCanSee),
 	)
 }

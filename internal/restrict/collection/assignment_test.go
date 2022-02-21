@@ -17,9 +17,7 @@ func TestAssignmentModeA(t *testing.T) {
 		false,
 		`---
 		assignment/1:
-			meeting_id: 1
-		
-		meeting/1/committee_id: 404
+			meeting_id: 30
 		`,
 	)
 
@@ -30,9 +28,9 @@ func TestAssignmentModeA(t *testing.T) {
 		true,
 		`---
 		assignment/1:
-			meeting_id: 1
+			meeting_id: 30
 		`,
-		withPerms(1, perm.AssignmentCanSee),
+		withPerms(30, perm.AssignmentCanSee),
 	)
 
 	testCase(
@@ -43,17 +41,17 @@ func TestAssignmentModeA(t *testing.T) {
 		`---
 		assignment/1:
 			agenda_item_id: 30
-			meeting_id: 1
+			meeting_id: 30
 			list_of_speakers_id: 15
 
 		agenda_item/30:
-			meeting_id: 1
+			meeting_id: 30
 
 		list_of_speakers/15:
 			id: 15
-			meeting_id: 1
+			meeting_id: 30
 		`,
-		withPerms(1, perm.AgendaItemCanSee),
+		withPerms(30, perm.AgendaItemCanSee),
 	)
 
 	testCase(
@@ -64,15 +62,15 @@ func TestAssignmentModeA(t *testing.T) {
 		`---
 		assignment/1:
 			agenda_item_id: 30
-			meeting_id: 1
+			meeting_id: 30
 			list_of_speakers_id: 15
 
 		agenda_item/30:
-			meeting_id: 1
+			meeting_id: 30
 
 		list_of_speakers/15:
 			id: 15
-			meeting_id: 1
+			meeting_id: 30
 		`,
 	)
 
@@ -83,12 +81,12 @@ func TestAssignmentModeA(t *testing.T) {
 		false,
 		`---
 		assignment/1:
-			meeting_id: 1
+			meeting_id: 30
 			
 		agenda_item/30:
-			meeting_id: 1
+			meeting_id: 30
 		`,
-		withPerms(1, perm.AgendaItemCanSee),
+		withPerms(30, perm.AgendaItemCanSee),
 	)
 }
 
@@ -102,7 +100,7 @@ func TestAssignmentModeB(t *testing.T) {
 		false,
 		`---
 		assignment/1:
-			meeting_id: 1
+			meeting_id: 30
 			list_of_speakers_id: 404
 		`,
 	)
@@ -114,9 +112,9 @@ func TestAssignmentModeB(t *testing.T) {
 		true,
 		`---
 		assignment/1:
-			meeting_id: 1
+			meeting_id: 30
 		`,
-		withPerms(1, perm.AssignmentCanSee),
+		withPerms(30, perm.AssignmentCanSee),
 	)
 
 	testCase(
@@ -127,13 +125,13 @@ func TestAssignmentModeB(t *testing.T) {
 		`---
 		assignment/1:
 			agenda_item_id: 30
-			meeting_id: 1
+			meeting_id: 30
 			list_of_speakers_id: 404
 
 		agenda_item/30:
-			meeting_id: 1
+			meeting_id: 30
 			list_of_speakers_id: 404
 		`,
-		withPerms(1, perm.AgendaItemCanSee),
+		withPerms(30, perm.AgendaItemCanSee),
 	)
 }

@@ -38,12 +38,12 @@ func TestTopicModeA(t *testing.T) {
 		true,
 		`---
 		topic/1:
-			meeting_id: 1
+			meeting_id: 30
 			agenda_item_id: 3
 
-		agenda_item_id/3/meeting_id: 1
+		agenda_item_id/3/meeting_id: 30
 		`,
-		withPerms(1, perm.AgendaItemCanSee),
+		withPerms(30, perm.AgendaItemCanSee),
 	)
 
 	testCase(
@@ -53,10 +53,10 @@ func TestTopicModeA(t *testing.T) {
 		false,
 		`---
 		topic/1:
-			meeting_id: 1
+			meeting_id: 30
 			agenda_item_id: 3
 
-		agenda_item_id/3/meeting_id: 1
+		agenda_item_id/3/meeting_id: 30
 		`,
 	)
 }
