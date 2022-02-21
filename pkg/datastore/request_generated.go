@@ -1061,12 +1061,6 @@ func (r *Request) Committee_ReceiveForwardingsFromCommitteeIDs(committeeID int) 
 	return v
 }
 
-func (r *Request) Committee_TemplateMeetingIDs(committeeID int) *ValueIntSlice {
-	v := &ValueIntSlice{request: r}
-	r.requested[fmt.Sprintf("committee/%d/template_meeting_ids", committeeID)] = v
-	return v
-}
-
 func (r *Request) Committee_UserIDs(committeeID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
 	r.requested[fmt.Sprintf("committee/%d/user_ids", committeeID)] = v
@@ -2297,21 +2291,15 @@ func (r *Request) Meeting_TagIDs(meetingID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Request) Meeting_TemplateForCommitteeID(meetingID int) *ValueMaybeInt {
+func (r *Request) Meeting_TemplateForOrganizationID(meetingID int) *ValueMaybeInt {
 	v := &ValueMaybeInt{request: r}
-	r.requested[fmt.Sprintf("meeting/%d/template_for_committee_id", meetingID)] = v
+	r.requested[fmt.Sprintf("meeting/%d/template_for_organization_id", meetingID)] = v
 	return v
 }
 
 func (r *Request) Meeting_TopicIDs(meetingID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/topic_ids", meetingID)] = v
-	return v
-}
-
-func (r *Request) Meeting_UrlName(meetingID int) *ValueString {
-	v := &ValueString{request: r}
-	r.requested[fmt.Sprintf("meeting/%d/url_name", meetingID)] = v
 	return v
 }
 
@@ -2360,12 +2348,6 @@ func (r *Request) Meeting_UsersEnablePresenceView(meetingID int) *ValueBool {
 func (r *Request) Meeting_UsersEnableVoteWeight(meetingID int) *ValueBool {
 	v := &ValueBool{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/users_enable_vote_weight", meetingID)] = v
-	return v
-}
-
-func (r *Request) Meeting_UsersPdfUrl(meetingID int) *ValueString {
-	v := &ValueString{request: r}
-	r.requested[fmt.Sprintf("meeting/%d/users_pdf_url", meetingID)] = v
 	return v
 }
 
@@ -3380,6 +3362,12 @@ func (r *Request) Organization_ResetPasswordVerboseErrors(organizationID int) *V
 func (r *Request) Organization_ResourceIDs(organizationID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
 	r.requested[fmt.Sprintf("organization/%d/resource_ids", organizationID)] = v
+	return v
+}
+
+func (r *Request) Organization_TemplateMeetingIDs(organizationID int) *ValueIntSlice {
+	v := &ValueIntSlice{request: r}
+	r.requested[fmt.Sprintf("organization/%d/template_meeting_ids", organizationID)] = v
 	return v
 }
 
