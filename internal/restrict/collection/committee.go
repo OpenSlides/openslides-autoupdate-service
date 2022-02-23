@@ -10,11 +10,13 @@ import (
 
 // Committee handels permission for committees.
 //
-// The user must be in committee/user_ids or have the OML can_manage_users or higher.
+// See user can see a committee, if he is in committee/user_ids or have the OML
+// can_manage_users or higher.
 //
 // Mode A: The user can see the committee.
 //
-// Mode B: The user must have the OML `can_manage_organization` or higher.
+// Mode B: The user must have the OML `can_manage_organization` or higher or the
+// CML `can_manage` in the committee.
 type Committee struct{}
 
 // Modes returns a map from all known modes to there restricter.
@@ -53,5 +55,15 @@ func (a Committee) modeB(ctx context.Context, ds *datastore.Request, mperms *per
 	if err != nil {
 		return false, fmt.Errorf("checking oml: %w", err)
 	}
-	return hasOMLPerm, nil
+
+	if hasOMLPerm {
+		return true, nil
+	}
+
+	cmlCanManage, err := perm.HasCommitteeManagementLevel(ctx, ds, mperms.UserID(), committeeID)
+	if err != nil {
+		return false, fmt.Errorf("checking committee management level: %w", err)
+	}
+
+	return cmlCanManage, nil
 }

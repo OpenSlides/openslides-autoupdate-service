@@ -118,7 +118,7 @@ func TestRestrict(t *testing.T) {
 		t.Errorf("user/1/group_$30_ids was restricted to %q, did not expect it", got)
 	}
 
-	if got := string(data["user/1/group_$2_ids"]); got != `null` {
+	if got := string(data["user/1/group_$2_ids"]); got != `[]` {
 		t.Errorf("user/1/group_$2_ids is %q, expected a empty list", got)
 	}
 }
