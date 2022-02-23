@@ -87,7 +87,7 @@ func (m Meeting) see(ctx context.Context, ds *datastore.Request, mperms *perm.Me
 		return true, nil
 	}
 
-	_, isTemplateMeeting, err := ds.Meeting_TemplateForCommitteeID(meetingID).Value(ctx)
+	_, isTemplateMeeting, err := ds.Meeting_TemplateForOrganizationID(meetingID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting template meeting: %w", err)
 	}

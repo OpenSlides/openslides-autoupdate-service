@@ -365,7 +365,6 @@ var exampleData = map[string]json.RawMessage{
                 1
             ]`),
 	"committee/1/receive_forwardings_from_committee_ids": []byte(`[]`),
-	"committee/1/template_meeting_ids":                   []byte(`[]`),
 	"committee/1/user_$_management_level":                []byte(`["can_manage"]`),
 	"committee/1/user_$can_manage_management_level":      []byte(`[1]`),
 	"committee/1/user_ids": []byte(`[
@@ -1050,7 +1049,7 @@ var exampleData = map[string]json.RawMessage{
                 2,
                 3
             ]`),
-	"meeting/1/template_for_committee_id": []byte(`null`),
+	"meeting/1/template_for_organization_id": []byte(`null`),
 	"meeting/1/topic_ids": []byte(`[
                 1,
                 2,
@@ -1971,7 +1970,8 @@ var exampleData = map[string]json.RawMessage{
 	"organization/1/resource_ids": []byte(`[
                 1
             ]`),
-	"organization/1/theme_id": []byte(`1`),
+	"organization/1/template_meeting_ids": []byte(`[]`),
+	"organization/1/theme_id":             []byte(`1`),
 	"organization/1/theme_ids": []byte(`[
                 1,
                 2,

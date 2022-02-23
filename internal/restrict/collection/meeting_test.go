@@ -96,7 +96,7 @@ func TestMeetingModeB(t *testing.T) {
 		`---
 		meeting/30:
 			committee_id: 4
-			template_for_committee_id: 16
+			template_for_organization_id: 16
 		user/1/committee_$can_manage_management_level: [8]
 		`,
 		withElementID(30),
