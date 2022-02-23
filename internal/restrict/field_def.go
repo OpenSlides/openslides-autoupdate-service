@@ -784,6 +784,7 @@ var restrictionModes = map[string]string{
 	"poll/id":                      "A",
 	"poll/is_pseudoanonymized":     "A",
 	"poll/max_votes_amount":        "A",
+	"poll/max_votes_per_person":	"A",
 	"poll/meeting_id":              "A",
 	"poll/min_votes_amount":        "A",
 	"poll/onehundred_percent_base": "A",
