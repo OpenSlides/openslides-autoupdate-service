@@ -1175,6 +1175,12 @@ func (r *Request) Group_UserIDs(groupID int) *ValueIntSlice {
 	return v
 }
 
+func (r *Request) Group_Weight(groupID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("group/%d/weight", groupID)] = v
+	return v
+}
+
 func (r *Request) Group_WriteChatGroupIDs(groupID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
 	r.requested[fmt.Sprintf("group/%d/write_chat_group_ids", groupID)] = v
@@ -2309,12 +2315,6 @@ func (r *Request) Meeting_TopicIDs(meetingID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Request) Meeting_UrlName(meetingID int) *ValueString {
-	v := &ValueString{request: r}
-	r.requested[fmt.Sprintf("meeting/%d/url_name", meetingID)] = v
-	return v
-}
-
 func (r *Request) Meeting_UserIDs(meetingID int) *ValueIntSlice {
 	v := &ValueIntSlice{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/user_ids", meetingID)] = v
@@ -2360,12 +2360,6 @@ func (r *Request) Meeting_UsersEnablePresenceView(meetingID int) *ValueBool {
 func (r *Request) Meeting_UsersEnableVoteWeight(meetingID int) *ValueBool {
 	v := &ValueBool{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/users_enable_vote_weight", meetingID)] = v
-	return v
-}
-
-func (r *Request) Meeting_UsersPdfUrl(meetingID int) *ValueString {
-	v := &ValueString{request: r}
-	r.requested[fmt.Sprintf("meeting/%d/users_pdf_url", meetingID)] = v
 	return v
 }
 

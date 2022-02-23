@@ -357,6 +357,7 @@ var restrictionModes = map[string]string{
 	"group/used_as_motion_poll_default_id":       "A",
 	"group/used_as_poll_default_id":              "A",
 	"group/user_ids":                             "A",
+	"group/weight":                               "A",
 	"group/write_chat_group_ids":                 "A",
 	"group/write_comment_section_ids":            "A",
 
@@ -536,7 +537,6 @@ var restrictionModes = map[string]string{
 	"meeting/tag_ids":                                            "B",
 	"meeting/template_for_committee_id":                          "B",
 	"meeting/topic_ids":                                          "B",
-	"meeting/url_name":                                           "B",
 	"meeting/user_ids":                                           "B",
 	"meeting/users_allow_self_set_present":                       "B",
 	"meeting/users_email_body":                                   "B",
@@ -545,7 +545,6 @@ var restrictionModes = map[string]string{
 	"meeting/users_email_subject":                                "B",
 	"meeting/users_enable_presence_view":                         "B",
 	"meeting/users_enable_vote_weight":                           "B",
-	"meeting/users_pdf_url":                                      "B",
 	"meeting/users_pdf_welcometext":                              "B",
 	"meeting/users_pdf_welcometitle":                             "B",
 	"meeting/users_pdf_wlan_encryption":                          "B",
