@@ -205,7 +205,7 @@ func filterRelationList(
 		return nil, nil
 	}
 
-	var allowedIDs []int
+	allowedIDs := []int{} // Use empty list as default for json encoding.
 	for _, id := range ids {
 		allowed, err := relationListModeFunc(ctx, ds, mperms, id)
 		if err != nil {
@@ -236,7 +236,7 @@ func filterGenericRelationList(
 		return nil, fmt.Errorf("decoding ids: %w", err)
 	}
 
-	var allowedIDs []string
+	allowedIDs := []string{} // Use empty list as default for json encoding.
 	for _, genericID := range genericIDs {
 		parts := strings.Split(genericID, "/")
 		id, err := strconv.Atoi(parts[1])

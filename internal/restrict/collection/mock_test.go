@@ -51,11 +51,11 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 		got, err := f(context.Background(), ds, perms, tt.elementID)
 
 		if err != nil {
-			t.Fatalf("See returned unexpected error: %v", err)
+			t.Fatalf("restriction mode returned unexpected error: %v", err)
 		}
 
 		if got != tt.expect {
-			t.Errorf("See() returned %t, expected %t", got, tt.expect)
+			t.Errorf("restriction mode returned %t, expected %t", got, tt.expect)
 		}
 	})
 }
