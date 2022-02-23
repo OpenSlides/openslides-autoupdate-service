@@ -398,6 +398,7 @@ var exampleData = map[string]json.RawMessage{
 	"group/1/used_as_motion_poll_default_id":     []byte(`null`),
 	"group/1/used_as_poll_default_id":            []byte(`null`),
 	"group/1/user_ids":                           []byte(`[]`),
+	"group/1/weight":                             []byte(`1`),
 	"group/1/write_chat_group_ids": []byte(`[
                 1
             ]`),
@@ -409,8 +410,7 @@ var exampleData = map[string]json.RawMessage{
                 1
             ]`),
 	"group/2/mediafile_inherited_access_group_ids": []byte(`[
-                1,
-                3
+                1
             ]`),
 	"group/2/meeting_id":  []byte(`1`),
 	"group/2/name":        []byte(`"Admin"`),
@@ -429,6 +429,7 @@ var exampleData = map[string]json.RawMessage{
 	"group/2/user_ids": []byte(`[
                 1
             ]`),
+	"group/2/weight": []byte(`2`),
 	"group/2/write_chat_group_ids": []byte(`[
                 1,
                 2
@@ -441,8 +442,7 @@ var exampleData = map[string]json.RawMessage{
                 1
             ]`),
 	"group/3/mediafile_inherited_access_group_ids": []byte(`[
-                1,
-                3
+                1
             ]`),
 	"group/3/meeting_id": []byte(`1`),
 	"group/3/name":       []byte(`"Staff"`),
@@ -470,6 +470,7 @@ var exampleData = map[string]json.RawMessage{
 	"group/3/used_as_motion_poll_default_id":     []byte(`1`),
 	"group/3/used_as_poll_default_id":            []byte(`1`),
 	"group/3/user_ids":                           []byte(`[]`),
+	"group/3/weight":                             []byte(`3`),
 	"group/3/write_chat_group_ids":               []byte(`[]`),
 	"group/3/write_comment_section_ids": []byte(`[
                 1
@@ -500,6 +501,7 @@ var exampleData = map[string]json.RawMessage{
 	"group/4/used_as_motion_poll_default_id":       []byte(`null`),
 	"group/4/used_as_poll_default_id":              []byte(`null`),
 	"group/4/user_ids":                             []byte(`[]`),
+	"group/4/weight":                               []byte(`4`),
 	"group/4/write_chat_group_ids":                 []byte(`[]`),
 	"group/4/write_comment_section_ids":            []byte(`[]`),
 	"group/5/admin_group_for_meeting_id":           []byte(`null`),
@@ -538,6 +540,7 @@ var exampleData = map[string]json.RawMessage{
                 2,
                 3
             ]`),
+	"group/5/weight": []byte(`5`),
 	"group/5/write_chat_group_ids": []byte(`[
                 1,
                 2
@@ -612,20 +615,6 @@ var exampleData = map[string]json.RawMessage{
 	"list_of_speakers/16/projection_ids":    []byte(`[]`),
 	"list_of_speakers/16/sequential_number": []byte(`16`),
 	"list_of_speakers/16/speaker_ids":       []byte(`[]`),
-	"list_of_speakers/17/closed":            []byte(`false`),
-	"list_of_speakers/17/content_object_id": []byte(`"mediafile/2"`),
-	"list_of_speakers/17/id":                []byte(`17`),
-	"list_of_speakers/17/meeting_id":        []byte(`1`),
-	"list_of_speakers/17/projection_ids":    []byte(`[]`),
-	"list_of_speakers/17/sequential_number": []byte(`17`),
-	"list_of_speakers/17/speaker_ids":       []byte(`[]`),
-	"list_of_speakers/18/closed":            []byte(`false`),
-	"list_of_speakers/18/content_object_id": []byte(`"mediafile/3"`),
-	"list_of_speakers/18/id":                []byte(`18`),
-	"list_of_speakers/18/meeting_id":        []byte(`1`),
-	"list_of_speakers/18/projection_ids":    []byte(`[]`),
-	"list_of_speakers/18/sequential_number": []byte(`18`),
-	"list_of_speakers/18/speaker_ids":       []byte(`[]`),
 	"list_of_speakers/2/closed":             []byte(`false`),
 	"list_of_speakers/2/content_object_id":  []byte(`"motion/2"`),
 	"list_of_speakers/2/id":                 []byte(`2`),
@@ -694,10 +683,8 @@ var exampleData = map[string]json.RawMessage{
                 2,
                 3
             ]`),
-	"mediafile/1/attachment_ids": []byte(`[]`),
-	"mediafile/1/child_ids": []byte(`[
-                3
-            ]`),
+	"mediafile/1/attachment_ids":   []byte(`[]`),
+	"mediafile/1/child_ids":        []byte(`[]`),
 	"mediafile/1/create_timestamp": []byte(`1584513763`),
 	"mediafile/1/filename":         []byte(`null`),
 	"mediafile/1/filesize":         []byte(`null`),
@@ -717,55 +704,9 @@ var exampleData = map[string]json.RawMessage{
 	"mediafile/1/title":                        []byte(`"logos"`),
 	"mediafile/1/used_as_font_$_in_meeting_id": []byte(`[]`),
 	"mediafile/1/used_as_logo_$_in_meeting_id": []byte(`[]`),
-	"mediafile/2/access_group_ids":             []byte(`[]`),
-	"mediafile/2/attachment_ids": []byte(`[
-                "motion/4"
-            ]`),
-	"mediafile/2/child_ids":                    []byte(`[]`),
-	"mediafile/2/create_timestamp":             []byte(`1584513771`),
-	"mediafile/2/filename":                     []byte(`"A.txt"`),
-	"mediafile/2/filesize":                     []byte(`3`),
-	"mediafile/2/id":                           []byte(`2`),
-	"mediafile/2/inherited_access_group_ids":   []byte(`[]`),
-	"mediafile/2/is_directory":                 []byte(`false`),
-	"mediafile/2/is_public":                    []byte(`true`),
-	"mediafile/2/list_of_speakers_id":          []byte(`17`),
-	"mediafile/2/meeting_id":                   []byte(`1`),
-	"mediafile/2/mimetype":                     []byte(`"text/plain"`),
-	"mediafile/2/parent_id":                    []byte(`null`),
-	"mediafile/2/pdf_information":              []byte(`{}`),
-	"mediafile/2/projection_ids":               []byte(`[]`),
-	"mediafile/2/title":                        []byte(`"A.txt"`),
-	"mediafile/2/used_as_font_$_in_meeting_id": []byte(`[]`),
-	"mediafile/2/used_as_logo_$_in_meeting_id": []byte(`[]`),
-	"mediafile/3/access_group_ids":             []byte(`[]`),
-	"mediafile/3/attachment_ids":               []byte(`[]`),
-	"mediafile/3/child_ids":                    []byte(`[]`),
-	"mediafile/3/create_timestamp":             []byte(`1584513791`),
-	"mediafile/3/filename":                     []byte(`"in.jpg"`),
-	"mediafile/3/filesize":                     []byte(`1462`),
-	"mediafile/3/id":                           []byte(`3`),
-	"mediafile/3/inherited_access_group_ids": []byte(`[
-                2,
-                3
-            ]`),
-	"mediafile/3/is_directory":                 []byte(`false`),
-	"mediafile/3/is_public":                    []byte(`false`),
-	"mediafile/3/list_of_speakers_id":          []byte(`18`),
-	"mediafile/3/meeting_id":                   []byte(`1`),
-	"mediafile/3/mimetype":                     []byte(`"image/png"`),
-	"mediafile/3/parent_id":                    []byte(`1`),
-	"mediafile/3/pdf_information":              []byte(`{}`),
-	"mediafile/3/projection_ids":               []byte(`[]`),
-	"mediafile/3/title":                        []byte(`"in.jpg"`),
-	"mediafile/3/used_as_font_$_in_meeting_id": []byte(`[]`),
-	"mediafile/3/used_as_logo_$_in_meeting_id": []byte(`[
-                "web_header"
-            ]`),
-	"mediafile/3/used_as_logo_$web_header_in_meeting_id": []byte(`1`),
-	"meeting/1/admin_group_id":                           []byte(`2`),
-	"meeting/1/agenda_enable_numbering":                  []byte(`true`),
-	"meeting/1/agenda_item_creation":                     []byte(`"default_yes"`),
+	"meeting/1/admin_group_id":                 []byte(`2`),
+	"meeting/1/agenda_enable_numbering":        []byte(`true`),
+	"meeting/1/agenda_item_creation":           []byte(`"default_yes"`),
 	"meeting/1/agenda_item_ids": []byte(`[
                 1,
                 2,
@@ -923,24 +864,17 @@ var exampleData = map[string]json.RawMessage{
                 13,
                 14,
                 15,
-                16,
-                17,
-                18
+                16
             ]`),
 	"meeting/1/list_of_speakers_initially_closed":                 []byte(`true`),
 	"meeting/1/list_of_speakers_present_users_only":               []byte(`false`),
 	"meeting/1/list_of_speakers_show_amount_of_speakers_on_slide": []byte(`true`),
 	"meeting/1/list_of_speakers_show_first_contribution":          []byte(`false`),
 	"meeting/1/list_of_speakers_speaker_note_for_everyone":        []byte(`true`),
-	"meeting/1/location": []byte(`""`),
-	"meeting/1/logo_$_id": []byte(`[
-                "web_header"
-            ]`),
-	"meeting/1/logo_$web_header_id": []byte(`3`),
+	"meeting/1/location":  []byte(`""`),
+	"meeting/1/logo_$_id": []byte(`[]`),
 	"meeting/1/mediafile_ids": []byte(`[
-                1,
-                2,
-                3
+                1
             ]`),
 	"meeting/1/motion_block_ids": []byte(`[
                 1
@@ -1127,7 +1061,6 @@ var exampleData = map[string]json.RawMessage{
                 7,
                 8
             ]`),
-	"meeting/1/url_name": []byte(`"os3_test"`),
 	"meeting/1/user_ids": []byte(`[
                 1,
                 2,
@@ -1140,7 +1073,6 @@ var exampleData = map[string]json.RawMessage{
 	"meeting/1/users_email_subject":          []byte(`"OpenSlides access data"`),
 	"meeting/1/users_enable_presence_view":   []byte(`true`),
 	"meeting/1/users_enable_vote_weight":     []byte(`true`),
-	"meeting/1/users_pdf_url":                []byte(`"https://example.com"`),
 	"meeting/1/users_pdf_welcometext":        []byte(`"[Place for your welcome and help text.]"`),
 	"meeting/1/users_pdf_welcometitle":       []byte(`"Welcome to OpenSlides"`),
 	"meeting/1/users_pdf_wlan_encryption":    []byte(`""`),
@@ -1321,12 +1253,10 @@ var exampleData = map[string]json.RawMessage{
 	"motion/4/all_origin_ids":         []byte(`[]`),
 	"motion/4/amendment_ids":          []byte(`[]`),
 	"motion/4/amendment_paragraph_$":  []byte(`[]`),
-	"motion/4/attachment_ids": []byte(`[
-                2
-            ]`),
-	"motion/4/block_id":        []byte(`1`),
-	"motion/4/category_id":     []byte(`null`),
-	"motion/4/category_weight": []byte(`10000`),
+	"motion/4/attachment_ids":         []byte(`[]`),
+	"motion/4/block_id":               []byte(`1`),
+	"motion/4/category_id":            []byte(`null`),
+	"motion/4/category_weight":        []byte(`10000`),
 	"motion/4/change_recommendation_ids": []byte(`[
                 4
             ]`),
