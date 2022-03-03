@@ -3527,9 +3527,9 @@ func (r *Request) Poll_MaxVotesAmount(pollID int) *ValueInt {
 	return v
 }
 
-func (r *Request) Poll_MaxVotesPerPerson(pollID int) *ValueInt {
+func (r *Request) Poll_MaxVotesPerOption(pollID int) *ValueInt {
 	v := &ValueInt{request: r}
-	r.requested[fmt.Sprintf("poll/%d/max_votes_per_person", pollID)] = v
+	r.requested[fmt.Sprintf("poll/%d/max_votes_per_option", pollID)] = v
 	return v
 }
 
