@@ -11,7 +11,7 @@ jobs:
         go-version: 1.17
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2.4.0
+      uses: actions/checkout@v3
 
     - name: go fmt
       run: test -z $(gofmt -l .)
