@@ -88,8 +88,6 @@ func Collection(collection string) Restricter {
 		return ProjectorCountdown{}
 	case "projector_message":
 		return ProjectorMessage{}
-	case "resource":
-		return Resource{}
 	case "speaker":
 		return Speaker{}
 	case "tag":

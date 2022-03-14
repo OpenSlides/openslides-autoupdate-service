@@ -1295,15 +1295,15 @@ func (r *Request) Mediafile_ListOfSpeakersID(mediafileID int) *ValueMaybeInt {
 	return v
 }
 
-func (r *Request) Mediafile_MeetingID(mediafileID int) *ValueInt {
-	v := &ValueInt{request: r}
-	r.requested[fmt.Sprintf("mediafile/%d/meeting_id", mediafileID)] = v
-	return v
-}
-
 func (r *Request) Mediafile_Mimetype(mediafileID int) *ValueString {
 	v := &ValueString{request: r}
 	r.requested[fmt.Sprintf("mediafile/%d/mimetype", mediafileID)] = v
+	return v
+}
+
+func (r *Request) Mediafile_OwnerID(mediafileID int) *ValueString {
+	v := &ValueString{request: r}
+	r.requested[fmt.Sprintf("mediafile/%d/owner_id", mediafileID)] = v
 	return v
 }
 
@@ -1328,6 +1328,12 @@ func (r *Request) Mediafile_ProjectionIDs(mediafileID int) *ValueIntSlice {
 func (r *Request) Mediafile_Title(mediafileID int) *ValueString {
 	v := &ValueString{request: r}
 	r.requested[fmt.Sprintf("mediafile/%d/title", mediafileID)] = v
+	return v
+}
+
+func (r *Request) Mediafile_Token(mediafileID int) *ValueString {
+	v := &ValueString{request: r}
+	r.requested[fmt.Sprintf("mediafile/%d/token", mediafileID)] = v
 	return v
 }
 
@@ -3341,6 +3347,12 @@ func (r *Request) Organization_LoginText(organizationID int) *ValueString {
 	return v
 }
 
+func (r *Request) Organization_MediafileIDs(organizationID int) *ValueIntSlice {
+	v := &ValueIntSlice{request: r}
+	r.requested[fmt.Sprintf("organization/%d/mediafile_ids", organizationID)] = v
+	return v
+}
+
 func (r *Request) Organization_Name(organizationID int) *ValueString {
 	v := &ValueString{request: r}
 	r.requested[fmt.Sprintf("organization/%d/name", organizationID)] = v
@@ -3362,12 +3374,6 @@ func (r *Request) Organization_PrivacyPolicy(organizationID int) *ValueString {
 func (r *Request) Organization_ResetPasswordVerboseErrors(organizationID int) *ValueBool {
 	v := &ValueBool{request: r}
 	r.requested[fmt.Sprintf("organization/%d/reset_password_verbose_errors", organizationID)] = v
-	return v
-}
-
-func (r *Request) Organization_ResourceIDs(organizationID int) *ValueIntSlice {
-	v := &ValueIntSlice{request: r}
-	r.requested[fmt.Sprintf("organization/%d/resource_ids", organizationID)] = v
 	return v
 }
 
@@ -3920,36 +3926,6 @@ func (r *Request) Projector_UsedAsReferenceProjectorMeetingID(projectorID int) *
 func (r *Request) Projector_Width(projectorID int) *ValueInt {
 	v := &ValueInt{request: r}
 	r.requested[fmt.Sprintf("projector/%d/width", projectorID)] = v
-	return v
-}
-
-func (r *Request) Resource_Filesize(resourceID int) *ValueInt {
-	v := &ValueInt{request: r}
-	r.requested[fmt.Sprintf("resource/%d/filesize", resourceID)] = v
-	return v
-}
-
-func (r *Request) Resource_ID(resourceID int) *ValueInt {
-	v := &ValueInt{request: r}
-	r.requested[fmt.Sprintf("resource/%d/id", resourceID)] = v
-	return v
-}
-
-func (r *Request) Resource_Mimetype(resourceID int) *ValueString {
-	v := &ValueString{request: r}
-	r.requested[fmt.Sprintf("resource/%d/mimetype", resourceID)] = v
-	return v
-}
-
-func (r *Request) Resource_OrganizationID(resourceID int) *ValueInt {
-	v := &ValueInt{request: r}
-	r.requested[fmt.Sprintf("resource/%d/organization_id", resourceID)] = v
-	return v
-}
-
-func (r *Request) Resource_Token(resourceID int) *ValueString {
-	v := &ValueString{request: r}
-	r.requested[fmt.Sprintf("resource/%d/token", resourceID)] = v
 	return v
 }
 

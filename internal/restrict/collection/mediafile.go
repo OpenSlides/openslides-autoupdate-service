@@ -3,6 +3,8 @@ package collection
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -32,23 +34,37 @@ func (m Mediafile) Modes(mode string) FieldRestricter {
 }
 
 func (m Mediafile) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, mediafileID int) (bool, error) {
-	meetingID, err := ds.Mediafile_MeetingID(mediafileID).Value(ctx)
+	genericOwnerID, err := ds.Mediafile_OwnerID(mediafileID).Value(ctx)
 	if err != nil {
-		return false, fmt.Errorf("fetching meeting_id of mediafile %d: %w", mediafileID, err)
+		return false, fmt.Errorf("fetching owner_id of mediafile %d: %w", mediafileID, err)
 	}
 
-	perms, err := mperms.Meeting(ctx, meetingID)
+	collection, rawID, found := cutgo118(genericOwnerID, "/")
+	if !found {
+		return false, fmt.Errorf("invalid ownerID: %s", genericOwnerID)
+	}
+
+	ownerID, err := strconv.Atoi(rawID)
 	if err != nil {
-		return false, fmt.Errorf("getting perms for meeting %d: %w", meetingID, err)
+		return false, fmt.Errorf("invalid id part of ownerID: %s", genericOwnerID)
+	}
+
+	if collection == "organization" {
+		return false, fmt.Errorf("TODO: How to restrict an owner mediafile?????")
+	}
+
+	perms, err := mperms.Meeting(ctx, ownerID)
+	if err != nil {
+		return false, fmt.Errorf("getting perms for meeting %d: %w", ownerID, err)
 	}
 
 	if perms.IsAdmin() {
 		return true, nil
 	}
 
-	canSeeMeeting, err := Meeting{}.see(ctx, ds, mperms, meetingID)
+	canSeeMeeting, err := Meeting{}.see(ctx, ds, mperms, ownerID)
 	if err != nil {
-		return false, fmt.Errorf("can see meeting %d: %w", meetingID, err)
+		return false, fmt.Errorf("can see meeting %d: %w", ownerID, err)
 	}
 
 	usedAsLogo := ds.Mediafile_UsedAsLogoInMeetingIDTmpl(mediafileID).ErrorLater(ctx)
@@ -95,4 +111,12 @@ func (m Mediafile) see(ctx context.Context, ds *datastore.Request, mperms *perm.
 		}
 	}
 	return false, nil
+}
+
+// cutgo118 from go 1.18. Replace me after the 1.18 release.
+func cutgo118(s, sep string) (before, after string, found bool) {
+	if i := strings.Index(s, sep); i >= 0 {
+		return s[:i], s[i+len(sep):], true
+	}
+	return s, "", false
 }
