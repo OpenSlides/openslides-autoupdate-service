@@ -12,7 +12,9 @@ import (
 
 // Mediafile handels permissions for the collection mediafile.
 //
-// The user can see a mediafile, if any of:
+// Everyone can see a medafile that belongs to the organization.
+//
+// The user can see a mediafile of a meeting if any of:
 //     The user is an admin of the meeting.
 //     The user can see the meeting and used_as_logo_$_in_meeting_id or used_as_font_$_in_meeting_id is not empty.
 //     The user has projector.can_see and there exists a mediafile/projection_ids with projection/current_projector_id set.
@@ -50,7 +52,7 @@ func (m Mediafile) see(ctx context.Context, ds *datastore.Request, mperms *perm.
 	}
 
 	if collection == "organization" {
-		return false, fmt.Errorf("TODO: How to restrict an owner mediafile?????")
+		return true, nil
 	}
 
 	perms, err := mperms.Meeting(ctx, ownerID)

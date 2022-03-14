@@ -26,6 +26,17 @@ func TestMediafileModeA(t *testing.T) {
 	)
 
 	testCase(
+		"No perms organization",
+		t,
+		m.Modes("A"),
+		true,
+		`---
+		mediafile/1:
+			owner_id: organization/1
+		`,
+	)
+
+	testCase(
 		"Admin",
 		t,
 		m.Modes("A"),
