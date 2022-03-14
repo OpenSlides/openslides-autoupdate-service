@@ -17,7 +17,7 @@ func TestMediafileModeA(t *testing.T) {
 		false,
 		`---
 		mediafile/1:
-			meeting_id: 7
+			owner_id: meeting/7
 
 		meeting/7:
 			id: 7
@@ -31,7 +31,7 @@ func TestMediafileModeA(t *testing.T) {
 		m.Modes("A"),
 		true,
 		`---
-		mediafile/1/meeting_id: 7
+		mediafile/1/owner_id: meeting/7
 		meeting/7/admin_group_id: 8
 		user/1/group_$7_ids: [8]
 		`,
@@ -44,7 +44,7 @@ func TestMediafileModeA(t *testing.T) {
 		false,
 		`---
 		mediafile/1:
-			meeting_id: 7
+			owner_id: meeting/7
 		
 		meeting/7/user_ids: [1]
 		`,
@@ -57,7 +57,7 @@ func TestMediafileModeA(t *testing.T) {
 		false,
 		`---
 		mediafile/1:
-			meeting_id: 7
+			owner_id: meeting/7
 			used_as_logo_$_in_meeting_id: ["foo"]
 
 		meeting/7:
@@ -73,7 +73,7 @@ func TestMediafileModeA(t *testing.T) {
 		true,
 		`---
 		mediafile/1:
-			meeting_id: 7
+			owner_id: meeting/7
 			used_as_logo_$_in_meeting_id: ["foo"]
 		meeting/7/user_ids: [1]
 		`,
@@ -86,7 +86,7 @@ func TestMediafileModeA(t *testing.T) {
 		true,
 		`---
 		mediafile/1:
-			meeting_id: 7
+			owner_id: meeting/7
 			projection_ids: [4]
 		projection/4/current_projector_id: 5
 
@@ -102,7 +102,7 @@ func TestMediafileModeA(t *testing.T) {
 		false,
 		`---
 		mediafile/1:
-			meeting_id: 7
+			owner_id: meeting/7
 			projection_ids: [4]
 		
 		meeting/7:
@@ -120,7 +120,7 @@ func TestMediafileModeA(t *testing.T) {
 		false,
 		`---
 		mediafile/1:
-			meeting_id: 7
+			owner_id: meeting/7
 			projection_ids: [4]
 
 		meeting/7:
@@ -139,7 +139,7 @@ func TestMediafileModeA(t *testing.T) {
 		true,
 		`---
 		mediafile/1:
-			meeting_id: 7
+			owner_id: meeting/7
 
 		meeting/7:
 			id: 7
@@ -155,7 +155,7 @@ func TestMediafileModeA(t *testing.T) {
 		false,
 		`---
 		mediafile/1:
-			meeting_id: 7
+			owner_id: meeting/7
 
 		meeting/7:
 			id: 7
@@ -171,7 +171,7 @@ func TestMediafileModeA(t *testing.T) {
 		true,
 		`---
 		mediafile/1:
-			meeting_id: 7
+			owner_id: meeting/7
 			is_public: true
 
 		meeting/7:
@@ -188,7 +188,7 @@ func TestMediafileModeA(t *testing.T) {
 		true,
 		`---
 		mediafile/1:
-			meeting_id: 7
+			owner_id: meeting/7
 			inherited_access_group_ids: [3]
 
 		meeting/7:
@@ -207,7 +207,7 @@ func TestMediafileModeA(t *testing.T) {
 		false,
 		`---
 		mediafile/1:
-			meeting_id: 7
+			owner_id: meeting/7
 			inherited_access_group_ids: [3]
 
 		meeting/7:
@@ -227,7 +227,7 @@ func TestMediafileModeA(t *testing.T) {
 		false,
 		`---
 		mediafile/1:
-			meeting_id: 7
+			owner_id: meeting/7
 			inherited_access_group_ids: [3]
 
 		meeting/7:
