@@ -138,7 +138,7 @@ func HistoryInformation(mux *http.ServeMux, auth Authenticater, hi HistoryInform
 		}
 	})
 
-	mux.Handle(prefixPublic+"/history_information", handler)
+	mux.Handle(prefixPublic+"/history_information", authMiddleware(handler, auth))
 }
 
 // MetricRequest returns the request metrics.

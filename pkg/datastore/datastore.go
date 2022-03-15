@@ -309,10 +309,11 @@ func (d *Datastore) calculateField(field string, key string, updated map[string]
 }
 
 // keysToGetManyRequest a json envoding of the get_many request.
-func keysToGetManyRequest(keys []string) ([]byte, error) {
+func keysToGetManyRequest(keys []string, position int) ([]byte, error) {
 	request := struct {
 		Requests []string `json:"requests"`
-	}{keys}
+		Position int      `json:"position,omitempty"`
+	}{keys, position}
 	return json.Marshal(request)
 }
 

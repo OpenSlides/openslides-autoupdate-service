@@ -38,7 +38,14 @@ func NewSourceDatastore(url string, updater Updater) *SourceDatastore {
 
 // Get fetches the request keys from the datastore-reader.
 func (s *SourceDatastore) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
-	requestData, err := keysToGetManyRequest(keys)
+	return s.GetPosition(ctx, 0, keys...)
+}
+
+// GetPosition gets keys from the datastore at a specifi position.
+//
+// Position 0 means the current position.
+func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ...string) (map[string][]byte, error) {
+	requestData, err := keysToGetManyRequest(keys, position)
 	if err != nil {
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)
 	}
