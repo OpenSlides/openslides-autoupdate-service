@@ -15,6 +15,16 @@ import (
 // Mode A: The user can see the assignment candidate.
 type AssignmentCandidate struct{}
 
+// MeetingID returns the meetingID for the object.
+func (a AssignmentCandidate) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	assignmentID, err := ds.AssignmentCandidate_AssignmentID(id).Value(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("fetching assignment id: %w", err)
+	}
+
+	return Assignment{}.MeetingID(ctx, ds, assignmentID)
+}
+
 // Modes returns the restrictions modes for assignment_candidate.
 func (a AssignmentCandidate) Modes(mode string) FieldRestricter {
 	switch mode {

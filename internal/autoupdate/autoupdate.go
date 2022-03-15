@@ -10,9 +10,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/ostcar/topic"
 )
@@ -99,14 +102,12 @@ func (a *Autoupdate) Connect(userID int, kb KeysBuilder) DataProvider {
 // then Next for the first time.
 func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder, position int) (map[string][]byte, error) {
 	var getter datastore.Getter = a.datastore
+	var restricter datastore.Getter = a.restricter(getter, userID)
+
 	if position != 0 {
 		getter = datastore.NewGetPosition(a.datastore, position)
+		restricter = historyRestricter{userID, getter}
 	}
-
-	// TODO: This uses the permissions from the old history. So an old admin can
-	// see the old data. It is impossible to remove the permissions from a user
-	// with this. Is this correct?
-	restricter := a.restricter(getter, userID)
 
 	if err := kb.Update(ctx, restricter); err != nil {
 		return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
@@ -117,6 +118,42 @@ func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder,
 		return nil, fmt.Errorf("get restricted data: %w", err)
 	}
 
+	return data, nil
+}
+
+type historyRestricter struct {
+	userID int
+	getter datastore.Getter
+}
+
+func (h historyRestricter) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+	allowedKeys := make([]string, 0, len(keys))
+	// if !oml_manager || !has_information in any meeting || anonymous -> return nil, nil
+
+	for _, key := range keys {
+		// If user/password -> continue
+		// if personal_note
+		//     if h.userID != personal_note/user_id -> continue
+		//     else -> append
+		// if is_oml_manager -> append
+		// if collection(key) has something to do with meeting:
+		//     if hasPerm(meetingID, h.userID, historyInformation) -> append
+		//     else -> continue
+		// if theme, organization, organization_tag, mediafile -> append
+		// if committee -> continue
+		// if user
+		//     for meetingID in all_meetings_where_i_have_the_historyPerm(h.userID)
+		//         if user_belongs_to(meetingID) -> append
+		//     else continue
+		// return nil, error
+
+		allowedKeys = append(allowedKeys, key)
+	}
+
+	data, err := h.getter.Get(ctx, allowedKeys...)
+	if err != nil {
+		return nil, fmt.Errorf("get data from history getter: %w", err)
+	}
 	return data, nil
 }
 
@@ -161,9 +198,41 @@ func (a *Autoupdate) ResetCache(ctx context.Context) {
 
 // HistoryInformation writes the history information for an fqid.
 func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid string, w io.Writer) error {
-	if uid != 1 {
-		// TODO: Only Admins????
-		return permissionDeniedError{fmt.Errorf("you are not allowed to use history information on %s", fqid)}
+	coll, rawID, found := cutgo118(fqid, "/")
+	if !found {
+		return fmt.Errorf("invalid fqid")
+	}
+
+	id, err := strconv.Atoi(rawID)
+	if err != nil {
+		return fmt.Errorf("invalid fqid. ID part is not an int")
+	}
+
+	ds := datastore.NewRequest(a.datastore)
+
+	meetingID, hasMeeting, err := collection.Collection(coll).MeetingID(ctx, ds, id)
+	if err != nil {
+		return fmt.Errorf("getting meeting id for collection %s id %d: %w", coll, id, err)
+	}
+
+	if !hasMeeting {
+		hasOML, err := perm.HasOrganizationManagementLevel(ctx, ds, uid, perm.OMLCanManageOrganization)
+		if err != nil {
+			return fmt.Errorf("getting organization management level: %w", err)
+		}
+
+		if !hasOML {
+			return permissionDeniedError{fmt.Errorf("you are not allowed to use history information on %s", fqid)}
+		}
+	} else {
+		p, err := perm.New(ctx, ds, uid, meetingID)
+		if err != nil {
+			return fmt.Errorf("getting meeting permissions: %w", err)
+		}
+
+		if !p.Has(perm.MeetingCanSeeHistory) {
+			return permissionDeniedError{fmt.Errorf("you are not allowed to use history information on %s", fqid)}
+		}
 	}
 
 	if err := a.datastore.HistoryInformation(ctx, fqid, w); err != nil {

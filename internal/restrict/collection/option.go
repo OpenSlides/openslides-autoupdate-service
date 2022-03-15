@@ -17,6 +17,16 @@ import (
 // Mode B: The user can see the poll and (manage the linked poll or poll/state is published).
 type Option struct{}
 
+// MeetingID returns the meetingID for the object.
+func (o Option) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	meetingID, err := ds.Option_MeetingID(id).Value(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("getting meetingID: %w", err)
+	}
+
+	return meetingID, true, nil
+}
+
 // Modes returns the restrictions modes for the meeting collection.
 func (o Option) Modes(mode string) FieldRestricter {
 	switch mode {

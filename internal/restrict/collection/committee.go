@@ -19,6 +19,11 @@ import (
 // CML `can_manage` in the committee.
 type Committee struct{}
 
+// MeetingID returns the meetingID for the object.
+func (a Committee) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	return 0, false, nil
+}
+
 // Modes returns a map from all known modes to there restricter.
 func (a Committee) Modes(mode string) FieldRestricter {
 	switch mode {

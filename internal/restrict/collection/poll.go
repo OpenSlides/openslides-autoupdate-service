@@ -33,22 +33,32 @@ import (
 // Mode D: Same as Mode B, but for `finished`: Accessible if the user can manage the poll or the user has list_of_speakers.can_manage.
 type Poll struct{}
 
+// MeetingID returns the meetingID for the object.
+func (p Poll) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	meetingID, err := ds.Poll_MeetingID(id).Value(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("getting meetingID: %w", err)
+	}
+
+	return meetingID, true, nil
+}
+
 // Modes returns the restrictions modes for the meeting collection.
-func (m Poll) Modes(mode string) FieldRestricter {
+func (p Poll) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return m.see
+		return p.see
 	case "B":
-		return m.modeB
+		return p.modeB
 	case "C":
-		return m.modeC
+		return p.modeC
 	case "D":
-		return m.modeD
+		return p.modeD
 	}
 	return nil
 }
 
-func (m Poll) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
+func (p Poll) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
 	contentObjectID, err := ds.Poll_ContentObjectID(pollID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting content object id: %w", err)
@@ -90,7 +100,7 @@ func (m Poll) see(ctx context.Context, ds *datastore.Request, mperms *perm.Meeti
 	return see, nil
 }
 
-func (m Poll) manage(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
+func (p Poll) manage(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
 	contentObjectID, err := ds.Poll_ContentObjectID(pollID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting content object id: %w", err)
@@ -151,7 +161,7 @@ func (m Poll) manage(ctx context.Context, ds *datastore.Request, mperms *perm.Me
 	}
 }
 
-func (m Poll) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
+func (p Poll) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
 	state, err := ds.Poll_State(pollID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting poll state: %w", err)
@@ -159,14 +169,14 @@ func (m Poll) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.Mee
 
 	switch state {
 	case "published":
-		see, err := m.see(ctx, ds, mperms, pollID)
+		see, err := p.see(ctx, ds, mperms, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking see: %w", err)
 		}
 		return see, nil
 
 	case "finished":
-		manage, err := m.manage(ctx, ds, mperms, pollID)
+		manage, err := p.manage(ctx, ds, mperms, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking manage: %w", err)
 		}
@@ -178,7 +188,7 @@ func (m Poll) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.Mee
 	}
 }
 
-func (m Poll) modeC(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
+func (p Poll) modeC(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
 	state, err := ds.Poll_State(pollID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting poll state: %w", err)
@@ -188,10 +198,10 @@ func (m Poll) modeC(ctx context.Context, ds *datastore.Request, mperms *perm.Mee
 		return false, nil
 	}
 
-	return m.manage(ctx, ds, mperms, pollID)
+	return p.manage(ctx, ds, mperms, pollID)
 }
 
-func (m Poll) modeD(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
+func (p Poll) modeD(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
 	state, err := ds.Poll_State(pollID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting poll state: %w", err)
@@ -199,14 +209,14 @@ func (m Poll) modeD(ctx context.Context, ds *datastore.Request, mperms *perm.Mee
 
 	switch state {
 	case "published":
-		see, err := m.see(ctx, ds, mperms, pollID)
+		see, err := p.see(ctx, ds, mperms, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking see: %w", err)
 		}
 		return see, nil
 
 	case "finished":
-		manage, err := m.manage(ctx, ds, mperms, pollID)
+		manage, err := p.manage(ctx, ds, mperms, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking manage: %w", err)
 		}

@@ -23,6 +23,16 @@ import (
 //     others: Not accessible for anyone.
 type Vote struct{}
 
+// MeetingID returns the meetingID for the object.
+func (v Vote) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	meetingID, err := ds.Vote_MeetingID(id).Value(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("get meeting id: %w", err)
+	}
+
+	return meetingID, true, nil
+}
+
 // Modes returns the restrictions modes for the meeting collection.
 func (v Vote) Modes(mode string) FieldRestricter {
 	switch mode {

@@ -17,6 +17,16 @@ import (
 // Mode A: The user can see the motion change recommendation.
 type MotionChangeRecommendation struct{}
 
+// MeetingID returns the meetingID for the object.
+func (m MotionChangeRecommendation) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	meetingID, err := ds.MotionChangeRecommendation_MeetingID(id).Value(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("getting meetingID: %w", err)
+	}
+
+	return meetingID, true, nil
+}
+
 // Modes returns the restrictions modes for the meeting collection.
 func (m MotionChangeRecommendation) Modes(mode string) FieldRestricter {
 	switch mode {

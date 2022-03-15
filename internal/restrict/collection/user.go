@@ -47,6 +47,11 @@ import (
 // Mode G: No one. Not even the superadmin.
 type User struct{}
 
+// MeetingID returns the meetingID for the object.
+func (u User) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	return 0, false, nil
+}
+
 // Modes returns the field restriction for each mode.
 func (u User) Modes(mode string) FieldRestricter {
 	switch mode {

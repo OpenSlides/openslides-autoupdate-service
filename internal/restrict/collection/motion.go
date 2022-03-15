@@ -26,6 +26,16 @@ import (
 // Mode D: Never published to any user.
 type Motion struct{}
 
+// MeetingID returns the meetingID for the object.
+func (m Motion) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	meetingID, err := ds.Motion_MeetingID(id).Value(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("fetching meeting_id: %w", err)
+	}
+
+	return meetingID, true, nil
+}
+
 // Modes returns the restrictions modes for the meeting collection.
 func (m Motion) Modes(mode string) FieldRestricter {
 	switch mode {

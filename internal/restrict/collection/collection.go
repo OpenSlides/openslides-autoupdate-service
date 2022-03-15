@@ -25,6 +25,10 @@ func loggedIn(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPe
 // that mode.
 type Restricter interface {
 	Modes(mode string) FieldRestricter
+
+	// MeetingID returns the meeting id for an object. Returns hasMeeting=false,
+	// if the object does not belong to a meeting.
+	MeetingID(ctx context.Context, ds *datastore.Request, id int) (meetingID int, hasMeeting bool, err error)
 }
 
 // Collection returns the restricter for a collection
