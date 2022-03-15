@@ -32,6 +32,11 @@ type Getter interface {
 	Get(ctx context.Context, keys ...string) (map[string][]byte, error)
 }
 
+// GetPositioner is like a Getter but also taks a position
+type GetPositioner interface {
+	GetPosition(ctx context.Context, position int, keys ...string) (map[string][]byte, error)
+}
+
 // Source gives the data for keys.
 type Source interface {
 	// Get is called when a key is not in the cache.
@@ -39,6 +44,17 @@ type Source interface {
 
 	// Update is called frequently and should block until there is new data.
 	Update(ctx context.Context) (map[string][]byte, error)
+}
+
+// SourcePosition is a Source that also supports getting the data at a specific position.
+type SourcePosition interface {
+	Source
+	GetPosition(ctx context.Context, position int, key ...string) (map[string][]byte, error)
+}
+
+// HistoryInformationer returns the history information.
+type HistoryInformationer interface {
+	HistoryInformation(ctx context.Context, fqid string, w io.Writer) error
 }
 
 // Datastore can be used to get values from the datastore-service.
@@ -54,11 +70,13 @@ type Datastore struct {
 	calculatedFields map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)
 	calculatedKeys   map[string]string
 
+	history HistoryInformationer
+
 	resetMu sync.Mutex
 }
 
 // New returns a new Datastore object.
-func New(defaultSource Source, keySource map[string]Source) *Datastore {
+func New(defaultSource Source, keySource map[string]Source, history HistoryInformationer) *Datastore {
 	if keySource == nil {
 		keySource = make(map[string]Source)
 	}
@@ -71,6 +89,8 @@ func New(defaultSource Source, keySource map[string]Source) *Datastore {
 
 		calculatedFields: make(map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)),
 		calculatedKeys:   make(map[string]string),
+
+		history: history,
 	}
 
 	return d
@@ -91,6 +111,40 @@ func (d *Datastore) Get(ctx context.Context, keys ...string) (map[string][]byte,
 	}
 
 	return values, nil
+}
+
+// GetPosition is like Get() but returns the data at a specific position.
+func (d *Datastore) GetPosition(ctx context.Context, position int, keys ...string) (map[string][]byte, error) {
+	if invalid := InvalidKeys(keys...); invalid != nil {
+		return nil, invalidKeyError{keys: invalid}
+	}
+
+	var data map[string][]byte
+	// Ignore calculated keys. They are not supported on GetPosition.
+	_, normalKeys := d.splitCalculatedKeys(keys)
+	for source, keys := range normalKeys {
+		sourcePosition, ok := source.(SourcePosition)
+		if !ok {
+			// Ignore keys from sources that do not support the history.
+			continue
+		}
+
+		values, err := sourcePosition.GetPosition(ctx, position, keys...)
+		if err != nil {
+			return nil, fmt.Errorf("get keys: %w", err)
+		}
+
+		if data == nil {
+			data = values
+			continue
+		}
+
+		for k, v := range values {
+			data[k] = v
+		}
+	}
+
+	return data, nil
 }
 
 // RegisterChangeListener registers a function that is called whenever an
@@ -120,6 +174,11 @@ func (d *Datastore) ResetCache() {
 	d.resetMu.Lock()
 	d.cache = newCache()
 	d.resetMu.Unlock()
+}
+
+// HistoryInformation writes the history information for a fqid.
+func (d *Datastore) HistoryInformation(ctx context.Context, fqid string, w io.Writer) error {
+	return d.history.HistoryInformation(ctx, fqid, w)
 }
 
 // ListenOnUpdates listens for updates and informs all listeners.
@@ -212,17 +271,14 @@ func (d *Datastore) splitCalculatedKeys(keys []string) (map[string]string, map[S
 
 func (d *Datastore) loadKeys(keys []string, set func(string, []byte)) error {
 	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
-	if len(normalKeys) > 0 {
-		for source, keys := range normalKeys {
-			data, err := source.Get(context.Background(), keys...)
-			if err != nil {
-				return fmt.Errorf("requesting keys from datastore: %w", err)
-			}
-			for k, v := range data {
-				set(k, v)
-			}
+	for source, keys := range normalKeys {
+		data, err := source.Get(context.Background(), keys...)
+		if err != nil {
+			return fmt.Errorf("requesting keys from datastore: %w", err)
 		}
-
+		for k, v := range data {
+			set(k, v)
+		}
 	}
 
 	for key, field := range calculatedKeys {

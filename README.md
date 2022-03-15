@@ -104,6 +104,16 @@ without a newline:
 {"user/1/name":"value","user/2/name":"value"}
 ```
 
+With the query parameter `single` the server writes the first response and
+closes the request immediately. So there are not autoupdates:
+
+`curl -N localhost:9012/system/autoupdate?k=user/1/username&single=1`
+
+With the query parameter `position=XX` it is possible to request the data at a
+specific position from the datastore. This implieds `single`:
+
+`curl -N localhost:9012/system/autoupdate?k=user/1/username&position=42`
+
 
 ### Updates via redis
 
@@ -141,6 +151,26 @@ curl -N localhost:9012/system/autoupdate -d '
   }
 ]'
 ```
+
+### History Information
+
+To get all history information for an fqid call
+
+`curl localhost:9012/system/autoupdate/history_information?fqid=motion/42`
+
+It returns a list of all changes to the requested fqid. Each element in the list
+is an object like this:
+
+```
+{
+  "position": 23,
+  "user_id": 5,
+  "information": "motion was created",
+  "timestamp: 1234567
+}
+```
+
+
 
 ## Configuration
 

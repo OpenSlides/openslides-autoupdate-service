@@ -130,9 +130,6 @@ func run() error {
 	}
 	go datastoreService.ListenOnUpdates(ctx, errHandler)
 
-	// Create http mux to add urls.
-	mux := http.NewServeMux()
-
 	// Auth Service.
 	authService, err := buildAuth(ctx, env, messageBus, errHandler)
 	if err != nil {
@@ -146,8 +143,12 @@ func run() error {
 	go service.PruneOldData(ctx)
 	go service.ResetCache(ctx)
 
+	// Create http mux to add urls.
+	mux := http.NewServeMux()
+
 	autoupdateHttp.Health(mux)
 	autoupdateHttp.Autoupdate(mux, authService, service, messageBus)
+	autoupdateHttp.HistoryInformation(mux, authService, service)
 	autoupdateHttp.MetricRequest(mux, messageBus)
 
 	// Projector Service.
@@ -201,9 +202,13 @@ func buildDatastore(env map[string]string, mb messageBus) (*datastore.Datastore,
 
 	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCAL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
 
-	return datastore.New(datastoreSource, map[string]datastore.Source{
-		"poll/vote_count": voteCountSource,
-	}), nil
+	return datastore.New(
+		datastoreSource,
+		map[string]datastore.Source{
+			"poll/vote_count": voteCountSource,
+		},
+		datastoreSource,
+	), nil
 }
 
 // buildMessagebus builds the receiver needed by the datastore service. It uses

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 // Updater returns keys that have changes. Blocks until there is
@@ -82,4 +83,36 @@ func (s *SourceDatastore) Get(ctx context.Context, keys ...string) (map[string][
 // Update updates the data from the redis message bus.
 func (s *SourceDatastore) Update(ctx context.Context) (map[string][]byte, error) {
 	return s.updater.Update(ctx)
+}
+
+// HistoryInformation requests the history information for an fqid from the datastore.
+func (s *SourceDatastore) HistoryInformation(ctx context.Context, fqid string, w io.Writer) error {
+	req, err := http.NewRequestWithContext(
+		ctx,
+		"POST",
+		"/internal/datastore/reader/history_information",
+		strings.NewReader(fmt.Sprintf(`{"fqid":[%q]}`, fqid)),
+	)
+	if err != nil {
+		return fmt.Errorf("creating request for datastore: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("sending request to datastore: %w", err)
+	}
+	defer resp.Body.Close()
+	defer io.ReadAll(resp.Body)
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("datastore returned %s", resp.Status)
+	}
+
+	if _, err := io.Copy(w, resp.Body); err != nil {
+		return fmt.Errorf("copping datastore response to client: %w", err)
+	}
+
+	return nil
 }

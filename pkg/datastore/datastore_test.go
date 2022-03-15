@@ -20,7 +20,7 @@ func TestDataStoreGet(t *testing.T) {
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[string][]byte{
 		"collection/1/field": []byte(`"Hello World"`),
 	}))
-	ds := datastore.New(source, nil)
+	ds := datastore.New(source, nil, source)
 
 	got, err := ds.Get(context.Background(), "collection/1/field")
 	assert.NoError(t, err, "Get() returned an unexpected error")
@@ -36,7 +36,7 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 		"collection/1/field": []byte(`"v1"`),
 		"collection/2/field": []byte(`"v2"`),
 	}), dsmock.NewCounter)
-	ds := datastore.New(source, nil)
+	ds := datastore.New(source, nil, source)
 
 	got, err := ds.Get(context.Background(), "collection/1/field", "collection/2/field")
 	assert.NoError(t, err, "Get() returned an unexpected error")
@@ -55,7 +55,7 @@ func TestDataStoreGetKeyTwice(t *testing.T) {
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[string][]byte{
 		"collection/1/field": []byte(`"v1"`),
 	}), dsmock.NewCounter)
-	ds := datastore.New(source, nil)
+	ds := datastore.New(source, nil, source)
 
 	got, err := ds.Get(context.Background(), "collection/1/field", "collection/1/field")
 	assert.NoError(t, err, "Get() returned an unexpected error")
@@ -72,7 +72,7 @@ func TestDataStoreGetKeyTwice(t *testing.T) {
 
 func TestDataStoreGetInvalidKey(t *testing.T) {
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[string][]byte{}))
-	ds := datastore.New(source, nil)
+	ds := datastore.New(source, nil, source)
 
 	_, err := ds.Get(context.Background(), "collection/1/Field")
 
@@ -90,7 +90,7 @@ func TestDataStoreGetInvalidKey(t *testing.T) {
 
 func TestCalculatedFields(t *testing.T) {
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[string][]byte{}))
-	ds := datastore.New(source, nil)
+	ds := datastore.New(source, nil, source)
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		if changed == nil {
 			return []byte("my value"), nil
@@ -122,7 +122,7 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 		"collection/1/normal_field": []byte(`"original value"`),
 	}))
 
-	ds := datastore.New(source, nil)
+	ds := datastore.New(source, nil, source)
 	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
@@ -156,7 +156,7 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 		"collection/1/normal_field": []byte(`"original value"`),
 	}))
 
-	ds := datastore.New(source, nil)
+	ds := datastore.New(source, nil, source)
 	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
@@ -193,7 +193,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 		"collection/1/normal_field": []byte(`"original value"`),
 	}))
 
-	ds := datastore.New(source, nil)
+	ds := datastore.New(source, nil, source)
 	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
@@ -214,7 +214,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[string][]byte{
 		"collection/1/normal_field": []byte(`"original value"`),
 	}))
-	ds := datastore.New(source, nil)
+	ds := datastore.New(source, nil, source)
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		fields, err := ds.Get(ctx, "collection/1/normal_field", "collection/1/normal_field")
 		if err != nil {
@@ -231,7 +231,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.
 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExist(t *testing.T) {
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[string][]byte{}))
-	ds := datastore.New(source, nil)
+	ds := datastore.New(source, nil, source)
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		field, err := ds.Get(ctx, "collection/1/normal_field")
 		if err != nil {
@@ -248,7 +248,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExist(t 
 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExistTwice(t *testing.T) {
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[string][]byte{}))
-	ds := datastore.New(source, nil)
+	ds := datastore.New(source, nil, source)
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		fields, err := ds.Get(ctx, "collection/1/normal_field", "collection/1/normal_field")
 		if err != nil {
@@ -265,7 +265,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExistTwi
 
 func TestCalculatedFieldsNoDBQuery(t *testing.T) {
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[string][]byte{}), dsmock.NewCounter)
-	ds := datastore.New(source, nil)
+	ds := datastore.New(source, nil, source)
 	ds.RegisterCalculatedField("collection/myfield", func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error) {
 		return []byte("foobar"), nil
 	})
@@ -285,7 +285,7 @@ func TestChangeListeners(t *testing.T) {
 	defer cancel()
 
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[string][]byte{}))
-	ds := datastore.New(source, nil)
+	ds := datastore.New(source, nil, source)
 	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	var receivedData map[string][]byte
@@ -308,7 +308,7 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 	defer cancel()
 
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[string][]byte{}))
-	ds := datastore.New(source, nil)
+	ds := datastore.New(source, nil, source)
 	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	var callCounter int
@@ -340,7 +340,7 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 
 func TestResetCache(t *testing.T) {
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[string][]byte{}), dsmock.NewCounter)
-	ds := datastore.New(source, nil)
+	ds := datastore.New(source, nil, source)
 
 	// Fetch key to fill the cache.
 	ds.Get(context.Background(), "some/1/key")
@@ -359,7 +359,7 @@ func TestResetWhileUpdate(t *testing.T) {
 	defer cancel()
 
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[string][]byte{}))
-	ds := datastore.New(source, nil)
+	ds := datastore.New(source, nil, source)
 	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	// Fetch key to fill the cache.
