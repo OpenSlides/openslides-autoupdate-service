@@ -12,7 +12,7 @@ import (
 
 // Mediafile handels permissions for the collection mediafile.
 //
-// Everyone can see a medafile that belongs to the organization.
+// Every logged in user can see a medafile that belongs to the organization.
 //
 // The user can see a mediafile of a meeting if any of:
 //     The user is an admin of the meeting.
@@ -52,7 +52,7 @@ func (m Mediafile) see(ctx context.Context, ds *datastore.Request, mperms *perm.
 	}
 
 	if collection == "organization" {
-		return true, nil
+		return mperms.UserID() != 0, nil
 	}
 
 	perms, err := mperms.Meeting(ctx, ownerID)
