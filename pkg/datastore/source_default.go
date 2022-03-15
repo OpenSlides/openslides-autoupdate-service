@@ -103,7 +103,7 @@ func (s *SourceDatastore) HistoryInformation(ctx context.Context, fqid string, w
 		ctx,
 		"POST",
 		s.url+urlHistoryInformation,
-		strings.NewReader(fmt.Sprintf(`{"fqid":[%q]}`, fqid)),
+		strings.NewReader(fmt.Sprintf(`{"fqids":[%q]}`, fqid)),
 	)
 	if err != nil {
 		return fmt.Errorf("creating request for datastore: %w", err)
