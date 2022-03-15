@@ -102,6 +102,10 @@ func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder,
 	if position != 0 {
 		getter = datastore.NewGetPosition(a.datastore, position)
 	}
+
+	// TODO: This uses the permissions from the old history. So an old admin can
+	// see the old data. It is impossible to remove the permissions from a user
+	// with this. Is this correct?
 	restricter := a.restricter(getter, userID)
 
 	if err := kb.Update(ctx, restricter); err != nil {
@@ -158,6 +162,7 @@ func (a *Autoupdate) ResetCache(ctx context.Context) {
 // HistoryInformation writes the history information for an fqid.
 func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid string, w io.Writer) error {
 	if uid != 1 {
+		// TODO: Only Admins????
 		return permissionDeniedError{fmt.Errorf("you are not allowed to use history information on %s", fqid)}
 	}
 
