@@ -9,6 +9,11 @@ import (
 	"strings"
 )
 
+const (
+	urlGetMany            = "/internal/datastore/reader/get_many"
+	urlHistoryInformation = "/internal/datastore/reader/history_information"
+)
+
 // Updater returns keys that have changes. Blocks until there is
 // changed data.
 //
@@ -28,7 +33,7 @@ type SourceDatastore struct {
 // NewSourceDatastore initializes a SourceDatastore.
 func NewSourceDatastore(url string, updater Updater) *SourceDatastore {
 	return &SourceDatastore{
-		url: url + urlPath,
+		url: url,
 		client: &http.Client{
 			Timeout: httpTimeout,
 		},
@@ -50,7 +55,7 @@ func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ..
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", s.url, bytes.NewReader(requestData))
+	req, err := http.NewRequest("POST", s.url+urlGetMany, bytes.NewReader(requestData))
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
@@ -97,7 +102,7 @@ func (s *SourceDatastore) HistoryInformation(ctx context.Context, fqid string, w
 	req, err := http.NewRequestWithContext(
 		ctx,
 		"POST",
-		"/internal/datastore/reader/history_information",
+		s.url+urlHistoryInformation,
 		strings.NewReader(fmt.Sprintf(`{"fqid":[%q]}`, fqid)),
 	)
 	if err != nil {

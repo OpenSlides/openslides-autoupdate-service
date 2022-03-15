@@ -18,8 +18,6 @@ import (
 	"time"
 )
 
-const urlPath = "/internal/datastore/reader/get_many"
-
 const (
 	messageBusReconnectPause = time.Second
 	httpTimeout              = 3 * time.Second
