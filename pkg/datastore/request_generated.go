@@ -3533,6 +3533,12 @@ func (r *Request) Poll_MaxVotesAmount(pollID int) *ValueInt {
 	return v
 }
 
+func (r *Request) Poll_MaxVotesPerOption(pollID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("poll/%d/max_votes_per_option", pollID)] = v
+	return v
+}
+
 func (r *Request) Poll_MeetingID(pollID int) *ValueInt {
 	v := &ValueInt{request: r}
 	r.requested[fmt.Sprintf("poll/%d/meeting_id", pollID)] = v
