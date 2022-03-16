@@ -33,7 +33,7 @@ func (m Mediafile) MeetingID(ctx context.Context, ds *datastore.Request, id int)
 		return 0, false, fmt.Errorf("fetching owner_id of mediafile %d: %w", id, err)
 	}
 
-	collection, rawID, found := cutgo118(genericOwnerID, "/")
+	collection, rawID, found := strings.Cut(genericOwnerID, "/")
 	if !found {
 		return 0, false, fmt.Errorf("invalid ownerID: %s", genericOwnerID)
 	}
@@ -65,7 +65,7 @@ func (m Mediafile) see(ctx context.Context, ds *datastore.Request, mperms *perm.
 		return false, fmt.Errorf("fetching owner_id of mediafile %d: %w", mediafileID, err)
 	}
 
-	collection, rawID, found := cutgo118(genericOwnerID, "/")
+	collection, rawID, found := strings.Cut(genericOwnerID, "/")
 	if !found {
 		return false, fmt.Errorf("invalid ownerID: %s", genericOwnerID)
 	}
@@ -137,12 +137,4 @@ func (m Mediafile) see(ctx context.Context, ds *datastore.Request, mperms *perm.
 		}
 	}
 	return false, nil
-}
-
-// cutgo118 from go 1.18. Replace me after the 1.18 release.
-func cutgo118(s, sep string) (before, after string, found bool) {
-	if i := strings.Index(s, sep); i >= 0 {
-		return s[:i], s[i+len(sep):], true
-	}
-	return s, "", false
 }

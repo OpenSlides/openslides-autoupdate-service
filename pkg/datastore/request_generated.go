@@ -1655,12 +1655,6 @@ func (r *Request) Meeting_EnableAnonymous(meetingID int) *ValueBool {
 	return v
 }
 
-func (r *Request) Meeting_EnableChat(meetingID int) *ValueBool {
-	v := &ValueBool{request: r}
-	r.requested[fmt.Sprintf("meeting/%d/enable_chat", meetingID)] = v
-	return v
-}
-
 func (r *Request) Meeting_EndTime(meetingID int) *ValueInt {
 	v := &ValueInt{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/end_time", meetingID)] = v
@@ -3530,6 +3524,12 @@ func (r *Request) Poll_IsPseudoanonymized(pollID int) *ValueBool {
 func (r *Request) Poll_MaxVotesAmount(pollID int) *ValueInt {
 	v := &ValueInt{request: r}
 	r.requested[fmt.Sprintf("poll/%d/max_votes_amount", pollID)] = v
+	return v
+}
+
+func (r *Request) Poll_MaxVotesPerOption(pollID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("poll/%d/max_votes_per_option", pollID)] = v
 	return v
 }
 

@@ -163,7 +163,7 @@ func (a *Autoupdate) ResetCache(ctx context.Context) {
 
 // HistoryInformation writes the history information for an fqid.
 func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid string, w io.Writer) error {
-	coll, rawID, found := cutgo118(fqid, "/")
+	coll, rawID, found := strings.Cut(fqid, "/")
 	if !found {
 		return fmt.Errorf("invalid fqid")
 	}
@@ -217,12 +217,4 @@ func (e permissionDeniedError) Error() string {
 
 func (e permissionDeniedError) Type() string {
 	return "permission_denied"
-}
-
-// cutgo118 from go 1.18. Replace me after the 1.18 release.
-func cutgo118(s, sep string) (before, after string, found bool) {
-	if i := strings.Index(s, sep); i >= 0 {
-		return s[:i], s[i+len(sep):], true
-	}
-	return s, "", false
 }
