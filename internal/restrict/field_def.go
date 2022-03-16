@@ -430,7 +430,6 @@ var restrictionModes = map[string]string{
 	"meeting/default_projector_$":                                "B",
 	"meeting/default_projector_$_id":                             "B",
 	"meeting/description":                                        "B",
-	"meeting/enable_chat":                                        "B",
 	"meeting/end_time":                                           "B",
 	"meeting/export_csv_encoding":                                "B",
 	"meeting/export_csv_separator":                               "B",
