@@ -1,16 +1,13 @@
-// +build gofuzzbeta
-
 package keysbuilder_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
 
 func FuzzFromJSON(f *testing.F) {
@@ -142,7 +139,7 @@ func FuzzFromJSON(f *testing.F) {
 		}
 	}`)
 
-	data := map[string]json.RawMessage{
+	ds := dsmock.Stub(map[string][]byte{
 		"user/1/note_id":       []byte(`1`),
 		"user/1/group_ids":     []byte(`[1,2]`),
 		"note/1/motion_id":     []byte(`1`),
@@ -155,12 +152,10 @@ func FuzzFromJSON(f *testing.F) {
 		"user/1/likes":         []byte(`["topic/1","agenda/1"]`),
 		"topic/1/tag_ids":      []byte(`[1,2]`),
 		"agenda/1/tag_ids":     []byte(`[1,2]`),
-	}
-
-	dp := &test.DataProvider{Data: data}
+	})
 
 	f.Fuzz(func(t *testing.T, query string) {
-		kb, err := keysbuilder.FromJSON(strings.NewReader(query), dp, 1)
+		kb, err := keysbuilder.FromJSON(strings.NewReader(query))
 		if err != nil {
 			var typedErr interface {
 				Type() string
@@ -171,7 +166,7 @@ func FuzzFromJSON(f *testing.F) {
 			t.Fatalf("building keysbuilder:\n%s\n%v", query, err)
 		}
 
-		if err := kb.Update(context.Background()); err != nil {
+		if err := kb.Update(context.Background(), ds); err != nil {
 			var typedErr interface {
 				Type() string
 			}
