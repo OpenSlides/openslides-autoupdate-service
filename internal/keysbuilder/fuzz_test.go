@@ -2,6 +2,7 @@ package keysbuilder_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -155,6 +156,10 @@ func FuzzFromJSON(f *testing.F) {
 	})
 
 	f.Fuzz(func(t *testing.T, query string) {
+		if !json.Valid([]byte(query)) {
+			t.Skip("invalid JSON")
+		}
+
 		kb, err := keysbuilder.FromJSON(strings.NewReader(query))
 		if err != nil {
 			var typedErr interface {
