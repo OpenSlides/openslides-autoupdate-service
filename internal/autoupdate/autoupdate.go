@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -106,7 +107,7 @@ func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder,
 
 	if position != 0 {
 		getter = datastore.NewGetPosition(a.datastore, position)
-		restricter = historyRestricter{userID, getter}
+		restricter = restrict.NewHistory(userID, a.datastore, getter)
 	}
 
 	if err := kb.Update(ctx, restricter); err != nil {
@@ -118,42 +119,6 @@ func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder,
 		return nil, fmt.Errorf("get restricted data: %w", err)
 	}
 
-	return data, nil
-}
-
-type historyRestricter struct {
-	userID int
-	getter datastore.Getter
-}
-
-func (h historyRestricter) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
-	allowedKeys := make([]string, 0, len(keys))
-	// if !oml_manager || !has_information in any meeting || anonymous -> return nil, nil
-
-	for _, key := range keys {
-		// If user/password -> continue
-		// if personal_note
-		//     if h.userID != personal_note/user_id -> continue
-		//     else -> append
-		// if is_oml_manager -> append
-		// if collection(key) has something to do with meeting:
-		//     if hasPerm(meetingID, h.userID, historyInformation) -> append
-		//     else -> continue
-		// if theme, organization, organization_tag, mediafile -> append
-		// if committee -> continue
-		// if user
-		//     for meetingID in all_meetings_where_i_have_the_historyPerm(h.userID)
-		//         if user_belongs_to(meetingID) -> append
-		//     else continue
-		// return nil, error
-
-		allowedKeys = append(allowedKeys, key)
-	}
-
-	data, err := h.getter.Get(ctx, allowedKeys...)
-	if err != nil {
-		return nil, fmt.Errorf("get data from history getter: %w", err)
-	}
 	return data, nil
 }
 
