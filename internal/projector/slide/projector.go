@@ -6,15 +6,15 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 )
 
 type dbProjectorCountdown struct {
-	ID            int     `json:"id"`
-	Description   string  `json:"description"`
-	Running       bool    `json:"running"`
-	CountdownTime float32 `json:"countdown_time"`
-	MeetingID     int     `json:"meeting_id"`
+	ID            int             `json:"id"`
+	Description   string          `json:"description"`
+	Running       bool            `json:"running"`
+	CountdownTime json.RawMessage `json:"countdown_time"`
+	MeetingID     int             `json:"meeting_id"`
 }
 
 func projectorCountdownFromMap(in map[string]json.RawMessage) (*dbProjectorCountdown, error) {
@@ -50,45 +50,41 @@ func projectorMessageFromMap(in map[string]json.RawMessage) (*dbProjectorMessage
 
 // ProjectorCountdown renders the projector_countdown slide.
 func ProjectorCountdown(store *projector.SlideStore) {
-	store.RegisterSliderFunc("projector_countdown", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
-		defer func() {
-			if err == nil {
-				err = fetch.Error()
-			}
-		}()
-		data := fetch.Object(ctx, []string{"id", "description", "running", "countdown_time", "meeting_id"}, p7on.ContentObjectID)
+	store.RegisterSliderFunc("projector_countdown", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
+		data := fetch.Object(ctx, p7on.ContentObjectID, "id", "description", "running", "countdown_time", "meeting_id")
 		pc, err := projectorCountdownFromMap(data)
 		if err != nil {
-			return nil, nil, fmt.Errorf("get projector countdown from map: %w", err)
+			return nil, fmt.Errorf("get projector countdown from map: %w", err)
 		}
-		pcwarningTime := fetch.Int(ctx, fmt.Sprintf("meeting/%d/projector_countdown_warning_time", pc.MeetingID))
+		pcwarningTime := datastore.Int(ctx, fetch.FetchIfExist, "meeting/%d/projector_countdown_warning_time", pc.MeetingID)
+		if err := fetch.Err(); err != nil {
+			return nil, err
+		}
+
 		responseValue, err := json.Marshal(map[string]interface{}{"description": pc.Description, "running": pc.Running, "countdown_time": pc.CountdownTime, "warning_time": pcwarningTime})
 		if err != nil {
-			return nil, nil, fmt.Errorf("encoding response for projector countdown slide: %w", err)
+			return nil, fmt.Errorf("encoding response for projector countdown slide: %w", err)
 		}
-		return responseValue, fetch.Keys(), err
+		return responseValue, err
 	})
 }
 
 // ProjectorMessage renders the projector_message slide.
 func ProjectorMessage(store *projector.SlideStore) {
-	store.RegisterSliderFunc("projector_message", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
-		defer func() {
-			if err == nil {
-				err = fetch.Error()
-			}
-		}()
-		data := fetch.Object(ctx, []string{"id", "message"}, p7on.ContentObjectID)
+	store.RegisterSliderFunc("projector_message", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
+		data := fetch.Object(ctx, p7on.ContentObjectID, "id", "message")
+		if err := fetch.Err(); err != nil {
+			return nil, err
+		}
+
 		projectorMessage, err := projectorMessageFromMap(data)
 		if err != nil {
-			return nil, nil, fmt.Errorf("get projector message from map: %w", err)
+			return nil, fmt.Errorf("get projector message from map: %w", err)
 		}
 		responseValue, err := json.Marshal(map[string]interface{}{"message": projectorMessage.Message})
 		if err != nil {
-			return nil, nil, fmt.Errorf("encoding response for projector message slide: %w", err)
+			return nil, fmt.Errorf("encoding response for projector message slide: %w", err)
 		}
-		return responseValue, fetch.Keys(), err
+		return responseValue, err
 	})
 }

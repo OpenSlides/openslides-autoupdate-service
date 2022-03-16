@@ -33,7 +33,7 @@ func TestStream(t *testing.T) {
 	if err != nil {
 		t.Errorf("Returned unexpected error %v", err)
 	}
-	expect := map[string]json.RawMessage{
+	expect := map[string][]byte{
 		"user/1/name": []byte("Hubert"),
 		"user/2/name": []byte("Isolde"),
 		"user/3/name": []byte("Igor"),
@@ -87,13 +87,13 @@ func TestStreamInvalidData(t *testing.T) {
 	}
 }
 
-func cmpMap(one, two map[string]json.RawMessage) bool {
+func cmpMap(one, two map[string][]byte) bool {
 	if len(one) != len(two) {
 		return false
 	}
 
 	for key := range one {
-		if bytes.Compare(one[key], two[key]) != 0 {
+		if !bytes.Equal(one[key], two[key]) {
 			return false
 		}
 	}

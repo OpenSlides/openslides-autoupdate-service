@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 )
 
 type dbListOfSpeakers struct {
@@ -30,21 +31,18 @@ func losFromMap(in map[string]json.RawMessage) (*dbListOfSpeakers, error) {
 	return &los, nil
 }
 
-type outputSpeaker struct {
-	User         string `json:"user"`
-	Marked       bool   `json:"marked"`
-	PointOfOrder bool   `json:"point_of_order"`
-	Weight       int    `json:"weight"`
-	EndTime      int    `json:"end_time,omitempty"`
+type dbSpeakerWork struct {
+	UserID    int `json:"user_id"`
+	Weight    int `json:"weight"`
+	BeginTime int `json:"begin_time"`
+	EndTime   int `json:"end_time"`
 }
-
 type dbSpeaker struct {
-	UserID       int  `json:"user_id"`
-	Marked       bool `json:"marked"`
-	PointOfOrder bool `json:"point_of_order"`
-	Weight       int  `json:"weight"`
-	BeginTime    int  `json:"begin_time"`
-	EndTime      int  `json:"end_time"`
+	User         string         `json:"user"`
+	SpeechState  string         `json:"speech_state"`
+	Note         string         `json:"note"`
+	PointOfOrder bool           `json:"point_of_order"`
+	SpeakerWork  *dbSpeakerWork `json:",omitempty"`
 }
 
 func speakerFromMap(in map[string]json.RawMessage) (*dbSpeaker, error) {
@@ -54,8 +52,13 @@ func speakerFromMap(in map[string]json.RawMessage) (*dbSpeaker, error) {
 	}
 
 	var speaker dbSpeaker
+	var work dbSpeakerWork
+	speaker.SpeakerWork = &work
 	if err := json.Unmarshal(bs, &speaker); err != nil {
 		return nil, fmt.Errorf("decoding speaker data: %w", err)
+	}
+	if err := json.Unmarshal(bs, &work); err != nil {
+		return nil, fmt.Errorf("decoding speaker work data: %w", err)
 	}
 	return &speaker, nil
 }
@@ -80,216 +83,67 @@ func chyronProjectorFromMap(in map[string]json.RawMessage) (*dbChyronProjector, 
 
 // ListOfSpeaker renders current list of speaker slide.
 func ListOfSpeaker(store *projector.SlideStore) {
-	store.RegisterSliderFunc("list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, hotkeys []string, err error) {
-		return renderListOfSpeakers(ctx, ds, p7on.ContentObjectID, p7on.MeetingID)
+	store.RegisterSliderFunc("list_of_speakers", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
+		return renderListOfSpeakers(ctx, fetch, p7on.ContentObjectID, p7on.MeetingID, store)
 	})
-}
-
-func renderListOfSpeakers(ctx context.Context, ds projector.Datastore, losFQID string, meetingID int) (encoded []byte, keys []string, err error) {
-	fetch := datastore.NewFetcher(ds)
-	defer func() {
-		if err == nil {
-			err = fetch.Error()
-		}
-	}()
-
-	data := fetch.Object(ctx, []string{"speaker_ids", "content_object_id", "closed"}, losFQID)
-	los, err := losFromMap(data)
-	if err != nil {
-		return nil, nil, fmt.Errorf("loading list of speakers: %w", err)
-	}
-
-	title := fetch.String(ctx, los.ContentObjectID+"/title")
-
-	var speakersWaiting []outputSpeaker
-	var speakersFinished []outputSpeaker
-	var currentSpeaker *outputSpeaker
-	for _, id := range los.SpeakerIDs {
-		fields := []string{
-			"user_id",
-			"marked",
-			"point_of_order",
-			"weight",
-			"begin_time",
-			"end_time",
-		}
-		speaker, err := speakerFromMap(fetch.Object(ctx, fields, "speaker/%d", id))
-		if err != nil {
-			return nil, nil, fmt.Errorf("loading speaker: %w", err)
-		}
-
-		user, err := newUser(ctx, fetch, speaker.UserID, meetingID)
-		if err != nil {
-			return nil, nil, fmt.Errorf("loading user: %w", err)
-		}
-
-		s := outputSpeaker{
-			User:         user.UserRepresentation(meetingID),
-			Marked:       speaker.Marked,
-			PointOfOrder: speaker.PointOfOrder,
-			Weight:       speaker.Weight,
-			EndTime:      speaker.EndTime,
-		}
-
-		if speaker.BeginTime == 0 && speaker.EndTime == 0 {
-			speakersWaiting = append(speakersWaiting, s)
-			continue
-		}
-
-		if speaker.EndTime == 0 {
-			currentSpeaker = &s
-			continue
-		}
-
-		speakersFinished = append(speakersFinished, s)
-	}
-
-	if err := fetch.Error(); err != nil {
-		return nil, nil, err
-	}
-
-	idx := strings.Index(los.ContentObjectID, "/")
-	collection := los.ContentObjectID[:idx]
-
-	slideData := struct {
-		Title                   string          `json:"title"`
-		Waiting                 []outputSpeaker `json:"waiting"`
-		Current                 *outputSpeaker  `json:"current,"`
-		Finished                []outputSpeaker `json:"finished"`
-		ContentObjectCollection string          `json:"content_object_collection"`
-		TitleInformation        string          `json:"title_information"`
-		Closed                  bool            `json:"closed"`
-	}{
-		title,
-		speakersWaiting,
-		currentSpeaker,
-		speakersFinished,
-		collection,
-		fmt.Sprintf("title_information for %s", los.ContentObjectID),
-		los.Closed,
-	}
-	b, err := json.Marshal(slideData)
-	if err != nil {
-		return nil, nil, fmt.Errorf("encoding outgoing data: %w", err)
-	}
-	return b, fetch.Keys(), nil
-}
-
-// getLosID determines the losID and first current_projection of the reference_projector.
-func getLosID(ctx context.Context, ContentObjectID string, fetch *datastore.Fetcher) (losID int, referenceProjectorID int, err error) {
-	parts := strings.Split(ContentObjectID, "/")
-	if len(parts) != 2 || parts[0] != "meeting" {
-		return losID, referenceProjectorID, fmt.Errorf("invalid ContentObjectID %s. Expected a meeting-objectID", ContentObjectID)
-	}
-	meetingID, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return losID, referenceProjectorID, fmt.Errorf("invalid ContentObjectID %s. Expected a numeric meeting_id", ContentObjectID)
-	}
-	referenceProjectorID = fetch.Int(ctx, "meeting/%d/reference_projector_id", meetingID)
-	referenceP7onIDs := fetch.Ints(ctx, "projector/%d/current_projection_ids", referenceProjectorID)
-
-	for _, pID := range referenceP7onIDs {
-		contentObjectID := fetch.String(ctx, "projection/%d/content_object_id", pID)
-		losID = fetch.Int(ctx, "%s/list_of_speakers_id", contentObjectID)
-
-		if losID != 0 {
-			break
-		}
-	}
-	return losID, referenceProjectorID, nil
 }
 
 // CurrentListOfSpeakers renders the current_list_of_speakers slide.
 func CurrentListOfSpeakers(store *projector.SlideStore) {
-	store.RegisterSliderFunc("current_list_of_speakers", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
-		defer func() {
-			if err == nil {
-				err = fetch.Error()
-			}
-		}()
-
+	store.RegisterSliderFunc("current_list_of_speakers", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
 		losID, _, err := getLosID(ctx, p7on.ContentObjectID, fetch)
 		if err != nil {
-			return nil, nil, fmt.Errorf("error in getLosID: %w", err)
+			return nil, fmt.Errorf("error in getLosID: %w", err)
 		}
 		if losID == 0 {
-			return []byte("{}"), fetch.Keys(), nil
+			return []byte("{}"), nil
 		}
 
-		if err := fetch.Error(); err != nil {
-			return nil, nil, err
+		if err := fetch.Err(); err != nil {
+			return nil, err
 		}
 
-		content, keys, err := renderListOfSpeakers(ctx, ds, fmt.Sprintf("list_of_speakers/%d", losID), p7on.MeetingID)
+		content, err := renderListOfSpeakers(ctx, fetch, fmt.Sprintf("list_of_speakers/%d", losID), p7on.MeetingID, store)
 		if err != nil {
-			return nil, nil, fmt.Errorf("render list of speakers %d: %w", losID, err)
+			return nil, fmt.Errorf("render list of speakers %d: %w", losID, err)
 		}
-		keys = append(keys, fetch.Keys()...)
-		return content, keys, nil
+		if err := fetch.Err(); err != nil {
+			return nil, err
+		}
+		return content, nil
 	})
-}
-
-func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID int, meetingID int) (shortName string, structureLevel string, err error) {
-	data := fetch.Object(ctx, []string{"speaker_ids", "content_object_id", "closed"}, "list_of_speakers/%d", losID)
-	los, err := losFromMap(data)
-	if err != nil {
-		return "", "", fmt.Errorf("loading list of speakers: %w", err)
-	}
-
-	fields := []string{
-		"user_id",
-		"begin_time",
-		"end_time",
-	}
-
-	for _, id := range los.SpeakerIDs {
-		speaker, err := speakerFromMap(fetch.Object(ctx, fields, "speaker/%d", id))
-		if err != nil {
-			return "", "", fmt.Errorf("loading speaker: %w", err)
-		}
-
-		if speaker.BeginTime == 0 || (speaker.BeginTime != 0 && speaker.EndTime != 0) {
-			continue
-		}
-
-		user, err := newUser(ctx, fetch, speaker.UserID, meetingID)
-		if err != nil {
-			return "", "", fmt.Errorf("getting newUser: %w", err)
-		}
-		return user.UserShortName(), user.UserStructureLevel(meetingID), nil
-	}
-	return shortName, structureLevel, nil
 }
 
 // CurrentSpeakerChyron renders the current_speaker_chyron slide.
 func CurrentSpeakerChyron(store *projector.SlideStore) {
-	store.RegisterSliderFunc("current_speaker_chyron", func(ctx context.Context, ds projector.Datastore, p7on *projector.Projection) (encoded []byte, keys []string, err error) {
-		fetch := datastore.NewFetcher(ds)
-		defer func() {
-			if err == nil {
-				err = fetch.Error()
-			}
-		}()
-
+	store.RegisterSliderFunc("current_speaker_chyron", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
 		losID, projectorID, err := getLosID(ctx, p7on.ContentObjectID, fetch)
 		if err != nil {
-			return nil, nil, fmt.Errorf("error in getLosID: %w", err)
+			return nil, fmt.Errorf("error in getLosID: %w", err)
 		}
 		meetingID, err := strconv.Atoi(strings.Split(p7on.ContentObjectID, "/")[1])
 		if err != nil {
-			return nil, nil, fmt.Errorf("error in Atoi with ContentObjectID: %w", err)
+			return nil, fmt.Errorf("error in Atoi with ContentObjectID: %w", err)
 		}
 
-		data := fetch.Object(ctx, []string{"chyron_background_color", "chyron_font_color"}, "projector/%d", projectorID)
-		projector, err := chyronProjectorFromMap(data)
-		if err != nil {
-			return nil, nil, fmt.Errorf("error in get chyron projector: %w", err)
+		projector := &dbChyronProjector{}
+		if projectorID > 0 {
+			data := fetch.Object(ctx, fmt.Sprintf("projector/%d", projectorID), "chyron_background_color", "chyron_font_color")
+			projector, err = chyronProjectorFromMap(data)
+			if err != nil {
+				return nil, fmt.Errorf("error in get chyron projector: %w", err)
+			}
 		}
 
-		shortName, structureLevel, err := getCurrentSpeakerData(ctx, fetch, losID, meetingID)
-		if err != nil {
-			return nil, nil, fmt.Errorf("get CurrentSpeakerData: %w", err)
+		var shortName, structureLevel string
+		if losID > 0 {
+			shortName, structureLevel, err = getCurrentSpeakerData(ctx, fetch, losID, meetingID)
+			if err != nil {
+				return nil, fmt.Errorf("get CurrentSpeakerData: %w", err)
+			}
+			if err := fetch.Err(); err != nil {
+				return nil, err
+			}
 		}
 
 		out := struct {
@@ -306,8 +160,221 @@ func CurrentSpeakerChyron(store *projector.SlideStore) {
 
 		responseValue, err := json.Marshal(out)
 		if err != nil {
-			return nil, nil, fmt.Errorf("encoding response slide current_speaker_chyron: %w", err)
+			return nil, fmt.Errorf("encoding response slide current_speaker_chyron: %w", err)
 		}
-		return responseValue, fetch.Keys(), err
+		return responseValue, nil
 	})
+}
+
+// getLosID determines the losID and first current_projection of the reference_projector.
+func getLosID(ctx context.Context, ContentObjectID string, fetch *datastore.Fetcher) (losID int, referenceProjectorID int, err error) {
+	parts := strings.Split(ContentObjectID, "/")
+	if len(parts) != 2 || parts[0] != "meeting" {
+		return losID, referenceProjectorID, fmt.Errorf("invalid ContentObjectID %s. Expected a meeting-objectID", ContentObjectID)
+	}
+	meetingID, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return losID, referenceProjectorID, fmt.Errorf("invalid ContentObjectID %s. Expected a numeric meeting_id", ContentObjectID)
+	}
+	referenceProjectorID = datastore.Int(ctx, fetch.FetchIfExist, "meeting/%d/reference_projector_id", meetingID)
+	referenceP7onIDs := datastore.Ints(ctx, fetch.FetchIfExist, "projector/%d/current_projection_ids", referenceProjectorID)
+
+	for _, pID := range referenceP7onIDs {
+		contentObjectID := datastore.String(ctx, fetch.FetchIfExist, "projection/%d/content_object_id", pID)
+		losID = datastore.Int(ctx, fetch.FetchIfExist, "%s/list_of_speakers_id", contentObjectID)
+
+		if losID != 0 {
+			break
+		}
+	}
+	if err := fetch.Err(); err != nil {
+		return losID, referenceProjectorID, err
+	}
+	return losID, referenceProjectorID, nil
+}
+
+func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID int, meetingID int) (shortName string, structureLevel string, err error) {
+	data := fetch.Object(ctx, fmt.Sprintf("list_of_speakers/%d", losID), "speaker_ids", "content_object_id", "closed")
+	los, err := losFromMap(data)
+	if err != nil {
+		return "", "", fmt.Errorf("loading list of speakers: %w", err)
+	}
+
+	fields := []string{
+		"user_id",
+		"begin_time",
+		"end_time",
+	}
+
+	for _, id := range los.SpeakerIDs {
+		speaker, err := speakerFromMap(fetch.Object(ctx, fmt.Sprintf("speaker/%d", id), fields...))
+		if err != nil {
+			return "", "", fmt.Errorf("loading speaker: %w", err)
+		}
+
+		if speaker.SpeakerWork.BeginTime == 0 || (speaker.SpeakerWork.BeginTime != 0 && speaker.SpeakerWork.EndTime != 0) {
+			continue
+		}
+
+		user, err := NewUser(ctx, fetch, speaker.SpeakerWork.UserID, meetingID)
+		if err != nil {
+			return "", "", fmt.Errorf("getting newUser: %w", err)
+		}
+		if err := fetch.Err(); err != nil {
+			return "", "", err
+		}
+		return user.UserShortName(), user.UserStructureLevel(meetingID), nil
+	}
+
+	return shortName, structureLevel, nil
+}
+
+func renderListOfSpeakers(ctx context.Context, fetch *datastore.Fetcher, losFQID string, meetingID int, store *projector.SlideStore) (encoded []byte, err error) {
+	data := fetch.Object(ctx, losFQID, "speaker_ids", "content_object_id", "closed")
+	los, err := losFromMap(data)
+	if err != nil {
+		return nil, fmt.Errorf("loading list of speakers: %w", err)
+	}
+
+	var speakersWaiting []dbSpeaker
+	var speakersFinished []dbSpeaker
+	currentSpeaker, numberOfWaitingSpeakers, err := getSpeakerLists(ctx, los, meetingID, fetch, &speakersWaiting, &speakersFinished)
+	if err != nil {
+		return nil, fmt.Errorf("getSpeakersList: %w", err)
+	}
+
+	if err := fetch.Err(); err != nil {
+		return nil, err
+	}
+
+	parts := strings.Split(los.ContentObjectID, "/")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("splitting ComtentObjectID: %w", err)
+	}
+	collection := parts[0]
+	if err != nil {
+		return nil, fmt.Errorf("get ID from ContentObjectID: %w", err)
+	}
+
+	titler := store.GetTitleInformationFunc(collection)
+	if titler == nil {
+		return nil, fmt.Errorf("no titler function registered for %s", collection)
+	}
+
+	titleInfo, err := titler.GetTitleInformation(ctx, fetch, los.ContentObjectID, "", meetingID)
+	if err != nil {
+		return nil, fmt.Errorf("get title func: %w", err)
+	}
+
+	slideData := struct {
+		Waiting                 []dbSpeaker     `json:"waiting"`
+		Current                 *dbSpeaker      `json:"current,"`
+		Finished                []dbSpeaker     `json:"finished"`
+		TitleInformation        json.RawMessage `json:"title_information"`
+		Closed                  bool            `json:"closed"`
+		NumberOfWaitingSpeakers *int            `json:"number_of_waiting_speakers,omitempty"`
+	}{
+		speakersWaiting,
+		currentSpeaker,
+		speakersFinished,
+		titleInfo,
+		los.Closed,
+		numberOfWaitingSpeakers,
+	}
+	b, err := json.Marshal(slideData)
+	if err != nil {
+		return nil, fmt.Errorf("encoding outgoing data: %w", err)
+	}
+	if err := fetch.Err(); err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+func getSpeakerLists(ctx context.Context, los *dbListOfSpeakers, meetingID int, fetch *datastore.Fetcher, speakersWaiting *[]dbSpeaker, speakersFinished *[]dbSpeaker) (*dbSpeaker, *int, error) {
+	fields := []string{
+		"user_id",
+		"speech_state",
+		"note",
+		"point_of_order",
+		"weight",
+		"begin_time",
+		"end_time",
+	}
+
+	var currentSpeaker *dbSpeaker
+	var numberOfWaitingSpeakers *int
+	for _, id := range los.SpeakerIDs {
+		speaker, err := speakerFromMap(fetch.Object(ctx, fmt.Sprintf("speaker/%d", id), fields...))
+		if err != nil {
+			return nil, nil, fmt.Errorf("loading speaker: %w", err)
+		}
+
+		user, err := NewUser(ctx, fetch, speaker.SpeakerWork.UserID, meetingID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("loading user: %w", err)
+		}
+
+		speaker.User = user.UserRepresentation(meetingID)
+
+		if speaker.SpeakerWork.BeginTime == 0 && speaker.SpeakerWork.EndTime == 0 {
+			*speakersWaiting = append(*speakersWaiting, *speaker)
+			continue
+		}
+
+		if speaker.SpeakerWork.EndTime == 0 {
+			currentSpeaker = speaker
+			continue
+		}
+
+		*speakersFinished = append(*speakersFinished, *speaker)
+	}
+
+	// Sort ascending by weight
+	sort.Slice(*speakersWaiting, func(i, j int) bool {
+		if (*speakersWaiting)[i].SpeakerWork.Weight == (*speakersWaiting)[j].SpeakerWork.Weight {
+			return (*speakersWaiting)[i].SpeakerWork.UserID < (*speakersWaiting)[j].SpeakerWork.UserID
+		}
+		return (*speakersWaiting)[i].SpeakerWork.Weight < (*speakersWaiting)[j].SpeakerWork.Weight
+	})
+
+	// Sort descending by endtime to get lates at top position
+	sort.Slice(*speakersFinished, func(i, j int) bool {
+		return (*speakersFinished)[i].SpeakerWork.EndTime > (*speakersFinished)[j].SpeakerWork.EndTime
+	})
+
+	meeting, err := getMeeting(ctx, fetch, meetingID, []string{"list_of_speakers_amount_next_on_projector", "list_of_speakers_amount_last_on_projector", "list_of_speakers_show_amount_of_speakers_on_slide"})
+	if err != nil {
+		return nil, nil, fmt.Errorf("reading meeting: %w", err)
+	}
+	if err := fetch.Err(); err != nil {
+		return nil, nil, err
+	}
+
+	if meeting.ListOfSpeakersShowAmountOfSpeakersOnSlide {
+		number := len(*speakersWaiting)
+		numberOfWaitingSpeakers = &number
+	}
+
+	if len(*speakersWaiting) > 1 || len(*speakersFinished) > 1 {
+		if len(*speakersWaiting) > 1 && meeting.ListOfSpeakersAmountNextOnProjector >= 0 && meeting.ListOfSpeakersAmountNextOnProjector < len(*speakersWaiting) {
+			*speakersWaiting = (*speakersWaiting)[:meeting.ListOfSpeakersAmountNextOnProjector]
+		}
+		if len(*speakersFinished) > 1 && meeting.ListOfSpeakersAmountLastOnProjector >= 0 && meeting.ListOfSpeakersAmountLastOnProjector < len(*speakersFinished) {
+			*speakersFinished = (*speakersFinished)[:meeting.ListOfSpeakersAmountLastOnProjector]
+		}
+	}
+
+	// Remove SpeakerWork's
+	for i := range *speakersWaiting {
+		(*speakersWaiting)[i].SpeakerWork = nil
+	}
+	for i := range *speakersFinished {
+		(*speakersFinished)[i].SpeakerWork = nil
+	}
+	if currentSpeaker != nil {
+		currentSpeaker.SpeakerWork = nil
+	}
+	return currentSpeaker, numberOfWaitingSpeakers, nil
 }

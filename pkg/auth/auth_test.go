@@ -9,18 +9,20 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
-	"github.com/dgrijalva/jwt-go/v4"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 func TestAuth(t *testing.T) {
-	const secret = "auth-dev-key"
 	const invalidSecret = "wrong-auth-dev-key"
 	const cookieName = "refreshId"
 	const authHeader = "Authentication"
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	validCookie, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sessionId": "123",
-	}).SignedString([]byte(secret))
+	}).SignedString([]byte(auth.DebugCookieKey))
 	if err != nil {
 		t.Fatalf("Can not sign cookie token: %v", err)
 	}
@@ -29,7 +31,7 @@ func TestAuth(t *testing.T) {
 	validHeader, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId":    1,
 		"sessionId": "123",
-	}).SignedString([]byte(secret))
+	}).SignedString([]byte(auth.DebugTokenKey))
 	if err != nil {
 		t.Fatalf("Can not sign token token: %v", err)
 	}
@@ -39,7 +41,7 @@ func TestAuth(t *testing.T) {
 		"userId":    1,
 		"sessionId": "123",
 		"exp":       123,
-	}).SignedString([]byte(secret))
+	}).SignedString([]byte(auth.DebugTokenKey))
 	if err != nil {
 		t.Fatalf("Can not sign token token: %v", err)
 	}
@@ -64,7 +66,7 @@ func TestAuth(t *testing.T) {
 
 	authSRV := httptest.NewServer(&mockAuth{token: "NEWTOKEN"})
 	defer authSRV.Close()
-	a, err := auth.New(authSRV.URL, nil, nil, nil, []byte(secret), []byte(secret))
+	a, err := auth.New(authSRV.URL, ctx.Done(), []byte(auth.DebugTokenKey), []byte(auth.DebugCookieKey))
 	if err != nil {
 		t.Fatalf("Can not create auth service: %v", err)
 	}
@@ -150,7 +152,7 @@ func TestAuth(t *testing.T) {
 				},
 			},
 			1,
-			"bearer NEWTOKEN",
+			"NEWTOKEN",
 			"",
 		},
 	} {
@@ -193,22 +195,27 @@ func TestAuth(t *testing.T) {
 			if got := a.FromContext(ctx); got != tt.uid {
 				t.Errorf("Got uid %d, expected %d", got, tt.uid)
 			}
-
 		})
 	}
 }
 
 func TestFromContext(t *testing.T) {
-	a, err := auth.New("", nil, nil, nil, []byte(""), []byte(""))
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	a, err := auth.New("", shutdownCtx.Done(), []byte(""), []byte(""))
 	if err != nil {
 		t.Fatalf("Can not create auth serivce: %v", err)
 	}
 
 	t.Run("Empty Context", func(t *testing.T) {
-		got := a.FromContext(context.Background())
-		if got != 0 {
-			t.Errorf("Got uid %d from empty context. Expected 0", got)
-		}
+		defer func() {
+			if r := recover(); r == nil {
+				t.Errorf("FromContext() did not panic")
+			}
+		}()
+
+		a.FromContext(context.Background())
 	})
 
 	t.Run("Context from Authenticate", func(t *testing.T) {
@@ -225,8 +232,8 @@ func TestFromContext(t *testing.T) {
 }
 
 func TestLogout(t *testing.T) {
-	closing := make(chan struct{})
-	defer close(closing)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	var lastErr error
 	errHandler := func(err error) {
@@ -236,10 +243,11 @@ func TestLogout(t *testing.T) {
 	logouter := NewLockoutEventMock()
 	defer logouter.Close()
 
-	a, err := auth.New("", logouter, closing, errHandler, []byte(""), []byte(""))
+	a, err := auth.New("", shutdownCtx.Done(), []byte(""), []byte(""))
 	if err != nil {
 		t.Fatalf("Can not create auth serivce: %v", err)
 	}
+	go a.ListenOnLogouts(shutdownCtx, logouter, errHandler)
 
 	t.Run("Closing session", func(t *testing.T) {
 		ctx, err := a.Authenticate(validSession(t, withSessionID("session1")))

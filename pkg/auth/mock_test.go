@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -27,14 +28,14 @@ func NewLockoutEventMock() *LockoutEventMock {
 
 // LogoutEvent returnes the sessionIDs that have changed. Blocks until
 // sessionIDs are send with the Send-method.
-func (m *LockoutEventMock) LogoutEvent(closing <-chan struct{}) ([]string, error) {
+func (m *LockoutEventMock) LogoutEvent(ctx context.Context) ([]string, error) {
 	select {
 	case v := <-m.c:
 		return v, nil
 	case <-m.t.C:
 		return nil, nil
-	case <-closing:
-		return nil, closingError{}
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	}
 }
 
@@ -47,11 +48,6 @@ func (m *LockoutEventMock) Send(values []string) {
 func (m *LockoutEventMock) Close() {
 	m.t.Stop()
 }
-
-type closingError struct{}
-
-func (e closingError) Closing()      {}
-func (e closingError) Error() string { return "closing" }
 
 type mockAuth struct {
 	token string

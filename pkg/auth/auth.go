@@ -11,8 +11,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go/v4"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/ostcar/topic"
+)
+
+// DebugTokenKey and DebugCookieKey are non random auth keys for development.
+const (
+	DebugTokenKey  = "auth-dev-token-key"
+	DebugCookieKey = "auth-dev-cookie-key"
 )
 
 // pruneTime defines how long a topic id will be valid. This should be higher
@@ -27,10 +33,7 @@ const authPath = "/internal/auth/authenticate"
 //
 // Has to be initialized with auth.New().
 type Auth struct {
-	logoutEventer    LogoutEventer
 	logedoutSessions *topic.Topic
-	closed           <-chan struct{}
-	errHandler       func(error)
 
 	authServiceURL string
 
@@ -39,11 +42,13 @@ type Auth struct {
 }
 
 // New initializes an Auth service.
-func New(authServiceURL string, logoutEventer LogoutEventer, closed <-chan struct{}, errHandler func(error), tokenKey, cookieKey []byte) (*Auth, error) {
+func New(
+	authServiceURL string,
+	closed <-chan struct{},
+	tokenKey,
+	cookieKey []byte,
+) (*Auth, error) {
 	a := &Auth{
-		closed:           closed,
-		errHandler:       errHandler,
-		logoutEventer:    logoutEventer,
 		logedoutSessions: topic.New(topic.WithClosed(closed)),
 		authServiceURL:   authServiceURL,
 		tokenKey:         tokenKey,
@@ -53,18 +58,14 @@ func New(authServiceURL string, logoutEventer LogoutEventer, closed <-chan struc
 	// Make sure the topic is not empty
 	a.logedoutSessions.Publish("")
 
-	if logoutEventer != nil {
-		go a.receiveLogoutEvent(errHandler)
-	}
-
-	go a.pruneLogoutEvent(closed)
-
 	return a, nil
 }
 
 // Authenticate uses the headers from the given request to get the user id. The
 // returned context will be cancled, if the session is revoked.
-func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (ctx context.Context, err error) {
+func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Context, error) {
+	ctx := context.WithValue(r.Context(), authenticateCalled, "yes")
+
 	p := new(payload)
 	if err := a.loadToken(w, r, p); err != nil {
 		return nil, fmt.Errorf("reading token: %w", err)
@@ -73,7 +74,7 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (ctx context
 	if p.UserID == 0 {
 		// Empty token or anonymous token. No need to save anything in the
 		// context.
-		return r.Context(), nil
+		return ctx, nil
 	}
 
 	_, sessionIDs, err := a.logedoutSessions.Receive(context.Background(), 0)
@@ -86,7 +87,7 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (ctx context
 		}
 	}
 
-	ctx, cancelCtx := context.WithCancel(context.WithValue(r.Context(), userIDType, p.UserID))
+	ctx, cancelCtx := context.WithCancel(context.WithValue(ctx, userIDType, p.UserID))
 
 	go func() {
 		defer cancelCtx()
@@ -112,9 +113,16 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (ctx context
 }
 
 // FromContext returnes the user id from a context returned by Authenticate().
-// If the context was not returned from Authenticate or the user is an anonymous
-// user, then 0 is returned.
+//
+// If the user is an anonymous user 0 is returned.
+//
+// Panics, if the context was not returned from Authenticate
 func (a *Auth) FromContext(ctx context.Context) int {
+	initialized := ctx.Value(authenticateCalled)
+	if initialized == nil {
+		panic("call to auth.FromContext() without auth.Authenticate()")
+	}
+
 	v := ctx.Value(userIDType)
 	if v == nil {
 		return 0
@@ -123,19 +131,22 @@ func (a *Auth) FromContext(ctx context.Context) int {
 	return v.(int)
 }
 
-func (a *Auth) receiveLogoutEvent(errHandler func(error)) {
+// LogoutEventer tells, when a sessionID gets revoked.
+//
+// The method LogoutEvent has to block until there are new data. The returned
+// data is a list of sessionIDs that are revoked.
+type LogoutEventer interface {
+	LogoutEvent(context.Context) ([]string, error)
+}
+
+// ListenOnLogouts listen on logout events and closes the connections.
+func (a *Auth) ListenOnLogouts(ctx context.Context, logoutEventer LogoutEventer, errHandler func(error)) {
 	if errHandler == nil {
 		errHandler = func(error) {}
 	}
 
 	for {
-		select {
-		case <-a.closed:
-			return
-		default:
-		}
-
-		data, err := a.logoutEventer.LogoutEvent(a.closed)
+		data, err := logoutEventer.LogoutEvent(ctx)
 		if err != nil {
 			errHandler(fmt.Errorf("receiving logout event: %w", err))
 			time.Sleep(time.Second)
@@ -146,13 +157,14 @@ func (a *Auth) receiveLogoutEvent(errHandler func(error)) {
 	}
 }
 
-func (a *Auth) pruneLogoutEvent(closed <-chan struct{}) {
+// PruneOldData removes old logout events.
+func (a *Auth) PruneOldData(ctx context.Context) {
 	tick := time.NewTicker(5 * time.Minute)
 	defer tick.Stop()
 
 	for {
 		select {
-		case <-closed:
+		case <-ctx.Done():
 			return
 		case <-tick.C:
 			a.logedoutSessions.Prune(time.Now().Add(-pruneTime))
@@ -186,35 +198,46 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 
 	encodedCookie := strings.TrimPrefix(cookie.Value, "bearer%20")
 
-	_, err = jwt.Parse(encodedCookie, jwt.KnownKeyfunc(jwt.SigningMethodHS256, a.cookieKey))
+	_, err = jwt.Parse(encodedCookie, func(token *jwt.Token) (interface{}, error) {
+		return a.cookieKey, nil
+	})
 	if err != nil {
-		var invalid *jwt.InvalidSignatureError
+		var invalid *jwt.ValidationError
 		if errors.As(err, &invalid) {
 			return authError{"Invalid auth ticket", err}
 		}
 		return fmt.Errorf("validating auth cookie: %w", err)
 	}
 
-	_, err = jwt.ParseWithClaims(encodedToken, payload, jwt.KnownKeyfunc(jwt.SigningMethodHS256, a.tokenKey))
+	_, err = jwt.ParseWithClaims(encodedToken, payload, func(token *jwt.Token) (interface{}, error) {
+		return a.tokenKey, nil
+	})
 	if err != nil {
-		var invalid *jwt.InvalidSignatureError
+		var invalid *jwt.ValidationError
 		if errors.As(err, &invalid) {
-			return authError{"Invalid auth ticket", err}
+			return a.handleInvalidToken(r.Context(), invalid, w, encodedToken, encodedCookie)
 		}
-
-		var expired *jwt.TokenExpiredError
-		if !errors.As(err, &expired) {
-			return fmt.Errorf("validating auth token: %w", err)
-		}
-
-		token, err := a.refreshToken(r.Context(), encodedToken, encodedCookie)
-		if err != nil {
-			return fmt.Errorf("refreshing token: %w", err)
-		}
-		w.Header().Set(authHeader, "bearer "+token)
 	}
 
 	return nil
+}
+
+func (a *Auth) handleInvalidToken(ctx context.Context, invalid *jwt.ValidationError, w http.ResponseWriter, encodedToken, encodedCookie string) error {
+	if !tokenExpired(invalid.Errors) {
+		return authError{"Invalid auth ticket", invalid}
+	}
+
+	token, err := a.refreshToken(ctx, encodedToken, encodedCookie)
+	if err != nil {
+		return fmt.Errorf("refreshing token: %w", err)
+	}
+
+	w.Header().Set(authHeader, token)
+	return nil
+}
+
+func tokenExpired(errNo uint32) bool {
+	return errNo&(jwt.ValidationErrorExpired|jwt.ValidationErrorNotValidYet) != 0
 }
 
 func (a *Auth) refreshToken(ctx context.Context, token, cookie string) (string, error) {
@@ -224,7 +247,7 @@ func (a *Auth) refreshToken(ctx context.Context, token, cookie string) (string, 
 	}
 
 	req.Header.Add(authHeader, "bearer "+token)
-	req.AddCookie(&http.Cookie{Name: cookieName, Value: "bearer " + cookie})
+	req.AddCookie(&http.Cookie{Name: cookieName, Value: "bearer " + cookie, HttpOnly: true, Secure: true})
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -257,6 +280,7 @@ func (a *Auth) refreshToken(ctx context.Context, token, cookie string) (string, 
 type authString string
 
 const userIDType authString = "user_id"
+const authenticateCalled authString = "authenticate_called"
 
 type payload struct {
 	jwt.StandardClaims

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
@@ -21,48 +22,39 @@ func TestProjectorCountdown(t *testing.T) {
 	projector_countdown/1:
 		description: description text
 		running: true
-		countdown_time: 200.34
+		countdown_time: 200.3445678
 		meeting_id: 1
 	meeting/1/projector_countdown_warning_time: 100
     `)
 
 	for _, tt := range []struct {
-		name       string
-		data       map[string]string
-		expect     string
-		expectKeys []string
+		name   string
+		data   map[string][]byte
+		expect string
 	}{
 		{
 			"Starter",
 			data,
 			`{
-				"countdown_time":200.34,
-			    "description":"description text",
+				"countdown_time":200.3445678,
+				"description":"description text",
 				"running":true,
 				"warning_time":100}`,
-			[]string{
-				"projector_countdown/1/id",
-				"projector_countdown/1/description",
-				"projector_countdown/1/running",
-				"projector_countdown/1/countdown_time",
-				"projector_countdown/1/meeting_id",
-				"meeting/1/projector_countdown_warning_time",
-			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			closed := make(chan struct{})
-			defer close(closed)
-			ds := dsmock.NewMockDatastore(closed, tt.data)
+			shutdownCtx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), tt.data))
 
 			p7on := &projector.Projection{
 				ContentObjectID: "projector_countdown/1",
 			}
 
-			bs, keys, err := pcSlide.Slide(context.Background(), ds, p7on)
+			bs, err := pcSlide.Slide(context.Background(), fetch, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
-			assert.ElementsMatch(t, tt.expectKeys, keys)
 		})
 	}
 }
@@ -79,34 +71,29 @@ func TestProjectorMessage(t *testing.T) {
     `)
 
 	for _, tt := range []struct {
-		name       string
-		data       map[string]string
-		expect     string
-		expectKeys []string
+		name   string
+		data   map[string][]byte
+		expect string
 	}{
 		{
 			"Starter",
 			data,
 			`{"message": "Shine on you crazy diamond"}`,
-			[]string{
-				"projector_message/1/id",
-				"projector_message/1/message",
-			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			closed := make(chan struct{})
-			defer close(closed)
-			ds := dsmock.NewMockDatastore(closed, tt.data)
+			shutdownCtx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), tt.data))
 
 			p7on := &projector.Projection{
 				ContentObjectID: "projector_message/1",
 			}
 
-			bs, keys, err := pmSlide.Slide(context.Background(), ds, p7on)
+			bs, err := pmSlide.Slide(context.Background(), fetch, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
-			assert.ElementsMatch(t, tt.expectKeys, keys)
 		})
 	}
 }

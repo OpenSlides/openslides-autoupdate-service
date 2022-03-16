@@ -2,18 +2,20 @@ package autoupdate
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
-// Connection holds the state of a client. It has to be created by colling
+// connection holds the state of a client. It has to be created by colling
 // Connect() on a autoupdate.Service instance.
-type Connection struct {
+type connection struct {
 	autoupdate *Autoupdate
 	uid        int
 	kb         KeysBuilder
 	tid        uint64
 	filter     filter
+	hotkeys    map[string]bool
 }
 
 // Next returns the next data for the user.
@@ -23,64 +25,17 @@ type Connection struct {
 //
 // On every other call, it blocks until there is new data. In this case, the map
 // is never empty.
-func (c *Connection) Next(ctx context.Context) (map[string]json.RawMessage, error) {
-	firstTime := c.filter.empty()
-	var data map[string]json.RawMessage
-
-	for len(data) == 0 {
-		keys, err := c.keys(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("getting keys: %w", err)
-		}
-
-		data, err = c.autoupdate.RestrictedData(ctx, c.uid, keys...)
-		if err != nil {
-			return nil, fmt.Errorf("get first time restricted data: %w", err)
-		}
-
-		c.filter.filter(data)
-
-		if firstTime {
-			// On firstTime return the data, even when it is empty.
-			return data, nil
-		}
-	}
-
-	return data, nil
-}
-
-func (c *Connection) keys(ctx context.Context) ([]string, error) {
+func (c *connection) Next(ctx context.Context) (map[string][]byte, error) {
 	if c.filter.empty() {
-		keys, err := c.allKeys(ctx)
+		data, err := c.data(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("get all keys: %w", err)
+			return nil, fmt.Errorf("creating first time data: %w", err)
 		}
-		return keys, nil
+
+		return data, nil
 	}
 
-	keys, err := c.nextKeys(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("get next keys: %w", err)
-	}
-	return keys, nil
-}
-
-func (c *Connection) allKeys(ctx context.Context) ([]string, error) {
-	if c.tid == 0 {
-		c.tid = c.autoupdate.topic.LastID()
-	}
-
-	if err := c.kb.Update(ctx); err != nil {
-		return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
-	}
-
-	return c.kb.Keys(), nil
-}
-
-// nextKeys blocks until there are new keys for the user.
-func (c *Connection) nextKeys(ctx context.Context) ([]string, error) {
-	var keys []string
-	for len(keys) == 0 {
+	for {
 		// Blocks until the topic is closed (on server exit) or the context is done.
 		tid, changedKeys, err := c.autoupdate.topic.Receive(ctx, c.tid)
 		if err != nil {
@@ -88,56 +43,65 @@ func (c *Connection) nextKeys(ctx context.Context) ([]string, error) {
 		}
 		c.tid = tid
 
-		changedSlice := make(map[string]bool, len(changedKeys))
 		for _, key := range changedKeys {
-			var uid int
-			if _, err := fmt.Sscanf(key, fullUpdateFormat, &uid); err == nil {
-				// The key is a fullUpdate key. Do not use it, exept of a full
-				// update.
-				if uid == -1 || uid == c.uid {
-					return c.allKeys(ctx)
+			if c.hotkeys[key] {
+				data, err := c.data(ctx)
+				if err != nil {
+					return nil, fmt.Errorf("creating later data: %w", err)
 				}
-				continue
+				if len(data) > 0 {
+					return data, nil
+				}
+				break
 			}
-
-			changedSlice[key] = true
-		}
-
-		oldKeys := c.kb.Keys()
-
-		// Update keysbuilder get new list of keys.
-		if err := c.kb.Update(ctx); err != nil {
-			return nil, fmt.Errorf("update keysbuilder: %w", err)
-		}
-
-		// Start with keys hat are new for the user.
-		keys = keysDiff(oldKeys, c.kb.Keys())
-
-		// Append keys that are old but have been changed.
-		for _, key := range oldKeys {
-			if !changedSlice[key] {
-				continue
-			}
-			keys = append(keys, key)
 		}
 	}
-
-	return keys, nil
 }
 
-func keysDiff(old []string, new []string) []string {
-	keySet := make(map[string]bool, len(old))
-	for _, key := range old {
-		keySet[key] = true
+// data returns all values from the datastore.getter.
+func (c *connection) data(ctx context.Context) (map[string][]byte, error) {
+	if c.tid == 0 {
+		c.tid = c.autoupdate.topic.LastID()
 	}
 
-	added := []string{}
-	for _, key := range new {
-		if keySet[key] {
-			continue
+	oldKeys := c.kb.Keys()
+
+	recorder := datastore.NewRecorder(c.autoupdate.datastore)
+	restricter := c.autoupdate.restricter(recorder, c.uid)
+
+	if err := c.kb.Update(ctx, restricter); err != nil {
+		return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
+	}
+
+	newKeys := c.kb.Keys()
+	removedKeys := notInSlice(oldKeys, newKeys)
+	for _, key := range removedKeys {
+		c.filter.delete(key)
+	}
+
+	data, err := restricter.Get(ctx, newKeys...)
+	if err != nil {
+		return nil, fmt.Errorf("get restricted data: %w", err)
+	}
+	c.hotkeys = recorder.Keys()
+
+	c.filter.filter(data)
+
+	return data, nil
+}
+
+// notInSlice returns elements that are in slice a but not in b.
+func notInSlice(a, b []string) []string {
+	bSet := make(map[string]struct{}, len(b))
+	for _, k := range b {
+		bSet[k] = struct{}{}
+	}
+
+	var missing []string
+	for _, k := range a {
+		if _, ok := bSet[k]; !ok {
+			missing = append(missing, k)
 		}
-		added = append(added, key)
 	}
-
-	return added
+	return missing
 }

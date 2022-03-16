@@ -2,46 +2,38 @@ package test
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
-// MockRestricter implements the restricter interface.
-type MockRestricter struct {
-	denie bool
-
-	Values map[string]string
+// RestrictAllowed is a restricter that allows everything
+func RestrictAllowed(getter datastore.Getter, uid int) datastore.Getter {
+	return mockRestricter{getter, true}
 }
 
-// RestrictAllowed creates a Restricter that allows everything.
-func RestrictAllowed() *MockRestricter {
-	return &MockRestricter{
-		denie: false,
-	}
+// RestrictNotAllowed is a restricter that removes everythin
+func RestrictNotAllowed(getter datastore.Getter, uid int) datastore.Getter {
+	return mockRestricter{getter, false}
 }
 
-// RestrictDenied create a Restricter, that disallowes everything.
-func RestrictDenied() *MockRestricter {
-	return &MockRestricter{
-		denie: true,
-	}
+type mockRestricter struct {
+	getter datastore.Getter
+	allow  bool
 }
 
-// Restrict does currently nothing.
-func (r *MockRestricter) Restrict(ctx context.Context, uid int, data map[string]json.RawMessage) error {
-	if r.denie {
-		for k := range data {
-			delete(data, k)
-		}
-		return nil
+func (r mockRestricter) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+	data, err := r.getter.Get(ctx, keys...)
+	if err != nil {
+		return nil, fmt.Errorf("getting data: %w", err)
 	}
 
-	if r.Values != nil {
-		for k := range data {
-			v, ok := r.Values[k]
-			if ok {
-				data[k] = []byte(v)
-			}
-		}
+	if r.allow {
+		return data, nil
 	}
-	return nil
+
+	for k := range data {
+		data[k] = nil
+	}
+	return data, nil
 }

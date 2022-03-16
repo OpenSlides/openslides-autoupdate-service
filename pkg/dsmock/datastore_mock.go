@@ -1,11 +1,12 @@
 package dsmock
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"gopkg.in/yaml.v3"
@@ -16,7 +17,7 @@ import (
 // It is expected, that the input is a constant string. So there can not be any
 // error at runtime. Therefore this function does not return an error but panics
 // to get the developer a fast feetback.
-func YAMLData(input string) map[string]string {
+func YAMLData(input string) map[string][]byte {
 	input = strings.ReplaceAll(input, "\t", "  ")
 
 	var db map[string]interface{}
@@ -24,7 +25,7 @@ func YAMLData(input string) map[string]string {
 		panic(err)
 	}
 
-	data := make(map[string]string)
+	data := make(map[string][]byte)
 	for dbKey, dbValue := range db {
 		parts := strings.Split(dbKey, "/")
 		switch len(parts) {
@@ -49,11 +50,11 @@ func YAMLData(input string) map[string]string {
 					if err != nil {
 						panic(fmt.Errorf("creating test db. Key %s: %w", fqfield, err))
 					}
-					data[fqfield] = string(bs)
+					data[fqfield] = bs
 				}
 
 				idField := fmt.Sprintf("%s/%d/id", dbKey, id)
-				data[idField] = strconv.Itoa(id)
+				data[idField] = []byte(strconv.Itoa(id))
 			}
 
 		case 2:
@@ -68,23 +69,29 @@ func YAMLData(input string) map[string]string {
 				if err != nil {
 					panic(fmt.Errorf("creating test db. Key %s: %w", fqfield, err))
 				}
-				data[fqfield] = string(bs)
+				data[fqfield] = bs
 			}
 
 			idField := fmt.Sprintf("%s/%s/id", parts[0], parts[1])
-			data[idField] = parts[1]
+			data[idField] = []byte(parts[1])
 
 		case 3:
 			bs, err := json.Marshal(dbValue)
 			if err != nil {
 				panic(fmt.Errorf("creating test db. Key %s: %w", dbKey, err))
 			}
-			data[dbKey] = string(bs)
+			data[dbKey] = bs
 
 			idField := fmt.Sprintf("%s/%s/id", parts[0], parts[1])
-			data[idField] = parts[1]
+			data[idField] = []byte(parts[1])
 		default:
 			panic(fmt.Errorf("invalid db key %s", dbKey))
+		}
+	}
+
+	for k, v := range data {
+		if bytes.Equal(v, []byte("null")) {
+			data[k] = nil
 		}
 	}
 
@@ -94,86 +101,77 @@ func YAMLData(input string) map[string]string {
 // MockDatastore implements the autoupdate.Datastore interface.
 type MockDatastore struct {
 	*datastore.Datastore
-	server *DatastoreServer
+	source  *StubWithUpdate
+	counter *Counter
+	err     error
 }
 
 // NewMockDatastore create a MockDatastore with data.
-func NewMockDatastore(closed <-chan struct{}, data map[string]string) *MockDatastore {
-	dsServer := NewDatastoreServer(closed, data)
-
-	s := &MockDatastore{
-		server: dsServer,
+//
+// The function starts a mock datastore server in the background. It gets
+// closed, when the closed channel is closed.
+func NewMockDatastore(closed <-chan struct{}, data map[string][]byte) *MockDatastore {
+	source := NewStubWithUpdate(data, NewCounter)
+	ds := &MockDatastore{
+		source:    source,
+		Datastore: datastore.New(source, nil),
 	}
 
-	s.Datastore = datastore.New(dsServer.TS.URL, closed, func(error) {}, s.server)
+	ds.counter = source.Middlewares()[0].(*Counter)
 
-	return s
+	return ds
+}
+
+// Get calls the Get() method of the datastore.
+func (d *MockDatastore) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+	if d.err != nil {
+		return nil, d.err
+	}
+
+	return d.Datastore.Get(ctx, keys...)
+}
+
+// InjectError lets the next calls to Get() return the injected error.
+func (d *MockDatastore) InjectError(err error) {
+	d.err = err
+}
+
+// Requests returns a list of all requested keys.
+func (d *MockDatastore) Requests() [][]string {
+	return d.counter.Requests()
+}
+
+// ResetRequests resets the list returned by Requests().
+func (d *MockDatastore) ResetRequests() {
+	d.counter.Reset()
+}
+
+// KeysRequested returns true, if all given keys where requested.
+func (d *MockDatastore) KeysRequested(keys ...string) bool {
+	requestedKeys := make(map[string]bool)
+	for _, l := range d.Requests() {
+		for _, k := range l {
+			requestedKeys[k] = true
+		}
+	}
+
+	for _, k := range keys {
+		if !requestedKeys[k] {
+			return false
+		}
+	}
+	return true
 }
 
 // Send updates the data.
 //
 // This method is unblocking. If you want to fetch data afterwards, make sure to
 // block until data is processed. For example with RegisterChanceListener.
-func (d *MockDatastore) Send(data map[string]string) {
-	d.server.Send(data)
+func (d *MockDatastore) Send(data map[string][]byte) {
+	d.source.Send(data)
 }
 
 // Update implements the datastore.Updater interface.
-func (d *MockDatastore) Update(close <-chan struct{}) (map[string]json.RawMessage, error) {
-	return d.server.Update(close)
-}
-
-// datastoreValues returns data for the test.MockDatastore and the
-// test.DatastoreServer.
-//
-// If OnlyData is false, fake data is generated.
-type datastoreValues struct {
-	mu   sync.RWMutex
-	Data map[string]json.RawMessage
-}
-
-func newDatastoreValues(data map[string]string) *datastoreValues {
-	conv := make(map[string]json.RawMessage)
-	for k, v := range data {
-		conv[k] = []byte(v)
-	}
-
-	return &datastoreValues{
-		Data: conv,
-	}
-}
-
-// value returns a value for a key. If the value does not exist, the second
-// return value is false.
-func (d *datastoreValues) value(key string) (json.RawMessage, error) {
-	if d == nil {
-		return nil, nil
-	}
-
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-
-	v, ok := d.Data[key]
-	if ok {
-		return v, nil
-	}
-
-	return nil, nil
-}
-
-// set updates the values from the Datastore.
-//
-// This does not send a signal to the listeners.
-func (d *datastoreValues) set(data map[string]json.RawMessage) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	if d.Data == nil {
-		d.Data = data
-		return
-	}
-
-	for key, value := range data {
-		d.Data[key] = value
-	}
+func (d *MockDatastore) Update(ctx context.Context) (map[string][]byte, error) {
+	return d.source.Update(ctx)
 }

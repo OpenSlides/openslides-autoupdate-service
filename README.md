@@ -80,7 +80,7 @@ Curl needs the flag `-N / --no-buffer` or it can happen, that the output is not
 printed immediately.
 
 
-### Without redis
+### HTTP requests
 
 When the server is started, clients can listen for keys to do so, they have to
 send a keyrequest in the body of the request. An example request is:
@@ -90,11 +90,13 @@ send a keyrequest in the body of the request. An example request is:
 To see a list of possible json-strings see the file
 internal/autoupdate/keysbuilder/keysbuilder_test.go
 
-There is a simpler method to request keys:
+Keys can also defined with the query parameter `k`:
 
-`curl -N localhost:9012/system/autoupdate/keys?user/1/username,user/2/username`
+`curl -N localhost:9012/system/autoupdate?k=user/1/username,user/2/username`
 
-With this simpler method, it is not possible to request related keys.
+With this query method, it is not possible to request related keys.
+
+A request can have a body and the `k`-query parameter.
 
 After the request is send, the values to the keys are returned as a json-object
 without a newline:
@@ -103,7 +105,7 @@ without a newline:
 ```
 
 
-### With redis
+### Updates via redis
 
 When redis is installed, it can be used to update keys. Start the autoupdate
 service with the envirnmentvariable `MESSAGING_SERVICE=redis`. Afterwards it is
@@ -161,12 +163,13 @@ The Service uses the following environment variables:
 * `MESSAGE_BUS_PORT`: Port of the redis server. The default is `6379`.
 * `REDIS_TEST_CONN`: Test the redis connection on startup. Disable on the cloud
   if redis needs more time to start then this service. The default is `true`.
+* `VOTE_HOST`: Host of the vote-service. The default is `localhost`.
+* `VOTE_PORT`: Port of the vote-service. The default is `9013`.
+* `VOTE_PROTOCAL`: Protocol of the vote-service. The default is `http`.
 * `AUTH`: Sets the type of the auth service. `fake` (default) or `ticket`.
 * `AUTH_HOST`: Host of the auth service. The default is `localhost`.
 * `AUTH_PORT`: Port of the auth service. The default is `9004`.
 * `AUTH_PROTOCOL`: Protocol of the auth servicer. The default is `http`.
-* `DEACTIVATE_PERMISSION`: Deactivate requests to the permission service. The
-  result is, that every user can see everything. The default is `false`.
 * `OPENSLIDES_DEVELOPMENT`: If set, the service starts, even when secrets (see
   below) are not given. The default is `false`.
 
@@ -179,3 +182,9 @@ environment variable `OPENSLIDES_DEVELOPMENT` is set.
 
 * `auth_token_key`: Key to sign the JWT auth tocken. Default `auth-dev-key`.
 * `auth_cookie_key`: Key to sign the JWT auth cookie. Default `auth-dev-key`.
+
+
+## Update models.yml
+
+To use a new models.yml update the value in the file `models-version`.
+Afterwards call `go generate ./...` to update the generated files.

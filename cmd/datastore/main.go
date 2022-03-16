@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	models "github.com/OpenSlides/openslides-models-to-go"
 	"github.com/gomodule/redigo/redis"
 )
 
@@ -21,6 +20,8 @@ const (
 	redisAddr  = "localhost:6379"
 	redisKey   = "ModifiedFields"
 )
+
+//go:generate sh -c "go run gen_example_data/main.go > example-data.json.go"
 
 func main() {
 	go updater(os.Stdin)
@@ -55,7 +56,7 @@ func updater(r io.Reader) {
 		args := []interface{}{redisKey, "*"}
 		for key, value := range data {
 			args = append(args, key, string(value))
-			models.ExampleData[key] = value
+			exampleData[key] = value
 		}
 
 		if _, err := conn.Do("XADD", args...); err != nil {
@@ -77,13 +78,14 @@ func exampleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println(data.Keys)
 
-	responceData := make(map[string]map[string]map[string]json.RawMessage)
+	responseData := make(map[string]map[string]map[string]json.RawMessage)
 	for _, key := range data.Keys {
 		if !validKey(key) {
 			http.Error(w, "Key is invalid: "+key, 400)
+			return
 		}
 
-		value, ok := models.ExampleData[key]
+		value, ok := exampleData[key]
 
 		if !ok {
 			continue
@@ -91,17 +93,20 @@ func exampleHandler(w http.ResponseWriter, r *http.Request) {
 
 		keyParts := strings.SplitN(key, "/", 3)
 
-		if _, ok := responceData[keyParts[0]]; !ok {
-			responceData[keyParts[0]] = make(map[string]map[string]json.RawMessage)
+		if _, ok := responseData[keyParts[0]]; !ok {
+			responseData[keyParts[0]] = make(map[string]map[string]json.RawMessage)
 		}
 
-		if _, ok := responceData[keyParts[0]][keyParts[1]]; !ok {
-			responceData[keyParts[0]][keyParts[1]] = make(map[string]json.RawMessage)
+		if _, ok := responseData[keyParts[0]][keyParts[1]]; !ok {
+			responseData[keyParts[0]][keyParts[1]] = make(map[string]json.RawMessage)
 		}
-		responceData[keyParts[0]][keyParts[1]][keyParts[2]] = value
+		responseData[keyParts[0]][keyParts[1]][keyParts[2]] = value
 	}
 
-	json.NewEncoder(w).Encode(responceData)
+	if err := json.NewEncoder(w).Encode(responseData); err != nil {
+		http.Error(w, fmt.Sprintf("encoding response: %v", err), 400)
+		return
+	}
 }
 
 func validKey(key string) bool {

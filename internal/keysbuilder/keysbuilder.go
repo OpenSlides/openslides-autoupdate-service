@@ -7,6 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
 const keySep = "/"
@@ -18,10 +21,45 @@ const keySep = "/"
 //
 // Has to be created with keysbuilder.FromJSON() or keysbuilder.ManyFromJSON().
 type Builder struct {
-	dataProvider DataProvider
-	uid          int
-	bodies       []body
-	keys         []string
+	bodies []body
+	keys   []string
+}
+
+// FromKeys creates a keysbuilder from a list of keys.
+func FromKeys(keys []string) (*Builder, error) {
+	b := new(Builder)
+	if len(keys) == 0 || keys[0] == "" {
+		return b, nil
+	}
+
+	if invalid := datastore.InvalidKeys(keys...); len(invalid) != 0 {
+		return nil, InvalidError{msg: fmt.Sprintf("Invalid keys: %v", invalid)}
+	}
+
+	for _, key := range keys {
+		parts := strings.Split(key, "/")
+		id, _ := strconv.Atoi(parts[1])
+		body := body{
+			ids:        []int{id},
+			collection: parts[0],
+			fieldsMap: fieldsMap{
+				fields: map[string]fieldDescription{
+					parts[2]: nil,
+				},
+			},
+		}
+		b.bodies = append(b.bodies, body)
+	}
+	return b, nil
+}
+
+// FromBuilders creates a new keysbuilder from a list of other builders.
+func FromBuilders(builders ...*Builder) *Builder {
+	builder := new(Builder)
+	for _, b := range builders {
+		builder.bodies = append(builder.bodies, b.bodies...)
+	}
+	return builder
 }
 
 // Update triggers a key update. It generates the list of keys, that can be
@@ -29,13 +67,17 @@ type Builder struct {
 // tree.
 //
 // It is not allowed to call builder.Keys() after Update returned an error.
-func (b *Builder) Update(ctx context.Context) (err error) {
+func (b *Builder) Update(ctx context.Context, getter datastore.Getter) (err error) {
 	defer func() {
 		// Reset keys if an error happens
 		if err != nil {
 			b.keys = b.keys[:0]
 		}
 	}()
+
+	if len(b.bodies) == 0 {
+		return nil
+	}
 
 	// Start with all keys from all the bodies.
 	process := make(map[string]fieldDescription)
@@ -63,7 +105,7 @@ func (b *Builder) Update(ctx context.Context) (err error) {
 		}
 
 		// Get values for all special (not none) fields.
-		data, err := b.dataProvider.RestrictedData(ctx, b.uid, needed...)
+		data, err := getter.Get(ctx, needed...)
 		if err != nil {
 			return fmt.Errorf("load needed keys: %w", err)
 		}

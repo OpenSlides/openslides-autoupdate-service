@@ -1,12 +1,16 @@
 module github.com/OpenSlides/openslides-autoupdate-service
 
-go 1.16
+go 1.18
 
 require (
-	github.com/OpenSlides/openslides-models-to-go v0.3.1-0.20210708115413-854eb0cac1b1
-	github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
-	github.com/gomodule/redigo v1.8.5
-	github.com/ostcar/topic v0.3.4-0.20200613094955-61bb28837a98
-	github.com/stretchr/testify v1.7.0
+	github.com/golang-jwt/jwt/v4 v4.3.0
+	github.com/gomodule/redigo v1.8.8
+	github.com/ostcar/topic v0.3.4
+	github.com/stretchr/testify v1.7.1
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+)
+
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 )

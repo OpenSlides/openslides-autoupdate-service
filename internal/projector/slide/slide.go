@@ -7,7 +7,6 @@ import (
 // Slides returns all OpenSlides-Slides.
 func Slides() *projector.SlideStore {
 	s := new(projector.SlideStore)
-	AgendaItem(s)
 	AgendaItemList(s)
 	Assignment(s)
 	ListOfSpeaker(s)

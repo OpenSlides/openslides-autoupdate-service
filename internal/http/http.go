@@ -2,75 +2,147 @@
 package http
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strings"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 )
 
-const prefix = "/system/autoupdate"
+const (
+	prefixPublic   = "/system/autoupdate"
+	prefixInternal = "/internal/autoupdate"
+)
 
-// Complex builds the requested keys from the body of a request. The
+// Connecter returns an connect object.
+type Connecter interface {
+	Connect(userID int, kb autoupdate.KeysBuilder) autoupdate.DataProvider
+}
+
+// RequestMetricer saves metrics about requests.
+type RequestMetricer interface {
+	RequestMeticSave(r []byte) error
+	RequestMetricGet(w io.Writer) error
+}
+
+// Autoupdate builds the requested keys from the body of a request. The
 // body has to be in the format specified in the keysbuilder package.
-func Complex(mux *http.ServeMux, auth Authenticater, db keysbuilder.DataProvider, liver Liver) {
+func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, metric RequestMetricer) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Header().Set("Cache-Control", "no-store, max-age=0")
 
 		defer r.Body.Close()
 		uid := auth.FromContext(r.Context())
 
-		kb, err := keysbuilder.ManyFromJSON(r.Body, db, uid)
+		queryBuilder, err := keysbuilder.FromKeys(strings.Split(r.URL.Query().Get("k"), ","))
 		if err != nil {
-			handleError(w, err, true)
+			handleError(w, fmt.Errorf("building keysbuilder from query: %w", err), true)
 			return
 		}
 
-		// TODO: This should not be run here. This is only for development
-		kb.Update(r.Context())
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			handleError(w, fmt.Errorf("reading body: %w", err), true)
+			return
+		}
 
-		// This blocks until the request is done.
-		if err := liver.Live(r.Context(), uid, w, kb); err != nil {
+		if metric != nil && len(body) != 0 {
+			if err := metric.RequestMeticSave(body); err != nil {
+				log.Printf("Warning: building metric: %v", err)
+			}
+		}
+
+		bodyBuilder, err := keysbuilder.ManyFromJSON(bytes.NewReader(body))
+		if err != nil {
+			handleError(w, fmt.Errorf("building keysbuilder from body: %w", err), true)
+			return
+		}
+
+		builder := keysbuilder.FromBuilders(queryBuilder, bodyBuilder)
+
+		sender := sendMessages
+		if r.URL.Query().Has("single") {
+			sender = sendSingleMessage
+		}
+
+		if err := sender(r.Context(), w, uid, builder, connecter); err != nil {
 			handleError(w, err, false)
 			return
 		}
 	})
 
-	mux.Handle(prefix, validRequest(authMiddleware(handler, auth)))
+	mux.Handle(prefixPublic, validRequest(authMiddleware(handler, auth)))
 }
 
-// Simple builds a keysbuilder from the url query. It expects a comma
-// separated list of keysname.
-func Simple(mux *http.ServeMux, auth Authenticater, liver Liver) {
-	url := prefix + "/keys"
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/octet-stream")
-
-		keys := strings.Split(r.URL.RawQuery, ",")
-		kb := &keysbuilder.Simple{K: keys}
-		if err := kb.Validate(); err != nil {
+// MetricRequest returns the request metrics.
+func MetricRequest(mux *http.ServeMux, metric RequestMetricer) {
+	mux.Handle(prefixInternal+"/metric/request", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if err := metric.RequestMetricGet(w); err != nil {
 			handleError(w, err, true)
-			return
+		}
+	}))
+}
+
+func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter) error {
+	next := connecter.Connect(uid, kb)
+	encoder := json.NewEncoder(w)
+
+	for ctx.Err() == nil {
+		// conn.Next() blocks, until there is new data. It also unblocks,
+		// when the client context or the server is closed.
+		data, err := next(ctx)
+		if err != nil {
+			return fmt.Errorf("getting next message: %w", err)
 		}
 
-		uid := auth.FromContext(r.Context())
-
-		// This blocks until the request is done.
-		if err := liver.Live(r.Context(), uid, w, kb); err != nil {
-			handleError(w, err, false)
-			return
+		converted := make(map[string]json.RawMessage, len(data))
+		for k, v := range data {
+			converted[k] = v
 		}
-	})
 
-	mux.Handle(url, validRequest(authMiddleware(handler, auth)))
+		if err := encoder.Encode(converted); err != nil {
+			return fmt.Errorf("encoding and sending next message: %w", err)
+		}
+
+		w.(http.Flusher).Flush()
+	}
+	return ctx.Err()
+}
+
+func sendSingleMessage(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter) error {
+	next := connecter.Connect(uid, kb)
+	encoder := json.NewEncoder(w)
+
+	// conn.Next() blocks, until there is new data. It also unblocks,
+	// when the client context or the server is closed.
+	data, err := next(ctx)
+	if err != nil {
+		return fmt.Errorf("getting next message: %w", err)
+	}
+
+	converted := make(map[string]json.RawMessage, len(data))
+	for k, v := range data {
+		converted[k] = v
+	}
+
+	if err := encoder.Encode(converted); err != nil {
+		return fmt.Errorf("encoding end sending next message: %w", err)
+	}
+	return nil
 }
 
 // Health tells, if the service is running.
 func Health(mux *http.ServeMux) {
-	url := prefix + "/health"
+	url := prefixPublic + "/health"
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		fmt.Fprintln(w, `{"healthy": true}`)
@@ -109,7 +181,7 @@ func handleError(w http.ResponseWriter, err error, writeStatusCode bool) {
 		return
 	}
 
-	if errors.Is(err, context.Canceled) {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		// Client closed connection.
 		return
 	}

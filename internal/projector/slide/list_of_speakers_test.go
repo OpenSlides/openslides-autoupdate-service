@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
@@ -14,201 +15,201 @@ import (
 func TestListOfSpeakers(t *testing.T) {
 	s := new(projector.SlideStore)
 	slide.ListOfSpeaker(s)
+	slide.Assignment(s)
 
 	losSlide := s.GetSlider("list_of_speakers")
 	assert.NotNilf(t, losSlide, "Slide with name `list_of_speakers` not found.")
 
 	data := dsmock.YAMLData(`
+	meeting/1:
+		list_of_speakers_amount_next_on_projector: 4
+		list_of_speakers_amount_last_on_projector: 2
+		list_of_speakers_show_amount_of_speakers_on_slide: true
 	list_of_speakers/1:
-		content_object_id:	topic/1
+		content_object_id:	assignment/1
 		closed: 			true
-		speaker_ids: 		[1,2,3]
+		speaker_ids: 		[1,2,3,4,5,6]
 
-	topic/1/title: topic title
+	assignment/1:
+		title: assignment1 title
+		agenda_item_id: 1
+	agenda_item/1/item_number: ItemNr Assignment1
 
 	speaker:
 		1:
 			# Waiting
 			user_id:        10
-			marked:         false
+			speech_state:   contribution
+			note:           Seq2Waiting
 			point_of_order: false
 			weight:         10
-		
 		2:
-			# Current
-			user_id:        20
-			begin_time:     100
-			marked:         true
-			point_of_order: false
-			weight:         20
+			# Waiting
+			user_id:        11
+			speech_state:   contribution
+			note:           Seq1Waiting
+			point_of_order: true
+			weight:         5
 		
 		3:
+			# Current
+			user_id:        20
+			speech_state:   pro
+			note:           SeqCurrent
+			point_of_order: false
+			weight:         20
+			begin_time:     100
+			
+		
+		4:
 			# Finished
 			user_id:        30
-			begin_time:     10
-			end_time:       20
-			marked:         true
+			speech_state:   contra
+			note:           Seq3Finished
 			point_of_order: true
 			weight:         30
+			begin_time:     20
+			end_time:       23
+			
+		5:
+			# Finished
+			user_id:        31
+			speech_state:   contra
+			note:           Seq1Finished
+			point_of_order: true
+			weight:         30
+			begin_time:     29
+			end_time:       32
+		6:
+			# Finished
+			user_id:        32
+			speech_state:   contra
+			note:           Seq2Finished
+			point_of_order: true
+			weight:         30
+			begin_time:     24
+			end_time:       28
 
 	user:
 		10:
 			username: jonny123
+		11:
+			username: elenor
 		20:
 			first_name: Jonny
 		30:
 			last_name: Bo
+		31:
+			username: Ernest
+		32:
+			username: Calli
 	`)
 
 	for _, tt := range []struct {
-		name       string
-		data       map[string]string
-		expect     string
-		expectKeys []string
+		name   string
+		data   map[string][]byte
+		expect string
 	}{
 		{
 			"Starter",
 			data,
 			`{
-				"title": "topic title",
-				"waiting": [{
-					"user": "jonny123",
-					"marked": false,
-					"point_of_order": false,
-					"weight": 10
-				}],
+				"waiting": [
+					{
+						"user": "elenor",
+						"speech_state": "contribution",
+						"note": "Seq1Waiting",
+						"point_of_order": true
+					},
+					{
+						"user": "jonny123",
+						"speech_state": "contribution",
+						"note": "Seq2Waiting",
+						"point_of_order": false
+					}
+				],
 				"current": {
 					"user": "Jonny",
-					"marked": true,
-					"point_of_order": false,
-					"weight": 20
+					"speech_state": "pro",
+					"note": "SeqCurrent",
+					"point_of_order": false
 				},
-				"finished": [{
-					"user": "Bo",
-					"marked": true,
-					"point_of_order": true,
-					"weight": 30,
-					"end_time": 20
-				}],
+				"finished": [
+					{
+						"user": "Ernest",
+						"speech_state": "contra",
+						"note": "Seq1Finished",
+						"point_of_order": true
+					},
+					{
+						"user": "Calli",
+						"speech_state": "contra",
+						"note": "Seq2Finished",
+						"point_of_order": true
+					}
+				],
 				"closed": true,
-				"content_object_collection": "topic",
-				"title_information": "title_information for topic/1"
+				"title_information": {
+					"agenda_item_number": "ItemNr Assignment1",
+					"collection": "assignment",
+					"content_object_id": "assignment/1",
+					"title": "assignment1 title"
+				},
+				"number_of_waiting_speakers": 2
 			}
 			`,
-			[]string{
-				"list_of_speakers/1/speaker_ids",
-				"list_of_speakers/1/content_object_id",
-				"list_of_speakers/1/closed",
-				"topic/1/title",
-				"speaker/1/user_id",
-				"speaker/1/marked",
-				"speaker/1/point_of_order",
-				"speaker/1/weight",
-				"speaker/1/begin_time",
-				"speaker/1/end_time",
-				"speaker/2/user_id",
-				"speaker/2/marked",
-				"speaker/2/point_of_order",
-				"speaker/2/weight",
-				"speaker/2/begin_time",
-				"speaker/2/end_time",
-				"speaker/3/user_id",
-				"speaker/3/marked",
-				"speaker/3/point_of_order",
-				"speaker/3/weight",
-				"speaker/3/begin_time",
-				"speaker/3/end_time",
-				"user/10/username",
-				"user/10/title",
-				"user/10/first_name",
-				"user/10/last_name",
-				"user/10/default_structure_level",
-				"user/20/username",
-				"user/20/title",
-				"user/20/first_name",
-				"user/20/last_name",
-				"user/20/default_structure_level",
-				"user/30/username",
-				"user/30/title",
-				"user/30/first_name",
-				"user/30/last_name",
-				"user/30/default_structure_level",
-			},
 		},
 		{
-			"No Current spaker",
-			changeData(data, map[string]string{
-				"list_of_speakers/1/speaker_ids": "[1,3]",
+			"No Current speaker",
+			changeData(data, map[string][]byte{
+				"list_of_speakers/1/speaker_ids":                              []byte("[1,4]"),
+				"meeting/1/list_of_speakers_show_amount_of_speakers_on_slide": []byte("false"),
 			}),
 			`{
-				"title": "topic title",
 				"waiting": [{
 					"user": "jonny123",
-					"marked": false,
-					"point_of_order": false,
-					"weight": 10
+					"speech_state": "contribution",
+					"note": "Seq2Waiting",
+					"point_of_order": false
 				}],
 				"current": null,
 				"finished": [{
 					"user": "Bo",
-					"marked": true,
-					"point_of_order": true,
-					"weight": 30,
-					"end_time": 20
+					"speech_state": "contra",
+					"note": "Seq3Finished",
+					"point_of_order": true
 				}],
 				"closed": true,
-				"content_object_collection": "topic",
-				"title_information": "title_information for topic/1"
+				"title_information": {
+					"agenda_item_number": "ItemNr Assignment1",
+					"collection": "assignment",
+					"content_object_id": "assignment/1",
+					"title": "assignment1 title"
+				}
 			}
 			`,
-			[]string{
-				"list_of_speakers/1/speaker_ids",
-				"list_of_speakers/1/content_object_id",
-				"list_of_speakers/1/closed",
-				"topic/1/title",
-				"speaker/1/user_id",
-				"speaker/1/marked",
-				"speaker/1/point_of_order",
-				"speaker/1/weight",
-				"speaker/1/begin_time",
-				"speaker/1/end_time",
-				"speaker/3/user_id",
-				"speaker/3/marked",
-				"speaker/3/point_of_order",
-				"speaker/3/weight",
-				"speaker/3/begin_time",
-				"speaker/3/end_time",
-				"user/10/username",
-				"user/10/title",
-				"user/10/first_name",
-				"user/10/last_name",
-				"user/10/default_structure_level",
-				"user/30/username",
-				"user/30/title",
-				"user/30/first_name",
-				"user/30/last_name",
-				"user/30/default_structure_level",
-			},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			closed := make(chan struct{})
-			defer close(closed)
-			ds := dsmock.NewMockDatastore(closed, tt.data)
+			shutdownCtx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), tt.data))
 
 			p7on := &projector.Projection{
 				ContentObjectID: "list_of_speakers/1",
+				MeetingID:       1,
 			}
 
-			bs, keys, err := losSlide.Slide(context.Background(), ds, p7on)
+			bs, err := losSlide.Slide(context.Background(), fetch, p7on)
 			assert.NoError(t, err)
+			assert.NoError(t, fetch.Err())
 			assert.JSONEq(t, tt.expect, string(bs))
-			assert.ElementsMatch(t, tt.expectKeys, keys)
 		})
 	}
 }
 
-func getDataForCurrentList() map[string]string {
+func getDataForCurrentList() map[string][]byte {
 	// This one is a bit complicated and will be used
 	// for tests current_list_of_speakers and, slightly modified,
 	// for current_speaker_chyron
@@ -217,33 +218,39 @@ func getDataForCurrentList() map[string]string {
 	// meeting/6 has reference_projector 60
 	// projector/60 has projection/2
 	// projection/2 has	content_object_id topic/5
-	// topic/5 points list_of_speakers/7
+	// motion_block/1 points list_of_speakers/7
 	// list_of_speakers/7 points to speaker/8
 	// speaker/8 points to user/10
 	// user/10 has username jonny123
 	//
 	// lets find out if this username is on the slide-data...
 	return dsmock.YAMLData(`
-		meeting/6/reference_projector_id: 60
-		projector/60/current_projection_ids: [2]
-		projection/2/content_object_id: topic/5
+		projector/60/current_projection_ids: [1, 2]
+		projection/1/content_object_id: user/10
+		projection/2/content_object_id: motion_block/1
 
-		topic/5:
+		meeting/6:
+			list_of_speakers_show_amount_of_speakers_on_slide: false
+			reference_projector_id: 60
+		motion_block/1:
 			list_of_speakers_id: 7
-			title: topic title
+			title: motion_block1 title
+			agenda_item_id: 1
 
 		list_of_speakers/7:
-			content_object_id:	topic/5
+			content_object_id:	motion_block/1
 			closed: 			true
 			speaker_ids: 		[8]
 
 		speaker/8:
 				user_id:        10
-				marked:         false
+				speech_state:   pro
+				note:           Lonesome speaker
 				point_of_order: false
 				weight:         10
-
+		
 		user/10/username: jonny123
+		agenda_item/1/item_number: ItemNr. MotionBlock1
 	`)
 
 }
@@ -253,62 +260,66 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 
 	s := new(projector.SlideStore)
 	slide.CurrentListOfSpeakers(s)
+	slide.MotionBlock(s)
 
 	slide := s.GetSlider("current_list_of_speakers")
 	require.NotNilf(t, slide, "Slide with name `current_list_of_speakers` not found.")
 
 	data := getDataForCurrentList()
-	t.Run("Find list of speakers", func(t *testing.T) {
-		ds := dsmock.NewMockDatastore(closed, data)
+	for _, tt := range []struct {
+		name   string
+		data   map[string][]byte
+		expect string
+	}{
+		{
+			"find second current projection with speaker list",
+			data,
+			`{
+				"waiting": [{
+					"user": "jonny123",
+					"speech_state": "pro",
+					"note": "Lonesome speaker",
+					"point_of_order": false
+				}],
+				"current": null,
+				"finished": null,
+				"closed": true,
+				"title_information": {
+					"agenda_item_number": "ItemNr. MotionBlock1",
+					"collection": "motion_block",
+					"content_object_id": "motion_block/1",
+					"title": "motion_block1 title"
+				}
+			}
+			`,
+		},
+		{
+			"don't find speaker list in current projections",
+			changeData(data, map[string][]byte{
+				"motion_block/1/list_of_speakers_id": []byte("0"),
+			}),
+			`{}`,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			shutdownCtx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 
-		p7on := &projector.Projection{
-			ID:              1,
-			ContentObjectID: "meeting/6",
-			Type:            "current_list_of_speakers",
-		}
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), tt.data))
 
-		bs, keys, err := slide.Slide(context.Background(), ds, p7on)
+			p7on := &projector.Projection{
+				ID:              1,
+				ContentObjectID: "meeting/6",
+				Type:            "current_list_of_speakers",
+				MeetingID:       6,
+			}
 
-		assert.NoError(t, err)
-		expect := `{
-			"title": "topic title",
-			"waiting": [{
-				"user": "jonny123",
-				"marked": false,
-				"point_of_order": false,
-				"weight": 10
-			}],
-			"current": null,
-			"finished": null,
-			"closed": true,
-			"content_object_collection": "topic",
-			"title_information": "title_information for topic/5"
-		}
-		`
-		assert.JSONEq(t, expect, string(bs))
-		expectKeys := []string{
-			"meeting/6/reference_projector_id",
-			"projector/60/current_projection_ids",
-			"projection/2/content_object_id",
-			"topic/5/title",
-			"topic/5/list_of_speakers_id",
-			"list_of_speakers/7/speaker_ids",
-			"list_of_speakers/7/content_object_id",
-			"list_of_speakers/7/closed",
-			"speaker/8/user_id",
-			"speaker/8/marked",
-			"speaker/8/point_of_order",
-			"speaker/8/weight",
-			"speaker/8/begin_time",
-			"speaker/8/end_time",
-			"user/10/username",
-			"user/10/title",
-			"user/10/first_name",
-			"user/10/last_name",
-			"user/10/default_structure_level",
-		}
-		assert.ElementsMatch(t, expectKeys, keys)
-	})
+			bs, err := slide.Slide(context.Background(), fetch, p7on)
+			assert.NoError(t, err)
+			assert.NoError(t, fetch.Err())
+			assert.JSONEq(t, tt.expect, string(bs))
+		})
+	}
 }
 
 func TestCurrentSpeakerChyron(t *testing.T) {
@@ -340,52 +351,59 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 		data[k] = v
 	}
 
-	t.Run("current speaker chyron test", func(t *testing.T) {
-		ds := dsmock.NewMockDatastore(closed, data)
+	for _, tt := range []struct {
+		name   string
+		data   map[string][]byte
+		expect string
+	}{
+		{
+			"current speaker chyron test find second",
+			data,
+			`{
+				"background_color": "green",
+				"font_color": "red",
+				"current_speaker_name": "Admiral Don Snyder",
+				"current_speaker_level": "Dinner"
+			}
+			`,
+		},
+		{
+			"current speaker chyron test no current projection",
+			changeData(data, map[string][]byte{
+				"motion_block/1/list_of_speakers_id": []byte("0"),
+			}),
+			`{
+				"background_color": "green",
+				"font_color": "red",
+				"current_speaker_name": "",
+				"current_speaker_level": ""
+			}
+			`,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			shutdownCtx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 
-		p7on := &projector.Projection{
-			ID:              1,
-			ContentObjectID: "meeting/6",
-			Type:            "current_speaker_chyron",
-		}
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), tt.data))
 
-		bs, keys, err := slide.Slide(context.Background(), ds, p7on)
+			p7on := &projector.Projection{
+				ID:              1,
+				ContentObjectID: "meeting/6",
+				Type:            "current_speaker_chyron",
+				MeetingID:       6,
+			}
 
-		assert.NoError(t, err)
-		expect := `{
-			"background_color": "green",
-			"font_color": "red",
-			"current_speaker_name": "Admiral Don Snyder",
-			"current_speaker_level": "Dinner"
-		}
-		`
-		assert.JSONEq(t, expect, string(bs))
-		expectKeys := []string{
-			"meeting/6/reference_projector_id",
-			"projector/60/current_projection_ids",
-			"projector/60/chyron_background_color",
-			"projector/60/chyron_font_color",
-			"projection/2/content_object_id",
-			"topic/5/list_of_speakers_id",
-			"list_of_speakers/7/speaker_ids",
-			"list_of_speakers/7/content_object_id",
-			"list_of_speakers/7/closed",
-			"speaker/8/user_id",
-			"speaker/8/begin_time",
-			"speaker/8/end_time",
-			"user/10/username",
-			"user/10/title",
-			"user/10/first_name",
-			"user/10/last_name",
-			"user/10/default_structure_level",
-			"user/10/structure_level_$6",
-		}
-		assert.ElementsMatch(t, expectKeys, keys)
-	})
+			bs, err := slide.Slide(context.Background(), fetch, p7on)
+			assert.NoError(t, err)
+			assert.NoError(t, fetch.Err())
+			assert.JSONEq(t, tt.expect, string(bs))
+		})
+	}
 }
 
-func changeData(orig, change map[string]string) map[string]string {
-	out := make(map[string]string)
+func changeData(orig, change map[string][]byte) map[string][]byte {
+	out := make(map[string][]byte)
 	for k, v := range orig {
 		out[k] = v
 	}

@@ -3,27 +3,27 @@ package projector
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"log"
 	"strings"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 )
 
 // Datastore gets values for keys and informs, if they change.
 type Datastore interface {
-	Get(ctx context.Context, keys ...string) ([]json.RawMessage, error)
-	RegisterCalculatedField(field string, f func(ctx context.Context, key string, changed map[string]json.RawMessage) ([]byte, error))
+	Get(ctx context.Context, keys ...string) (map[string][]byte, error)
+	RegisterCalculatedField(field string, f func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error))
 }
 
 // Register initializes a new projector.
 func Register(ds Datastore, slides *SlideStore) {
-	hotKeys := make(map[string][]string)
-	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield string, changed map[string]json.RawMessage) (bs []byte, err error) {
+	hotKeys := map[string]map[string]bool{}
+	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield string, changed map[string][]byte) (bs []byte, err error) {
 		if changed != nil {
 			var needUpdate bool
-			for _, k := range hotKeys[fqfield] {
-				if _, ok := changed[k]; ok {
+			for k := range changed {
+				if hotKeys[fqfield][k] {
 					needUpdate = true
 					break
 				}
@@ -33,23 +33,17 @@ func Register(ds Datastore, slides *SlideStore) {
 				if err != nil {
 					return nil, fmt.Errorf("getting old value: %w", err)
 				}
-				return old[0], nil
+				return old[fqfield], nil
 			}
 		}
 
-		var keys []string
+		recorder := datastore.NewRecorder(ds)
+		fetch := datastore.NewFetcher(recorder)
+
 		defer func() {
 			// At the end, save all requested keys to check later if one has
 			// changed.
-			//
-			// If an error happend, don't return the error but log it and show
-			// the user a generic error message.
-			hotKeys[fqfield] = keys
-			if err != nil {
-				log.Printf("Error parsing slide %s: %v", fqfield, err)
-				bs = []byte(fmt.Sprintf(`{"error":"Error parsing slide %s!"}`, fqfield))
-				err = nil
-			}
+			hotKeys[fqfield] = recorder.Keys()
 		}()
 
 		parts := strings.SplitN(fqfield, "/", 3)
@@ -57,29 +51,27 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("invalid key %s, expected two '/'", fqfield)
 		}
 
-		data, keys, err := datastore.Object(
+		data := fetch.Object(
 			ctx,
-			ds,
 			parts[0]+"/"+parts[1],
-			[]string{
-				"id",
-				"type",
-				"content_object_id",
-				"meeting_id",
-				"options",
-			},
+			"id",
+			"type",
+			"content_object_id",
+			"meeting_id",
+			"options",
 		)
-		if err != nil {
+		if err := fetch.Err(); err != nil {
+			var errDoesNotExist datastore.DoesNotExistError
+			if errors.As(err, &errDoesNotExist) {
+
+				return nil, nil
+			}
 			return nil, fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
 		}
 
 		p7on, err := p7onFromMap(data)
 		if err != nil {
 			return nil, fmt.Errorf("loading p7on: %w", err)
-		}
-
-		if !p7on.exists() {
-			return nil, nil
 		}
 
 		slideName, err := p7on.slideName()
@@ -92,13 +84,40 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("unknown slide %s", slideName)
 		}
 
-		bs, slideKeys, err := slider.Slide(context.Background(), ds, p7on)
+		bs, err = slider.Slide(ctx, fetch, p7on)
 		if err != nil {
-			return nil, fmt.Errorf("calculating slide: %w", err)
+			return nil, fmt.Errorf("calculating slide %s for p7on %v: %w", slideName, p7on, err)
 		}
-		keys = append(keys, slideKeys...)
-		return bs, nil
+
+		if err := fetch.Err(); err != nil {
+			return nil, err
+		}
+
+		final, err := addCollection(bs, slideName)
+		if err != nil {
+			return nil, fmt.Errorf("adding name of collection %q to value %q: %w", slideName, bs, err)
+		}
+		return final, nil
 	})
+}
+
+// addCollection adds the collection addribute to the given encoded json.
+//
+// `bs` has to be a encoded json-object. `collection` has to be a valid json
+// string.
+func addCollection(bs []byte, collection string) ([]byte, error) {
+	var decoded map[string]json.RawMessage
+	if err := json.Unmarshal(bs, &decoded); err != nil {
+		return nil, fmt.Errorf("decoding object: %w", err)
+	}
+
+	decoded["collection"] = []byte(`"` + collection + `"`)
+
+	bs, err := json.Marshal(decoded)
+	if err != nil {
+		return nil, fmt.Errorf("encoding object: %w", err)
+	}
+	return bs, nil
 }
 
 // Projection holds the meta data to render a projection on a projecter.
@@ -121,10 +140,6 @@ func p7onFromMap(in map[string]json.RawMessage) (*Projection, error) {
 		return nil, fmt.Errorf("decoding projection: %w", err)
 	}
 	return &p, nil
-}
-
-func (p *Projection) exists() bool {
-	return p.Type != "" || p.ContentObjectID != ""
 }
 
 // slideName extracts the name from Projection.

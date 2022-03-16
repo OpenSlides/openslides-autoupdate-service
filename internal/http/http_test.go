@@ -14,49 +14,64 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 )
 
-type liverMock struct {
-	content io.Reader
+type connecterMock struct {
+	f autoupdate.DataProvider
 }
 
-func (m *liverMock) Live(ctx context.Context, uid int, w io.Writer, kb autoupdate.KeysBuilder) error {
-	io.Copy(w, m.content)
-	return nil
+func (c *connecterMock) Connect(userID int, kb autoupdate.KeysBuilder) autoupdate.DataProvider {
+	return c.f
 }
 
-func TestSimpleHandler(t *testing.T) {
+func TestKeysHandler(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	mux := http.NewServeMux()
-	liver := &liverMock{
-		content: strings.NewReader("content"),
+	connecter := &connecterMock{
+		func(ctx context.Context) (map[string][]byte, error) {
+			cancel()
+			return map[string][]byte{"foo": []byte(`"bar"`)}, nil
+		},
 	}
-	ahttp.Simple(mux, test.Auth(1), liver)
 
-	req, _ := http.NewRequest("GET", "/system/autoupdate/keys?user/1/name,user/2/name", nil)
-	req.ProtoMajor = 2
+	ahttp.Autoupdate(mux, test.Auth(1), connecter, nil)
+
+	req := httptest.NewRequest("GET", "/system/autoupdate?k=user/1/name,user/2/name", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 
 	res := rec.Result()
 
 	if res.StatusCode != 200 {
-		t.Errorf("Got status %s, expected %s", res.Status, http.StatusText(200))
+		t.Errorf("Got status %q, expected %q", res.Status, http.StatusText(200))
 	}
 
-	expect := "content"
+	expect := `{"foo":"bar"}` + "\n"
 	got, _ := io.ReadAll(res.Body)
 	if string(got) != expect {
-		t.Errorf("Got content `%s`, expected `%s`", got, expect)
+		t.Errorf("Got content %q, expected %q", got, expect)
 	}
 }
 
 func TestComplexHandler(t *testing.T) {
-	mux := http.NewServeMux()
-	liver := &liverMock{
-		content: strings.NewReader("content"),
-	}
-	ahttp.Complex(mux, test.Auth(1), new(test.DataProvider), liver)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	req, _ := http.NewRequest("GET", "/system/autoupdate", strings.NewReader(`[{"ids":[1],"collection":"user","fields":{"name":null}}]`))
-	req.ProtoMajor = 2
+	mux := http.NewServeMux()
+	connecter := &connecterMock{
+		func(ctx context.Context) (map[string][]byte, error) {
+			cancel()
+			return map[string][]byte{"foo": []byte(`"bar"`)}, nil
+		},
+	}
+
+	ahttp.Autoupdate(mux, test.Auth(1), connecter, nil)
+
+	req := httptest.NewRequest(
+		"GET",
+		"/system/autoupdate",
+		strings.NewReader(`[{"ids":[1],"collection":"user","fields":{"name":null}}]`),
+	).WithContext(ctx)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 
@@ -66,10 +81,10 @@ func TestComplexHandler(t *testing.T) {
 		t.Errorf("Got status %s, expected %s", res.Status, http.StatusText(200))
 	}
 
-	expect := "content"
+	expect := `{"foo":"bar"}` + "\n"
 	got, _ := io.ReadAll(res.Body)
 	if string(got) != expect {
-		t.Errorf("Got `%s`, expected `%s`", got, expect)
+		t.Errorf("Got %q, expected %q", got, expect)
 	}
 }
 
@@ -88,21 +103,18 @@ func TestHealth(t *testing.T) {
 	got, _ := io.ReadAll(rec.Body)
 	expect := `{"healthy": true}` + "\n"
 	if string(got) != expect {
-		t.Errorf("Got %s, expected %s", got, expect)
+		t.Errorf("Got %q, expected %q", got, expect)
 	}
 }
 
 func TestErrors(t *testing.T) {
 	mux := http.NewServeMux()
-	liver := &liverMock{
-		content: strings.NewReader(`"content"`),
-	}
-	db := &test.DataProvider{
-		Data: map[string]json.RawMessage{
-			"foo/1/name": []byte(`"hugo"`),
+	liver := &connecterMock{
+		func(ctx context.Context) (map[string][]byte, error) {
+			return map[string][]byte{"foo": []byte(`"bar"`)}, nil
 		},
 	}
-	ahttp.Complex(mux, test.Auth(1), db, liver)
+	ahttp.Autoupdate(mux, test.Auth(1), liver, nil)
 
 	for _, tt := range []struct {
 		name    string
@@ -111,17 +123,6 @@ func TestErrors(t *testing.T) {
 		errType string
 		errMsg  string
 	}{
-		{
-			"No Body",
-			httptest.NewRequest(
-				"",
-				"/system/autoupdate",
-				nil,
-			),
-			400,
-			`SyntaxError`,
-			`No data`,
-		},
 		{
 			"Empty List",
 			httptest.NewRequest(
@@ -153,7 +154,7 @@ func TestErrors(t *testing.T) {
 			),
 			400,
 			`SyntaxError`,
-			`no collection`,
+			`attribute collection is missing`,
 		},
 		{
 			"No list",
@@ -179,15 +180,15 @@ func TestErrors(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.request.ProtoMajor = 2
-			req := httptest.NewRecorder()
-			mux.ServeHTTP(req, tt.request)
+			resp := httptest.NewRecorder()
 
-			if req.Result().StatusCode != tt.status {
-				t.Errorf("Got status %s, expected %s", req.Result().Status, http.StatusText(tt.status))
+			mux.ServeHTTP(resp, tt.request)
+
+			if resp.Result().StatusCode != tt.status {
+				t.Errorf("Got status %s, expected %s", resp.Result().Status, http.StatusText(tt.status))
 			}
 
-			body, _ := io.ReadAll(req.Body)
+			body, _ := io.ReadAll(resp.Body)
 
 			var data struct {
 				Error struct {

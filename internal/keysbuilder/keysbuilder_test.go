@@ -2,21 +2,19 @@ package keysbuilder_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
 
 func TestKeys(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		request string
-		data    map[string]json.RawMessage
+		data    string
 		keys    []string
 	}{
 		{
@@ -26,7 +24,7 @@ func TestKeys(t *testing.T) {
 				"collection": "user",
 				"fields": {"name": null}
 			}`,
-			nil,
+			"",
 			strs("user/1/name"),
 		},
 		{
@@ -39,7 +37,7 @@ func TestKeys(t *testing.T) {
 					"last": null
 				}
 			}`,
-			nil,
+			"",
 			strs("user/1/first", "user/1/last"),
 		},
 		{
@@ -52,7 +50,7 @@ func TestKeys(t *testing.T) {
 					"last": null
 				}
 			}`,
-			nil,
+			"",
 			strs("user/1/first", "user/1/last", "user/2/first", "user/2/last"),
 		},
 		{
@@ -68,7 +66,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{"user/1/note_id": []byte("1")},
+			"user/1/note_id: 1",
 			strs("user/1/note_id", "note/1/important"),
 		},
 		{
@@ -84,7 +82,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{"user/1/group_ids": []byte("[1,2]")},
+			"user/1/group_ids: [1,2]",
 			strs("user/1/group_ids", "group/1/admin", "group/2/admin"),
 		},
 		{
@@ -106,10 +104,10 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{
-				"user/1/note_id":   []byte("1"),
-				"note/1/motion_id": []byte("1"),
-			},
+			`---
+			user/1/note_id: 1
+			note/1/motion_id: 1
+			`,
 			strs("user/1/note_id", "note/1/motion_id", "motion/1/name"),
 		},
 		{
@@ -131,11 +129,11 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{
-				"user/1/group_ids": []byte("[1,2]"),
-				"group/1/perm_ids": []byte("[1,2]"),
-				"group/2/perm_ids": []byte("[1,2]"),
-			},
+			`---
+			user/1/group_ids: [1,2]
+			group/1/perm_ids: [1,2]
+			group/2/perm_ids: [1,2]
+			`,
 			strs("user/1/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name"),
 		},
 		{
@@ -145,7 +143,7 @@ func TestKeys(t *testing.T) {
 				"collection": "user",
 				"fields": {"note_id": null}
 			}`,
-			nil,
+			"",
 			strs("user/1/note_id"),
 		},
 		{
@@ -161,7 +159,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			nil,
+			"",
 			strs("not_exist/1/note_id"),
 		},
 		{
@@ -177,7 +175,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			nil,
+			"",
 			strs("not_exist/1/group_ids"),
 		},
 		{
@@ -196,11 +194,12 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{
-				"user/1/group_$_ids":  []byte(`["1","2"]`),
-				"user/1/group_$1_ids": []byte("[1,2]"),
-				"user/1/group_$2_ids": []byte("[1,2]"),
-			},
+			`---
+			user/1:
+				group_$_ids:  ["1","2"]
+				group_$1_ids: [1,2]
+				group_$2_ids: [1,2]
+			`,
 			strs("user/1/group_$_ids", "user/1/group_$1_ids", "user/1/group_$2_ids", "group/1/name", "group/2/name"),
 		},
 		{
@@ -215,9 +214,7 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{
-				"user/1/likes": []byte(`"other/1"`),
-			},
+			"user/1/likes: other/1",
 			strs("user/1/likes", "other/1/name"),
 		},
 		{
@@ -238,10 +235,10 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{
-				"user/1/likes":    []byte(`"other/1"`),
-				"other/1/tag_ids": []byte("[1,2]"),
-			},
+			`---
+			user/1/likes:    other/1
+			other/1/tag_ids: [1,2]
+			`,
 			strs("user/1/likes", "other/1/tag_ids", "tag/1/name", "tag/2/name"),
 		},
 		{
@@ -256,20 +253,18 @@ func TestKeys(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{
-				"user/1/likes": []byte(`["other/1","other/2"]`),
-			},
+			`user/1/likes: ["other/1","other/2"]`,
 			strs("user/1/likes", "other/1/name", "other/2/name"),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			dataProvider := &test.DataProvider{Data: tt.data}
-			b, err := keysbuilder.FromJSON(strings.NewReader(tt.request), dataProvider, 1)
+			ds := dsmock.Stub(dsmock.YAMLData(tt.data))
+			b, err := keysbuilder.FromJSON(strings.NewReader(tt.request))
 			if err != nil {
 				t.Fatalf("FromJSON returned the unexpected error: %v", err)
 			}
 
-			if err := b.Update(context.Background()); err != nil {
+			if err := b.Update(context.Background(), ds); err != nil {
 				t.Fatalf("Building keys: %v", err)
 			}
 
@@ -286,8 +281,8 @@ func TestUpdate(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		request string
-		data    map[string]json.RawMessage
-		newData map[string]json.RawMessage
+		data    string
+		newData string
 		got     []string
 		count   int
 	}{
@@ -304,8 +299,8 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{"user/1/note_id": []byte("1")},
-			map[string]json.RawMessage{"user/1/note_id": []byte("2")},
+			"user/1/note_id: 1",
+			"user/1/note_id: 2",
 			strs("user/1/note_id", "note/2/important"),
 			1,
 		},
@@ -322,8 +317,8 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{"user/1/note_id": []byte("1")},
-			map[string]json.RawMessage{"user/1/note_id": []byte("1")},
+			"user/1/note_id: 1",
+			"user/1/note_id: 1",
 			strs("user/1/note_id", "note/1/important"),
 			0,
 		},
@@ -340,8 +335,14 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{"user/1/note_id": []byte("1"), "user/2/note_id": []byte("1")},
-			map[string]json.RawMessage{"user/1/note_id": []byte("2"), "user/2/note_id": []byte("1")},
+			`---
+			user/1/note_id: 1
+			user/2/note_id: 1
+			`,
+			`---
+			user/1/note_id: 2
+			user/2/note_id: 1
+			`,
 			strs("user/1/note_id", "user/2/note_id", "note/1/important", "note/2/important"),
 			1,
 		},
@@ -363,16 +364,16 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{
-				"user/1/note_id":   []byte("1"),
-				"user/1/group_ids": []byte("[1,2]"),
-				"user/2/group_ids": []byte("[1,2]"),
-			},
-			map[string]json.RawMessage{
-				"user/1/note_id":   []byte("2"),
-				"user/1/group_ids": []byte("[1,2]"),
-				"user/2/group_ids": []byte("[1,2]"),
-			},
+			`---
+			user/1/note_id:   1
+			user/1/group_ids: [1,2]
+			user/2/group_ids: [1,2]
+			`,
+			`---
+			user/1/note_id:   2
+			user/1/group_ids: [1,2]
+			user/2/group_ids: [1,2]
+			`,
 			strs("user/1/note_id", "user/1/group_ids", "note/2/important", "group/1/admin", "group/2/admin"),
 			1,
 		},
@@ -394,8 +395,14 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{"user/1/note_id": []byte("1"), "group_ids": []byte("[1,2]")},
-			map[string]json.RawMessage{"user/1/note_id": []byte("2"), "user/1/group_ids": []byte("[2]")},
+			`---
+			user/1/note_id: 1
+			user/1/group_ids: [1,2]
+			`,
+			`---
+			user/1/note_id: 2
+			user/1/group_ids: [2]
+			`,
 			strs("user/1/note_id", "note/2/important", "user/1/group_ids", "group/2/admin"),
 			2,
 		},
@@ -418,29 +425,33 @@ func TestUpdate(t *testing.T) {
 					}
 				}
 			}`,
-			map[string]json.RawMessage{
-				"user/1/group_ids": []byte("[1,2]"),
-				"group/1/perm_ids": []byte("[1,2]"),
-				"group/2/perm_ids": []byte("[1,2]"),
-			},
-			map[string]json.RawMessage{
-				"user/1/group_ids": []byte("[2]"),
-				"group/1/perm_ids": []byte("[1,2]"),
-				"group/2/perm_ids": []byte("[1,2]"),
-			},
+			`---
+			user/1/group_ids: [1,2]
+			group/1/perm_ids: [1,2]
+			group/2/perm_ids: [1,2]
+			`,
+			`---
+			user/1/group_ids: [2]
+			group/1/perm_ids: [1,2]
+			group/2/perm_ids: [1,2]
+			`,
 			strs("user/1/group_ids", "group/2/perm_ids", "perm/2/name", "perm/1/name"),
 			1,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			dataProvider := &test.DataProvider{Data: tt.data}
-			b, err := keysbuilder.FromJSON(strings.NewReader(tt.request), dataProvider, 1)
+			ds := dsmock.Stub(dsmock.YAMLData(tt.data))
+			b, err := keysbuilder.FromJSON(strings.NewReader(tt.request))
 			if err != nil {
 				t.Fatalf("FromJSON() returned an unexpected error: %v", err)
 			}
-			dataProvider.Data = tt.newData
+			if err := b.Update(context.Background(), ds); err != nil {
+				t.Errorf("Update() returned an unexpect error: %v", err)
+			}
 
-			if err := b.Update(context.Background()); err != nil {
+			ds = dsmock.Stub(dsmock.YAMLData(tt.newData))
+
+			if err := b.Update(context.Background(), ds); err != nil {
 				t.Errorf("Update() returned an unexpect error: %v", err)
 			}
 
@@ -471,28 +482,30 @@ func TestConcurency(t *testing.T) {
 		}
 
 	}`
-	data := map[string]json.RawMessage{
-		"user/1/group_ids": []byte("[1,2]"),
-		"user/2/group_ids": []byte("[1,2]"),
-		"user/3/group_ids": []byte("[1,2]"),
-		"group/1/perm_ids": []byte("[1,2]"),
-		"group/2/perm_ids": []byte("[1,2]"),
-	}
-	dataProvider := &test.DataProvider{Data: data, Sleep: 10 * time.Millisecond}
-	start := time.Now()
-	b, err := keysbuilder.FromJSON(strings.NewReader(jsonData), dataProvider, 1)
+
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), dsmock.YAMLData(`---
+	user/1/group_ids: [1,2]
+	user/2/group_ids: [1,2]
+	user/3/group_ids: [1,2]
+	group/1/perm_ids: [1,2]
+	group/2/perm_ids: [1,2]
+	`))
+
+	b, err := keysbuilder.FromJSON(strings.NewReader(jsonData))
 	if err != nil {
 		t.Fatalf("Expected FromJSON() not to return an error, got: %v", err)
 	}
-	if err := b.Update(context.Background()); err != nil {
+	if err := b.Update(context.Background(), ds); err != nil {
 		t.Fatalf("Building keys: %v", err)
 	}
 
-	finished := time.Since(start)
-
-	if finished > 30*time.Millisecond {
-		t.Errorf("Expect keysbuilder to run in less then 30 Milliseconds, got: %v", finished)
+	if got := len(ds.Requests()); got != 2 {
+		t.Errorf("Got %d requests to the datastore, expected 2: %v", got, ds.Requests())
 	}
+
 	expect := strs("user/1/group_ids", "user/2/group_ids", "user/3/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name")
 	if diff := cmpSet(set(expect...), set(b.Keys()...)); diff != nil {
 		t.Errorf("Expected %v, got: %v", expect, diff)
@@ -528,23 +541,23 @@ func TestManyRequests(t *testing.T) {
 			}
 		}
 	]`
-	data := map[string]json.RawMessage{
-		"user/1/note_id": []byte("1"),
-		"user/2/note_id": []byte("1"),
-	}
-	dataProvider := &test.DataProvider{Data: data, Sleep: 10 * time.Millisecond}
-	start := time.Now()
-	b, err := keysbuilder.ManyFromJSON(strings.NewReader(jsonData), dataProvider, 1)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), dsmock.YAMLData(`---
+	user/1/note_id: 1
+	user/2/note_id: 1
+	`))
+
+	b, err := keysbuilder.ManyFromJSON(strings.NewReader(jsonData))
 	if err != nil {
 		t.Fatalf("FromJSON() returned an unexpected error: %v", err)
 	}
-	if err := b.Update(context.Background()); err != nil {
+	if err := b.Update(context.Background(), ds); err != nil {
 		t.Fatalf("Building keys: %v", err)
 	}
 
-	finished := time.Since(start)
-	if finished > 20*time.Millisecond {
-		t.Errorf("ManyFromJON() took %v, expected less then 20 Milliseconds", finished)
+	if got := len(ds.Requests()); got != 1 {
+		t.Errorf("Got %d requests, expected 1: %v", got, ds.Requests())
 	}
 
 	expect := strs("user/1/note_id", "user/2/note_id", "motion/1/name", "note/1/important")
@@ -554,6 +567,10 @@ func TestManyRequests(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), nil)
+	ds.InjectError(errors.New("Some Error"))
 	json := `
 	{
 		"ids": [1],
@@ -566,32 +583,31 @@ func TestError(t *testing.T) {
 			}
 		}
 	}`
-	dataProvider := &test.DataProvider{Err: errors.New("Some Error"), Sleep: 10 * time.Millisecond}
 
-	start := time.Now()
-	b, err := keysbuilder.FromJSON(strings.NewReader(json), dataProvider, 1)
+	b, err := keysbuilder.FromJSON(strings.NewReader(json))
 	if err != nil {
 		t.Fatalf("Got unexpected error: %v", err)
-
 	}
-	if err := b.Update(context.Background()); err == nil {
+
+	if err := b.Update(context.Background(), ds); err == nil {
 		t.Fatalf("Expected Update() to return an error, got none")
 	}
-	finished := time.Since(start)
 
-	if finished > 20*time.Millisecond {
-		t.Errorf("Expect keysbuilder to run in less then 20 Milliseconds, got: %v", finished)
+	if got := len(ds.Requests()); got != 0 {
+		t.Errorf("Got %d requests, expected 0: %v", got, ds.Requests())
 	}
 }
 
 func TestRequestCount(t *testing.T) {
-	dataProvider := new(test.DataProvider)
+	shutdownCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), nil)
 	json := `{
 		"ids": [1],
 		"collection": "user",
 		"fields": {
 			"name": null,
-			"goodLocking": null,
+			"goodlooking": null,
 			"note_ids": {
 				"type": "relation-list",
 				"collection": "note",
@@ -600,7 +616,7 @@ func TestRequestCount(t *testing.T) {
 					"text": null
 				}
 			},
-			"main-group": {
+			"main_group": {
 				"type": "relation",
 				"collection": "note",
 				"fields": {
@@ -610,53 +626,15 @@ func TestRequestCount(t *testing.T) {
 			}
 		}
 	}`
-	b, err := keysbuilder.FromJSON(strings.NewReader(json), dataProvider, 1)
+	b, err := keysbuilder.FromJSON(strings.NewReader(json))
 	if err != nil {
 		t.Fatalf("FromJSON returned unexpected error: %v", err)
 	}
-	if err := b.Update(context.Background()); err != nil {
+	if err := b.Update(context.Background(), ds); err != nil {
 		t.Fatalf("Building keys: %v", err)
 	}
 
-	if dataProvider.RequestCount != 1 {
-		t.Errorf("Updated() did %d requests, expected 1", dataProvider.RequestCount)
-	}
-}
-
-func TestLazy(t *testing.T) {
-	dataProvider := new(test.DataProvider)
-	dataProvider.Data = map[string]json.RawMessage{
-		"user/1/note_id": []byte("1"),
-	}
-
-	jsonData := `{
-		"ids": [1],
-		"collection": "user",
-		"fields": {
-			"note_id": {
-				"type": "relation",
-				"collection": "note",
-				"fields": {"important": null}
-			}
-		}
-	}`
-
-	b, err := keysbuilder.FromJSON(strings.NewReader(jsonData), dataProvider, 1)
-	if err != nil {
-		t.Fatalf("Got unexpected error: %v", err)
-	}
-
-	// Change data after kb was created
-	dataProvider.Data = map[string]json.RawMessage{
-		"user/1/note_id": []byte("2"),
-	}
-
-	if err := b.Update(context.Background()); err != nil {
-		t.Fatalf("Building keys: %v", err)
-	}
-
-	expect := "note/2/important"
-	if got := b.Keys()[1]; got != expect {
-		t.Errorf("Got %s, expected %s", got, expect)
+	if got := len(ds.Requests()); got != 1 {
+		t.Errorf("Updated() did %d requests, expected 1", got)
 	}
 }
