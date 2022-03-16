@@ -599,7 +599,6 @@ var exampleData = map[string]json.RawMessage{
 	"meeting/1/default_projector_$user_id":                     []byte(`1`),
 	"meeting/1/description":                                    []byte(`"Presentation and assembly system"`),
 	"meeting/1/enable_anonymous":                               []byte(`false`),
-	"meeting/1/enable_chat":                                    []byte(`true`),
 	"meeting/1/export_csv_encoding":                            []byte(`"utf-8"`),
 	"meeting/1/export_csv_separator":                           []byte(`","`),
 	"meeting/1/export_pdf_fontsize":                            []byte(`10`),
