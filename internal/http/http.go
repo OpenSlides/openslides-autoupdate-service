@@ -70,11 +70,6 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, met
 
 		builder := keysbuilder.FromBuilders(queryBuilder, bodyBuilder)
 
-		single := false
-		if r.URL.Query().Has("single") {
-			single = true
-		}
-
 		rawPosition := r.URL.Query().Get("position")
 		position := 0
 		if rawPosition != "" {
@@ -86,7 +81,7 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, met
 			position = p
 		}
 
-		if single || position != 0 {
+		if r.URL.Query().Has("single") || position != 0 {
 			data, err := connecter.SingleData(r.Context(), uid, builder, position)
 			if err != nil {
 				handleError(w, fmt.Errorf("getting single data: %w", err), true)
