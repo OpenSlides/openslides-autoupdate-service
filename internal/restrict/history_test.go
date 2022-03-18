@@ -96,7 +96,7 @@ func TestHistoryGetter(t *testing.T) {
 				group_$2_ids: [3]
 				meeting_ids: [2]
 			group/3/permissions: ["meeting.can_see_history"]
-			meeting/2/id: 2
+			meeting/2/admin_group_id: 3
 
 			`,
 			`topic/5/meeting_id: 2`,
@@ -110,7 +110,7 @@ func TestHistoryGetter(t *testing.T) {
 				group_$2_ids: [3]
 				meeting_ids: [2]
 			group/3/permissions: ["meeting.can_see_history"]
-			meeting/2/id: 2
+			meeting/2/admin_group_id: 3
 			`,
 			`topic/5/meeting_id: 404`,
 			[]string{"topic/5/title"},
@@ -123,7 +123,7 @@ func TestHistoryGetter(t *testing.T) {
 				group_$2_ids: [3]
 				meeting_ids: [2]
 			group/3/permissions: ["meeting.can_see_history"]
-			meeting/2/id: 2
+			meeting/2/admin_group_id: 3
 			`,
 			``,
 			[]string{"theme/5/name"},
@@ -136,7 +136,7 @@ func TestHistoryGetter(t *testing.T) {
 				group_$2_ids: [3]
 				meeting_ids: [2]
 			group/3/permissions: ["meeting.can_see_history"]
-			meeting/2/id: 2
+			meeting/2/admin_group_id: 3
 			`,
 			``,
 			[]string{"committee/5/name"},
@@ -149,7 +149,7 @@ func TestHistoryGetter(t *testing.T) {
 				group_$2_ids: [3]
 				meeting_ids: [2]
 			group/3/permissions: ["meeting.can_see_history"]
-			meeting/2/id: 2
+			meeting/2/admin_group_id: 3
 			`,
 			`---
 			user/50:
@@ -165,7 +165,7 @@ func TestHistoryGetter(t *testing.T) {
 				group_$2_ids: [3]
 				meeting_ids: [2]
 			group/3/permissions: ["meeting.can_see_history"]
-			meeting/2/id: 2
+			meeting/2/admin_group_id: 3
 			`,
 			``,
 			[]string{"unknown/50/name"},
