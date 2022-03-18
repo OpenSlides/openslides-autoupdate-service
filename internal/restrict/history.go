@@ -13,8 +13,7 @@ import (
 
 // History filters the keys for the history.
 //
-// It checks the organization management level or the perm `can_see_history` to
-// check the permissions.
+// It checks if the request User is organization manager or is admin in a meeting.
 type History struct {
 	userID        int
 	currentGetter datastore.Getter
@@ -27,6 +26,9 @@ func NewHistory(userID int, current datastore.Getter, old datastore.Getter) Hist
 }
 
 // Get returns the keys the user can see.
+//
+// In summary, a organization manager can see nearly all keys. A meeting admin
+// can see all keys, that belong to there meeting.
 func (h History) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
 	if h.userID == 0 {
 		return nil, nil
@@ -41,24 +43,24 @@ func (h History) Get(ctx context.Context, keys ...string) (map[string][]byte, er
 		return nil, fmt.Errorf("check orga management permission: %w", err)
 	}
 
-	requestUserMeetings, err := currentDS.User_MeetingIDs(h.userID).Value(ctx)
+	requestUserMeetingIDs, err := currentDS.User_MeetingIDs(h.userID).Value(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting relevant meeting ids: %w", err)
 	}
 
-	canSeeHistoryMeetings := make(map[int]struct{}, len(requestUserMeetings))
-	for _, meetingID := range requestUserMeetings {
+	adminInMeeting := make(map[int]struct{}, len(requestUserMeetingIDs))
+	for _, meetingID := range requestUserMeetingIDs {
 		p, err := mperms.Meeting(ctx, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
 		}
 
-		if p.Has(perm.MeetingCanSeeHistory) {
-			canSeeHistoryMeetings[meetingID] = struct{}{}
+		if p.IsAdmin() {
+			adminInMeeting[meetingID] = struct{}{}
 		}
 	}
 
-	if len(canSeeHistoryMeetings) == 0 && !orgaManager {
+	if len(adminInMeeting) == 0 && !orgaManager {
 		return nil, nil
 	}
 
@@ -96,7 +98,7 @@ func (h History) Get(ctx context.Context, keys ...string) (map[string][]byte, er
 		}
 
 		if hasMeeting {
-			if _, ok := canSeeHistoryMeetings[meetingID]; ok {
+			if _, ok := adminInMeeting[meetingID]; ok {
 				allowedKeys = append(allowedKeys, key)
 			}
 			continue
@@ -118,7 +120,7 @@ func (h History) Get(ctx context.Context, keys ...string) (map[string][]byte, er
 				}
 
 				for _, meetingID := range meetingIDs {
-					if _, ok := canSeeHistoryMeetings[meetingID]; ok {
+					if _, ok := adminInMeeting[meetingID]; ok {
 						allowedKeys = append(allowedKeys, key)
 					}
 				}
