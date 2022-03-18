@@ -67,64 +67,13 @@ func (h History) Get(ctx context.Context, keys ...string) (map[string][]byte, er
 	allowedKeys := make([]string, 0, len(keys))
 
 	for _, key := range keys {
-		coll, id, field, err := collectionIDField(key)
+		canSee, err := h.canSeeKey(ctx, oldDS, currentDS, orgaManager, adminInMeeting, key)
 		if err != nil {
-			return nil, fmt.Errorf("splitting key: %w", err)
-		}
-		if coll == "user" && field == "password" {
-			continue
+			return nil, fmt.Errorf("checking key %s: %w", key, err)
 		}
 
-		if coll == "personal_note" {
-			personalNoteUser, err := oldDS.PersonalNote_UserID(id).Value(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("getting personal note user: %w", err)
-			}
-
-			if personalNoteUser == h.userID {
-				allowedKeys = append(allowedKeys, key)
-			}
-			continue
-		}
-
-		if orgaManager {
+		if canSee {
 			allowedKeys = append(allowedKeys, key)
-			continue
-		}
-
-		meetingID, hasMeeting, err := collection.Collection(coll).MeetingID(ctx, oldDS, id)
-		if err != nil {
-			return nil, fmt.Errorf("getting meeting id: %w", err)
-		}
-
-		if hasMeeting {
-			if _, ok := adminInMeeting[meetingID]; ok {
-				allowedKeys = append(allowedKeys, key)
-			}
-			continue
-		}
-
-		if coll == "theme" || coll == "organization" || coll == "organization_tag" || coll == "mediafile" {
-			allowedKeys = append(allowedKeys, key)
-		}
-
-		if coll == "committee" {
-			continue
-		}
-
-		if coll == "user" {
-			for _, r := range (collection.User{}).RequiredObjects(oldDS) {
-				meetingIDs, err := r.TmplFunc(id).Value(ctx)
-				if err != nil {
-					return nil, fmt.Errorf("getting meeting ids for %s: %w", r.Name, err)
-				}
-
-				for _, meetingID := range meetingIDs {
-					if _, ok := adminInMeeting[meetingID]; ok {
-						allowedKeys = append(allowedKeys, key)
-					}
-				}
-			}
 		}
 	}
 
@@ -133,6 +82,72 @@ func (h History) Get(ctx context.Context, keys ...string) (map[string][]byte, er
 		return nil, fmt.Errorf("get data from history getter: %w", err)
 	}
 	return data, nil
+}
+
+func (h History) canSeeKey(
+	ctx context.Context,
+	oldDS,
+	currentDS *datastore.Request,
+	isOrgaManager bool,
+	adminInMeeting map[int]struct{},
+	key string,
+) (bool, error) {
+	coll, id, field, err := collectionIDField(key)
+	if err != nil {
+		return false, fmt.Errorf("splitting key: %w", err)
+	}
+
+	if coll == "user" && field == "password" {
+		return false, nil
+	}
+
+	if coll == "personal_note" {
+		personalNoteUser, err := oldDS.PersonalNote_UserID(id).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting personal note user: %w", err)
+		}
+
+		return personalNoteUser == h.userID, nil
+	}
+
+	if isOrgaManager {
+		return true, nil
+	}
+
+	if coll == "theme" || coll == "organization" || coll == "organization_tag" || coll == "mediafile" {
+		return true, nil
+	}
+
+	if coll == "committee" {
+		return false, nil
+	}
+
+	meetingID, hasMeeting, err := collection.Collection(coll).MeetingID(ctx, oldDS, id)
+	if err != nil {
+		return false, fmt.Errorf("getting meeting id: %w", err)
+	}
+
+	if hasMeeting {
+		_, isAdmin := adminInMeeting[meetingID]
+		return isAdmin, nil
+	}
+
+	if coll == "user" {
+		for _, r := range (collection.User{}).RequiredObjects(oldDS) {
+			meetingIDs, err := r.TmplFunc(id).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting meeting ids for %s: %w", r.Name, err)
+			}
+
+			for _, meetingID := range meetingIDs {
+				if _, ok := adminInMeeting[meetingID]; ok {
+					return true, nil
+				}
+			}
+		}
+	}
+
+	return false, nil
 }
 
 func collectionIDField(key string) (string, int, string, error) {
