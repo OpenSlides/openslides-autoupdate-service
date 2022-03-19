@@ -9,8 +9,14 @@ package autoupdate
 import (
 	"context"
 	"fmt"
+	"io"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/ostcar/topic"
 )
@@ -93,6 +99,29 @@ func (a *Autoupdate) Connect(userID int, kb KeysBuilder) DataProvider {
 	return c.Next
 }
 
+// SingleData returns the data for the kb. It is the same as calling Connect and
+// then Next for the first time.
+func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder, position int) (map[string][]byte, error) {
+	var getter datastore.Getter = a.datastore
+	var restricter datastore.Getter = a.restricter(getter, userID)
+
+	if position != 0 {
+		getter = datastore.NewGetPosition(a.datastore, position)
+		restricter = restrict.NewHistory(userID, a.datastore, getter)
+	}
+
+	if err := kb.Update(ctx, restricter); err != nil {
+		return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
+	}
+
+	data, err := restricter.Get(ctx, kb.Keys()...)
+	if err != nil {
+		return nil, fmt.Errorf("get restricted data: %w", err)
+	}
+
+	return data, nil
+}
+
 // LastID returns the id of the last data update.
 func (a *Autoupdate) LastID() uint64 {
 	return a.topic.LastID()
@@ -130,4 +159,62 @@ func (a *Autoupdate) ResetCache(ctx context.Context) {
 			a.topic.Publish(fmt.Sprintf(fullUpdateFormat, -1))
 		}
 	}
+}
+
+// HistoryInformation writes the history information for an fqid.
+func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid string, w io.Writer) error {
+	coll, rawID, found := strings.Cut(fqid, "/")
+	if !found {
+		return fmt.Errorf("invalid fqid")
+	}
+
+	id, err := strconv.Atoi(rawID)
+	if err != nil {
+		return fmt.Errorf("invalid fqid. ID part is not an int")
+	}
+
+	ds := datastore.NewRequest(a.datastore)
+
+	meetingID, hasMeeting, err := collection.Collection(coll).MeetingID(ctx, ds, id)
+	if err != nil {
+		return fmt.Errorf("getting meeting id for collection %s id %d: %w", coll, id, err)
+	}
+
+	if !hasMeeting {
+		hasOML, err := perm.HasOrganizationManagementLevel(ctx, ds, uid, perm.OMLCanManageOrganization)
+		if err != nil {
+			return fmt.Errorf("getting organization management level: %w", err)
+		}
+
+		if !hasOML {
+			return permissionDeniedError{fmt.Errorf("you are not allowed to use history information on %s", fqid)}
+		}
+	} else {
+		p, err := perm.New(ctx, ds, uid, meetingID)
+		if err != nil {
+			return fmt.Errorf("getting meeting permissions: %w", err)
+		}
+
+		if !p.Has(perm.MeetingCanSeeHistory) {
+			return permissionDeniedError{fmt.Errorf("you are not allowed to use history information on %s", fqid)}
+		}
+	}
+
+	if err := a.datastore.HistoryInformation(ctx, fqid, w); err != nil {
+		return fmt.Errorf("getting history information: %w", err)
+	}
+
+	return nil
+}
+
+type permissionDeniedError struct {
+	err error
+}
+
+func (e permissionDeniedError) Error() string {
+	return fmt.Sprintf("permissoin denied: %v", e.err)
+}
+
+func (e permissionDeniedError) Type() string {
+	return "permission_denied"
 }

@@ -17,6 +17,16 @@ import (
 // Mode A: The user can see the personal note.
 type PersonalNote struct{}
 
+// MeetingID returns the meetingID for the object.
+func (p PersonalNote) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	meetingID, err := ds.PersonalNote_MeetingID(id).Value(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("getting meetingID: %w", err)
+	}
+
+	return meetingID, true, nil
+}
+
 // Modes returns the field restriction for each mode.
 func (p PersonalNote) Modes(mode string) FieldRestricter {
 	switch mode {

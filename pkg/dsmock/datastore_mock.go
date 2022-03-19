@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 
@@ -114,7 +115,7 @@ func NewMockDatastore(closed <-chan struct{}, data map[string][]byte) *MockDatas
 	source := NewStubWithUpdate(data, NewCounter)
 	ds := &MockDatastore{
 		source:    source,
-		Datastore: datastore.New(source, nil),
+		Datastore: datastore.New(source, nil, source),
 	}
 
 	ds.counter = source.Middlewares()[0].(*Counter)
@@ -144,6 +145,12 @@ func (d *MockDatastore) Requests() [][]string {
 // ResetRequests resets the list returned by Requests().
 func (d *MockDatastore) ResetRequests() {
 	d.counter.Reset()
+}
+
+// HistoryInformation writes a fake history.
+func (d *MockDatastore) HistoryInformation(ctx context.Context, fqid string, w io.Writer) error {
+	w.Write([]byte(`[{"position":42,"user_id": 5,"information": "motion was created","timestamp: 1234567}]`))
+	return nil
 }
 
 // KeysRequested returns true, if all given keys where requested.

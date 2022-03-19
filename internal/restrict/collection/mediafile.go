@@ -26,6 +26,30 @@ import (
 // Mode A: The user can see the mediafile.
 type Mediafile struct{}
 
+// MeetingID returns the meetingID for the object.
+func (m Mediafile) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	genericOwnerID, err := ds.Mediafile_OwnerID(id).Value(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("fetching owner_id of mediafile %d: %w", id, err)
+	}
+
+	collection, rawID, found := strings.Cut(genericOwnerID, "/")
+	if !found {
+		return 0, false, fmt.Errorf("invalid ownerID: %s", genericOwnerID)
+	}
+
+	if collection != "meeting" {
+		return 0, false, nil
+	}
+
+	ownerID, err := strconv.Atoi(rawID)
+	if err != nil {
+		return 0, false, fmt.Errorf("invalid id part of ownerID: %s", genericOwnerID)
+	}
+
+	return ownerID, true, nil
+}
+
 // Modes returns the field modes for the collection mediafile.
 func (m Mediafile) Modes(mode string) FieldRestricter {
 	switch mode {

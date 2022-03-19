@@ -15,6 +15,16 @@ import (
 // Mode A: The user can see the tag.
 type Tag struct{}
 
+// MeetingID returns the meetingID for the object.
+func (t Tag) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	meetingID, err := ds.Tag_MeetingID(id).Value(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("get meeting id: %w", err)
+	}
+
+	return meetingID, true, nil
+}
+
 // Modes returns the field restriction for each mode.
 func (t Tag) Modes(mode string) FieldRestricter {
 	switch mode {

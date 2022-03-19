@@ -3,6 +3,7 @@ package dsmock
 import (
 	"context"
 	"fmt"
+	"io"
 	"sync"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -94,6 +95,12 @@ func (s *StubWithUpdate) Send(values map[string][]byte) {
 //     counter := ds.Middlewares()[0].(*dsmock.Counter)
 func (s *StubWithUpdate) Middlewares() []datastore.Getter {
 	return s.middlewares
+}
+
+// HistoryInformation writes a fake history.
+func (s *StubWithUpdate) HistoryInformation(ctx context.Context, fqid string, w io.Writer) error {
+	w.Write([]byte(`[{"position":42,"user_id": 5,"information": "motion was created","timestamp: 1234567}]`))
+	return nil
 }
 
 // Counter counts all keys that where requested.

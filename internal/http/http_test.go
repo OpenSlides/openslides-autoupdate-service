@@ -3,6 +3,7 @@ package http_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -20,6 +21,10 @@ type connecterMock struct {
 
 func (c *connecterMock) Connect(userID int, kb autoupdate.KeysBuilder) autoupdate.DataProvider {
 	return c.f
+}
+
+func (c *connecterMock) SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[string][]byte, error) {
+	return c.f(ctx)
 }
 
 func TestKeysHandler(t *testing.T) {
@@ -109,12 +114,12 @@ func TestHealth(t *testing.T) {
 
 func TestErrors(t *testing.T) {
 	mux := http.NewServeMux()
-	liver := &connecterMock{
+	connecter := &connecterMock{
 		func(ctx context.Context) (map[string][]byte, error) {
 			return map[string][]byte{"foo": []byte(`"bar"`)}, nil
 		},
 	}
-	ahttp.Autoupdate(mux, test.Auth(1), liver, nil)
+	ahttp.Autoupdate(mux, test.Auth(1), connecter, nil)
 
 	for _, tt := range []struct {
 		name    string
@@ -208,5 +213,94 @@ func TestErrors(t *testing.T) {
 				t.Errorf("Got error message `%s`, expected %s", data.Error.Msg, tt.errMsg)
 			}
 		})
+	}
+}
+
+type HistoryInformationStub struct {
+	uid   int
+	fqid  string
+	write string
+	err   error
+}
+
+func (h *HistoryInformationStub) HistoryInformation(ctx context.Context, uid int, fqid string, w io.Writer) error {
+	h.uid = uid
+	h.fqid = fqid
+	if h.write != "" {
+		w.Write([]byte(h.write))
+	}
+	return h.err
+}
+
+func TestHistoryInformation(t *testing.T) {
+	mux := http.NewServeMux()
+	hi := &HistoryInformationStub{
+		write: "my information",
+	}
+	ahttp.HistoryInformation(mux, test.Auth(1), hi)
+
+	resp := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/system/autoupdate/history_information?fqid=motion/42", nil)
+
+	mux.ServeHTTP(resp, req)
+
+	if resp.Result().StatusCode != 200 {
+		t.Errorf("got status %s, expected %s", resp.Result().Status, http.StatusText(http.StatusOK))
+	}
+
+	if body, _ := io.ReadAll(resp.Result().Body); string(body) != "my information" {
+		t.Errorf("got body %s, expected `my information`", body)
+	}
+
+	if hi.uid != 1 {
+		t.Errorf("hi was called with user %d, expected 1", hi.uid)
+	}
+
+	if hi.fqid != "motion/42" {
+		t.Errorf("hi was called with `%s`, expected `motion/42`", hi.fqid)
+	}
+}
+
+func TestHistoryInformationNoFQID(t *testing.T) {
+	mux := http.NewServeMux()
+	hi := &HistoryInformationStub{
+		write: "my information",
+	}
+	ahttp.HistoryInformation(mux, test.Auth(1), hi)
+
+	resp := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/system/autoupdate/history_information", nil)
+
+	mux.ServeHTTP(resp, req)
+
+	if resp.Result().StatusCode != 400 {
+		t.Errorf("got status %s, expected %s", resp.Result().Status, http.StatusText(http.StatusBadRequest))
+	}
+
+	expect := `{"error": {"type": "invalid_request", "msg": "Invalid request: History Information needs an fqid"}}`
+	if body, _ := io.ReadAll(resp.Result().Body); string(body) != expect {
+		t.Errorf("got body `%s`, expected `%s`", body, expect)
+	}
+}
+
+func TestHistoryInformationError(t *testing.T) {
+	mux := http.NewServeMux()
+	hi := &HistoryInformationStub{
+		err: fmt.Errorf("my error"),
+	}
+	ahttp.HistoryInformation(mux, test.Auth(1), hi)
+
+	resp := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/system/autoupdate/history_information?fqid=motion/42", nil)
+
+	mux.ServeHTTP(resp, req)
+
+	if resp.Result().StatusCode != 500 {
+		t.Errorf("got status %s, expected %s", resp.Result().Status, http.StatusText(http.StatusInternalServerError))
+	}
+
+	expect := `{"error": {"type": "InternalError", "msg": "Ups, something went wrong!"}}`
+	if body, _ := io.ReadAll(resp.Result().Body); strings.TrimSpace(string(body)) != expect {
+		t.Errorf("got body `%s`, expected `%s`", body, expect)
 	}
 }

@@ -18,6 +18,16 @@ import (
 // Mode B: The has assignment.can_see.
 type Assignment struct{}
 
+// MeetingID returns the meetingID for the object.
+func (a Assignment) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	meetingID, err := a.meetingID(ctx, ds, id)
+	if err != nil {
+		return 0, false, fmt.Errorf("getting meetingID: %w", err)
+	}
+
+	return meetingID, true, nil
+}
+
 // Modes returns the restricter for the a restriction mode.
 func (a Assignment) Modes(mode string) FieldRestricter {
 	switch mode {

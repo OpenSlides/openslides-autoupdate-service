@@ -15,6 +15,16 @@ import (
 // Group A: The user can see the projector countdown.
 type ProjectorCountdown struct{}
 
+// MeetingID returns the meetingID for the object.
+func (p ProjectorCountdown) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	meetingID, err := ds.ProjectorCountdown_MeetingID(id).Value(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("getting meetingID: %w", err)
+	}
+
+	return meetingID, true, nil
+}
+
 // Modes returns the restrictions modes for the meeting collection.
 func (p ProjectorCountdown) Modes(mode string) FieldRestricter {
 	switch mode {
