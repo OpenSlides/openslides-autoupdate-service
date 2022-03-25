@@ -204,6 +204,8 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 		return fmt.Errorf("getting history information: %w", err)
 	}
 
+	fmt.Fprintln(w)
+
 	return nil
 }
 
