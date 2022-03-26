@@ -13,6 +13,7 @@ COPY pkg pkg
 # Build service in seperate stage.
 FROM base as builder
 RUN CGO_ENABLED=0 go build ./cmd/autoupdate
+RUN CGO_ENABLED=0 go build ./cmd/healthcheck
 
 
 # Test build.
@@ -43,7 +44,9 @@ LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-autoupdate-service"
 
 COPY --from=builder /root/autoupdate .
+COPY --from=builder /root/healthcheck .
 EXPOSE 9012
 ENV MESSAGING redis
 ENV AUTH ticket
 ENTRYPOINT ["/autoupdate"]
+HEALTHCHECK CMD ["/healthcheck"]

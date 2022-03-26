@@ -100,6 +100,10 @@ func errHandler(err error) {
 		return
 	}
 
+	if errors.Is(err, context.Canceled) {
+		return
+	}
+
 	var errNet *net.OpError
 	if errors.As(err, &errNet) {
 		if errNet.Op == "dial" {

@@ -1,6 +1,7 @@
 /autoupdate
 /performance
 /datastore
+/healthcheck
 cert
 .vscode
 workspace.code-workspace
