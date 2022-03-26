@@ -47,6 +47,11 @@ import (
 // Mode G: No one. Not even the superadmin.
 type User struct{}
 
+// MeetingID returns the meetingID for the object.
+func (u User) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	return 0, false, nil
+}
+
 // Modes returns the field restriction for each mode.
 func (u User) Modes(mode string) FieldRestricter {
 	switch mode {
@@ -58,10 +63,8 @@ func (u User) Modes(mode string) FieldRestricter {
 		return u.modeD
 	case "E":
 		return u.modeE
-	case "F":
-		return u.modeF
 	case "G":
-		return u.modeG
+		return never
 	}
 	return nil
 }
@@ -69,7 +72,7 @@ func (u User) Modes(mode string) FieldRestricter {
 // SuperAdmin restricts the super admin.
 func (u User) SuperAdmin(mode string) FieldRestricter {
 	if mode == "G" {
-		return u.modeG
+		return never
 	}
 	return Allways
 }
@@ -157,12 +160,38 @@ func (u User) see(ctx context.Context, ds *datastore.Request, mperms *perm.Meeti
 		}
 	}
 
-	requiredObjects := []struct {
-		name     string
-		tmplFunc func(int) *datastore.ValueIDSlice
-		elemFunc func(int, int) *datastore.ValueIntSlice
-		seeFunc  FieldRestricter
-	}{
+	for _, r := range u.RequiredObjects(ds) {
+		for _, meetingID := range r.TmplFunc(userID).ErrorLater(ctx) {
+			for _, elementID := range r.ElemFunc(userID, meetingID).ErrorLater(ctx) {
+				see, err := r.SeeFunc(ctx, ds, mperms, elementID)
+				if err != nil {
+					return false, fmt.Errorf("checking required object %q: %w", r.Name, err)
+				}
+
+				if see {
+					return true, nil
+				}
+			}
+		}
+		if err := ds.Err(); err != nil {
+			return false, fmt.Errorf("getting object %q: %w", r.Name, err)
+		}
+	}
+
+	return false, nil
+}
+
+// UserRequiredObject represents the reference from a user to other objects.
+type UserRequiredObject struct {
+	Name     string
+	TmplFunc func(int) *datastore.ValueIDSlice
+	ElemFunc func(int, int) *datastore.ValueIntSlice
+	SeeFunc  FieldRestricter
+}
+
+// RequiredObjects returns all references to other objects from the user.
+func (u User) RequiredObjects(ds *datastore.Request) []UserRequiredObject {
+	return []UserRequiredObject{
 		{
 			"motion submitter",
 			ds.User_SubmittedMotionIDsTmpl,
@@ -226,26 +255,6 @@ func (u User) see(ctx context.Context, ds *datastore.Request, mperms *perm.Meeti
 			ChatMessage{}.see,
 		},
 	}
-
-	for _, r := range requiredObjects {
-		for _, meetingID := range r.tmplFunc(userID).ErrorLater(ctx) {
-			for _, elementID := range r.elemFunc(userID, meetingID).ErrorLater(ctx) {
-				see, err := r.seeFunc(ctx, ds, mperms, elementID)
-				if err != nil {
-					return false, fmt.Errorf("checking required object %q: %w", r.name, err)
-				}
-
-				if see {
-					return true, nil
-				}
-			}
-		}
-		if err := ds.Err(); err != nil {
-			return false, fmt.Errorf("getting object %q: %w", r.name, err)
-		}
-	}
-
-	return false, nil
 }
 
 func (u User) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, UserID int) (bool, error) {
@@ -330,26 +339,5 @@ func (u User) modeE(ctx context.Context, ds *datastore.Request, mperms *perm.Mee
 		return false, fmt.Errorf("checking manage in any meeting: %w", err)
 	}
 
-	return false, nil
-}
-
-func (u User) modeF(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, UserID int) (bool, error) {
-	if mperms.UserID() == UserID {
-		return true, nil
-	}
-
-	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
-	if err != nil {
-		return false, fmt.Errorf("cheching oml: %w", err)
-	}
-
-	if canManage {
-		return true, nil
-	}
-
-	return false, nil
-}
-
-func (u User) modeG(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, UserID int) (bool, error) {
 	return false, nil
 }

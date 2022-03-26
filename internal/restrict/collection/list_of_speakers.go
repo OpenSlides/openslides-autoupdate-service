@@ -18,6 +18,16 @@ import (
 // Mode A: The user can see the list of speakers.
 type ListOfSpeakers struct{}
 
+// MeetingID returns the meetingID for the object.
+func (los ListOfSpeakers) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	meetingID, err := los.meetingID(ctx, ds, id)
+	if err != nil {
+		return 0, false, fmt.Errorf("fetching meeting id for los %d: %w", id, err)
+	}
+
+	return meetingID, true, nil
+}
+
 // Modes returns the restrictions modes for the meeting collection.
 func (los ListOfSpeakers) Modes(mode string) FieldRestricter {
 	switch mode {

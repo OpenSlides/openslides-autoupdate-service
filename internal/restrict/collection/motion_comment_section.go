@@ -17,6 +17,16 @@ import (
 // The user can see the motion comment section.
 type MotionCommentSection struct{}
 
+// MeetingID returns the meetingID for the object.
+func (m MotionCommentSection) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	meetingID, err := ds.MotionCommentSection_MeetingID(id).Value(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("getting meetingID: %w", err)
+	}
+
+	return meetingID, true, nil
+}
+
 // Modes returns the restrictions modes for the meeting collection.
 func (m MotionCommentSection) Modes(mode string) FieldRestricter {
 	switch mode {

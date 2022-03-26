@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
@@ -24,6 +25,7 @@ const (
 // Connecter returns an connect object.
 type Connecter interface {
 	Connect(userID int, kb autoupdate.KeysBuilder) autoupdate.DataProvider
+	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[string][]byte, error)
 }
 
 // RequestMetricer saves metrics about requests.
@@ -68,18 +70,70 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, met
 
 		builder := keysbuilder.FromBuilders(queryBuilder, bodyBuilder)
 
-		sender := sendMessages
-		if r.URL.Query().Has("single") {
-			sender = sendSingleMessage
+		rawPosition := r.URL.Query().Get("position")
+		position := 0
+		if rawPosition != "" {
+			p, err := strconv.Atoi(rawPosition)
+			if err != nil {
+				handleError(w, invalidRequestError{fmt.Errorf("position has to be a number, not %s", rawPosition)}, true)
+				return
+			}
+			position = p
 		}
 
-		if err := sender(r.Context(), w, uid, builder, connecter); err != nil {
+		if r.URL.Query().Has("single") || position != 0 {
+			data, err := connecter.SingleData(r.Context(), uid, builder, position)
+			if err != nil {
+				handleError(w, fmt.Errorf("getting single data: %w", err), true)
+				return
+			}
+
+			converted := make(map[string]json.RawMessage, len(data))
+			for k, v := range data {
+				converted[k] = v
+			}
+
+			if err := json.NewEncoder(w).Encode(converted); err != nil {
+				handleError(w, fmt.Errorf("encoding end sending next message: %w", err), true)
+				return
+			}
+			return
+		}
+
+		if err := sendMessages(r.Context(), w, uid, builder, connecter); err != nil {
 			handleError(w, err, false)
 			return
 		}
 	})
 
 	mux.Handle(prefixPublic, validRequest(authMiddleware(handler, auth)))
+}
+
+// HistoryInformationer is an object, that can write the history information for
+// an object.
+type HistoryInformationer interface {
+	HistoryInformation(ctx context.Context, uid int, fqid string, w io.Writer) error
+}
+
+// HistoryInformation registers the route to return the history information info
+// for an fqid.
+func HistoryInformation(mux *http.ServeMux, auth Authenticater, hi HistoryInformationer) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		uid := auth.FromContext(r.Context())
+
+		fqid := r.URL.Query().Get("fqid")
+		if fqid == "" {
+			handleError(w, invalidRequestError{fmt.Errorf("History Information needs an fqid")}, true)
+			return
+		}
+
+		if err := hi.HistoryInformation(r.Context(), uid, fqid, w); err != nil {
+			handleError(w, fmt.Errorf("getting history information: %w", err), true)
+			return
+		}
+	})
+
+	mux.Handle(prefixPublic+"/history_information", authMiddleware(handler, auth))
 }
 
 // MetricRequest returns the request metrics.
@@ -116,28 +170,6 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 		w.(http.Flusher).Flush()
 	}
 	return ctx.Err()
-}
-
-func sendSingleMessage(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter) error {
-	next := connecter.Connect(uid, kb)
-	encoder := json.NewEncoder(w)
-
-	// conn.Next() blocks, until there is new data. It also unblocks,
-	// when the client context or the server is closed.
-	data, err := next(ctx)
-	if err != nil {
-		return fmt.Errorf("getting next message: %w", err)
-	}
-
-	converted := make(map[string]json.RawMessage, len(data))
-	for k, v := range data {
-		converted[k] = v
-	}
-
-	if err := encoder.Encode(converted); err != nil {
-		return fmt.Errorf("encoding end sending next message: %w", err)
-	}
-	return nil
 }
 
 // Health tells, if the service is running.

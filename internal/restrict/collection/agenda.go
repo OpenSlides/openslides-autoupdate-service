@@ -22,6 +22,16 @@ import (
 // Mode C: The user has agenda_item.can_manage.
 type AgendaItem struct{}
 
+// MeetingID returns the meetingID for the object.
+func (a AgendaItem) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	meetingID, err := a.meetingID(ctx, ds, id)
+	if err != nil {
+		return 0, false, fmt.Errorf("getting meetingID: %w", err)
+	}
+
+	return meetingID, true, nil
+}
+
 // Modes returns a map from all known modes to there restricter.
 func (a AgendaItem) Modes(mode string) FieldRestricter {
 	switch mode {

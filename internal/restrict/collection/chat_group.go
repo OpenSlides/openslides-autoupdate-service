@@ -18,6 +18,16 @@ import (
 // Mode A: The user can see the chat_group.
 type ChatGroup struct{}
 
+// MeetingID returns the meetingID for the object.
+func (c ChatGroup) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	meetingID, err := c.meetingID(ctx, ds, id)
+	if err != nil {
+		return 0, false, fmt.Errorf("getting meetingID: %w", err)
+	}
+
+	return meetingID, true, nil
+}
+
 // Modes give sthe FieldRestricter for a restriction_mode.
 func (c ChatGroup) Modes(mode string) FieldRestricter {
 	switch mode {

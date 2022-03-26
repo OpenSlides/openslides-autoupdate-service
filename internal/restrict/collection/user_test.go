@@ -553,42 +553,6 @@ func TestUserModeE(t *testing.T) {
 	)
 }
 
-func TestUserModeF(t *testing.T) {
-	var u collection.User
-
-	testCase(
-		"No perms",
-		t,
-		u.Modes("F"),
-		false,
-		`user/2/id: 2`,
-		withRequestUser(1),
-		withElementID(2),
-	)
-
-	testCase(
-		"OML can manage users",
-		t,
-		u.Modes("F"),
-		true,
-		`---
-		user/1/organization_management_level: can_manage_users
-		`,
-		withRequestUser(1),
-		withElementID(2),
-	)
-
-	testCase(
-		"X == Y",
-		t,
-		u.Modes("F"),
-		true,
-		``,
-		withRequestUser(1),
-		withElementID(1),
-	)
-}
-
 func TestUserModeG(t *testing.T) {
 	var u collection.User
 

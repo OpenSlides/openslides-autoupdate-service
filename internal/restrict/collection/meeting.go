@@ -26,6 +26,11 @@ import (
 // Mode D: The user has meeting.can_see_livestream.
 type Meeting struct{}
 
+// MeetingID returns the meetingID for the object.
+func (m Meeting) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	return id, true, nil
+}
+
 // Modes returns the restrictions modes for the meeting collection.
 func (m Meeting) Modes(mode string) FieldRestricter {
 	switch mode {

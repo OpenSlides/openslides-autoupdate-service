@@ -15,6 +15,16 @@ import (
 // Mode A: The user can see the motion submitter.
 type MotionSubmitter struct{}
 
+// MeetingID returns the meetingID for the object.
+func (m MotionSubmitter) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+	motionID, err := ds.MotionSubmitter_MotionID(id).Value(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("getting motionID: %w", err)
+	}
+
+	return Motion{}.MeetingID(ctx, ds, motionID)
+}
+
 // Modes returns the restrictions modes for the meeting collection.
 func (m MotionSubmitter) Modes(mode string) FieldRestricter {
 	switch mode {
