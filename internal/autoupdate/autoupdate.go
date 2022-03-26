@@ -8,6 +8,7 @@ package autoupdate
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -177,6 +178,10 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 
 	meetingID, hasMeeting, err := collection.Collection(coll).MeetingID(ctx, ds, id)
 	if err != nil {
+		var errNotExist datastore.DoesNotExistError
+		if errors.As(err, &errNotExist) {
+			return notExistError{string(errNotExist)}
+		}
 		return fmt.Errorf("getting meeting id for collection %s id %d: %w", coll, id, err)
 	}
 
@@ -219,4 +224,16 @@ func (e permissionDeniedError) Error() string {
 
 func (e permissionDeniedError) Type() string {
 	return "permission_denied"
+}
+
+type notExistError struct {
+	fqid string
+}
+
+func (e notExistError) Error() string {
+	return fmt.Sprintf("%s does not exist", e.fqid)
+}
+
+func (e notExistError) Type() string {
+	return "ont_exist"
 }
