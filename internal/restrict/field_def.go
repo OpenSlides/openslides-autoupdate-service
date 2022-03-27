@@ -411,6 +411,7 @@ var restrictionModes = map[string]string{
 	"meeting/assignment_candidate_ids":                           "B",
 	"meeting/assignment_ids":                                     "B",
 	"meeting/assignment_poll_add_candidates_to_list_of_speakers": "B",
+	"meeting/assignment_poll_enable_max_votes_per_option":        "B",
 	"meeting/assignment_poll_ballot_paper_number":                "B",
 	"meeting/assignment_poll_ballot_paper_selection":             "B",
 	"meeting/assignment_poll_default_100_percent_base":           "B",

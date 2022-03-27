@@ -539,6 +539,7 @@ var exampleData = map[string]json.RawMessage{
                 2
             ]`),
 	"meeting/1/assignment_poll_add_candidates_to_list_of_speakers": []byte(`true`),
+	"meeting/1/assignment_poll_enable_max_votes_per_option":        []byte(`false`),
 	"meeting/1/assignment_poll_ballot_paper_number":                []byte(`8`),
 	"meeting/1/assignment_poll_ballot_paper_selection":             []byte(`"CUSTOM_NUMBER"`),
 	"meeting/1/assignment_poll_default_100_percent_base":           []byte(`"valid"`),
