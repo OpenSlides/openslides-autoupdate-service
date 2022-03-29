@@ -418,6 +418,7 @@ var restrictionModes = map[string]string{
 	"meeting/assignment_poll_default_group_ids":                  "B",
 	"meeting/assignment_poll_default_method":                     "B",
 	"meeting/assignment_poll_default_type":                       "B",
+	"meeting/assignment_poll_enable_max_votes_per_option":        "B",
 	"meeting/assignment_poll_sort_poll_result_by_votes":          "B",
 	"meeting/assignments_export_preamble":                        "B",
 	"meeting/assignments_export_title":                           "B",
