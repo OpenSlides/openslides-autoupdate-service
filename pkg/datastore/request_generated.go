@@ -1523,6 +1523,12 @@ func (r *Request) Meeting_AssignmentPollDefaultType(meetingID int) *ValueString 
 	return v
 }
 
+func (r *Request) Meeting_AssignmentPollEnableMaxVotesPerOption(meetingID int) *ValueBool {
+	v := &ValueBool{request: r}
+	r.requested[fmt.Sprintf("meeting/%d/assignment_poll_enable_max_votes_per_option", meetingID)] = v
+	return v
+}
+
 func (r *Request) Meeting_AssignmentPollSortPollResultByVotes(meetingID int) *ValueBool {
 	v := &ValueBool{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/assignment_poll_sort_poll_result_by_votes", meetingID)] = v
