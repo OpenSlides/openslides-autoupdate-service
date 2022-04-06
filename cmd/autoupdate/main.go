@@ -20,6 +20,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
+	"golang.org/x/sys/unix"
 )
 
 type messageBus interface {
@@ -183,18 +184,18 @@ func run() error {
 
 // interruptContext works like signal.NotifyContext
 //
-// In only listens on os.Interrupt. If the signal is received two times,
+// In listens on os.Interrupt and unix.SIGTERM. If the signal is received two times,
 // os.Exit(1) is called.
 func interruptContext() (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt)
-		<-sigint
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, os.Interrupt, unix.SIGTERM)
+		<-sig
 		cancel()
 
 		// If the signal was send for the second time, make a hard cut.
-		<-sigint
+		<-sig
 		os.Exit(1)
 	}()
 	return ctx, cancel
