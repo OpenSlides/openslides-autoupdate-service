@@ -33,7 +33,7 @@ const authPath = "/internal/auth/authenticate"
 //
 // Has to be initialized with auth.New().
 type Auth struct {
-	logedoutSessions *topic.Topic
+	logedoutSessions *topic.Topic[string]
 
 	authServiceURL string
 
@@ -49,7 +49,7 @@ func New(
 	cookieKey []byte,
 ) (*Auth, error) {
 	a := &Auth{
-		logedoutSessions: topic.New(topic.WithClosed(closed)),
+		logedoutSessions: topic.New(topic.WithClosed[string](closed)),
 		authServiceURL:   authServiceURL,
 		tokenKey:         tokenKey,
 		cookieKey:        cookieKey,

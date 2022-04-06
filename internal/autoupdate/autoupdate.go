@@ -49,7 +49,7 @@ const fullUpdateFormat = "fullupdate/%d"
 // with autoupdate.New().
 type Autoupdate struct {
 	datastore  Datastore
-	topic      *topic.Topic
+	topic      *topic.Topic[string]
 	restricter RestrictMiddleware
 	voteAddr   string
 }
@@ -64,7 +64,7 @@ type RestrictMiddleware func(getter datastore.Getter, uid int) datastore.Getter
 func New(datastore Datastore, restricter RestrictMiddleware, voteAddr string, closed <-chan struct{}) *Autoupdate {
 	a := &Autoupdate{
 		datastore:  datastore,
-		topic:      topic.New(topic.WithClosed(closed)),
+		topic:      topic.New(topic.WithClosed[string](closed)),
 		restricter: restricter,
 		voteAddr:   voteAddr,
 	}
