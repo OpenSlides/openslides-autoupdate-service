@@ -233,7 +233,8 @@ var exampleData = map[string]json.RawMessage{
 	"committee/1/user_$can_manage_management_level": []byte(`[1]`),
 	"committee/1/user_ids": []byte(`[
                 1,
-                2
+                2,
+                3
             ]`),
 	"group/1/default_group_for_meeting_id": []byte(`1`),
 	"group/1/id":                           []byte(`1`),
@@ -2145,7 +2146,10 @@ var exampleData = map[string]json.RawMessage{
 	"user/3/comment_$": []byte(`[
                 "1"
             ]`),
-	"user/3/comment_$1":          []byte(`"Test comment b as guest"`),
+	"user/3/comment_$1": []byte(`"Test comment b as guest"`),
+	"user/3/committee_ids": []byte(`[
+                1
+            ]`),
 	"user/3/default_password":    []byte(`"jKwSLGCk"`),
 	"user/3/default_vote_weight": []byte(`"1.000000"`),
 	"user/3/first_name":          []byte(`"b"`),
