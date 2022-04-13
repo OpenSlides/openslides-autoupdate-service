@@ -2681,6 +2681,12 @@ func (r *Request) MotionState_AllowCreatePoll(motionStateID int) *ValueBool {
 	return v
 }
 
+func (r *Request) MotionState_AllowMotionForwarding(motionStateID int) *ValueBool {
+	v := &ValueBool{request: r}
+	r.requested[fmt.Sprintf("motion_state/%d/allow_motion_forwarding", motionStateID)] = v
+	return v
+}
+
 func (r *Request) MotionState_AllowSubmitterEdit(motionStateID int) *ValueBool {
 	v := &ValueBool{request: r}
 	r.requested[fmt.Sprintf("motion_state/%d/allow_submitter_edit", motionStateID)] = v
@@ -2762,6 +2768,12 @@ func (r *Request) MotionState_RecommendationLabel(motionStateID int) *ValueStrin
 func (r *Request) MotionState_Restrictions(motionStateID int) *ValueStringSlice {
 	v := &ValueStringSlice{request: r}
 	r.requested[fmt.Sprintf("motion_state/%d/restrictions", motionStateID)] = v
+	return v
+}
+
+func (r *Request) MotionState_SetCreatedTimestamp(motionStateID int) *ValueBool {
+	v := &ValueBool{request: r}
+	r.requested[fmt.Sprintf("motion_state/%d/set_created_timestamp", motionStateID)] = v
 	return v
 }
 

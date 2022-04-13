@@ -670,6 +670,7 @@ var restrictionModes = map[string]string{
 
 	// motion_state
 	"motion_state/allow_create_poll":                   "A",
+	"motion_state/allow_motion_forwarding":             "A",
 	"motion_state/allow_submitter_edit":                "A",
 	"motion_state/allow_support":                       "A",
 	"motion_state/css_class":                           "A",
@@ -684,6 +685,7 @@ var restrictionModes = map[string]string{
 	"motion_state/previous_state_ids":                  "A",
 	"motion_state/recommendation_label":                "A",
 	"motion_state/restrictions":                        "A",
+	"motion_state/set_created_timestamp":               "A",
 	"motion_state/set_number":                          "A",
 	"motion_state/show_recommendation_extension_field": "A",
 	"motion_state/show_state_extension_field":          "A",
