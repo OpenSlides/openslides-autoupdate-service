@@ -143,13 +143,26 @@ func (m Motion) modeA(ctx context.Context, ds *datastore.Request, mperms *perm.M
 }
 
 func (m Motion) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, motionID int) (bool, error) {
-	motionIDs := append([]int{motionID}, ds.Motion_AllOriginIDs(motionID).ErrorLater(ctx)...)
-	motionIDs = append(motionIDs, ds.Motion_AllDerivedMotionIDs(motionID).ErrorLater(ctx)...)
+	allOriginIDs := ds.Motion_AllOriginIDs(motionID).ErrorLater(ctx)
+	allDerivedMotionIDs := ds.Motion_AllDerivedMotionIDs(motionID).ErrorLater(ctx)
+	originID, hasOrigin := ds.Motion_OriginID(motionID).ErrorLater(ctx)
+	derivedMotionIDs := ds.Motion_DerivedMotionIDs(motionID).ErrorLater(ctx)
 	if err := ds.Err(); err != nil {
 		return false, fmt.Errorf("fetching origin and derived motions: %w", err)
 	}
 
-	for _, referenceID := range motionIDs {
+	motionIDs := make(map[int]struct{}, len(allOriginIDs)+len(allDerivedMotionIDs)+len(derivedMotionIDs)+2)
+	motionIDs[motionID] = struct{}{}
+	for _, l := range [][]int{allOriginIDs, allDerivedMotionIDs, derivedMotionIDs} {
+		for _, id := range l {
+			motionIDs[id] = struct{}{}
+		}
+	}
+	if hasOrigin {
+		motionIDs[originID] = struct{}{}
+	}
+
+	for referenceID := range motionIDs {
 		see, err := m.see(ctx, ds, mperms, referenceID)
 		if err != nil {
 			return false, fmt.Errorf("see motion %d: %w", referenceID, err)

@@ -365,6 +365,58 @@ func TestMotionModeB(t *testing.T) {
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)
+
+	testCase(
+		"see origin_id",
+		t,
+		f,
+		true,
+		`---
+		motion:
+			1:
+				meeting_id: 30
+				state_id: 3
+				submitter_ids: [4]
+				origin_id: 2
+			2:
+				meeting_id: 30
+				state_id: 3
+				submitter_ids: [5]
+
+		motion_state/3/restrictions:
+		- is_submitter
+
+		motion_submitter/4/user_id: 2
+		motion_submitter/5/user_id: 1
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"see derived_motion_ids",
+		t,
+		f,
+		true,
+		`---
+		motion:
+			1:
+				meeting_id: 30
+				state_id: 3
+				submitter_ids: [4]
+				derived_motion_ids: [2]
+			2:
+				meeting_id: 30
+				state_id: 3
+				submitter_ids: [5]
+
+		motion_state/3/restrictions:
+		- is_submitter
+
+		motion_submitter/4/user_id: 2
+		motion_submitter/5/user_id: 1
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
 }
 
 func TestMotionModeD(t *testing.T) {
