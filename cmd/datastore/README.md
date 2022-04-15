@@ -14,9 +14,3 @@ json-object. For example:
 ```
 
 Changed data is sent to the autoupdate-service via redis.
-
-To connect the autoupdate-service to this service, use
-
-```
-DATASTORE=service MESSAGING=redis ./autoupdate
-```

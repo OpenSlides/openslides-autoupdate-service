@@ -2,6 +2,7 @@ package redis_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
@@ -48,7 +49,7 @@ var testData = map[string]string{
 	]`,
 }
 
-func (c mockConn) XREAD(count, stream, lastID string) (interface{}, error) {
+func (c mockConn) XREAD(ctx context.Context, count, stream, lastID string) (interface{}, error) {
 	if c.err != nil {
 		return nil, c.err
 	}

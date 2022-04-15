@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -38,17 +39,8 @@ func (s *Pool) TestConn() error {
 }
 
 // XREAD reads new messages from one stream.
-func (s *Pool) XREAD(count, stream, id string) (interface{}, error) {
+func (s *Pool) XREAD(ctx context.Context, count, stream, id string) (interface{}, error) {
 	conn := s.pool.Get()
 	defer conn.Close()
-	return conn.Do("XREAD", "COUNT", count, "BLOCK", "0", "STREAMS", stream, id)
-}
-
-// BlockingConn is a fake implementation of the redis connection. It does not
-// create a connection but blocks forever.
-type BlockingConn struct{}
-
-// XREAD blocks forever.
-func (BlockingConn) XREAD(count, stream, id string) (interface{}, error) {
-	select {}
+	return redis.DoContext(conn, ctx, "XREAD", "COUNT", count, "BLOCK", "0", "STREAMS", stream, id)
 }

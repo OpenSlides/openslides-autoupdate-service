@@ -21,11 +21,10 @@ go build ./cmd/autoupdate
 
 ### With Docker
 
-The docker build uses the redis messaging service, the auth token and the real
-datastore service as default. Either configure it to use the fake services (see
-environment variables below) or make sure the service inside the docker
-container can connect to redis and the datastore-reader. For example with the
-docker argument --network host. The auth-secrets have to given as a file.
+The docker build uses the auth token as default. Either configure it to use the
+auth-fake services (see environment variables below) or make sure the service
+inside the docker container can connect to the auth service. For example with
+the docker argument --network host. The auth-secrets have to given as a file.
 
 ```
 docker build . --tag openslides-autoupdate
@@ -117,11 +116,9 @@ specific position from the datastore. This implieds `single`:
 
 ### Updates via redis
 
-When redis is installed, it can be used to update keys. Start the autoupdate
-service with the envirnmentvariable `MESSAGING_SERVICE=redis`. Afterwards it is
-possible to update keys by sending the following command to redis:
+Keys are updated via redis:
 
-`xadd field_changed * updated user/1/username updated user/1/password`
+`xadd ModifiedFields * user/1/username newName user/1/password newPassword`
 
 
 ### Projector
@@ -187,8 +184,6 @@ The Service uses the following environment variables:
 * `DATASTORE_READER_PORT`: Port of the datastore reader. The default is `9010`.
 * `DATASTORE_READER_PROTOCOL`: Protocol of the datastore reader. The default is
   `http`.
-* `MESSAGING`: Sets the type of messaging service. `fake`(default) or
-  `redis`.
 * `MESSAGE_BUS_HOST`: Host of the redis server. The default is `localhost`.
 * `MESSAGE_BUS_PORT`: Port of the redis server. The default is `6379`.
 * `REDIS_TEST_CONN`: Test the redis connection on startup. Disable on the cloud

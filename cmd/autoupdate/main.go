@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -43,7 +42,6 @@ func defaultEnv() map[string]string {
 		"DATASTORE_READER_PORT":     "9010",
 		"DATASTORE_READER_PROTOCOL": "http",
 
-		"MESSAGING":        "fake",
 		"MESSAGE_BUS_HOST": "localhost",
 		"MESSAGE_BUS_PORT": "6379",
 		"REDIS_TEST_CONN":  "true",
@@ -102,14 +100,6 @@ func errHandler(err error) {
 
 	if errors.Is(err, context.Canceled) {
 		return
-	}
-
-	var errNet *net.OpError
-	if errors.As(err, &errNet) {
-		if errNet.Op == "dial" {
-			log.Printf("Can not connect to redis.")
-			return
-		}
 	}
 
 	log.Printf("Error: %v", err)
@@ -202,7 +192,6 @@ func interruptContext() (context.Context, context.CancelFunc) {
 // buildDatastore configures the datastore service.
 func buildDatastore(env map[string]string, mb messageBus) (*datastore.Datastore, error) {
 	datastoreSource := datastore.NewSourceDatastore(env["DATASTORE_READER_PROTOCOL"]+"://"+env["DATASTORE_READER_HOST"]+":"+env["DATASTORE_READER_PORT"], mb)
-
 	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCAL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
 
 	return datastore.New(
@@ -218,26 +207,12 @@ func buildDatastore(env map[string]string, mb messageBus) (*datastore.Datastore,
 // environment variables to make the decission. Per default, the given faker is
 // used.
 func buildMessagebus(env map[string]string) (messageBus, error) {
-	serviceName := env["MESSAGING"]
-	fmt.Printf("Messaging Service: %s\n", serviceName)
-
-	var conn redis.Connection
-	switch serviceName {
-	case "redis":
-		redisAddress := env["MESSAGE_BUS_HOST"] + ":" + env["MESSAGE_BUS_PORT"]
-		c := redis.NewConnection(redisAddress)
-		if env["REDIS_TEST_CONN"] == "true" {
-			if err := c.TestConn(); err != nil {
-				return nil, fmt.Errorf("connect to redis: %w", err)
-			}
+	redisAddress := env["MESSAGE_BUS_HOST"] + ":" + env["MESSAGE_BUS_PORT"]
+	conn := redis.NewConnection(redisAddress)
+	if env["REDIS_TEST_CONN"] == "true" {
+		if err := conn.TestConn(); err != nil {
+			return nil, fmt.Errorf("connect to redis: %w", err)
 		}
-
-		conn = c
-
-	case "fake":
-		conn = redis.BlockingConn{}
-	default:
-		return nil, fmt.Errorf("unknown messagin service %q", serviceName)
 	}
 
 	return &redis.Redis{Conn: conn}, nil
