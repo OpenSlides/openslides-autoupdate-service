@@ -26,7 +26,6 @@ import (
 type messageBus interface {
 	datastore.Updater
 	auth.LogoutEventer
-	autoupdateHttp.RequestMetricer
 }
 
 func main() {
@@ -152,9 +151,8 @@ func run() error {
 	mux := http.NewServeMux()
 
 	autoupdateHttp.Health(mux)
-	autoupdateHttp.Autoupdate(mux, authService, service, messageBus)
+	autoupdateHttp.Autoupdate(mux, authService, service)
 	autoupdateHttp.HistoryInformation(mux, authService, service)
-	autoupdateHttp.MetricRequest(mux, messageBus)
 
 	// Projector Service.
 	projector.Register(datastoreService, slide.Slides())

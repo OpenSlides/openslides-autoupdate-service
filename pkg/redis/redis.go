@@ -4,13 +4,9 @@ package redis
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"strconv"
 	"time"
-
-	"github.com/gomodule/redigo/redis"
 )
 
 const (
@@ -23,9 +19,6 @@ const (
 	// logoutTopic is the redis key name of the logout stream.
 	logoutTopic = "logout"
 
-	// requestMetricKey is the key to save request metrics.
-	requestMetricKey = "autoupdate_metric_request"
-
 	// lastLogoutDuration decides how many old logout messages are received.
 	lastLogoutDuration = 15 * time.Minute
 )
@@ -33,9 +26,6 @@ const (
 // Connection is the raw connection to a redis server.
 type Connection interface {
 	XREAD(count, stream, lastID string) (interface{}, error)
-	ZINCR(key string, value []byte) error
-	ZRANGE(key string) (interface{}, error)
-	XADD(stream, field string, value []byte) error
 }
 
 // Redis holds the state of the redis receiver.
@@ -76,14 +66,6 @@ func (r *Redis) Update(ctx context.Context) (map[string][]byte, error) {
 	return data, nil
 }
 
-// Publish updates a value on the message bus.
-func (r *Redis) Publish(ctx context.Context, key string, value []byte) error {
-	if err := r.Conn.XADD(fieldChangedTopic, key, value); err != nil {
-		return fmt.Errorf("publish %s, %v in redis: %w", key, value, err)
-	}
-	return nil
-}
-
 // LogoutEvent is a blocking function that returns, when a session was revoked.
 func (r *Redis) LogoutEvent(ctx context.Context) ([]string, error) {
 	id := r.lastLogoutID
@@ -114,68 +96,6 @@ func (r *Redis) LogoutEvent(ctx context.Context) ([]string, error) {
 		r.lastLogoutID = id
 	}
 	return sessionIDs, nil
-}
-
-// RequestMeticSave saves how often a request was send.
-func (r *Redis) RequestMeticSave(request []byte) error {
-	normalized, err := normalizeRequest(request)
-	if err != nil {
-		return fmt.Errorf("normalize request: %w", err)
-	}
-
-	if err := r.Conn.ZINCR(requestMetricKey, normalized); err != nil {
-		return fmt.Errorf("saving metric: %w", err)
-	}
-
-	return nil
-}
-
-// RequestMetricGet writes all request with there count as json.
-func (r *Redis) RequestMetricGet(w io.Writer) error {
-	values, err := redis.ByteSlices(r.Conn.ZRANGE(requestMetricKey))
-	if err != nil {
-		return fmt.Errorf("reading data: %w", err)
-	}
-
-	type request struct {
-		Count   json.RawMessage `json:"count"`
-		Request json.RawMessage `json:"request"`
-	}
-
-	var requests []request
-	for i := 0; i < len(values); i += 2 {
-		requests = append(requests, request{
-			Request: values[i],
-			Count:   values[i+1],
-		})
-	}
-
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-
-	if err := enc.Encode(requests); err != nil {
-		return fmt.Errorf("encoding and sending data: %w", err)
-	}
-
-	return nil
-}
-
-// normalizeRequest takes json and returns the same output when the input has
-// the same keys but in the different order.
-func normalizeRequest(request []byte) ([]byte, error) {
-	var bodies []struct {
-		Collection string          `json:"collection"`
-		Fields     json.RawMessage `json:"fields"`
-	}
-	err := json.Unmarshal(request, &bodies)
-	if err != nil {
-		return nil, err
-	}
-	output, err := json.Marshal(bodies)
-	if err != nil {
-		return nil, err
-	}
-	return output, nil
 }
 
 // contextFunc calls f in a separat goroutine. If the given context is done,

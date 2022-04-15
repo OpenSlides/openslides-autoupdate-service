@@ -28,15 +28,9 @@ type Connecter interface {
 	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[string][]byte, error)
 }
 
-// RequestMetricer saves metrics about requests.
-type RequestMetricer interface {
-	RequestMeticSave(r []byte) error
-	RequestMetricGet(w io.Writer) error
-}
-
 // Autoupdate builds the requested keys from the body of a request. The
 // body has to be in the format specified in the keysbuilder package.
-func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, metric RequestMetricer) {
+func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Cache-Control", "no-store, max-age=0")
@@ -54,12 +48,6 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, met
 		if err != nil {
 			handleError(w, fmt.Errorf("reading body: %w", err), true)
 			return
-		}
-
-		if metric != nil && len(body) != 0 {
-			if err := metric.RequestMeticSave(body); err != nil {
-				log.Printf("Warning: building metric: %v", err)
-			}
 		}
 
 		bodyBuilder, err := keysbuilder.ManyFromJSON(bytes.NewReader(body))
@@ -134,16 +122,6 @@ func HistoryInformation(mux *http.ServeMux, auth Authenticater, hi HistoryInform
 	})
 
 	mux.Handle(prefixPublic+"/history_information", authMiddleware(handler, auth))
-}
-
-// MetricRequest returns the request metrics.
-func MetricRequest(mux *http.ServeMux, metric RequestMetricer) {
-	mux.Handle(prefixInternal+"/metric/request", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if err := metric.RequestMetricGet(w); err != nil {
-			handleError(w, err, true)
-		}
-	}))
 }
 
 func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter) error {
