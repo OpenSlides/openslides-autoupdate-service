@@ -2,6 +2,7 @@ package redis_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
@@ -48,7 +49,7 @@ var testData = map[string]string{
 	]`,
 }
 
-func (c mockConn) XREAD(count, stream, lastID string) (interface{}, error) {
+func (c mockConn) XREAD(ctx context.Context, count, stream, lastID string) (interface{}, error) {
 	if c.err != nil {
 		return nil, c.err
 	}
@@ -58,18 +59,6 @@ func (c mockConn) XREAD(count, stream, lastID string) (interface{}, error) {
 	var data interface{}
 	err := json.Unmarshal([]byte(testData[lastID]), &data)
 	return data, err
-}
-
-func (c mockConn) XADD(stream, key string, value []byte) error {
-	return nil
-}
-
-func (c mockConn) ZINCR(key string, value []byte) error {
-	return nil
-}
-
-func (c mockConn) ZRANGE(key string) (interface{}, error) {
-	return nil, nil
 }
 
 func cmpMap(one, two map[string][]byte) bool {

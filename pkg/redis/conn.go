@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -38,56 +39,8 @@ func (s *Pool) TestConn() error {
 }
 
 // XREAD reads new messages from one stream.
-func (s *Pool) XREAD(count, stream, id string) (interface{}, error) {
+func (s *Pool) XREAD(ctx context.Context, count, stream, id string) (interface{}, error) {
 	conn := s.pool.Get()
 	defer conn.Close()
-	return conn.Do("XREAD", "COUNT", count, "BLOCK", "0", "STREAMS", stream, id)
-}
-
-// XADD updates a field with a value.
-func (s *Pool) XADD(stream, field string, value []byte) error {
-	conn := s.pool.Get()
-	defer conn.Close()
-
-	_, err := conn.Do("XADD", stream, "*", field, value)
-	return err
-}
-
-// ZINCR increments a sorted set by one.
-func (s *Pool) ZINCR(key string, value []byte) error {
-	conn := s.pool.Get()
-	defer conn.Close()
-	_, err := conn.Do("ZINCRBY", key, 1, value)
-	return err
-}
-
-// ZRANGE returns all values from a sorted set with the scores.
-func (s *Pool) ZRANGE(key string) (interface{}, error) {
-	conn := s.pool.Get()
-	defer conn.Close()
-	return conn.Do("ZREVRANGE", key, 0, -1, "WITHSCORES")
-}
-
-// BlockingConn is a fake implementation of the redis connection. It does not
-// create a connection but blocks forever.
-type BlockingConn struct{}
-
-// XREAD blocks forever.
-func (BlockingConn) XREAD(count, stream, id string) (interface{}, error) {
-	select {}
-}
-
-// XADD does nothing.
-func (BlockingConn) XADD(stream, key string, value []byte) error {
-	return nil
-}
-
-// ZINCR does nothing.
-func (BlockingConn) ZINCR(key string, value []byte) error {
-	return nil
-}
-
-// ZRANGE does nothing.
-func (BlockingConn) ZRANGE(key string) (interface{}, error) {
-	return nil, nil
+	return redis.DoContext(conn, ctx, "XREAD", "COUNT", count, "BLOCK", "0", "STREAMS", stream, id)
 }

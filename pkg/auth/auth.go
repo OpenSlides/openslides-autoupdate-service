@@ -42,14 +42,9 @@ type Auth struct {
 }
 
 // New initializes an Auth service.
-func New(
-	authServiceURL string,
-	closed <-chan struct{},
-	tokenKey,
-	cookieKey []byte,
-) (*Auth, error) {
+func New(authServiceURL string, tokenKey, cookieKey []byte) (*Auth, error) {
 	a := &Auth{
-		logedoutSessions: topic.New(topic.WithClosed[string](closed)),
+		logedoutSessions: topic.New[string](),
 		authServiceURL:   authServiceURL,
 		tokenKey:         tokenKey,
 		cookieKey:        cookieKey,

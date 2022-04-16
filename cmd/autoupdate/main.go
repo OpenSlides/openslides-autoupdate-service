@@ -26,7 +26,6 @@ import (
 type messageBus interface {
 	datastore.Updater
 	auth.LogoutEventer
-	autoupdateHttp.RequestMetricer
 }
 
 func main() {
@@ -44,7 +43,6 @@ func defaultEnv() map[string]string {
 		"DATASTORE_READER_PORT":     "9010",
 		"DATASTORE_READER_PROTOCOL": "http",
 
-		"MESSAGING":        "fake",
 		"MESSAGE_BUS_HOST": "localhost",
 		"MESSAGE_BUS_PORT": "6379",
 		"REDIS_TEST_CONN":  "true",
@@ -105,14 +103,6 @@ func errHandler(err error) {
 		return
 	}
 
-	var errNet *net.OpError
-	if errors.As(err, &errNet) {
-		if errNet.Op == "dial" {
-			log.Printf("Can not connect to redis.")
-			return
-		}
-	}
-
 	log.Printf("Error: %v", err)
 }
 
@@ -144,7 +134,7 @@ func run() error {
 	voteAddr := fmt.Sprintf("%s://%s:%s", env["VOTE_PROTOCAL"], env["VOTE_HOST"], env["VOTE_PORT"])
 
 	// Autoupdate Service.
-	service := autoupdate.New(datastoreService, restrict.Middleware, voteAddr, ctx.Done())
+	service := autoupdate.New(datastoreService, restrict.Middleware, voteAddr)
 	go service.PruneOldData(ctx)
 	go service.ResetCache(ctx)
 
@@ -152,16 +142,19 @@ func run() error {
 	mux := http.NewServeMux()
 
 	autoupdateHttp.Health(mux)
-	autoupdateHttp.Autoupdate(mux, authService, service, messageBus)
+	autoupdateHttp.Autoupdate(mux, authService, service)
 	autoupdateHttp.HistoryInformation(mux, authService, service)
-	autoupdateHttp.MetricRequest(mux, messageBus)
 
 	// Projector Service.
 	projector.Register(datastoreService, slide.Slides())
 
 	// Create http server.
 	listenAddr := ":" + env["AUTOUPDATE_PORT"]
-	srv := &http.Server{Addr: listenAddr, Handler: mux}
+	srv := &http.Server{
+		Addr:        listenAddr,
+		Handler:     mux,
+		BaseContext: func(net.Listener) context.Context { return ctx },
+	}
 
 	// Shutdown logic in separate goroutine.
 	wait := make(chan error)
@@ -204,7 +197,6 @@ func interruptContext() (context.Context, context.CancelFunc) {
 // buildDatastore configures the datastore service.
 func buildDatastore(env map[string]string, mb messageBus) (*datastore.Datastore, error) {
 	datastoreSource := datastore.NewSourceDatastore(env["DATASTORE_READER_PROTOCOL"]+"://"+env["DATASTORE_READER_HOST"]+":"+env["DATASTORE_READER_PORT"], mb)
-
 	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCAL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
 
 	return datastore.New(
@@ -220,26 +212,12 @@ func buildDatastore(env map[string]string, mb messageBus) (*datastore.Datastore,
 // environment variables to make the decission. Per default, the given faker is
 // used.
 func buildMessagebus(env map[string]string) (messageBus, error) {
-	serviceName := env["MESSAGING"]
-	fmt.Printf("Messaging Service: %s\n", serviceName)
-
-	var conn redis.Connection
-	switch serviceName {
-	case "redis":
-		redisAddress := env["MESSAGE_BUS_HOST"] + ":" + env["MESSAGE_BUS_PORT"]
-		c := redis.NewConnection(redisAddress)
-		if env["REDIS_TEST_CONN"] == "true" {
-			if err := c.TestConn(); err != nil {
-				return nil, fmt.Errorf("connect to redis: %w", err)
-			}
+	redisAddress := env["MESSAGE_BUS_HOST"] + ":" + env["MESSAGE_BUS_PORT"]
+	conn := redis.NewConnection(redisAddress)
+	if env["REDIS_TEST_CONN"] == "true" {
+		if err := conn.TestConn(); err != nil {
+			return nil, fmt.Errorf("connect to redis: %w", err)
 		}
-
-		conn = c
-
-	case "fake":
-		conn = redis.BlockingConn{}
-	default:
-		return nil, fmt.Errorf("unknown messagin service %q", serviceName)
 	}
 
 	return &redis.Redis{Conn: conn}, nil
@@ -279,7 +257,7 @@ func buildAuth(
 		url := protocol + "://" + host + ":" + port
 
 		fmt.Printf("Auth Service: %s\n", url)
-		a, err := auth.New(url, ctx.Done(), []byte(tokenKey), []byte(cookieKey))
+		a, err := auth.New(url, []byte(tokenKey), []byte(cookieKey))
 		if err != nil {
 			return nil, fmt.Errorf("creating auth service: %w", err)
 		}

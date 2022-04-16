@@ -39,7 +39,7 @@ func TestKeysHandler(t *testing.T) {
 		},
 	}
 
-	ahttp.Autoupdate(mux, test.Auth(1), connecter, nil)
+	ahttp.Autoupdate(mux, test.Auth(1), connecter)
 
 	req := httptest.NewRequest("GET", "/system/autoupdate?k=user/1/name,user/2/name", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()
@@ -70,7 +70,7 @@ func TestComplexHandler(t *testing.T) {
 		},
 	}
 
-	ahttp.Autoupdate(mux, test.Auth(1), connecter, nil)
+	ahttp.Autoupdate(mux, test.Auth(1), connecter)
 
 	req := httptest.NewRequest(
 		"GET",
@@ -119,7 +119,7 @@ func TestErrors(t *testing.T) {
 			return map[string][]byte{"foo": []byte(`"bar"`)}, nil
 		},
 	}
-	ahttp.Autoupdate(mux, test.Auth(1), connecter, nil)
+	ahttp.Autoupdate(mux, test.Auth(1), connecter)
 
 	for _, tt := range []struct {
 		name    string
