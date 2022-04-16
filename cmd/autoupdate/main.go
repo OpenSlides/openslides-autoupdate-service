@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -133,7 +134,7 @@ func run() error {
 	voteAddr := fmt.Sprintf("%s://%s:%s", env["VOTE_PROTOCAL"], env["VOTE_HOST"], env["VOTE_PORT"])
 
 	// Autoupdate Service.
-	service := autoupdate.New(datastoreService, restrict.Middleware, voteAddr, ctx.Done())
+	service := autoupdate.New(datastoreService, restrict.Middleware, voteAddr)
 	go service.PruneOldData(ctx)
 	go service.ResetCache(ctx)
 
@@ -149,7 +150,11 @@ func run() error {
 
 	// Create http server.
 	listenAddr := ":" + env["AUTOUPDATE_PORT"]
-	srv := &http.Server{Addr: listenAddr, Handler: mux}
+	srv := &http.Server{
+		Addr:        listenAddr,
+		Handler:     mux,
+		BaseContext: func(net.Listener) context.Context { return ctx },
+	}
 
 	// Shutdown logic in separate goroutine.
 	wait := make(chan error)
@@ -252,7 +257,7 @@ func buildAuth(
 		url := protocol + "://" + host + ":" + port
 
 		fmt.Printf("Auth Service: %s\n", url)
-		a, err := auth.New(url, ctx.Done(), []byte(tokenKey), []byte(cookieKey))
+		a, err := auth.New(url, []byte(tokenKey), []byte(cookieKey))
 		if err != nil {
 			return nil, fmt.Errorf("creating auth service: %w", err)
 		}

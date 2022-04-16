@@ -61,10 +61,10 @@ type RestrictMiddleware func(getter datastore.Getter, uid int) datastore.Getter
 //
 // The attribute closed is a channel that should be closed when the server shuts
 // down. In this case, all connections get closed.
-func New(datastore Datastore, restricter RestrictMiddleware, voteAddr string, closed <-chan struct{}) *Autoupdate {
+func New(datastore Datastore, restricter RestrictMiddleware, voteAddr string) *Autoupdate {
 	a := &Autoupdate{
 		datastore:  datastore,
-		topic:      topic.New(topic.WithClosed[string](closed)),
+		topic:      topic.New[string](),
 		restricter: restricter,
 		voteAddr:   voteAddr,
 	}
