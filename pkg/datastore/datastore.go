@@ -15,7 +15,10 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 )
 
 const (
@@ -71,6 +74,8 @@ type Datastore struct {
 	history HistoryInformationer
 
 	resetMu sync.Mutex
+
+	metricGetHitCount uint64
 }
 
 // New returns a new Datastore object.
@@ -91,6 +96,8 @@ func New(defaultSource Source, keySource map[string]Source, history HistoryInfor
 		history: history,
 	}
 
+	metric.Register(d.metric)
+
 	return d
 }
 
@@ -98,6 +105,7 @@ func New(defaultSource Source, keySource map[string]Source, history HistoryInfor
 //
 // If a key does not exist, the value nil is returned for that key.
 func (d *Datastore) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+	atomic.AddUint64(&d.metricGetHitCount, 1)
 	values, err := d.cache.GetOrSet(ctx, keys, func(keys []string, set func(key string, value []byte)) error {
 		if invalid := InvalidKeys(keys...); invalid != nil {
 			return invalidKeyError{keys: invalid}

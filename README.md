@@ -197,6 +197,8 @@ The Service uses the following environment variables:
 * `AUTH_PROTOCOL`: Protocol of the auth servicer. The default is `http`.
 * `OPENSLIDES_DEVELOPMENT`: If set, the service starts, even when secrets (see
   below) are not given. The default is `false`.
+* `METRIC_MINUTES`: Time in minutes how often the metrics are gathered. Zero
+  disables the metrics. The default is `5`.
 
 
 ### Secrets
