@@ -25,7 +25,7 @@ func Register(f func(Container)) {
 // Blocks until the context is done.
 //
 // It is not possible to Register new metrics, when the loop is running.
-func Loop(ctx context.Context, d time.Duration, logger log.Logger) {
+func Loop(ctx context.Context, d time.Duration, logger *log.Logger) {
 	callbacks.mu.Lock()
 	defer callbacks.mu.Unlock()
 

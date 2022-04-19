@@ -154,7 +154,7 @@ func run() error {
 		metricSeconds = got
 	}
 	if metricSeconds > 0 {
-		go metric.Loop(ctx, time.Duration(metricSeconds)*time.Second, *log.Default())
+		go metric.Loop(ctx, time.Duration(metricSeconds)*time.Second, log.Default())
 	}
 
 	// Create http server.
