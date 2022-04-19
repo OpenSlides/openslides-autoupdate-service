@@ -10,9 +10,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
+	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	autoupdateHttp "github.com/OpenSlides/openslides-autoupdate-service/internal/http"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
@@ -56,7 +59,8 @@ func defaultEnv() map[string]string {
 		"AUTH_HOST":     "localhost",
 		"AUTH_PORT":     "9004",
 
-		"OPENSLIDES_DEVELOPMENT": "false",
+		"OPENSLIDES_DEVELOPMENT":  "false",
+		"METRIC_INTERVAL_SECONDS": "300",
 	}
 
 	for k := range defaults {
@@ -91,15 +95,7 @@ func secret(name string, dev bool) (string, error) {
 
 // errHandler is called by some background tasts.
 func errHandler(err error) {
-	// If an error happened, we just close the session.
-	var closing interface {
-		Closing()
-	}
-	if errors.As(err, &closing) {
-		return
-	}
-
-	if errors.Is(err, context.Canceled) {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return
 	}
 
@@ -141,15 +137,29 @@ func run() error {
 	// Create http mux to add urls.
 	mux := http.NewServeMux()
 
+	requestCount := new(metric.CurrentCounter)
+
 	autoupdateHttp.Health(mux)
-	autoupdateHttp.Autoupdate(mux, authService, service)
+	autoupdateHttp.Autoupdate(mux, authService, service, requestCount)
 	autoupdateHttp.HistoryInformation(mux, authService, service)
 
 	// Projector Service.
 	projector.Register(datastoreService, slide.Slides())
 
+	// Start metrics.
+	metric.Register(requestCount.Metric)
+	metric.Register(runtimeMetrics)
+	metricSeconds := 0
+	if got, err := strconv.Atoi(env["METRIC_INTERVAL_SECONDS"]); err == nil {
+		metricSeconds = got
+	}
+	if metricSeconds > 0 {
+		go metric.Loop(ctx, time.Duration(metricSeconds)*time.Second, log.Default())
+	}
+
 	// Create http server.
 	listenAddr := ":" + env["AUTOUPDATE_PORT"]
+
 	srv := &http.Server{
 		Addr:        listenAddr,
 		Handler:     mux,

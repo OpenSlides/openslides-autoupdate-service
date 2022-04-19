@@ -15,6 +15,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 )
 
 const (
@@ -30,7 +31,7 @@ type Connecter interface {
 
 // Autoupdate builds the requested keys from the body of a request. The
 // body has to be in the format specified in the keysbuilder package.
-func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter) {
+func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, counter *metric.CurrentCounter) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Cache-Control", "no-store, max-age=0")
@@ -94,7 +95,18 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter) {
 		}
 	})
 
-	mux.Handle(prefixPublic, validRequest(authMiddleware(handler, auth)))
+	mux.Handle(
+		prefixPublic,
+		validRequest(
+			authMiddleware(
+				countMiddleware(
+					handler,
+					counter,
+				),
+				auth,
+			),
+		),
+	)
 }
 
 // HistoryInformationer is an object, that can write the history information for
@@ -129,8 +141,8 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 	encoder := json.NewEncoder(w)
 
 	for ctx.Err() == nil {
-		// conn.Next() blocks, until there is new data. It also unblocks,
-		// when the client context or the server is closed.
+		// This blocks, until there is new data. It also unblocks, when the
+		// client context is done.
 		data, err := next(ctx)
 		if err != nil {
 			return fmt.Errorf("getting next message: %w", err)
@@ -183,14 +195,6 @@ func handleError(w http.ResponseWriter, err error, writeStatusCode bool) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 	}
 
-	var closing interface {
-		Closing()
-	}
-	if errors.As(err, &closing) {
-		// Server is closing.
-		return
-	}
-
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		// Client closed connection.
 		return
@@ -226,6 +230,19 @@ func validRequest(next http.Handler) http.Handler {
 			handleError(w, invalidRequestError{fmt.Errorf("Only GET or POST requests are supported")}, true)
 			return
 		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func countMiddleware(next http.Handler, counter *metric.CurrentCounter) http.Handler {
+	if counter == nil {
+		return next
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		counter.Add()
+		defer counter.Done()
 
 		next.ServeHTTP(w, r)
 	})

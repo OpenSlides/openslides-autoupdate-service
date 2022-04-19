@@ -121,6 +121,14 @@ func (c *cache) SetIfExistMany(data map[string][]byte) {
 	c.data.setIfExistMany(data)
 }
 
+func (c *cache) len() int {
+	return c.data.len()
+}
+
+func (c *cache) size() int {
+	return c.data.size()
+}
+
 // pendingMap is like a map but values are returned as pendingValues.
 type pendingMap struct {
 	sync.RWMutex
@@ -286,6 +294,19 @@ func (pm *pendingMap) setEmptyIfPending(keys ...string) {
 			delete(pm.pending, key)
 		}
 	}
+}
+
+func (pm *pendingMap) len() int {
+	return len(pm.data)
+}
+
+// size returns the size of all values in the cache in bytes.
+func (pm *pendingMap) size() int {
+	var size int
+	for _, v := range pm.data {
+		size += len(v)
+	}
+	return size
 }
 
 type rlocker interface {

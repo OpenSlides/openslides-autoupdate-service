@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync/atomic"
 )
 
 const (
@@ -28,6 +29,8 @@ type SourceDatastore struct {
 	url     string
 	client  *http.Client
 	updater Updater // TODO: Replace this with the real redis backend.
+
+	metricDSHitCount uint64
 }
 
 // NewSourceDatastore initializes a SourceDatastore.
@@ -43,6 +46,7 @@ func NewSourceDatastore(url string, updater Updater) *SourceDatastore {
 
 // Get fetches the request keys from the datastore-reader.
 func (s *SourceDatastore) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+	atomic.AddUint64(&s.metricDSHitCount, 1)
 	return s.GetPosition(ctx, 0, keys...)
 }
 
