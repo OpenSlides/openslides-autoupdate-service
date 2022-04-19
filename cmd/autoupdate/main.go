@@ -59,8 +59,8 @@ func defaultEnv() map[string]string {
 		"AUTH_HOST":     "localhost",
 		"AUTH_PORT":     "9004",
 
-		"OPENSLIDES_DEVELOPMENT": "false",
-		"METRIC_MINUTES":         "5",
+		"OPENSLIDES_DEVELOPMENT":  "false",
+		"METRIC_INTERVAL_SECONDS": "300",
 	}
 
 	for k := range defaults {
@@ -149,12 +149,12 @@ func run() error {
 	// Start metrics.
 	metric.Register(requestCount.Metric)
 	metric.Register(runtimeMetrics)
-	metricMinutes := 0
-	if got, err := strconv.Atoi(env["METRIC_MINUTES"]); err == nil {
-		metricMinutes = got
+	metricSeconds := 0
+	if got, err := strconv.Atoi(env["METRIC_INTERVAL_SECONDS"]); err == nil {
+		metricSeconds = got
 	}
-	if metricMinutes > 0 {
-		go metric.Loop(ctx, time.Duration(metricMinutes)*time.Minute, *log.Default())
+	if metricSeconds > 0 {
+		go metric.Loop(ctx, time.Duration(metricSeconds)*time.Second, *log.Default())
 	}
 
 	// Create http server.

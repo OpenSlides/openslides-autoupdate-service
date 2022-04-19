@@ -99,5 +99,5 @@ func (c *CurrentCounter) Done() {
 func (c *CurrentCounter) Metric(con Container) {
 	s := con.Sub("connection")
 	s.Add("current", c.current)
-	s.Add("totel", c.total)
+	s.Add("total", c.total)
 }
