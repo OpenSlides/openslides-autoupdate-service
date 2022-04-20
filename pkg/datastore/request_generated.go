@@ -1685,6 +1685,36 @@ func (r *Request) Meeting_ExportPdfFontsize(meetingID int) *ValueInt {
 	return v
 }
 
+func (r *Request) Meeting_ExportPdfLineHeight(meetingID int) *ValueFloat {
+	v := &ValueFloat{request: r}
+	r.requested[fmt.Sprintf("meeting/%d/export_pdf_line_height", meetingID)] = v
+	return v
+}
+
+func (r *Request) Meeting_ExportPdfPageMarginBottom(meetingID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("meeting/%d/export_pdf_page_margin_bottom", meetingID)] = v
+	return v
+}
+
+func (r *Request) Meeting_ExportPdfPageMarginLeft(meetingID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("meeting/%d/export_pdf_page_margin_left", meetingID)] = v
+	return v
+}
+
+func (r *Request) Meeting_ExportPdfPageMarginRight(meetingID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("meeting/%d/export_pdf_page_margin_right", meetingID)] = v
+	return v
+}
+
+func (r *Request) Meeting_ExportPdfPageMarginTop(meetingID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("meeting/%d/export_pdf_page_margin_top", meetingID)] = v
+	return v
+}
+
 func (r *Request) Meeting_ExportPdfPagenumberAlignment(meetingID int) *ValueString {
 	v := &ValueString{request: r}
 	r.requested[fmt.Sprintf("meeting/%d/export_pdf_pagenumber_alignment", meetingID)] = v
@@ -3146,6 +3176,12 @@ func (r *Request) Motion_SortParentID(motionID int) *ValueMaybeInt {
 func (r *Request) Motion_SortWeight(motionID int) *ValueInt {
 	v := &ValueInt{request: r}
 	r.requested[fmt.Sprintf("motion/%d/sort_weight", motionID)] = v
+	return v
+}
+
+func (r *Request) Motion_StartLineNumber(motionID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("motion/%d/start_line_number", motionID)] = v
 	return v
 }
 
