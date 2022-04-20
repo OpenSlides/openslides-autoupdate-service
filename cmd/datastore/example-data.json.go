@@ -605,6 +605,11 @@ var exampleData = map[string]json.RawMessage{
 	"meeting/1/export_csv_encoding":                            []byte(`"utf-8"`),
 	"meeting/1/export_csv_separator":                           []byte(`";"`),
 	"meeting/1/export_pdf_fontsize":                            []byte(`10`),
+	"meeting/1/export_pdf_line_height":                         []byte(`1.25`),
+	"meeting/1/export_pdf_page_margin_bottom":                  []byte(`20`),
+	"meeting/1/export_pdf_page_margin_left":                    []byte(`20`),
+	"meeting/1/export_pdf_page_margin_right":                   []byte(`20`),
+	"meeting/1/export_pdf_page_margin_top":                     []byte(`25`),
 	"meeting/1/export_pdf_pagenumber_alignment":                []byte(`"center"`),
 	"meeting/1/export_pdf_pagesize":                            []byte(`"A4"`),
 	"meeting/1/group_ids": []byte(`[
