@@ -890,6 +890,7 @@ var exampleData = map[string]json.RawMessage{
             ]`),
 	"motion/1/sequential_number": []byte(`1`),
 	"motion/1/sort_weight":       []byte(`10000`),
+	"motion/1/start_line_number": []byte(`1`),
 	"motion/1/state_id":          []byte(`1`),
 	"motion/1/submitter_ids": []byte(`[
                 1
@@ -912,6 +913,7 @@ var exampleData = map[string]json.RawMessage{
             ]`),
 	"motion/2/sequential_number": []byte(`2`),
 	"motion/2/sort_weight":       []byte(`10000`),
+	"motion/2/start_line_number": []byte(`1`),
 	"motion/2/state_extension":   []byte(`"<p>regeer</p>"`),
 	"motion/2/state_id":          []byte(`1`),
 	"motion/2/submitter_ids": []byte(`[
@@ -939,6 +941,7 @@ var exampleData = map[string]json.RawMessage{
 	"motion/3/number_value":        []byte(`2`),
 	"motion/3/sequential_number":   []byte(`3`),
 	"motion/3/sort_weight":         []byte(`10000`),
+	"motion/3/start_line_number":   []byte(`1`),
 	"motion/3/state_id":            []byte(`1`),
 	"motion/3/submitter_ids": []byte(`[
                 3
@@ -969,6 +972,7 @@ var exampleData = map[string]json.RawMessage{
             ]`),
 	"motion/4/sequential_number": []byte(`4`),
 	"motion/4/sort_weight":       []byte(`10000`),
+	"motion/4/start_line_number": []byte(`1`),
 	"motion/4/state_id":          []byte(`7`),
 	"motion/4/submitter_ids": []byte(`[
                 4
