@@ -297,11 +297,17 @@ func (pm *pendingMap) setEmptyIfPending(keys ...string) {
 }
 
 func (pm *pendingMap) len() int {
+	pm.RLock()
+	defer pm.RUnlock()
+
 	return len(pm.data)
 }
 
 // size returns the size of all values in the cache in bytes.
 func (pm *pendingMap) size() int {
+	pm.RLock()
+	defer pm.RUnlock()
+
 	var size int
 	for _, v := range pm.data {
 		size += len(v)
