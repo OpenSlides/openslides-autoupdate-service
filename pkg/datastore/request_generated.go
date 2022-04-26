@@ -1025,6 +1025,12 @@ func (r *Request) Committee_ForwardToCommitteeIDs(committeeID int) *ValueIntSlic
 	return v
 }
 
+func (r *Request) Committee_ForwardingUserID(committeeID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{request: r}
+	r.requested[fmt.Sprintf("committee/%d/forwarding_user_id", committeeID)] = v
+	return v
+}
+
 func (r *Request) Committee_ID(committeeID int) *ValueInt {
 	v := &ValueInt{request: r}
 	r.requested[fmt.Sprintf("committee/%d/id", committeeID)] = v
@@ -3047,6 +3053,12 @@ func (r *Request) Motion_DerivedMotionIDs(motionID int) *ValueIntSlice {
 	return v
 }
 
+func (r *Request) Motion_Forwarded(motionID int) *ValueInt {
+	v := &ValueInt{request: r}
+	r.requested[fmt.Sprintf("motion/%d/forwarded", motionID)] = v
+	return v
+}
+
 func (r *Request) Motion_ID(motionID int) *ValueInt {
 	v := &ValueInt{request: r}
 	r.requested[fmt.Sprintf("motion/%d/id", motionID)] = v
@@ -4514,6 +4526,12 @@ func (r *Request) User_Email(userID int) *ValueString {
 func (r *Request) User_FirstName(userID int) *ValueString {
 	v := &ValueString{request: r}
 	r.requested[fmt.Sprintf("user/%d/first_name", userID)] = v
+	return v
+}
+
+func (r *Request) User_ForwardingCommitteeIDs(userID int) *ValueIntSlice {
+	v := &ValueIntSlice{request: r}
+	r.requested[fmt.Sprintf("user/%d/forwarding_committee_ids", userID)] = v
 	return v
 }
 
