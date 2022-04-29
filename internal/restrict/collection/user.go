@@ -196,7 +196,7 @@ func (u User) RequiredObjects(ds *datastore.Request) []UserRequiredObject {
 			"motion submitter",
 			ds.User_SubmittedMotionIDsTmpl,
 			ds.User_SubmittedMotionIDs,
-			Motion{}.see,
+			MotionSubmitter{}.see,
 		},
 
 		{
