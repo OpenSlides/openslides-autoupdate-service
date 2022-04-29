@@ -181,7 +181,10 @@ func TestUserModeA(t *testing.T) {
 			submitted_motion_$_ids: ["1"]
 			submitted_motion_$1_ids: [4]
 		
-		motion/4:
+		motion_submitter/4:
+			motion_id: 7
+		
+		motion/7:
 			meeting_id: 30
 			state_id: 5
 		
