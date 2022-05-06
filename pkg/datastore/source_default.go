@@ -68,7 +68,7 @@ func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ..
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("requesting keys `%v`: %w", keys, err)
+		return nil, fmt.Errorf("requesting keys: %w", err)
 	}
 	defer resp.Body.Close()
 

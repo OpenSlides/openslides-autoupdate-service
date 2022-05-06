@@ -108,7 +108,7 @@ func (a AgendaItem) modeC(ctx context.Context, ds *datastore.Request, mperms *pe
 func (a AgendaItem) meetingID(ctx context.Context, request *datastore.Request, id int) (int, error) {
 	mid, err := request.AgendaItem_MeetingID(id).Value(ctx)
 	if err != nil {
-		return 0, fmt.Errorf("fetching meeting_id for agenda_item %d: %w", id, err)
+		return 0, fmt.Errorf("fetching meeting_id: %w", err)
 	}
 	return mid, nil
 }

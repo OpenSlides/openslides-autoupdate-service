@@ -86,7 +86,7 @@ func (los ListOfSpeakers) see(ctx context.Context, ds *datastore.Request, mperms
 func (los ListOfSpeakers) meetingID(ctx context.Context, ds *datastore.Request, id int) (int, error) {
 	mid, err := ds.ListOfSpeakers_MeetingID(id).Value(ctx)
 	if err != nil {
-		return 0, fmt.Errorf("fetching meeting_id for the list of speakers %d: %w", id, err)
+		return 0, fmt.Errorf("fetching meeting_id: %w", err)
 	}
 	return mid, nil
 }
