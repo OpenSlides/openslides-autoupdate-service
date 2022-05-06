@@ -120,6 +120,9 @@ func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder,
 		return nil, fmt.Errorf("get restricted data: %w", err)
 	}
 
+	var f filter
+	f.filter(data)
+
 	return data, nil
 }
 
