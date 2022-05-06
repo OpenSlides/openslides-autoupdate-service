@@ -116,10 +116,10 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 			}
 		}
 
-		foo := templateKeyPrefix(fqfield.CollectionField())
+		keyPrefix := templateKeyPrefix(fqfield.CollectionField())
 		// Relation List fields
-		if toCollectionfield, ok := relationListFields[foo]; ok {
-			value, err := filterRelationList(ctx, ds, mperms, toCollectionfield, isSuperAdmin, data[key])
+		if toCollectionfield, ok := relationListFields[keyPrefix]; ok {
+			value, err := filterRelationList(ctx, ds, mperms, fqfield.CollectionField(), toCollectionfield, isSuperAdmin, data[key])
 			if err != nil {
 				return fmt.Errorf("restrict relation-list ids of %q: %w", key, err)
 			}
@@ -187,6 +187,7 @@ func filterRelationList(
 	ctx context.Context,
 	ds *datastore.Request,
 	mperms *perm.MeetingPermission,
+	fromListField string,
 	toCollectionField string,
 	isSuperAdmin bool,
 	data []byte,
@@ -209,6 +210,19 @@ func filterRelationList(
 	for _, id := range ids {
 		allowed, err := relationListModeFunc(ctx, ds, mperms, id)
 		if err != nil {
+			var errDoesNotExist datastore.DoesNotExistError
+			if errors.As(err, &errDoesNotExist) && string(errDoesNotExist) == fmt.Sprintf("%s/%d/id", parts[0], id) {
+				log.Printf(
+					"Warning: datastore is corrupted. Relation-list field `%s` contains id `%d`, but `%s` with this id does not exist.",
+					fromListField,
+					id,
+					parts[0],
+				)
+
+				// List shows to a missing element. Ignore it.
+				continue
+			}
+
 			return nil, fmt.Errorf("checking %q for id %d: %w", toCollectionField, id, err)
 		}
 		if allowed {

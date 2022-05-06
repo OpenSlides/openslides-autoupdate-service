@@ -1,7 +1,10 @@
 package restrict_test
 
 import (
+	"bytes"
 	"context"
+	"log"
+	"strings"
 	"testing"
 
 	restrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
@@ -164,24 +167,38 @@ func TestRestrictSuperAdmin(t *testing.T) {
 	}
 }
 
-// func TestNullValue(t *testing.T) {
-// 	ctx, close := context.WithCancel(context.Background())
-// 	defer close()
-// 	ds := dsmock.NewMockDatastore(ctx.Done(), dsmock.YAMLData(`---
-// 	meeting/1/enable_anonymous
-// 	user/1/id: 1
-// 	motion/1/origin_id: null
-// 	`))
+func TestCorruptedDatastore(t *testing.T) {
+	ds := dsmock.Stub(dsmock.YAMLData(`---
+	projector/13:
+		meeting_id: 30
+		current_projection_ids: [404]
 
-// 	restricter := restrict.Middleware(ds, 1)
+	meeting/30/id: 30
+	user/1:
+		group_$_ids: ["30"]
+		group_$30_ids: [10]
+	group:
+		10:
+			meeting_id: 30
+			permissions:
+			- projector.can_see
+	`))
 
-// 	got, err := restricter.Get(ctx, "motion/1/origin_id")
-// 	if err != nil {
-// 		t.Fatalf("restricter.Get() returned: %v", err)
-// 	}
+	restricter := restrict.Middleware(ds, 1)
 
-// 	if v, ok := got["motion/1/origin_id"]; v != nil || !ok {
-// 		t.Errorf("restricter.Get()[motion/1/origin_id] returned (%v, %t), expected (nil, true)", v, ok)
-// 	}
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
 
-// }
+	got, err := restricter.Get(context.Background(), "projector/13/current_projection_ids")
+	if err != nil {
+		t.Fatalf("Restrict returned: %v", err)
+	}
+
+	if string(got["projector/13/current_projection_ids"]) != `[]` {
+		t.Errorf("projector/13/current_projection_ids == %s, expected an empty list", got["projector/13/current_projection_ids"])
+	}
+
+	if !strings.Contains(buf.String(), "Warning") {
+		t.Errorf("no warning logged, got: %s", buf.String())
+	}
+}

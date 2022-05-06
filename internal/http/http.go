@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
@@ -195,7 +196,7 @@ func handleError(w http.ResponseWriter, err error, writeStatusCode bool) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 	}
 
-	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) || errors.Is(err, syscall.EPIPE) {
 		// Client closed connection.
 		return
 	}
