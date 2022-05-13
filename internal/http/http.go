@@ -17,6 +17,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
 const (
@@ -27,7 +28,7 @@ const (
 // Connecter returns an connect object.
 type Connecter interface {
 	Connect(userID int, kb autoupdate.KeysBuilder) autoupdate.DataProvider
-	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[string][]byte, error)
+	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[datastore.Key][]byte, error)
 }
 
 // Autoupdate builds the requested keys from the body of a request. The
@@ -40,7 +41,7 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 		defer r.Body.Close()
 		uid := auth.FromContext(r.Context())
 
-		queryBuilder, err := keysbuilder.FromKeys(strings.Split(r.URL.Query().Get("k"), ","))
+		queryBuilder, err := keysbuilder.FromKeys(strings.Split(r.URL.Query().Get("k"), ",")...)
 		if err != nil {
 			handleError(w, fmt.Errorf("building keysbuilder from query: %w", err), true)
 			return
@@ -80,7 +81,7 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 
 			converted := make(map[string]json.RawMessage, len(data))
 			for k, v := range data {
-				converted[k] = v
+				converted[k.String()] = v
 			}
 
 			if err := json.NewEncoder(w).Encode(converted); err != nil {
@@ -151,7 +152,7 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 
 		converted := make(map[string]json.RawMessage, len(data))
 		for k, v := range data {
-			converted[k] = v
+			converted[k.String()] = v
 		}
 
 		if err := encoder.Encode(converted); err != nil {

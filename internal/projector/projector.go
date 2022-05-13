@@ -12,14 +12,14 @@ import (
 
 // Datastore gets values for keys and informs, if they change.
 type Datastore interface {
-	Get(ctx context.Context, keys ...string) (map[string][]byte, error)
-	RegisterCalculatedField(field string, f func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error))
+	Get(ctx context.Context, keys ...datastore.Key) (map[datastore.Key][]byte, error)
+	RegisterCalculatedField(field string, f func(ctx context.Context, key datastore.Key, changed map[datastore.Key][]byte) ([]byte, error))
 }
 
 // Register initializes a new projector.
 func Register(ds Datastore, slides *SlideStore) {
-	hotKeys := map[string]map[string]bool{}
-	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield string, changed map[string][]byte) (bs []byte, err error) {
+	hotKeys := map[datastore.Key]map[datastore.Key]bool{}
+	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield datastore.Key, changed map[datastore.Key][]byte) (bs []byte, err error) {
 		if changed != nil {
 			var needUpdate bool
 			for k := range changed {
@@ -46,14 +46,9 @@ func Register(ds Datastore, slides *SlideStore) {
 			hotKeys[fqfield] = recorder.Keys()
 		}()
 
-		parts := strings.SplitN(fqfield, "/", 3)
-		if len(parts) != 3 {
-			return nil, fmt.Errorf("invalid key %s, expected two '/'", fqfield)
-		}
-
 		data := fetch.Object(
 			ctx,
-			parts[0]+"/"+parts[1],
+			fqfield.FQID(),
 			"id",
 			"type",
 			"content_object_id",
@@ -66,7 +61,7 @@ func Register(ds Datastore, slides *SlideStore) {
 
 				return nil, nil
 			}
-			return nil, fmt.Errorf("fetching projection %s from datastore: %w", parts[1], err)
+			return nil, fmt.Errorf("fetching projection %d from datastore: %w", fqfield.ID, err)
 		}
 
 		p7on, err := p7onFromMap(data)

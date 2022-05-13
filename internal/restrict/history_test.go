@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
 
@@ -177,14 +178,19 @@ func TestHistoryGetter(t *testing.T) {
 			oldDS := dsmock.Stub(dsmock.YAMLData(tt.old))
 			history := restrict.NewHistory(1, currentDS, oldDS)
 
-			got, err := history.Get(ctx, tt.keys...)
+			keys := make([]datastore.Key, len(tt.keys))
+			for i, k := range tt.keys {
+				keys[i] = MustKey(k)
+			}
+
+			got, err := history.Get(ctx, keys...)
 			if err != nil {
 				t.Fatalf("Get returned: %v", err)
 			}
 
 			gotKeys := make([]string, 0, len(got))
 			for k := range got {
-				gotKeys = append(gotKeys, k)
+				gotKeys = append(gotKeys, k.String())
 			}
 
 			if !test.CmpSlice(gotKeys, tt.expect) {

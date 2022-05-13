@@ -193,7 +193,7 @@ func TestMotion(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		options []byte
-		data    map[string][]byte
+		data    map[datastore.Key][]byte
 		expect  string
 	}{
 		{
@@ -297,13 +297,13 @@ func TestMotion(t *testing.T) {
 		{
 			"motion including conditional fields",
 			[]byte(`{"mode":"final"}`),
-			changeData(data, map[string][]byte{
-				"meeting/1/motions_enable_text_on_projector":           []byte(`true`),
-				"meeting/1/motions_enable_reason_on_projector":         []byte(`true`),
-				"meeting/1/motions_show_referring_motions":             []byte(`true`),
-				"meeting/1/motions_enable_recommendation_on_projector": []byte(`true`),
-				"motion/1/lead_motion_id":                              []byte(`2`),
-				"motion/1/statute_paragraph_id":                        []byte(`1`),
+			changeData(data, map[datastore.Key][]byte{
+				MustKey("meeting/1/motions_enable_text_on_projector"):           []byte(`true`),
+				MustKey("meeting/1/motions_enable_reason_on_projector"):         []byte(`true`),
+				MustKey("meeting/1/motions_show_referring_motions"):             []byte(`true`),
+				MustKey("meeting/1/motions_enable_recommendation_on_projector"): []byte(`true`),
+				MustKey("motion/1/lead_motion_id"):                              []byte(`2`),
+				MustKey("motion/1/statute_paragraph_id"):                        []byte(`1`),
 			}),
 			`{
                 "id":1,

@@ -34,6 +34,11 @@ func (k Key) FQID() string {
 	return fmt.Sprintf("%s/%d", k.Collection, k.ID)
 }
 
+// CollectionField returns the first and last part of the key.
+func (k Key) CollectionField() string {
+	return k.Collection + "/" + k.Field
+}
+
 // IDField retuns the the /id field for the key.
 func (k Key) IDField() Key {
 	k.Field = "id"

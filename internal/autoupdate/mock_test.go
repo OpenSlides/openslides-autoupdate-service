@@ -4,16 +4,18 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
 
 func getConnection(closed <-chan struct{}) (autoupdate.DataProvider, *dsmock.MockDatastore) {
-	datastore := dsmock.NewMockDatastore(closed, map[string][]byte{
-		"user/1/name": []byte(`"Hello World"`),
+	datastore := dsmock.NewMockDatastore(closed, map[datastore.Key][]byte{
+		userNameKey: []byte(`"Hello World"`),
 	})
 	s := autoupdate.New(datastore, test.RestrictAllowed, "")
-	kb := test.KeysBuilder{K: test.Str("user/1/name")}
+	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 	next := s.Connect(1, kb)
 
 	return next, datastore

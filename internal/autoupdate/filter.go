@@ -2,6 +2,8 @@ package autoupdate
 
 import (
 	"hash/maphash"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
 func createHash(hasher *maphash.Hash, value []byte) uint64 {
@@ -14,15 +16,15 @@ func createHash(hasher *maphash.Hash, value []byte) uint64 {
 
 type filter struct {
 	hasher  maphash.Hash
-	history map[string]uint64
+	history map[datastore.Key]uint64
 }
 
 // filter has to be called on a reader that contains a decoded json object. It
 // removes nil values from a map. Filter is called multiple times it removes
 // values from the map, that did not chance.
-func (f *filter) filter(data map[string][]byte) {
+func (f *filter) filter(data map[datastore.Key][]byte) {
 	if f.history == nil {
-		f.history = make(map[string]uint64)
+		f.history = make(map[datastore.Key]uint64)
 	}
 
 	for key, value := range data {
@@ -53,6 +55,6 @@ func (f *filter) empty() bool {
 // delete removes the key k from the filter.
 //
 // The next time the filter is called with the key, it will not be filtered.
-func (f *filter) delete(k string) {
+func (f *filter) delete(k datastore.Key) {
 	delete(f.history, k)
 }

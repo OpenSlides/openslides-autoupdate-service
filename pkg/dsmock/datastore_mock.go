@@ -57,7 +57,7 @@ func YAMLData(input string) map[datastore.Key][]byte {
 					data[key] = bs
 				}
 
-				idKey, err := datastore.KeyFromString(fmt.Sprintf("%s/%d", dbKey, id))
+				idKey, err := datastore.KeyFromString(fmt.Sprintf("%s/%d/id", dbKey, id))
 				if err != nil {
 					panic(err)
 				}
@@ -82,7 +82,7 @@ func YAMLData(input string) map[datastore.Key][]byte {
 				data[fqfield] = bs
 			}
 
-			idKey, err := datastore.KeyFromString(fmt.Sprintf("%s/%s", parts[0], parts[1]))
+			idKey, err := datastore.KeyFromString(fmt.Sprintf("%s/%s/id", parts[0], parts[1]))
 			if err != nil {
 				panic(err)
 			}

@@ -40,16 +40,11 @@ const (
 	datastoreCacheResetTime = 24 * time.Hour
 )
 
-// Format of keys in the topic that shows, that a full update is necessary. It
-// is in the same namespace then model names. So make sure, there is no model
-// with this name.
-const fullUpdateFormat = "fullupdate/%d"
-
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
 // with autoupdate.New().
 type Autoupdate struct {
 	datastore  Datastore
-	topic      *topic.Topic[string]
+	topic      *topic.Topic[datastore.Key]
 	restricter RestrictMiddleware
 	voteAddr   string
 }
@@ -61,17 +56,17 @@ type RestrictMiddleware func(getter datastore.Getter, uid int) datastore.Getter
 //
 // The attribute closed is a channel that should be closed when the server shuts
 // down. In this case, all connections get closed.
-func New(datastore Datastore, restricter RestrictMiddleware, voteAddr string) *Autoupdate {
+func New(ds Datastore, restricter RestrictMiddleware, voteAddr string) *Autoupdate {
 	a := &Autoupdate{
-		datastore:  datastore,
-		topic:      topic.New[string](),
+		datastore:  ds,
+		topic:      topic.New[datastore.Key](),
 		restricter: restricter,
 		voteAddr:   voteAddr,
 	}
 
 	// Update the topic when an data update is received.
-	a.datastore.RegisterChangeListener(func(data map[string][]byte) error {
-		keys := make([]string, 0, len(data))
+	a.datastore.RegisterChangeListener(func(data map[datastore.Key][]byte) error {
+		keys := make([]datastore.Key, 0, len(data))
 		for k := range data {
 			keys = append(keys, k)
 		}
@@ -84,7 +79,7 @@ func New(datastore Datastore, restricter RestrictMiddleware, voteAddr string) *A
 }
 
 // DataProvider is a function that returns the next data for a user.
-type DataProvider func(ctx context.Context) (map[string][]byte, error)
+type DataProvider func(ctx context.Context) (map[datastore.Key][]byte, error)
 
 // Connect has to be called by a client to register to the service. The method
 // returns a Connection object, that can be used to receive the data.
@@ -102,7 +97,7 @@ func (a *Autoupdate) Connect(userID int, kb KeysBuilder) DataProvider {
 
 // SingleData returns the data for the kb. It is the same as calling Connect and
 // then Next for the first time.
-func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder, position int) (map[string][]byte, error) {
+func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder, position int) (map[datastore.Key][]byte, error) {
 	var getter datastore.Getter = a.datastore
 	var restricter datastore.Getter = a.restricter(getter, userID)
 
@@ -159,8 +154,6 @@ func (a *Autoupdate) ResetCache(ctx context.Context) {
 			return
 		case <-tick.C:
 			a.datastore.ResetCache()
-			// After the cache was updated, every connection has to be recalculated.
-			a.topic.Publish(fmt.Sprintf(fullUpdateFormat, -1))
 		}
 	}
 }
@@ -183,7 +176,7 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 	if err != nil {
 		var errNotExist datastore.DoesNotExistError
 		if errors.As(err, &errNotExist) {
-			return notExistError{string(errNotExist)}
+			return notExistError{datastore.Key(errNotExist)}
 		}
 		return fmt.Errorf("getting meeting id for collection %s id %d: %w", coll, id, err)
 	}
@@ -230,13 +223,13 @@ func (e permissionDeniedError) Type() string {
 }
 
 type notExistError struct {
-	fqid string
+	key datastore.Key
 }
 
 func (e notExistError) Error() string {
-	return fmt.Sprintf("%s does not exist", e.fqid)
+	return fmt.Sprintf("%s does not exist", e.key)
 }
 
 func (e notExistError) Type() string {
-	return "ont_exist"
+	return "not_exist"
 }

@@ -10,10 +10,13 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var userNameKey = autoupdate.MustKey("user/1/name")
 
 func TestConnect(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
@@ -25,7 +28,7 @@ func TestConnect(t *testing.T) {
 		t.Errorf("next() returned an error: %v", err)
 	}
 
-	if value, ok := data["user/1/name"]; !ok || string(value) != `"Hello World"` {
+	if value, ok := data[userNameKey]; !ok || string(value) != `"Hello World"` {
 		t.Errorf("next() returned %v, expected map[user/1/name:\"Hello World\"", data)
 	}
 }
@@ -54,14 +57,14 @@ func TestConnectionReadNewData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	next, datastore := getConnection(shutdownCtx.Done())
-	go datastore.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
+	next, ds := getConnection(shutdownCtx.Done())
+	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	if _, err := next(context.Background()); err != nil {
 		t.Errorf("next() returned an error: %v", err)
 	}
 
-	datastore.Send(map[string][]byte{"user/1/name": []byte(`"new value"`)})
+	ds.Send(map[datastore.Key][]byte{userNameKey: []byte(`"new value"`)})
 	data, err := next(context.Background())
 
 	if err != nil {
@@ -70,27 +73,27 @@ func TestConnectionReadNewData(t *testing.T) {
 	if got := len(data); got != 1 {
 		t.Errorf("Expected data to have one key, got: %d", got)
 	}
-	if value, ok := data["user/1/name"]; !ok || string(value) != `"new value"` {
-		t.Errorf("next() returned %v, expected %v", data, map[string]string{"user/1/name": `"new value"`})
+	if value, ok := data[userNameKey]; !ok || string(value) != `"new value"` {
+		t.Errorf("next() returned %v, expected %v", data, map[datastore.Key]string{userNameKey: `"new value"`})
 	}
 }
 
 func TestConnectionEmptyData(t *testing.T) {
-	const (
-		doesNotExistKey = "doesnot/1/exist"
-		doesExistKey    = "user/1/name"
+	var (
+		doesNotExistKey = autoupdate.MustKey("doesnot/1/exist")
+		doesExistKey    = userNameKey
 	)
 
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
 		doesExistKey: []byte(`"Hello World"`),
 	})
-	go datastore.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
+	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
-	s := autoupdate.New(datastore, test.RestrictAllowed, "")
-	kb := test.KeysBuilder{K: test.Str(doesExistKey, doesNotExistKey)}
+	s := autoupdate.New(ds, test.RestrictAllowed, "")
+	kb, _ := keysbuilder.FromKeys(doesExistKey.String(), doesNotExistKey.String())
 
 	t.Run("First response", func(t *testing.T) {
 		next := s.Connect(1, kb)
@@ -103,31 +106,31 @@ func TestConnectionEmptyData(t *testing.T) {
 
 	for _, tt := range []struct {
 		name           string
-		update         map[string][]byte
+		update         map[datastore.Key][]byte
 		expectBlocking bool
 		expectExist    bool
 		expectNotExist bool
 	}{
 		{
 			name:           "not exist->not exist",
-			update:         map[string][]byte{doesNotExistKey: nil},
+			update:         map[datastore.Key][]byte{doesNotExistKey: nil},
 			expectBlocking: true,
 		},
 		{
 			name:           "not exist->exist",
-			update:         map[string][]byte{doesNotExistKey: []byte("value")},
+			update:         map[datastore.Key][]byte{doesNotExistKey: []byte("value")},
 			expectExist:    false, // existing key gets filtered.
 			expectNotExist: true,
 		},
 		{
 			name:           "exist->not exist",
-			update:         map[string][]byte{doesExistKey: nil},
+			update:         map[datastore.Key][]byte{doesExistKey: nil},
 			expectExist:    true,
 			expectNotExist: false,
 		},
 		{
 			name:           "exist->exist",
-			update:         map[string][]byte{doesExistKey: []byte("new value")},
+			update:         map[datastore.Key][]byte{doesExistKey: []byte("new value")},
 			expectExist:    true,
 			expectNotExist: false,
 		},
@@ -138,9 +141,9 @@ func TestConnectionEmptyData(t *testing.T) {
 				t.Errorf("next() returned an error: %v", err)
 			}
 
-			datastore.Send(tt.update)
+			ds.Send(tt.update)
 
-			var data map[string][]byte
+			var data map[datastore.Key][]byte
 			var err error
 			isBlocking := blocking(func() {
 				data, err = next(context.Background())
@@ -174,14 +177,14 @@ func TestConnectionEmptyData(t *testing.T) {
 		}
 
 		// First time not exist
-		datastore.Send(map[string][]byte{doesExistKey: nil})
+		ds.Send(map[datastore.Key][]byte{doesExistKey: nil})
 
 		blocking(func() {
 			next(context.Background())
 		})
 
 		// Second time not exist
-		datastore.Send(map[string][]byte{doesExistKey: nil})
+		ds.Send(map[datastore.Key][]byte{doesExistKey: nil})
 
 		var err error
 		isBlocking := blocking(func() {
@@ -198,19 +201,19 @@ func TestConnectionFilterData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
-		"user/1/name": []byte(`"Hello World"`),
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+		userNameKey: []byte(`"Hello World"`),
 	})
 
-	s := autoupdate.New(datastore, test.RestrictAllowed, "")
-	kb := test.KeysBuilder{K: test.Str("user/1/name")}
+	s := autoupdate.New(ds, test.RestrictAllowed, "")
+	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 	next := s.Connect(1, kb)
 	if _, err := next(context.Background()); err != nil {
 		t.Errorf("next() returned an error: %v", err)
 	}
 
 	// send again, value did not change in restricter
-	datastore.Send(map[string][]byte{"user/1/name": []byte(`"Hello World"`)})
+	ds.Send(map[datastore.Key][]byte{userNameKey: []byte(`"Hello World"`)})
 	data, err := next(context.Background())
 
 	if err != nil {
@@ -219,7 +222,7 @@ func TestConnectionFilterData(t *testing.T) {
 	if got := len(data); got != 0 {
 		t.Errorf("Got %d keys, expected none", got)
 	}
-	if _, ok := data["user/1/name"]; ok {
+	if _, ok := data[userNameKey]; ok {
 		t.Errorf("next() returned %v, expected empty map", data)
 	}
 }
@@ -228,19 +231,19 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
-		"user/1/name": []byte(`"Hello World"`),
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+		userNameKey: []byte(`"Hello World"`),
 	})
-	go datastore.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
+	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
-	s := autoupdate.New(datastore, test.RestrictAllowed, "")
-	kb := test.KeysBuilder{K: test.Str("user/1/name")}
+	s := autoupdate.New(ds, test.RestrictAllowed, "")
+	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 	next := s.Connect(1, kb)
 	if _, err := next(context.Background()); err != nil {
 		t.Errorf("next() returned an error: %v", err)
 	}
 
-	datastore.Send(map[string][]byte{"user/1/name": []byte(`"newname"`)})
+	ds.Send(map[datastore.Key][]byte{userNameKey: []byte(`"newname"`)})
 	data, err := next(context.Background())
 
 	if err != nil {
@@ -249,10 +252,10 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	if got := len(data); got != 1 {
 		t.Errorf("Expected data to have one key, got: %d", got)
 	}
-	if _, ok := data["user/1/name"]; !ok {
+	if _, ok := data[userNameKey]; !ok {
 		t.Errorf("Returned value does not have key `user/1/name`")
 	}
-	if got := string(data["user/1/name"]); got != `"newname"` {
+	if got := string(data[userNameKey]); got != `"newname"` {
 		t.Errorf("Expect value `newname` got: %s", got)
 	}
 }
@@ -261,17 +264,17 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
-		"user/1/name": []byte(`"Hello World"`),
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+		userNameKey: []byte(`"Hello World"`),
 	})
 
-	s := autoupdate.New(datastore, test.RestrictNotAllowed, "")
-	kb := test.KeysBuilder{K: test.Str("user/1/name")}
+	s := autoupdate.New(ds, test.RestrictNotAllowed, "")
+	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 
 	next := s.Connect(1, kb)
 
 	t.Run("first call", func(t *testing.T) {
-		var data map[string][]byte
+		var data map[datastore.Key][]byte
 		var err error
 		isBlocked := blocking(func() {
 			data, err = next(context.Background())
@@ -283,7 +286,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 	})
 
 	t.Run("next call", func(t *testing.T) {
-		var data map[string][]byte
+		var data map[datastore.Key][]byte
 		var err error
 		isBlocked := blocking(func() {
 			data, err = next(context.Background())
@@ -362,11 +365,11 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 		t.Errorf("second data contained 2 values, expected only one. Got: %v", secondData)
 	}
 
-	if v := string(secondData["organization/1/organization_tag_ids"]); v != "[1]" {
+	if v := string(secondData[autoupdate.MustKey("organization/1/organization_tag_ids")]); v != "[1]" {
 		t.Errorf("Got organization/1/organization_tag_ids: %q, expected [1]", v)
 	}
 
-	if v, ok := secondData["organization_tag/2/id"]; ok {
+	if v, ok := secondData[autoupdate.MustKey("organization_tag/2/id")]; ok {
 		t.Errorf("Got value for deleted object organization_tag/2/id: %s", v)
 	}
 }
@@ -438,11 +441,11 @@ func TestKeyRequestedAgain(t *testing.T) {
 		t.Errorf("second data contained %d values, expected two. Got: %v", len(testData), testData)
 	}
 
-	if v := string(testData["organization/1/organization_tag_ids"]); v != "[1,2]" {
+	if v := string(testData[autoupdate.MustKey("organization/1/organization_tag_ids")]); v != "[1,2]" {
 		t.Errorf("Got organization/1/organization_tag_ids: %q, expected [1,2]", v)
 	}
 
-	if v := string(testData["organization_tag/2/id"]); v != "2" {
+	if v := string(testData[autoupdate.MustKey("organization_tag/2/id")]); v != "2" {
 		t.Errorf("Got organization_tag/2/id: %q, expected 2", v)
 	}
 }

@@ -190,8 +190,8 @@ func TestUserWithError(t *testing.T) {
 	defer cancel()
 
 	userSlide := setup(t)
-	data := map[string][]byte{
-		"user/1/id": []byte(`1`),
+	data := map[datastore.Key][]byte{
+		MustKey("user/1/id"): []byte(`1`),
 	}
 
 	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), data))

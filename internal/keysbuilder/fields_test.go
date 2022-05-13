@@ -106,7 +106,7 @@ func TestRequestErrors(t *testing.T) {
 				"fields": {"name": null}
 			}`,
 			"attribute collection is missing",
-			strs(),
+			nil,
 		},
 		{
 			"no ids",
@@ -115,7 +115,7 @@ func TestRequestErrors(t *testing.T) {
 				"collection": "user"
 			}`,
 			"no ids",
-			strs(),
+			nil,
 		},
 		{
 			"Relation no collection",
@@ -130,7 +130,7 @@ func TestRequestErrors(t *testing.T) {
 				}
 			}`,
 			`field "group_id": no collection`,
-			strs("group_id"),
+			[]string{"group_id"},
 		},
 		{
 			"NoType",
@@ -145,7 +145,7 @@ func TestRequestErrors(t *testing.T) {
 				}
 			}`,
 			`field "group_id": no type`,
-			strs("group_id"),
+			[]string{"group_id"},
 		},
 		{
 			"NoType sub",
@@ -168,7 +168,7 @@ func TestRequestErrors(t *testing.T) {
 				}
 			}`,
 			`field "group_id.perm_ids": no type`,
-			strs("group_id", "perm_ids"),
+			[]string{"group_id", "perm_ids"},
 		},
 		{
 			"NoType sub",
@@ -191,7 +191,7 @@ func TestRequestErrors(t *testing.T) {
 				}
 			}`,
 			`field "group_id.perm_ids": no type`,
-			strs("group_id", "perm_ids"),
+			[]string{"group_id", "perm_ids"},
 		},
 		{
 			"Unknown Type",
@@ -207,7 +207,7 @@ func TestRequestErrors(t *testing.T) {
 				}
 			}`,
 			`field "group_id": unknown type invalid-type`,
-			strs("group_id"),
+			[]string{"group_id"},
 		},
 		{
 			"Relation twice no fields",
@@ -228,7 +228,7 @@ func TestRequestErrors(t *testing.T) {
 				}
 			}`,
 			`field "group_ids.perm_ids": no fields`,
-			strs("group_ids", "perm_ids"),
+			[]string{"group_ids", "perm_ids"},
 		},
 		{
 			"collection has upper letter",
@@ -239,7 +239,7 @@ func TestRequestErrors(t *testing.T) {
 			}
 			`,
 			"invalid collection name",
-			strs(),
+			nil,
 		},
 		{
 			"field with upper letter",
@@ -250,7 +250,7 @@ func TestRequestErrors(t *testing.T) {
 			}
 			`,
 			"field \"Username\": fieldname \"Username\" is not a valid fieldname",
-			strs("Username"),
+			[]string{"Username"},
 		},
 		{
 			"collection in relation-field has upper letter",
@@ -267,7 +267,7 @@ func TestRequestErrors(t *testing.T) {
 			}
 			`,
 			"field \"group_id\": invalid collection name",
-			strs("group_id"),
+			[]string{"group_id"},
 		},
 		{
 			"collection in relation-list-field has upper letter",
@@ -284,7 +284,7 @@ func TestRequestErrors(t *testing.T) {
 			}
 			`,
 			"field \"group_ids\": invalid collection name",
-			strs("group_ids"),
+			[]string{"group_ids"},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

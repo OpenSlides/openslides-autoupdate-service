@@ -8,8 +8,17 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
+
+func MustKey(in string) datastore.Key {
+	k, err := datastore.KeyFromString(in)
+	if err != nil {
+		panic(err)
+	}
+	return k
+}
 
 func FuzzFromJSON(f *testing.F) {
 	f.Add(`{
@@ -140,19 +149,19 @@ func FuzzFromJSON(f *testing.F) {
 		}
 	}`)
 
-	ds := dsmock.Stub(map[string][]byte{
-		"user/1/note_id":       []byte(`1`),
-		"user/1/group_ids":     []byte(`[1,2]`),
-		"note/1/motion_id":     []byte(`1`),
-		"group/1/perm_ids":     []byte(`[1,2]`),
-		"group/2/perm_ids":     []byte(`[1,2]`),
-		"user/1/group_$_ids":   []byte(`["1","2"]`),
-		"user/1/group_$1_ids":  []byte(`[1,2]`),
-		"user/1/group_$_2_ids": []byte(`[1,2]`),
-		"user/1/like":          []byte(`"topic/1"`),
-		"user/1/likes":         []byte(`["topic/1","agenda/1"]`),
-		"topic/1/tag_ids":      []byte(`[1,2]`),
-		"agenda/1/tag_ids":     []byte(`[1,2]`),
+	ds := dsmock.Stub(map[datastore.Key][]byte{
+		MustKey("user/1/note_id"):       []byte(`1`),
+		MustKey("user/1/group_ids"):     []byte(`[1,2]`),
+		MustKey("note/1/motion_id"):     []byte(`1`),
+		MustKey("group/1/perm_ids"):     []byte(`[1,2]`),
+		MustKey("group/2/perm_ids"):     []byte(`[1,2]`),
+		MustKey("user/1/group_$_ids"):   []byte(`["1","2"]`),
+		MustKey("user/1/group_$1_ids"):  []byte(`[1,2]`),
+		MustKey("user/1/group_$_2_ids"): []byte(`[1,2]`),
+		MustKey("user/1/like"):          []byte(`"topic/1"`),
+		MustKey("user/1/likes"):         []byte(`["topic/1","agenda/1"]`),
+		MustKey("topic/1/tag_ids"):      []byte(`[1,2]`),
+		MustKey("agenda/1/tag_ids"):     []byte(`[1,2]`),
 	})
 
 	f.Fuzz(func(t *testing.T, query string) {

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
 const (
@@ -36,7 +38,7 @@ type Redis struct {
 }
 
 // Update is a blocking function that returns, when there is new data.
-func (r *Redis) Update(ctx context.Context) (map[string][]byte, error) {
+func (r *Redis) Update(ctx context.Context) (map[datastore.Key][]byte, error) {
 	id := r.lastAutoupdateID
 	if id == "" {
 		id = "$"
@@ -54,7 +56,17 @@ func (r *Redis) Update(ctx context.Context) (map[string][]byte, error) {
 	if id != "" {
 		r.lastAutoupdateID = id
 	}
-	return data, nil
+
+	converted := make(map[datastore.Key][]byte, len(data))
+	for k, v := range data {
+		key, err := datastore.KeyFromString(k)
+		if err != nil {
+			return nil, fmt.Errorf("invalid key: %s", k)
+		}
+		converted[key] = v
+	}
+
+	return converted, nil
 }
 
 // LogoutEvent is a blocking function that returns, when a session was revoked.

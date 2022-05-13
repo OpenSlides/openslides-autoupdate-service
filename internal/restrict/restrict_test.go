@@ -8,8 +8,17 @@ import (
 	"testing"
 
 	restrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
+
+func MustKey(in string) datastore.Key {
+	k, err := datastore.KeyFromString(in)
+	if err != nil {
+		panic(err)
+	}
+	return k
+}
 
 func TestRestrict(t *testing.T) {
 	ds := dsmock.Stub(dsmock.YAMLData(`---
@@ -67,19 +76,19 @@ func TestRestrict(t *testing.T) {
 
 	restricter := restrict.Middleware(ds, 1)
 
-	keys := []string{
-		"agenda_item/1/item_number",
-		"agenda_item/1/unknown_field",
-		"agenda_item/1/tag_ids",
-		"agenda_item/10/item_number",
-		"unknown_collection/1/field",
-		"tag/1/tagged_ids",
-		"user/1/group_$_ids",
-		"user/1/group_$30_ids",
-		"user/1/group_$2_ids",
-		"agenda_item/2/content_object_id",
-		"agenda_item/2/parent_id",
-		"motion/1/origin_id",
+	keys := []datastore.Key{
+		MustKey("agenda_item/1/item_number"),
+		MustKey("agenda_item/1/unknown_field"),
+		MustKey("agenda_item/1/tag_ids"),
+		MustKey("agenda_item/10/item_number"),
+		MustKey("unknown_collection/1/field"),
+		MustKey("tag/1/tagged_ids"),
+		MustKey("user/1/group_$_ids"),
+		MustKey("user/1/group_$30_ids"),
+		MustKey("user/1/group_$2_ids"),
+		MustKey("agenda_item/2/content_object_id"),
+		MustKey("agenda_item/2/parent_id"),
+		MustKey("motion/1/origin_id"),
 	}
 
 	data, err := restricter.Get(context.Background(), keys...)
@@ -88,40 +97,40 @@ func TestRestrict(t *testing.T) {
 		t.Fatalf("Restrict returned: %v", err)
 	}
 
-	if data["agenda_item/1/item_number"] == nil {
+	if data[MustKey("agenda_item/1/item_number")] == nil {
 		t.Errorf("agenda_item/1/item_number was removed")
 	}
 
-	if data["agenda_item/1/unknown_field"] != nil {
+	if data[MustKey("agenda_item/1/unknown_field")] != nil {
 		t.Errorf("agenda_item/1/item_number was not removed")
 	}
 
-	if data["agenda_item/10/item_number"] != nil {
+	if data[MustKey("agenda_item/10/item_number")] != nil {
 		t.Errorf("agenda_item/10/item_number was not removed")
 	}
 
-	if data["unknown_collection/1/field"] != nil {
+	if data[MustKey("unknown_collection/1/field")] != nil {
 		t.Errorf("unknown_collection/1/field was not removed")
 	}
 
-	if got := string(data["tag/1/tagged_ids"]); got != `["agenda_item/1"]` {
+	if got := string(data[MustKey("tag/1/tagged_ids")]); got != `["agenda_item/1"]` {
 		t.Errorf("tag/1/tagged_ids was restricted to %q, expedted %q", got, `["agenda_item/1"]`)
 	}
 
-	if got := string(data["agenda_item/1/tag_ids"]); got != `[1]` {
+	if got := string(data[MustKey("agenda_item/1/tag_ids")]); got != `[1]` {
 		t.Errorf("agenda_item/1/tag_ids was restricted to %q, expedted %q", got, `[1]`)
 	}
 
 	// This should change in the future. meeting 2 is not visible
-	if got := string(data["user/1/group_$_ids"]); got != `["30","2"]` {
+	if got := string(data[MustKey("user/1/group_$_ids")]); got != `["30","2"]` {
 		t.Errorf("user/1/group_$_ids was restricted to %q, did not expect it", got)
 	}
 
-	if got := string(data["user/1/group_$30_ids"]); got != `[10]` {
+	if got := string(data[MustKey("user/1/group_$30_ids")]); got != `[10]` {
 		t.Errorf("user/1/group_$30_ids was restricted to %q, did not expect it", got)
 	}
 
-	if got := string(data["user/1/group_$2_ids"]); got != `[]` {
+	if got := string(data[MustKey("user/1/group_$2_ids")]); got != `[]` {
 		t.Errorf("user/1/group_$2_ids is %q, expected a empty list", got)
 	}
 }
@@ -138,11 +147,11 @@ func TestRestrictSuperAdmin(t *testing.T) {
 
 	restricter := restrict.Middleware(ds, 1)
 
-	keys := []string{
-		"unknown_collection/404/field",
-		"personal_note/1/id",
-		"personal_note/2/id",
-		"user/404/unknown_field",
+	keys := []datastore.Key{
+		MustKey("unknown_collection/404/field"),
+		MustKey("personal_note/1/id"),
+		MustKey("personal_note/2/id"),
+		MustKey("user/404/unknown_field"),
 	}
 
 	got, err := restricter.Get(context.Background(), keys...)
@@ -150,19 +159,19 @@ func TestRestrictSuperAdmin(t *testing.T) {
 		t.Fatalf("Restrict returned: %v", err)
 	}
 
-	if got["unknown_collection/404/field"] == nil {
+	if got[MustKey("unknown_collection/404/field")] == nil {
 		t.Errorf("unknown_collection/404/field was restricted")
 	}
 
-	if got["user/404/unknown_field"] == nil {
+	if got[MustKey("user/404/unknown_field")] == nil {
 		t.Errorf("user/404/unknown_field was restricted")
 	}
 
-	if got["personal_note/1/id"] == nil {
+	if got[MustKey("personal_note/1/id")] == nil {
 		t.Errorf("personal_note/1/id got restricted")
 	}
 
-	if got["personal_note/2/id"] != nil {
+	if got[MustKey("personal_note/2/id")] != nil {
 		t.Errorf("personal_note/2/id got not restricted")
 	}
 }
@@ -189,13 +198,13 @@ func TestCorruptedDatastore(t *testing.T) {
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
 
-	got, err := restricter.Get(context.Background(), "projector/13/current_projection_ids")
+	got, err := restricter.Get(context.Background(), MustKey("projector/13/current_projection_ids"))
 	if err != nil {
 		t.Fatalf("Restrict returned: %v", err)
 	}
 
-	if string(got["projector/13/current_projection_ids"]) != `[]` {
-		t.Errorf("projector/13/current_projection_ids == %s, expected an empty list", got["projector/13/current_projection_ids"])
+	if string(got[MustKey("projector/13/current_projection_ids")]) != `[]` {
+		t.Errorf("projector/13/current_projection_ids == %s, expected an empty list", got[MustKey("projector/13/current_projection_ids")])
 	}
 
 	if !strings.Contains(buf.String(), "Warning") {
