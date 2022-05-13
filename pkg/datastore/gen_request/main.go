@@ -184,11 +184,11 @@ func parse(r io.Reader) ([]field, error) {
 	for collectionName, collection := range inData {
 		for fieldName, modelField := range collection.Fields {
 			f := field{}
-			f.Name = collectionName + "/" + fieldName
 			f.GoName = goName(collectionName) + "_" + goName(fieldName)
 			f.ValueType = valueType(modelField.Type, modelField.Required)
 			f.Collection = firstLower(goName(collectionName))
-			f.FQField = collectionName + "/%d/" + fieldName
+			f.CollectionName = collectionName
+			f.FieldName = fieldName
 			f.Required = modelField.Required
 
 			if modelField.Type == "relation" || modelField.Type == "generic-relation" {
@@ -198,13 +198,13 @@ func parse(r io.Reader) ([]field, error) {
 			if strings.Contains(fieldName, "$") {
 				f.TemplateAttr = "replacement"
 				f.TemplateAttrType = "string"
-				f.TemplateFQField = collectionName + "/%d/" + strings.Replace(fieldName, "$", "$%s", 1)
+				f.TemplateFieldName = strings.Replace(fieldName, "$", "$%s", 1)
 				f.ValueType = valueType(modelField.Template.Fields.Type, true)
 
 				if modelField.Template.Replacement != "" {
 					f.TemplateAttr = modelField.Template.Replacement + "ID"
 					f.TemplateAttrType = "int"
-					f.TemplateFQField = collectionName + "/%d/" + strings.Replace(fieldName, "$", "$%d", 1)
+					f.TemplateFieldName = strings.Replace(fieldName, "$", "$%d", 1)
 				}
 			}
 
@@ -221,16 +221,16 @@ func parse(r io.Reader) ([]field, error) {
 }
 
 type field struct {
-	Name             string
-	GoName           string
-	ValueType        string
-	Collection       string
-	FQField          string
-	TemplateFQField  string
-	TemplateAttr     string
-	TemplateAttrType string
-	Required         bool
-	SingleRelation   bool
+	GoName            string
+	ValueType         string
+	Collection        string
+	CollectionName    string
+	FieldName         string
+	TemplateFieldName string
+	TemplateAttr      string
+	TemplateAttrType  string
+	Required          bool
+	SingleRelation    bool
 }
 
 func goName(name string) string {

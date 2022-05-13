@@ -18,7 +18,7 @@ import (
 // It is expected, that the input is a constant string. So there can not be any
 // error at runtime. Therefore this function does not return an error but panics
 // to get the developer a fast feetback.
-func YAMLData(input string) map[string][]byte {
+func YAMLData(input string) map[datastore.Key][]byte {
 	input = strings.ReplaceAll(input, "\t", "  ")
 
 	var db map[string]interface{}
@@ -26,7 +26,7 @@ func YAMLData(input string) map[string][]byte {
 		panic(err)
 	}
 
-	data := make(map[string][]byte)
+	data := make(map[datastore.Key][]byte)
 	for dbKey, dbValue := range db {
 		parts := strings.Split(dbKey, "/")
 		switch len(parts) {
@@ -46,16 +46,22 @@ func YAMLData(input string) map[string][]byte {
 				}
 
 				for fieldName, fieldValue := range field {
-					fqfield := fmt.Sprintf("%s/%d/%s", dbKey, id, fieldName)
+					key, err := datastore.KeyFromString(fmt.Sprintf("%s/%d/%s", dbKey, id, fieldName))
+					if err != nil {
+						panic(err)
+					}
 					bs, err := json.Marshal(fieldValue)
 					if err != nil {
-						panic(fmt.Errorf("creating test db. Key %s: %w", fqfield, err))
+						panic(fmt.Errorf("creating test db. Key %s: %w", key, err))
 					}
-					data[fqfield] = bs
+					data[key] = bs
 				}
 
-				idField := fmt.Sprintf("%s/%d/id", dbKey, id)
-				data[idField] = []byte(strconv.Itoa(id))
+				idKey, err := datastore.KeyFromString(fmt.Sprintf("%s/%d", dbKey, id))
+				if err != nil {
+					panic(err)
+				}
+				data[idKey] = []byte(strconv.Itoa(id))
 			}
 
 		case 2:
@@ -65,7 +71,10 @@ func YAMLData(input string) map[string][]byte {
 			}
 
 			for fieldName, fieldValue := range field {
-				fqfield := fmt.Sprintf("%s/%s/%s", parts[0], parts[1], fieldName)
+				fqfield, err := datastore.KeyFromString(fmt.Sprintf("%s/%s/%s", parts[0], parts[1], fieldName))
+				if err != nil {
+					panic(err)
+				}
 				bs, err := json.Marshal(fieldValue)
 				if err != nil {
 					panic(fmt.Errorf("creating test db. Key %s: %w", fqfield, err))
@@ -73,18 +82,29 @@ func YAMLData(input string) map[string][]byte {
 				data[fqfield] = bs
 			}
 
-			idField := fmt.Sprintf("%s/%s/id", parts[0], parts[1])
-			data[idField] = []byte(parts[1])
+			idKey, err := datastore.KeyFromString(fmt.Sprintf("%s/%s", parts[0], parts[1]))
+			if err != nil {
+				panic(err)
+			}
+			data[idKey] = []byte(parts[1])
 
 		case 3:
+			key, err := datastore.KeyFromString(dbKey)
+			if err != nil {
+				panic(err)
+			}
 			bs, err := json.Marshal(dbValue)
 			if err != nil {
 				panic(fmt.Errorf("creating test db. Key %s: %w", dbKey, err))
 			}
-			data[dbKey] = bs
 
-			idField := fmt.Sprintf("%s/%s/id", parts[0], parts[1])
-			data[idField] = []byte(parts[1])
+			data[key] = bs
+
+			idKey, err := datastore.KeyFromString(fmt.Sprintf("%s/%s/id", parts[0], parts[1]))
+			if err != nil {
+				panic(err)
+			}
+			data[idKey] = []byte(parts[1])
 		default:
 			panic(fmt.Errorf("invalid db key %s", dbKey))
 		}
@@ -111,7 +131,7 @@ type MockDatastore struct {
 //
 // The function starts a mock datastore server in the background. It gets
 // closed, when the closed channel is closed.
-func NewMockDatastore(closed <-chan struct{}, data map[string][]byte) *MockDatastore {
+func NewMockDatastore(closed <-chan struct{}, data map[datastore.Key][]byte) *MockDatastore {
 	source := NewStubWithUpdate(data, NewCounter)
 	ds := &MockDatastore{
 		source:    source,
@@ -124,7 +144,7 @@ func NewMockDatastore(closed <-chan struct{}, data map[string][]byte) *MockDatas
 }
 
 // Get calls the Get() method of the datastore.
-func (d *MockDatastore) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+func (d *MockDatastore) Get(ctx context.Context, keys ...datastore.Key) (map[datastore.Key][]byte, error) {
 	if d.err != nil {
 		return nil, d.err
 	}
@@ -138,7 +158,7 @@ func (d *MockDatastore) InjectError(err error) {
 }
 
 // Requests returns a list of all requested keys.
-func (d *MockDatastore) Requests() [][]string {
+func (d *MockDatastore) Requests() [][]datastore.Key {
 	return d.counter.Requests()
 }
 
@@ -154,8 +174,8 @@ func (d *MockDatastore) HistoryInformation(ctx context.Context, fqid string, w i
 }
 
 // KeysRequested returns true, if all given keys where requested.
-func (d *MockDatastore) KeysRequested(keys ...string) bool {
-	requestedKeys := make(map[string]bool)
+func (d *MockDatastore) KeysRequested(keys ...datastore.Key) bool {
+	requestedKeys := make(map[datastore.Key]bool)
 	for _, l := range d.Requests() {
 		for _, k := range l {
 			requestedKeys[k] = true
@@ -174,11 +194,11 @@ func (d *MockDatastore) KeysRequested(keys ...string) bool {
 //
 // This method is unblocking. If you want to fetch data afterwards, make sure to
 // block until data is processed. For example with RegisterChanceListener.
-func (d *MockDatastore) Send(data map[string][]byte) {
+func (d *MockDatastore) Send(data map[datastore.Key][]byte) {
 	d.source.Send(data)
 }
 
 // Update implements the datastore.Updater interface.
-func (d *MockDatastore) Update(ctx context.Context) (map[string][]byte, error) {
+func (d *MockDatastore) Update(ctx context.Context) (map[datastore.Key][]byte, error) {
 	return d.source.Update(ctx)
 }

@@ -17,6 +17,6 @@ func NewGetPosition(g GetPositioner, position int) *GetPosition {
 }
 
 // Get fetches the keys at a position.
-func (g *GetPosition) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+func (g *GetPosition) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
 	return g.getter.GetPosition(ctx, g.position, keys...)
 }

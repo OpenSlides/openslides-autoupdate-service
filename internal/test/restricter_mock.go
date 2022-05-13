@@ -22,7 +22,7 @@ type mockRestricter struct {
 	allow  bool
 }
 
-func (r mockRestricter) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+func (r mockRestricter) Get(ctx context.Context, keys ...datastore.Key) (map[datastore.Key][]byte, error) {
 	data, err := r.getter.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("getting data: %w", err)

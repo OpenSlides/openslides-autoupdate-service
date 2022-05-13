@@ -10,16 +10,12 @@ import (
 )
 
 // Stub are data that can be used as a datastore value.
-type Stub map[string][]byte
+type Stub map[datastore.Key][]byte
 
 // Get implements the Getter interface.
-func (s Stub) Get(_ context.Context, keys ...string) (map[string][]byte, error) {
-	if invalid := datastore.InvalidKeys(keys...); len(invalid) > 0 {
-		return nil, fmt.Errorf("keys %v are invalid", invalid)
-	}
-
-	data := map[string][]byte(s)
-	requested := make(map[string][]byte, len(keys))
+func (s Stub) Get(_ context.Context, keys ...datastore.Key) (map[datastore.Key][]byte, error) {
+	data := map[datastore.Key][]byte(s)
+	requested := make(map[datastore.Key][]byte, len(keys))
 	for _, k := range keys {
 		requested[k] = data[k]
 	}
@@ -34,7 +30,7 @@ type StubWithUpdate struct {
 	mu sync.RWMutex
 
 	stub Stub
-	ch   chan map[string][]byte
+	ch   chan map[datastore.Key][]byte
 
 	getter datastore.Getter
 
@@ -52,14 +48,14 @@ func NewStubWithUpdate(stub Stub, middlewares ...func(datastore.Getter) datastor
 
 	return &StubWithUpdate{
 		stub:        stub,
-		ch:          make(chan map[string][]byte),
+		ch:          make(chan map[datastore.Key][]byte),
 		getter:      getter,
 		middlewares: initialized,
 	}
 }
 
 // Get returns the current value for the given keys.
-func (s *StubWithUpdate) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+func (s *StubWithUpdate) Get(ctx context.Context, keys ...datastore.Key) (map[datastore.Key][]byte, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -67,7 +63,7 @@ func (s *StubWithUpdate) Get(ctx context.Context, keys ...string) (map[string][]
 }
 
 // Update blocks until new data is received via the Send method.
-func (s *StubWithUpdate) Update(ctx context.Context) (map[string][]byte, error) {
+func (s *StubWithUpdate) Update(ctx context.Context) (map[datastore.Key][]byte, error) {
 	select {
 	case newValues := <-s.ch:
 		s.mu.Lock()
@@ -83,7 +79,7 @@ func (s *StubWithUpdate) Update(ctx context.Context) (map[string][]byte, error) 
 }
 
 // Send sends keys to the mock that can be received with Update().
-func (s *StubWithUpdate) Send(values map[string][]byte) {
+func (s *StubWithUpdate) Send(values map[datastore.Key][]byte) {
 	s.ch <- values
 }
 
@@ -108,7 +104,7 @@ type Counter struct {
 	mu sync.Mutex
 
 	ds       datastore.Getter
-	requests [][]string
+	requests [][]datastore.Key
 }
 
 // NewCounter initializes a Counter.
@@ -117,7 +113,7 @@ func NewCounter(ds datastore.Getter) datastore.Getter {
 }
 
 // Get sends the keys to the underling getter. Counting the request.
-func (ds *Counter) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+func (ds *Counter) Get(ctx context.Context, keys ...datastore.Key) (map[datastore.Key][]byte, error) {
 	ds.mu.Lock()
 	defer ds.mu.Unlock()
 
@@ -142,7 +138,7 @@ func (ds *Counter) Value() int {
 }
 
 // Requests returns all lists of requested keys.
-func (ds *Counter) Requests() [][]string {
+func (ds *Counter) Requests() [][]datastore.Key {
 	ds.mu.Lock()
 	defer ds.mu.Unlock()
 
@@ -155,22 +151,22 @@ type Cache struct {
 	mu sync.Mutex
 
 	ds    datastore.Getter
-	cache map[string][]byte
+	cache map[datastore.Key][]byte
 }
 
 // NewCache initializes a Cache.
 func NewCache(ds datastore.Getter) datastore.Getter {
-	return &Cache{ds: ds, cache: make(map[string][]byte)}
+	return &Cache{ds: ds, cache: make(map[datastore.Key][]byte)}
 }
 
 // Get redirects the keys to the underling getter. But only, if they where not
 // requested before.
-func (ds *Cache) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+func (ds *Cache) Get(ctx context.Context, keys ...datastore.Key) (map[datastore.Key][]byte, error) {
 	ds.mu.Lock()
 	defer ds.mu.Unlock()
 
-	out := make(map[string][]byte, len(keys))
-	var needKeys []string
+	out := make(map[datastore.Key][]byte, len(keys))
+	var needKeys []datastore.Key
 	for _, key := range keys {
 		v, ok := ds.cache[key]
 		if !ok {
