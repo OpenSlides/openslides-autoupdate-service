@@ -11,7 +11,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/auerror"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
-	autoupdateHttp "github.com/OpenSlides/openslides-autoupdate-service/internal/http"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/http"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
@@ -75,7 +75,7 @@ func run() error {
 
 	// Start http server.
 	listenAddr := ":" + env["AUTOUPDATE_PORT"]
-	return autoupdateHttp.Run(ctx, listenAddr, authService, service)
+	return http.Run(ctx, listenAddr, authService, service)
 }
 
 func defaultEnv() map[string]string {
@@ -178,7 +178,7 @@ func initDatastore(env map[string]string, mb *redis.Redis) (*datastore.Datastore
 	), nil
 }
 
-func initAuth(env map[string]string, messageBus auth.LogoutEventer) (autoupdateHttp.Authenticater, func(context.Context), error) {
+func initAuth(env map[string]string, messageBus auth.LogoutEventer) (http.Authenticater, func(context.Context), error) {
 	method := env["AUTH"]
 
 	switch method {
