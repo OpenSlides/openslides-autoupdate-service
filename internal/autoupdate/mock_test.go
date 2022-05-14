@@ -14,7 +14,7 @@ func getConnection(closed <-chan struct{}) (autoupdate.DataProvider, *dsmock.Moc
 	datastore := dsmock.NewMockDatastore(closed, map[datastore.Key][]byte{
 		userNameKey: []byte(`"Hello World"`),
 	})
-	s := autoupdate.New(datastore, test.RestrictAllowed, "")
+	s := autoupdate.New(datastore, test.RestrictAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 	next := s.Connect(1, kb)
 

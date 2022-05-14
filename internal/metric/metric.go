@@ -23,12 +23,7 @@ func Register(f func(Container)) {
 // Loop gathers the metric data from all registered callbacks.
 //
 // Blocks until the context is done.
-//
-// It is not possible to Register new metrics, when the loop is running.
 func Loop(ctx context.Context, d time.Duration, logger *log.Logger) {
-	callbacks.mu.Lock()
-	defer callbacks.mu.Unlock()
-
 	ticker := time.NewTicker(d)
 	defer ticker.Stop()
 
@@ -40,9 +35,13 @@ func Loop(ctx context.Context, d time.Duration, logger *log.Logger) {
 			return
 		case <-ticker.C:
 			data := Container{make(map[string]any, lastSize)}
+
+			callbacks.mu.Lock()
 			for _, callback := range callbacks.fs {
 				callback(data)
 			}
+			callbacks.mu.Unlock()
+
 			lastSize = len(data.data)
 
 			bs, err := json.Marshal(data)
@@ -52,6 +51,7 @@ func Loop(ctx context.Context, d time.Duration, logger *log.Logger) {
 			}
 
 			logger.Printf("Metric: %s", bs)
+
 		}
 	}
 }

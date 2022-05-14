@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,6 +25,41 @@ const (
 	prefixPublic   = "/system/autoupdate"
 	prefixInternal = "/internal/autoupdate"
 )
+
+// Run starts the http server.
+func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autoupdate.Autoupdate) error {
+	requestCount := new(metric.CurrentCounter)
+	metric.Register(requestCount.Metric)
+
+	mux := http.NewServeMux()
+	Health(mux)
+	Autoupdate(mux, auth, autoupdate, requestCount)
+	HistoryInformation(mux, auth, autoupdate)
+
+	srv := &http.Server{
+		Addr:        addr,
+		Handler:     mux,
+		BaseContext: func(net.Listener) context.Context { return ctx },
+	}
+
+	// Shutdown logic in separate goroutine.
+	wait := make(chan error)
+	go func() {
+		<-ctx.Done()
+		if err := srv.Shutdown(context.Background()); err != nil {
+			wait <- fmt.Errorf("HTTP server shutdown: %w", err)
+			return
+		}
+		wait <- nil
+	}()
+
+	fmt.Printf("Listen on %s\n", addr)
+	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+		return fmt.Errorf("HTTP Server failed: %v", err)
+	}
+
+	return <-wait
+}
 
 // Connecter returns an connect object.
 type Connecter interface {

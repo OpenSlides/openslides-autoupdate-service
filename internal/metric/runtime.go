@@ -1,12 +1,9 @@
-package main
+package metric
 
-import (
-	"runtime/metrics"
+import "runtime/metrics"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
-)
-
-func runtimeMetrics(con metric.Container) {
+// Runtime gathers metrics from the go runtime
+func Runtime(con Container) {
 	const metricName = "/sched/goroutines:goroutines"
 
 	sample := make([]metrics.Sample, 1)
