@@ -6,19 +6,19 @@ import "context"
 // keys. They can be get with Recorder.Keys().
 type Recorder struct {
 	getter Getter
-	keys   map[string]bool
+	keys   map[Key]bool
 }
 
 // NewRecorder initializes a Recorder.
 func NewRecorder(g Getter) *Recorder {
 	return &Recorder{
 		getter: g,
-		keys:   map[string]bool{},
+		keys:   map[Key]bool{},
 	}
 }
 
 // Get fetches the keys from the datastore.
-func (r *Recorder) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+func (r *Recorder) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
 	for _, k := range keys {
 		r.keys[k] = true
 	}
@@ -26,6 +26,6 @@ func (r *Recorder) Get(ctx context.Context, keys ...string) (map[string][]byte, 
 }
 
 // Keys returns all datastore keys that where fetched in the process.
-func (r *Recorder) Keys() map[string]bool {
+func (r *Recorder) Keys() map[Key]bool {
 	return r.keys
 }

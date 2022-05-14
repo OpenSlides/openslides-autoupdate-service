@@ -15,7 +15,7 @@ import (
 
 type testData struct {
 	name          string
-	data          map[string][]byte
+	data          map[datastore.Key][]byte
 	expect        bool
 	requestUserID int
 	elementID     int
@@ -35,7 +35,9 @@ func testCase(name string, t *testing.T, f collection.FieldRestricter, expect bo
 		o(&td)
 	}
 
-	td.data[fmt.Sprintf("user/%d/id", td.requestUserID)] = []byte(strconv.Itoa(td.requestUserID))
+	userIDKey, _ := datastore.KeyFromString(fmt.Sprintf("user/%d/id", td.requestUserID))
+
+	td.data[userIDKey] = []byte(strconv.Itoa(td.requestUserID))
 
 	td.test(t, f)
 }
@@ -75,11 +77,15 @@ func withPerms(meetingID int, perms ...perm.TPermission) testCaseOption {
 		permString = permString[:len(permString)-1] + "]"
 		groupID := 1000 + 337
 
-		groupsKey := fmt.Sprintf("user/1/group_$%d_ids", meetingID)
+		groupsKey, _ := datastore.KeyFromString(fmt.Sprintf("user/1/group_$%d_ids", meetingID))
+		groupIDKey, _ := datastore.KeyFromString(fmt.Sprintf("group/%d/id", groupID))
+		groupPermissionKey, _ := datastore.KeyFromString(fmt.Sprintf("group/%d/permissions", groupID))
+		meetingIDKey, _ := datastore.KeyFromString(fmt.Sprintf("meeting/%d/id", meetingID))
+
 		td.data[groupsKey] = jsonAppend(td.data[groupsKey], groupID)
-		td.data[fmt.Sprintf("group/%d/id", groupID)] = []byte(strconv.Itoa(groupID))
-		td.data[fmt.Sprintf("group/%d/permissions", groupID)] = []byte(permString)
-		td.data[fmt.Sprintf("meeting/%d/id", meetingID)] = []byte(strconv.Itoa(meetingID))
+		td.data[groupIDKey] = []byte(strconv.Itoa(groupID))
+		td.data[groupPermissionKey] = []byte(permString)
+		td.data[meetingIDKey] = []byte(strconv.Itoa(meetingID))
 	}
 }
 

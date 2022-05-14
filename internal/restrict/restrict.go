@@ -31,7 +31,7 @@ type restricter struct {
 }
 
 // Get returns restricted data.
-func (r restricter) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+func (r restricter) Get(ctx context.Context, keys ...datastore.Key) (map[datastore.Key][]byte, error) {
 	data, err := r.getter.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("getting data: %w", err)
@@ -45,7 +45,7 @@ func (r restricter) Get(ctx context.Context, keys ...string) (map[string][]byte,
 
 // restrict changes the keys and values in data for the user with the given user
 // id.
-func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[string][]byte) error {
+func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[datastore.Key][]byte) error {
 	ds := datastore.NewRequest(getter)
 	isSuperAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, uid, perm.OMLSuperadmin)
 	if err != nil {
@@ -63,12 +63,8 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 		}
 
 		ds := datastore.NewRequest(getter)
-		fqfield, err := parseFQField(key)
-		if err != nil {
-			return fmt.Errorf("parsing fqfield %s: %w", key, err)
-		}
 
-		modeFunc, err := restrictMode(fqfield.Collection, fqfield.Field, isSuperAdmin)
+		modeFunc, err := restrictMode(key.Collection, key.Field, isSuperAdmin)
 		if err != nil {
 			// Collection or field unknown. Handle it as no permission.
 			log.Printf("Warning: %v", err)
@@ -76,7 +72,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 			continue
 		}
 
-		canSeeMode, err := modeFunc(ctx, ds, mperms, fqfield.ID)
+		canSeeMode, err := modeFunc(ctx, ds, mperms, key.ID)
 		if err != nil {
 			var errDoesNotExist datastore.DoesNotExistError
 			if !errors.As(err, &errDoesNotExist) {
@@ -95,7 +91,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 		}
 
 		// Relation fields
-		if toCollectionfield, ok := relationFields[templateKeyPrefix(fqfield.CollectionField())]; ok {
+		if toCollectionfield, ok := relationFields[templateKeyPrefix(key.CollectionField())]; ok {
 			var id int
 			if err := json.Unmarshal(data[key], &id); err != nil {
 				return fmt.Errorf("decoding %q: %w", key, err)
@@ -116,10 +112,10 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 			}
 		}
 
-		keyPrefix := templateKeyPrefix(fqfield.CollectionField())
+		keyPrefix := templateKeyPrefix(key.CollectionField())
 		// Relation List fields
 		if toCollectionfield, ok := relationListFields[keyPrefix]; ok {
-			value, err := filterRelationList(ctx, ds, mperms, fqfield.CollectionField(), toCollectionfield, isSuperAdmin, data[key])
+			value, err := filterRelationList(ctx, ds, mperms, key.CollectionField(), toCollectionfield, isSuperAdmin, data[key])
 			if err != nil {
 				return fmt.Errorf("restrict relation-list ids of %q: %w", key, err)
 			}
@@ -127,7 +123,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 		}
 
 		// Generic Relation fields
-		if toCollectionFieldMap, ok := genericRelationFields[templateKeyPrefix(fqfield.CollectionField())]; ok {
+		if toCollectionFieldMap, ok := genericRelationFields[templateKeyPrefix(key.CollectionField())]; ok {
 			var genericID string
 			if err := json.Unmarshal(data[key], &genericID); err != nil {
 				return fmt.Errorf("decoding %q: %w", key, err)
@@ -136,7 +132,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 			parts := strings.Split(genericID, "/")
 			toField := toCollectionFieldMap[parts[0]]
 			if toField == "" {
-				return fmt.Errorf("invalid generic relation for field %q: %s", fqfield.CollectionField(), parts[0])
+				return fmt.Errorf("invalid generic relation for field %q: %s", key.CollectionField(), parts[0])
 			}
 
 			modeFunc, err := restrictMode(parts[0], toField, isSuperAdmin)
@@ -159,7 +155,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[st
 		}
 
 		// Generic Relation List fields
-		if toCollectionfieldMap, ok := genericRelationListFields[templateKeyPrefix(fqfield.CollectionField())]; ok {
+		if toCollectionfieldMap, ok := genericRelationListFields[templateKeyPrefix(key.CollectionField())]; ok {
 			value, err := filterGenericRelationList(ctx, ds, mperms, toCollectionfieldMap, isSuperAdmin, data[key])
 			if err != nil {
 				return fmt.Errorf("restrict generic-relation-list ids of %q: %w", key, err)
@@ -211,7 +207,7 @@ func filterRelationList(
 		allowed, err := relationListModeFunc(ctx, ds, mperms, id)
 		if err != nil {
 			var errDoesNotExist datastore.DoesNotExistError
-			if errors.As(err, &errDoesNotExist) && string(errDoesNotExist) == fmt.Sprintf("%s/%d/id", parts[0], id) {
+			if errors.As(err, &errDoesNotExist) && datastore.Key(errDoesNotExist).String() == fmt.Sprintf("%s/%d/id", parts[0], id) {
 				log.Printf(
 					"Warning: datastore is corrupted. Relation-list field `%s` contains id `%d`, but `%s` with this id does not exist.",
 					fromListField,

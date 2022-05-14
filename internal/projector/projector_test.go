@@ -14,6 +14,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func MustKey(in string) datastore.Key {
+	k, err := datastore.KeyFromString(in)
+	if err != nil {
+		panic(err)
+	}
+	return k
+}
+
 func TestProjectionDoesNotExist(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -23,10 +31,10 @@ func TestProjectionDoesNotExist(t *testing.T) {
 
 	projector.Register(ds, testSlides())
 
-	fields, err := ds.Get(context.Background(), "projection/1/content")
+	fields, err := ds.Get(context.Background(), MustKey("projection/1/content"))
 	require.NoError(t, err, "Get returned unexpected error")
-	if fields["projection/1/content"] != nil {
-		t.Errorf("Content was calculated, should be nil, got: %q", fields["projection/1/content"])
+	if fields[MustKey("projection/1/content")] != nil {
+		t.Errorf("Content was calculated, should be nil, got: %q", fields[MustKey("projection/1/content")])
 	}
 }
 
@@ -34,54 +42,54 @@ func TestProjectionFromContentObject(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
-		"projection/1/id":                []byte("1"),
-		"projection/1/content_object_id": []byte(`"test_model/1"`),
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+		MustKey("projection/1/id"):                []byte("1"),
+		MustKey("projection/1/content_object_id"): []byte(`"test_model/1"`),
 	})
 	projector.Register(ds, testSlides())
 
-	fields, err := ds.Get(context.Background(), "projection/1/content")
+	fields, err := ds.Get(context.Background(), MustKey("projection/1/content"))
 	require.NoError(t, err, "Get returned unexpected error")
 	expect := `{"collection":"test_model","value":"test_model"}` + "\n"
-	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
+	assert.JSONEq(t, expect, string(fields[MustKey("projection/1/content")]))
 }
 
 func TestProjectionFromType(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
-		"projection/1/id":                []byte("1"),
-		"projection/1/content_object_id": []byte(`"meeting/1"`),
-		"projection/1/type":              []byte(`"test1"`),
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+		MustKey("projection/1/id"):                []byte("1"),
+		MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
+		MustKey("projection/1/type"):              []byte(`"test1"`),
 	})
 	projector.Register(ds, testSlides())
 
-	fields, err := ds.Get(context.Background(), "projection/1/content")
+	fields, err := ds.Get(context.Background(), MustKey("projection/1/content"))
 	require.NoError(t, err, "Get returned unexpected error")
 	expect := `{"collection":"test1","value":"abc"}` + "\n"
-	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
+	assert.JSONEq(t, expect, string(fields[MustKey("projection/1/content")]))
 }
 
 func TestProjectionUpdateProjection(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
-		"projection/1/id":                []byte("1"),
-		"projection/1/content_object_id": []byte(`"meeting/1"`),
-		"projection/1/type":              []byte(`"test1"`),
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+		MustKey("projection/1/id"):                []byte("1"),
+		MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
+		MustKey("projection/1/type"):              []byte(`"test1"`),
 	})
 	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	projector.Register(ds, testSlides())
 
 	// Fetch data once to fill the test.
-	_, err := ds.Get(context.Background(), "projection/1/content")
+	_, err := ds.Get(context.Background(), MustKey("projection/1/content"))
 	require.NoError(t, err, "Get returned unexpected error")
 
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(map[string][]byte) error {
+	ds.RegisterChangeListener(func(map[datastore.Key][]byte) error {
 		close(done)
 		return nil
 	})
@@ -92,31 +100,31 @@ func TestProjectionUpdateProjection(t *testing.T) {
 	`))
 	<-done
 
-	fields, err := ds.Get(context.Background(), "projection/1/content")
+	fields, err := ds.Get(context.Background(), MustKey("projection/1/content"))
 	require.NoError(t, err, "Get returned unexpected error")
 	expect := `{"collection":"test_model","value":"test_model"}` + "\n"
-	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
+	assert.JSONEq(t, expect, string(fields[MustKey("projection/1/content")]))
 }
 
 func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
-		"projection/1/id":                []byte("1"),
-		"projection/1/type":              []byte(`"projection"`),
-		"projection/1/content_object_id": []byte(`"meeting/1"`),
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+		MustKey("projection/1/id"):                []byte("1"),
+		MustKey("projection/1/type"):              []byte(`"projection"`),
+		MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
 	})
 	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	projector.Register(ds, testSlides())
 
 	// Fetch data once to fill the test.
-	_, err := ds.Get(context.Background(), "projection/1/content")
+	_, err := ds.Get(context.Background(), MustKey("projection/1/content"))
 	require.NoError(t, err, "Get returned unexpected error")
 
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(map[string][]byte) error {
+	ds.RegisterChangeListener(func(map[datastore.Key][]byte) error {
 		close(done)
 		return nil
 	})
@@ -124,51 +132,51 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 	ds.Send(dsmock.YAMLData("projection/1/stable: true"))
 	<-done
 
-	fields, err := ds.Get(context.Background(), "projection/1/content")
+	fields, err := ds.Get(context.Background(), MustKey("projection/1/content"))
 	require.NoError(t, err, "Get returned unexpected error")
 	expect := `{"collection":"projection","id": 1, "content_object_id": "meeting/1", "meeting_id":0, "type":"projection", "options": null}` + "\n"
-	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
+	assert.JSONEq(t, expect, string(fields[MustKey("projection/1/content")]))
 }
 
 func TestProjectionWithOptionsData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
-		"projection/1/id":                []byte("1"),
-		"projection/1/content_object_id": []byte(`"meeting/6"`),
-		"projection/1/type":              []byte(`"projection"`),
-		"projection/1/meeting_id":        []byte(`1`),
-		"projection/1/options":           []byte(`{"only_main_items": true}`),
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+		MustKey("projection/1/id"):                []byte("1"),
+		MustKey("projection/1/content_object_id"): []byte(`"meeting/6"`),
+		MustKey("projection/1/type"):              []byte(`"projection"`),
+		MustKey("projection/1/meeting_id"):        []byte(`1`),
+		MustKey("projection/1/options"):           []byte(`{"only_main_items": true}`),
 	})
 	projector.Register(ds, testSlides())
 
-	fields, err := ds.Get(context.Background(), "projection/1/content")
+	fields, err := ds.Get(context.Background(), MustKey("projection/1/content"))
 	require.NoError(t, err, "Get returned unexpected error")
 	expect := `{"collection":"projection","id": 1, "content_object_id": "meeting/6", "type":"projection", "meeting_id": 1, "options": {"only_main_items": true}}` + "\n"
-	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
+	assert.JSONEq(t, expect, string(fields[MustKey("projection/1/content")]))
 }
 
 func TestProjectionUpdateSlide(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
-		"projection/1/id":                []byte("1"),
-		"projection/1/content_object_id": []byte(`"meeting/6"`),
-		"projection/1/type":              []byte(`"test_model"`),
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+		MustKey("projection/1/id"):                []byte("1"),
+		MustKey("projection/1/content_object_id"): []byte(`"meeting/6"`),
+		MustKey("projection/1/type"):              []byte(`"test_model"`),
 	})
 	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	projector.Register(ds, testSlides())
 
 	// Fetch data once to fill the test.
-	_, err := ds.Get(context.Background(), "projection/1/content")
+	_, err := ds.Get(context.Background(), MustKey("projection/1/content"))
 	require.NoError(t, err, "Get returned unexpected error")
 
 	// Register a listener that tells, when cache is updated.
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(data map[string][]byte) error {
+	ds.RegisterChangeListener(func(data map[datastore.Key][]byte) error {
 		close(done)
 		return nil
 	})
@@ -176,31 +184,31 @@ func TestProjectionUpdateSlide(t *testing.T) {
 	ds.Send(dsmock.YAMLData("test_model/1/field: new value"))
 	<-done
 
-	fields, err := ds.Get(context.Background(), "projection/1/content")
+	fields, err := ds.Get(context.Background(), MustKey("projection/1/content"))
 	require.NoError(t, err, "Get returned unexpected error")
 	expect := `{"collection":"test_model","value":"calculated with new value"}` + "\n"
-	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
+	assert.JSONEq(t, expect, string(fields[MustKey("projection/1/content")]))
 }
 
 func TestProjectionUpdateOtherKey(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
-		"projection/1/id":                []byte("1"),
-		"projection/1/content_object_id": []byte(`"meeting/1"`),
-		"projection/1/type":              []byte(`"test_model"`),
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+		MustKey("projection/1/id"):                []byte("1"),
+		MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
+		MustKey("projection/1/type"):              []byte(`"test_model"`),
 	})
 	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	projector.Register(ds, testSlides())
 
 	// Call once to add field to cache.
-	ds.Get(context.Background(), "projection/1/content")
+	ds.Get(context.Background(), MustKey("projection/1/content"))
 
 	// Register a listener that tells, when cache is updated.
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(data map[string][]byte) error {
+	ds.RegisterChangeListener(func(data map[datastore.Key][]byte) error {
 		close(done)
 		return nil
 	})
@@ -208,24 +216,24 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 	ds.Send(dsmock.YAMLData("some_other/1/field: new value"))
 	<-done
 
-	fields, err := ds.Get(context.Background(), "projection/1/content")
+	fields, err := ds.Get(context.Background(), MustKey("projection/1/content"))
 	require.NoError(t, err, "Get returned unexpected error")
 	expect := `{"collection":"test_model","value":"test_model"}` + "\n"
-	assert.JSONEq(t, expect, string(fields["projection/1/content"]))
+	assert.JSONEq(t, expect, string(fields[MustKey("projection/1/content")]))
 }
 
 func TestProjectionTypeDoesNotExist(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[string][]byte{
-		"projection/1/id":                []byte("1"),
-		"projection/1/content_object_id": []byte(`"meeting/1"`),
-		"projection/1/type":              []byte(`"unexistingTestSlide"`),
+	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+		MustKey("projection/1/id"):                []byte("1"),
+		MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
+		MustKey("projection/1/type"):              []byte(`"unexistingTestSlide"`),
 	})
 	projector.Register(ds, testSlides())
 
-	fields, err := ds.Get(context.Background(), "projection/1/content")
+	fields, err := ds.Get(context.Background(), MustKey("projection/1/content"))
 	if err != nil {
 		t.Fatalf("Get returned unexpected error: %v", err)
 	}
@@ -233,8 +241,8 @@ func TestProjectionTypeDoesNotExist(t *testing.T) {
 	var content struct {
 		Error string `json:"error"`
 	}
-	if err := json.Unmarshal(fields["projection/1/content"], &content); err != nil {
-		t.Fatalf("Can not unmarshal field projection/1/content `%s`: %v", fields["projection/1/content"], err)
+	if err := json.Unmarshal(fields[MustKey("projection/1/content")], &content); err != nil {
+		t.Fatalf("Can not unmarshal field projection/1/content `%s`: %v", fields[MustKey("projection/1/content")], err)
 	}
 
 	if content.Error == "" {

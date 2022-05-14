@@ -12,6 +12,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func MustKey(in string) datastore.Key {
+	k, err := datastore.KeyFromString(in)
+	if err != nil {
+		panic(err)
+	}
+	return k
+}
+
 func TestListOfSpeakers(t *testing.T) {
 	s := new(projector.SlideStore)
 	slide.ListOfSpeaker(s)
@@ -107,7 +115,7 @@ func TestListOfSpeakers(t *testing.T) {
 
 	for _, tt := range []struct {
 		name   string
-		data   map[string][]byte
+		data   map[datastore.Key][]byte
 		expect string
 	}{
 		{
@@ -161,9 +169,9 @@ func TestListOfSpeakers(t *testing.T) {
 		},
 		{
 			"No Current speaker",
-			changeData(data, map[string][]byte{
-				"list_of_speakers/1/speaker_ids":                              []byte("[1,4]"),
-				"meeting/1/list_of_speakers_show_amount_of_speakers_on_slide": []byte("false"),
+			changeData(data, map[datastore.Key][]byte{
+				MustKey("list_of_speakers/1/speaker_ids"):                              []byte("[1,4]"),
+				MustKey("meeting/1/list_of_speakers_show_amount_of_speakers_on_slide"): []byte("false"),
 			}),
 			`{
 				"waiting": [{
@@ -209,7 +217,7 @@ func TestListOfSpeakers(t *testing.T) {
 	}
 }
 
-func getDataForCurrentList() map[string][]byte {
+func getDataForCurrentList() map[datastore.Key][]byte {
 	// This one is a bit complicated and will be used
 	// for tests current_list_of_speakers and, slightly modified,
 	// for current_speaker_chyron
@@ -268,7 +276,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 	data := getDataForCurrentList()
 	for _, tt := range []struct {
 		name   string
-		data   map[string][]byte
+		data   map[datastore.Key][]byte
 		expect string
 	}{
 		{
@@ -295,8 +303,8 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 		},
 		{
 			"don't find speaker list in current projections",
-			changeData(data, map[string][]byte{
-				"motion_block/1/list_of_speakers_id": []byte("0"),
+			changeData(data, map[datastore.Key][]byte{
+				MustKey("motion_block/1/list_of_speakers_id"): []byte("0"),
 			}),
 			`{}`,
 		},
@@ -353,7 +361,7 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 
 	for _, tt := range []struct {
 		name   string
-		data   map[string][]byte
+		data   map[datastore.Key][]byte
 		expect string
 	}{
 		{
@@ -369,8 +377,8 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 		},
 		{
 			"current speaker chyron test no current projection",
-			changeData(data, map[string][]byte{
-				"motion_block/1/list_of_speakers_id": []byte("0"),
+			changeData(data, map[datastore.Key][]byte{
+				MustKey("motion_block/1/list_of_speakers_id"): []byte("0"),
 			}),
 			`{
 				"background_color": "green",
@@ -402,8 +410,8 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 	}
 }
 
-func changeData(orig, change map[string][]byte) map[string][]byte {
-	out := make(map[string][]byte)
+func changeData(orig, change map[datastore.Key][]byte) map[datastore.Key][]byte {
+	out := make(map[datastore.Key][]byte)
 	for k, v := range orig {
 		out[k] = v
 	}

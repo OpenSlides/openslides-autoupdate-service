@@ -326,7 +326,7 @@ func TestFeatures(t *testing.T) {
 
 			converted := make(map[string]json.RawMessage, len(data))
 			for k, v := range data {
-				converted[k] = v
+				converted[k.String()] = v
 			}
 
 			var expect map[string]json.RawMessage

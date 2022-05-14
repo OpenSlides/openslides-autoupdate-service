@@ -24,6 +24,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
 const (
@@ -40,7 +42,7 @@ var (
 )
 
 type fieldDescription interface {
-	keys(key string, value json.RawMessage, data map[string]fieldDescription) error
+	keys(key datastore.Key, value json.RawMessage, data map[datastore.Key]fieldDescription) error
 }
 
 // body holds the information which keys are requested by the client.
@@ -89,7 +91,7 @@ func (b *body) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (b *body) keys(data map[string]fieldDescription) {
+func (b *body) keys(data map[datastore.Key]fieldDescription) {
 	for _, id := range b.ids {
 		cid := buildCollectionID(b.collection, id)
 		b.fieldsMap.keys(cid, data)
@@ -136,7 +138,7 @@ func (r *relationField) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (r *relationField) keys(key string, value json.RawMessage, data map[string]fieldDescription) error {
+func (r *relationField) keys(key datastore.Key, value json.RawMessage, data map[datastore.Key]fieldDescription) error {
 	var id int
 	if err := json.Unmarshal(value, &id); err != nil {
 		return fmt.Errorf("decoding value for key %s: %w", key, err)
@@ -164,7 +166,7 @@ type relationListField struct {
 	relationField
 }
 
-func (r *relationListField) keys(key string, value json.RawMessage, data map[string]fieldDescription) error {
+func (r *relationListField) keys(key datastore.Key, value json.RawMessage, data map[datastore.Key]fieldDescription) error {
 	var ids []int
 	if err := json.Unmarshal(value, &ids); err != nil {
 		return fmt.Errorf("decoding value for key %s: %w", key, err)
@@ -209,7 +211,7 @@ func (g *genericRelationField) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (g *genericRelationField) keys(key string, value json.RawMessage, data map[string]fieldDescription) error {
+func (g *genericRelationField) keys(key datastore.Key, value json.RawMessage, data map[datastore.Key]fieldDescription) error {
 	var cid string
 	if err := json.Unmarshal(value, &cid); err != nil {
 		return fmt.Errorf("decoding value for key %s: %w", key, err)
@@ -235,7 +237,7 @@ type genericRelationListField struct {
 	genericRelationField
 }
 
-func (g *genericRelationListField) keys(key string, value json.RawMessage, data map[string]fieldDescription) error {
+func (g *genericRelationListField) keys(key datastore.Key, value json.RawMessage, data map[datastore.Key]fieldDescription) error {
 	var cids []string
 	if err := json.Unmarshal(value, &cids); err != nil {
 		return fmt.Errorf("decoding value for key %s: %w", key, err)
@@ -289,15 +291,16 @@ func (t *templateField) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (t *templateField) keys(key string, value json.RawMessage, data map[string]fieldDescription) error {
+func (t *templateField) keys(key datastore.Key, value json.RawMessage, data map[datastore.Key]fieldDescription) error {
 	var values []string
 	if err := json.Unmarshal(value, &values); err != nil {
 		return fmt.Errorf("decoding value for key %s: %w", key, err)
 	}
 
 	for _, value := range values {
-		key := strings.Replace(key, "$", "$"+value, 1)
-		data[key] = t.values
+		newkey := key
+		newkey.Field = strings.Replace(key.Field, "$", "$"+value, 1)
+		data[newkey] = t.values
 	}
 	return nil
 }
@@ -380,7 +383,7 @@ func (f *fieldsMap) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *fieldsMap) keys(cid string, data map[string]fieldDescription) {
+func (f *fieldsMap) keys(cid string, data map[datastore.Key]fieldDescription) {
 	for field, description := range f.fields {
 		data[buildGenericKey(cid, field)] = description
 	}

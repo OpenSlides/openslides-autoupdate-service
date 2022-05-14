@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 )
 
 //go:generate sh -c "go run gen_request/main.go > request_generated.go"
@@ -17,14 +16,14 @@ type Request struct {
 	getter Getter
 	err    error
 
-	requested map[string]executer
+	requested map[Key]executer
 }
 
 // NewRequest initializes a Request object.
 func NewRequest(getter Getter) *Request {
 	r := Request{
 		getter:    getter,
-		requested: make(map[string]executer),
+		requested: make(map[Key]executer),
 	}
 	return &r
 }
@@ -33,20 +32,12 @@ func NewRequest(getter Getter) *Request {
 func (r *Request) Execute(ctx context.Context) error {
 	defer func() {
 		// Clear all requested fields in the end. Even if errors happened.
-		r.requested = make(map[string]executer)
+		r.requested = make(map[Key]executer)
 	}()
 
-	keys := make([]string, 0, len(r.requested)*2)
-	for fqfield := range r.requested {
-		keyParts := strings.Split(fqfield, "/")
-		if len(keyParts) != 3 {
-			return fmt.Errorf("invalid key %q", fqfield)
-		}
-
-		fqid := keyParts[0] + "/" + keyParts[1]
-		idField := fqid + "/id"
-
-		keys = append(keys, fqfield, idField)
+	keys := make([]Key, 0, len(r.requested)*2)
+	for key := range r.requested {
+		keys = append(keys, key, key.IDField())
 	}
 
 	if len(keys) == 0 {
@@ -60,7 +51,7 @@ func (r *Request) Execute(ctx context.Context) error {
 	}
 
 	for fqfield, value := range data {
-		if strings.HasSuffix(fqfield, "/id") && value == nil {
+		if fqfield.Field == "id" && value == nil {
 			r.err = DoesNotExistError(fqfield)
 			return r.err
 		}
@@ -155,8 +146,8 @@ func (v *ValueRequiredInt) execute(p []byte) error {
 }
 
 // DoesNotExistError is thrown when an object does not exist.
-type DoesNotExistError string
+type DoesNotExistError Key
 
 func (e DoesNotExistError) Error() string {
-	return fmt.Sprintf("%s does not exist.", string(e))
+	return fmt.Sprintf("%s does not exist.", Key(e))
 }

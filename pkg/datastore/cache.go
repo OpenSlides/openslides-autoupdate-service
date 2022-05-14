@@ -8,7 +8,7 @@ import (
 )
 
 // cacheSetFunc is a function to update cache keys.
-type cacheSetFunc func(keys []string, set func(key string, value []byte)) error
+type cacheSetFunc func(keys []Key, set func(key Key, value []byte)) error
 
 // cache stores the values to the datastore.
 //
@@ -49,14 +49,14 @@ func newCache() *cache {
 //
 // If the context is done, GetOrSet returns. But the set() call is not stopped.
 // Other calls to GetOrSet may wait for its result.
-func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) (map[string][]byte, error) {
+func (c *cache) GetOrSet(ctx context.Context, keys []Key, set cacheSetFunc) (map[Key][]byte, error) {
 	// Blocks until all missing keys are fetched.
 	if err := c.fetchMissing(ctx, keys, set); err != nil {
 		return nil, fmt.Errorf("fetching missing keys: %w", err)
 	}
 
 	// Blocks until all keys that are requested by other callers are fetched.
-	values := make(map[string][]byte, len(keys))
+	values := make(map[Key][]byte, len(keys))
 	for _, key := range keys {
 		// Gets a value and waits until it is ready.
 		v, err := c.data.get(ctx, key)
@@ -71,7 +71,7 @@ func (c *cache) GetOrSet(ctx context.Context, keys []string, set cacheSetFunc) (
 
 // fetchMissing loads the given keys with the set method. Does not update keys
 // that are already in the cache.
-func (c *cache) fetchMissing(ctx context.Context, keys []string, set cacheSetFunc) error {
+func (c *cache) fetchMissing(ctx context.Context, keys []Key, set cacheSetFunc) error {
 	missingKeys := c.data.markPending(keys...)
 
 	if len(missingKeys) == 0 {
@@ -82,7 +82,7 @@ func (c *cache) fetchMissing(ctx context.Context, keys []string, set cacheSetFun
 	// when the context is done. Other calls could also request it.
 	errChan := make(chan error, 1)
 	go func() {
-		err := set(keys, func(key string, value []byte) {
+		err := set(keys, func(key Key, value []byte) {
 			c.data.setIfPending(key, value)
 		})
 
@@ -112,12 +112,12 @@ func (c *cache) fetchMissing(ctx context.Context, keys []string, set cacheSetFun
 }
 
 // SetIfExist updates the cache if the key exists or is pending.
-func (c *cache) SetIfExist(key string, value []byte) {
+func (c *cache) SetIfExist(key Key, value []byte) {
 	c.data.setIfExist(key, value)
 }
 
 // SetIfExistMany is like SetIfExist but with many keys.
-func (c *cache) SetIfExistMany(data map[string][]byte) {
+func (c *cache) SetIfExistMany(data map[Key][]byte) {
 	c.data.setIfExistMany(data)
 }
 
@@ -132,15 +132,15 @@ func (c *cache) size() int {
 // pendingMap is like a map but values are returned as pendingValues.
 type pendingMap struct {
 	sync.RWMutex
-	data    map[string][]byte
-	pending map[string]chan struct{}
+	data    map[Key][]byte
+	pending map[Key]chan struct{}
 }
 
 // newPendingMap initializes a pendingDict.
 func newPendingMap() *pendingMap {
 	return &pendingMap{
-		data:    map[string][]byte{},
-		pending: map[string]chan struct{}{},
+		data:    map[Key][]byte{},
+		pending: map[Key]chan struct{}{},
 	}
 }
 
@@ -150,7 +150,7 @@ func newPendingMap() *pendingMap {
 // pending anymore.
 //
 // Returns nil for a value that does not exist.
-func (pm *pendingMap) get(ctx context.Context, key string) ([]byte, error) {
+func (pm *pendingMap) get(ctx context.Context, key Key) ([]byte, error) {
 	var value []byte
 	var pending chan struct{}
 	reading(pm, func() {
@@ -180,11 +180,11 @@ func (pm *pendingMap) get(ctx context.Context, key string) ([]byte, error) {
 // Skips keys that are already pending or are already in the database.
 //
 // Returns all keys that where marked as pending (did not exist).
-func (pm *pendingMap) markPending(keys ...string) []string {
+func (pm *pendingMap) markPending(keys ...Key) []Key {
 	pm.Lock()
 	defer pm.Unlock()
 
-	var marked []string
+	var marked []Key
 	for _, key := range keys {
 		if _, ok := pm.data[key]; ok {
 			continue
@@ -202,7 +202,7 @@ func (pm *pendingMap) markPending(keys ...string) []string {
 // unMarkPending sets any key that is still pending not to be pending.
 //
 // Skips keys that are already pending or are already in the database.
-func (pm *pendingMap) unMarkPending(keys ...string) {
+func (pm *pendingMap) unMarkPending(keys ...Key) {
 	pm.Lock()
 	defer pm.Unlock()
 
@@ -223,7 +223,7 @@ func (pm *pendingMap) unMarkPending(keys ...string) {
 
 // setIfExiists is like setIfExist but without setting a lock. Should not be
 // used directly.
-func (pm *pendingMap) setIfExistUnlocked(key string, value []byte) {
+func (pm *pendingMap) setIfExistUnlocked(key Key, value []byte) {
 	pending := pm.pending[key]
 	_, exists := pm.data[key]
 
@@ -247,7 +247,7 @@ func (pm *pendingMap) setIfExistUnlocked(key string, value []byte) {
 // pending.
 //
 // If the key is pending, informs all listeners.
-func (pm *pendingMap) setIfExist(key string, value []byte) {
+func (pm *pendingMap) setIfExist(key Key, value []byte) {
 	pm.Lock()
 	defer pm.Unlock()
 
@@ -255,7 +255,7 @@ func (pm *pendingMap) setIfExist(key string, value []byte) {
 }
 
 // setIfExistMany is like setIfExists but for many values.
-func (pm *pendingMap) setIfExistMany(data map[string][]byte) {
+func (pm *pendingMap) setIfExistMany(data map[Key][]byte) {
 	pm.Lock()
 	defer pm.Unlock()
 
@@ -267,7 +267,7 @@ func (pm *pendingMap) setIfExistMany(data map[string][]byte) {
 // setIfPending updates values but only if the key is pending.
 //
 // Informs all listeners.
-func (pm *pendingMap) setIfPending(key string, value []byte) {
+func (pm *pendingMap) setIfPending(key Key, value []byte) {
 	pm.Lock()
 	defer pm.Unlock()
 
@@ -283,7 +283,7 @@ func (pm *pendingMap) setIfPending(key string, value []byte) {
 }
 
 // setIfPendingMany like setIfPending but with many keys.
-func (pm *pendingMap) setEmptyIfPending(keys ...string) {
+func (pm *pendingMap) setEmptyIfPending(keys ...Key) {
 	pm.Lock()
 	defer pm.Unlock()
 

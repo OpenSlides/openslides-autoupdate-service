@@ -13,6 +13,20 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	ahttp "github.com/OpenSlides/openslides-autoupdate-service/internal/http"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+)
+
+func MustKey(in string) datastore.Key {
+	k, err := datastore.KeyFromString(in)
+	if err != nil {
+		panic(err)
+	}
+	return k
+}
+
+var (
+	myKey1 = MustKey("collection/1/field")
+	myKey2 = MustKey("collection/2/field")
 )
 
 type connecterMock struct {
@@ -23,7 +37,7 @@ func (c *connecterMock) Connect(userID int, kb autoupdate.KeysBuilder) autoupdat
 	return c.f
 }
 
-func (c *connecterMock) SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[string][]byte, error) {
+func (c *connecterMock) SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[datastore.Key][]byte, error) {
 	return c.f(ctx)
 }
 
@@ -33,9 +47,9 @@ func TestKeysHandler(t *testing.T) {
 
 	mux := http.NewServeMux()
 	connecter := &connecterMock{
-		func(ctx context.Context) (map[string][]byte, error) {
+		func(ctx context.Context) (map[datastore.Key][]byte, error) {
 			cancel()
-			return map[string][]byte{"foo": []byte(`"bar"`)}, nil
+			return map[datastore.Key][]byte{myKey1: []byte(`"bar"`)}, nil
 		},
 	}
 
@@ -51,10 +65,10 @@ func TestKeysHandler(t *testing.T) {
 		t.Errorf("Got status %q, expected %q", res.Status, http.StatusText(200))
 	}
 
-	expect := `{"foo":"bar"}` + "\n"
+	expect := `{"collection/1/field":"bar"}` + "\n"
 	got, _ := io.ReadAll(res.Body)
 	if string(got) != expect {
-		t.Errorf("Got content %q, expected %q", got, expect)
+		t.Errorf("Got content %s, expected %s", got, expect)
 	}
 }
 
@@ -64,9 +78,9 @@ func TestComplexHandler(t *testing.T) {
 
 	mux := http.NewServeMux()
 	connecter := &connecterMock{
-		func(ctx context.Context) (map[string][]byte, error) {
+		func(ctx context.Context) (map[datastore.Key][]byte, error) {
 			cancel()
-			return map[string][]byte{"foo": []byte(`"bar"`)}, nil
+			return map[datastore.Key][]byte{myKey1: []byte(`"bar"`)}, nil
 		},
 	}
 
@@ -86,10 +100,10 @@ func TestComplexHandler(t *testing.T) {
 		t.Errorf("Got status %s, expected %s", res.Status, http.StatusText(200))
 	}
 
-	expect := `{"foo":"bar"}` + "\n"
+	expect := `{"collection/1/field":"bar"}` + "\n"
 	got, _ := io.ReadAll(res.Body)
 	if string(got) != expect {
-		t.Errorf("Got %q, expected %q", got, expect)
+		t.Errorf("Got %s, expected %s", got, expect)
 	}
 }
 
@@ -115,8 +129,8 @@ func TestHealth(t *testing.T) {
 func TestErrors(t *testing.T) {
 	mux := http.NewServeMux()
 	connecter := &connecterMock{
-		func(ctx context.Context) (map[string][]byte, error) {
-			return map[string][]byte{"foo": []byte(`"bar"`)}, nil
+		func(ctx context.Context) (map[datastore.Key][]byte, error) {
+			return map[datastore.Key][]byte{myKey1: []byte(`"bar"`)}, nil
 		},
 	}
 	ahttp.Autoupdate(mux, test.Auth(1), connecter, nil)

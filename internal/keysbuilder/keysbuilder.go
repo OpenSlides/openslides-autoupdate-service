@@ -7,12 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
+	"sync"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
-
-const keySep = "/"
 
 // Builder builds the keys. It is not save for concourent use. There is one
 // Builder instance per client. It is not allowed to call builder.Update() more
@@ -21,30 +19,35 @@ const keySep = "/"
 //
 // Has to be created with keysbuilder.FromJSON() or keysbuilder.ManyFromJSON().
 type Builder struct {
+	mu sync.Mutex
+
 	bodies []body
-	keys   []string
+	keys   []datastore.Key
 }
 
 // FromKeys creates a keysbuilder from a list of keys.
-func FromKeys(keys []string) (*Builder, error) {
+func FromKeys(rawKeys ...string) (*Builder, error) {
 	b := new(Builder)
-	if len(keys) == 0 || keys[0] == "" {
+	if len(rawKeys) == 0 || rawKeys[0] == "" {
 		return b, nil
 	}
 
-	if invalid := datastore.InvalidKeys(keys...); len(invalid) != 0 {
-		return nil, InvalidError{msg: fmt.Sprintf("Invalid keys: %v", invalid)}
+	keys := make([]datastore.Key, len(rawKeys))
+	for i, k := range rawKeys {
+		key, err := datastore.KeyFromString(k)
+		if err != nil {
+			return nil, fmt.Errorf("invalid key: %s", k)
+		}
+		keys[i] = key
 	}
 
 	for _, key := range keys {
-		parts := strings.Split(key, "/")
-		id, _ := strconv.Atoi(parts[1])
 		body := body{
-			ids:        []int{id},
-			collection: parts[0],
+			ids:        []int{key.ID},
+			collection: key.Collection,
 			fieldsMap: fieldsMap{
 				fields: map[string]fieldDescription{
-					parts[2]: nil,
+					key.Field: nil,
 				},
 			},
 		}
@@ -68,6 +71,9 @@ func FromBuilders(builders ...*Builder) *Builder {
 //
 // It is not allowed to call builder.Keys() after Update returned an error.
 func (b *Builder) Update(ctx context.Context, getter datastore.Getter) (err error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	defer func() {
 		// Reset keys if an error happens
 		if err != nil {
@@ -80,14 +86,14 @@ func (b *Builder) Update(ctx context.Context, getter datastore.Getter) (err erro
 	}
 
 	// Start with all keys from all the bodies.
-	process := make(map[string]fieldDescription)
+	process := make(map[datastore.Key]fieldDescription)
 	for _, body := range b.bodies {
 		body.keys(process)
 	}
 
 	b.keys = b.keys[:0]
-	var needed []string
-	processed := make(map[string]fieldDescription)
+	var needed []datastore.Key
+	processed := make(map[datastore.Key]fieldDescription)
 	for {
 		// Get all keys and descriptions
 		for key, description := range process {
@@ -144,7 +150,10 @@ func (b *Builder) Update(ctx context.Context, getter datastore.Getter) (err erro
 // Keys returns the keys.
 //
 // Make sure to call Update() or Keys() will return an empty list.
-func (b *Builder) Keys() []string {
+func (b *Builder) Keys() []datastore.Key {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	return append(b.keys[:0:0], b.keys...)
 }
 
@@ -152,10 +161,13 @@ func (b *Builder) Keys() []string {
 // together.
 //
 // buildGenericKey("motion/5", "title") -> "motion/5/title".
-func buildGenericKey(collectionID string, field string) string {
-	return collectionID + keySep + field
+func buildGenericKey(collectionID string, field string) datastore.Key {
+	key, err := datastore.KeyFromString(collectionID + "/" + field)
+	_ = err // TODO: Can this happen?
+
+	return key
 }
 
 func buildCollectionID(collection string, id int) string {
-	return collection + keySep + strconv.Itoa(id)
+	return collection + "/" + strconv.Itoa(id)
 }

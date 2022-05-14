@@ -9,13 +9,13 @@ import (
 
 // Datastore gets values for keys and informs, if they change.
 type Datastore interface {
-	Get(ctx context.Context, keys ...string) (map[string][]byte, error)
-	GetPosition(ctx context.Context, position int, keys ...string) (map[string][]byte, error)
-	RegisterChangeListener(f func(map[string][]byte) error)
+	Get(ctx context.Context, keys ...datastore.Key) (map[datastore.Key][]byte, error)
+	GetPosition(ctx context.Context, position int, keys ...datastore.Key) (map[datastore.Key][]byte, error)
+	RegisterChangeListener(f func(map[datastore.Key][]byte) error)
 	ResetCache()
 	RegisterCalculatedField(
 		field string,
-		f func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error),
+		f func(ctx context.Context, key datastore.Key, changed map[datastore.Key][]byte) ([]byte, error),
 	)
 	HistoryInformation(ctx context.Context, fqid string, w io.Writer) error
 }
@@ -23,5 +23,5 @@ type Datastore interface {
 // KeysBuilder holds the keys that are requested by a user.
 type KeysBuilder interface {
 	Update(ctx context.Context, ds datastore.Getter) error
-	Keys() []string
+	Keys() []datastore.Key
 }

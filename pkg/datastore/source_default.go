@@ -20,7 +20,7 @@ const (
 //
 // Deprivated: Use redis directly.
 type Updater interface {
-	Update(context.Context) (map[string][]byte, error)
+	Update(context.Context) (map[Key][]byte, error)
 }
 
 // SourceDatastore receives the data from the datastore-reader via http and
@@ -45,7 +45,7 @@ func NewSourceDatastore(url string, updater Updater) *SourceDatastore {
 }
 
 // Get fetches the request keys from the datastore-reader.
-func (s *SourceDatastore) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+func (s *SourceDatastore) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
 	atomic.AddUint64(&s.metricDSHitCount, 1)
 	return s.GetPosition(ctx, 0, keys...)
 }
@@ -53,7 +53,7 @@ func (s *SourceDatastore) Get(ctx context.Context, keys ...string) (map[string][
 // GetPosition gets keys from the datastore at a specifi position.
 //
 // Position 0 means the current position.
-func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ...string) (map[string][]byte, error) {
+func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
 	requestData, err := keysToGetManyRequest(keys, position)
 	if err != nil {
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)
@@ -97,7 +97,7 @@ func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ..
 }
 
 // Update updates the data from the redis message bus.
-func (s *SourceDatastore) Update(ctx context.Context) (map[string][]byte, error) {
+func (s *SourceDatastore) Update(ctx context.Context) (map[Key][]byte, error) {
 	return s.updater.Update(ctx)
 }
 

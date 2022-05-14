@@ -15,7 +15,7 @@ type connection struct {
 	kb         KeysBuilder
 	tid        uint64
 	filter     filter
-	hotkeys    map[string]bool
+	hotkeys    map[datastore.Key]bool
 }
 
 // Next returns the next data for the user.
@@ -25,7 +25,7 @@ type connection struct {
 //
 // On every other call, it blocks until there is new data. In this case, the map
 // is never empty.
-func (c *connection) Next(ctx context.Context) (map[string][]byte, error) {
+func (c *connection) Next(ctx context.Context) (map[datastore.Key][]byte, error) {
 	if c.filter.empty() {
 		data, err := c.data(ctx)
 		if err != nil {
@@ -36,7 +36,7 @@ func (c *connection) Next(ctx context.Context) (map[string][]byte, error) {
 	}
 
 	for {
-		// Blocks until the topic is closed (on server exit) or the context is done.
+		// Blocks until new data or the context is done.
 		tid, changedKeys, err := c.autoupdate.topic.Receive(ctx, c.tid)
 		if err != nil {
 			return nil, fmt.Errorf("get updated keys: %w", err)
@@ -59,7 +59,7 @@ func (c *connection) Next(ctx context.Context) (map[string][]byte, error) {
 }
 
 // data returns all values from the datastore.getter.
-func (c *connection) data(ctx context.Context) (map[string][]byte, error) {
+func (c *connection) data(ctx context.Context) (map[datastore.Key][]byte, error) {
 	if c.tid == 0 {
 		c.tid = c.autoupdate.topic.LastID()
 	}
@@ -91,13 +91,13 @@ func (c *connection) data(ctx context.Context) (map[string][]byte, error) {
 }
 
 // notInSlice returns elements that are in slice a but not in b.
-func notInSlice(a, b []string) []string {
-	bSet := make(map[string]struct{}, len(b))
+func notInSlice(a, b []datastore.Key) []datastore.Key {
+	bSet := make(map[datastore.Key]struct{}, len(b))
 	for _, k := range b {
 		bSet[k] = struct{}{}
 	}
 
-	var missing []string
+	var missing []datastore.Key
 	for _, k := range a {
 		if _, ok := bSet[k]; !ok {
 			missing = append(missing, k)

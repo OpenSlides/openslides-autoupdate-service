@@ -12,8 +12,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"regexp"
-	"strings"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -30,27 +29,27 @@ const (
 //
 // The Datastore object implements this interface.
 type Getter interface {
-	Get(ctx context.Context, keys ...string) (map[string][]byte, error)
+	Get(ctx context.Context, keys ...Key) (map[Key][]byte, error)
 }
 
 // GetPositioner is like a Getter but also taks a position
 type GetPositioner interface {
-	GetPosition(ctx context.Context, position int, keys ...string) (map[string][]byte, error)
+	GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error)
 }
 
 // Source gives the data for keys.
 type Source interface {
 	// Get is called when a key is not in the cache.
-	Get(ctx context.Context, key ...string) (map[string][]byte, error)
+	Get(ctx context.Context, key ...Key) (map[Key][]byte, error)
 
 	// Update is called frequently and should block until there is new data.
-	Update(ctx context.Context) (map[string][]byte, error)
+	Update(ctx context.Context) (map[Key][]byte, error)
 }
 
 // SourcePosition is a Source that also supports getting the data at a specific position.
 type SourcePosition interface {
 	Source
-	GetPosition(ctx context.Context, position int, key ...string) (map[string][]byte, error)
+	GetPosition(ctx context.Context, position int, key ...Key) (map[Key][]byte, error)
 }
 
 // HistoryInformationer returns the history information.
@@ -67,9 +66,9 @@ type Datastore struct {
 	defaultSource Source
 	keySource     map[string]Source
 
-	changeListeners  []func(map[string][]byte) error
-	calculatedFields map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)
-	calculatedKeys   map[string]string
+	changeListeners  []func(map[Key][]byte) error
+	calculatedFields map[string]func(ctx context.Context, key Key, changed map[Key][]byte) ([]byte, error)
+	calculatedKeys   map[Key]string
 
 	history HistoryInformationer
 
@@ -90,8 +89,8 @@ func New(defaultSource Source, keySource map[string]Source, history HistoryInfor
 		defaultSource: defaultSource,
 		keySource:     keySource,
 
-		calculatedFields: make(map[string]func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error)),
-		calculatedKeys:   make(map[string]string),
+		calculatedFields: make(map[string]func(ctx context.Context, key Key, changed map[Key][]byte) ([]byte, error)),
+		calculatedKeys:   make(map[Key]string),
 
 		history: history,
 	}
@@ -104,12 +103,9 @@ func New(defaultSource Source, keySource map[string]Source, history HistoryInfor
 // Get returns the value for one or many keys.
 //
 // If a key does not exist, the value nil is returned for that key.
-func (d *Datastore) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+func (d *Datastore) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
 	atomic.AddUint64(&d.metricGetHitCount, 1)
-	values, err := d.cache.GetOrSet(ctx, keys, func(keys []string, set func(key string, value []byte)) error {
-		if invalid := InvalidKeys(keys...); invalid != nil {
-			return invalidKeyError{keys: invalid}
-		}
+	values, err := d.cache.GetOrSet(ctx, keys, func(keys []Key, set func(key Key, value []byte)) error {
 		return d.loadKeys(keys, set)
 	})
 	if err != nil {
@@ -120,12 +116,8 @@ func (d *Datastore) Get(ctx context.Context, keys ...string) (map[string][]byte,
 }
 
 // GetPosition is like Get() but returns the data at a specific position.
-func (d *Datastore) GetPosition(ctx context.Context, position int, keys ...string) (map[string][]byte, error) {
-	if invalid := InvalidKeys(keys...); invalid != nil {
-		return nil, invalidKeyError{keys: invalid}
-	}
-
-	var data map[string][]byte
+func (d *Datastore) GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
+	var data map[Key][]byte
 	// Ignore calculated keys. They are not supported on GetPosition.
 	_, normalKeys := d.splitCalculatedKeys(keys)
 	for source, keys := range normalKeys {
@@ -155,7 +147,7 @@ func (d *Datastore) GetPosition(ctx context.Context, position int, keys ...strin
 
 // RegisterChangeListener registers a function that is called whenever an
 // datastore update happens.
-func (d *Datastore) RegisterChangeListener(f func(map[string][]byte) error) {
+func (d *Datastore) RegisterChangeListener(f func(map[Key][]byte) error) {
 	d.changeListeners = append(d.changeListeners, f)
 }
 
@@ -170,7 +162,7 @@ func (d *Datastore) RegisterChangeListener(f func(map[string][]byte) error) {
 // data, that has changed.
 func (d *Datastore) RegisterCalculatedField(
 	field string,
-	f func(ctx context.Context, key string, changed map[string][]byte) ([]byte, error),
+	f func(ctx context.Context, key Key, changed map[Key][]byte) ([]byte, error),
 ) {
 	d.calculatedFields[field] = f
 }
@@ -193,7 +185,7 @@ func (d *Datastore) ListenOnUpdates(ctx context.Context, errHandler func(error))
 		errHandler = func(error) {}
 	}
 
-	updatedValues := make(chan map[string][]byte)
+	updatedValues := make(chan map[Key][]byte)
 	sources := make([]Source, 0, len(d.keySource)+1)
 	sources = append(sources, d.defaultSource)
 	for _, s := range d.keySource {
@@ -251,16 +243,11 @@ func (d *Datastore) ListenOnUpdates(ctx context.Context, errHandler func(error))
 
 // splitCalculatedKeys splits a list of keys in calculated keys and "normal"
 // keys. The calculated keys are returned as map that point to the field name.
-func (d *Datastore) splitCalculatedKeys(keys []string) (map[string]string, map[Source][]string) {
-	normal := make(map[Source][]string)
-	calculated := make(map[string]string)
+func (d *Datastore) splitCalculatedKeys(keys []Key) (map[Key]string, map[Source][]Key) {
+	normal := make(map[Source][]Key)
+	calculated := make(map[Key]string)
 	for _, k := range keys {
-		parts := strings.SplitN(k, "/", 3)
-		if len(parts) != 3 {
-			continue
-		}
-
-		field := parts[0] + "/" + parts[2]
+		field := k.Collection + "/" + k.Field
 		_, ok := d.calculatedFields[field]
 		if !ok {
 			source := d.defaultSource
@@ -275,7 +262,7 @@ func (d *Datastore) splitCalculatedKeys(keys []string) (map[string]string, map[S
 	return calculated, normal
 }
 
-func (d *Datastore) loadKeys(keys []string, set func(string, []byte)) error {
+func (d *Datastore) loadKeys(keys []Key, set func(Key, []byte)) error {
 	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
 	for source, keys := range normalKeys {
 		data, err := source.Get(context.Background(), keys...)
@@ -295,7 +282,7 @@ func (d *Datastore) loadKeys(keys []string, set func(string, []byte)) error {
 	return nil
 }
 
-func (d *Datastore) calculateField(field string, key string, updated map[string][]byte) []byte {
+func (d *Datastore) calculateField(field string, key Key, updated map[Key][]byte) []byte {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
@@ -315,45 +302,33 @@ func (d *Datastore) calculateField(field string, key string, updated map[string]
 }
 
 // keysToGetManyRequest a json envoding of the get_many request.
-func keysToGetManyRequest(keys []string, position int) ([]byte, error) {
+func keysToGetManyRequest(keys []Key, position int) ([]byte, error) {
 	request := struct {
-		Requests []string `json:"requests"`
-		Position int      `json:"position,omitempty"`
+		Requests []Key `json:"requests"`
+		Position int   `json:"position,omitempty"`
 	}{keys, position}
 	return json.Marshal(request)
 }
 
 // getManyResponseToKeyValue reads the response from the getMany request and
 // returns the content as key-values.
-func getManyResponseToKeyValue(r io.Reader) (map[string][]byte, error) {
+func getManyResponseToKeyValue(r io.Reader) (map[Key][]byte, error) {
 	var data map[string]map[string]map[string]json.RawMessage
 	if err := json.NewDecoder(r).Decode(&data); err != nil {
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 
-	keyValue := make(map[string][]byte)
+	keyValue := make(map[Key][]byte)
 	for collection, idField := range data {
-		for id, fieldValue := range idField {
+		for idstr, fieldValue := range idField {
+			id, err := strconv.Atoi(idstr)
+			if err != nil {
+				return nil, fmt.Errorf("invalid key. Id is no number: %s", idstr)
+			}
 			for field, value := range fieldValue {
-				keyValue[collection+"/"+id+"/"+field] = value
+				keyValue[Key{collection, id, field}] = value
 			}
 		}
 	}
 	return keyValue, nil
-}
-
-var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*/[a-z][a-z0-9_]*\$?[a-z0-9_]*$`)
-
-// InvalidKeys checks if all of the given keys are valid. Invalid keys are
-// returned.
-//
-// A return value of nil means, that all keys are valid.
-func InvalidKeys(keys ...string) []string {
-	var invalid []string
-	for _, key := range keys {
-		if ok := reValidKeys.MatchString(key); !ok {
-			invalid = append(invalid, key)
-		}
-	}
-	return invalid
 }

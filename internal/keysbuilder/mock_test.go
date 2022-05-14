@@ -2,6 +2,8 @@ package keysbuilder_test
 
 import (
 	"sort"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
 func cmpSlice(one, two []string) bool {
@@ -16,17 +18,17 @@ func cmpSlice(one, two []string) bool {
 	return true
 }
 
-func cmpSet(one, two map[string]bool) []string {
+func cmpSet(one, two map[datastore.Key]bool) []string {
 	var out []string
 
 	for key := range one {
 		if !two[key] {
-			out = append(out, "-"+key)
+			out = append(out, "-"+key.String())
 		}
 	}
 	for key := range two {
 		if !one[key] {
-			out = append(out, "+"+key)
+			out = append(out, "+"+key.String())
 		}
 	}
 	if len(out) == 0 {
@@ -36,12 +38,23 @@ func cmpSet(one, two map[string]bool) []string {
 	return out
 }
 
-func set(keys ...string) map[string]bool {
-	out := make(map[string]bool)
+func set(keys ...datastore.Key) map[datastore.Key]bool {
+	out := make(map[datastore.Key]bool)
 	for _, key := range keys {
 		out[key] = true
 	}
 	return out
 }
 
-func strs(str ...string) []string { return str }
+func keys(ks ...string) []datastore.Key {
+	keys := make([]datastore.Key, len(ks))
+	for i, k := range ks {
+		key, err := datastore.KeyFromString(k)
+		if err != nil {
+			panic(err)
+		}
+
+		keys[i] = key
+	}
+	return keys
+}

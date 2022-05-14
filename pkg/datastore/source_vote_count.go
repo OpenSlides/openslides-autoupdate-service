@@ -51,22 +51,21 @@ func (s *VoteCountSource) voteServiceConnect(ctx context.Context, blocking bool)
 }
 
 // Get is called when a key is not in the cache.
-func (s *VoteCountSource) Get(ctx context.Context, keys ...string) (map[string][]byte, error) {
+func (s *VoteCountSource) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
 	content, err := s.voteServiceConnect(ctx, false)
 	if err != nil {
 		return nil, fmt.Errorf("connecting to vote service: %w", err)
 	}
 
-	out := make(map[string][]byte, len(keys))
+	out := make(map[Key][]byte, len(keys))
 	for _, key := range keys {
 		out[key] = nil
 
-		var pollID int
-		if _, err := fmt.Sscanf(key, "poll/%d/vote_count", &pollID); err != nil {
+		if key.Collection != "poll" || key.Field != "vote_count" {
 			continue
 		}
 
-		if count, ok := content.Polls[pollID]; ok {
+		if count, ok := content.Polls[key.ID]; ok {
 			out[key] = []byte(strconv.Itoa(count))
 		}
 	}
@@ -74,7 +73,7 @@ func (s *VoteCountSource) Get(ctx context.Context, keys ...string) (map[string][
 }
 
 // Update is called frequently and should block until there is new data.
-func (s *VoteCountSource) Update(ctx context.Context) (map[string][]byte, error) {
+func (s *VoteCountSource) Update(ctx context.Context) (map[Key][]byte, error) {
 	content, err := s.voteServiceConnect(ctx, true)
 	if err != nil {
 		return nil, fmt.Errorf("connecting to vote service: %w", err)
@@ -82,9 +81,9 @@ func (s *VoteCountSource) Update(ctx context.Context) (map[string][]byte, error)
 
 	s.id = content.ID
 
-	out := make(map[string][]byte, len(content.Polls))
+	out := make(map[Key][]byte, len(content.Polls))
 	for pollID, count := range content.Polls {
-		out[fmt.Sprintf("poll/%d/vote_count", pollID)] = []byte(strconv.Itoa(count))
+		out[Key{"poll", pollID, "vote_count"}] = []byte(strconv.Itoa(count))
 	}
 	return out, nil
 }

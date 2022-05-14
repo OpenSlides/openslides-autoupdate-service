@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
 
@@ -15,7 +16,7 @@ func TestKeys(t *testing.T) {
 		name    string
 		request string
 		data    string
-		keys    []string
+		keys    []datastore.Key
 	}{
 		{
 			"One Field",
@@ -25,7 +26,7 @@ func TestKeys(t *testing.T) {
 				"fields": {"name": null}
 			}`,
 			"",
-			strs("user/1/name"),
+			keys("user/1/name"),
 		},
 		{
 			"Many Fields",
@@ -38,7 +39,7 @@ func TestKeys(t *testing.T) {
 				}
 			}`,
 			"",
-			strs("user/1/first", "user/1/last"),
+			keys("user/1/first", "user/1/last"),
 		},
 		{
 			"Many IDs Many Fields",
@@ -51,7 +52,7 @@ func TestKeys(t *testing.T) {
 				}
 			}`,
 			"",
-			strs("user/1/first", "user/1/last", "user/2/first", "user/2/last"),
+			keys("user/1/first", "user/1/last", "user/2/first", "user/2/last"),
 		},
 		{
 			"Redirect Once id",
@@ -67,7 +68,7 @@ func TestKeys(t *testing.T) {
 				}
 			}`,
 			"user/1/note_id: 1",
-			strs("user/1/note_id", "note/1/important"),
+			keys("user/1/note_id", "note/1/important"),
 		},
 		{
 			"Redirect Once ids",
@@ -83,7 +84,7 @@ func TestKeys(t *testing.T) {
 				}
 			}`,
 			"user/1/group_ids: [1,2]",
-			strs("user/1/group_ids", "group/1/admin", "group/2/admin"),
+			keys("user/1/group_ids", "group/1/admin", "group/2/admin"),
 		},
 		{
 			"Redirect twice id",
@@ -108,7 +109,7 @@ func TestKeys(t *testing.T) {
 			user/1/note_id: 1
 			note/1/motion_id: 1
 			`,
-			strs("user/1/note_id", "note/1/motion_id", "motion/1/name"),
+			keys("user/1/note_id", "note/1/motion_id", "motion/1/name"),
 		},
 		{
 			"Redirect twice ids",
@@ -134,7 +135,7 @@ func TestKeys(t *testing.T) {
 			group/1/perm_ids: [1,2]
 			group/2/perm_ids: [1,2]
 			`,
-			strs("user/1/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name"),
+			keys("user/1/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name"),
 		},
 		{
 			"Request _id without redirect",
@@ -144,7 +145,7 @@ func TestKeys(t *testing.T) {
 				"fields": {"note_id": null}
 			}`,
 			"",
-			strs("user/1/note_id"),
+			keys("user/1/note_id"),
 		},
 		{
 			"Redirect id not exist",
@@ -160,7 +161,7 @@ func TestKeys(t *testing.T) {
 				}
 			}`,
 			"",
-			strs("not_exist/1/note_id"),
+			keys("not_exist/1/note_id"),
 		},
 		{
 			"Redirect ids not exist",
@@ -176,7 +177,7 @@ func TestKeys(t *testing.T) {
 				}
 			}`,
 			"",
-			strs("not_exist/1/group_ids"),
+			keys("not_exist/1/group_ids"),
 		},
 		{
 			"Template field",
@@ -200,7 +201,7 @@ func TestKeys(t *testing.T) {
 				group_$1_ids: [1,2]
 				group_$2_ids: [1,2]
 			`,
-			strs("user/1/group_$_ids", "user/1/group_$1_ids", "user/1/group_$2_ids", "group/1/name", "group/2/name"),
+			keys("user/1/group_$_ids", "user/1/group_$1_ids", "user/1/group_$2_ids", "group/1/name", "group/2/name"),
 		},
 		{
 			"Generic field",
@@ -215,7 +216,7 @@ func TestKeys(t *testing.T) {
 				}
 			}`,
 			"user/1/likes: other/1",
-			strs("user/1/likes", "other/1/name"),
+			keys("user/1/likes", "other/1/name"),
 		},
 		{
 			"Generic field with sub fields",
@@ -239,7 +240,7 @@ func TestKeys(t *testing.T) {
 			user/1/likes:    other/1
 			other/1/tag_ids: [1,2]
 			`,
-			strs("user/1/likes", "other/1/tag_ids", "tag/1/name", "tag/2/name"),
+			keys("user/1/likes", "other/1/tag_ids", "tag/1/name", "tag/2/name"),
 		},
 		{
 			"Generic list field",
@@ -254,7 +255,7 @@ func TestKeys(t *testing.T) {
 				}
 			}`,
 			`user/1/likes: ["other/1","other/2"]`,
-			strs("user/1/likes", "other/1/name", "other/2/name"),
+			keys("user/1/likes", "other/1/name", "other/2/name"),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -283,7 +284,7 @@ func TestUpdate(t *testing.T) {
 		request string
 		data    string
 		newData string
-		got     []string
+		got     []datastore.Key
 		count   int
 	}{
 		{
@@ -301,7 +302,7 @@ func TestUpdate(t *testing.T) {
 			}`,
 			"user/1/note_id: 1",
 			"user/1/note_id: 2",
-			strs("user/1/note_id", "note/2/important"),
+			keys("user/1/note_id", "note/2/important"),
 			1,
 		},
 		{
@@ -319,7 +320,7 @@ func TestUpdate(t *testing.T) {
 			}`,
 			"user/1/note_id: 1",
 			"user/1/note_id: 1",
-			strs("user/1/note_id", "note/1/important"),
+			keys("user/1/note_id", "note/1/important"),
 			0,
 		},
 		{
@@ -343,7 +344,7 @@ func TestUpdate(t *testing.T) {
 			user/1/note_id: 2
 			user/2/note_id: 1
 			`,
-			strs("user/1/note_id", "user/2/note_id", "note/1/important", "note/2/important"),
+			keys("user/1/note_id", "user/2/note_id", "note/1/important", "note/2/important"),
 			1,
 		},
 		{
@@ -374,7 +375,7 @@ func TestUpdate(t *testing.T) {
 			user/1/group_ids: [1,2]
 			user/2/group_ids: [1,2]
 			`,
-			strs("user/1/note_id", "user/1/group_ids", "note/2/important", "group/1/admin", "group/2/admin"),
+			keys("user/1/note_id", "user/1/group_ids", "note/2/important", "group/1/admin", "group/2/admin"),
 			1,
 		},
 		{
@@ -403,7 +404,7 @@ func TestUpdate(t *testing.T) {
 			user/1/note_id: 2
 			user/1/group_ids: [2]
 			`,
-			strs("user/1/note_id", "note/2/important", "user/1/group_ids", "group/2/admin"),
+			keys("user/1/note_id", "note/2/important", "user/1/group_ids", "group/2/admin"),
 			2,
 		},
 		{
@@ -435,7 +436,7 @@ func TestUpdate(t *testing.T) {
 			group/1/perm_ids: [1,2]
 			group/2/perm_ids: [1,2]
 			`,
-			strs("user/1/group_ids", "group/2/perm_ids", "perm/2/name", "perm/1/name"),
+			keys("user/1/group_ids", "group/2/perm_ids", "perm/2/name", "perm/1/name"),
 			1,
 		},
 	} {
@@ -506,7 +507,7 @@ func TestConcurency(t *testing.T) {
 		t.Errorf("Got %d requests to the datastore, expected 2: %v", got, ds.Requests())
 	}
 
-	expect := strs("user/1/group_ids", "user/2/group_ids", "user/3/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name")
+	expect := keys("user/1/group_ids", "user/2/group_ids", "user/3/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name")
 	if diff := cmpSet(set(expect...), set(b.Keys()...)); diff != nil {
 		t.Errorf("Expected %v, got: %v", expect, diff)
 	}
@@ -560,7 +561,7 @@ func TestManyRequests(t *testing.T) {
 		t.Errorf("Got %d requests, expected 1: %v", got, ds.Requests())
 	}
 
-	expect := strs("user/1/note_id", "user/2/note_id", "motion/1/name", "note/1/important")
+	expect := keys("user/1/note_id", "user/2/note_id", "motion/1/name", "note/1/important")
 	if diff := cmpSet(set(expect...), set(b.Keys()...)); diff != nil {
 		t.Errorf("Got %v, expected %v", diff, expect)
 	}
