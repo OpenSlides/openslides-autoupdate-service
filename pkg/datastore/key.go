@@ -44,3 +44,8 @@ func (k Key) IDField() Key {
 	k.Field = "id"
 	return k
 }
+
+// MarshalJSON converts the key to a json string.
+func (k Key) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + k.String() + `"`), nil
+}
