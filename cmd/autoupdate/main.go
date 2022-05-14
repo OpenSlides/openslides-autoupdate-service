@@ -52,10 +52,11 @@ func run() error {
 	projector.Register(datastoreService, slide.Slides())
 
 	// Auth Service.
-	authService, err := initAuth(ctx, env, messageBus)
+	authService, authBackground, err := initAuth(env, messageBus)
 	if err != nil {
 		return fmt.Errorf("creating auth adapter: %w", err)
 	}
+	go authBackground(ctx)
 
 	// Autoupdate Service.
 	service := autoupdate.New(datastoreService, restrict.Middleware)
@@ -177,14 +178,7 @@ func initDatastore(env map[string]string, mb *redis.Redis) (*datastore.Datastore
 	), nil
 }
 
-// initAuth returns the auth service needed by the http server.
-//
-// This function is not blocking. The context to start background tasks.
-func initAuth(
-	ctx context.Context,
-	env map[string]string,
-	messageBus auth.LogoutEventer,
-) (autoupdateHttp.Authenticater, error) {
+func initAuth(env map[string]string, messageBus auth.LogoutEventer) (autoupdateHttp.Authenticater, func(context.Context), error) {
 	method := env["AUTH"]
 
 	switch method {
@@ -193,31 +187,33 @@ func initAuth(
 
 		tokenKey, err := secret("auth_token_key", useDev)
 		if err != nil {
-			return nil, fmt.Errorf("getting token secret: %w", err)
+			return nil, nil, fmt.Errorf("getting token secret: %w", err)
 		}
 
 		cookieKey, err := secret("auth_cookie_key", useDev)
 		if err != nil {
-			return nil, fmt.Errorf("getting cookie secret: %w", err)
+			return nil, nil, fmt.Errorf("getting cookie secret: %w", err)
 		}
 
 		url := fmt.Sprintf("%s://%s:%s", env["AUTH_PROTOCOL"], env["AUTH_HOST"], env["AUTH_PORT"])
 		a, err := auth.New(url, tokenKey, cookieKey)
 		if err != nil {
-			return nil, fmt.Errorf("creating auth service: %w", err)
+			return nil, nil, fmt.Errorf("creating auth service: %w", err)
 		}
 
-		go a.ListenOnLogouts(ctx, messageBus, auerror.Handle)
-		go a.PruneOldData(ctx)
+		backgroundtask := func(ctx context.Context) {
+			go a.ListenOnLogouts(ctx, messageBus, auerror.Handle)
+			go a.PruneOldData(ctx)
+		}
 
-		return a, nil
+		return a, backgroundtask, nil
 
 	case "fake":
 		fmt.Println("Auth Method: FakeAuth (User ID 1 for all requests)")
-		return auth.Fake(1), nil
+		return auth.Fake(1), func(context.Context) {}, nil
 
 	default:
 		// TODO LAST ERROR
-		return nil, fmt.Errorf("unknown auth method: %s", method)
+		return nil, nil, fmt.Errorf("unknown auth method: %s", method)
 	}
 }
