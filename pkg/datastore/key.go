@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -15,9 +16,8 @@ type Key struct {
 
 // KeyFromString parses a string to a Key.
 func KeyFromString(in string) (Key, error) {
-	invalid := InvalidKeys(in)
-	if invalid != nil {
-		return Key{}, invalidKeyError{invalid}
+	if !keyValid(in) {
+		return Key{}, invalidKeyError{in}
 	}
 
 	parts := strings.Split(in, "/")
@@ -48,4 +48,14 @@ func (k Key) IDField() Key {
 // MarshalJSON converts the key to a json string.
 func (k Key) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + k.String() + `"`), nil
+}
+
+var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*/[a-z][a-z0-9_]*\$?[a-z0-9_]*$`)
+
+// keyValid checks if all of the given keys are valid. Invalid keys are
+// returned.
+//
+// A return value of nil means, that all keys are valid.
+func keyValid(key string) bool {
+	return reValidKeys.MatchString(key)
 }

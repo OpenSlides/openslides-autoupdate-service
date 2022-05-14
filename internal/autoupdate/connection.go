@@ -36,7 +36,7 @@ func (c *connection) Next(ctx context.Context) (map[datastore.Key][]byte, error)
 	}
 
 	for {
-		// Blocks until the topic is closed (on server exit) or the context is done.
+		// Blocks until new data or the context is done.
 		tid, changedKeys, err := c.autoupdate.topic.Receive(ctx, c.tid)
 		if err != nil {
 			return nil, fmt.Errorf("get updated keys: %w", err)

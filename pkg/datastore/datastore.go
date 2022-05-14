@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"regexp"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -332,22 +331,4 @@ func getManyResponseToKeyValue(r io.Reader) (map[Key][]byte, error) {
 		}
 	}
 	return keyValue, nil
-}
-
-var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*/[a-z][a-z0-9_]*\$?[a-z0-9_]*$`)
-
-// InvalidKeys checks if all of the given keys are valid. Invalid keys are
-// returned.
-//
-// A return value of nil means, that all keys are valid.
-//
-// TODO: Check if this can be unexported.
-func InvalidKeys(keys ...string) []string {
-	var invalid []string
-	for _, key := range keys {
-		if ok := reValidKeys.MatchString(key); !ok {
-			invalid = append(invalid, key)
-		}
-	}
-	return invalid
 }

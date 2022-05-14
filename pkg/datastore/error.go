@@ -3,11 +3,11 @@ package datastore
 import "fmt"
 
 type invalidKeyError struct {
-	keys []string
+	key string
 }
 
 func (i invalidKeyError) Error() string {
-	return fmt.Sprintf("the given keys/fqfields are invalid: %v", i.keys)
+	return fmt.Sprintf("the key/fqfield is invalid: %s", i.key)
 }
 
 func (i invalidKeyError) Type() string {
