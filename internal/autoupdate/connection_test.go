@@ -12,20 +12,16 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 var userNameKey = autoupdate.MustKey("user/1/name")
 
 func TestConnect(t *testing.T) {
-	shutdownCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	next, _ := getConnection(shutdownCtx.Done())
+	next, _ := getConnection()
 
 	data, err := next(context.Background())
 	if err != nil {
-		t.Errorf("next() returned an error: %v", err)
+		t.Errorf("next(): %v", err)
 	}
 
 	if value, ok := data[userNameKey]; !ok || string(value) != `"Hello World"` {
@@ -33,10 +29,8 @@ func TestConnect(t *testing.T) {
 	}
 }
 
-func TestConnectionReadNoNewData(t *testing.T) {
-	shutdownCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	next, _ := getConnection(shutdownCtx.Done())
+func TestConnectionAfterDisconnect(t *testing.T) {
+	next, _ := getConnection()
 	ctx, disconnect := context.WithCancel(context.Background())
 
 	if _, err := next(ctx); err != nil {
@@ -49,7 +43,7 @@ func TestConnectionReadNoNewData(t *testing.T) {
 		t.Errorf("next() returned error %v, expected context.Canceled", err)
 	}
 	if data != nil {
-		t.Errorf("Expect no new data, got: %v", data)
+		t.Errorf("Got %v, expected no data", data)
 	}
 }
 
@@ -57,22 +51,23 @@ func TestConnectionReadNewData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	next, ds := getConnection(shutdownCtx.Done())
+	next, ds := getConnection()
 	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	if _, err := next(context.Background()); err != nil {
-		t.Errorf("next() returned an error: %v", err)
+		t.Errorf("next(): %v", err)
 	}
 
 	ds.Send(map[datastore.Key][]byte{userNameKey: []byte(`"new value"`)})
 	data, err := next(context.Background())
-
 	if err != nil {
-		t.Errorf("next() returned an error: %v", err)
+		t.Errorf("next(): %v", err)
 	}
+
 	if got := len(data); got != 1 {
-		t.Errorf("Expected data to have one key, got: %d", got)
+		t.Errorf("len(next()) == %d, expected 1", got)
 	}
+
 	if value, ok := data[userNameKey]; !ok || string(value) != `"new value"` {
 		t.Errorf("next() returned %v, expected %v", data, map[datastore.Key]string{userNameKey: `"new value"`})
 	}
@@ -87,7 +82,7 @@ func TestConnectionEmptyData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		doesExistKey: []byte(`"Hello World"`),
 	})
 	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
@@ -99,9 +94,17 @@ func TestConnectionEmptyData(t *testing.T) {
 		next := s.Connect(1, kb)
 
 		data, err := next(context.Background())
-		require.NoError(t, err)
-		assert.Contains(t, data, doesExistKey, "next() should return the existing key")
-		assert.NotContains(t, data, doesNotExistKey, "next() should not return a non existing key")
+		if err != nil {
+			t.Fatalf("next(): %v", err)
+		}
+
+		if _, ok := data[doesExistKey]; !ok {
+			t.Errorf("next does not contain %v", doesExistKey)
+		}
+
+		if _, ok := data[doesNotExistKey]; ok {
+			t.Errorf("next does contain %v", doesNotExistKey)
+		}
 	})
 
 	for _, tt := range []struct {
@@ -138,7 +141,7 @@ func TestConnectionEmptyData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			next := s.Connect(1, kb)
 			if _, err := next(context.Background()); err != nil {
-				t.Errorf("next() returned an error: %v", err)
+				t.Errorf("next(): %v", err)
 			}
 
 			ds.Send(tt.update)
@@ -149,23 +152,38 @@ func TestConnectionEmptyData(t *testing.T) {
 				data, err = next(context.Background())
 			})
 
-			require.NoError(t, err)
+			if err != nil {
+				t.Errorf("next(): %v", err)
+			}
+
 			if tt.expectBlocking {
-				assert.True(t, isBlocking, "Expect next() to block")
+				if !isBlocking {
+					t.Errorf("next() did not block")
+				}
 			} else {
-				assert.False(t, isBlocking, "Expect next() not to block.")
+				if isBlocking {
+					t.Errorf("next() did block")
+				}
 			}
 
 			if tt.expectExist {
-				assert.Contains(t, data, doesExistKey)
+				if _, ok := data[doesExistKey]; !ok {
+					t.Errorf("next does not contain %v", doesExistKey)
+				}
 			} else {
-				assert.NotContains(t, data, doesExistKey)
+				if _, ok := data[doesExistKey]; ok {
+					t.Errorf("next does contain %v", doesExistKey)
+				}
 			}
 
 			if tt.expectNotExist {
-				assert.Contains(t, data, doesNotExistKey)
+				if _, ok := data[doesNotExistKey]; !ok {
+					t.Errorf("next does not contain %v", doesNotExistKey)
+				}
 			} else {
-				assert.NotContains(t, data, doesNotExistKey)
+				if _, ok := data[doesNotExistKey]; ok {
+					t.Errorf("next does contain %v", doesNotExistKey)
+				}
 			}
 		})
 	}
@@ -191,47 +209,21 @@ func TestConnectionEmptyData(t *testing.T) {
 			_, err = next(context.Background())
 		})
 
-		require.NoError(t, err)
-		assert.True(t, isBlocking, "second request should be blocking")
+		if err != nil {
+			t.Fatalf("next(): %v", err)
+		}
+
+		if !isBlocking {
+			t.Errorf("second request did block")
+		}
 	})
-}
-
-func TestConnectionFilterData(t *testing.T) {
-	t.Skipf("TODO")
-	shutdownCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
-		userNameKey: []byte(`"Hello World"`),
-	})
-
-	s := autoupdate.New(ds, test.RestrictAllowed)
-	kb, _ := keysbuilder.FromKeys(userNameKey.String())
-	next := s.Connect(1, kb)
-	if _, err := next(context.Background()); err != nil {
-		t.Errorf("next() returned an error: %v", err)
-	}
-
-	// send again, value did not change in restricter
-	ds.Send(map[datastore.Key][]byte{userNameKey: []byte(`"Hello World"`)})
-	data, err := next(context.Background())
-
-	if err != nil {
-		t.Errorf("next() returned an error: %v", err)
-	}
-	if got := len(data); got != 0 {
-		t.Errorf("Got %d keys, expected none", got)
-	}
-	if _, ok := data[userNameKey]; ok {
-		t.Errorf("next() returned %v, expected empty map", data)
-	}
 }
 
 func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		userNameKey: []byte(`"Hello World"`),
 	})
 	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
@@ -240,31 +232,30 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 	next := s.Connect(1, kb)
 	if _, err := next(context.Background()); err != nil {
-		t.Errorf("next() returned an error: %v", err)
+		t.Errorf("next(): %v", err)
 	}
 
 	ds.Send(map[datastore.Key][]byte{userNameKey: []byte(`"newname"`)})
 	data, err := next(context.Background())
-
 	if err != nil {
-		t.Errorf("next() returned an error: %v", err)
+		t.Errorf("next(): %v", err)
 	}
+
 	if got := len(data); got != 1 {
-		t.Errorf("Expected data to have one key, got: %d", got)
+		t.Errorf("len(data) == %d, expected 1", got)
 	}
+
 	if _, ok := data[userNameKey]; !ok {
 		t.Errorf("Returned value does not have key `user/1/name`")
 	}
+
 	if got := string(data[userNameKey]); got != `"newname"` {
-		t.Errorf("Expect value `newname` got: %s", got)
+		t.Errorf("userNameKey == %s, expected `newname`", got)
 	}
 }
 
 func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
-	shutdownCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		userNameKey: []byte(`"Hello World"`),
 	})
 
@@ -280,9 +271,17 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 			data, err = next(context.Background())
 
 		})
-		require.NoError(t, err, "next() returned an error")
-		assert.Empty(t, data, "next() should return data on first call.")
-		assert.False(t, isBlocked, "next() should not block on first call.")
+		if err != nil {
+			t.Fatalf("next(): %v", err)
+		}
+
+		if len(data) > 0 {
+			t.Errorf("got %v, expected empty map", data)
+		}
+
+		if isBlocked {
+			t.Errorf("next() was blocking")
+		}
 	})
 
 	t.Run("next call", func(t *testing.T) {
@@ -292,9 +291,17 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 			data, err = next(context.Background())
 
 		})
-		require.NoError(t, err, "next() returned an error")
-		assert.Empty(t, data, "next() returned data")
-		assert.True(t, isBlocked, "next() did not block")
+		if err != nil {
+			t.Fatalf("next(): %v", err)
+		}
+
+		if len(data) > 0 {
+			t.Errorf("got %v, expected empty map", data)
+		}
+
+		if !isBlocked {
+			t.Errorf("next() was not blocking")
+		}
 	})
 }
 
@@ -312,15 +319,15 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 // deleted. Only be looking in the relation-list-field the client knows, that it
 // should not be interested in the object anymore.
 //
-// See Issue https://github.com/OpenSlides/openslides-autoupdate-service/issues/321
+// See: https://github.com/OpenSlides/openslides-autoupdate-service/issues/321
 func TestKeyNotRequestedAnymore(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), dsmock.YAMLData(`---
-	organization/1/organization_tag_ids: [1,2]
-	organization_tag/1/id: 1
-	organization_tag/2/id: 2
+	datastore := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+		organization/1/organization_tag_ids: [1,2]
+		organization_tag/1/id: 1
+		organization_tag/2/id: 2
 	`))
 	go datastore.ListenOnUpdates(shutdownCtx, nil)
 
@@ -352,8 +359,8 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 	}
 
 	datastore.Send(dsmock.YAMLData(`
-	organization_tag/2/id: null
-	organization/1/organization_tag_ids: [1]
+		organization_tag/2/id: null
+		organization/1/organization_tag_ids: [1]
 	`))
 
 	secondData, err := next(shutdownCtx)
@@ -362,7 +369,7 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 	}
 
 	if len(secondData) != 1 {
-		t.Errorf("second data contained 2 values, expected only one. Got: %v", secondData)
+		t.Errorf("Second data contained 2 values, expected only one. Got: %v", secondData)
 	}
 
 	if v := string(secondData[autoupdate.MustKey("organization/1/organization_tag_ids")]); v != "[1]" {
@@ -384,10 +391,10 @@ func TestKeyRequestedAgain(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), dsmock.YAMLData(`---
-	organization/1/organization_tag_ids: [1,2]
-	organization_tag/1/id: 1
-	organization_tag/2/id: 2
+	datastore := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+		organization/1/organization_tag_ids: [1,2]
+		organization_tag/1/id: 1
+		organization_tag/2/id: 2
 	`))
 	go datastore.ListenOnUpdates(shutdownCtx, nil)
 
@@ -420,7 +427,7 @@ func TestKeyRequestedAgain(t *testing.T) {
 	}
 
 	datastore.Send(dsmock.YAMLData(`
-	organization/1/organization_tag_ids: [1]
+		organization/1/organization_tag_ids: [1]
 	`))
 
 	if _, err := next(shutdownCtx); err != nil {
@@ -428,7 +435,7 @@ func TestKeyRequestedAgain(t *testing.T) {
 	}
 
 	datastore.Send(dsmock.YAMLData(`
-	organization/1/organization_tag_ids: [1,2]
+		organization/1/organization_tag_ids: [1,2]
 	`))
 
 	// Receive the third data
@@ -438,7 +445,7 @@ func TestKeyRequestedAgain(t *testing.T) {
 	}
 
 	if len(testData) != 2 {
-		t.Errorf("second data contained %d values, expected two. Got: %v", len(testData), testData)
+		t.Errorf("Second data contained %d values, expected two. Got: %v", len(testData), testData)
 	}
 
 	if v := string(testData[autoupdate.MustKey("organization/1/organization_tag_ids")]); v != "[1,2]" {

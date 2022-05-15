@@ -199,10 +199,7 @@ func TestListOfSpeakers(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			shutdownCtx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), tt.data))
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(tt.data))
 
 			p7on := &projector.Projection{
 				ContentObjectID: "list_of_speakers/1",
@@ -310,10 +307,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			shutdownCtx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), tt.data))
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(tt.data))
 
 			p7on := &projector.Projection{
 				ID:              1,
@@ -390,10 +384,7 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			shutdownCtx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), tt.data))
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(tt.data))
 
 			p7on := &projector.Projection{
 				ID:              1,

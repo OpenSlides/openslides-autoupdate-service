@@ -199,10 +199,7 @@ func TestPoll(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			shutdownCtx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), tt.data))
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(tt.data))
 
 			p7on := &projector.Projection{
 				ContentObjectID: "poll/1",

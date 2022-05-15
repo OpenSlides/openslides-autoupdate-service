@@ -151,7 +151,7 @@ curl -N localhost:9012/system/autoupdate -d '
 
 ### History Information
 
-To get all history information for an fqid call
+To get all history information for an fqid call:
 
 `curl localhost:9012/system/autoupdate/history_information?fqid=motion/42`
 
@@ -167,6 +167,8 @@ is an object like this:
 }
 ```
 
+To get the data at a position, use the normal autoupdate request with the
+attribute `position`. See above.
 
 
 ## Configuration

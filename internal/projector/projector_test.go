@@ -26,7 +26,7 @@ func TestProjectionDoesNotExist(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), nil)
+	ds := dsmock.NewMockDatastore(nil)
 	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
 	projector.Register(ds, testSlides())
@@ -39,10 +39,7 @@ func TestProjectionDoesNotExist(t *testing.T) {
 }
 
 func TestProjectionFromContentObject(t *testing.T) {
-	shutdownCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		MustKey("projection/1/id"):                []byte("1"),
 		MustKey("projection/1/content_object_id"): []byte(`"test_model/1"`),
 	})
@@ -55,10 +52,7 @@ func TestProjectionFromContentObject(t *testing.T) {
 }
 
 func TestProjectionFromType(t *testing.T) {
-	shutdownCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		MustKey("projection/1/id"):                []byte("1"),
 		MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
 		MustKey("projection/1/type"):              []byte(`"test1"`),
@@ -75,7 +69,7 @@ func TestProjectionUpdateProjection(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		MustKey("projection/1/id"):                []byte("1"),
 		MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
 		MustKey("projection/1/type"):              []byte(`"test1"`),
@@ -110,7 +104,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		MustKey("projection/1/id"):                []byte("1"),
 		MustKey("projection/1/type"):              []byte(`"projection"`),
 		MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
@@ -139,10 +133,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 }
 
 func TestProjectionWithOptionsData(t *testing.T) {
-	shutdownCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		MustKey("projection/1/id"):                []byte("1"),
 		MustKey("projection/1/content_object_id"): []byte(`"meeting/6"`),
 		MustKey("projection/1/type"):              []byte(`"projection"`),
@@ -161,7 +152,7 @@ func TestProjectionUpdateSlide(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		MustKey("projection/1/id"):                []byte("1"),
 		MustKey("projection/1/content_object_id"): []byte(`"meeting/6"`),
 		MustKey("projection/1/type"):              []byte(`"test_model"`),
@@ -194,7 +185,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		MustKey("projection/1/id"):                []byte("1"),
 		MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
 		MustKey("projection/1/type"):              []byte(`"test_model"`),
@@ -223,10 +214,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 }
 
 func TestProjectionTypeDoesNotExist(t *testing.T) {
-	shutdownCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), map[datastore.Key][]byte{
+	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		MustKey("projection/1/id"):                []byte("1"),
 		MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
 		MustKey("projection/1/type"):              []byte(`"unexistingTestSlide"`),

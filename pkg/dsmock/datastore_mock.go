@@ -129,9 +129,8 @@ type MockDatastore struct {
 
 // NewMockDatastore create a MockDatastore with data.
 //
-// The function starts a mock datastore server in the background. It gets
-// closed, when the closed channel is closed.
-func NewMockDatastore(closed <-chan struct{}, data map[datastore.Key][]byte) *MockDatastore {
+// It is a wrapper around the datastore.Datastore object.
+func NewMockDatastore(data map[datastore.Key][]byte) *MockDatastore {
 	source := NewStubWithUpdate(data, NewCounter)
 	ds := &MockDatastore{
 		source:    source,
@@ -169,7 +168,7 @@ func (d *MockDatastore) ResetRequests() {
 
 // HistoryInformation writes a fake history.
 func (d *MockDatastore) HistoryInformation(ctx context.Context, fqid string, w io.Writer) error {
-	w.Write([]byte(`[{"position":42,"user_id": 5,"information": "motion was created","timestamp: 1234567}]`))
+	w.Write([]byte(`[{"position":42,"user_id": 5,"information": "motion was created","timestamp": 1234567}]`))
 	return nil
 }
 

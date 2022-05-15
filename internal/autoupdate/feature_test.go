@@ -77,10 +77,7 @@ gb/1:
 `
 
 func TestFeatures(t *testing.T) {
-	shutdownCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), dsmock.YAMLData(dataSet))
+	datastore := dsmock.NewMockDatastore(dsmock.YAMLData(dataSet))
 	service := autoupdate.New(datastore, test.RestrictAllowed)
 
 	for _, tt := range []struct {

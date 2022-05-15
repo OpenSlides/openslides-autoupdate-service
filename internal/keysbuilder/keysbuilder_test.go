@@ -484,10 +484,7 @@ func TestConcurency(t *testing.T) {
 
 	}`
 
-	shutdownCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), dsmock.YAMLData(`---
+	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 	user/1/group_ids: [1,2]
 	user/2/group_ids: [1,2]
 	user/3/group_ids: [1,2]
@@ -542,9 +539,8 @@ func TestManyRequests(t *testing.T) {
 			}
 		}
 	]`
-	shutdownCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), dsmock.YAMLData(`---
+
+	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 	user/1/note_id: 1
 	user/2/note_id: 1
 	`))
@@ -568,9 +564,7 @@ func TestManyRequests(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
-	shutdownCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), nil)
+	ds := dsmock.NewMockDatastore(nil)
 	ds.InjectError(errors.New("Some Error"))
 	json := `
 	{
@@ -600,9 +594,7 @@ func TestError(t *testing.T) {
 }
 
 func TestRequestCount(t *testing.T) {
-	shutdownCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	ds := dsmock.NewMockDatastore(shutdownCtx.Done(), nil)
+	ds := dsmock.NewMockDatastore(nil)
 	json := `{
 		"ids": [1],
 		"collection": "user",

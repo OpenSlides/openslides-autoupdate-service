@@ -1,10 +1,10 @@
 package autoupdate
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
-	"github.com/stretchr/testify/assert"
 )
 
 func MustKey(in string) datastore.Key {
@@ -21,21 +21,20 @@ var (
 )
 
 func TestFilterFirstCall(t *testing.T) {
-	var f filter
 	data := map[datastore.Key][]byte{
 		myKey1: []byte("v1"),
 		myKey2: nil,
 	}
 
-	f.filter(data)
+	new(filter).filter(data)
 
-	assert.Equal(
-		t,
-		map[datastore.Key][]byte{
-			myKey1: []byte("v1"),
-		},
-		data,
-	)
+	expect := map[datastore.Key][]byte{
+		myKey1: []byte("v1"),
+	}
+
+	if !reflect.DeepEqual(data, expect) {
+		t.Errorf("got %v, expected %v", data, expect)
+	}
 }
 
 func TestFilterChange(t *testing.T) {
@@ -143,7 +142,9 @@ func TestFilterChange(t *testing.T) {
 			var f filter
 			f.filter(tt.origian)
 			f.filter(tt.new)
-			assert.Equal(t, tt.expect, tt.new)
+			if !reflect.DeepEqual(tt.new, tt.expect) {
+				t.Errorf("got %v, expected %v", tt.new, tt.expect)
+			}
 		})
 	}
 }
@@ -175,7 +176,9 @@ func TestFilterChangeTwice(t *testing.T) {
 			f.filter(tt.origian)
 			f.filter(tt.firstChange)
 			f.filter(tt.new)
-			assert.Equal(t, tt.expect, tt.new)
+			if !reflect.DeepEqual(tt.new, tt.expect) {
+				t.Errorf("got %v, expected %v", tt.new, tt.expect)
+			}
 		})
 	}
 }

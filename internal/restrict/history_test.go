@@ -176,7 +176,7 @@ func TestHistoryGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			currentDS := dsmock.Stub(dsmock.YAMLData(tt.current))
 			oldDS := dsmock.Stub(dsmock.YAMLData(tt.old))
-			history := restrict.NewHistory(1, currentDS, oldDS)
+			history := restrict.NewHistory(currentDS, oldDS, 1)
 
 			keys := make([]datastore.Key, len(tt.keys))
 			for i, k := range tt.keys {

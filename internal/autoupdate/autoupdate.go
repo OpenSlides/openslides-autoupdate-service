@@ -1,9 +1,9 @@
 // Package autoupdate allows clients to request keys and get updates when the
 // keys changes.
 //
-// To register to the autoupdate serive, a client has to receive a connection
-// object by calling the Connect()-method. It is not necessary and therefore not
-// possible to close a connection. The client can just stop listening.
+// To register to the autoupdate serive, a client has to call Connect() to get a
+// connection object. It is not necessary and therefore not possible to close
+// the connection.
 package autoupdate
 
 import (
@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -23,9 +24,9 @@ import (
 )
 
 const (
-	// pruneTime defines how long a topic id will be valid. If a client needs
-	// more time to process the data, it will get an error and has to reconnect.
-	// A higher value means, that more memory is used.
+	// pruneTime defines how long the data in the topic will be valid. If a
+	// client needs more time to process the data, it will get an error and has
+	// to reconnect. A higher value means, that more memory is used.
 	pruneTime = 10 * time.Minute
 
 	// cacheResetTime defines when the cache should be reseted.
@@ -40,6 +41,28 @@ const (
 	datastoreCacheResetTime = 24 * time.Hour
 )
 
+// Datastore is the source for the data.
+type Datastore interface {
+	Get(ctx context.Context, keys ...datastore.Key) (map[datastore.Key][]byte, error)
+	GetPosition(ctx context.Context, position int, keys ...datastore.Key) (map[datastore.Key][]byte, error)
+	RegisterChangeListener(f func(map[datastore.Key][]byte) error)
+	ResetCache()
+	RegisterCalculatedField(
+		field string,
+		f func(ctx context.Context, key datastore.Key, changed map[datastore.Key][]byte) ([]byte, error),
+	)
+	HistoryInformation(ctx context.Context, fqid string, w io.Writer) error
+}
+
+// KeysBuilder holds the keys that are requested by a user.
+type KeysBuilder interface {
+	Update(ctx context.Context, ds datastore.Getter) error
+	Keys() []datastore.Key
+}
+
+// RestrictMiddleware is a function that can restrict data.
+type RestrictMiddleware func(getter datastore.Getter, uid int) datastore.Getter
+
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
 // with autoupdate.New().
 type Autoupdate struct {
@@ -48,10 +71,10 @@ type Autoupdate struct {
 	restricter RestrictMiddleware
 }
 
-// RestrictMiddleware is a function that can restrict data.
-type RestrictMiddleware func(getter datastore.Getter, uid int) datastore.Getter
-
 // New creates a new autoupdate service.
+//
+// You should call `go a.PruneOldData()` and `go a.ResetCache()` after creating
+// the service.
 func New(ds Datastore, restricter RestrictMiddleware) *Autoupdate {
 	a := &Autoupdate{
 		datastore:  ds,
@@ -79,7 +102,7 @@ type DataProvider func(ctx context.Context) (map[datastore.Key][]byte, error)
 // Connect has to be called by a client to register to the service. The method
 // returns a Connection object, that can be used to receive the data.
 //
-// There is no need to "close" the Connection object.
+// There is no need to "close" the returned DataProvider.
 func (a *Autoupdate) Connect(userID int, kb KeysBuilder) DataProvider {
 	c := &connection{
 		autoupdate: a,
@@ -90,15 +113,15 @@ func (a *Autoupdate) Connect(userID int, kb KeysBuilder) DataProvider {
 	return c.Next
 }
 
-// SingleData returns the data for the kb. It is the same as calling Connect and
-// then Next for the first time.
+// SingleData returns the data for the given keysbuilder without autoupdates.
+//
+// The attribute position can be used to get data from the history.
 func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder, position int) (map[datastore.Key][]byte, error) {
-	var getter datastore.Getter = a.datastore
-	var restricter datastore.Getter = a.restricter(getter, userID)
+	var restricter datastore.Getter = a.restricter(a.datastore, userID)
 
 	if position != 0 {
-		getter = datastore.NewGetPosition(a.datastore, position)
-		restricter = restrict.NewHistory(userID, a.datastore, getter)
+		getter := datastore.NewGetPosition(a.datastore, position)
+		restricter = restrict.NewHistory(a.datastore, getter, userID)
 	}
 
 	if err := kb.Update(ctx, restricter); err != nil {
@@ -110,15 +133,13 @@ func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder,
 		return nil, fmt.Errorf("get restricted data: %w", err)
 	}
 
-	var f filter
-	f.filter(data)
+	for k, v := range data {
+		if len(v) == 0 {
+			delete(data, k)
+		}
+	}
 
 	return data, nil
-}
-
-// LastID returns the id of the last data update.
-func (a *Autoupdate) LastID() uint64 {
-	return a.topic.LastID()
 }
 
 // PruneOldData removes old data from the topic. Blocks until the service is
@@ -153,17 +174,17 @@ func (a *Autoupdate) ResetCache(ctx context.Context) {
 	}
 }
 
+var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*`)
+
 // HistoryInformation writes the history information for an fqid.
 func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid string, w io.Writer) error {
-	coll, rawID, found := strings.Cut(fqid, "/")
-	if !found {
-		return fmt.Errorf("invalid fqid")
+	if !reValidKeys.MatchString(fqid) {
+		// TODO Client Error
+		return invalidInputError{fmt.Sprintf("fqid %s is invalid", fqid)}
 	}
 
-	id, err := strconv.Atoi(rawID)
-	if err != nil {
-		return fmt.Errorf("invalid fqid. ID part is not an int")
-	}
+	coll, rawID, _ := strings.Cut(fqid, "/")
+	id, _ := strconv.Atoi(rawID)
 
 	ds := datastore.NewRequest(a.datastore)
 
@@ -171,6 +192,7 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 	if err != nil {
 		var errNotExist datastore.DoesNotExistError
 		if errors.As(err, &errNotExist) {
+			// TODO Client Error
 			return notExistError{datastore.Key(errNotExist)}
 		}
 		return fmt.Errorf("getting meeting id for collection %s id %d: %w", coll, id, err)
@@ -183,6 +205,7 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 		}
 
 		if !hasOML {
+			// TODO Client Error
 			return permissionDeniedError{fmt.Errorf("you are not allowed to use history information on %s", fqid)}
 		}
 	} else {
@@ -192,6 +215,7 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 		}
 
 		if !p.Has(perm.MeetingCanSeeHistory) {
+			// TODO Client Error
 			return permissionDeniedError{fmt.Errorf("you are not allowed to use history information on %s", fqid)}
 		}
 	}
@@ -227,4 +251,16 @@ func (e notExistError) Error() string {
 
 func (e notExistError) Type() string {
 	return "not_exist"
+}
+
+type invalidInputError struct {
+	msg string
+}
+
+func (e invalidInputError) Error() string {
+	return e.msg
+}
+
+func (e invalidInputError) Type() string {
+	return "invalid_input"
 }
