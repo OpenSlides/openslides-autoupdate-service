@@ -81,7 +81,7 @@ func TestFeatures(t *testing.T) {
 	defer cancel()
 
 	datastore := dsmock.NewMockDatastore(shutdownCtx.Done(), dsmock.YAMLData(dataSet))
-	service := autoupdate.New(datastore, test.RestrictAllowed, "")
+	service := autoupdate.New(datastore, test.RestrictAllowed)
 
 	for _, tt := range []struct {
 		name string

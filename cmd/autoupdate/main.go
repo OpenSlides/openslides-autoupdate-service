@@ -2,39 +2,80 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"log"
-	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/auerror"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
-	autoupdateHttp "github.com/OpenSlides/openslides-autoupdate-service/internal/http"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/http"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
 	"golang.org/x/sys/unix"
 )
 
-type messageBus interface {
-	datastore.Updater
-	auth.LogoutEventer
-}
-
 func main() {
 	if err := run(); err != nil {
-		log.Fatalf("Fatal error: %v", err)
+		auerror.Handle(err)
+		os.Exit(1)
 	}
+}
+
+func run() error {
+	ctx, cancel := interruptContext()
+	defer cancel()
+
+	env := defaultEnv()
+
+	// Redis as message bus for datastore and logout events.
+	messageBus, err := initRedis(env)
+	if err != nil {
+		return fmt.Errorf("init redis as message bus: %w", err)
+	}
+
+	// Datastore Service.
+	datastoreService, err := initDatastore(env, messageBus)
+	if err != nil {
+		return fmt.Errorf("creating datastore adapter: %w", err)
+	}
+	go datastoreService.ListenOnUpdates(ctx, auerror.Handle)
+
+	// Register projector in datastore.
+	projector.Register(datastoreService, slide.Slides())
+
+	// Auth Service.
+	authService, authBackground, err := initAuth(env, messageBus)
+	if err != nil {
+		return fmt.Errorf("creating auth adapter: %w", err)
+	}
+	go authBackground(ctx)
+
+	// Autoupdate Service.
+	service := autoupdate.New(datastoreService, restrict.Middleware)
+	go service.PruneOldData(ctx)
+	go service.ResetCache(ctx)
+
+	// Start metrics.
+	metric.Register(metric.Runtime)
+	metricSeconds := 0
+	if got, err := strconv.Atoi(env["METRIC_INTERVAL_SECONDS"]); err == nil {
+		metricSeconds = got
+	}
+	if metricSeconds > 0 {
+		go metric.Loop(ctx, time.Duration(metricSeconds)*time.Second, log.Default())
+	}
+
+	// Start http server.
+	listenAddr := ":" + env["AUTOUPDATE_PORT"]
+	return http.Run(ctx, listenAddr, authService, service)
 }
 
 func defaultEnv() map[string]string {
@@ -52,7 +93,7 @@ func defaultEnv() map[string]string {
 
 		"VOTE_HOST":     "localhost",
 		"VOTE_PORT":     "9013",
-		"VOTE_PROTOCAL": "http",
+		"VOTE_PROTOCOL": "http",
 
 		"AUTH":          "fake",
 		"AUTH_PROTOCOL": "http",
@@ -72,123 +113,33 @@ func defaultEnv() map[string]string {
 	return defaults
 }
 
-func secret(name string, dev bool) (string, error) {
-	defaultSecrets := map[string]string{
-		"auth_token_key":  auth.DebugTokenKey,
-		"auth_cookie_key": auth.DebugCookieKey,
-	}
-
-	d, ok := defaultSecrets[name]
-	if !ok {
-		return "", fmt.Errorf("unknown secret %s", name)
-	}
-
-	s, err := openSecret(name)
-	if err != nil {
-		if !dev {
-			return "", fmt.Errorf("can not read secret %s: %w", s, err)
+func secret(name string, dev bool) ([]byte, error) {
+	if dev {
+		debugSecred := "openslides"
+		switch name {
+		case "auth_token_key":
+			debugSecred = auth.DebugTokenKey
+		case "auth_cookie_key":
+			debugSecred = auth.DebugCookieKey
 		}
-		s = d
+
+		return []byte(debugSecred), nil
 	}
-	return s, nil
+
+	secret, err := os.ReadFile("/run/secrets/" + name)
+	if err != nil {
+		// TODO EXTERMAL ERROR
+		return nil, fmt.Errorf("reading `/run/secrets/%s`: %w", name, err)
+	}
+
+	return secret, nil
 }
 
-// errHandler is called by some background tasts.
-func errHandler(err error) {
-	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-		return
-	}
-
-	log.Printf("Error: %v", err)
-}
-
-func run() error {
-	env := defaultEnv()
-
-	ctx, cancel := interruptContext()
-	defer cancel()
-
-	// Receiver for datastore and logout events.
-	messageBus, err := buildMessagebus(env)
-	if err != nil {
-		return fmt.Errorf("creating messsaging adapter: %w", err)
-	}
-
-	// Datastore Service.
-	datastoreService, err := buildDatastore(env, messageBus)
-	if err != nil {
-		return fmt.Errorf("creating datastore adapter: %w", err)
-	}
-	go datastoreService.ListenOnUpdates(ctx, errHandler)
-
-	// Auth Service.
-	authService, err := buildAuth(ctx, env, messageBus, errHandler)
-	if err != nil {
-		return fmt.Errorf("creating auth adapter: %w", err)
-	}
-
-	voteAddr := fmt.Sprintf("%s://%s:%s", env["VOTE_PROTOCAL"], env["VOTE_HOST"], env["VOTE_PORT"])
-
-	// Autoupdate Service.
-	service := autoupdate.New(datastoreService, restrict.Middleware, voteAddr)
-	go service.PruneOldData(ctx)
-	go service.ResetCache(ctx)
-
-	// Create http mux to add urls.
-	mux := http.NewServeMux()
-
-	requestCount := new(metric.CurrentCounter)
-
-	autoupdateHttp.Health(mux)
-	autoupdateHttp.Autoupdate(mux, authService, service, requestCount)
-	autoupdateHttp.HistoryInformation(mux, authService, service)
-
-	// Projector Service.
-	projector.Register(datastoreService, slide.Slides())
-
-	// Start metrics.
-	metric.Register(requestCount.Metric)
-	metric.Register(runtimeMetrics)
-	metricSeconds := 0
-	if got, err := strconv.Atoi(env["METRIC_INTERVAL_SECONDS"]); err == nil {
-		metricSeconds = got
-	}
-	if metricSeconds > 0 {
-		go metric.Loop(ctx, time.Duration(metricSeconds)*time.Second, log.Default())
-	}
-
-	// Create http server.
-	listenAddr := ":" + env["AUTOUPDATE_PORT"]
-
-	srv := &http.Server{
-		Addr:        listenAddr,
-		Handler:     mux,
-		BaseContext: func(net.Listener) context.Context { return ctx },
-	}
-
-	// Shutdown logic in separate goroutine.
-	wait := make(chan error)
-	go func() {
-		<-ctx.Done()
-		if err := srv.Shutdown(context.Background()); err != nil {
-			wait <- fmt.Errorf("HTTP server shutdown: %w", err)
-			return
-		}
-		wait <- nil
-	}()
-
-	fmt.Printf("Listen on %s\n", listenAddr)
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		return fmt.Errorf("HTTP Server failed: %v", err)
-	}
-
-	return <-wait
-}
-
-// interruptContext works like signal.NotifyContext
+// interruptContext works like signal.NotifyContext. It returns a context that
+// is canceled, when a signal is received.
 //
-// In listens on os.Interrupt and unix.SIGTERM. If the signal is received two times,
-// os.Exit(1) is called.
+// It listens on os.Interrupt and unix.SIGTERM. If the signal is received two
+// times, os.Exit(2) is called.
 func interruptContext() (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
@@ -196,18 +147,27 @@ func interruptContext() (context.Context, context.CancelFunc) {
 		signal.Notify(sig, os.Interrupt, unix.SIGTERM)
 		<-sig
 		cancel()
-
-		// If the signal was send for the second time, make a hard cut.
 		<-sig
-		os.Exit(1)
+		os.Exit(2)
 	}()
 	return ctx, cancel
 }
 
-// buildDatastore configures the datastore service.
-func buildDatastore(env map[string]string, mb messageBus) (*datastore.Datastore, error) {
+func initRedis(env map[string]string) (*redis.Redis, error) {
+	redisAddress := env["MESSAGE_BUS_HOST"] + ":" + env["MESSAGE_BUS_PORT"]
+	conn := redis.NewConnection(redisAddress)
+	if ok, _ := strconv.ParseBool(env["REDIS_TEST_CONN"]); ok {
+		if err := conn.TestConn(); err != nil {
+			return nil, fmt.Errorf("connect to redis: %w", err)
+		}
+	}
+
+	return &redis.Redis{Conn: conn}, nil
+}
+
+func initDatastore(env map[string]string, mb *redis.Redis) (*datastore.Datastore, error) {
 	datastoreSource := datastore.NewSourceDatastore(env["DATASTORE_READER_PROTOCOL"]+"://"+env["DATASTORE_READER_HOST"]+":"+env["DATASTORE_READER_PORT"], mb)
-	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCAL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
+	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCOL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
 
 	return datastore.New(
 		datastoreSource,
@@ -218,82 +178,42 @@ func buildDatastore(env map[string]string, mb messageBus) (*datastore.Datastore,
 	), nil
 }
 
-// buildMessagebus builds the receiver needed by the datastore service. It uses
-// environment variables to make the decission. Per default, the given faker is
-// used.
-func buildMessagebus(env map[string]string) (messageBus, error) {
-	redisAddress := env["MESSAGE_BUS_HOST"] + ":" + env["MESSAGE_BUS_PORT"]
-	conn := redis.NewConnection(redisAddress)
-	if env["REDIS_TEST_CONN"] == "true" {
-		if err := conn.TestConn(); err != nil {
-			return nil, fmt.Errorf("connect to redis: %w", err)
-		}
-	}
-
-	return &redis.Redis{Conn: conn}, nil
-}
-
-// buildAuth returns the auth service needed by the http server.
-//
-// This function is not blocking. The context is used to give it to auth.New
-// that uses it to stop background goroutines.
-func buildAuth(
-	ctx context.Context,
-	env map[string]string,
-	messageBus auth.LogoutEventer,
-	errHandler func(error),
-) (autoupdateHttp.Authenticater, error) {
+func initAuth(env map[string]string, messageBus auth.LogoutEventer) (http.Authenticater, func(context.Context), error) {
 	method := env["AUTH"]
+
 	switch method {
 	case "ticket":
-		fmt.Println("Auth Method: ticket")
-		tokenKey, err := secret("auth_token_key", env["OPENSLIDES_DEVELOPMENT"] != "false")
+		useDev, _ := strconv.ParseBool(env["OPENSLIDES_DEVELOPMENT"])
+
+		tokenKey, err := secret("auth_token_key", useDev)
 		if err != nil {
-			return nil, fmt.Errorf("getting token secret: %w", err)
+			return nil, nil, fmt.Errorf("getting token secret: %w", err)
 		}
 
-		cookieKey, err := secret("auth_cookie_key", env["OPENSLIDES_DEVELOPMENT"] != "false")
+		cookieKey, err := secret("auth_cookie_key", useDev)
 		if err != nil {
-			return nil, fmt.Errorf("getting cookie secret: %w", err)
+			return nil, nil, fmt.Errorf("getting cookie secret: %w", err)
 		}
 
-		if tokenKey == auth.DebugTokenKey || cookieKey == auth.DebugCookieKey {
-			fmt.Println("Auth with debug key")
-		}
-
-		protocol := env["AUTH_PROTOCOL"]
-		host := env["AUTH_HOST"]
-		port := env["AUTH_PORT"]
-		url := protocol + "://" + host + ":" + port
-
-		fmt.Printf("Auth Service: %s\n", url)
-		a, err := auth.New(url, []byte(tokenKey), []byte(cookieKey))
+		url := fmt.Sprintf("%s://%s:%s", env["AUTH_PROTOCOL"], env["AUTH_HOST"], env["AUTH_PORT"])
+		a, err := auth.New(url, tokenKey, cookieKey)
 		if err != nil {
-			return nil, fmt.Errorf("creating auth service: %w", err)
+			return nil, nil, fmt.Errorf("creating auth service: %w", err)
 		}
-		go a.ListenOnLogouts(ctx, messageBus, errHandler)
-		go a.PruneOldData(ctx)
 
-		return a, nil
+		backgroundtask := func(ctx context.Context) {
+			go a.ListenOnLogouts(ctx, messageBus, auerror.Handle)
+			go a.PruneOldData(ctx)
+		}
+
+		return a, backgroundtask, nil
 
 	case "fake":
 		fmt.Println("Auth Method: FakeAuth (User ID 1 for all requests)")
-		return test.Auth(1), nil
+		return auth.Fake(1), func(context.Context) {}, nil
+
 	default:
-		return nil, fmt.Errorf("unknown auth method %s", method)
+		// TODO LAST ERROR
+		return nil, nil, fmt.Errorf("unknown auth method: %s", method)
 	}
-}
-
-func openSecret(name string) (string, error) {
-	f, err := os.Open("/run/secrets/" + name)
-	if err != nil {
-		return "", err
-	}
-
-	secret, err := io.ReadAll(f)
-	if err != nil {
-		return "", fmt.Errorf("reading `/run/secrets/%s`: %w", name, err)
-	}
-
-	return string(secret), nil
 }

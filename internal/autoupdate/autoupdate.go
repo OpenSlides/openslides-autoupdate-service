@@ -46,22 +46,17 @@ type Autoupdate struct {
 	datastore  Datastore
 	topic      *topic.Topic[datastore.Key]
 	restricter RestrictMiddleware
-	voteAddr   string
 }
 
 // RestrictMiddleware is a function that can restrict data.
 type RestrictMiddleware func(getter datastore.Getter, uid int) datastore.Getter
 
 // New creates a new autoupdate service.
-//
-// The attribute closed is a channel that should be closed when the server shuts
-// down. In this case, all connections get closed.
-func New(ds Datastore, restricter RestrictMiddleware, voteAddr string) *Autoupdate {
+func New(ds Datastore, restricter RestrictMiddleware) *Autoupdate {
 	a := &Autoupdate{
 		datastore:  ds,
 		topic:      topic.New[datastore.Key](),
 		restricter: restricter,
-		voteAddr:   voteAddr,
 	}
 
 	// Update the topic when an data update is received.

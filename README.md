@@ -190,15 +190,15 @@ The Service uses the following environment variables:
   if redis needs more time to start then this service. The default is `true`.
 * `VOTE_HOST`: Host of the vote-service. The default is `localhost`.
 * `VOTE_PORT`: Port of the vote-service. The default is `9013`.
-* `VOTE_PROTOCAL`: Protocol of the vote-service. The default is `http`.
+* `VOTE_PROTOCOL`: Protocol of the vote-service. The default is `http`.
 * `AUTH`: Sets the type of the auth service. `fake` (default) or `ticket`.
 * `AUTH_HOST`: Host of the auth service. The default is `localhost`.
 * `AUTH_PORT`: Port of the auth service. The default is `9004`.
 * `AUTH_PROTOCOL`: Protocol of the auth servicer. The default is `http`.
-* `OPENSLIDES_DEVELOPMENT`: If set, the service starts, even when secrets (see
-  below) are not given. The default is `false`.
-* `METRIC_INTERVAL_SECONDS`: Time in minutes how often the metrics are gathered.
-  Zero disables the metrics. The default is `300`.
+* `OPENSLIDES_DEVELOPMENT`: If set, the service uses the default secrets. The
+  default is `false`.
+* `METRIC_INTERVAL_SECONDS`: Time in how often the metrics are gathered. Zero
+  disables the metrics. The default is `300`.
 
 
 ### Secrets
@@ -207,8 +207,8 @@ Secrets are filenames in `/run/secrets/`. The service only starts if it can find
 each secret file and read its content. The default values are only used, if the
 environment variable `OPENSLIDES_DEVELOPMENT` is set.
 
-* `auth_token_key`: Key to sign the JWT auth tocken. Default `auth-dev-key`.
-* `auth_cookie_key`: Key to sign the JWT auth cookie. Default `auth-dev-key`.
+* `auth_token_key`: Key to sign the JWT auth tocken.
+* `auth_cookie_key`: Key to sign the JWT auth cookie.
 
 
 ## Update models.yml

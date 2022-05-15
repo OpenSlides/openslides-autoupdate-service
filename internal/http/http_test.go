@@ -12,7 +12,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	ahttp "github.com/OpenSlides/openslides-autoupdate-service/internal/http"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
@@ -53,7 +53,7 @@ func TestKeysHandler(t *testing.T) {
 		},
 	}
 
-	ahttp.Autoupdate(mux, test.Auth(1), connecter, nil)
+	ahttp.Autoupdate(mux, auth.Fake(1), connecter, nil)
 
 	req := httptest.NewRequest("GET", "/system/autoupdate?k=user/1/name,user/2/name", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()
@@ -84,7 +84,7 @@ func TestComplexHandler(t *testing.T) {
 		},
 	}
 
-	ahttp.Autoupdate(mux, test.Auth(1), connecter, nil)
+	ahttp.Autoupdate(mux, auth.Fake(1), connecter, nil)
 
 	req := httptest.NewRequest(
 		"GET",
@@ -133,7 +133,7 @@ func TestErrors(t *testing.T) {
 			return map[datastore.Key][]byte{myKey1: []byte(`"bar"`)}, nil
 		},
 	}
-	ahttp.Autoupdate(mux, test.Auth(1), connecter, nil)
+	ahttp.Autoupdate(mux, auth.Fake(1), connecter, nil)
 
 	for _, tt := range []struct {
 		name    string
@@ -251,7 +251,7 @@ func TestHistoryInformation(t *testing.T) {
 	hi := &HistoryInformationStub{
 		write: "my information",
 	}
-	ahttp.HistoryInformation(mux, test.Auth(1), hi)
+	ahttp.HistoryInformation(mux, auth.Fake(1), hi)
 
 	resp := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/system/autoupdate/history_information?fqid=motion/42", nil)
@@ -280,7 +280,7 @@ func TestHistoryInformationNoFQID(t *testing.T) {
 	hi := &HistoryInformationStub{
 		write: "my information",
 	}
-	ahttp.HistoryInformation(mux, test.Auth(1), hi)
+	ahttp.HistoryInformation(mux, auth.Fake(1), hi)
 
 	resp := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/system/autoupdate/history_information", nil)
@@ -302,7 +302,7 @@ func TestHistoryInformationError(t *testing.T) {
 	hi := &HistoryInformationStub{
 		err: fmt.Errorf("my error"),
 	}
-	ahttp.HistoryInformation(mux, test.Auth(1), hi)
+	ahttp.HistoryInformation(mux, auth.Fake(1), hi)
 
 	resp := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/system/autoupdate/history_information?fqid=motion/42", nil)
