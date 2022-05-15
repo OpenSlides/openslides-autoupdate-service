@@ -9,7 +9,6 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
@@ -87,7 +86,7 @@ func TestConnectionEmptyData(t *testing.T) {
 	})
 	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
-	s := autoupdate.New(ds, test.RestrictAllowed)
+	s := autoupdate.New(ds, RestrictAllowed)
 	kb, _ := keysbuilder.FromKeys(doesExistKey.String(), doesNotExistKey.String())
 
 	t.Run("First response", func(t *testing.T) {
@@ -228,7 +227,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	})
 	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
 
-	s := autoupdate.New(ds, test.RestrictAllowed)
+	s := autoupdate.New(ds, RestrictAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 	next := s.Connect(1, kb)
 	if _, err := next(context.Background()); err != nil {
@@ -259,7 +258,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 		userNameKey: []byte(`"Hello World"`),
 	})
 
-	s := autoupdate.New(ds, test.RestrictNotAllowed)
+	s := autoupdate.New(ds, RestrictNotAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 
 	next := s.Connect(1, kb)
@@ -331,7 +330,7 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 	`))
 	go datastore.ListenOnUpdates(shutdownCtx, nil)
 
-	s := autoupdate.New(datastore, test.RestrictAllowed)
+	s := autoupdate.New(datastore, RestrictAllowed)
 	kb, err := keysbuilder.FromJSON(strings.NewReader(`{
 		"collection":"organization",
 		"ids":[
@@ -398,7 +397,7 @@ func TestKeyRequestedAgain(t *testing.T) {
 	`))
 	go datastore.ListenOnUpdates(shutdownCtx, nil)
 
-	s := autoupdate.New(datastore, test.RestrictAllowed)
+	s := autoupdate.New(datastore, RestrictAllowed)
 	kb, err := keysbuilder.FromJSON(strings.NewReader(`{
 		"collection":"organization",
 		"ids":[

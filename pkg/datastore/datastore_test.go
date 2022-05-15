@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 	"github.com/stretchr/testify/assert"
@@ -31,7 +30,7 @@ func TestDataStoreGet(t *testing.T) {
 	got, err := ds.Get(context.Background(), myKey1)
 	assert.NoError(t, err, "Get() returned an unexpected error")
 
-	expect := test.Str(`"Hello World"`)
+	expect := []string{`"Hello World"`}
 	if len(got) != 1 || string(got[myKey1]) != expect[0] {
 		t.Errorf("Get() returned `%v`, expected `%v`", got, expect)
 	}
@@ -47,7 +46,7 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 	got, err := ds.Get(context.Background(), myKey1, myKey2)
 	assert.NoError(t, err, "Get() returned an unexpected error")
 
-	expect := test.Str(`"v1"`, `"v2"`)
+	expect := []string{`"v1"`, `"v2"`}
 	if len(got) != 2 || string(got[myKey1]) != expect[0] || string(got[myKey2]) != expect[1] {
 		t.Errorf("Get() returned %s, expected %s", got, expect)
 	}
@@ -66,7 +65,7 @@ func TestDataStoreGetKeyTwice(t *testing.T) {
 	got, err := ds.Get(context.Background(), myKey1, myKey1)
 	assert.NoError(t, err, "Get() returned an unexpected error")
 
-	expect := test.Str(`"v1"`, `"v1"`)
+	expect := []string{`"v1"`, `"v1"`}
 	if len(got) != 1 || string(got[myKey1]) != expect[0] {
 		t.Errorf("Get() returned %s, expected %s", got, expect)
 	}

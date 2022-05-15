@@ -75,6 +75,7 @@ func run() error {
 
 	// Start http server.
 	listenAddr := ":" + env["AUTOUPDATE_PORT"]
+	fmt.Printf("Listen on %s\n", listenAddr)
 	return http.Run(ctx, listenAddr, authService, service)
 }
 

@@ -47,14 +47,15 @@ func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autou
 	go func() {
 		<-ctx.Done()
 		if err := srv.Shutdown(context.Background()); err != nil {
+			// TODO EXTERNAL ERROR
 			wait <- fmt.Errorf("HTTP server shutdown: %w", err)
 			return
 		}
 		wait <- nil
 	}()
 
-	fmt.Printf("Listen on %s\n", addr)
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+		// TODO EXTERNAL ERROR
 		return fmt.Errorf("HTTP Server failed: %v", err)
 	}
 
@@ -85,6 +86,7 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
+			// TODO EXTERNAL ERROR
 			handleError(w, fmt.Errorf("reading body: %w", err), true)
 			return
 		}
@@ -121,6 +123,7 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 			}
 
 			if err := json.NewEncoder(w).Encode(converted); err != nil {
+				// TODO EXTERNAL ERROR
 				handleError(w, fmt.Errorf("encoding end sending next message: %w", err), true)
 				return
 			}
@@ -192,6 +195,7 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 		}
 
 		if err := encoder.Encode(converted); err != nil {
+			// TODO EXTERNAL ERROR
 			return fmt.Errorf("encoding and sending next message: %w", err)
 		}
 

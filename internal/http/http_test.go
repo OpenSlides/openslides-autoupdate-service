@@ -16,17 +16,9 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
-func MustKey(in string) datastore.Key {
-	k, err := datastore.KeyFromString(in)
-	if err != nil {
-		panic(err)
-	}
-	return k
-}
-
 var (
-	myKey1 = MustKey("collection/1/field")
-	myKey2 = MustKey("collection/2/field")
+	myKey1 = datastore.Key{Collection: "collection", ID: 1, Field: "field"}
+	myKey2 = datastore.Key{Collection: "collection", ID: 2, Field: "field"}
 )
 
 type connecterMock struct {

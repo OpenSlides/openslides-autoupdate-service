@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
 
@@ -14,43 +12,43 @@ func TestHistoryGetter(t *testing.T) {
 	ctx := context.Background()
 
 	for _, tt := range []struct {
-		name    string
-		current string
-		old     string
-		keys    []string
-		expect  []string
+		name         string
+		current      string
+		old          string
+		testKey      string
+		expectCanSee bool
 	}{
 		{
 			"anonymous",
 			`---
 			user/1/id: 1`,
 			``,
-			[]string{"user/1/name"},
-			nil,
+			"user/1/name",
+			false,
 		},
 		{
 			"orga admin",
 			`---
 			user/1/organization_management_level: can_manage_organization`,
 			``,
-			[]string{"user/1/name"},
-			[]string{"user/1/name"},
+			"user/1/name",
+			true,
 		},
 		{
 			"orga user management",
 			`---
 			user/1/organization_management_level: can_manage_users`,
 			``,
-			[]string{"user/1/name"},
-			nil,
+			"user/1/name",
+			false,
 		},
 		{
 			"password field",
 			`---
 			user/1/organization_management_level: can_manage_organization`,
 			``,
-			[]string{"user/1/password"},
-			nil,
+			"user/1/password",
+			false,
 		},
 		{
 			"personal note same user",
@@ -59,8 +57,8 @@ func TestHistoryGetter(t *testing.T) {
 			`---
 			personal_note/5/user_id: 1
 			`,
-			[]string{"personal_note/5/note"},
-			[]string{"personal_note/5/note"},
+			"personal_note/5/note",
+			true,
 		},
 		{
 			"personal note other user",
@@ -69,8 +67,8 @@ func TestHistoryGetter(t *testing.T) {
 			`---
 			personal_note/5/user_id: 2
 			`,
-			[]string{"personal_note/5/note"},
-			nil,
+			"personal_note/5/note",
+			false,
 		},
 		{
 			"meeting object orga manager",
@@ -78,8 +76,8 @@ func TestHistoryGetter(t *testing.T) {
 			user/1/organization_management_level: can_manage_organization
 			`,
 			``,
-			[]string{"topic/5/title"},
-			[]string{"topic/5/title"},
+			"topic/5/title",
+			true,
 		},
 		{
 			"meeting object not orga manager",
@@ -87,8 +85,8 @@ func TestHistoryGetter(t *testing.T) {
 			user/1/id: 1
 			`,
 			``,
-			[]string{"topic/5/title"},
-			nil,
+			"topic/5/title",
+			false,
 		},
 		{
 			"meeting object history permission",
@@ -101,8 +99,8 @@ func TestHistoryGetter(t *testing.T) {
 
 			`,
 			`topic/5/meeting_id: 2`,
-			[]string{"topic/5/title"},
-			[]string{"topic/5/title"},
+			"topic/5/title",
+			true,
 		},
 		{
 			"meeting object wrong meeting",
@@ -114,8 +112,8 @@ func TestHistoryGetter(t *testing.T) {
 			meeting/2/admin_group_id: 3
 			`,
 			`topic/5/meeting_id: 404`,
-			[]string{"topic/5/title"},
-			nil,
+			"topic/5/title",
+			false,
 		},
 		{
 			"theme",
@@ -127,8 +125,8 @@ func TestHistoryGetter(t *testing.T) {
 			meeting/2/admin_group_id: 3
 			`,
 			``,
-			[]string{"theme/5/name"},
-			[]string{"theme/5/name"},
+			"theme/5/name",
+			true,
 		},
 		{
 			"committee",
@@ -140,8 +138,8 @@ func TestHistoryGetter(t *testing.T) {
 			meeting/2/admin_group_id: 3
 			`,
 			``,
-			[]string{"committee/5/name"},
-			nil,
+			"committee/5/name",
+			false,
 		},
 		{
 			"user is motion submitter",
@@ -156,8 +154,8 @@ func TestHistoryGetter(t *testing.T) {
 			user/50:
 				submitted_motion_$_ids: ["2"]
 			`,
-			[]string{"user/50/username"},
-			[]string{"user/50/username"},
+			"user/50/username",
+			true,
 		},
 		{
 			"unknown collection",
@@ -169,8 +167,8 @@ func TestHistoryGetter(t *testing.T) {
 			meeting/2/admin_group_id: 3
 			`,
 			``,
-			[]string{"unknown/50/name"},
-			nil,
+			"unknown/50/name",
+			false,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -178,23 +176,19 @@ func TestHistoryGetter(t *testing.T) {
 			oldDS := dsmock.Stub(dsmock.YAMLData(tt.old))
 			history := restrict.NewHistory(currentDS, oldDS, 1)
 
-			keys := make([]datastore.Key, len(tt.keys))
-			for i, k := range tt.keys {
-				keys[i] = MustKey(k)
-			}
+			key := MustKey(tt.testKey)
 
-			got, err := history.Get(ctx, keys...)
+			got, err := history.Get(ctx, key)
 			if err != nil {
 				t.Fatalf("Get returned: %v", err)
 			}
 
-			gotKeys := make([]string, 0, len(got))
-			for k := range got {
-				gotKeys = append(gotKeys, k.String())
+			if tt.expectCanSee && len(got) == 0 {
+				t.Errorf("history.Get() did not return %v", tt.testKey)
 			}
 
-			if !test.CmpSlice(gotKeys, tt.expect) {
-				t.Errorf("Got %v, expected %v", gotKeys, tt.expect)
+			if !tt.expectCanSee && len(got) == 1 {
+				t.Errorf("histroy.Get() did return %v", tt.testKey)
 			}
 		})
 	}

@@ -25,9 +25,11 @@ const (
 // then the max livetime of a token.
 const pruneTime = 15 * time.Minute
 
-const cookieName = "refreshId"
-const authHeader = "Authentication"
-const authPath = "/internal/auth/authenticate"
+const (
+	cookieName = "refreshId"
+	authHeader = "Authentication"
+	authPath   = "/internal/auth/authenticate"
+)
 
 // Auth authenticates a request against the openslides-auth-service.
 //
