@@ -59,3 +59,15 @@ var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*/[a
 func keyValid(key string) bool {
 	return reValidKeys.MatchString(key)
 }
+
+type invalidKeyError struct {
+	key string
+}
+
+func (i invalidKeyError) Error() string {
+	return fmt.Sprintf("the key/fqfield is invalid: %s", i.key)
+}
+
+func (i invalidKeyError) Type() string {
+	return "invalid"
+}

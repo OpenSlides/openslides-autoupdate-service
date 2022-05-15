@@ -65,6 +65,7 @@ func (b *body) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &field); err != nil {
 		return err
 	}
+
 	if len(field.IDs) == 0 {
 		return InvalidError{msg: "no ids"}
 	}

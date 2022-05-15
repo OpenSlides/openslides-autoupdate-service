@@ -1,11 +1,12 @@
 package autoupdate_test
 
 import (
+	"context"
+	"fmt"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
@@ -14,7 +15,7 @@ func getConnection() (autoupdate.DataProvider, *dsmock.MockDatastore) {
 	datastore := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		userNameKey: []byte(`"Hello World"`),
 	})
-	s := autoupdate.New(datastore, test.RestrictAllowed)
+	s := autoupdate.New(datastore, RestrictAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 	next := s.Connect(1, kb)
 
@@ -40,4 +41,35 @@ func blockingTime(wait time.Duration, f func()) bool {
 	case <-timer.C:
 		return true
 	}
+}
+
+// RestrictAllowed is a restricter that allows everything
+func RestrictAllowed(getter datastore.Getter, uid int) datastore.Getter {
+	return mockRestricter{getter, true}
+}
+
+// RestrictNotAllowed is a restricter that removes everythin
+func RestrictNotAllowed(getter datastore.Getter, uid int) datastore.Getter {
+	return mockRestricter{getter, false}
+}
+
+type mockRestricter struct {
+	getter datastore.Getter
+	allow  bool
+}
+
+func (r mockRestricter) Get(ctx context.Context, keys ...datastore.Key) (map[datastore.Key][]byte, error) {
+	data, err := r.getter.Get(ctx, keys...)
+	if err != nil {
+		return nil, fmt.Errorf("getting data: %w", err)
+	}
+
+	if r.allow {
+		return data, nil
+	}
+
+	for k := range data {
+		data[k] = nil
+	}
+	return data, nil
 }

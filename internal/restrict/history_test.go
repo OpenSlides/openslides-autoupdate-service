@@ -2,10 +2,10 @@ package restrict_test
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
@@ -193,7 +193,7 @@ func TestHistoryGetter(t *testing.T) {
 				gotKeys = append(gotKeys, k.String())
 			}
 
-			if !test.CmpSlice(gotKeys, tt.expect) {
+			if !reflect.DeepEqual(gotKeys, tt.expect) {
 				t.Errorf("Got %v, expected %v", gotKeys, tt.expect)
 			}
 		})

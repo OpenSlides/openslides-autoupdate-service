@@ -9,7 +9,6 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/test"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
 )
 
@@ -20,7 +19,7 @@ func TestSingleDataEmptyValues(t *testing.T) {
 	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 	`))
-	s := autoupdate.New(ds, test.RestrictAllowed)
+	s := autoupdate.New(ds, RestrictAllowed)
 
 	kb, err := keysbuilder.FromKeys("user/1/username")
 	if err != nil {
@@ -44,7 +43,7 @@ func TestHistoryInformation(t *testing.T) {
 	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 	`))
-	s := autoupdate.New(ds, test.RestrictAllowed)
+	s := autoupdate.New(ds, RestrictAllowed)
 
 	buf := new(bytes.Buffer)
 	err := s.HistoryInformation(ctx, 1, "collection/1", buf)
@@ -70,7 +69,7 @@ func TestHistoryInformationWrongFQID(t *testing.T) {
 	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 	`))
-	s := autoupdate.New(ds, test.RestrictAllowed)
+	s := autoupdate.New(ds, RestrictAllowed)
 
 	buf := new(bytes.Buffer)
 	err := s.HistoryInformation(ctx, 1, "collection", buf)
