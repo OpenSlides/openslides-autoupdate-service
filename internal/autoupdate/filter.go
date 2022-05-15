@@ -19,9 +19,8 @@ type filter struct {
 	history map[datastore.Key]uint64
 }
 
-// filter has to be called on a reader that contains a decoded json object. It
-// removes nil values from a map. Filter is called multiple times it removes
-// values from the map, that did not chance.
+// filter removes nil values from a map. If filter is called multiple times it
+// removes values from the map, that did not chance.
 func (f *filter) filter(data map[datastore.Key][]byte) {
 	if f.history == nil {
 		f.history = make(map[datastore.Key]uint64)

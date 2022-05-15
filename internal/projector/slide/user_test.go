@@ -142,10 +142,7 @@ func TestUser(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			shutdownCtx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), convertData(tt.data)))
+			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(convertData(tt.data)))
 
 			p7on := &projector.Projection{
 				ContentObjectID: "user/1",
@@ -160,9 +157,6 @@ func TestUser(t *testing.T) {
 }
 
 func TestUserWithoutMeeting(t *testing.T) {
-	shutdownCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	userSlide := setup(t)
 
 	data := convertData(map[string]string{
@@ -174,7 +168,7 @@ func TestUserWithoutMeeting(t *testing.T) {
 		"user/1/default_structure_level": `"Switzerland"`,
 	})
 
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), data))
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(data))
 
 	p7on := &projector.Projection{
 		ContentObjectID: "user/1",
@@ -186,15 +180,12 @@ func TestUserWithoutMeeting(t *testing.T) {
 }
 
 func TestUserWithError(t *testing.T) {
-	shutdownCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	userSlide := setup(t)
 	data := map[datastore.Key][]byte{
 		MustKey("user/1/id"): []byte(`1`),
 	}
 
-	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(shutdownCtx.Done(), data))
+	fetch := datastore.NewFetcher(dsmock.NewMockDatastore(data))
 
 	p7on := &projector.Projection{
 		ContentObjectID: "user/1",

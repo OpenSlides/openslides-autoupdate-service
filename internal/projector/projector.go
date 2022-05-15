@@ -18,12 +18,12 @@ type Datastore interface {
 
 // Register initializes a new projector.
 func Register(ds Datastore, slides *SlideStore) {
-	hotKeys := map[datastore.Key]map[datastore.Key]bool{}
+	hotKeys := map[datastore.Key]map[datastore.Key]struct{}{}
 	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield datastore.Key, changed map[datastore.Key][]byte) (bs []byte, err error) {
 		if changed != nil {
 			var needUpdate bool
 			for k := range changed {
-				if hotKeys[fqfield][k] {
+				if _, ok := hotKeys[fqfield][k]; ok {
 					needUpdate = true
 					break
 				}

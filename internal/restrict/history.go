@@ -19,7 +19,7 @@ type History struct {
 }
 
 // NewHistory initializes a History object.
-func NewHistory(userID int, current datastore.Getter, old datastore.Getter) History {
+func NewHistory(current datastore.Getter, old datastore.Getter, userID int) History {
 	return History{userID, current, old}
 }
 
