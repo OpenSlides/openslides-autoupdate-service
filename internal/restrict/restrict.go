@@ -115,7 +115,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 		keyPrefix := templateKeyPrefix(key.CollectionField())
 		// Relation List fields
 		if toCollectionfield, ok := relationListFields[keyPrefix]; ok {
-			value, err := filterRelationList(ctx, ds, mperms, key.CollectionField(), toCollectionfield, isSuperAdmin, data[key])
+			value, err := filterRelationList(ctx, ds, mperms, key.String(), toCollectionfield, isSuperAdmin, data[key])
 			if err != nil {
 				return fmt.Errorf("restrict relation-list ids of %q: %w", key, err)
 			}
