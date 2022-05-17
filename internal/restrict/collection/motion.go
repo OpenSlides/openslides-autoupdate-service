@@ -2,6 +2,7 @@ package collection
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
@@ -165,6 +166,12 @@ func (m Motion) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.M
 	for referenceID := range motionIDs {
 		see, err := m.see(ctx, ds, mperms, referenceID)
 		if err != nil {
+			var errDoesNotExist datastore.DoesNotExistError
+			if errors.As(err, &errDoesNotExist) {
+				// The ids in all_derived_motion_ids and all_origin_ids can
+				// contain motion, that were deleted. Ignore them.
+				continue
+			}
 			return false, fmt.Errorf("see motion %d: %w", referenceID, err)
 		}
 
