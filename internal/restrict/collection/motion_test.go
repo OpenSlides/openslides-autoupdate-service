@@ -341,6 +341,27 @@ func TestMotionModeB(t *testing.T) {
 	)
 
 	testCase(
+		"see all_derived_motion_ids corrupted",
+		t,
+		f,
+		false,
+		`---
+		motion:
+			1:
+				meeting_id: 30
+				state_id: 3
+				submitter_ids: [4]
+				all_derived_motion_ids: [404]
+
+		motion_state/3/restrictions:
+		- is_submitter
+
+		motion_submitter/4/user_id: 2
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
 		"not see all_derived_motion_ids",
 		t,
 		f,
