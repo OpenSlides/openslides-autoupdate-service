@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -188,6 +189,52 @@ func TestCacheSetIfExistParallelToGetOrSet(t *testing.T) {
 	if len(got) != 1 || string(got[myKey]) != expect[0] {
 		t.Errorf("Got `%s`, expected `%s`", got, expect)
 	}
+}
+
+func TestGetWhileUpdate(t *testing.T) {
+	const count = 100
+	var wg sync.WaitGroup
+
+	c := newCache()
+
+	myKey1 := MustKey("key/1/field")
+	myKey2 := MustKey("key/2/field")
+	c.GetOrSet(context.Background(), []Key{myKey1, myKey2}, func(key []Key, set func(Key, []byte)) error {
+		set(myKey1, []byte("Init Value"))
+		set(myKey2, []byte("Init Value"))
+		return nil
+	})
+
+	// Fetch Keys many times
+	got := make([]map[Key][]byte, count)
+	wg.Add(count)
+	for i := 0; i < count; i++ {
+		go func(i int) {
+			defer wg.Done()
+			got[i], _ = c.GetOrSet(context.Background(), []Key{myKey1, myKey2}, func([]Key, func(Key, []byte)) error { return nil })
+		}(i)
+	}
+
+	// Update Keys many times to the same value
+	wg.Add(count)
+	for i := 0; i < count; i++ {
+		go func(i int) {
+			defer wg.Done()
+			c.SetIfExistMany(map[Key][]byte{
+				myKey1: []byte(strconv.Itoa(i)),
+				myKey2: []byte(strconv.Itoa(i)),
+			})
+		}(i)
+	}
+
+	wg.Wait()
+
+	for i, g := range got {
+		if string(g[myKey1]) != string(g[myKey2]) {
+			t.Fatalf("GetOrSet returned invalid data got[%d] has myKey1: %s but myKey2: %s", i, g[myKey1], g[myKey2])
+		}
+	}
+
 }
 
 func TestCacheGetOrSetOldData(t *testing.T) {
