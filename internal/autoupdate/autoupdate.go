@@ -20,6 +20,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/ostcar/topic"
 )
 
@@ -186,11 +187,11 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 	coll, rawID, _ := strings.Cut(fqid, "/")
 	id, _ := strconv.Atoi(rawID)
 
-	ds := datastore.NewRequest(a.datastore)
+	ds := dsfetch.New(a.datastore)
 
 	meetingID, hasMeeting, err := collection.Collection(coll).MeetingID(ctx, ds, id)
 	if err != nil {
-		var errNotExist datastore.DoesNotExistError
+		var errNotExist dsfetch.DoesNotExistError
 		if errors.As(err, &errNotExist) {
 			// TODO Client Error
 			return notExistError{datastore.Key(errNotExist)}

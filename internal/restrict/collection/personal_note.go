@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // PersonalNote handels restriction for the personal_node collection.
@@ -18,7 +18,7 @@ import (
 type PersonalNote struct{}
 
 // MeetingID returns the meetingID for the object.
-func (p PersonalNote) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (p PersonalNote) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.PersonalNote_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting meetingID: %w", err)
@@ -36,7 +36,7 @@ func (p PersonalNote) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p PersonalNote) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, personalNoteID int) (bool, error) {
+func (p PersonalNote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, personalNoteID int) (bool, error) {
 	pUserID, err := ds.PersonalNote_UserID(personalNoteID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("fetching user id of personal note: %w", err)

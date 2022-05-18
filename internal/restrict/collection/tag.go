@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Tag handels the restrictions for the tag collection.
@@ -16,7 +16,7 @@ import (
 type Tag struct{}
 
 // MeetingID returns the meetingID for the object.
-func (t Tag) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (t Tag) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.Tag_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("get meeting id: %w", err)
@@ -34,7 +34,7 @@ func (t Tag) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (t Tag) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, tagID int) (bool, error) {
+func (t Tag) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, tagID int) (bool, error) {
 	meetingID, err := ds.Tag_MeetingID(tagID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("fetching meeting id of tag %d: %w", tagID, err)

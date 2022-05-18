@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Motion handels restrictions of the collection motion.
@@ -28,7 +28,7 @@ import (
 type Motion struct{}
 
 // MeetingID returns the meetingID for the object.
-func (m Motion) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (m Motion) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.Motion_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("fetching meeting_id: %w", err)
@@ -52,7 +52,7 @@ func (m Motion) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m Motion) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, motionID int) (bool, error) {
+func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionID int) (bool, error) {
 	meetingID, err := ds.Motion_MeetingID(motionID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("fetching meeting_id: %w", err)
@@ -102,7 +102,7 @@ func (m Motion) see(ctx context.Context, ds *datastore.Request, mperms *perm.Mee
 	return false, nil
 }
 
-func isSubmitter(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, motionID int) (bool, error) {
+func isSubmitter(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionID int) (bool, error) {
 	for _, submitterID := range ds.Motion_SubmitterIDs(motionID).ErrorLater(ctx) {
 		if ds.MotionSubmitter_UserID(submitterID).ErrorLater(ctx) == mperms.UserID() {
 			return true, nil
@@ -114,7 +114,7 @@ func isSubmitter(ctx context.Context, ds *datastore.Request, mperms *perm.Meetin
 	return false, nil
 }
 
-func (m Motion) modeA(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, motionID int) (bool, error) {
+func (m Motion) modeA(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionID int) (bool, error) {
 	see, err := m.modeB(ctx, ds, mperms, motionID)
 	if err != nil {
 		return false, fmt.Errorf("see motion: %w", err)
@@ -143,7 +143,7 @@ func (m Motion) modeA(ctx context.Context, ds *datastore.Request, mperms *perm.M
 	return false, nil
 }
 
-func (m Motion) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, motionID int) (bool, error) {
+func (m Motion) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionID int) (bool, error) {
 	allOriginIDs := ds.Motion_AllOriginIDs(motionID).ErrorLater(ctx)
 	allDerivedMotionIDs := ds.Motion_AllDerivedMotionIDs(motionID).ErrorLater(ctx)
 	originID, hasOrigin := ds.Motion_OriginID(motionID).ErrorLater(ctx)
@@ -166,7 +166,7 @@ func (m Motion) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.M
 	for referenceID := range motionIDs {
 		see, err := m.see(ctx, ds, mperms, referenceID)
 		if err != nil {
-			var errDoesNotExist datastore.DoesNotExistError
+			var errDoesNotExist dsfetch.DoesNotExistError
 			if errors.As(err, &errDoesNotExist) {
 				// The ids in all_derived_motion_ids and all_origin_ids can
 				// contain motion, that were deleted. Ignore them.
@@ -182,6 +182,6 @@ func (m Motion) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.M
 	return false, nil
 }
 
-func (m Motion) modeD(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, UserID int) (bool, error) {
+func (m Motion) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, UserID int) (bool, error) {
 	return false, nil
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // MotionComment handels restrictions of the collection motion_comment.
@@ -16,7 +16,7 @@ import (
 type MotionComment struct{}
 
 // MeetingID returns the meetingID for the object.
-func (m MotionComment) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (m MotionComment) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	motionID, err := ds.MotionComment_MotionID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting motionID: %w", err)
@@ -34,7 +34,7 @@ func (m MotionComment) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionComment) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, motionCommentID int) (bool, error) {
+func (m MotionComment) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionCommentID int) (bool, error) {
 	motionID := ds.MotionComment_MotionID(motionCommentID).ErrorLater(ctx)
 	commentSectionID := ds.MotionComment_SectionID(motionCommentID).ErrorLater(ctx)
 	if err := ds.Err(); err != nil {

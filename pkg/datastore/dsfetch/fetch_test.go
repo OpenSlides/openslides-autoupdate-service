@@ -1,15 +1,15 @@
-package datastore_test
+package dsfetch_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
 
 func TestRequestTwoWithErrors(t *testing.T) {
-	ds := datastore.NewRequest(dsmock.Stub(dsmock.YAMLData(`---
+	ds := dsfetch.New(dsmock.Stub(dsmock.YAMLData(`---
 	topic/1/title: foo
 	`)))
 
@@ -32,7 +32,7 @@ func TestRequestTwoWithErrorsOften(t *testing.T) {
 
 func TestRequestEmpty(t *testing.T) {
 	counter := dsmock.NewCounter(dsmock.Stub(nil)).(*dsmock.Counter)
-	ds := datastore.NewRequest(counter)
+	ds := dsfetch.New(counter)
 
 	if err := ds.Execute(context.Background()); err != nil {
 		t.Fatalf("Execute returned: %v", err)

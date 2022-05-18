@@ -4,22 +4,22 @@ import (
 	"context"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // FieldRestricter is a function to restrict fields of a collection.
-type FieldRestricter func(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, id int) (bool, error)
+type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, id int) (bool, error)
 
 // Allways is a restricter func that just returns true.
-func Allways(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, elementID int) (bool, error) {
+func Allways(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementID int) (bool, error) {
 	return true, nil
 }
 
-func loggedIn(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, elementID int) (bool, error) {
+func loggedIn(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementID int) (bool, error) {
 	return mperms.UserID() != 0, nil
 }
 
-func never(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, elementID int) (bool, error) {
+func never(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementID int) (bool, error) {
 	return false, nil
 }
 
@@ -32,7 +32,7 @@ type Restricter interface {
 
 	// MeetingID returns the meeting id for an object. Returns hasMeeting=false,
 	// if the object does not belong to a meeting.
-	MeetingID(ctx context.Context, ds *datastore.Request, id int) (meetingID int, hasMeeting bool, err error)
+	MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (meetingID int, hasMeeting bool, err error)
 }
 
 // Collection returns the restricter for a collection
@@ -123,6 +123,6 @@ func (u Unknown) Modes(string) FieldRestricter {
 }
 
 // MeetingID is not a thing on a unknown meeting
-func (u Unknown) MeetingID(context.Context, *datastore.Request, int) (int, bool, error) {
+func (u Unknown) MeetingID(context.Context, *dsfetch.Fetch, int) (int, bool, error) {
 	return 0, false, nil
 }

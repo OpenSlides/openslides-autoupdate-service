@@ -10,6 +10,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
 
@@ -47,7 +48,7 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 
 	t.Run(tt.name, func(t *testing.T) {
 		t.Helper()
-		ds := datastore.NewRequest(dsmock.Stub(tt.data))
+		ds := dsfetch.New(dsmock.Stub(tt.data))
 		perms := perm.NewMeetingPermission(ds, tt.requestUserID)
 
 		got, err := f(context.Background(), ds, perms, tt.elementID)

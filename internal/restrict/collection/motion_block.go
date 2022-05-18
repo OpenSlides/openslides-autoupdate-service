@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // MotionBlock handels restrictions of the collection motion_block.
@@ -20,7 +20,7 @@ import (
 type MotionBlock struct{}
 
 // MeetingID returns the meetingID for the object.
-func (m MotionBlock) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (m MotionBlock) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.MotionBlock_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting meetingID: %w", err)
@@ -40,7 +40,7 @@ func (m MotionBlock) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionBlock) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, motionBlockID int) (bool, error) {
+func (m MotionBlock) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionBlockID int) (bool, error) {
 	meetingID, err := ds.MotionBlock_MeetingID(motionBlockID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)
@@ -71,7 +71,7 @@ func (m MotionBlock) see(ctx context.Context, ds *datastore.Request, mperms *per
 	return false, nil
 }
 
-func (m MotionBlock) modeA(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, motionBlockID int) (bool, error) {
+func (m MotionBlock) modeA(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionBlockID int) (bool, error) {
 	see, err := m.see(ctx, ds, mperms, motionBlockID)
 	if err != nil {
 		return false, fmt.Errorf("checking see: %w", err)

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // MotionWorkflow handels restrictions of the collection motion_workflow.
@@ -16,7 +16,7 @@ import (
 type MotionWorkflow struct{}
 
 // MeetingID returns the meetingID for the object.
-func (m MotionWorkflow) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (m MotionWorkflow) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.MotionWorkflow_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting meetingID: %w", err)
@@ -34,7 +34,7 @@ func (m MotionWorkflow) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionWorkflow) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, motionWorkflowID int) (bool, error) {
+func (m MotionWorkflow) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionWorkflowID int) (bool, error) {
 	meetingID, err := ds.MotionWorkflow_MeetingID(motionWorkflowID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // ProjectorMessage handels the restriction for the projector_message collection.
@@ -16,7 +16,7 @@ import (
 type ProjectorMessage struct{}
 
 // MeetingID returns the meetingID for the object.
-func (p ProjectorMessage) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (p ProjectorMessage) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.ProjectorMessage_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting meetingID: %w", err)
@@ -34,7 +34,7 @@ func (p ProjectorMessage) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p ProjectorMessage) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, projectorMessageID int) (bool, error) {
+func (p ProjectorMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, projectorMessageID int) (bool, error) {
 	meetingID, err := ds.ProjectorMessage_MeetingID(projectorMessageID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("fetching meeting_id: %w", err)
