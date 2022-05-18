@@ -50,6 +50,7 @@ func (r *Redis) Update(ctx context.Context) (map[datastore.Key][]byte, error) {
 			// No new data
 			return nil, nil
 		}
+		// TODO External Error
 		return nil, fmt.Errorf("get xread data from redis: %w", err)
 	}
 
@@ -61,6 +62,7 @@ func (r *Redis) Update(ctx context.Context) (map[datastore.Key][]byte, error) {
 	for k, v := range data {
 		key, err := datastore.KeyFromString(k)
 		if err != nil {
+			// TODO End Error
 			return nil, fmt.Errorf("invalid key: %s", k)
 		}
 		converted[key] = v
@@ -83,6 +85,7 @@ func (r *Redis) LogoutEvent(ctx context.Context) ([]string, error) {
 			// No new data
 			return nil, nil
 		}
+		// TODO External Error
 		return nil, fmt.Errorf("get xread data from redis: %w", err)
 	}
 	if id != "" {
