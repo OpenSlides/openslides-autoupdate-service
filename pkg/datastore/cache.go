@@ -51,22 +51,14 @@ func newCache() *cache {
 // Other calls to GetOrSet may wait for its result.
 func (c *cache) GetOrSet(ctx context.Context, keys []Key, set cacheSetFunc) (map[Key][]byte, error) {
 	// Blocks until all missing keys are fetched.
+	//
+	// After this call, all keys are either pending (from another parallel call)
+	// or in the c.data. This is a requirement to call c.data.get().
 	if err := c.fetchMissing(ctx, keys, set); err != nil {
 		return nil, fmt.Errorf("fetching missing keys: %w", err)
 	}
 
-	// Blocks until all keys that are requested by other callers are fetched.
-	values := make(map[Key][]byte, len(keys))
-	for _, key := range keys {
-		// Gets a value and waits until it is ready.
-		v, err := c.data.get(ctx, key)
-		if err != nil {
-			return nil, fmt.Errorf("waiting for key %s: %w", key, err)
-		}
-
-		values[key] = v
-	}
-	return values, nil
+	return c.data.get(ctx, keys)
 }
 
 // fetchMissing loads the given keys with the set method. Does not update keys
@@ -144,35 +136,31 @@ func newPendingMap() *pendingMap {
 	}
 }
 
-// get returns a value from the pendingMap.
+// get returns a list o keys from the pendingMap.
 //
-// If the value is pending, the returned value will block until the value is not
-// pending anymore.
+// The function blocks, until all values are not pending anymore.
 //
 // Returns nil for a value that does not exist.
-func (pm *pendingMap) get(ctx context.Context, key Key) ([]byte, error) {
-	var value []byte
-	var pending chan struct{}
-	reading(pm, func() {
-		pending = pm.pending[key]
-		value = pm.data[key]
-	})
-
-	if pending == nil {
-		return value, nil
+//
+// Makes sure that all values are returned at the same version. So if setIfExist
+// is called while the function is running, then all values are returned at the
+// latest version.
+//
+// Expects, that all keys are either pending or in the data. It is not allowed,
+// that a key is not pending when this starts and gets pending whil it runs.
+func (pm *pendingMap) get(ctx context.Context, keys []Key) (map[Key][]byte, error) {
+	if err := pm.waitForPending(ctx, keys); err != nil {
+		return nil, err
 	}
 
-	select {
-	case <-pending:
-	case <-ctx.Done():
-		return nil, fmt.Errorf("waiting for value: %w", ctx.Err())
-	}
-
+	out := make(map[Key][]byte, len(keys))
 	reading(pm, func() {
-		value = pm.data[key]
+		for _, k := range keys {
+			out[k] = pm.data[k]
+		}
 	})
 
-	return value, nil
+	return out, nil
 }
 
 // markPending marks one or more keys as pending.
@@ -219,6 +207,30 @@ func (pm *pendingMap) unMarkPending(keys ...Key) {
 		close(pending)
 		delete(pm.pending, key)
 	}
+}
+
+// waitForPending blocks until all the given keys are not pending anymore.
+//
+// Expects, that all keys are either pending or in the data. It is not allowed,
+// that a key is not pending when this starts and gets pending whil it runs.
+func (pm *pendingMap) waitForPending(ctx context.Context, keys []Key) error {
+	for _, k := range keys {
+		var pending chan struct{}
+		reading(pm, func() {
+			pending = pm.pending[k]
+		})
+
+		if pending == nil {
+			continue
+		}
+
+		select {
+		case <-pending:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	return nil
 }
 
 // setIfExiists is like setIfExist but without setting a lock. Should not be
