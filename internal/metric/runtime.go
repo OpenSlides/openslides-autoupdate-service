@@ -16,6 +16,5 @@ func Runtime(con Container) {
 
 	goroutines := sample[0].Value.Uint64()
 
-	s := con.Sub("runtime")
-	s.Add("goroutines", goroutines)
+	con.Add("runtime_goroutines", int(goroutines))
 }

@@ -28,7 +28,7 @@ const (
 
 // Run starts the http server.
 func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autoupdate.Autoupdate) error {
-	requestCount := new(metric.CurrentCounter)
+	requestCount := metric.NewCurrentCounter("connection")
 	metric.Register(requestCount.Metric)
 
 	mux := http.NewServeMux()
