@@ -5,13 +5,12 @@ import (
 )
 
 func (d *Datastore) metric(values metric.Container) {
-	c := values.Sub("datastore")
-	c.Add("cache_key_len", d.cache.len())
-	c.Add("cache_size", d.cache.size())
-	c.Add("get_calls", d.metricGetHitCount)
+	values.Add("datastore_cache_key_len", d.cache.len())
+	values.Add("datastore_cache_size", d.cache.size())
+	values.Add("datastore_get_calls", int(d.metricGetHitCount))
 
 	ds, ok := d.defaultSource.(*SourceDatastore)
 	if ok {
-		c.Add("ds_hits", ds.metricDSHitCount)
+		values.Add("datastore_hits", int(ds.metricDSHitCount))
 	}
 }

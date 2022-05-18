@@ -33,8 +33,9 @@ func Loop(ctx context.Context, d time.Duration, logger *log.Logger) {
 		select {
 		case <-ctx.Done():
 			return
+
 		case <-ticker.C:
-			data := Container{make(map[string]any, lastSize)}
+			data := Container{make(map[string]int, lastSize)}
 
 			callbacks.mu.Lock()
 			for _, callback := range callbacks.fs {
@@ -58,11 +59,11 @@ func Loop(ctx context.Context, d time.Duration, logger *log.Logger) {
 
 // Container is given to the callbacks for them to add the values.
 type Container struct {
-	data map[string]any
+	data map[string]int
 }
 
 // Add adds a metric value.
-func (c *Container) Add(key string, value any) {
+func (c *Container) Add(key string, value int) {
 	c.data[key] = value
 }
 
@@ -71,17 +72,17 @@ func (c Container) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.data)
 }
 
-// Sub creates a sub container for adding values under one name.
-func (c *Container) Sub(name string) Container {
-	nc := Container{make(map[string]any)}
-	c.data[name] = nc
-	return nc
-}
-
 // CurrentCounter is a metric that shows a current value.
 type CurrentCounter struct {
+	name    string
 	current int
 	total   uint64
+}
+
+// NewCurrentCounter initializes a current counter with a name that is used as
+// prefix.
+func NewCurrentCounter(name string) *CurrentCounter {
+	return &CurrentCounter{name: name + "_"}
 }
 
 // Add increases the counter by one.
@@ -97,7 +98,6 @@ func (c *CurrentCounter) Done() {
 
 // Metric writes the current counter.
 func (c *CurrentCounter) Metric(con Container) {
-	s := con.Sub("connection")
-	s.Add("current", c.current)
-	s.Add("total", c.total)
+	con.Add(c.name+"current", c.current)
+	con.Add(c.name+"total", int(c.total))
 }
