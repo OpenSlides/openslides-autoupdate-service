@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // ProjectorCountdown handels the restriction for the projector_countdown collection.
@@ -16,7 +16,7 @@ import (
 type ProjectorCountdown struct{}
 
 // MeetingID returns the meetingID for the object.
-func (p ProjectorCountdown) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (p ProjectorCountdown) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.ProjectorCountdown_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting meetingID: %w", err)
@@ -34,7 +34,7 @@ func (p ProjectorCountdown) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p ProjectorCountdown) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, projectorCountdownID int) (bool, error) {
+func (p ProjectorCountdown) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, projectorCountdownID int) (bool, error) {
 	meetingID, err := ds.ProjectorCountdown_MeetingID(projectorCountdownID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("fetching meeting_id: %w", err)

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Meeting handels restrictions of the collection meeting.
@@ -27,7 +27,7 @@ import (
 type Meeting struct{}
 
 // MeetingID returns the meetingID for the object.
-func (m Meeting) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (m Meeting) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	return id, true, nil
 }
 
@@ -46,7 +46,7 @@ func (m Meeting) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m Meeting) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, meetingID int) (bool, error) {
+func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, meetingID int) (bool, error) {
 	enableAnonymous, err := ds.Meeting_EnableAnonymous(meetingID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("checking enabled anonymous: %w", err)
@@ -109,7 +109,7 @@ func (m Meeting) see(ctx context.Context, ds *datastore.Request, mperms *perm.Me
 	return false, nil
 }
 
-func (m Meeting) modeC(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, meetingID int) (bool, error) {
+func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, meetingID int) (bool, error) {
 	perms, err := mperms.Meeting(ctx, meetingID)
 	if err != nil {
 		return false, fmt.Errorf("getting permissions: %w", err)
@@ -118,7 +118,7 @@ func (m Meeting) modeC(ctx context.Context, ds *datastore.Request, mperms *perm.
 	return perms.Has(perm.MeetingCanSeeFrontpage), nil
 }
 
-func (m Meeting) modeD(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, meetingID int) (bool, error) {
+func (m Meeting) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, meetingID int) (bool, error) {
 	perms, err := mperms.Meeting(ctx, meetingID)
 	if err != nil {
 		return false, fmt.Errorf("getting permissions: %w", err)

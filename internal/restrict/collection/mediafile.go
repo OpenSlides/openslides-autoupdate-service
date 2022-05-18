@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Mediafile handels permissions for the collection mediafile.
@@ -27,7 +27,7 @@ import (
 type Mediafile struct{}
 
 // MeetingID returns the meetingID for the object.
-func (m Mediafile) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (m Mediafile) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	genericOwnerID, err := ds.Mediafile_OwnerID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("fetching owner_id of mediafile %d: %w", id, err)
@@ -59,7 +59,7 @@ func (m Mediafile) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m Mediafile) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, mediafileID int) (bool, error) {
+func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, mediafileID int) (bool, error) {
 	genericOwnerID, err := ds.Mediafile_OwnerID(mediafileID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("fetching owner_id of mediafile %d: %w", mediafileID, err)

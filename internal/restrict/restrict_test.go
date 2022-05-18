@@ -9,7 +9,7 @@ import (
 
 	restrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
 
 func MustKey(in string) datastore.Key {

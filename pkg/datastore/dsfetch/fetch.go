@@ -1,41 +1,43 @@
-package datastore
+package dsfetch
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
-//go:generate sh -c "go run gen_request/main.go > request_generated.go"
+//go:generate sh -c "go run gen_fields/main.go > fields_generated.go"
 
-// Request provides functions to access the fields of the datastore.
+// Fetch provides functions to access the fields of the datastore.
 //
-// Request is not save for concurent use. One Request object AND its value can only be
+// Fetch is not save for concurent use. One Fetch object AND its value can only be
 // used in one goroutine.
-type Request struct {
-	getter Getter
+type Fetch struct {
+	getter datastore.Getter
 	err    error
 
-	requested map[Key]executer
+	requested map[datastore.Key]executer
 }
 
-// NewRequest initializes a Request object.
-func NewRequest(getter Getter) *Request {
-	r := Request{
+// New initializes a Request object.
+func New(getter datastore.Getter) *Fetch {
+	r := Fetch{
 		getter:    getter,
-		requested: make(map[Key]executer),
+		requested: make(map[datastore.Key]executer),
 	}
 	return &r
 }
 
 // Execute loads all requested keys from the datastore.
-func (r *Request) Execute(ctx context.Context) error {
+func (r *Fetch) Execute(ctx context.Context) error {
 	defer func() {
 		// Clear all requested fields in the end. Even if errors happened.
-		r.requested = make(map[Key]executer)
+		r.requested = make(map[datastore.Key]executer)
 	}()
 
-	keys := make([]Key, 0, len(r.requested)*2)
+	keys := make([]datastore.Key, 0, len(r.requested)*2)
 	for key := range r.requested {
 		keys = append(keys, key, key.IDField())
 	}
@@ -71,7 +73,7 @@ func (r *Request) Execute(ctx context.Context) error {
 }
 
 // Err returns an error from a previous call.
-func (r *Request) Err() error {
+func (r *Fetch) Err() error {
 	return r.err
 }
 
@@ -87,7 +89,7 @@ type ValueRequiredInt struct {
 
 	lazies []*int
 
-	request *Request
+	request *Fetch
 }
 
 // Value returns the value.
@@ -146,8 +148,8 @@ func (v *ValueRequiredInt) execute(p []byte) error {
 }
 
 // DoesNotExistError is thrown when an object does not exist.
-type DoesNotExistError Key
+type DoesNotExistError datastore.Key
 
 func (e DoesNotExistError) Error() string {
-	return fmt.Sprintf("%s does not exist.", Key(e))
+	return fmt.Sprintf("%s does not exist.", datastore.Key(e))
 }

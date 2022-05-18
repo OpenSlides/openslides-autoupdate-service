@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Option handels restrictions of the collection option.
@@ -18,7 +18,7 @@ import (
 type Option struct{}
 
 // MeetingID returns the meetingID for the object.
-func (o Option) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (o Option) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.Option_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting meetingID: %w", err)
@@ -38,7 +38,7 @@ func (o Option) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (o Option) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, optionID int) (bool, error) {
+func (o Option) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, optionID int) (bool, error) {
 	pollID, err := pollID(ctx, ds, optionID)
 	if err != nil {
 		return false, fmt.Errorf("getting poll id: %w", err)
@@ -52,7 +52,7 @@ func (o Option) see(ctx context.Context, ds *datastore.Request, mperms *perm.Mee
 	return see, nil
 }
 
-func (o Option) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, optionID int) (bool, error) {
+func (o Option) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, optionID int) (bool, error) {
 	pollID, err := pollID(ctx, ds, optionID)
 	if err != nil {
 		return false, fmt.Errorf("getting poll id: %w", err)
@@ -84,7 +84,7 @@ func (o Option) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.M
 	return pollState == "published", nil
 }
 
-func pollID(ctx context.Context, ds *datastore.Request, optionID int) (int, error) {
+func pollID(ctx context.Context, ds *dsfetch.Fetch, optionID int) (int, error) {
 	pollID, exist, err := ds.Option_PollID(optionID).Value(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("getting poll id from field poll_id: %w", err)

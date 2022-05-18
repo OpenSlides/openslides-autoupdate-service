@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
 
 func TestHistoryGetter(t *testing.T) {

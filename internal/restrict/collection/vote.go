@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Vote handels restrictions of the collection vote.
@@ -24,7 +24,7 @@ import (
 type Vote struct{}
 
 // MeetingID returns the meetingID for the object.
-func (v Vote) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (v Vote) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.Vote_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("get meeting id: %w", err)
@@ -44,7 +44,7 @@ func (v Vote) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (v Vote) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, voteID int) (bool, error) {
+func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, voteID int) (bool, error) {
 	optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("fetching option_id: %w", err)
@@ -94,7 +94,7 @@ func (v Vote) see(ctx context.Context, ds *datastore.Request, mperms *perm.Meeti
 	return false, nil
 }
 
-func (v Vote) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, voteID int) (bool, error) {
+func (v Vote) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, voteID int) (bool, error) {
 	optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("fetching option_id: %w", err)

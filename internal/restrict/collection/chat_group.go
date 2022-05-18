@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // ChatGroup handels restrictions for the collection chat_group.
@@ -19,7 +19,7 @@ import (
 type ChatGroup struct{}
 
 // MeetingID returns the meetingID for the object.
-func (c ChatGroup) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (c ChatGroup) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := c.meetingID(ctx, ds, id)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting meetingID: %w", err)
@@ -37,7 +37,7 @@ func (c ChatGroup) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (c ChatGroup) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, chatGroupID int) (bool, error) {
+func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, chatGroupID int) (bool, error) {
 	meetingID, err := c.meetingID(ctx, ds, chatGroupID)
 	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)
@@ -73,7 +73,7 @@ func (c ChatGroup) see(ctx context.Context, ds *datastore.Request, mperms *perm.
 	return false, nil
 }
 
-func (c ChatGroup) meetingID(ctx context.Context, ds *datastore.Request, id int) (int, error) {
+func (c ChatGroup) meetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, error) {
 	mid, err := ds.ChatGroup_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("fetching meeting_id: %w", err)

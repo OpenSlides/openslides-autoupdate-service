@@ -14,6 +14,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Middleware can be used as a datastore.Getter that restrict the data for a
@@ -46,10 +47,10 @@ func (r restricter) Get(ctx context.Context, keys ...datastore.Key) (map[datasto
 // restrict changes the keys and values in data for the user with the given user
 // id.
 func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[datastore.Key][]byte) error {
-	ds := datastore.NewRequest(getter)
+	ds := dsfetch.New(getter)
 	isSuperAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, uid, perm.OMLSuperadmin)
 	if err != nil {
-		var errDoesNotExist datastore.DoesNotExistError
+		var errDoesNotExist dsfetch.DoesNotExistError
 		if errors.As(err, &errDoesNotExist) {
 			return fmt.Errorf("request user %d does not exist", uid)
 		}
@@ -62,7 +63,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 			continue
 		}
 
-		ds := datastore.NewRequest(getter)
+		ds := dsfetch.New(getter)
 
 		modeFunc, err := restrictMode(key.Collection, key.Field, isSuperAdmin)
 		if err != nil {
@@ -74,7 +75,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 
 		canSeeMode, err := modeFunc(ctx, ds, mperms, key.ID)
 		if err != nil {
-			var errDoesNotExist datastore.DoesNotExistError
+			var errDoesNotExist dsfetch.DoesNotExistError
 			if !errors.As(err, &errDoesNotExist) {
 				return fmt.Errorf("calling modefunc for key %s: %w", key, err)
 			}
@@ -181,7 +182,7 @@ func templateKeyPrefix(collectionField string) string {
 
 func filterRelationList(
 	ctx context.Context,
-	ds *datastore.Request,
+	ds *dsfetch.Fetch,
 	mperms *perm.MeetingPermission,
 	fromListField string,
 	toCollectionField string,
@@ -206,7 +207,7 @@ func filterRelationList(
 	for _, id := range ids {
 		allowed, err := relationListModeFunc(ctx, ds, mperms, id)
 		if err != nil {
-			var errDoesNotExist datastore.DoesNotExistError
+			var errDoesNotExist dsfetch.DoesNotExistError
 			if errors.As(err, &errDoesNotExist) && datastore.Key(errDoesNotExist).String() == fmt.Sprintf("%s/%d/id", parts[0], id) {
 				log.Printf(
 					"Warning: datastore is corrupted. Relation-list field `%s` contains id `%d`, but `%s` with this id does not exist.",
@@ -235,7 +236,7 @@ func filterRelationList(
 
 func filterGenericRelationList(
 	ctx context.Context,
-	ds *datastore.Request,
+	ds *dsfetch.Fetch,
 	mperms *perm.MeetingPermission,
 	toCollectionFieldMap map[string]string,
 	isSuperAdmin bool,

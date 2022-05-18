@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Group handels restrictions of the collection group.
@@ -16,7 +16,7 @@ import (
 type Group struct{}
 
 // MeetingID returns the meetingID for the object.
-func (g Group) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (g Group) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.Group_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("fetching meeting id of group %d: %w", id, err)
@@ -34,7 +34,7 @@ func (g Group) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (g Group) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, groupID int) (bool, error) {
+func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, groupID int) (bool, error) {
 	meetingID, err := ds.Group_MeetingID(groupID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("fetching meeting id of group %d: %w", groupID, err)

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // User handels the restrictions for the user collection.
@@ -48,7 +48,7 @@ import (
 type User struct{}
 
 // MeetingID returns the meetingID for the object.
-func (u User) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (u User) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	return 0, false, nil
 }
 
@@ -77,7 +77,7 @@ func (u User) SuperAdmin(mode string) FieldRestricter {
 	return Allways
 }
 
-func (u User) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, userID int) (bool, error) {
+func (u User) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userID int) (bool, error) {
 	if mperms.UserID() == userID {
 		return true, nil
 	}
@@ -184,13 +184,13 @@ func (u User) see(ctx context.Context, ds *datastore.Request, mperms *perm.Meeti
 // UserRequiredObject represents the reference from a user to other objects.
 type UserRequiredObject struct {
 	Name     string
-	TmplFunc func(int) *datastore.ValueIDSlice
-	ElemFunc func(int, int) *datastore.ValueIntSlice
+	TmplFunc func(int) *dsfetch.ValueIDSlice
+	ElemFunc func(int, int) *dsfetch.ValueIntSlice
 	SeeFunc  FieldRestricter
 }
 
 // RequiredObjects returns all references to other objects from the user.
-func (u User) RequiredObjects(ds *datastore.Request) []UserRequiredObject {
+func (u User) RequiredObjects(ds *dsfetch.Fetch) []UserRequiredObject {
 	return []UserRequiredObject{
 		{
 			"motion submitter",
@@ -257,11 +257,11 @@ func (u User) RequiredObjects(ds *datastore.Request) []UserRequiredObject {
 	}
 }
 
-func (u User) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, UserID int) (bool, error) {
+func (u User) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, UserID int) (bool, error) {
 	return mperms.UserID() == UserID, nil
 }
 
-func (u User) modeD(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, UserID int) (bool, error) {
+func (u User) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, UserID int) (bool, error) {
 	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
 	if err != nil {
 		return false, fmt.Errorf("cheching oml: %w", err)
@@ -289,7 +289,7 @@ func (u User) modeD(ctx context.Context, ds *datastore.Request, mperms *perm.Mee
 	return false, nil
 }
 
-func (u User) modeE(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, UserID int) (bool, error) {
+func (u User) modeE(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, UserID int) (bool, error) {
 	if mperms.UserID() == UserID {
 		return true, nil
 	}

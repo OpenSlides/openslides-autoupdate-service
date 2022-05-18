@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Assignment handels restrictions for the assignment collection.
@@ -19,7 +19,7 @@ import (
 type Assignment struct{}
 
 // MeetingID returns the meetingID for the object.
-func (a Assignment) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (a Assignment) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := a.meetingID(ctx, ds, id)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting meetingID: %w", err)
@@ -39,7 +39,7 @@ func (a Assignment) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a Assignment) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, assignmentID int) (bool, error) {
+func (a Assignment) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, assignmentID int) (bool, error) {
 	meetingID, err := a.meetingID(ctx, ds, assignmentID)
 	if err != nil {
 		return false, fmt.Errorf("fetching meeting id: %w", err)
@@ -73,7 +73,7 @@ func (a Assignment) see(ctx context.Context, ds *datastore.Request, mperms *perm
 	return false, nil
 }
 
-func (a Assignment) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, assignmentID int) (bool, error) {
+func (a Assignment) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, assignmentID int) (bool, error) {
 	meetingID, err := a.meetingID(ctx, ds, assignmentID)
 	if err != nil {
 		return false, fmt.Errorf("fetching meeting id: %w", err)
@@ -87,7 +87,7 @@ func (a Assignment) modeB(ctx context.Context, ds *datastore.Request, mperms *pe
 	return perms.Has(perm.AssignmentCanSee), nil
 }
 
-func (a Assignment) meetingID(ctx context.Context, ds *datastore.Request, id int) (int, error) {
+func (a Assignment) meetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, error) {
 	mid, err := ds.Assignment_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("fetching meeting_id: %w", err)

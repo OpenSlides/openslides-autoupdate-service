@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Committee handels permission for committees.
@@ -20,7 +20,7 @@ import (
 type Committee struct{}
 
 // MeetingID returns the meetingID for the object.
-func (a Committee) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (a Committee) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	return 0, false, nil
 }
 
@@ -35,7 +35,7 @@ func (a Committee) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a Committee) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, committeeID int) (bool, error) {
+func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, committeeID int) (bool, error) {
 	userIDs, err := ds.Committee_UserIDs(committeeID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting committee users: %w", err)
@@ -55,7 +55,7 @@ func (a Committee) see(ctx context.Context, ds *datastore.Request, mperms *perm.
 	return hasOMLPerm, nil
 }
 
-func (a Committee) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, committeeID int) (bool, error) {
+func (a Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, committeeID int) (bool, error) {
 	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageOrganization)
 	if err != nil {
 		return false, fmt.Errorf("checking oml: %w", err)

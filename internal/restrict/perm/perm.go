@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Permission holds the information which permissions and groups a user has.
@@ -19,7 +19,7 @@ type Permission struct {
 // New creates a new Permission object for a user in a specific meeting.
 //
 // If the user is not a member of the meeting, nil is returned.
-func New(ctx context.Context, ds *datastore.Request, userID, meetingID int) (*Permission, error) {
+func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permission, error) {
 	if userID == 0 {
 		return newAnonymous(ctx, ds, meetingID)
 	}
@@ -53,7 +53,7 @@ func New(ctx context.Context, ds *datastore.Request, userID, meetingID int) (*Pe
 	return &Permission{groupIDs: groupIDs, permissions: perms}, nil
 }
 
-func newAnonymous(ctx context.Context, ds *datastore.Request, meetingID int) (*Permission, error) {
+func newAnonymous(ctx context.Context, ds *dsfetch.Fetch, meetingID int) (*Permission, error) {
 	enableAnonymous, err := ds.Meeting_EnableAnonymous(meetingID).Value(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("checking anonymous enabled: %w", err)
@@ -75,7 +75,7 @@ func newAnonymous(ctx context.Context, ds *datastore.Request, meetingID int) (*P
 	return &Permission{groupIDs: []int{defaultGroupID}, permissions: perms}, nil
 }
 
-func isAdmin(ctx context.Context, ds *datastore.Request, meetingID int, groupIDs []int) (bool, error) {
+func isAdmin(ctx context.Context, ds *dsfetch.Fetch, meetingID int, groupIDs []int) (bool, error) {
 	adminGroupID, exist, err := ds.Meeting_AdminGroupID(meetingID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("check for admin group: %w", err)
@@ -93,7 +93,7 @@ func isAdmin(ctx context.Context, ds *datastore.Request, meetingID int, groupIDs
 	return false, nil
 }
 
-func permissionsFromGroups(ctx context.Context, ds *datastore.Request, groupIDs ...int) (map[TPermission]bool, error) {
+func permissionsFromGroups(ctx context.Context, ds *dsfetch.Fetch, groupIDs ...int) (map[TPermission]bool, error) {
 	permissions := make(map[TPermission]bool)
 	for _, gid := range groupIDs {
 		perms := ds.Group_Permissions(gid).ErrorLater(ctx)
@@ -151,7 +151,7 @@ func (p *Permission) InGroup(gid int) bool {
 }
 
 // HasOrganizationManagementLevel returns true if the user has the level or a higher level
-func HasOrganizationManagementLevel(ctx context.Context, ds *datastore.Request, userID int, level OrganizationManagementLevel) (bool, error) {
+func HasOrganizationManagementLevel(ctx context.Context, ds *dsfetch.Fetch, userID int, level OrganizationManagementLevel) (bool, error) {
 	if userID == 0 {
 		return false, nil
 	}
@@ -176,7 +176,7 @@ func HasOrganizationManagementLevel(ctx context.Context, ds *datastore.Request, 
 
 // HasCommitteeManagementLevel returns true, if the user has the manager level
 // in the given committeeID.
-func HasCommitteeManagementLevel(ctx context.Context, ds *datastore.Request, userID int, committeeID int) (bool, error) {
+func HasCommitteeManagementLevel(ctx context.Context, ds *dsfetch.Fetch, userID int, committeeID int) (bool, error) {
 	ids, err := ManagementLevelCommittees(ctx, ds, userID)
 	if err != nil {
 		return false, fmt.Errorf("fetching list of commitee_ids: %w", err)
@@ -192,7 +192,7 @@ func HasCommitteeManagementLevel(ctx context.Context, ds *datastore.Request, use
 
 // ManagementLevelCommittees returns all committee-ids where the given user has
 // the management level.
-func ManagementLevelCommittees(ctx context.Context, ds *datastore.Request, userID int) ([]int, error) {
+func ManagementLevelCommittees(ctx context.Context, ds *dsfetch.Fetch, userID int) ([]int, error) {
 	if userID == 0 {
 		return nil, nil
 	}

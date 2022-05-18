@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // ChatMessage handels restrictions for the collection chat_message.
@@ -18,7 +18,7 @@ import (
 type ChatMessage struct{}
 
 // MeetingID returns the meetingID for the object.
-func (c ChatMessage) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (c ChatMessage) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	chatGroupID, err := ds.ChatMessage_ChatGroupID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting chat_group_id: %w", err)
@@ -36,7 +36,7 @@ func (c ChatMessage) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (ChatMessage) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, chatMessageID int) (bool, error) {
+func (ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, chatMessageID int) (bool, error) {
 	chatGroupID, err := ds.ChatMessage_ChatGroupID(chatMessageID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting chat_group_id: %w", err)

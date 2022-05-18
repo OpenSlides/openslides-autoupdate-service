@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // AssignmentCandidate handels the permissions for assignment_candiate collections.
@@ -16,7 +16,7 @@ import (
 type AssignmentCandidate struct{}
 
 // MeetingID returns the meetingID for the object.
-func (a AssignmentCandidate) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (a AssignmentCandidate) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	assignmentID, err := ds.AssignmentCandidate_AssignmentID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("fetching assignment id: %w", err)
@@ -34,7 +34,7 @@ func (a AssignmentCandidate) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a AssignmentCandidate) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, assignmentCandidateID int) (bool, error) {
+func (a AssignmentCandidate) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, assignmentCandidateID int) (bool, error) {
 	assignmentID, err := ds.AssignmentCandidate_AssignmentID(assignmentCandidateID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("fetching assignment id: %w", err)

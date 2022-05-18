@@ -7,6 +7,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // History filters the keys for the history.
@@ -32,9 +33,9 @@ func (h History) Get(ctx context.Context, keys ...datastore.Key) (map[datastore.
 		return nil, nil
 	}
 
-	currentDS := datastore.NewRequest(h.currentGetter)
+	currentDS := dsfetch.New(h.currentGetter)
 	mperms := perm.NewMeetingPermission(currentDS, h.userID)
-	oldDS := datastore.NewRequest(h.oldGetter)
+	oldDS := dsfetch.New(h.oldGetter)
 
 	orgaManager, err := perm.HasOrganizationManagementLevel(ctx, currentDS, h.userID, perm.OMLCanManageOrganization)
 	if err != nil {
@@ -85,7 +86,7 @@ func (h History) Get(ctx context.Context, keys ...datastore.Key) (map[datastore.
 func (h History) canSeeKey(
 	ctx context.Context,
 	oldDS,
-	currentDS *datastore.Request,
+	currentDS *dsfetch.Fetch,
 	isOrgaManager bool,
 	adminInMeeting map[int]struct{},
 	key datastore.Key,

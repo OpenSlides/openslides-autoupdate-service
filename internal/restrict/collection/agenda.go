@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // AgendaItem handels permission for the agenda.
@@ -23,7 +23,7 @@ import (
 type AgendaItem struct{}
 
 // MeetingID returns the meetingID for the object.
-func (a AgendaItem) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (a AgendaItem) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := a.meetingID(ctx, ds, id)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting meetingID: %w", err)
@@ -45,7 +45,7 @@ func (a AgendaItem) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a AgendaItem) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, agendaID int) (bool, error) {
+func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, agendaID int) (bool, error) {
 	meetingID, err := a.meetingID(ctx, ds, agendaID)
 	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)
@@ -77,7 +77,7 @@ func (a AgendaItem) see(ctx context.Context, ds *datastore.Request, mperms *perm
 	return false, nil
 }
 
-func (a AgendaItem) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, agendaID int) (bool, error) {
+func (a AgendaItem) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, agendaID int) (bool, error) {
 	meetingID, err := a.meetingID(ctx, ds, agendaID)
 	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)
@@ -91,7 +91,7 @@ func (a AgendaItem) modeB(ctx context.Context, ds *datastore.Request, mperms *pe
 	return perms.Has(perm.AgendaItemCanSeeInternal), nil
 }
 
-func (a AgendaItem) modeC(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, agendaID int) (bool, error) {
+func (a AgendaItem) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, agendaID int) (bool, error) {
 	meetingID, err := a.meetingID(ctx, ds, agendaID)
 	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)
@@ -105,7 +105,7 @@ func (a AgendaItem) modeC(ctx context.Context, ds *datastore.Request, mperms *pe
 	return perms.Has(perm.AgendaItemCanManage), nil
 }
 
-func (a AgendaItem) meetingID(ctx context.Context, request *datastore.Request, id int) (int, error) {
+func (a AgendaItem) meetingID(ctx context.Context, request *dsfetch.Fetch, id int) (int, error) {
 	mid, err := request.AgendaItem_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("fetching meeting_id: %w", err)

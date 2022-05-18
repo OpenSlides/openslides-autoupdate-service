@@ -3,7 +3,7 @@ package collection
 import (
 	"context"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Theme handels the restrictions for the theme collection.
@@ -12,7 +12,7 @@ import (
 type Theme struct{}
 
 // MeetingID returns the meetingID for the object.
-func (t Theme) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (t Theme) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	return 0, false, nil
 }
 

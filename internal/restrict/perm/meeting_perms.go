@@ -3,7 +3,7 @@ package perm
 import (
 	"context"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // MeetingPermission is a cache for different Permission objects for each
@@ -12,12 +12,12 @@ import (
 // Can be used if fields from different meetings are checked.
 type MeetingPermission struct {
 	perms map[int]*Permission
-	ds    *datastore.Request
+	ds    *dsfetch.Fetch
 	uid   int
 }
 
 // NewMeetingPermission initializes a new MeetingPermission.
-func NewMeetingPermission(ds *datastore.Request, uid int) *MeetingPermission {
+func NewMeetingPermission(ds *dsfetch.Fetch, uid int) *MeetingPermission {
 	p := MeetingPermission{
 		perms: make(map[int]*Permission),
 		ds:    ds,

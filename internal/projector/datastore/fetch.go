@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Fetcher is a helper to fetch many keys from the datastore.
@@ -80,7 +81,7 @@ func (f *Fetcher) FetchIfExist(ctx context.Context, value interface{}, keyFmt st
 	}
 
 	if fields[idField] == nil {
-		f.err = datastore.DoesNotExistError(idField)
+		f.err = dsfetch.DoesNotExistError(idField)
 		return
 	}
 	if fields[fqfield] == nil {
@@ -126,7 +127,7 @@ func (f *Fetcher) Object(ctx context.Context, fqID string, fields ...string) map
 	}
 
 	if vals[idKey] == nil {
-		f.err = datastore.DoesNotExistError(idKey)
+		f.err = dsfetch.DoesNotExistError(idKey)
 		return nil
 	}
 

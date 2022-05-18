@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Poll handels restrictions of the collection poll.
@@ -34,7 +34,7 @@ import (
 type Poll struct{}
 
 // MeetingID returns the meetingID for the object.
-func (p Poll) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (p Poll) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.Poll_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting meetingID: %w", err)
@@ -58,7 +58,7 @@ func (p Poll) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p Poll) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
+func (p Poll) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, pollID int) (bool, error) {
 	contentObjectID, err := ds.Poll_ContentObjectID(pollID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting content object id: %w", err)
@@ -75,7 +75,7 @@ func (p Poll) see(ctx context.Context, ds *datastore.Request, mperms *perm.Meeti
 	}
 
 	var collection interface {
-		see(context.Context, *datastore.Request, *perm.MeetingPermission, int) (bool, error)
+		see(context.Context, *dsfetch.Fetch, *perm.MeetingPermission, int) (bool, error)
 	}
 
 	switch parts[0] {
@@ -100,7 +100,7 @@ func (p Poll) see(ctx context.Context, ds *datastore.Request, mperms *perm.Meeti
 	return see, nil
 }
 
-func (p Poll) manage(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
+func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, pollID int) (bool, error) {
 	contentObjectID, err := ds.Poll_ContentObjectID(pollID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting content object id: %w", err)
@@ -161,7 +161,7 @@ func (p Poll) manage(ctx context.Context, ds *datastore.Request, mperms *perm.Me
 	}
 }
 
-func (p Poll) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
+func (p Poll) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, pollID int) (bool, error) {
 	state, err := ds.Poll_State(pollID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting poll state: %w", err)
@@ -188,7 +188,7 @@ func (p Poll) modeB(ctx context.Context, ds *datastore.Request, mperms *perm.Mee
 	}
 }
 
-func (p Poll) modeC(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
+func (p Poll) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, pollID int) (bool, error) {
 	state, err := ds.Poll_State(pollID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting poll state: %w", err)
@@ -201,7 +201,7 @@ func (p Poll) modeC(ctx context.Context, ds *datastore.Request, mperms *perm.Mee
 	return p.manage(ctx, ds, mperms, pollID)
 }
 
-func (p Poll) modeD(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, pollID int) (bool, error) {
+func (p Poll) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, pollID int) (bool, error) {
 	state, err := ds.Poll_State(pollID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting poll state: %w", err)

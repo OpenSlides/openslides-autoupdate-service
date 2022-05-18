@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // ListOfSpeakers handels the restriction for the list_of_speakers collection.
@@ -19,7 +19,7 @@ import (
 type ListOfSpeakers struct{}
 
 // MeetingID returns the meetingID for the object.
-func (los ListOfSpeakers) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (los ListOfSpeakers) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := los.meetingID(ctx, ds, id)
 	if err != nil {
 		return 0, false, fmt.Errorf("fetching meeting id for los %d: %w", id, err)
@@ -37,7 +37,7 @@ func (los ListOfSpeakers) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (los ListOfSpeakers) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, losID int) (bool, error) {
+func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, losID int) (bool, error) {
 	mid, err := los.meetingID(ctx, ds, losID)
 	if err != nil {
 		return false, fmt.Errorf("fetching meeting id for los %d: %w", losID, err)
@@ -83,7 +83,7 @@ func (los ListOfSpeakers) see(ctx context.Context, ds *datastore.Request, mperms
 	}
 }
 
-func (los ListOfSpeakers) meetingID(ctx context.Context, ds *datastore.Request, id int) (int, error) {
+func (los ListOfSpeakers) meetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, error) {
 	mid, err := ds.ListOfSpeakers_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("fetching meeting_id: %w", err)

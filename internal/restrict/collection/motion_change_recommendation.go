@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // MotionChangeRecommendation handels restrictions of the collection motion_change_recommendation.
@@ -18,7 +18,7 @@ import (
 type MotionChangeRecommendation struct{}
 
 // MeetingID returns the meetingID for the object.
-func (m MotionChangeRecommendation) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (m MotionChangeRecommendation) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.MotionChangeRecommendation_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting meetingID: %w", err)
@@ -36,7 +36,7 @@ func (m MotionChangeRecommendation) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionChangeRecommendation) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, motionChangeRecommendationID int) (bool, error) {
+func (m MotionChangeRecommendation) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionChangeRecommendationID int) (bool, error) {
 	meetingID, err := ds.MotionChangeRecommendation_MeetingID(motionChangeRecommendationID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)

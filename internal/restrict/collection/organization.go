@@ -3,7 +3,7 @@ package collection
 import (
 	"context"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Organization handels restrictions of the collection organization.
@@ -16,7 +16,7 @@ import (
 type Organization struct{}
 
 // MeetingID returns the meetingID for the object.
-func (o Organization) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (o Organization) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	return 0, false, nil
 }
 

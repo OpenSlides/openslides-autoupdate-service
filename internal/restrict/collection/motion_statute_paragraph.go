@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // MotionStatuteParagraph handels restrictions of the collection motion_statute_paragraph.
@@ -16,7 +16,7 @@ import (
 type MotionStatuteParagraph struct{}
 
 // MeetingID returns the meetingID for the object.
-func (m MotionStatuteParagraph) MeetingID(ctx context.Context, ds *datastore.Request, id int) (int, bool, error) {
+func (m MotionStatuteParagraph) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.MotionStatuteParagraph_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting meetingID: %w", err)
@@ -34,7 +34,7 @@ func (m MotionStatuteParagraph) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionStatuteParagraph) see(ctx context.Context, ds *datastore.Request, mperms *perm.MeetingPermission, MotionStatuteParagraphID int) (bool, error) {
+func (m MotionStatuteParagraph) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, MotionStatuteParagraphID int) (bool, error) {
 	meetingID, err := ds.MotionStatuteParagraph_MeetingID(MotionStatuteParagraphID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting meetingID: %w", err)
