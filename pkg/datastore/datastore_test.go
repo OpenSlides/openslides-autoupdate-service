@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

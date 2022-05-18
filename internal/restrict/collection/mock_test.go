@@ -10,7 +10,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
 
 type testData struct {

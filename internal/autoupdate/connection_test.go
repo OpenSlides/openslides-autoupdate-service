@@ -10,7 +10,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/dsmock"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
 
 var userNameKey = autoupdate.MustKey("user/1/name")
