@@ -49,6 +49,9 @@ func newCache() *cache {
 //
 // If the context is done, GetOrSet returns. But the set() call is not stopped.
 // Other calls to GetOrSet may wait for its result.
+//
+// Possible Errors: context.Canceled or context.DeadlineExeeded or the return
+// value from hte set func.
 func (c *cache) GetOrSet(ctx context.Context, keys []Key, set cacheSetFunc) (map[Key][]byte, error) {
 	// Blocks until all missing keys are fetched.
 	//
@@ -63,6 +66,9 @@ func (c *cache) GetOrSet(ctx context.Context, keys []Key, set cacheSetFunc) (map
 
 // fetchMissing loads the given keys with the set method. Does not update keys
 // that are already in the cache.
+//
+// Possible Errors: context.Canceled or context.DeadlineExeeded or the return
+// value from the set func.
 func (c *cache) fetchMissing(ctx context.Context, keys []Key, set cacheSetFunc) error {
 	missingKeys := c.data.markPending(keys...)
 
@@ -148,6 +154,8 @@ func newPendingMap() *pendingMap {
 //
 // Expects, that all keys are either pending or in the data. It is not allowed,
 // that a key is not pending when this starts and gets pending whil it runs.
+//
+// Possible Errors: context.Canceled or context.DeadlineExeeded
 func (pm *pendingMap) get(ctx context.Context, keys []Key) (map[Key][]byte, error) {
 	if err := pm.waitForPending(ctx, keys); err != nil {
 		return nil, err
@@ -213,6 +221,8 @@ func (pm *pendingMap) unMarkPending(keys ...Key) {
 //
 // Expects, that all keys are either pending or in the data. It is not allowed,
 // that a key is not pending when this starts and gets pending whil it runs.
+//
+// Possible Errors: context.Canceled or context.DeadlineExeeded
 func (pm *pendingMap) waitForPending(ctx context.Context, keys []Key) error {
 	for _, k := range keys {
 		var pending chan struct{}

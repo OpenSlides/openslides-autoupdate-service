@@ -28,7 +28,7 @@ type Updater interface {
 type SourceDatastore struct {
 	url     string
 	client  *http.Client
-	updater Updater // TODO: Replace this with the real redis backend.
+	updater Updater
 
 	metricDSHitCount uint64
 }
@@ -56,11 +56,13 @@ func (s *SourceDatastore) Get(ctx context.Context, keys ...Key) (map[Key][]byte,
 func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
 	requestData, err := keysToGetManyRequest(keys, position)
 	if err != nil {
+		// TODO External Error
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)
 	}
 
 	req, err := http.NewRequest("POST", s.url+urlGetMany, bytes.NewReader(requestData))
 	if err != nil {
+		// TODO External Error
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
 
@@ -68,6 +70,7 @@ func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ..
 
 	resp, err := s.client.Do(req)
 	if err != nil {
+		// TODO External Error
 		return nil, fmt.Errorf("requesting keys: %w", err)
 	}
 	defer resp.Body.Close()
@@ -75,13 +78,16 @@ func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ..
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
+			// TODO External Error
 			return nil, fmt.Errorf("datastore returned status %s", resp.Status)
 		}
+		// TODO External Error
 		return nil, fmt.Errorf("datastore returned status %s: %s", resp.Status, body)
 	}
 
-	responseData, err := getManyResponseToKeyValue(resp.Body)
+	responseData, err := parseGetManyResponse(resp.Body)
 	if err != nil {
+		// TODO External Error
 		return nil, fmt.Errorf("parse response: %w", err)
 	}
 

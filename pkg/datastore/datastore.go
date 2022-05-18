@@ -310,9 +310,9 @@ func keysToGetManyRequest(keys []Key, position int) ([]byte, error) {
 	return json.Marshal(request)
 }
 
-// getManyResponseToKeyValue reads the response from the getMany request and
+// parseGetManyResponse reads the response from the getMany request and
 // returns the content as key-values.
-func getManyResponseToKeyValue(r io.Reader) (map[Key][]byte, error) {
+func parseGetManyResponse(r io.Reader) (map[Key][]byte, error) {
 	var data map[string]map[string]map[string]json.RawMessage
 	if err := json.NewDecoder(r).Decode(&data); err != nil {
 		return nil, fmt.Errorf("decoding response: %w", err)

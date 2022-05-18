@@ -38,12 +38,14 @@ func (s *VoteCountSource) voteServiceConnect(ctx context.Context, blocking bool)
 
 	resp, err := s.client.Do(req)
 	if err != nil {
+		// TODO External Error
 		return voteCountContent{}, fmt.Errorf("sending request to vote service: %w", err)
 	}
 	defer resp.Body.Close()
 
 	var content voteCountContent
 	if err := json.NewDecoder(resp.Body).Decode(&content); err != nil {
+		// TODO External Error
 		return voteCountContent{}, fmt.Errorf("decoding response body: %w", err)
 	}
 
