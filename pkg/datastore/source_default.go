@@ -17,6 +17,7 @@ import (
 const (
 	urlGetMany            = "/internal/datastore/reader/get_many"
 	urlHistoryInformation = "/internal/datastore/reader/history_information"
+	maxKeysPerRequest     = 5
 )
 
 // Updater returns keys that have changes. Blocks until there is
@@ -58,6 +59,28 @@ func (s *SourceDatastore) Get(ctx context.Context, keys ...Key) (map[Key][]byte,
 //
 // Position 0 means the current position.
 func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
+	if len(keys) <= maxKeysPerRequest {
+		return s.getPosition(ctx, position, keys...)
+	}
+
+	combined := make(map[Key][]byte, len(keys))
+	for i := 0; i < len(keys); i++ {
+		to := i + maxKeysPerRequest
+		if to > len(keys) {
+			to = len(keys)
+		}
+		data, err := s.getPosition(ctx, position, keys[i:to]...)
+		if err != nil {
+			return nil, fmt.Errorf("getting keys %d to %d: %w", i, to, err)
+		}
+		for k, v := range data {
+			combined[k] = v
+		}
+	}
+	return combined, nil
+}
+
+func (s *SourceDatastore) getPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
 	requestData, err := keysToGetManyRequest(keys, position)
 	if err != nil {
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)
