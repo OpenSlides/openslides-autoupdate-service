@@ -305,7 +305,7 @@ func TestHistoryInformationError(t *testing.T) {
 		t.Errorf("got status %s, expected %s", resp.Result().Status, http.StatusText(http.StatusInternalServerError))
 	}
 
-	expect := `{"error": {"type": "InternalError", "msg": "Ups, something went wrong!"}}`
+	expect := `{"error": {"type": "InternalError", "msg": "Something went wrong on the server. The admin is already informed."}}`
 	if body, _ := io.ReadAll(resp.Result().Body); strings.TrimSpace(string(body)) != expect {
 		t.Errorf("got body `%s`, expected `%s`", body, expect)
 	}
