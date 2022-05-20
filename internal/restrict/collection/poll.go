@@ -66,6 +66,7 @@ func (p Poll) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPe
 
 	parts := strings.Split(contentObjectID, "/")
 	if len(parts) != 2 {
+		// TODO LAST ERROR
 		return false, fmt.Errorf("invalid value for poll/content_object_id: `%s`", contentObjectID)
 	}
 
@@ -89,6 +90,7 @@ func (p Poll) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPe
 		collection = Topic{}
 
 	default:
+		// TODO LAST ERROR
 		return false, fmt.Errorf("unsupported collection for poll %d: %s", pollID, parts[0])
 	}
 
@@ -108,6 +110,7 @@ func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meetin
 
 	parts := strings.Split(contentObjectID, "/")
 	if len(parts) != 2 {
+		// TODO LAST ERROR
 		return false, fmt.Errorf("invalid value for poll/content_object_id: `%s`", contentObjectID)
 	}
 
@@ -157,6 +160,7 @@ func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meetin
 		return perms.Has(perm.PollCanManage), nil
 
 	default:
+		// TODO LAST ERROR
 		return false, fmt.Errorf("unsupported collection for poll %d: %s", pollID, parts[0])
 	}
 }

@@ -248,11 +248,13 @@ func (a *Auth) refreshToken(ctx context.Context, token, cookie string) (string, 
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("send request to auth service: %v", err)
+		// TODO External ERROR
+		return "", fmt.Errorf("send request to auth service: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
+		// TODO LAST ERROR
 		return "", fmt.Errorf("auth-service returned status %s", resp.Status)
 	}
 

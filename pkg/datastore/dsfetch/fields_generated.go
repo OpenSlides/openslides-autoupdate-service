@@ -67,7 +67,7 @@ func (v *ValueBool) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -136,7 +136,7 @@ func (v *ValueFloat) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -206,7 +206,7 @@ func (v *ValueIDSlice) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &values); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 

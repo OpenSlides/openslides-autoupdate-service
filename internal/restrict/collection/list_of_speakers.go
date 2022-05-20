@@ -59,11 +59,13 @@ func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, mperms *pe
 
 	parts := strings.Split(contentObjectID, "/")
 	if len(parts) != 2 {
+		// TODO LAST ERROR
 		return false, fmt.Errorf("content object_id has to have exacly one /, got %q", contentObjectID)
 	}
 
 	id, err := strconv.Atoi(parts[1])
 	if err != nil {
+		// TODO LAST ERROR
 		return false, fmt.Errorf("second part of content_object_id has to be int, got %q", parts[1])
 	}
 
@@ -79,6 +81,7 @@ func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, mperms *pe
 	case "mediafile":
 		return Mediafile{}.see(ctx, ds, mperms, id)
 	default:
+		// TODO LAST ERROR
 		return false, fmt.Errorf("unknown content_object collection %q", parts[0])
 	}
 }

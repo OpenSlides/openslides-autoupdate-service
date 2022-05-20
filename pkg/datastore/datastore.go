@@ -323,6 +323,7 @@ func parseGetManyResponse(r io.Reader) (map[Key][]byte, error) {
 		for idstr, fieldValue := range idField {
 			id, err := strconv.Atoi(idstr)
 			if err != nil {
+				// TODO LAST ERROR
 				return nil, fmt.Errorf("invalid key. Id is no number: %s", idstr)
 			}
 			for field, value := range fieldValue {

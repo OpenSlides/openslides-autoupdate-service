@@ -127,7 +127,7 @@ type Projection struct {
 func p7onFromMap(in map[string]json.RawMessage) (*Projection, error) {
 	bs, err := json.Marshal(in)
 	if err != nil {
-		return nil, fmt.Errorf("encoding projection data")
+		return nil, fmt.Errorf("encoding projection data: %w", err)
 	}
 
 	var p Projection
@@ -143,6 +143,7 @@ func p7onFromMap(in map[string]json.RawMessage) (*Projection, error) {
 func (p *Projection) slideName() (string, error) {
 	parts := strings.Split(p.ContentObjectID, "/")
 	if len(parts) != 2 {
+		// TODO LAST ERROR
 		return "", fmt.Errorf("invalid content_object_id `%s`, expected one '/'", p.ContentObjectID)
 	}
 

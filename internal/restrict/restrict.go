@@ -52,6 +52,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 	if err != nil {
 		var errDoesNotExist dsfetch.DoesNotExistError
 		if errors.As(err, &errDoesNotExist) {
+			// TODO LAST ERROR (there can be other cases of DoesNotExist)
 			return fmt.Errorf("request user %d does not exist", uid)
 		}
 		return fmt.Errorf("checking for superadmin: %w", err)
@@ -133,6 +134,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 			parts := strings.Split(genericID, "/")
 			toField := toCollectionFieldMap[parts[0]]
 			if toField == "" {
+				// TODO LAST ERROR
 				return fmt.Errorf("invalid generic relation for field %q: %s", key.CollectionField(), parts[0])
 			}
 
@@ -257,6 +259,7 @@ func filterGenericRelationList(
 
 		toField := toCollectionFieldMap[parts[0]]
 		if toField == "" {
+			// TODO LAST ERROR
 			return nil, fmt.Errorf("invalid generic relation: %s", parts[0])
 		}
 
@@ -291,6 +294,7 @@ func restrictMode(collectionName, fieldName string, isSuperAdmin bool) (collecti
 			// Superadmins can see unknown collections.
 			return collection.Allways, nil
 		}
+		// TODO LAST ERROR
 		return nil, fmt.Errorf("collection %q is not implemented, maybe run go generate ./... to fetch all fields from the models.yml", collectionName)
 	}
 
@@ -300,6 +304,7 @@ func restrictMode(collectionName, fieldName string, isSuperAdmin bool) (collecti
 			// Superadmin can see unknown fields
 			return collection.Allways, nil
 		}
+		// TODO LAST ERROR
 		return nil, fmt.Errorf("fqfield %q is unknown, maybe run go generate ./... to fetch all fields from the models.yml", collectionName+"/"+fieldName)
 	}
 
@@ -322,6 +327,7 @@ func restrictMode(collectionName, fieldName string, isSuperAdmin bool) (collecti
 
 	modefunc := restricter.Modes(fieldMode)
 	if modefunc == nil {
+		// TODO LAST ERROR
 		return nil, fmt.Errorf("mode %q of models %q is not implemented", fieldMode, collectionName)
 	}
 

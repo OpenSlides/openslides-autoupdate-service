@@ -129,6 +129,7 @@ func (s *SourceDatastore) HistoryInformation(ctx context.Context, fqid string, w
 	defer io.ReadAll(resp.Body)
 
 	if resp.StatusCode != 200 {
+		// TODO LAST ERROR
 		return fmt.Errorf("datastore returned %s", resp.Status)
 	}
 

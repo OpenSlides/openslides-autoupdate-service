@@ -8,6 +8,7 @@ import (
 var errNil = errors.New("nil returned")
 
 func stream(reply interface{}, err error) (string, map[string][]byte, error) {
+	// TODO Many LAST ERRORs
 	if err != nil {
 		return "", nil, err
 	}

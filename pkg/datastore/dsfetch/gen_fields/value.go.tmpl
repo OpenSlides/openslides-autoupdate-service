@@ -95,7 +95,7 @@ func (v *{{.TypeName}}) execute(p []byte) error {
 			v.isNull = true
 		} else {
 			if err := json.Unmarshal(p, &values); err != nil {
-				return fmt.Errorf("decoding value %q: %v", p, err)
+				return fmt.Errorf("decoding value %q: %w", p, err)
 			}
 		}
 
