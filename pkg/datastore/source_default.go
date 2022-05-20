@@ -66,28 +66,28 @@ func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ..
 		return s.getPosition(ctx, position, keys...)
 	}
 
+	// Sort keys to help datastore
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].Collection < keys[j].Collection {
+			return true
+		} else if keys[i].Collection < keys[j].Collection {
+			return false
+		}
+
+		if keys[i].ID < keys[j].ID {
+			return true
+		} else if keys[i].ID < keys[j].ID {
+			return false
+		}
+
+		return keys[i].Field < keys[j].Field
+	})
+
 	eg, ctx := errgroup.WithContext(ctx)
 
 	results := make([]map[Key][]byte, len(keys)/s.maxKeysPerRequest+1)
 	for i := 0; i < len(results); i++ {
 		i := i
-
-		// Sort keys to help datastore
-		sort.Slice(keys, func(i, j int) bool {
-			if keys[i].Collection < keys[j].Collection {
-				return true
-			} else if keys[i].Collection < keys[j].Collection {
-				return false
-			}
-
-			if keys[i].ID < keys[j].ID {
-				return true
-			} else if keys[i].ID < keys[j].ID {
-				return false
-			}
-
-			return keys[i].Field < keys[j].Field
-		})
 
 		eg.Go(func() error {
 			from := i * s.maxKeysPerRequest
