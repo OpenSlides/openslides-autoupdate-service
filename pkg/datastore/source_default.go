@@ -3,11 +3,15 @@ package datastore
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"sync/atomic"
+	"time"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 )
 
 const (
@@ -56,7 +60,6 @@ func (s *SourceDatastore) Get(ctx context.Context, keys ...Key) (map[Key][]byte,
 func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
 	requestData, err := keysToGetManyRequest(keys, position)
 	if err != nil {
-		// TODO External Error
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)
 	}
 
@@ -70,24 +73,29 @@ func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ..
 
 	resp, err := s.client.Do(req)
 	if err != nil {
+		if oserror.Timeout(err) {
+			return nil, oserror.ForAdmin(
+				"A request to the datastore got a timeout. The current timeout value is %d seconds. Please check that the datastore has enough CPU to handle the request in time",
+				httpTimeout/time.Second,
+			)
+		}
 		// TODO External Error
-		return nil, fmt.Errorf("requesting keys: %w", err)
+		return nil, fmt.Errorf("sending request to datastore: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		errMsg := fmt.Sprintf("datastore returned status %s", resp.Status)
 		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			// TODO External Error
-			return nil, fmt.Errorf("datastore returned status %s", resp.Status)
+		if err == nil {
+			errMsg = fmt.Sprintf("%s :%s", errMsg, body)
 		}
 		// TODO External Error
-		return nil, fmt.Errorf("datastore returned status %s: %s", resp.Status, body)
+		return nil, errors.New(errMsg)
 	}
 
 	responseData, err := parseGetManyResponse(resp.Body)
 	if err != nil {
-		// TODO External Error
 		return nil, fmt.Errorf("parse response: %w", err)
 	}
 
@@ -129,10 +137,12 @@ func (s *SourceDatastore) HistoryInformation(ctx context.Context, fqid string, w
 	defer io.ReadAll(resp.Body)
 
 	if resp.StatusCode != 200 {
+		// TODO LAST ERROR
 		return fmt.Errorf("datastore returned %s", resp.Status)
 	}
 
 	if _, err := io.Copy(w, resp.Body); err != nil {
+		// TODO External Error
 		return fmt.Errorf("copping datastore response to client: %w", err)
 	}
 

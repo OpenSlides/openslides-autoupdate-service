@@ -103,5 +103,6 @@ func pollID(ctx context.Context, ds *dsfetch.Fetch, optionID int) (int, error) {
 		return pollID, nil
 	}
 
+	// TODO LAST ERROR
 	return 0, fmt.Errorf("database seems corrupted. option %d has no poll id", optionID)
 }

@@ -36,6 +36,7 @@ func FromKeys(rawKeys ...string) (*Builder, error) {
 	for i, k := range rawKeys {
 		key, err := datastore.KeyFromString(k)
 		if err != nil {
+			// TODO LAST ERROR
 			return nil, fmt.Errorf("invalid key: %s", k)
 		}
 		keys[i] = key

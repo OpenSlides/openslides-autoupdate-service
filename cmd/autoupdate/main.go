@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/auerror"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/http"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
@@ -24,7 +24,7 @@ import (
 
 func main() {
 	if err := run(); err != nil {
-		auerror.Handle(err)
+		oserror.Handle(err)
 		os.Exit(1)
 	}
 }
@@ -46,7 +46,7 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("creating datastore adapter: %w", err)
 	}
-	go datastoreService.ListenOnUpdates(ctx, auerror.Handle)
+	go datastoreService.ListenOnUpdates(ctx, oserror.Handle)
 
 	// Register projector in datastore.
 	projector.Register(datastoreService, slide.Slides())
@@ -203,7 +203,7 @@ func initAuth(env map[string]string, messageBus auth.LogoutEventer) (http.Authen
 		}
 
 		backgroundtask := func(ctx context.Context) {
-			go a.ListenOnLogouts(ctx, messageBus, auerror.Handle)
+			go a.ListenOnLogouts(ctx, messageBus, oserror.Handle)
 			go a.PruneOldData(ctx)
 		}
 
