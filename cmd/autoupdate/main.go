@@ -103,6 +103,7 @@ func defaultEnv() map[string]string {
 
 		"OPENSLIDES_DEVELOPMENT":  "false",
 		"METRIC_INTERVAL_SECONDS": "300",
+		"MAX_PARALLEL_KEYS":       "1000",
 	}
 
 	for k := range defaults {
@@ -167,7 +168,16 @@ func initRedis(env map[string]string) (*redis.Redis, error) {
 }
 
 func initDatastore(env map[string]string, mb *redis.Redis) (*datastore.Datastore, error) {
-	datastoreSource := datastore.NewSourceDatastore(env["DATASTORE_READER_PROTOCOL"]+"://"+env["DATASTORE_READER_HOST"]+":"+env["DATASTORE_READER_PORT"], mb, 1000)
+	maxParallel, err := strconv.Atoi(env["MAX_PARALLEL_KEYS"])
+	if err != nil {
+		return nil, fmt.Errorf("environmentvariable MAX_PARALLEL_KEYS has to be a number, not %s", env["MAX_PARALLEL_KEYS"])
+	}
+
+	datastoreSource := datastore.NewSourceDatastore(
+		env["DATASTORE_READER_PROTOCOL"]+"://"+env["DATASTORE_READER_HOST"]+":"+env["DATASTORE_READER_PORT"],
+		mb,
+		maxParallel,
+	)
 	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCOL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
 
 	return datastore.New(

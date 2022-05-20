@@ -201,6 +201,8 @@ The Service uses the following environment variables:
   default is `false`.
 * `METRIC_INTERVAL_SECONDS`: Time in how often the metrics are gathered. Zero
   disables the metrics. The default is `300`.
+* `MAX_PARALLEL_KEYS`: Max keys that are send in one request to the datastore.
+  The default is `1000`.
 
 
 ### Secrets
