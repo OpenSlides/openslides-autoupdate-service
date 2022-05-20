@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 	"sync/atomic"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -34,17 +36,19 @@ type SourceDatastore struct {
 	client  *http.Client
 	updater Updater
 
-	metricDSHitCount uint64
+	metricDSHitCount  uint64
+	maxKeysPerRequest int
 }
 
 // NewSourceDatastore initializes a SourceDatastore.
-func NewSourceDatastore(url string, updater Updater) *SourceDatastore {
+func NewSourceDatastore(url string, updater Updater, maxKeysPerRequest int) *SourceDatastore {
 	return &SourceDatastore{
 		url: url,
 		client: &http.Client{
 			Timeout: httpTimeout,
 		},
-		updater: updater,
+		updater:           updater,
+		maxKeysPerRequest: maxKeysPerRequest,
 	}
 }
 
@@ -58,6 +62,65 @@ func (s *SourceDatastore) Get(ctx context.Context, keys ...Key) (map[Key][]byte,
 //
 // Position 0 means the current position.
 func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
+	if len(keys) <= s.maxKeysPerRequest {
+		return s.getPosition(ctx, position, keys...)
+	}
+
+	// Sort keys to help datastore
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].Collection < keys[j].Collection {
+			return true
+		} else if keys[i].Collection < keys[j].Collection {
+			return false
+		}
+
+		if keys[i].ID < keys[j].ID {
+			return true
+		} else if keys[i].ID < keys[j].ID {
+			return false
+		}
+
+		return keys[i].Field < keys[j].Field
+	})
+
+	eg, ctx := errgroup.WithContext(ctx)
+
+	results := make([]map[Key][]byte, len(keys)/s.maxKeysPerRequest+1)
+	for i := 0; i < len(results); i++ {
+		i := i
+
+		eg.Go(func() error {
+			from := i * s.maxKeysPerRequest
+			to := (i + 1) * s.maxKeysPerRequest
+			if to > len(keys) {
+				to = len(keys)
+			}
+
+			data, err := s.getPosition(ctx, position, keys[from:to]...)
+			if err != nil {
+				return fmt.Errorf("getting keys %d to %d: %w", from, to-1, err)
+			}
+			results[i] = data
+
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return nil, err
+	}
+
+	combined := make(map[Key][]byte, len(keys))
+	for _, r := range results {
+		for k, v := range r {
+			combined[k] = v
+		}
+	}
+
+	return combined, nil
+}
+
+func (s *SourceDatastore) getPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
 	requestData, err := keysToGetManyRequest(keys, position)
 	if err != nil {
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)
