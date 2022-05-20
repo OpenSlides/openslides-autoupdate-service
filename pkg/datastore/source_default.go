@@ -93,6 +93,11 @@ func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ..
 	}
 
 	combined := make(map[Key][]byte, len(keys))
+	for _, r := range results {
+		for k, v := range r {
+			combined[k] = v
+		}
+	}
 
 	return combined, nil
 }
