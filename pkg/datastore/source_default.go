@@ -12,12 +12,12 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
 	urlGetMany            = "/internal/datastore/reader/get_many"
 	urlHistoryInformation = "/internal/datastore/reader/history_information"
-	maxKeysPerRequest     = 5
 )
 
 // Updater returns keys that have changes. Blocks until there is
@@ -35,17 +35,19 @@ type SourceDatastore struct {
 	client  *http.Client
 	updater Updater
 
-	metricDSHitCount uint64
+	metricDSHitCount  uint64
+	maxKeysPerRequest int
 }
 
 // NewSourceDatastore initializes a SourceDatastore.
-func NewSourceDatastore(url string, updater Updater) *SourceDatastore {
+func NewSourceDatastore(url string, updater Updater, maxKeysPerRequest int) *SourceDatastore {
 	return &SourceDatastore{
 		url: url,
 		client: &http.Client{
 			Timeout: httpTimeout,
 		},
-		updater: updater,
+		updater:           updater,
+		maxKeysPerRequest: maxKeysPerRequest,
 	}
 }
 
@@ -59,24 +61,39 @@ func (s *SourceDatastore) Get(ctx context.Context, keys ...Key) (map[Key][]byte,
 //
 // Position 0 means the current position.
 func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
-	if len(keys) <= maxKeysPerRequest {
+	if len(keys) <= s.maxKeysPerRequest {
 		return s.getPosition(ctx, position, keys...)
 	}
 
-	combined := make(map[Key][]byte, len(keys))
+	eg, ctx := errgroup.WithContext(ctx)
+
+	results := make([]map[Key][]byte, len(keys)/s.maxKeysPerRequest+1)
 	for i := 0; i < len(keys); i++ {
-		to := i + maxKeysPerRequest
-		if to > len(keys) {
-			to = len(keys)
-		}
-		data, err := s.getPosition(ctx, position, keys[i:to]...)
-		if err != nil {
-			return nil, fmt.Errorf("getting keys %d to %d: %w", i, to, err)
-		}
-		for k, v := range data {
-			combined[k] = v
-		}
+		i := i
+
+		eg.Go(func() error {
+			from := i * s.maxKeysPerRequest
+			to := (i + 1) * s.maxKeysPerRequest
+			if to > len(keys) {
+				to = len(keys)
+			}
+
+			data, err := s.getPosition(ctx, position, keys[from:to]...)
+			if err != nil {
+				return fmt.Errorf("getting keys %d to %d: %w", from, to-1, err)
+			}
+			results[i] = data
+
+			return nil
+		})
 	}
+
+	if err := eg.Wait(); err != nil {
+		return nil, err
+	}
+
+	combined := make(map[Key][]byte, len(keys))
+
 	return combined, nil
 }
 
