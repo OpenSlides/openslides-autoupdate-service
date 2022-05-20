@@ -69,7 +69,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 		modeFunc, err := restrictMode(key.Collection, key.Field, isSuperAdmin)
 		if err != nil {
 			// Collection or field unknown. Handle it as no permission.
-			log.Printf("Warning: %v", err)
+			log.Printf("Warning: getting restrictMode for %s: %v", key, err)
 			data[key] = nil
 			continue
 		}
@@ -117,7 +117,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 		keyPrefix := templateKeyPrefix(key.CollectionField())
 		// Relation List fields
 		if toCollectionfield, ok := relationListFields[keyPrefix]; ok {
-			value, err := filterRelationList(ctx, ds, mperms, key.String(), toCollectionfield, isSuperAdmin, data[key])
+			value, err := filterRelationList(ctx, ds, mperms, key, toCollectionfield, isSuperAdmin, data[key])
 			if err != nil {
 				return fmt.Errorf("restrict relation-list ids of %q: %w", key, err)
 			}
@@ -159,7 +159,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 
 		// Generic Relation List fields
 		if toCollectionfieldMap, ok := genericRelationListFields[templateKeyPrefix(key.CollectionField())]; ok {
-			value, err := filterGenericRelationList(ctx, ds, mperms, toCollectionfieldMap, isSuperAdmin, data[key])
+			value, err := filterGenericRelationList(ctx, ds, mperms, key, toCollectionfieldMap, isSuperAdmin, data[key])
 			if err != nil {
 				return fmt.Errorf("restrict generic-relation-list ids of %q: %w", key, err)
 			}
@@ -186,7 +186,7 @@ func filterRelationList(
 	ctx context.Context,
 	ds *dsfetch.Fetch,
 	mperms *perm.MeetingPermission,
-	fromListField string,
+	key datastore.Key,
 	toCollectionField string,
 	isSuperAdmin bool,
 	data []byte,
@@ -201,7 +201,7 @@ func filterRelationList(
 	relationListModeFunc, err := restrictMode(parts[0], parts[1], isSuperAdmin)
 	if err != nil {
 		// Collection or field unknown. Handle it as no permission.
-		log.Printf("Warning: %v", err)
+		log.Printf("Warning: getting restriction mode for values of relation list field %s: %v", key, err)
 		return nil, nil
 	}
 
@@ -213,7 +213,7 @@ func filterRelationList(
 			if errors.As(err, &errDoesNotExist) && datastore.Key(errDoesNotExist).String() == fmt.Sprintf("%s/%d/id", parts[0], id) {
 				log.Printf(
 					"Warning: datastore is corrupted. Relation-list field `%s` contains id `%d`, but `%s` with this id does not exist.",
-					fromListField,
+					key,
 					id,
 					parts[0],
 				)
@@ -240,6 +240,7 @@ func filterGenericRelationList(
 	ctx context.Context,
 	ds *dsfetch.Fetch,
 	mperms *perm.MeetingPermission,
+	key datastore.Key,
 	toCollectionFieldMap map[string]string,
 	isSuperAdmin bool,
 	data []byte,
@@ -266,7 +267,7 @@ func filterGenericRelationList(
 		relationListModeFunc, err := restrictMode(parts[0], toField, isSuperAdmin)
 		if err != nil {
 			// Collection or field unknown. Handle it as no permission.
-			fmt.Printf("Warning: %v", err)
+			fmt.Printf("Warning: getting restiction mode values of generic key %s: %v", key, err)
 			return nil, nil
 		}
 
