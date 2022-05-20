@@ -257,7 +257,7 @@ func handleError(w http.ResponseWriter, err error, writeStatusCode bool) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	log.Printf("Internal Error: %v", err)
-	fmt.Fprintln(w, `{"error": {"type": "InternalError", "msg": "Ups, something went wrong!"}}`)
+	fmt.Fprintln(w, `{"error": {"type": "InternalError", "msg": "Something went wrong on the server. The admin is already informed."}}`)
 }
 
 // quote decodes changes quotation marks with a backslash to make sure, they are
