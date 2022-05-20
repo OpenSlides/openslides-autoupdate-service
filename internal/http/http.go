@@ -18,6 +18,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
@@ -237,7 +238,7 @@ func handleError(w http.ResponseWriter, err error, writeStatusCode bool) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 	}
 
-	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) || errors.Is(err, syscall.EPIPE) {
+	if oserror.ContextDone(err) || errors.Is(err, syscall.EPIPE) {
 		// Client closed connection.
 		return
 	}

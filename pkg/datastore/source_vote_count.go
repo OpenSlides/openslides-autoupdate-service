@@ -43,6 +43,8 @@ func (s *VoteCountSource) voteServiceConnect(ctx context.Context, blocking bool)
 	}
 	defer resp.Body.Close()
 
+	// TODO: Check status code
+
 	var content voteCountContent
 	if err := json.NewDecoder(resp.Body).Decode(&content); err != nil {
 		// TODO External Error

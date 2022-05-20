@@ -8,7 +8,6 @@ package datastore
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -18,6 +17,7 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 )
 
 const (
@@ -200,7 +200,7 @@ func (d *Datastore) ListenOnUpdates(ctx context.Context, errHandler func(error))
 			for {
 				data, err := source.Update(ctx)
 				if err != nil {
-					if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+					if oserror.ContextDone(err) {
 						return
 					}
 
@@ -291,7 +291,7 @@ func (d *Datastore) calculateField(field string, key Key, updated map[Key][]byte
 		log.Printf("Error calculating key %s: %v", key, err)
 
 		msg := fmt.Sprintf("calculating key %s", key)
-		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		if oserror.ContextDone(err) {
 			msg = fmt.Sprintf("calculating key %s timed out", key)
 		}
 
