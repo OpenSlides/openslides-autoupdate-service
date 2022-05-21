@@ -3,7 +3,6 @@ package datastore
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/jackc/pgx/v4"
@@ -17,7 +16,7 @@ type SourcePostgres struct {
 
 // NewSourcePostgres initializes a SourcePostgres.
 func NewSourcePostgres(ctx context.Context, addr string, password string, positioner SourcePosition) (*SourcePostgres, error) {
-	config, err := pgx.ParseConfig(os.Getenv("DATABASE_URL"))
+	config, err := pgx.ParseConfig(addr)
 	if err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
@@ -37,7 +36,7 @@ func (p *SourcePostgres) Get(ctx context.Context, keys ...Key) (map[Key][]byte, 
 
 	uniqueFieldsStr, fieldIndex, uniqueFQID := prepareQuery(keys)
 
-	sql := fmt.Sprintf(`SELECT fqfield, %s from models where fqid in $1 AND deleted=false`, uniqueFieldsStr)
+	sql := fmt.Sprintf(`SELECT fqid, %s from models where fqid = ANY ($1) AND deleted=false;`, uniqueFieldsStr)
 
 	rows, err := conn.Query(ctx, sql, uniqueFQID)
 	if err != nil {
@@ -60,7 +59,10 @@ func (p *SourcePostgres) Get(ctx context.Context, keys ...Key) (map[Key][]byte, 
 		var value []byte
 		fields, ok := table[k.FQID()]
 		if ok {
-			value = fields[fieldIndex[k.Field]]
+			idx, ok := fieldIndex[k.Field]
+			if ok {
+				value = fields[idx]
+			}
 		}
 		values[k] = value
 	}
@@ -72,15 +74,15 @@ func prepareQuery(keys []Key) (uniqueFieldsStr string, fieldIndex map[string]int
 	uniqueFQIDSet := make(map[string]struct{})
 	uniqueFieldsSet := make(map[string]struct{})
 	for _, k := range keys {
-		uniqueFieldsSet[fmt.Sprintf("data->%s as %s", k.Field, k.Field)] = struct{}{}
+		uniqueFieldsSet[k.Field] = struct{}{}
 		uniqueFQIDSet[k.FQID()] = struct{}{}
 	}
 
 	uniqueFields := make([]string, 0, len(uniqueFieldsSet))
 	fieldIndex = make(map[string]int, len(uniqueFieldsSet))
-	for k := range uniqueFieldsSet {
-		uniqueFields = append(uniqueFields, k)
-		fieldIndex[k] = len(uniqueFields) - 1
+	for field := range uniqueFieldsSet {
+		uniqueFields = append(uniqueFields, fmt.Sprintf("data->'%s'", field))
+		fieldIndex[field] = len(uniqueFields) - 1
 	}
 
 	uniqueFQID = make([]string, 0, len(uniqueFQIDSet))
