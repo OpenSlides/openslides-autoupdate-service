@@ -42,7 +42,7 @@ func run() error {
 	}
 
 	// Datastore Service.
-	datastoreService, err := initDatastore(env, messageBus)
+	datastoreService, err := initDatastore(ctx, env, messageBus)
 	if err != nil {
 		return fmt.Errorf("creating datastore adapter: %w", err)
 	}
@@ -83,6 +83,11 @@ func defaultEnv() map[string]string {
 	defaults := map[string]string{
 		"AUTOUPDATE_HOST": "",
 		"AUTOUPDATE_PORT": "9012",
+
+		"DATASTORE_DATABASE_HOST": "postgres",
+		"DATASTORE_DATABASE_PORT": "5432",
+		"DATASTORE_DATABASE_USER": "openslides",
+		"DATASTORE_DATABASE_NAME": "openslides",
 
 		"DATASTORE_READER_HOST":     "localhost",
 		"DATASTORE_READER_PORT":     "9010",
@@ -167,7 +172,7 @@ func initRedis(env map[string]string) (*redis.Redis, error) {
 	return &redis.Redis{Conn: conn}, nil
 }
 
-func initDatastore(env map[string]string, mb *redis.Redis) (*datastore.Datastore, error) {
+func initDatastore(ctx context.Context, env map[string]string, mb *redis.Redis) (*datastore.Datastore, error) {
 	maxParallel, err := strconv.Atoi(env["MAX_PARALLEL_KEYS"])
 	if err != nil {
 		return nil, fmt.Errorf("environmentvariable MAX_PARALLEL_KEYS has to be a number, not %s", env["MAX_PARALLEL_KEYS"])
@@ -180,8 +185,27 @@ func initDatastore(env map[string]string, mb *redis.Redis) (*datastore.Datastore
 	)
 	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCOL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
 
+	useDev, _ := strconv.ParseBool(env["OPENSLIDES_DEVELOPMENT"])
+	password, err := secret("DATASTORE_DATABASE_PASSWORD_FILE", useDev)
+	if err != nil {
+		return nil, fmt.Errorf("getting postgres password: %w", err)
+	}
+
+	addr := fmt.Sprintf(
+		"postgres://%s@%s:%s/%s",
+		env["POSTGRES_USER"],
+		env["POSTGRES_HOST"],
+		env["POSTGRES_PORT"],
+		env["POSTGRES_DB"],
+	)
+
+	postgresSource, err := datastore.NewSourcePostgres(ctx, addr, string(password), datastoreSource)
+	if err != nil {
+		return nil, fmt.Errorf("creating connection to postgres: %w", err)
+	}
+
 	return datastore.New(
-		datastoreSource,
+		postgresSource,
 		map[string]datastore.Source{
 			"poll/vote_count": voteCountSource,
 		},
