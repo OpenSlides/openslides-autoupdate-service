@@ -105,11 +105,19 @@ func New(defaultSource Source, keySource map[string]Source, history HistoryInfor
 // If a key does not exist, the value nil is returned for that key.
 func (d *Datastore) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
 	atomic.AddUint64(&d.metricGetHitCount, 1)
-	values, err := d.cache.GetOrSet(ctx, keys, func(keys []Key, set func(key Key, value []byte)) error {
-		return d.loadKeys(keys, set)
-	})
-	if err != nil {
-		return nil, fmt.Errorf("getOrSet`: %w", err)
+	// values, err := d.cache.GetOrSet(ctx, keys, func(keys []Key, set func(key Key, value []byte)) error {
+	// 	return d.loadKeys(keys, set)
+	// })
+	// if err != nil {
+	// 	return nil, fmt.Errorf("getOrSet`: %w", err)
+	// }
+
+	values := make(map[Key][]byte, len(keys))
+	set := func(key Key, value []byte) {
+		values[key] = value
+	}
+	if err := d.loadKeys(keys, set); err != nil {
+		return nil, fmt.Errorf("load keys: %w", err)
 	}
 
 	return values, nil
