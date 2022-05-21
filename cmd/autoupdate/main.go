@@ -186,7 +186,7 @@ func initDatastore(ctx context.Context, env map[string]string, mb *redis.Redis) 
 	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCOL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
 
 	useDev, _ := strconv.ParseBool(env["OPENSLIDES_DEVELOPMENT"])
-	password, err := secret("DATASTORE_DATABASE_PASSWORD_FILE", useDev)
+	password, err := secret("postgres_password", useDev)
 	if err != nil {
 		return nil, fmt.Errorf("getting postgres password: %w", err)
 	}
