@@ -47,7 +47,11 @@ func (p *SourcePostgres) Get(ctx context.Context, keys ...Key) (map[Key][]byte, 
 	table := make(map[string][][]byte)
 	for rows.Next() {
 		r := rows.RawValues()
-		table[string(r[0])] = r[1:]
+		copied := make([][]byte, len(r)-1)
+		for i := 1; i < len(r); i++ {
+			copied[i-1] = r[i]
+		}
+		table[string(r[0])] = copied
 	}
 
 	if rows.Err() != nil {
@@ -57,11 +61,11 @@ func (p *SourcePostgres) Get(ctx context.Context, keys ...Key) (map[Key][]byte, 
 	values := make(map[Key][]byte, len(keys))
 	for _, k := range keys {
 		var value []byte
-		fields, ok := table[k.FQID()]
+		element, ok := table[k.FQID()]
 		if ok {
 			idx, ok := fieldIndex[k.Field]
 			if ok {
-				value = fields[idx]
+				value = element[idx]
 			}
 		}
 		values[k] = value
