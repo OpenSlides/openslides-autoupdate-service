@@ -193,10 +193,10 @@ func initDatastore(ctx context.Context, env map[string]string, mb *redis.Redis) 
 
 	addr := fmt.Sprintf(
 		"postgres://%s@%s:%s/%s",
-		env["POSTGRES_USER"],
-		env["POSTGRES_HOST"],
-		env["POSTGRES_PORT"],
-		env["POSTGRES_DB"],
+		env["DATASTORE_DATABASE_USER"],
+		env["DATASTORE_DATABASE_HOST"],
+		env["DATASTORE_DATABASE_PORT"],
+		env["DATASTORE_DATABASE_NAME"],
 	)
 
 	postgresSource, err := datastore.NewSourcePostgres(ctx, addr, string(password), datastoreSource)

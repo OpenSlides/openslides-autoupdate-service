@@ -35,25 +35,7 @@ func (p *SourcePostgres) Get(ctx context.Context, keys ...Key) (map[Key][]byte, 
 	}
 	defer conn.Close(ctx)
 
-	uniqueFQIDSet := make(map[string]struct{})
-	uniqueFieldsSet := make(map[string]struct{})
-	for _, k := range keys {
-		uniqueFieldsSet[fmt.Sprintf("data->%s as %s", k.Field, k.Field)] = struct{}{}
-		uniqueFQIDSet[k.FQID()] = struct{}{}
-	}
-
-	uniqueFields := make([]string, 0, len(uniqueFieldsSet))
-	fieldIndex := make(map[string]int, len(uniqueFieldsSet))
-	for k := range uniqueFieldsSet {
-		uniqueFields = append(uniqueFields, k)
-		fieldIndex[k] = len(uniqueFields) - 1
-	}
-
-	uniqueFQID := make([]string, 0, len(uniqueFQIDSet))
-	for k := range uniqueFQIDSet {
-		uniqueFQID = append(uniqueFQID, k)
-	}
-	uniqueFieldsStr := strings.Join(uniqueFields, ",")
+	uniqueFieldsStr, fieldIndex, uniqueFQID := prepareQuery(keys)
 
 	sql := fmt.Sprintf(`SELECT fqfield, %s from models where fqid in $1 AND deleted=false`, uniqueFieldsStr)
 
@@ -84,4 +66,27 @@ func (p *SourcePostgres) Get(ctx context.Context, keys ...Key) (map[Key][]byte, 
 	}
 
 	return values, nil
+}
+
+func prepareQuery(keys []Key) (uniqueFieldsStr string, fieldIndex map[string]int, uniqueFQID []string) {
+	uniqueFQIDSet := make(map[string]struct{})
+	uniqueFieldsSet := make(map[string]struct{})
+	for _, k := range keys {
+		uniqueFieldsSet[fmt.Sprintf("data->%s as %s", k.Field, k.Field)] = struct{}{}
+		uniqueFQIDSet[k.FQID()] = struct{}{}
+	}
+
+	uniqueFields := make([]string, 0, len(uniqueFieldsSet))
+	fieldIndex = make(map[string]int, len(uniqueFieldsSet))
+	for k := range uniqueFieldsSet {
+		uniqueFields = append(uniqueFields, k)
+		fieldIndex[k] = len(uniqueFields) - 1
+	}
+
+	uniqueFQID = make([]string, 0, len(uniqueFQIDSet))
+	for k := range uniqueFQIDSet {
+		uniqueFQID = append(uniqueFQID, k)
+	}
+	uniqueFieldsStr = strings.Join(uniqueFields, ",")
+	return uniqueFieldsStr, fieldIndex, uniqueFQID
 }
