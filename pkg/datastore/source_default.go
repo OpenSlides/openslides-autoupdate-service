@@ -85,7 +85,12 @@ func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ..
 
 	eg, ctx := errgroup.WithContext(ctx)
 
-	results := make([]map[Key][]byte, len(keys)/s.maxKeysPerRequest+1)
+	requestCount := len(keys) / s.maxKeysPerRequest
+	if len(keys)%s.maxKeysPerRequest != 0 {
+		requestCount++
+	}
+
+	results := make([]map[Key][]byte, requestCount)
 	for i := 0; i < len(results); i++ {
 		i := i
 
