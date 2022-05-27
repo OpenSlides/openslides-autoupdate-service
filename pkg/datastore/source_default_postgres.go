@@ -5,41 +5,40 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 // SourcePostgres uses postgres to get the connections.
 type SourcePostgres struct {
-	config *pgx.ConnConfig
+	pool *pgxpool.Pool
 	SourcePosition
 }
 
 // NewSourcePostgres initializes a SourcePostgres.
 func NewSourcePostgres(ctx context.Context, addr string, password string, positioner SourcePosition) (*SourcePostgres, error) {
-	config, err := pgx.ParseConfig(addr)
+	config, err := pgxpool.ParseConfig(addr)
 	if err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
 
-	config.Password = password
-	config.PreferSimpleProtocol = true
+	config.ConnConfig.Password = password
+	config.ConnConfig.PreferSimpleProtocol = true
 
-	return &SourcePostgres{config: config, SourcePosition: positioner}, nil
+	pool, err := pgxpool.ConnectConfig(context.Background(), config)
+	if err != nil {
+		return nil, fmt.Errorf("creating connection pool: %w", err)
+	}
+
+	return &SourcePostgres{pool: pool, SourcePosition: positioner}, nil
 }
 
 // Get fetches the keys from postgres.
 func (p *SourcePostgres) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
-	conn, err := pgx.ConnectConfig(ctx, p.config)
-	if err != nil {
-		return nil, fmt.Errorf("connecting to postgres: %w", err)
-	}
-	defer conn.Close(ctx)
-
 	uniqueFieldsStr, fieldIndex, uniqueFQID := prepareQuery(keys)
 
 	sql := fmt.Sprintf(`SELECT fqid, %s from models where fqid = ANY ($1) AND deleted=false;`, uniqueFieldsStr)
 
-	rows, err := conn.Query(ctx, sql, uniqueFQID)
+	rows, err := p.pool.Query(ctx, sql, uniqueFQID)
 	if err != nil {
 		return nil, fmt.Errorf("sending query: %w", err)
 	}
