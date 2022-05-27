@@ -3,6 +3,7 @@ package autoupdate
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
@@ -63,6 +64,7 @@ func (c *connection) Next(ctx context.Context) (map[datastore.Key][]byte, error)
 				return data, nil
 			}
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
