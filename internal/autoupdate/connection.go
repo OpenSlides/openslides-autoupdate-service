@@ -61,10 +61,10 @@ func (c *connection) Next(ctx context.Context) (map[datastore.Key][]byte, error)
 			}
 
 			if len(data) > 0 {
+				time.Sleep(5 * time.Second)
 				return data, nil
 			}
 		}
-		time.Sleep(5 * time.Second)
 	}
 }
 
