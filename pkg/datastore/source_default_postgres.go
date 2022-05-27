@@ -22,7 +22,7 @@ func NewSourcePostgres(ctx context.Context, addr string, password string, positi
 	}
 
 	config.Password = password
-	config.PreferSimpleProtocol = false
+	config.PreferSimpleProtocol = true
 
 	return &SourcePostgres{config: config, SourcePosition: positioner}, nil
 }
