@@ -37,7 +37,7 @@ func (c ChatMessage) Modes(mode string) FieldRestricter {
 }
 
 func (ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, chatMessageIDs ...int) ([]int, error) {
-	return eachField(ctx, ds.ChatMessage_ChatGroupID, chatMessageIDs, func(chatGroupID int, ids []int) ([]int, error) {
+	return eachRelationField(ctx, ds.ChatMessage_ChatGroupID, chatMessageIDs, func(chatGroupID int, ids []int) ([]int, error) {
 		meetingID, err := ChatGroup{}.meetingID(ctx, ds, chatGroupID)
 		if err != nil {
 			return nil, fmt.Errorf("getting meeting id: %w", err)

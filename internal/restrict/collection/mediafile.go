@@ -56,89 +56,83 @@ func (m Mediafile) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (in
 func (m Mediafile) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return todoToSingle(m.see)
+		return m.see
 	}
 	return nil
 }
 
-func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, mediafileID int) (bool, error) {
-	genericOwnerID, err := ds.Mediafile_OwnerID(mediafileID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("fetching owner_id of mediafile %d: %w", mediafileID, err)
-	}
+func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, mediafileIDs ...int) ([]int, error) {
+	return eachContentObjectCollection(ctx, ds.Mediafile_OwnerID, mediafileIDs, func(collection string, ownerID int, ids []int) ([]int, error) {
+		if collection == "organization" && mperms.UserID() != 0 {
+			return ids, nil
+		}
 
-	collection, rawID, found := strings.Cut(genericOwnerID, "/")
-	if !found {
-		// TODO LAST ERROR
-		return false, fmt.Errorf("invalid ownerID: %s", genericOwnerID)
-	}
+		var allowed []int
+		for _, mediafileID := range ids {
+			perms, err := mperms.Meeting(ctx, ownerID)
+			if err != nil {
+				return nil, fmt.Errorf("getting perms for meeting %d: %w", ownerID, err)
+			}
 
-	ownerID, err := strconv.Atoi(rawID)
-	if err != nil {
-		// TODO LAST ERROR
-		return false, fmt.Errorf("invalid id part of ownerID: %s", genericOwnerID)
-	}
+			if perms.IsAdmin() {
+				allowed = append(allowed, mediafileID)
+				continue
+			}
 
-	if collection == "organization" {
-		return mperms.UserID() != 0, nil
-	}
+			canSeeMeeting, err := Meeting{}.see(ctx, ds, mperms, ownerID)
+			if err != nil {
+				return nil, fmt.Errorf("can see meeting %d: %w", ownerID, err)
+			}
 
-	perms, err := mperms.Meeting(ctx, ownerID)
-	if err != nil {
-		return false, fmt.Errorf("getting perms for meeting %d: %w", ownerID, err)
-	}
+			usedAsLogo := ds.Mediafile_UsedAsLogoInMeetingIDTmpl(mediafileID).ErrorLater(ctx)
+			usedAsFont := ds.Mediafile_UsedAsFontInMeetingIDTmpl(mediafileID).ErrorLater(ctx)
+			if err := ds.Err(); err != nil {
+				return nil, fmt.Errorf("fetching as logo and as font: %w", err)
+			}
+			if canSeeMeeting && (len(usedAsFont)+len(usedAsLogo) > 0) {
+				allowed = append(allowed, mediafileID)
+				continue
+			}
 
-	if perms.IsAdmin() {
-		return true, nil
-	}
+			if perms.Has(perm.ProjectorCanSee) {
+				p7onIDs := ds.Mediafile_ProjectionIDs(mediafileID).ErrorLater(ctx)
+				for _, p7onID := range p7onIDs {
+					if _, exist := ds.Projection_CurrentProjectorID(p7onID).ErrorLater(ctx); exist {
+						allowed = append(allowed, mediafileID)
+						continue
+					}
+				}
 
-	canSeeMeeting, err := Meeting{}.see(ctx, ds, mperms, ownerID)
-	if err != nil {
-		return false, fmt.Errorf("can see meeting %d: %w", ownerID, err)
-	}
+				if err := ds.Err(); err != nil {
+					return nil, fmt.Errorf("checking projections: %w", err)
+				}
+			}
 
-	usedAsLogo := ds.Mediafile_UsedAsLogoInMeetingIDTmpl(mediafileID).ErrorLater(ctx)
-	usedAsFont := ds.Mediafile_UsedAsFontInMeetingIDTmpl(mediafileID).ErrorLater(ctx)
-	if err := ds.Err(); err != nil {
-		return false, fmt.Errorf("fetching as logo and as font: %w", err)
-	}
-	if canSeeMeeting && (len(usedAsFont)+len(usedAsLogo) > 0) {
-		return true, nil
-	}
+			if perms.Has(perm.MediafileCanManage) {
+				allowed = append(allowed, mediafileID)
+				continue
+			}
 
-	if perms.Has(perm.ProjectorCanSee) {
-		p7onIDs := ds.Mediafile_ProjectionIDs(mediafileID).ErrorLater(ctx)
-		for _, p7onID := range p7onIDs {
-			if _, exist := ds.Projection_CurrentProjectorID(p7onID).ErrorLater(ctx); exist {
-				return true, nil
+			if perms.Has(perm.MediafileCanSee) {
+				public := ds.Mediafile_IsPublic(mediafileID).ErrorLater(ctx)
+				if public {
+					allowed = append(allowed, mediafileID)
+					continue
+				}
+
+				inheritedGroups := ds.Mediafile_InheritedAccessGroupIDs(mediafileID).ErrorLater(ctx)
+				for _, id := range inheritedGroups {
+					if perms.InGroup(id) {
+						allowed = append(allowed, mediafileID)
+						continue
+					}
+				}
+
+				if err := ds.Err(); err != nil {
+					return nil, fmt.Errorf("checking can see conditions: %w", err)
+				}
 			}
 		}
-
-		if err := ds.Err(); err != nil {
-			return false, fmt.Errorf("checking projections: %w", err)
-		}
-	}
-
-	if perms.Has(perm.MediafileCanManage) {
-		return true, nil
-	}
-
-	if perms.Has(perm.MediafileCanSee) {
-		public := ds.Mediafile_IsPublic(mediafileID).ErrorLater(ctx)
-		if public {
-			return true, nil
-		}
-
-		inheritedGroups := ds.Mediafile_InheritedAccessGroupIDs(mediafileID).ErrorLater(ctx)
-		for _, id := range inheritedGroups {
-			if perms.InGroup(id) {
-				return true, nil
-			}
-		}
-
-		if err := ds.Err(); err != nil {
-			return false, fmt.Errorf("checking can see conditions: %w", err)
-		}
-	}
-	return false, nil
+		return allowed, nil
+	})
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
@@ -181,7 +183,7 @@ func eachMeeting(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int
 	return allAllowed, nil
 }
 
-func eachField(ctx context.Context, toField func(int) *dsfetch.ValueInt, ids []int, f func(id int, ids []int) ([]int, error)) ([]int, error) {
+func eachRelationField(ctx context.Context, toField func(int) *dsfetch.ValueInt, ids []int, f func(id int, ids []int) ([]int, error)) ([]int, error) {
 	filteredIDs := make(map[int][]int)
 	for _, id := range ids {
 		fieldID, err := toField(id).Value(ctx)
@@ -196,6 +198,40 @@ func eachField(ctx context.Context, toField func(int) *dsfetch.ValueInt, ids []i
 		allowed, err := f(fieldID, ids)
 		if err != nil {
 			return nil, fmt.Errorf("restricting for element %d: %w", fieldID, err)
+		}
+
+		allAllowed = append(allAllowed, allowed...)
+	}
+
+	return allAllowed, nil
+}
+
+func eachContentObjectCollection(ctx context.Context, toField func(int) *dsfetch.ValueString, ids []int, f func(collection string, id int, ids []int) ([]int, error)) ([]int, error) {
+	filteredIDs := make(map[string][]int)
+	for _, id := range ids {
+		contentObjectID, err := toField(id).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting id for element %d: %w", id, err)
+		}
+
+		filteredIDs[contentObjectID] = append(filteredIDs[contentObjectID], id)
+	}
+
+	var allAllowed []int
+	for contentObjectID, ids := range filteredIDs {
+		collection, objectID, found := strings.Cut(contentObjectID, "/")
+		if !found {
+			return nil, fmt.Errorf("content object_id has to have exacly one /, got %q", contentObjectID)
+		}
+
+		id, err := strconv.Atoi(objectID)
+		if err != nil {
+			return nil, fmt.Errorf("second part of content_object_id has to be int, got %q", objectID)
+		}
+
+		allowed, err := f(collection, id, ids)
+		if err != nil {
+			return nil, fmt.Errorf("restricting for element %s: %w", contentObjectID, err)
 		}
 
 		allAllowed = append(allAllowed, allowed...)

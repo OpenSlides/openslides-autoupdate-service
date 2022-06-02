@@ -63,7 +63,7 @@ func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 			return nil, nil
 		}
 
-		return eachMotionState(ctx, ds, ids, func(stateID int, ids []int) ([]int, error) {
+		return eachRelationField(ctx, ds.Motion_StateID, ids, func(stateID int, ids []int) ([]int, error) {
 			restrictions, err := ds.MotionState_Restrictions(stateID).Value(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("getting restrictions: %w", err)
@@ -101,29 +101,6 @@ func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 			return allowed, nil
 		})
 	})
-}
-
-func eachMotionState(ctx context.Context, ds *dsfetch.Fetch, ids []int, f func(stateID int, ids []int) ([]int, error)) ([]int, error) {
-	stateIDs := make(map[int][]int)
-	for _, id := range ids {
-		stateID, err := ds.Motion_StateID(id).Value(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("getting state id for motion %d: %w", id, err)
-		}
-		stateIDs[stateID] = append(stateIDs[stateID], id)
-	}
-
-	var allAllowed []int
-	for assignmentID, ids := range stateIDs {
-		allowed, err := f(assignmentID, ids)
-		if err != nil {
-			return nil, fmt.Errorf("restricting for state %d: %w", assignmentID, err)
-		}
-
-		allAllowed = append(allAllowed, allowed...)
-	}
-
-	return allAllowed, nil
 }
 
 func isSubmitter(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionID int) (bool, error) {

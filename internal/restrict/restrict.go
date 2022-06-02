@@ -15,6 +15,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // Middleware can be used as a datastore.Getter that restrict the data for a
@@ -66,7 +67,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 		collection string
 		mode       string
 	}
-	restrictModeIDs := make(map[collectionMode]*set)
+	restrictModeIDs := make(map[collectionMode]*set.Set)
 
 	// Group all ids with same collection-restrictionMode
 	for key := range data {
@@ -81,7 +82,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 
 		cm := collectionMode{key.Collection, restrictionMode}
 		if restrictModeIDs[cm] == nil {
-			restrictModeIDs[cm] = newSet()
+			restrictModeIDs[cm] = set.New()
 		}
 		restrictModeIDs[cm].Add(key.ID)
 	}

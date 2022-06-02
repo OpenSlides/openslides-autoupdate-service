@@ -35,7 +35,7 @@ func (m MotionComment) Modes(mode string) FieldRestricter {
 }
 
 func (m MotionComment) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionCommentIDs ...int) ([]int, error) {
-	return eachField(ctx, ds.MotionComment_SectionID, motionCommentIDs, func(commentSectionID int, ids []int) ([]int, error) {
+	return eachRelationField(ctx, ds.MotionComment_SectionID, motionCommentIDs, func(commentSectionID int, ids []int) ([]int, error) {
 		seeSection, err := MotionCommentSection{}.see(ctx, ds, mperms, commentSectionID)
 		if err != nil {
 			return nil, fmt.Errorf("checking motion comment section %d can see: %w", commentSectionID, err)

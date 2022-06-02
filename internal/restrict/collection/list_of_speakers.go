@@ -3,8 +3,6 @@ package collection
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
@@ -47,57 +45,38 @@ func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, mperms *pe
 			return nil, nil
 		}
 
-		// TODO bundle with same collection
-		var allowed []int
-		for _, id := range ids {
-			contentObjectID, err := ds.ListOfSpeakers_ContentObjectID(id).Value(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("getting content object id: %w", err)
-			}
-
-			parts := strings.Split(contentObjectID, "/")
-			if len(parts) != 2 {
-				// TODO LAST ERROR
-				return nil, fmt.Errorf("content object_id has to have exacly one /, got %q", contentObjectID)
-			}
-
-			id, err := strconv.Atoi(parts[1])
-			if err != nil {
-				// TODO LAST ERROR
-				return nil, fmt.Errorf("second part of content_object_id has to be int, got %q", parts[1])
-			}
-
-			canSee := false
-			switch parts[0] {
+		return eachContentObjectCollection(ctx, ds.ListOfSpeakers_ContentObjectID, ids, func(collection string, id int, ids []int) ([]int, error) {
+			// TODO: This should return not one contentobject, but all content objects with the same collection at once. So the first argument should be objectIDs
+			var restricter FieldRestricter
+			switch collection {
 			case "motion":
-				var todo []int
-				todo, err = Motion{}.see(ctx, ds, mperms, id)
-				canSee = len(todo) > 0
+				restricter = Motion{}.see
+
 			case "motion_block":
-				canSee, err = MotionBlock{}.see(ctx, ds, mperms, id)
+				restricter = MotionBlock{}.see
+
 			case "assignment":
-				var todo []int
-				todo, err = Assignment{}.see(ctx, ds, mperms, id)
-				canSee = len(todo) > 0
+				restricter = Assignment{}.see
+
 			case "topic":
-				var todo []int
-				todo, err = Topic{}.see(ctx, ds, mperms, id)
-				canSee = len(todo) > 0
+				restricter = Topic{}.see
 			case "mediafile":
-				canSee, err = Mediafile{}.see(ctx, ds, mperms, id)
+				restricter = Mediafile{}.see
 			default:
 				// TODO LAST ERROR
-				return nil, fmt.Errorf("unknown content_object collection %q", parts[0])
-			}
-			if err != nil {
-				return nil, fmt.Errorf("checking can see of %s: %w", parts[0], err)
+				return nil, fmt.Errorf("unknown content_object collection %q", collection)
 			}
 
-			if canSee {
-				allowed = append(allowed, id)
+			canSee, err := restricter(ctx, ds, mperms, id)
+			if err != nil {
+				return nil, fmt.Errorf("checking can see of %s: %w", collection, err)
 			}
-		}
-		return allowed, nil
+
+			if len(canSee) == 1 {
+				return ids, nil
+			}
+			return nil, nil
+		})
 	})
 
 }

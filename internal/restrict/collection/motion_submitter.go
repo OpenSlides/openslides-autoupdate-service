@@ -35,7 +35,7 @@ func (m MotionSubmitter) Modes(mode string) FieldRestricter {
 }
 
 func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionSubmitterIDs ...int) ([]int, error) {
-	return eachField(ctx, ds.MotionSubmitter_MotionID, motionSubmitterIDs, func(motionID int, ids []int) ([]int, error) {
+	return eachRelationField(ctx, ds.MotionSubmitter_MotionID, motionSubmitterIDs, func(motionID int, ids []int) ([]int, error) {
 		seeMotion, err := Motion{}.see(ctx, ds, mperms, motionID)
 		if err != nil {
 			return nil, fmt.Errorf("checking motion %d can see: %w", motionID, err)
