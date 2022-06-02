@@ -29,7 +29,7 @@ func (t Tag) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, boo
 func (t Tag) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return t.see
+		return todoToSingle(t.see)
 	}
 	return nil
 }

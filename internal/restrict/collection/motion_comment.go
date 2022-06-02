@@ -34,22 +34,30 @@ func (m MotionComment) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionComment) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionCommentID int) (bool, error) {
-	motionID := ds.MotionComment_MotionID(motionCommentID).ErrorLater(ctx)
-	commentSectionID := ds.MotionComment_SectionID(motionCommentID).ErrorLater(ctx)
-	if err := ds.Err(); err != nil {
-		return false, fmt.Errorf("getting motion id and comment section id: %w", err)
-	}
+func (m MotionComment) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionCommentIDs ...int) ([]int, error) {
+	return eachField(ctx, ds.MotionComment_SectionID, motionCommentIDs, func(commentSectionID int, ids []int) ([]int, error) {
+		seeSection, err := MotionCommentSection{}.see(ctx, ds, mperms, commentSectionID)
+		if err != nil {
+			return nil, fmt.Errorf("checking motion comment section %d can see: %w", commentSectionID, err)
+		}
 
-	seeMotion, err := Motion{}.see(ctx, ds, mperms, motionID)
-	if err != nil {
-		return false, fmt.Errorf("checking motion %d can see: %w", motionID, err)
-	}
+		if !seeSection {
+			return nil, nil
+		}
 
-	seeSection, err := MotionCommentSection{}.see(ctx, ds, mperms, commentSectionID)
-	if err != nil {
-		return false, fmt.Errorf("checking motion comment section %d can see: %w", commentSectionID, err)
-	}
+		var allowed []int
+		for _, motionCommentID := range ids {
+			motionID := ds.MotionComment_MotionID(motionCommentID).ErrorLater(ctx)
 
-	return seeMotion && seeSection, nil
+			seeMotion, err := Motion{}.see(ctx, ds, mperms, motionID)
+			if err != nil {
+				return nil, fmt.Errorf("checking motion %d can see: %w", motionID, err)
+			}
+
+			if len(seeMotion) == 1 {
+				allowed = append(allowed, motionCommentID)
+			}
+		}
+		return allowed, nil
+	})
 }

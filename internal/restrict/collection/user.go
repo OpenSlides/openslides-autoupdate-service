@@ -56,13 +56,13 @@ func (u User) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bo
 func (u User) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return u.see
+		return todoToSingle(u.see)
 	case "B":
-		return u.modeB
+		return todoToSingle(u.modeB)
 	case "D":
-		return u.modeD
+		return todoToSingle(u.modeD)
 	case "E":
-		return u.modeE
+		return todoToSingle(u.modeE)
 	case "G":
 		return never
 	}
@@ -162,16 +162,21 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPe
 
 	for _, r := range u.RequiredObjects(ds) {
 		for _, meetingID := range r.TmplFunc(userID).ErrorLater(ctx) {
-			for _, elementID := range r.ElemFunc(userID, meetingID).ErrorLater(ctx) {
-				see, err := r.SeeFunc(ctx, ds, mperms, elementID)
-				if err != nil {
-					return false, fmt.Errorf("checking required object %q: %w", r.Name, err)
-				}
+			ids := r.ElemFunc(userID, meetingID).ErrorLater(ctx)
 
-				if see {
-					return true, nil
-				}
+			if len(ids) == 0 {
+				continue
 			}
+
+			allowedIDs, err := r.SeeFunc(ctx, ds, mperms, ids...)
+			if err != nil {
+				return false, fmt.Errorf("checking required object %q: %w", r.Name, err)
+			}
+
+			if len(allowedIDs) > 0 {
+				return true, nil
+			}
+
 		}
 		if err := ds.Err(); err != nil {
 			return false, fmt.Errorf("getting object %q: %w", r.Name, err)
@@ -210,7 +215,7 @@ func (u User) RequiredObjects(ds *dsfetch.Fetch) []UserRequiredObject {
 			"option",
 			ds.User_OptionIDsTmpl,
 			ds.User_OptionIDs,
-			Option{}.see,
+			todoToSingle(Option{}.see),
 		},
 
 		{
@@ -231,28 +236,28 @@ func (u User) RequiredObjects(ds *dsfetch.Fetch) []UserRequiredObject {
 			"poll voted",
 			ds.User_PollVotedIDsTmpl,
 			ds.User_PollVotedIDs,
-			Poll{}.see,
+			todoToSingle(Poll{}.see),
 		},
 
 		{
 			"vote user",
 			ds.User_VoteIDsTmpl,
 			ds.User_VoteIDs,
-			Vote{}.see,
+			todoToSingle(Vote{}.see),
 		},
 
 		{
 			"vote delegated user",
 			ds.User_VoteDelegatedVoteIDsTmpl,
 			ds.User_VoteDelegatedVoteIDs,
-			Vote{}.see,
+			todoToSingle(Vote{}.see),
 		},
 
 		{
 			"chat messages",
 			ds.User_ChatMessageIDsTmpl,
 			ds.User_ChatMessageIDs,
-			ChatMessage{}.see,
+			todoToSingle(ChatMessage{}.see),
 		},
 	}
 }

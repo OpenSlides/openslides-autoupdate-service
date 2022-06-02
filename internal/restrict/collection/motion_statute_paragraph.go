@@ -29,7 +29,7 @@ func (m MotionStatuteParagraph) MeetingID(ctx context.Context, ds *dsfetch.Fetch
 func (m MotionStatuteParagraph) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return m.see
+		return todoToSingle(m.see)
 	}
 	return nil
 }

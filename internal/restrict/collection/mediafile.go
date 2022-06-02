@@ -56,7 +56,7 @@ func (m Mediafile) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (in
 func (m Mediafile) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return m.see
+		return todoToSingle(m.see)
 	}
 	return nil
 }

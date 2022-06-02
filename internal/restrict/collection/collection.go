@@ -2,25 +2,53 @@ package collection
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // FieldRestricter is a function to restrict fields of a collection.
-type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, id int) (bool, error)
+type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, id ...int) ([]int, error)
+
+type singleFieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, id int) (bool, error)
 
 // Allways is a restricter func that just returns true.
-func Allways(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementID int) (bool, error) {
-	return true, nil
+func Allways(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
+	return elementIDs, nil
 }
 
-func loggedIn(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementID int) (bool, error) {
-	return mperms.UserID() != 0, nil
+func loggedIn(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
+	if mperms.UserID() != 0 {
+		return elementIDs, nil
+	}
+	return nil, nil
 }
 
-func never(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementID int) (bool, error) {
-	return false, nil
+func never(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
+	return nil, nil
+}
+
+func todoToSingle(f singleFieldRestricter) FieldRestricter {
+	return func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
+		allowedIDs := make([]int, 0, len(elementIDs))
+		for _, id := range elementIDs {
+			allowed, err := f(ctx, ds, mperms, id)
+			if err != nil {
+				var errDoesNotExist dsfetch.DoesNotExistError
+				if !errors.As(err, &errDoesNotExist) {
+					return nil, fmt.Errorf("restrict element %d: %w", id, err)
+				}
+			}
+
+			if allowed {
+				allowedIDs = append(allowedIDs, id)
+			}
+		}
+
+		return allowedIDs, nil
+	}
 }
 
 // Restricter returns a fieldRestricter for a restriction_mode.
@@ -125,4 +153,53 @@ func (u Unknown) Modes(string) FieldRestricter {
 // MeetingID is not a thing on a unknown meeting
 func (u Unknown) MeetingID(context.Context, *dsfetch.Fetch, int) (int, bool, error) {
 	return 0, false, nil
+}
+
+func eachMeeting(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int, f func(meetingID int, ids []int) ([]int, error)) ([]int, error) {
+	meetingToIDs := make(map[int][]int)
+	for _, id := range ids {
+		meetingID, hasMeeting, err := r.MeetingID(ctx, ds, id)
+		if err != nil {
+			return nil, fmt.Errorf("getting meeting id of element %d: %w", id, err)
+		}
+		if !hasMeeting {
+			return nil, fmt.Errorf("calling eachMeeting for object, that has no meeting")
+		}
+		meetingToIDs[meetingID] = append(meetingToIDs[meetingID], id)
+	}
+
+	var allAllowed []int
+	for meetingID, ids := range meetingToIDs {
+		allowed, err := f(meetingID, ids)
+		if err != nil {
+			return nil, fmt.Errorf("restricting for meeting %d: %w", meetingID, err)
+		}
+
+		allAllowed = append(allAllowed, allowed...)
+	}
+
+	return allAllowed, nil
+}
+
+func eachField(ctx context.Context, toField func(int) *dsfetch.ValueInt, ids []int, f func(id int, ids []int) ([]int, error)) ([]int, error) {
+	filteredIDs := make(map[int][]int)
+	for _, id := range ids {
+		fieldID, err := toField(id).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting id for element %d: %w", id, err)
+		}
+		filteredIDs[fieldID] = append(filteredIDs[fieldID], id)
+	}
+
+	var allAllowed []int
+	for filteredID, ids := range filteredIDs {
+		allowed, err := f(filteredID, ids)
+		if err != nil {
+			return nil, fmt.Errorf("restricting for element %d: %w", filteredID, err)
+		}
+
+		allAllowed = append(allAllowed, allowed...)
+	}
+
+	return allAllowed, nil
 }

@@ -33,9 +33,9 @@ func (m MotionBlock) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (
 func (m MotionBlock) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return m.modeA
+		return todoToSingle(m.modeA)
 	case "B":
-		return m.see
+		return todoToSingle(m.see)
 	}
 	return nil
 }
@@ -87,12 +87,12 @@ func (m MotionBlock) modeA(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.
 	}
 
 	if exist {
-		see, err = AgendaItem{}.see(ctx, ds, mperms, agendaItemID)
+		see, err := AgendaItem{}.see(ctx, ds, mperms, agendaItemID)
 		if err != nil {
 			return false, fmt.Errorf("checking agendaItem %d: %w", agendaItemID, err)
 		}
 
-		if see {
+		if len(see) == 1 {
 			return true, nil
 		}
 	}

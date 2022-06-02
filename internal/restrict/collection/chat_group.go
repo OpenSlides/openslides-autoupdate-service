@@ -37,40 +37,40 @@ func (c ChatGroup) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, chatGroupID int) (bool, error) {
-	meetingID, err := c.meetingID(ctx, ds, chatGroupID)
-	if err != nil {
-		return false, fmt.Errorf("getting meetingID: %w", err)
-	}
-
-	perms, err := mperms.Meeting(ctx, meetingID)
-	if err != nil {
-		return false, fmt.Errorf("getting permissions: %w", err)
-	}
-
-	if perms.Has(perm.ChatCanManage) {
-		return true, nil
-	}
-
-	readGroups, err := ds.ChatGroup_ReadGroupIDs(chatGroupID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting chat read group ids: %w", err)
-	}
-
-	writeGroups, err := ds.ChatGroup_WriteGroupIDs(chatGroupID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting chat read group ids: %w", err)
-	}
-
-	allGroups := append(readGroups, writeGroups...)
-
-	for _, gid := range allGroups {
-		if perms.InGroup(gid) {
-			return true, nil
+func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, chatGroupIDs ...int) ([]int, error) {
+	return eachMeeting(ctx, ds, c, chatGroupIDs, func(meetingID int, ids []int) ([]int, error) {
+		perms, err := mperms.Meeting(ctx, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting permissions: %w", err)
 		}
-	}
 
-	return false, nil
+		if perms.Has(perm.ChatCanManage) {
+			return ids, nil
+		}
+
+		var allowed []int
+		for _, chatGroupID := range ids {
+			readGroups, err := ds.ChatGroup_ReadGroupIDs(chatGroupID).Value(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("getting chat read group ids: %w", err)
+			}
+
+			writeGroups, err := ds.ChatGroup_WriteGroupIDs(chatGroupID).Value(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("getting chat read group ids: %w", err)
+			}
+
+			allGroups := append(readGroups, writeGroups...)
+
+			for _, gid := range allGroups {
+				if perms.InGroup(gid) {
+					allowed = append(allowed, chatGroupID)
+					continue
+				}
+			}
+		}
+		return allowed, nil
+	})
 }
 
 func (c ChatGroup) meetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, error) {

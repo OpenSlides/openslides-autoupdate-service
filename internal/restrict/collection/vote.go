@@ -37,9 +37,9 @@ func (v Vote) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bo
 func (v Vote) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return v.see
+		return todoToSingle(v.see)
 	case "B":
-		return v.modeB
+		return todoToSingle(v.modeB)
 	}
 	return nil
 }

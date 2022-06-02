@@ -37,11 +37,11 @@ func (m Meeting) Modes(mode string) FieldRestricter {
 	case "A":
 		return Allways
 	case "B":
-		return m.see
+		return todoToSingle(m.see)
 	case "C":
-		return m.modeC
+		return todoToSingle(m.modeC)
 	case "D":
-		return m.modeD
+		return todoToSingle(m.modeD)
 	}
 	return nil
 }

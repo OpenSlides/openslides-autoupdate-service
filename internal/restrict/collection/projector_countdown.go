@@ -29,7 +29,7 @@ func (p ProjectorCountdown) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id
 func (p ProjectorCountdown) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return p.see
+		return todoToSingle(p.see)
 	}
 	return nil
 }

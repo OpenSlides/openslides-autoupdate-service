@@ -41,65 +41,89 @@ func (m Motion) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, 
 func (m Motion) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return m.modeA
+		return todoToSingle(m.modeA)
 	case "B":
-		return m.modeB
+		return todoToSingle(m.modeB)
 	case "C":
 		return m.see
 	case "D":
-		return m.modeD
+		return never
 	}
 	return nil
 }
 
-func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionID int) (bool, error) {
-	meetingID, err := ds.Motion_MeetingID(motionID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("fetching meeting_id: %w", err)
-	}
+func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionIDs ...int) ([]int, error) {
+	return eachMeeting(ctx, ds, m, motionIDs, func(meetingID int, ids []int) ([]int, error) {
+		perms, err := mperms.Meeting(ctx, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting permissions: %w", err)
+		}
 
-	perms, err := mperms.Meeting(ctx, meetingID)
-	if err != nil {
-		return false, fmt.Errorf("getting permissions: %w", err)
-	}
+		if !perms.Has(perm.MotionCanSee) {
+			return nil, nil
+		}
 
-	if !perms.Has(perm.MotionCanSee) {
-		return false, nil
-	}
-
-	stateID, err := ds.Motion_StateID(motionID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("fetching stateID: %w", err)
-	}
-
-	restrictions, err := ds.MotionState_Restrictions(stateID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting restrictions: %w", err)
-	}
-
-	if len(restrictions) == 0 {
-		return true, nil
-	}
-
-	for _, restriction := range restrictions {
-		if restriction == "is_submitter" {
-			submitter, err := isSubmitter(ctx, ds, mperms, motionID)
+		return eachMotionState(ctx, ds, ids, func(stateID int, ids []int) ([]int, error) {
+			restrictions, err := ds.MotionState_Restrictions(stateID).Value(ctx)
 			if err != nil {
-				return false, fmt.Errorf("checking for motion submitter: %w", err)
+				return nil, fmt.Errorf("getting restrictions: %w", err)
 			}
 
-			if submitter {
-				return true, nil
+			if len(restrictions) == 0 {
+				return ids, nil
 			}
-			continue
-		}
 
-		if perms.Has(perm.TPermission(restriction)) {
-			return true, nil
+			hasIsSubmitterRestriction := false
+			for _, restriction := range restrictions {
+				if restriction == "is_submitter" {
+					hasIsSubmitterRestriction = true
+					continue
+				}
+
+				if perms.Has(perm.TPermission(restriction)) {
+					return ids, nil
+				}
+			}
+
+			var allowed []int
+			if hasIsSubmitterRestriction {
+				for _, motionID := range ids {
+					submitter, err := isSubmitter(ctx, ds, mperms, motionID)
+					if err != nil {
+						return nil, fmt.Errorf("checking for motion submitter of motion %d: %w", motionID, err)
+					}
+
+					if submitter {
+						allowed = append(allowed, motionID)
+					}
+				}
+			}
+			return allowed, nil
+		})
+	})
+}
+
+func eachMotionState(ctx context.Context, ds *dsfetch.Fetch, ids []int, f func(stateID int, ids []int) ([]int, error)) ([]int, error) {
+	stateIDs := make(map[int][]int)
+	for _, id := range ids {
+		stateID, err := ds.Motion_StateID(id).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting state id for motion %d: %w", id, err)
 		}
+		stateIDs[stateID] = append(stateIDs[stateID], id)
 	}
 
-	return false, nil
+	var allAllowed []int
+	for assignmentID, ids := range stateIDs {
+		allowed, err := f(assignmentID, ids)
+		if err != nil {
+			return nil, fmt.Errorf("restricting for state %d: %w", assignmentID, err)
+		}
+
+		allAllowed = append(allAllowed, allowed...)
+	}
+
+	return allAllowed, nil
 }
 
 func isSubmitter(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionID int) (bool, error) {
@@ -135,7 +159,7 @@ func (m Motion) modeA(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeti
 			return false, fmt.Errorf("checking see for agenda item %d: %w", agendaID, err)
 		}
 
-		if seeAgenda {
+		if len(seeAgenda) == 1 {
 			return true, nil
 		}
 	}
@@ -164,6 +188,8 @@ func (m Motion) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeti
 	}
 
 	for referenceID := range motionIDs {
+		// Check each motion as it own. It is enough when one motion returns
+		// true. To call m.see with all motions at once would be slower.
 		see, err := m.see(ctx, ds, mperms, referenceID)
 		if err != nil {
 			var errDoesNotExist dsfetch.DoesNotExistError
@@ -175,13 +201,9 @@ func (m Motion) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeti
 			return false, fmt.Errorf("see motion %d: %w", referenceID, err)
 		}
 
-		if see {
+		if len(see) == 1 {
 			return true, nil
 		}
 	}
-	return false, nil
-}
-
-func (m Motion) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, UserID int) (bool, error) {
 	return false, nil
 }

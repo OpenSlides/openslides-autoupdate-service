@@ -29,7 +29,7 @@ func (p Projector) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (in
 func (p Projector) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return p.see
+		return todoToSingle(p.see)
 	}
 	return nil
 }

@@ -31,7 +31,7 @@ func (c ChatMessage) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (
 func (c ChatMessage) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return c.see
+		return todoToSingle(c.see)
 	}
 	return nil
 }

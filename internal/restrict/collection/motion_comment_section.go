@@ -31,7 +31,7 @@ func (m MotionCommentSection) MeetingID(ctx context.Context, ds *dsfetch.Fetch, 
 func (m MotionCommentSection) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return m.see
+		return todoToSingle(m.see)
 	}
 	return nil
 }

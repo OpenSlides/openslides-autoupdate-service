@@ -28,9 +28,9 @@ func (a Committee) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (in
 func (a Committee) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return a.see
+		return todoToSingle(a.see)
 	case "B":
-		return a.modeB
+		return todoToSingle(a.modeB)
 	}
 	return nil
 }

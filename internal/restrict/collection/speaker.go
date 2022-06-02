@@ -34,16 +34,16 @@ func (s Speaker) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (s Speaker) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, speakerID int) (bool, error) {
-	los, err := ds.Speaker_ListOfSpeakersID(speakerID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("fetch los: %w", err)
-	}
+func (s Speaker) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, speakerIDs ...int) ([]int, error) {
+	return eachField(ctx, ds.Speaker_ListOfSpeakersID, speakerIDs, func(losID int, ids []int) ([]int, error) {
+		see, err := ListOfSpeakers{}.see(ctx, ds, mperms, losID)
+		if err != nil {
+			return nil, fmt.Errorf("checking see of los %d: %w", losID, err)
+		}
 
-	see, err := ListOfSpeakers{}.see(ctx, ds, mperms, los)
-	if err != nil {
-		return false, fmt.Errorf("checking see of los %d: %w", los, err)
-	}
-
-	return see, nil
+		if len(see) == 1 {
+			return ids, nil
+		}
+		return nil, nil
+	})
 }

@@ -57,23 +57,65 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 		}
 		return fmt.Errorf("checking for superadmin: %w", err)
 	}
+
+	// TODO: handle super admin in extra function
+
 	mperms := perm.NewMeetingPermission(ds, uid)
 
-	restrictModeCache := make(map[string]bool)
+	type collectionMode struct {
+		collection string
+		mode       string
+	}
+	restrictModeIDs := make(map[collectionMode]*Set)
 
+	// Group all ids with same collection-restrictionMode
 	for key := range data {
 		if data[key] == nil {
 			continue
 		}
 
-		ds := dsfetch.New(getter)
-
-		canSee, err := buildCanSee(ctx, ds, mperms, key, restrictModeCache, isSuperAdmin)
+		restrictionMode, err := buildFieldMode(key.Collection, key.Field)
 		if err != nil {
-			return fmt.Errorf("checking canSee of key %s: %w", key, err)
+			return fmt.Errorf("getting restriction Mode for %s: %w", key, err)
 		}
 
-		if !canSee {
+		cm := collectionMode{key.Collection, restrictionMode}
+		if restrictModeIDs[cm] == nil {
+			restrictModeIDs[cm] = NewSet()
+		}
+		restrictModeIDs[cm].Add(key.ID)
+	}
+
+	// Call restrict Mode function
+	for cm, ids := range restrictModeIDs {
+		modeFunc, err := restrictMode(cm.collection, cm.mode, isSuperAdmin)
+		if err != nil {
+			// Collection or field unknown. Handle it as no permission.
+			//log.Printf("Warning: getting restrictMode for %s: %v", key, err)
+			return errors.New("TODO")
+		}
+
+		allowedIDs, err := modeFunc(ctx, ds, mperms, ids.List()...)
+		if err != nil {
+			// TODO: Handle does not exits in modeFunc!!!
+			return fmt.Errorf("calling collection %s modefunc %s with ids %v: %w", cm.collection, cm.mode, ids.List(), err)
+		}
+		restrictModeIDs[cm].Remove(allowedIDs...)
+	}
+
+	// Remove restricted keys
+	for key := range data {
+		if data[key] == nil {
+			continue
+		}
+
+		restrictionMode, err := buildFieldMode(key.Collection, key.Field)
+		if err != nil {
+			return fmt.Errorf("getting restriction Mode for %s: %w", key, err)
+		}
+
+		cm := collectionMode{key.Collection, restrictionMode}
+		if restrictModeIDs[cm].Has(key.ID) {
 			data[key] = nil
 			continue
 		}
@@ -96,11 +138,11 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 				return fmt.Errorf("getting restict func: %w", err)
 			}
 
-			cansee, err := modeFunc(ctx, ds, mperms, id)
+			allowedID, err := modeFunc(ctx, ds, mperms, id)
 			if err != nil {
 				return fmt.Errorf("checking can see of relation field %s: %w", key, err)
 			}
-			if !cansee {
+			if len(allowedID) != 1 {
 				data[key] = nil
 			}
 		}
@@ -144,11 +186,11 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 				return fmt.Errorf("decoding genericID: %w", err)
 			}
 
-			cansee, err := modeFunc(ctx, ds, mperms, id)
+			allowedID, err := modeFunc(ctx, ds, mperms, id)
 			if err != nil {
 				return fmt.Errorf("checking can see: %w", err)
 			}
-			if !cansee {
+			if len(allowedID) != 1 {
 				data[key] = nil
 			}
 		}
@@ -166,36 +208,9 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 	return nil
 }
 
-func buildCanSee(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, key datastore.Key, cache map[string]bool, isSuperAdmin bool) (bool, error) {
-	fieldMode, err := buildFieldMode(key.Collection, key.Field)
-	if err != nil {
-		return false, fmt.Errorf("getting base fieldMode: %w", err)
-	}
-
-	cacheKey := fmt.Sprintf("%s/%d/%s", key.Collection, key.ID, fieldMode)
-	if allowed, ok := cache[cacheKey]; ok {
-		return allowed, nil
-	}
-	modeFunc, err := restrictMode(key.Collection, fieldMode, isSuperAdmin)
-	if err != nil {
-		// Collection or field unknown. Handle it as no permission.
-		log.Printf("Warning: getting restrictMode for %s: %v", key, err)
-		return false, nil
-	}
-
-	canSeeMode, err := modeFunc(ctx, ds, mperms, key.ID)
-	if err != nil {
-		var errDoesNotExist dsfetch.DoesNotExistError
-		if !errors.As(err, &errDoesNotExist) {
-			return false, fmt.Errorf("calling modefunc for key %s: %w", key, err)
-		}
-		canSeeMode = false
-	}
-
-	cache[cacheKey] = canSeeMode
-	return canSeeMode, nil
-}
-
+// buildFieldMode returns the restriction mode for a collection and field.
+//
+// This is a string like "A" or "B" or any other name of a restriction mode.
 func buildFieldMode(collection, field string) (string, error) {
 	fieldMode, ok := restrictionModes[templateKeyPrefix(collection+"/"+field)]
 	if !ok {
@@ -245,28 +260,9 @@ func filterRelationList(
 		return nil, nil
 	}
 
-	allowedIDs := []int{} // Use empty list as default for json encoding.
-	for _, id := range ids {
-		allowed, err := relationListModeFunc(ctx, ds, mperms, id)
-		if err != nil {
-			var errDoesNotExist dsfetch.DoesNotExistError
-			if errors.As(err, &errDoesNotExist) && datastore.Key(errDoesNotExist).String() == fmt.Sprintf("%s/%d/id", parts[0], id) {
-				log.Printf(
-					"Warning: datastore is corrupted. Relation-list field `%s` contains id `%d`, but `%s` with this id does not exist.",
-					key,
-					id,
-					parts[0],
-				)
-
-				// List shows to a missing element. Ignore it.
-				continue
-			}
-
-			return nil, fmt.Errorf("checking %q for id %d: %w", toCollectionField, id, err)
-		}
-		if allowed {
-			allowedIDs = append(allowedIDs, id)
-		}
+	allowedIDs, err := relationListModeFunc(ctx, ds, mperms, ids...)
+	if err != nil {
+		return nil, fmt.Errorf("calling relation ist mode func: %w", err)
 	}
 
 	encoded, err := json.Marshal(allowedIDs)
@@ -309,6 +305,7 @@ func filterGenericRelationList(
 			return nil, fmt.Errorf("building field mode: %w", err)
 		}
 
+		// TODO: call all restictMode of one collection at once
 		relationListModeFunc, err := restrictMode(parts[0], fieldMode, isSuperAdmin)
 		if err != nil {
 			// Collection or field unknown. Handle it as no permission.
@@ -316,11 +313,11 @@ func filterGenericRelationList(
 			return nil, nil
 		}
 
-		allowed, err := relationListModeFunc(ctx, ds, mperms, id)
+		allowedID, err := relationListModeFunc(ctx, ds, mperms, id)
 		if err != nil {
 			return nil, fmt.Errorf("checking %q for id %d: %w", toField, id, err)
 		}
-		if allowed {
+		if len(allowedID) == 1 {
 			allowedIDs = append(allowedIDs, genericID)
 		}
 	}

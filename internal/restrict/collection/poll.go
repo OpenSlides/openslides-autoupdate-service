@@ -47,13 +47,13 @@ func (p Poll) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bo
 func (p Poll) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return p.see
+		return todoToSingle(p.see)
 	case "B":
-		return p.modeB
+		return todoToSingle(p.modeB)
 	case "C":
-		return p.modeC
+		return todoToSingle(p.modeC)
 	case "D":
-		return p.modeD
+		return todoToSingle(p.modeD)
 	}
 	return nil
 }
@@ -76,7 +76,7 @@ func (p Poll) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPe
 	}
 
 	var collection interface {
-		see(context.Context, *dsfetch.Fetch, *perm.MeetingPermission, int) (bool, error)
+		see(context.Context, *dsfetch.Fetch, *perm.MeetingPermission, ...int) ([]int, error)
 	}
 
 	switch parts[0] {
@@ -99,7 +99,7 @@ func (p Poll) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPe
 		return false, fmt.Errorf("checking see of content objet %d: %w", id, err)
 	}
 
-	return see, nil
+	return len(see) > 0, nil
 }
 
 func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, pollID int) (bool, error) {
