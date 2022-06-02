@@ -63,8 +63,11 @@ func (m Mediafile) Modes(mode string) FieldRestricter {
 
 func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, mediafileIDs ...int) ([]int, error) {
 	return eachContentObjectCollection(ctx, ds.Mediafile_OwnerID, mediafileIDs, func(collection string, ownerID int, ids []int) ([]int, error) {
-		if collection == "organization" && mperms.UserID() != 0 {
-			return ids, nil
+		if collection == "organization" {
+			if mperms.UserID() != 0 {
+				return ids, nil
+			}
+			return nil, nil
 		}
 
 		var allowed []int
