@@ -1,24 +1,24 @@
 package restrict
 
-// Set a datastructure of unique items.
-type Set struct {
+// set a datastructure of unique items.
+type set struct {
 	m map[int]struct{}
 }
 
-func NewSet() *Set {
-	return &Set{m: make(map[int]struct{})}
+func newSet() *set {
+	return &set{m: make(map[int]struct{})}
 }
 
-func (s Set) Add(e int) {
+func (s set) Add(e int) {
 	(s.m)[e] = struct{}{}
 }
 
-func (s Set) Has(e int) bool {
+func (s set) Has(e int) bool {
 	_, ok := (s.m)[e]
 	return ok
 }
 
-func (s Set) List() []int {
+func (s set) List() []int {
 	out := make([]int, 0, len(s.m))
 	for k := range s.m {
 		out = append(out, k)
@@ -26,7 +26,7 @@ func (s Set) List() []int {
 	return out
 }
 
-func (s Set) Remove(es ...int) {
+func (s set) Remove(es ...int) {
 	for _, e := range es {
 		delete(s.m, e)
 	}
