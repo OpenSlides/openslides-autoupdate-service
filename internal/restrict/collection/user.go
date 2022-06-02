@@ -257,7 +257,7 @@ func (u User) RequiredObjects(ds *dsfetch.Fetch) []UserRequiredObject {
 			"chat messages",
 			ds.User_ChatMessageIDsTmpl,
 			ds.User_ChatMessageIDs,
-			todoToSingle(ChatMessage{}.see),
+			ChatMessage{}.see,
 		},
 	}
 }
