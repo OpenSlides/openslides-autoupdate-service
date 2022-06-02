@@ -92,7 +92,7 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 			if err := ds.Err(); err != nil {
 				return nil, fmt.Errorf("fetching as logo and as font: %w", err)
 			}
-			if canSeeMeeting && (len(usedAsFont)+len(usedAsLogo) > 0) {
+			if len(canSeeMeeting) == 1 && (len(usedAsFont)+len(usedAsLogo) > 0) {
 				allowed = append(allowed, mediafileID)
 				continue
 			}

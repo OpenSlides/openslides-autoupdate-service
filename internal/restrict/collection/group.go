@@ -41,7 +41,7 @@ func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingP
 			return nil, fmt.Errorf("can see meeting %d: %w", meetingID, err)
 		}
 
-		if canSee {
+		if len(canSee) == 1 {
 			return ids, nil
 		}
 		return nil, nil
