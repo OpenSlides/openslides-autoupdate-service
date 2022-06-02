@@ -192,10 +192,10 @@ func eachField(ctx context.Context, toField func(int) *dsfetch.ValueInt, ids []i
 	}
 
 	var allAllowed []int
-	for filteredID, ids := range filteredIDs {
-		allowed, err := f(filteredID, ids)
+	for fieldID, ids := range filteredIDs {
+		allowed, err := f(fieldID, ids)
 		if err != nil {
-			return nil, fmt.Errorf("restricting for element %d: %w", filteredID, err)
+			return nil, fmt.Errorf("restricting for element %d: %w", fieldID, err)
 		}
 
 		allAllowed = append(allAllowed, allowed...)

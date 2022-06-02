@@ -28,47 +28,62 @@ func (a Committee) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (in
 func (a Committee) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return todoToSingle(a.see)
+		return a.see
 	case "B":
-		return todoToSingle(a.modeB)
+		return a.modeB
 	}
 	return nil
 }
 
-func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, committeeID int) (bool, error) {
-	userIDs, err := ds.Committee_UserIDs(committeeID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting committee users: %w", err)
-	}
-
-	for _, uid := range userIDs {
-		if uid == mperms.UserID() {
-			return true, nil
-		}
-	}
-
+func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, committeeIDs ...int) ([]int, error) {
 	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
 	if err != nil {
-		return false, fmt.Errorf("checking oml perm: %w", err)
-	}
-
-	return hasOMLPerm, nil
-}
-
-func (a Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, committeeID int) (bool, error) {
-	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageOrganization)
-	if err != nil {
-		return false, fmt.Errorf("checking oml: %w", err)
+		return nil, fmt.Errorf("checking oml perm: %w", err)
 	}
 
 	if hasOMLPerm {
-		return true, nil
+		return committeeIDs, nil
 	}
 
-	cmlCanManage, err := perm.HasCommitteeManagementLevel(ctx, ds, mperms.UserID(), committeeID)
+	var allowed []int
+	for _, committeeID := range committeeIDs {
+		userIDs, err := ds.Committee_UserIDs(committeeID).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting committee users: %w", err)
+		}
+
+		for _, uid := range userIDs {
+			if uid == mperms.UserID() {
+				allowed = append(allowed, committeeID)
+				break
+			}
+		}
+	}
+
+	return allowed, nil
+}
+
+func (a Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, committeeIDs ...int) ([]int, error) {
+	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageOrganization)
 	if err != nil {
-		return false, fmt.Errorf("checking committee management level: %w", err)
+		return nil, fmt.Errorf("checking oml: %w", err)
 	}
 
-	return cmlCanManage, nil
+	if hasOMLPerm {
+		return committeeIDs, nil
+	}
+
+	var allowed []int
+	for _, committeeID := range committeeIDs {
+		cmlCanManage, err := perm.HasCommitteeManagementLevel(ctx, ds, mperms.UserID(), committeeID)
+		if err != nil {
+			return nil, fmt.Errorf("checking committee management level: %w", err)
+		}
+
+		if cmlCanManage {
+			allowed = append(allowed, committeeID)
+		}
+	}
+
+	return allowed, nil
 }

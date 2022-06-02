@@ -38,40 +38,43 @@ func (c ChatMessage) Modes(mode string) FieldRestricter {
 
 func (ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, chatMessageIDs ...int) ([]int, error) {
 	return eachField(ctx, ds.ChatMessage_ChatGroupID, chatMessageIDs, func(chatGroupID int, ids []int) ([]int, error) {
-		return eachMeeting(ctx, ds, ChatGroup{}, ids, func(meetingID int, ids []int) ([]int, error) {
-			perms, err := mperms.Meeting(ctx, meetingID)
-			if err != nil {
-				return nil, fmt.Errorf("getting permissions: %w", err)
-			}
+		meetingID, err := ChatGroup{}.meetingID(ctx, ds, chatGroupID)
+		if err != nil {
+			return nil, fmt.Errorf("getting meeting id: %w", err)
+		}
 
-			if perms.Has(perm.ChatCanManage) {
+		perms, err := mperms.Meeting(ctx, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting permissions: %w", err)
+		}
+
+		if perms.Has(perm.ChatCanManage) {
+			return ids, nil
+		}
+
+		readGroups, err := ds.ChatGroup_ReadGroupIDs(chatGroupID).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting chat read group ids: %w", err)
+		}
+
+		for _, gid := range readGroups {
+			if perms.InGroup(gid) {
 				return ids, nil
 			}
+		}
 
-			readGroups, err := ds.ChatGroup_ReadGroupIDs(chatGroupID).Value(ctx)
+		var allowed []int
+		for _, chatMessageID := range ids {
+			author, err := ds.ChatMessage_UserID(chatMessageID).Value(ctx)
 			if err != nil {
-				return nil, fmt.Errorf("getting chat read group ids: %w", err)
+				return nil, fmt.Errorf("reading author of chat message: %w", err)
 			}
 
-			for _, gid := range readGroups {
-				if perms.InGroup(gid) {
-					return ids, nil
-				}
+			if author == mperms.UserID() {
+				allowed = append(allowed, chatMessageID)
 			}
+		}
 
-			var allowed []int
-			for _, chatMessageID := range ids {
-				author, err := ds.ChatMessage_UserID(chatMessageID).Value(ctx)
-				if err != nil {
-					return nil, fmt.Errorf("reading author of chat message: %w", err)
-				}
-
-				if author == mperms.UserID() {
-					allowed = append(allowed, chatMessageID)
-				}
-			}
-
-			return allowed, nil
-		})
+		return allowed, nil
 	})
 }
