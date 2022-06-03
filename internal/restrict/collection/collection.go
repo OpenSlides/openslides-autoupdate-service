@@ -2,7 +2,6 @@ package collection
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -30,27 +29,6 @@ func loggedIn(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermis
 
 func never(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
 	return nil, nil
-}
-
-func todoToSingle(f singleFieldRestricter) FieldRestricter {
-	return func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
-		allowedIDs := make([]int, 0, len(elementIDs))
-		for _, id := range elementIDs {
-			allowed, err := f(ctx, ds, mperms, id)
-			if err != nil {
-				var errDoesNotExist dsfetch.DoesNotExistError
-				if !errors.As(err, &errDoesNotExist) {
-					return nil, fmt.Errorf("restrict element %d: %w", id, err)
-				}
-			}
-
-			if allowed {
-				allowedIDs = append(allowedIDs, id)
-			}
-		}
-
-		return allowedIDs, nil
-	}
 }
 
 // Restricter returns a fieldRestricter for a restriction_mode.
@@ -207,7 +185,7 @@ func eachRelationField(ctx context.Context, toField func(int) *dsfetch.ValueInt,
 		filteredIDs[fieldID] = append(filteredIDs[fieldID], id)
 	}
 
-	var allAllowed []int
+	allAllowed := make([]int, 0, len(ids))
 	for fieldID, ids := range filteredIDs {
 		allowed, err := f(fieldID, ids)
 		if err != nil {
@@ -230,7 +208,7 @@ func eachStringField(ctx context.Context, toField func(int) *dsfetch.ValueString
 		filteredIDs[value] = append(filteredIDs[value], id)
 	}
 
-	var allAllowed []int
+	allAllowed := make([]int, 0, len(ids))
 	for value, ids := range filteredIDs {
 		allowed, err := f(value, ids)
 		if err != nil {
@@ -257,7 +235,7 @@ func eachContentObjectCollection(ctx context.Context, toField func(int) *dsfetch
 		filteredIDs[contentObjectID] = append(filteredIDs[contentObjectID], id)
 	}
 
-	var allAllowed []int
+	allAllowed := make([]int, 0, len(ids))
 	for contentObjectID, ids := range filteredIDs {
 		collection, objectID, found := strings.Cut(contentObjectID, "/")
 		if !found {
@@ -281,7 +259,7 @@ func eachContentObjectCollection(ctx context.Context, toField func(int) *dsfetch
 }
 
 func eachCondition(ids []int, f func(id int) (bool, error)) ([]int, error) {
-	var allowed []int
+	allowed := make([]int, 0, len(ids))
 	for _, id := range ids {
 		ok, err := f(id)
 		if err != nil {
