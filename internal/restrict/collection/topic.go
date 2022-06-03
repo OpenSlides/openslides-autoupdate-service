@@ -35,15 +35,5 @@ func (t Topic) Modes(mode string) FieldRestricter {
 }
 
 func (t Topic) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, topicIDs ...int) ([]int, error) {
-	return eachMeeting(ctx, ds, t, topicIDs, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
-		if err != nil {
-			return nil, fmt.Errorf("getting perms for meeting %d: %w", meetingID, err)
-		}
-
-		if perms.Has(perm.AgendaItemCanSee) {
-			return ids, nil
-		}
-		return nil, nil
-	})
+	return meetingPerm(ctx, ds, t, topicIDs, mperms, perm.AgendaItemCanSee)
 }

@@ -29,21 +29,11 @@ func (p ProjectorCountdown) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id
 func (p ProjectorCountdown) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return todoToSingle(p.see)
+		return p.see
 	}
 	return nil
 }
 
-func (p ProjectorCountdown) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, projectorCountdownID int) (bool, error) {
-	meetingID, err := ds.ProjectorCountdown_MeetingID(projectorCountdownID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("fetching meeting_id: %w", err)
-	}
-
-	perms, err := mperms.Meeting(ctx, meetingID)
-	if err != nil {
-		return false, fmt.Errorf("getting perms for meeting %d: %w", meetingID, err)
-	}
-
-	return perms.Has(perm.ProjectorCanSee), nil
+func (p ProjectorCountdown) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, projectorCountdownIDs ...int) ([]int, error) {
+	return meetingPerm(ctx, ds, p, projectorCountdownIDs, mperms, perm.ProjectorCanSee)
 }

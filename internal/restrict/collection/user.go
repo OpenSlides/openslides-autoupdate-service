@@ -236,21 +236,21 @@ func (u User) RequiredObjects(ds *dsfetch.Fetch) []UserRequiredObject {
 			"poll voted",
 			ds.User_PollVotedIDsTmpl,
 			ds.User_PollVotedIDs,
-			todoToSingle(Poll{}.see),
+			Poll{}.see,
 		},
 
 		{
 			"vote user",
 			ds.User_VoteIDsTmpl,
 			ds.User_VoteIDs,
-			todoToSingle(Vote{}.see),
+			Vote{}.see,
 		},
 
 		{
 			"vote delegated user",
 			ds.User_VoteDelegatedVoteIDsTmpl,
 			ds.User_VoteDelegatedVoteIDs,
-			todoToSingle(Vote{}.see),
+			Vote{}.see,
 		},
 
 		{

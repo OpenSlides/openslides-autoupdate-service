@@ -51,7 +51,7 @@ func (o Option) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 			return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
 		}
 
-		return see, nil
+		return len(see) == 1, nil
 	})
 }
 
@@ -68,7 +68,7 @@ func (o Option) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeti
 			return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
 		}
 
-		if !see {
+		if len(see) == 0 {
 			return false, nil
 		}
 
@@ -77,7 +77,7 @@ func (o Option) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeti
 			return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
 		}
 
-		if canManage {
+		if len(canManage) == 1 {
 			return true, nil
 		}
 

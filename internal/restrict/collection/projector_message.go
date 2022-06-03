@@ -29,21 +29,11 @@ func (p ProjectorMessage) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id i
 func (p ProjectorMessage) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return todoToSingle(p.see)
+		return p.see
 	}
 	return nil
 }
 
-func (p ProjectorMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, projectorMessageID int) (bool, error) {
-	meetingID, err := ds.ProjectorMessage_MeetingID(projectorMessageID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("fetching meeting_id: %w", err)
-	}
-
-	perms, err := mperms.Meeting(ctx, meetingID)
-	if err != nil {
-		return false, fmt.Errorf("getting perms for meeting %d: %w", meetingID, err)
-	}
-
-	return perms.Has(perm.ProjectorCanSee), nil
+func (p ProjectorMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, projectorMessageIDs ...int) ([]int, error) {
+	return meetingPerm(ctx, ds, p, projectorMessageIDs, mperms, perm.ProjectorCanSee)
 }

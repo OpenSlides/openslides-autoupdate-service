@@ -220,6 +220,29 @@ func eachRelationField(ctx context.Context, toField func(int) *dsfetch.ValueInt,
 	return allAllowed, nil
 }
 
+func eachStringField(ctx context.Context, toField func(int) *dsfetch.ValueString, ids []int, f func(value string, ids []int) ([]int, error)) ([]int, error) {
+	filteredIDs := make(map[string][]int)
+	for _, id := range ids {
+		value, err := toField(id).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting value for element %d: %w", id, err)
+		}
+		filteredIDs[value] = append(filteredIDs[value], id)
+	}
+
+	var allAllowed []int
+	for value, ids := range filteredIDs {
+		allowed, err := f(value, ids)
+		if err != nil {
+			return nil, fmt.Errorf("restricting for element %s: %w", value, err)
+		}
+
+		allAllowed = append(allAllowed, allowed...)
+	}
+
+	return allAllowed, nil
+}
+
 // TODO: currently, this calls the function with the same collectionObject
 // (motion/5, motion/5), but it should bundle it by collection (motion/1,
 // motion/2).
