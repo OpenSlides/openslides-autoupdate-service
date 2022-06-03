@@ -52,14 +52,16 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 	isSuperAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, uid, perm.OMLSuperadmin)
 	if err != nil {
 		var errDoesNotExist dsfetch.DoesNotExistError
-		if errors.As(err, &errDoesNotExist) {
-			// TODO LAST ERROR (there can be other cases of DoesNotExist)
+		if errors.As(err, &errDoesNotExist) || datastore.Key(errDoesNotExist).Collection == "user" {
+			// TODO LAST ERROR
 			return fmt.Errorf("request user %d does not exist", uid)
 		}
 		return fmt.Errorf("checking for superadmin: %w", err)
 	}
 
-	// TODO: handle super admin in extra function
+	if isSuperAdmin {
+		return restrictSuperAdmin(ctx, getter, uid, data)
+	}
 
 	mperms := perm.NewMeetingPermission(ds, uid)
 
@@ -89,16 +91,13 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 
 	// Call restrict Mode function
 	for cm, ids := range restrictModeIDs {
-		modeFunc, err := restrictMode(cm.collection, cm.mode, isSuperAdmin)
+		modeFunc, err := restrictModefunc(cm.collection, cm.mode)
 		if err != nil {
-			// Collection or field unknown. Handle it as no permission.
-			//log.Printf("Warning: getting restrictMode for %s: %v", key, err)
-			return errors.New("TODO")
+			return fmt.Errorf("getting restiction mode for %s/%s: %w", cm.collection, cm.mode, err)
 		}
 
 		allowedIDs, err := modeFunc(ctx, ds, mperms, ids.List()...)
 		if err != nil {
-			// TODO: Handle does not exits in modeFunc!!!
 			return fmt.Errorf("calling collection %s modefunc %s with ids %v: %w", cm.collection, cm.mode, ids.List(), err)
 		}
 		restrictModeIDs[cm].Remove(allowedIDs...)
@@ -134,7 +133,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 				return fmt.Errorf("building relation field field mode: %w", err)
 			}
 
-			modeFunc, err := restrictMode(parts[0], fieldMode, isSuperAdmin)
+			modeFunc, err := restrictModefunc(parts[0], fieldMode)
 			if err != nil {
 				return fmt.Errorf("getting restict func: %w", err)
 			}
@@ -151,7 +150,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 		keyPrefix := templateKeyPrefix(key.CollectionField())
 		// Relation List fields
 		if toCollectionfield, ok := relationListFields[keyPrefix]; ok {
-			value, err := filterRelationList(ctx, ds, mperms, key, toCollectionfield, isSuperAdmin, data[key])
+			value, err := filterRelationList(ctx, ds, mperms, key, toCollectionfield, data[key])
 			if err != nil {
 				return fmt.Errorf("restrict relation-list ids of %q: %w", key, err)
 			}
@@ -177,7 +176,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 				return fmt.Errorf("building generic relation field mode: %w", err)
 			}
 
-			modeFunc, err := restrictMode(parts[0], fieldMode, isSuperAdmin)
+			modeFunc, err := restrictModefunc(parts[0], fieldMode)
 			if err != nil {
 				return fmt.Errorf("getting restict func: %w", err)
 			}
@@ -198,7 +197,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 
 		// Generic Relation List fields
 		if toCollectionfieldMap, ok := genericRelationListFields[templateKeyPrefix(key.CollectionField())]; ok {
-			value, err := filterGenericRelationList(ctx, ds, mperms, key, toCollectionfieldMap, isSuperAdmin, data[key])
+			value, err := filterGenericRelationList(ctx, ds, mperms, key, toCollectionfieldMap, data[key])
 			if err != nil {
 				return fmt.Errorf("restrict generic-relation-list ids of %q: %w", key, err)
 			}
@@ -206,6 +205,52 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 		}
 	}
 
+	return nil
+}
+
+func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, data map[datastore.Key][]byte) error {
+	ds := dsfetch.New(getter)
+	mperms := perm.NewMeetingPermission(ds, uid)
+
+	for key := range data {
+		if data[key] == nil {
+			continue
+		}
+
+		restricter := collection.Collection(key.Collection)
+		if restricter == nil {
+			// Superadmins can see unknown collections.
+			continue
+		}
+
+		type superRestricter interface {
+			SuperAdmin(mode string) collection.FieldRestricter
+		}
+		sr, ok := restricter.(superRestricter)
+		if !ok {
+			continue
+		}
+
+		restrictionMode, err := buildFieldMode(key.Collection, key.Field)
+		if err != nil {
+			return fmt.Errorf("getting restriction Mode for %s: %w", key, err)
+		}
+
+		modefunc := sr.SuperAdmin(restrictionMode)
+		if modefunc == nil {
+			// Do not restrict unknown fields that are not implemented.
+			continue
+		}
+
+		allowed, err := modefunc(ctx, ds, mperms, key.ID)
+		if err != nil {
+			return fmt.Errorf("calling mode func: %w", err)
+		}
+
+		if len(allowed) == 0 {
+			data[key] = nil
+		}
+	}
 	return nil
 }
 
@@ -239,7 +284,6 @@ func filterRelationList(
 	mperms *perm.MeetingPermission,
 	key datastore.Key,
 	toCollectionField string,
-	isSuperAdmin bool,
 	data []byte,
 ) ([]byte, error) {
 	var ids []int
@@ -254,7 +298,7 @@ func filterRelationList(
 		return nil, fmt.Errorf("building field mode: %w", err)
 	}
 
-	relationListModeFunc, err := restrictMode(parts[0], fieldMode, isSuperAdmin)
+	relationListModeFunc, err := restrictModefunc(parts[0], fieldMode)
 	if err != nil {
 		// Collection or field unknown. Handle it as no permission.
 		log.Printf("Warning: getting restriction mode for values of relation list field %s: %v", key, err)
@@ -263,7 +307,13 @@ func filterRelationList(
 
 	allowedIDs, err := relationListModeFunc(ctx, ds, mperms, ids...)
 	if err != nil {
+		// TODO: add currupted database warning if doesNotExist error from toCollectionField with one of the ids.
 		return nil, fmt.Errorf("calling relation ist mode func: %w", err)
+	}
+
+	if allowedIDs == nil {
+		// this is important for json
+		allowedIDs = make([]int, 0)
 	}
 
 	encoded, err := json.Marshal(allowedIDs)
@@ -279,7 +329,6 @@ func filterGenericRelationList(
 	mperms *perm.MeetingPermission,
 	key datastore.Key,
 	toCollectionFieldMap map[string]string,
-	isSuperAdmin bool,
 	data []byte,
 ) ([]byte, error) {
 	var genericIDs []string
@@ -307,7 +356,7 @@ func filterGenericRelationList(
 		}
 
 		// TODO: call all restictMode of one collection at once
-		relationListModeFunc, err := restrictMode(parts[0], fieldMode, isSuperAdmin)
+		relationListModeFunc, err := restrictModefunc(parts[0], fieldMode)
 		if err != nil {
 			// Collection or field unknown. Handle it as no permission.
 			fmt.Printf("Warning: getting restiction mode values of generic key %s: %v", key, err)
@@ -323,6 +372,11 @@ func filterGenericRelationList(
 		}
 	}
 
+	if allowedIDs == nil {
+		// this is important for json
+		allowedIDs = make([]string, 0)
+	}
+
 	encoded, err := json.Marshal(allowedIDs)
 	if err != nil {
 		return nil, fmt.Errorf("encoding ids: %w", err)
@@ -330,33 +384,12 @@ func filterGenericRelationList(
 	return encoded, nil
 }
 
-// restrictMode returns the field restricter function to use.
-func restrictMode(collectionName, fieldMode string, isSuperAdmin bool) (collection.FieldRestricter, error) {
+// restrictModefunc returns the field restricter function to use.
+func restrictModefunc(collectionName, fieldMode string) (collection.FieldRestricter, error) {
 	restricter := collection.Collection(collectionName)
 	if restricter == nil {
-		if isSuperAdmin {
-			// Superadmins can see unknown collections.
-			return collection.Allways, nil
-		}
 		// TODO LAST ERROR
 		return nil, fmt.Errorf("collection %q is not implemented, maybe run go generate ./... to fetch all fields from the models.yml", collectionName)
-	}
-
-	if isSuperAdmin {
-		type superRestricter interface {
-			SuperAdmin(mode string) collection.FieldRestricter
-		}
-		sr, ok := restricter.(superRestricter)
-		if !ok {
-			// Superadmin can see all collections without a SuperAdmin method.
-			return collection.Allways, nil
-		}
-		modefunc := sr.SuperAdmin(fieldMode)
-		if modefunc == nil {
-			// Do not restrict unknown fields that are not implemented.
-			return collection.Allways, nil
-		}
-		return modefunc, nil
 	}
 
 	modefunc := restricter.Modes(fieldMode)
