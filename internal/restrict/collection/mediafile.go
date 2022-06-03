@@ -70,72 +70,66 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 			return nil, nil
 		}
 
-		var allowed []int
-		for _, mediafileID := range ids {
+		return eachCondition(ids, func(mediafileID int) (bool, error) {
 			perms, err := mperms.Meeting(ctx, ownerID)
 			if err != nil {
-				return nil, fmt.Errorf("getting perms for meeting %d: %w", ownerID, err)
+				return false, fmt.Errorf("getting perms for meeting %d: %w", ownerID, err)
 			}
 
 			if perms.IsAdmin() {
-				allowed = append(allowed, mediafileID)
-				continue
+				return true, nil
 			}
 
 			canSeeMeeting, err := Meeting{}.see(ctx, ds, mperms, ownerID)
 			if err != nil {
-				return nil, fmt.Errorf("can see meeting %d: %w", ownerID, err)
+				return false, fmt.Errorf("can see meeting %d: %w", ownerID, err)
 			}
 
 			usedAsLogo := ds.Mediafile_UsedAsLogoInMeetingIDTmpl(mediafileID).ErrorLater(ctx)
 			usedAsFont := ds.Mediafile_UsedAsFontInMeetingIDTmpl(mediafileID).ErrorLater(ctx)
 			if err := ds.Err(); err != nil {
-				return nil, fmt.Errorf("fetching as logo and as font: %w", err)
+				return false, fmt.Errorf("fetching as logo and as font: %w", err)
 			}
+
 			if len(canSeeMeeting) == 1 && (len(usedAsFont)+len(usedAsLogo) > 0) {
-				allowed = append(allowed, mediafileID)
-				continue
+				return true, nil
 			}
 
 			if perms.Has(perm.ProjectorCanSee) {
 				p7onIDs := ds.Mediafile_ProjectionIDs(mediafileID).ErrorLater(ctx)
 				for _, p7onID := range p7onIDs {
 					if _, exist := ds.Projection_CurrentProjectorID(p7onID).ErrorLater(ctx); exist {
-						allowed = append(allowed, mediafileID)
-						continue
+						return true, nil
 					}
 				}
 
 				if err := ds.Err(); err != nil {
-					return nil, fmt.Errorf("checking projections: %w", err)
+					return false, fmt.Errorf("checking projections: %w", err)
 				}
 			}
 
 			if perms.Has(perm.MediafileCanManage) {
-				allowed = append(allowed, mediafileID)
-				continue
+				return true, nil
 			}
 
 			if perms.Has(perm.MediafileCanSee) {
 				public := ds.Mediafile_IsPublic(mediafileID).ErrorLater(ctx)
 				if public {
-					allowed = append(allowed, mediafileID)
-					continue
+					return true, nil
 				}
 
 				inheritedGroups := ds.Mediafile_InheritedAccessGroupIDs(mediafileID).ErrorLater(ctx)
 				for _, id := range inheritedGroups {
 					if perms.InGroup(id) {
-						allowed = append(allowed, mediafileID)
-						continue
+						return true, nil
 					}
 				}
 
 				if err := ds.Err(); err != nil {
-					return nil, fmt.Errorf("checking can see conditions: %w", err)
+					return false, fmt.Errorf("checking can see conditions: %w", err)
 				}
 			}
-		}
-		return allowed, nil
+			return false, nil
+		})
 	})
 }

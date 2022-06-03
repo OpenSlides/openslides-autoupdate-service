@@ -215,7 +215,7 @@ func (u User) RequiredObjects(ds *dsfetch.Fetch) []UserRequiredObject {
 			"option",
 			ds.User_OptionIDsTmpl,
 			ds.User_OptionIDs,
-			todoToSingle(Option{}.see),
+			Option{}.see,
 		},
 
 		{

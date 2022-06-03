@@ -183,6 +183,20 @@ func eachMeeting(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int
 	return allAllowed, nil
 }
 
+func meetingPerm(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int, mperms *perm.MeetingPermission, permission perm.TPermission) ([]int, error) {
+	return eachMeeting(ctx, ds, r, ids, func(meetingID int, ids []int) ([]int, error) {
+		perms, err := mperms.Meeting(ctx, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting permission: %w", err)
+		}
+
+		if perms.Has(permission) {
+			return ids, nil
+		}
+		return nil, nil
+	})
+}
+
 func eachRelationField(ctx context.Context, toField func(int) *dsfetch.ValueInt, ids []int, f func(id int, ids []int) ([]int, error)) ([]int, error) {
 	filteredIDs := make(map[int][]int)
 	for _, id := range ids {
@@ -206,6 +220,9 @@ func eachRelationField(ctx context.Context, toField func(int) *dsfetch.ValueInt,
 	return allAllowed, nil
 }
 
+// TODO: currently, this calls the function with the same collectionObject
+// (motion/5, motion/5), but it should bundle it by collection (motion/1,
+// motion/2).
 func eachContentObjectCollection(ctx context.Context, toField func(int) *dsfetch.ValueString, ids []int, f func(collection string, id int, ids []int) ([]int, error)) ([]int, error) {
 	filteredIDs := make(map[string][]int)
 	for _, id := range ids {
@@ -238,4 +255,19 @@ func eachContentObjectCollection(ctx context.Context, toField func(int) *dsfetch
 	}
 
 	return allAllowed, nil
+}
+
+func eachCondition(ids []int, f func(id int) (bool, error)) ([]int, error) {
+	var allowed []int
+	for _, id := range ids {
+		ok, err := f(id)
+		if err != nil {
+			return nil, fmt.Errorf("checking for element %d: %w", id, err)
+		}
+
+		if ok {
+			allowed = append(allowed, id)
+		}
+	}
+	return allowed, nil
 }

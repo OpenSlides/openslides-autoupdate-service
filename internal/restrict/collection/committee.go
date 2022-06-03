@@ -45,19 +45,22 @@ func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 		return committeeIDs, nil
 	}
 
-	var allowed []int
-	for _, committeeID := range committeeIDs {
+	allowed, err := eachCondition(committeeIDs, func(committeeID int) (bool, error) {
 		userIDs, err := ds.Committee_UserIDs(committeeID).Value(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("getting committee users: %w", err)
+			return false, fmt.Errorf("getting committee users: %w", err)
 		}
 
 		for _, uid := range userIDs {
 			if uid == mperms.UserID() {
-				allowed = append(allowed, committeeID)
-				break
+				return true, nil
 			}
 		}
+		return false, nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("checking if user is in committee: %w", err)
 	}
 
 	return allowed, nil
@@ -73,16 +76,17 @@ func (a Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Me
 		return committeeIDs, nil
 	}
 
-	var allowed []int
-	for _, committeeID := range committeeIDs {
+	allowed, err := eachCondition(committeeIDs, func(committeeID int) (bool, error) {
 		cmlCanManage, err := perm.HasCommitteeManagementLevel(ctx, ds, mperms.UserID(), committeeID)
 		if err != nil {
-			return nil, fmt.Errorf("checking committee management level: %w", err)
+			return false, fmt.Errorf("checking committee management level: %w", err)
 		}
 
-		if cmlCanManage {
-			allowed = append(allowed, committeeID)
-		}
+		return cmlCanManage, nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("checking has committee managemement level: %w", err)
 	}
 
 	return allowed, nil

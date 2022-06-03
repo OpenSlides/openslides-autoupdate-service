@@ -38,7 +38,7 @@ func (c ChatMessage) Modes(mode string) FieldRestricter {
 
 func (ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, chatMessageIDs ...int) ([]int, error) {
 	return eachRelationField(ctx, ds.ChatMessage_ChatGroupID, chatMessageIDs, func(chatGroupID int, ids []int) ([]int, error) {
-		meetingID, err := ChatGroup{}.meetingID(ctx, ds, chatGroupID)
+		meetingID, _, err := ChatGroup{}.MeetingID(ctx, ds, chatGroupID)
 		if err != nil {
 			return nil, fmt.Errorf("getting meeting id: %w", err)
 		}
@@ -63,16 +63,17 @@ func (ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 			}
 		}
 
-		var allowed []int
-		for _, chatMessageID := range ids {
+		allowed, err := eachCondition(ids, func(chatMessageID int) (bool, error) {
 			author, err := ds.ChatMessage_UserID(chatMessageID).Value(ctx)
 			if err != nil {
-				return nil, fmt.Errorf("reading author of chat message: %w", err)
+				return false, fmt.Errorf("reading author of chat message: %w", err)
 			}
 
-			if author == mperms.UserID() {
-				allowed = append(allowed, chatMessageID)
-			}
+			return author == mperms.UserID(), nil
+		})
+
+		if err != nil {
+			return nil, fmt.Errorf("checking auther of chat message: %w", err)
 		}
 
 		return allowed, nil

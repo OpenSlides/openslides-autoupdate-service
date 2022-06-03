@@ -20,12 +20,11 @@ type ChatGroup struct{}
 
 // MeetingID returns the meetingID for the object.
 func (c ChatGroup) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
-	meetingID, err := c.meetingID(ctx, ds, id)
+	mid, err := ds.ChatGroup_MeetingID(id).Value(ctx)
 	if err != nil {
-		return 0, false, fmt.Errorf("getting meetingID: %w", err)
+		return 0, false, fmt.Errorf("getting meeting_id: %w", err)
 	}
-
-	return meetingID, true, nil
+	return mid, true, nil
 }
 
 // Modes give sthe FieldRestricter for a restriction_mode.
@@ -48,35 +47,31 @@ func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 			return ids, nil
 		}
 
-		var allowed []int
-		for _, chatGroupID := range ids {
+		allowed, err := eachCondition(ids, func(chatGroupID int) (bool, error) {
 			readGroups, err := ds.ChatGroup_ReadGroupIDs(chatGroupID).Value(ctx)
 			if err != nil {
-				return nil, fmt.Errorf("getting chat read group ids: %w", err)
+				return false, fmt.Errorf("getting chat read group ids: %w", err)
 			}
 
 			writeGroups, err := ds.ChatGroup_WriteGroupIDs(chatGroupID).Value(ctx)
 			if err != nil {
-				return nil, fmt.Errorf("getting chat read group ids: %w", err)
+				return false, fmt.Errorf("getting chat read group ids: %w", err)
 			}
 
 			allGroups := append(readGroups, writeGroups...)
 
 			for _, gid := range allGroups {
 				if perms.InGroup(gid) {
-					allowed = append(allowed, chatGroupID)
-					continue
+					return true, nil
 				}
 			}
+			return false, nil
+		})
+
+		if err != nil {
+			return nil, fmt.Errorf("checking if user is in read or write group: %w", err)
 		}
+
 		return allowed, nil
 	})
-}
-
-func (c ChatGroup) meetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, error) {
-	mid, err := ds.ChatGroup_MeetingID(id).Value(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("fetching meeting_id: %w", err)
-	}
-	return mid, nil
 }

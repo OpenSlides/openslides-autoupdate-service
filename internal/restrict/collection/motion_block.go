@@ -56,17 +56,19 @@ func (m MotionBlock) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Me
 			return nil, nil
 		}
 
-		var allowed []int
-		for _, motionBlockID := range ids {
+		allowed, err := eachCondition(ids, func(motionBlockID int) (bool, error) {
 			internal, err := ds.MotionBlock_Internal(motionBlockID).Value(ctx)
 			if err != nil {
-				return nil, fmt.Errorf("getting internal: %w", err)
+				return false, fmt.Errorf("getting internal: %w", err)
 			}
 
-			if !internal {
-				allowed = append(allowed, motionBlockID)
-			}
+			return !internal, nil
+		})
+
+		if err != nil {
+			return nil, fmt.Errorf("checking internal state: %w", err)
 		}
+
 		return allowed, nil
 	})
 }

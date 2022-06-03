@@ -55,52 +55,35 @@ func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Mee
 			return ids, nil
 		}
 
-		var allowed []int
-		for _, agendaID := range ids {
+		allowed, err := eachCondition(ids, func(agendaID int) (bool, error) {
 			isHidden := ds.AgendaItem_IsHidden(agendaID).ErrorLater(ctx)
 			isInternal := ds.AgendaItem_IsInternal(agendaID).ErrorLater(ctx)
 			if err := ds.Err(); err != nil {
-				return nil, fmt.Errorf("fetching isHidden and isInternal: %w", err)
+				return false, fmt.Errorf("fetching isHidden and isInternal: %w", err)
 			}
 
 			if perms.Has(perm.AgendaItemCanSeeInternal) && !isHidden {
-				allowed = append(allowed, agendaID)
-				continue
+				return true, nil
 			}
 
 			if perms.Has(perm.AgendaItemCanSee) && (!isHidden && !isInternal) {
-				allowed = append(allowed, agendaID)
-				continue
+				return true, nil
 			}
+
+			return false, nil
+		})
+
+		if err != nil {
+			return nil, fmt.Errorf("checking agende is hidden and is internal with perm can_see_internal and can_see: %w", err)
 		}
 		return allowed, nil
 	})
 }
 
 func (a AgendaItem) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, agendaIDs ...int) ([]int, error) {
-	return eachMeeting(ctx, ds, a, agendaIDs, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
-		if err != nil {
-			return nil, fmt.Errorf("getting permissions: %w", err)
-		}
-
-		if perms.Has(perm.AgendaItemCanSeeInternal) {
-			return ids, nil
-		}
-		return nil, nil
-	})
+	return meetingPerm(ctx, ds, a, agendaIDs, mperms, perm.AgendaItemCanSeeInternal)
 }
 
 func (a AgendaItem) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, agendaIDs ...int) ([]int, error) {
-	return eachMeeting(ctx, ds, a, agendaIDs, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
-		if err != nil {
-			return nil, fmt.Errorf("getting permissions: %w", err)
-		}
-
-		if perms.Has(perm.AgendaItemCanManage) {
-			return ids, nil
-		}
-		return nil, nil
-	})
+	return meetingPerm(ctx, ds, a, agendaIDs, mperms, perm.AgendaItemCanManage)
 }

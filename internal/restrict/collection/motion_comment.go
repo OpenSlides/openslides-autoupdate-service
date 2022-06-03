@@ -41,23 +41,25 @@ func (m MotionComment) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.
 			return nil, fmt.Errorf("checking motion comment section %d can see: %w", commentSectionID, err)
 		}
 
-		if !seeSection {
+		if len(seeSection) == 0 {
 			return nil, nil
 		}
 
-		var allowed []int
-		for _, motionCommentID := range ids {
+		allowed, err := eachCondition(ids, func(motionCommentID int) (bool, error) {
 			motionID := ds.MotionComment_MotionID(motionCommentID).ErrorLater(ctx)
 
 			seeMotion, err := Motion{}.see(ctx, ds, mperms, motionID)
 			if err != nil {
-				return nil, fmt.Errorf("checking motion %d can see: %w", motionID, err)
+				return false, fmt.Errorf("checking motion %d can see: %w", motionID, err)
 			}
 
-			if len(seeMotion) == 1 {
-				allowed = append(allowed, motionCommentID)
-			}
+			return len(seeMotion) == 1, nil
+		})
+
+		if err != nil {
+			return nil, fmt.Errorf("checking motion can see: %w", err)
 		}
+
 		return allowed, nil
 	})
 }

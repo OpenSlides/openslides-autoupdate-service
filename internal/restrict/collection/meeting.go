@@ -56,91 +56,90 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meetin
 		return meetingIDs, nil
 	}
 
-	var allowed []int
-	for _, meetingID := range meetingIDs {
+	return eachCondition(meetingIDs, func(meetingID int) (bool, error) {
 		enableAnonymous, err := ds.Meeting_EnableAnonymous(meetingID).Value(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("checking enabled anonymous: %w", err)
+			return false, fmt.Errorf("checking enabled anonymous: %w", err)
 		}
 		if enableAnonymous {
-			allowed = append(allowed, meetingID)
-			continue
+			return true, nil
 		}
 
 		if mperms.UserID() == 0 {
-			continue
+			return false, nil
 		}
 
 		userIDs, err := ds.Meeting_UserIDs(meetingID).Value(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("getting user ids of meeting: %w", err)
+			return false, fmt.Errorf("getting user ids of meeting: %w", err)
 		}
 		for _, id := range userIDs {
 			if mperms.UserID() == id {
-				allowed = append(allowed, meetingID)
-				continue
+				return true, nil
 			}
 		}
 
 		committeeID, err := ds.Meeting_CommitteeID(meetingID).Value(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("getting committee id of meeting: %w", err)
+			return false, fmt.Errorf("getting committee id of meeting: %w", err)
 		}
 
 		isCommitteeManager, err := perm.HasCommitteeManagementLevel(ctx, ds, mperms.UserID(), committeeID)
 		if err != nil {
-			return nil, fmt.Errorf("getting committee management status: %w", err)
+			return false, fmt.Errorf("getting committee management status: %w", err)
 		}
 
 		if isCommitteeManager {
-			allowed = append(allowed, meetingID)
-			continue
+			return true, nil
 		}
 
 		_, isTemplateMeeting, err := ds.Meeting_TemplateForOrganizationID(meetingID).Value(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("getting template meeting: %w", err)
+			return false, fmt.Errorf("getting template meeting: %w", err)
 		}
 
 		cmlMeetings, err := perm.ManagementLevelCommittees(ctx, ds, mperms.UserID())
 		if err != nil {
-			return nil, fmt.Errorf("getting meetings with cml can manage: %w", err)
+			return false, fmt.Errorf("getting meetings with cml can manage: %w", err)
 		}
 
 		if isTemplateMeeting && len(cmlMeetings) > 0 {
-			allowed = append(allowed, meetingID)
-			continue
+			return true, nil
 		}
-	}
-	return allowed, nil
+
+		return false, nil
+	})
 }
 
 func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, meetingIDs ...int) ([]int, error) {
-	var allowed []int
-	for _, meetingID := range meetingIDs {
+	allowed, err := eachCondition(meetingIDs, func(meetingID int) (bool, error) {
 		perms, err := mperms.Meeting(ctx, meetingID)
 		if err != nil {
-			return nil, fmt.Errorf("getting permissions: %w", err)
+			return false, fmt.Errorf("getting permissions: %w", err)
 		}
 
-		if perms.Has(perm.MeetingCanSeeFrontpage) {
-			allowed = append(allowed, meetingID)
-		}
+		return perms.Has(perm.MeetingCanSeeFrontpage), nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("checking can front page permission: %w", err)
 	}
+
 	return allowed, nil
 }
 
 func (m Meeting) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, meetingIDs ...int) ([]int, error) {
-	var allowed []int
-	for _, meetingID := range meetingIDs {
+	allowed, err := eachCondition(meetingIDs, func(meetingID int) (bool, error) {
 		perms, err := mperms.Meeting(ctx, meetingID)
 		if err != nil {
-			return nil, fmt.Errorf("getting permissions: %w", err)
+			return false, fmt.Errorf("getting permissions: %w", err)
 		}
 
-		if perms.Has(perm.MeetingCanSeeLivestream) {
-			allowed = append(allowed, meetingID)
-		}
+		return perms.Has(perm.MeetingCanSeeLivestream), nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("checking can see lievestream permission: %w", err)
 	}
+
 	return allowed, nil
 }

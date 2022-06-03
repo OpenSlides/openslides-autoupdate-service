@@ -29,21 +29,11 @@ func (m MotionWorkflow) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int
 func (m MotionWorkflow) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return todoToSingle(m.see)
+		return m.see
 	}
 	return nil
 }
 
-func (m MotionWorkflow) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionWorkflowID int) (bool, error) {
-	meetingID, err := ds.MotionWorkflow_MeetingID(motionWorkflowID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting meetingID: %w", err)
-	}
-
-	perms, err := mperms.Meeting(ctx, meetingID)
-	if err != nil {
-		return false, fmt.Errorf("getting permission: %w", err)
-	}
-
-	return perms.Has(perm.MotionCanSee), nil
+func (m MotionWorkflow) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionWorkflowIDs ...int) ([]int, error) {
+	return meetingPerm(ctx, ds, m, motionWorkflowIDs, mperms, perm.MotionCanSee)
 }
