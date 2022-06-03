@@ -31,17 +31,18 @@ func (p PersonalNote) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) 
 func (p PersonalNote) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return todoToSingle(p.see)
+		return p.see
 	}
 	return nil
 }
 
-func (p PersonalNote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, personalNoteID int) (bool, error) {
-	pUserID, err := ds.PersonalNote_UserID(personalNoteID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("fetching user id of personal note: %w", err)
-	}
-	return mperms.UserID() == pUserID, nil
+func (p PersonalNote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, personalNoteIDs ...int) ([]int, error) {
+	return eachRelationField(ctx, ds.PersonalNote_UserID, personalNoteIDs, func(userID int, ids []int) ([]int, error) {
+		if mperms.UserID() == userID {
+			return ids, nil
+		}
+		return nil, nil
+	})
 }
 
 // SuperAdmin restricts the super admin.
