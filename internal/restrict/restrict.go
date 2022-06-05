@@ -308,7 +308,16 @@ func filterRelationList(
 	allowedIDs, err := relationListModeFunc(ctx, ds, mperms, ids...)
 	if err != nil {
 		// TODO: add currupted database warning if doesNotExist error from toCollectionField with one of the ids.
-		return nil, fmt.Errorf("calling relation ist mode func: %w", err)
+		if id, ok := isErrorCollectionIDs(err, parts[0], ids); ok {
+			log.Printf(
+				"Warning: datastore is corrupted. Relation-list field `%s` contains id `%d`, but `%s` with this id does not exist.",
+				key,
+				id,
+				parts[0],
+			)
+		} else {
+			return nil, fmt.Errorf("calling relation list mode func: %w", err)
+		}
 	}
 
 	if allowedIDs == nil {
@@ -321,6 +330,21 @@ func filterRelationList(
 		return nil, fmt.Errorf("encoding ids: %w", err)
 	}
 	return encoded, nil
+}
+
+func isErrorCollectionIDs(err error, collection string, ids []int) (int, bool) {
+	var errDoesNotExist dsfetch.DoesNotExistError
+	if errors.As(err, &errDoesNotExist) {
+		doesNotExistKey := datastore.Key(errDoesNotExist)
+		if doesNotExistKey.Collection == collection {
+			for _, id := range ids {
+				if id == doesNotExistKey.ID {
+					return id, true
+				}
+			}
+		}
+	}
+	return 0, false
 }
 
 func filterGenericRelationList(
