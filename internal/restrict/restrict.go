@@ -307,7 +307,6 @@ func filterRelationList(
 
 	allowedIDs, err := relationListModeFunc(ctx, ds, mperms, ids...)
 	if err != nil {
-		// TODO: add currupted database warning if doesNotExist error from toCollectionField with one of the ids.
 		if id, ok := isErrorCollectionIDs(err, parts[0], ids); ok {
 			log.Printf(
 				"Warning: datastore is corrupted. Relation-list field `%s` contains id `%d`, but `%s` with this id does not exist.",
