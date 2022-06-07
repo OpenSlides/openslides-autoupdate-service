@@ -48,7 +48,8 @@ func (r restricter) Get(ctx context.Context, keys ...datastore.Key) (map[datasto
 	}
 
 	duration := time.Since(start)
-	if times != nil && (duration > slowCalls || oserror.HasTagFromContext(ctx, "restrict_profile")) {
+
+	if times != nil && (duration > slowCalls || oserror.HasTagFromContext(ctx, "profile_restrict")) {
 		body, ok := oserror.BodyFromContext(ctx)
 		if !ok {
 			body = "unknown body, probably simple request"
@@ -175,9 +176,8 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 			}
 		}
 
-		keyPrefix := templateKeyPrefix(key.CollectionField())
 		// Relation List fields
-		if toCollectionfield, ok := relationListFields[keyPrefix]; ok {
+		if toCollectionfield, ok := relationListFields[templateKeyPrefix(key.CollectionField())]; ok {
 			value, err := filterRelationList(ctx, ds, mperms, key, toCollectionfield, data[key])
 			if err != nil {
 				return nil, fmt.Errorf("restrict relation-list ids of %q: %w", key, err)

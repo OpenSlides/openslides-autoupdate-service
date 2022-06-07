@@ -119,7 +119,7 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 		}
 
 		if r.URL.Query().Has("profile_restrict") {
-			ctx = oserror.ContextWithTag(ctx, "restrict_profile")
+			ctx = oserror.ContextWithTag(ctx, "profile_restrict")
 		}
 
 		if r.URL.Query().Has("single") || position != 0 {
