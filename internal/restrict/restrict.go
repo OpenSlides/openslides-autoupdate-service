@@ -10,13 +10,17 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
+
+const slowCalls = 100 * time.Millisecond
 
 // Middleware can be used as a datastore.Getter that restrict the data for a
 // user.
@@ -39,28 +43,41 @@ func (r restricter) Get(ctx context.Context, keys ...datastore.Key) (map[datasto
 		return nil, fmt.Errorf("getting data: %w", err)
 	}
 
-	if err := restrict(ctx, r.getter, r.uid, data); err != nil {
+	start := time.Now()
+	times, err := restrict(ctx, r.getter, r.uid, data)
+	if err != nil {
 		return nil, fmt.Errorf("restricting data: %w", err)
 	}
+
+	duration := time.Since(start)
+	if times != nil && duration > slowCalls {
+		if body, ok := oserror.BodyFromContext(ctx); ok {
+			profile(body, duration, times)
+		}
+	}
+
 	return data, nil
 }
 
 // restrict changes the keys and values in data for the user with the given user
 // id.
-func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[datastore.Key][]byte) error {
+func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[datastore.Key][]byte) (map[string]timeCount, error) {
 	ds := dsfetch.New(getter)
 	isSuperAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, uid, perm.OMLSuperadmin)
 	if err != nil {
 		var errDoesNotExist dsfetch.DoesNotExistError
 		if errors.As(err, &errDoesNotExist) || datastore.Key(errDoesNotExist).Collection == "user" {
 			// TODO LAST ERROR
-			return fmt.Errorf("request user %d does not exist", uid)
+			return nil, fmt.Errorf("request user %d does not exist", uid)
 		}
-		return fmt.Errorf("checking for superadmin: %w", err)
+		return nil, fmt.Errorf("checking for superadmin: %w", err)
 	}
 
 	if isSuperAdmin {
-		return restrictSuperAdmin(ctx, getter, uid, data)
+		if err := restrictSuperAdmin(ctx, getter, uid, data); err != nil {
+			return nil, fmt.Errorf("restrict as superadmin: %w", err)
+		}
+		return nil, nil
 	}
 
 	mperms := perm.NewMeetingPermission(ds, uid)
@@ -79,7 +96,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 
 		restrictionMode, err := buildFieldMode(key.Collection, key.Field)
 		if err != nil {
-			return fmt.Errorf("getting restriction Mode for %s: %w", key, err)
+			return nil, fmt.Errorf("getting restriction Mode for %s: %w", key, err)
 		}
 
 		cm := collectionMode{key.Collection, restrictionMode}
@@ -89,18 +106,24 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 		restrictModeIDs[cm].Add(key.ID)
 	}
 
+	times := make(map[string]timeCount, len(restrictModeIDs))
+
 	// Call restrict Mode function
 	for cm, ids := range restrictModeIDs {
+		start := time.Now()
 		modeFunc, err := restrictModefunc(cm.collection, cm.mode)
 		if err != nil {
-			return fmt.Errorf("getting restiction mode for %s/%s: %w", cm.collection, cm.mode, err)
+			return nil, fmt.Errorf("getting restiction mode for %s/%s: %w", cm.collection, cm.mode, err)
 		}
 
 		allowedIDs, err := modeFunc(ctx, ds, mperms, ids.List()...)
 		if err != nil {
-			return fmt.Errorf("calling collection %s modefunc %s with ids %v: %w", cm.collection, cm.mode, ids.List(), err)
+			return nil, fmt.Errorf("calling collection %s modefunc %s with ids %v: %w", cm.collection, cm.mode, ids.List(), err)
 		}
 		restrictModeIDs[cm].Remove(allowedIDs...)
+
+		duration := time.Since(start)
+		times[cm.collection] = timeCount{time: duration, count: ids.Len()}
 	}
 
 	// Remove restricted keys
@@ -111,7 +134,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 
 		restrictionMode, err := buildFieldMode(key.Collection, key.Field)
 		if err != nil {
-			return fmt.Errorf("getting restriction Mode for %s: %w", key, err)
+			return nil, fmt.Errorf("getting restriction Mode for %s: %w", key, err)
 		}
 
 		cm := collectionMode{key.Collection, restrictionMode}
@@ -124,23 +147,23 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 		if toCollectionfield, ok := relationFields[templateKeyPrefix(key.CollectionField())]; ok {
 			var id int
 			if err := json.Unmarshal(data[key], &id); err != nil {
-				return fmt.Errorf("decoding %q: %w", key, err)
+				return nil, fmt.Errorf("decoding %q: %w", key, err)
 			}
 
 			parts := strings.Split(toCollectionfield, "/")
 			fieldMode, err := buildFieldMode(parts[0], parts[1])
 			if err != nil {
-				return fmt.Errorf("building relation field field mode: %w", err)
+				return nil, fmt.Errorf("building relation field field mode: %w", err)
 			}
 
 			modeFunc, err := restrictModefunc(parts[0], fieldMode)
 			if err != nil {
-				return fmt.Errorf("getting restict func: %w", err)
+				return nil, fmt.Errorf("getting restict func: %w", err)
 			}
 
 			allowedID, err := modeFunc(ctx, ds, mperms, id)
 			if err != nil {
-				return fmt.Errorf("checking can see of relation field %s: %w", key, err)
+				return nil, fmt.Errorf("checking can see of relation field %s: %w", key, err)
 			}
 			if len(allowedID) != 1 {
 				data[key] = nil
@@ -152,7 +175,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 		if toCollectionfield, ok := relationListFields[keyPrefix]; ok {
 			value, err := filterRelationList(ctx, ds, mperms, key, toCollectionfield, data[key])
 			if err != nil {
-				return fmt.Errorf("restrict relation-list ids of %q: %w", key, err)
+				return nil, fmt.Errorf("restrict relation-list ids of %q: %w", key, err)
 			}
 			data[key] = value
 		}
@@ -161,34 +184,34 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 		if toCollectionFieldMap, ok := genericRelationFields[templateKeyPrefix(key.CollectionField())]; ok {
 			var genericID string
 			if err := json.Unmarshal(data[key], &genericID); err != nil {
-				return fmt.Errorf("decoding %q: %w", key, err)
+				return nil, fmt.Errorf("decoding %q: %w", key, err)
 			}
 
 			parts := strings.Split(genericID, "/")
 			toField := toCollectionFieldMap[parts[0]]
 			if toField == "" {
 				// TODO LAST ERROR
-				return fmt.Errorf("invalid generic relation for field %q: %s", key.CollectionField(), parts[0])
+				return nil, fmt.Errorf("invalid generic relation for field %q: %s", key.CollectionField(), parts[0])
 			}
 
 			fieldMode, err := buildFieldMode(parts[0], toField)
 			if err != nil {
-				return fmt.Errorf("building generic relation field mode: %w", err)
+				return nil, fmt.Errorf("building generic relation field mode: %w", err)
 			}
 
 			modeFunc, err := restrictModefunc(parts[0], fieldMode)
 			if err != nil {
-				return fmt.Errorf("getting restict func: %w", err)
+				return nil, fmt.Errorf("getting restict func: %w", err)
 			}
 
 			id, err := strconv.Atoi(parts[1])
 			if err != nil {
-				return fmt.Errorf("decoding genericID: %w", err)
+				return nil, fmt.Errorf("decoding genericID: %w", err)
 			}
 
 			allowedID, err := modeFunc(ctx, ds, mperms, id)
 			if err != nil {
-				return fmt.Errorf("checking can see: %w", err)
+				return nil, fmt.Errorf("checking can see: %w", err)
 			}
 			if len(allowedID) != 1 {
 				data[key] = nil
@@ -199,13 +222,13 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 		if toCollectionfieldMap, ok := genericRelationListFields[templateKeyPrefix(key.CollectionField())]; ok {
 			value, err := filterGenericRelationList(ctx, ds, mperms, key, toCollectionfieldMap, data[key])
 			if err != nil {
-				return fmt.Errorf("restrict generic-relation-list ids of %q: %w", key, err)
+				return nil, fmt.Errorf("restrict generic-relation-list ids of %q: %w", key, err)
 			}
 			data[key] = value
 		}
 	}
 
-	return nil
+	return times, nil
 }
 
 func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, data map[datastore.Key][]byte) error {

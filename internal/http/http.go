@@ -75,6 +75,7 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Cache-Control", "no-store, max-age=0")
+		ctx := r.Context()
 
 		defer r.Body.Close()
 		uid := auth.FromContext(r.Context())
@@ -90,6 +91,12 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 			// TODO EXTERNAL ERROR
 			handleError(w, fmt.Errorf("reading body: %w", err), true)
 			return
+		}
+
+		compactedBody := new(bytes.Buffer)
+		if err := json.Compact(compactedBody, body); err == nil {
+			// Ignore error, it will be handled in the keysbuilder function.
+			ctx = oserror.ContextWithBody(ctx, string(body))
 		}
 
 		bodyBuilder, err := keysbuilder.ManyFromJSON(bytes.NewReader(body))
@@ -112,7 +119,7 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 		}
 
 		if r.URL.Query().Has("single") || position != 0 {
-			data, err := connecter.SingleData(r.Context(), uid, builder, position)
+			data, err := connecter.SingleData(ctx, uid, builder, position)
 			if err != nil {
 				handleError(w, fmt.Errorf("getting single data: %w", err), true)
 				return
@@ -131,7 +138,7 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 			return
 		}
 
-		if err := sendMessages(r.Context(), w, uid, builder, connecter); err != nil {
+		if err := sendMessages(ctx, w, uid, builder, connecter); err != nil {
 			handleError(w, err, false)
 			return
 		}
