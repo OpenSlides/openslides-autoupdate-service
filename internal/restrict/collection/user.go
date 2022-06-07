@@ -77,108 +77,116 @@ func (u User) SuperAdmin(mode string) FieldRestricter {
 	return Allways
 }
 
-func (u User) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userID int) (bool, error) {
-	if mperms.UserID() == userID {
-		return true, nil
-	}
-
-	if mperms.UserID() != 0 {
-		canManageUsers, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
-		if err != nil {
-			return false, fmt.Errorf("get organization level: %w", err)
-		}
-
-		if canManageUsers {
+// TODO: this is not good.
+func (u User) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
+	return eachCondition(userIDs, func(userID int) (bool, error) {
+		if mperms.UserID() == userID {
 			return true, nil
 		}
 
-		commiteeIDs, err := perm.ManagementLevelCommittees(ctx, ds, mperms.UserID())
-		if err != nil {
-			return false, fmt.Errorf("getting committee ids: %w", err)
-		}
+		if mperms.UserID() != 0 {
+			canManageUsers, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
+			if err != nil {
+				return false, fmt.Errorf("get organization level: %w", err)
+			}
 
-		for _, committeeID := range commiteeIDs {
-			userIDs := ds.Committee_UserIDs(committeeID).ErrorLater(ctx)
-			for _, uid := range userIDs {
-				if userID == uid {
-					return true, nil
+			if canManageUsers {
+				return true, nil
+			}
+
+			commiteeIDs, err := perm.ManagementLevelCommittees(ctx, ds, mperms.UserID())
+			if err != nil {
+				return false, fmt.Errorf("getting committee ids: %w", err)
+			}
+
+			for _, committeeID := range commiteeIDs {
+				userIDs := ds.Committee_UserIDs(committeeID).ErrorLater(ctx)
+				for _, uid := range userIDs {
+					if userID == uid {
+						return true, nil
+					}
 				}
 			}
-		}
-		if err := ds.Err(); err != nil {
-			return false, fmt.Errorf("checking committee management level: %w", err)
-		}
-	}
-
-	meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
-	for _, meetingID := range meetingIDs {
-		perms, err := mperms.Meeting(ctx, meetingID)
-		if err != nil {
-			return false, fmt.Errorf("checking permissions of meeting %d: %w", meetingID, err)
+			if err := ds.Err(); err != nil {
+				return false, fmt.Errorf("checking committee management level: %w", err)
+			}
 		}
 
-		if perms.Has(perm.UserCanSee) {
-			return true, nil
-		}
+		meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
+		for _, meetingID := range meetingIDs {
+			perms, err := mperms.Meeting(ctx, meetingID)
+			if err != nil {
+				return false, fmt.Errorf("checking permissions of meeting %d: %w", meetingID, err)
+			}
 
-		cid, err := ds.Meeting_CommitteeID(meetingID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("getting committee id of meeting %d: %w", meetingID, err)
-		}
+			if perms.Has(perm.UserCanSee) {
+				return true, nil
+			}
 
-		committeeManager, err := perm.HasCommitteeManagementLevel(ctx, ds, mperms.UserID(), cid)
-		if err != nil {
-			return false, fmt.Errorf("getting committee management level: %w", err)
-		}
+			cid, err := ds.Meeting_CommitteeID(meetingID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting committee id of meeting %d: %w", meetingID, err)
+			}
 
-		if committeeManager {
-			return true, nil
-		}
-	}
+			committeeManager, err := perm.HasCommitteeManagementLevel(ctx, ds, mperms.UserID(), cid)
+			if err != nil {
+				return false, fmt.Errorf("getting committee management level: %w", err)
+			}
 
-	if mperms.UserID() != 0 {
-		for _, meetingID := range ds.User_VoteDelegatedToIDTmpl(mperms.UserID()).ErrorLater(ctx) {
-			delegated := ds.User_VoteDelegatedToID(mperms.UserID(), meetingID).ErrorLater(ctx)
-			if delegated == userID {
+			if committeeManager {
 				return true, nil
 			}
 		}
-		if err := ds.Err(); err != nil {
-			return false, fmt.Errorf("checking vote deleted to: %w", err)
-		}
 
-		for _, meetingID := range ds.User_VoteDelegationsFromIDsTmpl(mperms.UserID()).ErrorLater(ctx) {
-			delegations := ds.User_VoteDelegationsFromIDs(mperms.UserID(), meetingID).ErrorLater(ctx)
-			for _, uid := range delegations {
-				if uid == userID {
+		if mperms.UserID() != 0 {
+			for _, meetingID := range ds.User_VoteDelegatedToIDTmpl(mperms.UserID()).ErrorLater(ctx) {
+				delegated := ds.User_VoteDelegatedToID(mperms.UserID(), meetingID).ErrorLater(ctx)
+				if delegated == userID {
 					return true, nil
 				}
 			}
-		}
-		if err := ds.Err(); err != nil {
-			return false, fmt.Errorf("checking vote delegations form: %w", err)
-		}
-	}
+			if err := ds.Err(); err != nil {
+				return false, fmt.Errorf("checking vote deleted to: %w", err)
+			}
 
-	for _, r := range u.RequiredObjects(ds) {
-		for _, meetingID := range r.TmplFunc(userID).ErrorLater(ctx) {
-			for _, elementID := range r.ElemFunc(userID, meetingID).ErrorLater(ctx) {
-				see, err := r.SeeFunc(ctx, ds, mperms, elementID)
+			for _, meetingID := range ds.User_VoteDelegationsFromIDsTmpl(mperms.UserID()).ErrorLater(ctx) {
+				delegations := ds.User_VoteDelegationsFromIDs(mperms.UserID(), meetingID).ErrorLater(ctx)
+				for _, uid := range delegations {
+					if uid == userID {
+						return true, nil
+					}
+				}
+			}
+			if err := ds.Err(); err != nil {
+				return false, fmt.Errorf("checking vote delegations form: %w", err)
+			}
+		}
+
+		for _, r := range u.RequiredObjects(ds) {
+			for _, meetingID := range r.TmplFunc(userID).ErrorLater(ctx) {
+				ids := r.ElemFunc(userID, meetingID).ErrorLater(ctx)
+
+				if len(ids) == 0 {
+					continue
+				}
+
+				allowedIDs, err := r.SeeFunc(ctx, ds, mperms, ids...)
 				if err != nil {
 					return false, fmt.Errorf("checking required object %q: %w", r.Name, err)
 				}
 
-				if see {
+				if len(allowedIDs) > 0 {
 					return true, nil
 				}
+
+			}
+			if err := ds.Err(); err != nil {
+				return false, fmt.Errorf("getting object %q: %w", r.Name, err)
 			}
 		}
-		if err := ds.Err(); err != nil {
-			return false, fmt.Errorf("getting object %q: %w", r.Name, err)
-		}
-	}
 
-	return false, nil
+		return false, nil
+	})
 }
 
 // UserRequiredObject represents the reference from a user to other objects.
@@ -257,87 +265,95 @@ func (u User) RequiredObjects(ds *dsfetch.Fetch) []UserRequiredObject {
 	}
 }
 
-func (u User) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, UserID int) (bool, error) {
-	return mperms.UserID() == UserID, nil
+func (u User) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
+	return eachCondition(userIDs, func(userID int) (bool, error) {
+		return mperms.UserID() == userID, nil
+	})
 }
 
-func (u User) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, UserID int) (bool, error) {
+func (u User) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
 	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
 	if err != nil {
-		return false, fmt.Errorf("cheching oml: %w", err)
+		return nil, fmt.Errorf("cheching oml: %w", err)
 	}
 
 	if canManage {
-		return true, nil
+		return userIDs, nil
 	}
 
-	meetingIDs := ds.User_GroupIDsTmpl(UserID).ErrorLater(ctx)
-	for _, meetingID := range meetingIDs {
-		perms, err := mperms.Meeting(ctx, meetingID)
-		if err != nil {
-			return false, fmt.Errorf("checking permissions of meeting %d: %w", meetingID, err)
-		}
+	// TODO: group by many meeting.
+	return eachCondition(userIDs, func(userID int) (bool, error) {
+		meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
+		for _, meetingID := range meetingIDs {
+			perms, err := mperms.Meeting(ctx, meetingID)
+			if err != nil {
+				return false, fmt.Errorf("checking permissions of meeting %d: %w", meetingID, err)
+			}
 
-		if perms.Has(perm.UserCanManage) {
-			return true, nil
-		}
-	}
-	if err := ds.Err(); err != nil {
-		return false, fmt.Errorf("checking manage in any meeting: %w", err)
-	}
-
-	return false, nil
-}
-
-func (u User) modeE(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, UserID int) (bool, error) {
-	if mperms.UserID() == UserID {
-		return true, nil
-	}
-
-	if mperms.UserID() == 0 {
-		return false, nil
-	}
-
-	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
-	if err != nil {
-		return false, fmt.Errorf("cheching oml: %w", err)
-	}
-
-	if canManage {
-		return true, nil
-	}
-
-	commiteeIDs, err := perm.ManagementLevelCommittees(ctx, ds, mperms.UserID())
-	if err != nil {
-		return false, fmt.Errorf("getting committee ids: %w", err)
-	}
-
-	for _, committeeID := range commiteeIDs {
-		userIDs := ds.Committee_UserIDs(committeeID).ErrorLater(ctx)
-		for _, uid := range userIDs {
-			if UserID == uid {
+			if perms.Has(perm.UserCanManage) {
 				return true, nil
 			}
 		}
-	}
-	if err := ds.Err(); err != nil {
-		return false, fmt.Errorf("checking committee management level: %w", err)
-	}
-
-	meetingIDs := ds.User_GroupIDsTmpl(UserID).ErrorLater(ctx)
-	for _, meetingID := range meetingIDs {
-		perms, err := mperms.Meeting(ctx, meetingID)
-		if err != nil {
-			return false, fmt.Errorf("checking permissions of meeting %d: %w", meetingID, err)
+		if err := ds.Err(); err != nil {
+			return false, fmt.Errorf("checking manage in any meeting: %w", err)
 		}
 
-		if perms.Has(perm.UserCanManage) {
+		return false, nil
+	})
+}
+
+func (u User) modeE(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
+	if mperms.UserID() == 0 {
+		return nil, nil
+	}
+
+	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
+	if err != nil {
+		return nil, fmt.Errorf("cheching oml: %w", err)
+	}
+
+	if canManage {
+		return userIDs, nil
+	}
+
+	// TODO: optimize
+	return eachCondition(userIDs, func(userID int) (bool, error) {
+		if mperms.UserID() == userID {
 			return true, nil
 		}
-	}
-	if err := ds.Err(); err != nil {
-		return false, fmt.Errorf("checking manage in any meeting: %w", err)
-	}
 
-	return false, nil
+		commiteeIDs, err := perm.ManagementLevelCommittees(ctx, ds, mperms.UserID())
+		if err != nil {
+			return false, fmt.Errorf("getting committee ids: %w", err)
+		}
+
+		for _, committeeID := range commiteeIDs {
+			userIDs := ds.Committee_UserIDs(committeeID).ErrorLater(ctx)
+			for _, uid := range userIDs {
+				if userID == uid {
+					return true, nil
+				}
+			}
+		}
+		if err := ds.Err(); err != nil {
+			return false, fmt.Errorf("checking committee management level: %w", err)
+		}
+
+		meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
+		for _, meetingID := range meetingIDs {
+			perms, err := mperms.Meeting(ctx, meetingID)
+			if err != nil {
+				return false, fmt.Errorf("checking permissions of meeting %d: %w", meetingID, err)
+			}
+
+			if perms.Has(perm.UserCanManage) {
+				return true, nil
+			}
+		}
+		if err := ds.Err(); err != nil {
+			return false, fmt.Errorf("checking manage in any meeting: %w", err)
+		}
+
+		return false, nil
+	})
 }

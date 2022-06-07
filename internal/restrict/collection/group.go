@@ -34,15 +34,16 @@ func (g Group) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, groupID int) (bool, error) {
-	meetingID, err := ds.Group_MeetingID(groupID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("fetching meeting id of group %d: %w", groupID, err)
-	}
+func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, groupIDs ...int) ([]int, error) {
+	return eachMeeting(ctx, ds, g, groupIDs, func(meetingID int, ids []int) ([]int, error) {
+		canSee, err := Meeting{}.see(ctx, ds, mperms, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("can see meeting %d: %w", meetingID, err)
+		}
 
-	canSee, err := Meeting{}.see(ctx, ds, mperms, meetingID)
-	if err != nil {
-		return false, fmt.Errorf("can see meeting %d: %w", meetingID, err)
-	}
-	return canSee, nil
+		if len(canSee) == 1 {
+			return ids, nil
+		}
+		return nil, nil
+	})
 }

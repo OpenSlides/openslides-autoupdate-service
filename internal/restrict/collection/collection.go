@@ -2,25 +2,33 @@ package collection
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // FieldRestricter is a function to restrict fields of a collection.
-type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, id int) (bool, error)
+type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, id ...int) ([]int, error)
+
+type singleFieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, id int) (bool, error)
 
 // Allways is a restricter func that just returns true.
-func Allways(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementID int) (bool, error) {
-	return true, nil
+func Allways(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
+	return elementIDs, nil
 }
 
-func loggedIn(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementID int) (bool, error) {
-	return mperms.UserID() != 0, nil
+func loggedIn(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
+	if mperms.UserID() != 0 {
+		return elementIDs, nil
+	}
+	return nil, nil
 }
 
-func never(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementID int) (bool, error) {
-	return false, nil
+func never(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
+	return nil, nil
 }
 
 // Restricter returns a fieldRestricter for a restriction_mode.
@@ -125,4 +133,142 @@ func (u Unknown) Modes(string) FieldRestricter {
 // MeetingID is not a thing on a unknown meeting
 func (u Unknown) MeetingID(context.Context, *dsfetch.Fetch, int) (int, bool, error) {
 	return 0, false, nil
+}
+
+func eachMeeting(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int, f func(meetingID int, ids []int) ([]int, error)) ([]int, error) {
+	meetingToIDs := make(map[int][]int)
+	for _, id := range ids {
+		meetingID, hasMeeting, err := r.MeetingID(ctx, ds, id)
+		if err != nil {
+			return nil, fmt.Errorf("getting meeting id of element %d: %w", id, err)
+		}
+		if !hasMeeting {
+			return nil, fmt.Errorf("calling eachMeeting for object, that has no meeting")
+		}
+		meetingToIDs[meetingID] = append(meetingToIDs[meetingID], id)
+	}
+
+	var allAllowed []int
+	for meetingID, ids := range meetingToIDs {
+		allowed, err := f(meetingID, ids)
+		if err != nil {
+			return nil, fmt.Errorf("restricting for meeting %d: %w", meetingID, err)
+		}
+
+		allAllowed = append(allAllowed, allowed...)
+	}
+
+	return allAllowed, nil
+}
+
+func meetingPerm(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int, mperms *perm.MeetingPermission, permission perm.TPermission) ([]int, error) {
+	return eachMeeting(ctx, ds, r, ids, func(meetingID int, ids []int) ([]int, error) {
+		perms, err := mperms.Meeting(ctx, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting permission: %w", err)
+		}
+
+		if perms.Has(permission) {
+			return ids, nil
+		}
+		return nil, nil
+	})
+}
+
+func eachRelationField(ctx context.Context, toField func(int) *dsfetch.ValueInt, ids []int, f func(id int, ids []int) ([]int, error)) ([]int, error) {
+	filteredIDs := make(map[int][]int)
+	for _, id := range ids {
+		fieldID, err := toField(id).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting id for element %d: %w", id, err)
+		}
+		filteredIDs[fieldID] = append(filteredIDs[fieldID], id)
+	}
+
+	allAllowed := make([]int, 0, len(ids))
+	for fieldID, ids := range filteredIDs {
+		allowed, err := f(fieldID, ids)
+		if err != nil {
+			return nil, fmt.Errorf("restricting for element %d: %w", fieldID, err)
+		}
+
+		allAllowed = append(allAllowed, allowed...)
+	}
+
+	return allAllowed, nil
+}
+
+func eachStringField(ctx context.Context, toField func(int) *dsfetch.ValueString, ids []int, f func(value string, ids []int) ([]int, error)) ([]int, error) {
+	filteredIDs := make(map[string][]int)
+	for _, id := range ids {
+		value, err := toField(id).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting value for element %d: %w", id, err)
+		}
+		filteredIDs[value] = append(filteredIDs[value], id)
+	}
+
+	allAllowed := make([]int, 0, len(ids))
+	for value, ids := range filteredIDs {
+		allowed, err := f(value, ids)
+		if err != nil {
+			return nil, fmt.Errorf("restricting for element %s: %w", value, err)
+		}
+
+		allAllowed = append(allAllowed, allowed...)
+	}
+
+	return allAllowed, nil
+}
+
+// TODO: currently, this calls the function with the same collectionObject
+// (motion/5, motion/5), but it should bundle it by collection (motion/1,
+// motion/2).
+func eachContentObjectCollection(ctx context.Context, toField func(int) *dsfetch.ValueString, ids []int, f func(collection string, id int, ids []int) ([]int, error)) ([]int, error) {
+	filteredIDs := make(map[string][]int)
+	for _, id := range ids {
+		contentObjectID, err := toField(id).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting id for element %d: %w", id, err)
+		}
+
+		filteredIDs[contentObjectID] = append(filteredIDs[contentObjectID], id)
+	}
+
+	allAllowed := make([]int, 0, len(ids))
+	for contentObjectID, ids := range filteredIDs {
+		collection, objectID, found := strings.Cut(contentObjectID, "/")
+		if !found {
+			return nil, fmt.Errorf("content object_id has to have exacly one /, got %q", contentObjectID)
+		}
+
+		id, err := strconv.Atoi(objectID)
+		if err != nil {
+			return nil, fmt.Errorf("second part of content_object_id has to be int, got %q", objectID)
+		}
+
+		allowed, err := f(collection, id, ids)
+		if err != nil {
+			return nil, fmt.Errorf("restricting for element %s: %w", contentObjectID, err)
+		}
+
+		allAllowed = append(allAllowed, allowed...)
+	}
+
+	return allAllowed, nil
+}
+
+func eachCondition(ids []int, f func(id int) (bool, error)) ([]int, error) {
+	allowed := make([]int, 0, len(ids))
+	for _, id := range ids {
+		ok, err := f(id)
+		if err != nil {
+			return nil, fmt.Errorf("checking for element %d: %w", id, err)
+		}
+
+		if ok {
+			allowed = append(allowed, id)
+		}
+	}
+	return allowed, nil
 }

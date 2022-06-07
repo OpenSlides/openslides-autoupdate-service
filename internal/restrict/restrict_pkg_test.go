@@ -14,7 +14,7 @@ func TestRestrictModeForAll(t *testing.T) {
 			t.Fatalf("building field mode: %v", err)
 		}
 
-		if _, err := restrictMode(parts[0], fieldMode, false); err != nil {
+		if _, err := restrictModefunc(parts[0], fieldMode); err != nil {
 			t.Errorf("restrictMode(%s, %s) returned: %v", parts[0], parts[1], err)
 		}
 	}

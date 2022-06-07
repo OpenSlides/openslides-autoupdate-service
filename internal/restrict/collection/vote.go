@@ -44,90 +44,95 @@ func (v Vote) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, voteID int) (bool, error) {
-	optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("fetching option_id: %w", err)
-	}
-
-	pollID, err := pollID(ctx, ds, optionID)
-	if err != nil {
-		return false, fmt.Errorf("getting poll id: %w", err)
-	}
-
-	state, err := ds.Poll_State(pollID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting poll id and state: %w", err)
-	}
-
-	if state == "published" {
-		return true, nil
-	}
-
-	manage, err := Poll{}.manage(ctx, ds, mperms, pollID)
-	if err != nil {
-		return false, fmt.Errorf("checking manage poll %d: %w", pollID, err)
-	}
-
-	if manage {
-		return true, nil
-	}
-
-	voteUser, exist, err := ds.Vote_UserID(voteID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting vote user: %w", err)
-	}
-
-	if exist && voteUser == mperms.UserID() {
-		return true, nil
-	}
-
-	delegatedUser, exist, err := ds.Vote_DelegatedUserID(voteID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting delegated user: %w", err)
-	}
-
-	if exist && delegatedUser == mperms.UserID() {
-		return true, nil
-	}
-
-	return false, nil
-}
-
-func (v Vote) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, voteID int) (bool, error) {
-	optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("fetching option_id: %w", err)
-	}
-
-	pollID, err := pollID(ctx, ds, optionID)
-	if err != nil {
-		return false, fmt.Errorf("getting poll id: %w", err)
-	}
-	state, err := ds.Poll_State(pollID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting poll id and state: %w", err)
-	}
-
-	switch state {
-	case "published":
-		see, err := v.see(ctx, ds, mperms, voteID)
+// TODO: Group by poll or option
+func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, voteIDs ...int) ([]int, error) {
+	return eachCondition(voteIDs, func(voteID int) (bool, error) {
+		optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
 		if err != nil {
-			return false, fmt.Errorf("checking see vote: %w", err)
+			return false, fmt.Errorf("fetching option_id: %w", err)
 		}
 
-		return see, nil
+		pollID, err := pollID(ctx, ds, optionID)
+		if err != nil {
+			return false, fmt.Errorf("getting poll id: %w", err)
+		}
 
-	case "finished":
+		state, err := ds.Poll_State(pollID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting poll id and state: %w", err)
+		}
+
+		if state == "published" {
+			return true, nil
+		}
+
 		manage, err := Poll{}.manage(ctx, ds, mperms, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking manage poll %d: %w", pollID, err)
 		}
 
-		return manage, nil
+		if len(manage) == 1 {
+			return true, nil
+		}
 
-	default:
+		voteUser, exist, err := ds.Vote_UserID(voteID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting vote user: %w", err)
+		}
+
+		if exist && voteUser == mperms.UserID() {
+			return true, nil
+		}
+
+		delegatedUser, exist, err := ds.Vote_DelegatedUserID(voteID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting delegated user: %w", err)
+		}
+
+		if exist && delegatedUser == mperms.UserID() {
+			return true, nil
+		}
+
 		return false, nil
+	})
+}
 
-	}
+// TODO: Group by poll or option
+func (v Vote) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, voteIDs ...int) ([]int, error) {
+	return eachCondition(voteIDs, func(voteID int) (bool, error) {
+		optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("fetching option_id: %w", err)
+		}
+
+		pollID, err := pollID(ctx, ds, optionID)
+		if err != nil {
+			return false, fmt.Errorf("getting poll id: %w", err)
+		}
+		state, err := ds.Poll_State(pollID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting poll id and state: %w", err)
+		}
+
+		switch state {
+		case "published":
+			see, err := v.see(ctx, ds, mperms, voteID)
+			if err != nil {
+				return false, fmt.Errorf("checking see vote: %w", err)
+			}
+
+			return len(see) == 1, nil
+
+		case "finished":
+			manage, err := Poll{}.manage(ctx, ds, mperms, pollID)
+			if err != nil {
+				return false, fmt.Errorf("checking manage poll %d: %w", pollID, err)
+			}
+
+			return len(manage) == 1, nil
+
+		default:
+			return false, nil
+		}
+	})
 }

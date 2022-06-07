@@ -3,8 +3,6 @@ package collection
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
@@ -20,12 +18,11 @@ type ListOfSpeakers struct{}
 
 // MeetingID returns the meetingID for the object.
 func (los ListOfSpeakers) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
-	meetingID, err := los.meetingID(ctx, ds, id)
+	mid, err := ds.ListOfSpeakers_MeetingID(id).Value(ctx)
 	if err != nil {
-		return 0, false, fmt.Errorf("fetching meeting id for los %d: %w", id, err)
+		return 0, false, fmt.Errorf("fetching meeting_id: %w", err)
 	}
-
-	return meetingID, true, nil
+	return mid, true, nil
 }
 
 // Modes returns the restrictions modes for the meeting collection.
@@ -37,59 +34,49 @@ func (los ListOfSpeakers) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, losID int) (bool, error) {
-	mid, err := los.meetingID(ctx, ds, losID)
-	if err != nil {
-		return false, fmt.Errorf("fetching meeting id for los %d: %w", losID, err)
-	}
+func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, losIDs ...int) ([]int, error) {
+	return eachMeeting(ctx, ds, los, losIDs, func(meetingID int, ids []int) ([]int, error) {
+		perms, err := mperms.Meeting(ctx, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting perms for meetind %d: %w", meetingID, err)
+		}
 
-	perms, err := mperms.Meeting(ctx, mid)
-	if err != nil {
-		return false, fmt.Errorf("getting perms for meetind %d: %w", mid, err)
-	}
+		if canSee := perms.Has(perm.ListOfSpeakersCanSee); !canSee {
+			return nil, nil
+		}
 
-	if canSee := perms.Has(perm.ListOfSpeakersCanSee); !canSee {
-		return false, nil
-	}
+		return eachContentObjectCollection(ctx, ds.ListOfSpeakers_ContentObjectID, ids, func(collection string, id int, ids []int) ([]int, error) {
+			// TODO: This should return not one contentobject, but all content objects with the same collection at once. So the first argument should be objectIDs
+			var restricter FieldRestricter
+			switch collection {
+			case "motion":
+				restricter = Motion{}.see
 
-	contentObjectID, err := ds.ListOfSpeakers_ContentObjectID(losID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting content object id: %w", err)
-	}
+			case "motion_block":
+				restricter = MotionBlock{}.see
 
-	parts := strings.Split(contentObjectID, "/")
-	if len(parts) != 2 {
-		// TODO LAST ERROR
-		return false, fmt.Errorf("content object_id has to have exacly one /, got %q", contentObjectID)
-	}
+			case "assignment":
+				restricter = Assignment{}.see
 
-	id, err := strconv.Atoi(parts[1])
-	if err != nil {
-		// TODO LAST ERROR
-		return false, fmt.Errorf("second part of content_object_id has to be int, got %q", parts[1])
-	}
+			case "topic":
+				restricter = Topic{}.see
+			case "mediafile":
+				restricter = Mediafile{}.see
+			default:
+				// TODO LAST ERROR
+				return nil, fmt.Errorf("unknown content_object collection %q", collection)
+			}
 
-	switch parts[0] {
-	case "motion":
-		return Motion{}.see(ctx, ds, mperms, id)
-	case "motion_block":
-		return MotionBlock{}.see(ctx, ds, mperms, id)
-	case "assignment":
-		return Assignment{}.see(ctx, ds, mperms, id)
-	case "topic":
-		return Topic{}.see(ctx, ds, mperms, id)
-	case "mediafile":
-		return Mediafile{}.see(ctx, ds, mperms, id)
-	default:
-		// TODO LAST ERROR
-		return false, fmt.Errorf("unknown content_object collection %q", parts[0])
-	}
-}
+			canSee, err := restricter(ctx, ds, mperms, id)
+			if err != nil {
+				return nil, fmt.Errorf("checking can see of %s: %w", collection, err)
+			}
 
-func (los ListOfSpeakers) meetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, error) {
-	mid, err := ds.ListOfSpeakers_MeetingID(id).Value(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("fetching meeting_id: %w", err)
-	}
-	return mid, nil
+			if len(canSee) == 1 {
+				return ids, nil
+			}
+			return nil, nil
+		})
+	})
+
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // Motion handels restrictions of the collection motion.
@@ -47,59 +48,62 @@ func (m Motion) Modes(mode string) FieldRestricter {
 	case "C":
 		return m.see
 	case "D":
-		return m.modeD
+		return never
 	}
 	return nil
 }
 
-func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionID int) (bool, error) {
-	meetingID, err := ds.Motion_MeetingID(motionID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("fetching meeting_id: %w", err)
-	}
+func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionIDs ...int) ([]int, error) {
+	return eachMeeting(ctx, ds, m, motionIDs, func(meetingID int, ids []int) ([]int, error) {
+		perms, err := mperms.Meeting(ctx, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting permissions: %w", err)
+		}
 
-	perms, err := mperms.Meeting(ctx, meetingID)
-	if err != nil {
-		return false, fmt.Errorf("getting permissions: %w", err)
-	}
+		if !perms.Has(perm.MotionCanSee) {
+			return nil, nil
+		}
 
-	if !perms.Has(perm.MotionCanSee) {
-		return false, nil
-	}
-
-	stateID, err := ds.Motion_StateID(motionID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("fetching stateID: %w", err)
-	}
-
-	restrictions, err := ds.MotionState_Restrictions(stateID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting restrictions: %w", err)
-	}
-
-	if len(restrictions) == 0 {
-		return true, nil
-	}
-
-	for _, restriction := range restrictions {
-		if restriction == "is_submitter" {
-			submitter, err := isSubmitter(ctx, ds, mperms, motionID)
+		return eachRelationField(ctx, ds.Motion_StateID, ids, func(stateID int, ids []int) ([]int, error) {
+			restrictions, err := ds.MotionState_Restrictions(stateID).Value(ctx)
 			if err != nil {
-				return false, fmt.Errorf("checking for motion submitter: %w", err)
+				return nil, fmt.Errorf("getting restrictions: %w", err)
 			}
 
-			if submitter {
-				return true, nil
+			if len(restrictions) == 0 {
+				return ids, nil
 			}
-			continue
-		}
 
-		if perms.Has(perm.TPermission(restriction)) {
-			return true, nil
-		}
-	}
+			hasIsSubmitterRestriction := false
+			for _, restriction := range restrictions {
+				if restriction == "is_submitter" {
+					hasIsSubmitterRestriction = true
+					continue
+				}
 
-	return false, nil
+				if perms.Has(perm.TPermission(restriction)) {
+					return ids, nil
+				}
+			}
+			if hasIsSubmitterRestriction {
+				allowed, err := eachCondition(ids, func(motionID int) (bool, error) {
+					submitter, err := isSubmitter(ctx, ds, mperms, motionID)
+					if err != nil {
+						return false, fmt.Errorf("checking for motion submitter of motion %d: %w", motionID, err)
+					}
+
+					return submitter, nil
+				})
+				if err != nil {
+					return nil, fmt.Errorf("checking if user is submitter: %w", err)
+				}
+
+				return allowed, nil
+			}
+
+			return nil, nil
+		})
+	})
 }
 
 func isSubmitter(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionID int) (bool, error) {
@@ -114,74 +118,83 @@ func isSubmitter(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPer
 	return false, nil
 }
 
-func (m Motion) modeA(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionID int) (bool, error) {
-	see, err := m.modeB(ctx, ds, mperms, motionID)
+func (m Motion) modeA(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionIDs ...int) ([]int, error) {
+	allowed, err := m.modeB(ctx, ds, mperms, motionIDs...)
 	if err != nil {
-		return false, fmt.Errorf("see motion: %w", err)
+		return nil, fmt.Errorf("see motion: %w", err)
 	}
 
-	if see {
-		return true, nil
+	if len(allowed) == len(motionIDs) {
+		return allowed, nil
 	}
 
-	agendaID, exist, err := ds.Motion_AgendaItemID(motionID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting agenda item: %w", err)
-	}
+	notAllowed := set.New(motionIDs...)
+	notAllowed.Remove(allowed...)
 
-	if exist {
+	allowed2, err := eachCondition(notAllowed.List(), func(motionID int) (bool, error) {
+		agendaID, exist, err := ds.Motion_AgendaItemID(motionID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting agenda item: %w", err)
+		}
+
+		if !exist {
+			return false, nil
+		}
+
 		seeAgenda, err := AgendaItem{}.see(ctx, ds, mperms, agendaID)
 		if err != nil {
 			return false, fmt.Errorf("checking see for agenda item %d: %w", agendaID, err)
 		}
 
-		if seeAgenda {
-			return true, nil
-		}
+		return len(seeAgenda) == 1, nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("echking for agenda item: %w", err)
 	}
 
-	return false, nil
+	return append(allowed, allowed2...), nil
 }
 
-func (m Motion) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionID int) (bool, error) {
-	allOriginIDs := ds.Motion_AllOriginIDs(motionID).ErrorLater(ctx)
-	allDerivedMotionIDs := ds.Motion_AllDerivedMotionIDs(motionID).ErrorLater(ctx)
-	originID, hasOrigin := ds.Motion_OriginID(motionID).ErrorLater(ctx)
-	derivedMotionIDs := ds.Motion_DerivedMotionIDs(motionID).ErrorLater(ctx)
-	if err := ds.Err(); err != nil {
-		return false, fmt.Errorf("fetching origin and derived motions: %w", err)
-	}
-
-	motionIDs := make(map[int]struct{}, len(allOriginIDs)+len(allDerivedMotionIDs)+len(derivedMotionIDs)+2)
-	motionIDs[motionID] = struct{}{}
-	for _, l := range [][]int{allOriginIDs, allDerivedMotionIDs, derivedMotionIDs} {
-		for _, id := range l {
-			motionIDs[id] = struct{}{}
+func (m Motion) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionIDs ...int) ([]int, error) {
+	return eachCondition(motionIDs, func(motionID int) (bool, error) {
+		allOriginIDs := ds.Motion_AllOriginIDs(motionID).ErrorLater(ctx)
+		allDerivedMotionIDs := ds.Motion_AllDerivedMotionIDs(motionID).ErrorLater(ctx)
+		originID, hasOrigin := ds.Motion_OriginID(motionID).ErrorLater(ctx)
+		derivedMotionIDs := ds.Motion_DerivedMotionIDs(motionID).ErrorLater(ctx)
+		if err := ds.Err(); err != nil {
+			return false, fmt.Errorf("fetching origin and derived motions: %w", err)
 		}
-	}
-	if hasOrigin {
-		motionIDs[originID] = struct{}{}
-	}
 
-	for referenceID := range motionIDs {
-		see, err := m.see(ctx, ds, mperms, referenceID)
-		if err != nil {
-			var errDoesNotExist dsfetch.DoesNotExistError
-			if errors.As(err, &errDoesNotExist) {
-				// The ids in all_derived_motion_ids and all_origin_ids can
-				// contain motion, that were deleted. Ignore them.
-				continue
+		motionIDs := make(map[int]struct{}, len(allOriginIDs)+len(allDerivedMotionIDs)+len(derivedMotionIDs)+2)
+		motionIDs[motionID] = struct{}{}
+		for _, l := range [][]int{allOriginIDs, allDerivedMotionIDs, derivedMotionIDs} {
+			for _, id := range l {
+				motionIDs[id] = struct{}{}
 			}
-			return false, fmt.Errorf("see motion %d: %w", referenceID, err)
+		}
+		if hasOrigin {
+			motionIDs[originID] = struct{}{}
 		}
 
-		if see {
-			return true, nil
-		}
-	}
-	return false, nil
-}
+		for referenceID := range motionIDs {
+			// Check each motion as it own. It is enough when one motion returns
+			// true. To call m.see with all motions at once would be slower.
+			see, err := m.see(ctx, ds, mperms, referenceID)
+			if err != nil {
+				var errDoesNotExist dsfetch.DoesNotExistError
+				if errors.As(err, &errDoesNotExist) {
+					// The ids in all_derived_motion_ids and all_origin_ids can
+					// contain motion, that were deleted. Ignore them.
+					continue
+				}
+				return false, fmt.Errorf("see motion %d: %w", referenceID, err)
+			}
 
-func (m Motion) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, UserID int) (bool, error) {
-	return false, nil
+			if len(see) == 1 {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
 }

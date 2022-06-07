@@ -36,33 +36,33 @@ func (m MotionChangeRecommendation) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionChangeRecommendation) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionChangeRecommendationID int) (bool, error) {
-	meetingID, err := ds.MotionChangeRecommendation_MeetingID(motionChangeRecommendationID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting meetingID: %w", err)
-	}
+func (m MotionChangeRecommendation) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionChangeRecommendationIDs ...int) ([]int, error) {
+	return eachMeeting(ctx, ds, m, motionChangeRecommendationIDs, func(meetingID int, ids []int) ([]int, error) {
+		perms, err := mperms.Meeting(ctx, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting permissions: %w", err)
+		}
 
-	perms, err := mperms.Meeting(ctx, meetingID)
-	if err != nil {
-		return false, fmt.Errorf("getting permissions: %w", err)
-	}
+		if perms.Has(perm.MotionCanManage) {
+			return ids, nil
+		}
 
-	if perms.Has(perm.MotionCanManage) {
-		return true, nil
-	}
+		if !perms.Has(perm.MotionCanSee) {
+			return nil, nil
+		}
 
-	if !perms.Has(perm.MotionCanSee) {
-		return false, nil
-	}
+		allowed, err := eachCondition(ids, func(motionChangeRecommendationID int) (bool, error) {
+			internal, err := ds.MotionChangeRecommendation_Internal(motionChangeRecommendationID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting internal: %w", err)
+			}
 
-	internal, err := ds.MotionChangeRecommendation_Internal(motionChangeRecommendationID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting internal: %w", err)
-	}
+			return !internal, nil
+		})
 
-	if !internal {
-		return true, nil
-	}
-
-	return false, nil
+		if err != nil {
+			return nil, fmt.Errorf("checking internal state: %w", err)
+		}
+		return allowed, nil
+	})
 }
