@@ -20,8 +20,6 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
-const slowCalls = 100 * time.Millisecond
-
 // Middleware can be used as a datastore.Getter that restrict the data for a
 // user.
 func Middleware(getter datastore.Getter, uid int) datastore.Getter {
@@ -50,10 +48,13 @@ func (r restricter) Get(ctx context.Context, keys ...datastore.Key) (map[datasto
 	}
 
 	duration := time.Since(start)
-	if times != nil && duration > slowCalls {
-		if body, ok := oserror.BodyFromContext(ctx); ok {
-			profile(body, duration, times)
+	if times != nil && (duration > slowCalls || oserror.HasTagFromContext(ctx, "restrict_profile")) {
+		body, ok := oserror.BodyFromContext(ctx)
+		if !ok {
+			body = "unknown body, probably simple request"
 		}
+		profile(body, duration, times)
+
 	}
 
 	return data, nil
@@ -110,6 +111,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 
 	// Call restrict Mode function
 	for cm, ids := range restrictModeIDs {
+		idsCount := ids.Len()
 		start := time.Now()
 		modeFunc, err := restrictModefunc(cm.collection, cm.mode)
 		if err != nil {
@@ -123,7 +125,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 		restrictModeIDs[cm].Remove(allowedIDs...)
 
 		duration := time.Since(start)
-		times[cm.collection] = timeCount{time: duration, count: ids.Len()}
+		times[cm.collection] = timeCount{time: duration, count: idsCount}
 	}
 
 	// Remove restricted keys

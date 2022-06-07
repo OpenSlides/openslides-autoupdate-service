@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const slowCalls = 100 * time.Millisecond
+
 type timeCount struct {
 	time  time.Duration
 	count int

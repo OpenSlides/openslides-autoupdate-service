@@ -50,9 +50,9 @@ func (err adminError) Error() string {
 	return fmt.Sprintf("ADMIN ERROR: %v", err.msg)
 }
 
-type bodyCTXType string
+type ctxType string
 
-const bodyCTX bodyCTXType = "body context"
+const bodyCTX ctxType = "body context"
 
 // ContextWithBody adds a body to the context.
 //
@@ -70,4 +70,15 @@ func BodyFromContext(ctx context.Context) (string, bool) {
 
 	body, ok := v.(string)
 	return body, ok
+}
+
+// ContextWithTag adds a tag to the context
+func ContextWithTag(ctx context.Context, tag string) context.Context {
+	return context.WithValue(ctx, ctxType("tag-"+tag), struct{}{})
+}
+
+// HasTagFromContext returns true if the tag was set.
+func HasTagFromContext(ctx context.Context, tag string) bool {
+	v := ctx.Value(ctxType("tag-" + tag))
+	return v != nil
 }
