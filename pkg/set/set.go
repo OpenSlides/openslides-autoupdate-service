@@ -40,3 +40,8 @@ func (s Set) Remove(es ...int) {
 		delete(s.m, e)
 	}
 }
+
+// Len returns the amout of elements in the set.
+func (s Set) Len() int {
+	return len(s.m)
+}

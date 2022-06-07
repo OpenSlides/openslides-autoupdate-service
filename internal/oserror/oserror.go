@@ -49,3 +49,36 @@ type adminError struct {
 func (err adminError) Error() string {
 	return fmt.Sprintf("ADMIN ERROR: %v", err.msg)
 }
+
+type ctxType string
+
+const bodyCTX ctxType = "body context"
+
+// ContextWithBody adds a body to the context.
+//
+// The value can be returned with the BodyFromContext function.
+func ContextWithBody(ctx context.Context, body string) context.Context {
+	return context.WithValue(ctx, bodyCTX, body)
+}
+
+// BodyFromContext returns the http body from a context.
+func BodyFromContext(ctx context.Context) (string, bool) {
+	v := ctx.Value(bodyCTX)
+	if v == nil {
+		return "", false
+	}
+
+	body, ok := v.(string)
+	return body, ok
+}
+
+// ContextWithTag adds a tag to the context
+func ContextWithTag(ctx context.Context, tag string) context.Context {
+	return context.WithValue(ctx, ctxType("tag-"+tag), struct{}{})
+}
+
+// HasTagFromContext returns true if the tag was set.
+func HasTagFromContext(ctx context.Context, tag string) bool {
+	v := ctx.Value(ctxType("tag-" + tag))
+	return v != nil
+}
