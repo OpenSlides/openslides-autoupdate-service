@@ -54,7 +54,6 @@ func (r restricter) Get(ctx context.Context, keys ...datastore.Key) (map[datasto
 			body = "unknown body, probably simple request"
 		}
 		profile(body, duration, times)
-
 	}
 
 	return data, nil
@@ -105,6 +104,10 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 			restrictModeIDs[cm] = set.New()
 		}
 		restrictModeIDs[cm].Add(key.ID)
+	}
+
+	if len(restrictModeIDs) == 0 {
+		return nil, nil
 	}
 
 	times := make(map[string]timeCount, len(restrictModeIDs))
