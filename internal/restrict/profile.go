@@ -38,5 +38,5 @@ func profile(request string, duration time.Duration, times map[string]timeCount)
 		return timeStrings[i] < timeStrings[j]
 	})
 
-	log.Printf("Restrict: Slow request:\nRequest: %s\nDuration: %d ms\n%s\n", request, duration.Milliseconds(), strings.Join(timeStrings, "\n"))
+	log.Printf("Profile: Restrict: Slow request:\nRequest: %s\nDuration: %d ms\n%s\n", request, duration.Milliseconds(), strings.Join(timeStrings, "\n"))
 }
