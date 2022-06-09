@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // MotionBlock handels restrictions of the collection motion_block.
@@ -40,62 +41,68 @@ func (m MotionBlock) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionBlock) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionBlockID int) (bool, error) {
-	meetingID, err := ds.MotionBlock_MeetingID(motionBlockID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting meetingID: %w", err)
-	}
+func (m MotionBlock) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionBlockIDs ...int) ([]int, error) {
+	return eachMeeting(ctx, ds, m, motionBlockIDs, func(meetingID int, ids []int) ([]int, error) {
+		perms, err := mperms.Meeting(ctx, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting permissions: %w", err)
+		}
 
-	perms, err := mperms.Meeting(ctx, meetingID)
-	if err != nil {
-		return false, fmt.Errorf("getting permissions: %w", err)
-	}
+		if perms.Has(perm.MotionCanManage) {
+			return ids, nil
+		}
 
-	if perms.Has(perm.MotionCanManage) {
-		return true, nil
-	}
+		if !perms.Has(perm.MotionCanSee) {
+			return nil, nil
+		}
 
-	if !perms.Has(perm.MotionCanSee) {
-		return false, nil
-	}
+		allowed, err := eachCondition(ids, func(motionBlockID int) (bool, error) {
+			internal, err := ds.MotionBlock_Internal(motionBlockID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting internal: %w", err)
+			}
 
-	internal, err := ds.MotionBlock_Internal(motionBlockID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting internal: %w", err)
-	}
+			return !internal, nil
+		})
 
-	if !internal {
-		return true, nil
-	}
+		if err != nil {
+			return nil, fmt.Errorf("checking internal state: %w", err)
+		}
 
-	return false, nil
+		return allowed, nil
+	})
 }
 
-func (m MotionBlock) modeA(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionBlockID int) (bool, error) {
-	see, err := m.see(ctx, ds, mperms, motionBlockID)
+func (m MotionBlock) modeA(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionBlockIDs ...int) ([]int, error) {
+	allowed, err := m.see(ctx, ds, mperms, motionBlockIDs...)
 	if err != nil {
-		return false, fmt.Errorf("checking see: %w", err)
+		return nil, fmt.Errorf("checking see: %w", err)
 	}
 
-	if see {
-		return true, nil
+	if len(allowed) == len(motionBlockIDs) {
+		return motionBlockIDs, nil
 	}
 
-	agendaItemID, exist, err := ds.MotionBlock_AgendaItemID(motionBlockID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting agendaItem: %w", err)
-	}
+	notAllowed := set.New(motionBlockIDs...)
+	notAllowed.Remove(allowed...)
 
-	if exist {
-		see, err = AgendaItem{}.see(ctx, ds, mperms, agendaItemID)
+	for _, motionBlockID := range notAllowed.List() {
+		agendaItemID, exist, err := ds.MotionBlock_AgendaItemID(motionBlockID).Value(ctx)
 		if err != nil {
-			return false, fmt.Errorf("checking agendaItem %d: %w", agendaItemID, err)
+			return nil, fmt.Errorf("getting agendaItem: %w", err)
 		}
 
-		if see {
-			return true, nil
+		if exist {
+			see, err := AgendaItem{}.see(ctx, ds, mperms, agendaItemID)
+			if err != nil {
+				return nil, fmt.Errorf("checking agendaItem %d: %w", agendaItemID, err)
+			}
+
+			if len(see) == 1 {
+				allowed = append(allowed, motionBlockID)
+			}
 		}
 	}
 
-	return false, nil
+	return allowed, nil
 }

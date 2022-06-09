@@ -177,22 +177,31 @@ func (pm *pendingMap) get(ctx context.Context, keys []Key) (map[Key][]byte, erro
 //
 // Returns all keys that where marked as pending (did not exist).
 func (pm *pendingMap) markPending(keys ...Key) []Key {
-	pm.Lock()
-	defer pm.Unlock()
-
 	var marked []Key
-	for _, key := range keys {
-		if _, ok := pm.data[key]; ok {
-			continue
-		}
-		if _, ok := pm.pending[key]; ok {
-			continue
-		}
+	reading(pm, func() {
+		for _, key := range keys {
+			if _, ok := pm.data[key]; ok {
+				continue
+			}
+			if _, ok := pm.pending[key]; ok {
+				continue
+			}
 
-		pm.pending[key] = make(chan struct{})
-		marked = append(marked, key)
+			marked = append(marked, key)
+		}
+	})
+
+	if len(marked) > 0 {
+		pm.Lock()
+		defer pm.Unlock()
+
+		for _, key := range marked {
+			pm.pending[key] = make(chan struct{})
+		}
+		return marked
 	}
-	return marked
+
+	return nil
 }
 
 // unMarkPending sets any key that is still pending not to be pending.

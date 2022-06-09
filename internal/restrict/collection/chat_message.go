@@ -36,42 +36,46 @@ func (c ChatMessage) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, chatMessageID int) (bool, error) {
-	chatGroupID, err := ds.ChatMessage_ChatGroupID(chatMessageID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting chat_group_id: %w", err)
-	}
-
-	meetingID, err := ChatGroup{}.meetingID(ctx, ds, chatGroupID)
-	if err != nil {
-		return false, fmt.Errorf("getting meeting id: %w", err)
-	}
-
-	perms, err := mperms.Meeting(ctx, meetingID)
-	if err != nil {
-		return false, fmt.Errorf("getting permissions: %w", err)
-	}
-
-	if perms.Has(perm.ChatCanManage) {
-		return true, nil
-	}
-
-	readGroups, err := ds.ChatGroup_ReadGroupIDs(chatGroupID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting chat read group ids: %w", err)
-	}
-
-	for _, gid := range readGroups {
-		if perms.InGroup(gid) {
-			return true, nil
+func (ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, chatMessageIDs ...int) ([]int, error) {
+	return eachRelationField(ctx, ds.ChatMessage_ChatGroupID, chatMessageIDs, func(chatGroupID int, ids []int) ([]int, error) {
+		meetingID, _, err := ChatGroup{}.MeetingID(ctx, ds, chatGroupID)
+		if err != nil {
+			return nil, fmt.Errorf("getting meeting id: %w", err)
 		}
-	}
 
-	author, err := ds.ChatMessage_UserID(chatMessageID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("reading author of chat message: %w", err)
-	}
+		perms, err := mperms.Meeting(ctx, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting permissions: %w", err)
+		}
 
-	return author == mperms.UserID(), nil
+		if perms.Has(perm.ChatCanManage) {
+			return ids, nil
+		}
 
+		readGroups, err := ds.ChatGroup_ReadGroupIDs(chatGroupID).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting chat read group ids: %w", err)
+		}
+
+		for _, gid := range readGroups {
+			if perms.InGroup(gid) {
+				return ids, nil
+			}
+		}
+
+		allowed, err := eachCondition(ids, func(chatMessageID int) (bool, error) {
+			author, err := ds.ChatMessage_UserID(chatMessageID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("reading author of chat message: %w", err)
+			}
+
+			return author == mperms.UserID(), nil
+		})
+
+		if err != nil {
+			return nil, fmt.Errorf("checking auther of chat message: %w", err)
+		}
+
+		return allowed, nil
+	})
 }

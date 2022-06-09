@@ -24,12 +24,11 @@ type AgendaItem struct{}
 
 // MeetingID returns the meetingID for the object.
 func (a AgendaItem) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
-	meetingID, err := a.meetingID(ctx, ds, id)
+	mid, err := ds.AgendaItem_MeetingID(id).Value(ctx)
 	if err != nil {
-		return 0, false, fmt.Errorf("getting meetingID: %w", err)
+		return 0, false, fmt.Errorf("getting meeting id: %w", err)
 	}
-
-	return meetingID, true, nil
+	return mid, true, nil
 }
 
 // Modes returns a map from all known modes to there restricter.
@@ -45,70 +44,46 @@ func (a AgendaItem) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, agendaID int) (bool, error) {
-	meetingID, err := a.meetingID(ctx, ds, agendaID)
-	if err != nil {
-		return false, fmt.Errorf("getting meetingID: %w", err)
-	}
+func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, agendaIDs ...int) ([]int, error) {
+	return eachMeeting(ctx, ds, a, agendaIDs, func(meetingID int, ids []int) ([]int, error) {
+		perms, err := mperms.Meeting(ctx, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting permissions: %w", err)
+		}
 
-	perms, err := mperms.Meeting(ctx, meetingID)
-	if err != nil {
-		return false, fmt.Errorf("getting permissions: %w", err)
-	}
+		if perms.Has(perm.AgendaItemCanManage) {
+			return ids, nil
+		}
 
-	if perms.Has(perm.AgendaItemCanManage) {
-		return true, nil
-	}
+		allowed, err := eachCondition(ids, func(agendaID int) (bool, error) {
+			isHidden := ds.AgendaItem_IsHidden(agendaID).ErrorLater(ctx)
+			isInternal := ds.AgendaItem_IsInternal(agendaID).ErrorLater(ctx)
+			if err := ds.Err(); err != nil {
+				return false, fmt.Errorf("fetching isHidden and isInternal: %w", err)
+			}
 
-	isHidden := ds.AgendaItem_IsHidden(agendaID).ErrorLater(ctx)
-	isInternal := ds.AgendaItem_IsInternal(agendaID).ErrorLater(ctx)
-	if err := ds.Err(); err != nil {
-		return false, fmt.Errorf("fetching isHidden and isInternal: %w", err)
-	}
+			if perms.Has(perm.AgendaItemCanSeeInternal) && !isHidden {
+				return true, nil
+			}
 
-	if perms.Has(perm.AgendaItemCanSeeInternal) && !isHidden {
-		return true, nil
-	}
+			if perms.Has(perm.AgendaItemCanSee) && (!isHidden && !isInternal) {
+				return true, nil
+			}
 
-	if perms.Has(perm.AgendaItemCanSee) && (!isHidden && !isInternal) {
-		return true, nil
-	}
+			return false, nil
+		})
 
-	return false, nil
+		if err != nil {
+			return nil, fmt.Errorf("checking agende is hidden and is internal with perm can_see_internal and can_see: %w", err)
+		}
+		return allowed, nil
+	})
 }
 
-func (a AgendaItem) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, agendaID int) (bool, error) {
-	meetingID, err := a.meetingID(ctx, ds, agendaID)
-	if err != nil {
-		return false, fmt.Errorf("getting meetingID: %w", err)
-	}
-
-	perms, err := mperms.Meeting(ctx, meetingID)
-	if err != nil {
-		return false, fmt.Errorf("getting permissions: %w", err)
-	}
-
-	return perms.Has(perm.AgendaItemCanSeeInternal), nil
+func (a AgendaItem) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, agendaIDs ...int) ([]int, error) {
+	return meetingPerm(ctx, ds, a, agendaIDs, mperms, perm.AgendaItemCanSeeInternal)
 }
 
-func (a AgendaItem) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, agendaID int) (bool, error) {
-	meetingID, err := a.meetingID(ctx, ds, agendaID)
-	if err != nil {
-		return false, fmt.Errorf("getting meetingID: %w", err)
-	}
-
-	perms, err := mperms.Meeting(ctx, meetingID)
-	if err != nil {
-		return false, fmt.Errorf("getting permissions: %w", err)
-	}
-
-	return perms.Has(perm.AgendaItemCanManage), nil
-}
-
-func (a AgendaItem) meetingID(ctx context.Context, request *dsfetch.Fetch, id int) (int, error) {
-	mid, err := request.AgendaItem_MeetingID(id).Value(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("fetching meeting_id: %w", err)
-	}
-	return mid, nil
+func (a AgendaItem) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, agendaIDs ...int) ([]int, error) {
+	return meetingPerm(ctx, ds, a, agendaIDs, mperms, perm.AgendaItemCanManage)
 }

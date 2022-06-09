@@ -38,50 +38,56 @@ func (o Option) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (o Option) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, optionID int) (bool, error) {
-	pollID, err := pollID(ctx, ds, optionID)
-	if err != nil {
-		return false, fmt.Errorf("getting poll id: %w", err)
-	}
+// TODO: Group by poll
+func (o Option) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, optionIDs ...int) ([]int, error) {
+	return eachCondition(optionIDs, func(optionID int) (bool, error) {
+		pollID, err := pollID(ctx, ds, optionID)
+		if err != nil {
+			return false, fmt.Errorf("getting poll id: %w", err)
+		}
 
-	see, err := Poll{}.see(ctx, ds, mperms, pollID)
-	if err != nil {
-		return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
-	}
+		see, err := Poll{}.see(ctx, ds, mperms, pollID)
+		if err != nil {
+			return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
+		}
 
-	return see, nil
+		return len(see) == 1, nil
+	})
 }
 
-func (o Option) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, optionID int) (bool, error) {
-	pollID, err := pollID(ctx, ds, optionID)
-	if err != nil {
-		return false, fmt.Errorf("getting poll id: %w", err)
-	}
+// TODO: Group by poll
+func (o Option) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, optionIDs ...int) ([]int, error) {
+	return eachCondition(optionIDs, func(optionID int) (bool, error) {
+		pollID, err := pollID(ctx, ds, optionID)
+		if err != nil {
+			return false, fmt.Errorf("getting poll id: %w", err)
+		}
 
-	see, err := Poll{}.see(ctx, ds, mperms, pollID)
-	if err != nil {
-		return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
-	}
+		see, err := Poll{}.see(ctx, ds, mperms, pollID)
+		if err != nil {
+			return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
+		}
 
-	if !see {
-		return false, nil
-	}
+		if len(see) == 0 {
+			return false, nil
+		}
 
-	canManage, err := Poll{}.manage(ctx, ds, mperms, pollID)
-	if err != nil {
-		return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
-	}
+		canManage, err := Poll{}.manage(ctx, ds, mperms, pollID)
+		if err != nil {
+			return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
+		}
 
-	if canManage {
-		return true, nil
-	}
+		if len(canManage) == 1 {
+			return true, nil
+		}
 
-	pollState, err := ds.Poll_State(pollID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting poll state: %w", err)
-	}
+		pollState, err := ds.Poll_State(pollID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting poll state: %w", err)
+		}
 
-	return pollState == "published", nil
+		return pollState == "published", nil
+	})
 }
 
 func pollID(ctx context.Context, ds *dsfetch.Fetch, optionID int) (int, error) {

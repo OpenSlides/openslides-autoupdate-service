@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // MotionSubmitter handels restrictions of the collection motion_submitter.
@@ -34,16 +35,42 @@ func (m MotionSubmitter) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionSubmitterID int) (bool, error) {
-	motionID, err := ds.MotionSubmitter_MotionID(motionSubmitterID).Value(ctx)
-	if err != nil {
-		return false, fmt.Errorf("getting motion id id: %w", err)
+func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionSubmitterIDs ...int) ([]int, error) {
+	submitterToMotion := make(map[int]int, len(motionSubmitterIDs))
+	motionIDs := make([]int, 0, len(motionSubmitterIDs))
+	for _, submitterID := range motionSubmitterIDs {
+		motionID := ds.MotionSubmitter_MotionID(submitterID).ErrorLater(ctx)
+		submitterToMotion[submitterID] = motionID
+		motionIDs = append(motionIDs, motionID)
+	}
+	if err := ds.Err(); err != nil {
+		return nil, fmt.Errorf("getting motionIDs: %w", err)
 	}
 
-	seeMotion, err := Motion{}.see(ctx, ds, mperms, motionID)
+	allowedMotionIDs, err := Motion{}.see(ctx, ds, mperms, motionIDs...)
 	if err != nil {
-		return false, fmt.Errorf("checking motion %d can see: %w", motionID, err)
+		return nil, fmt.Errorf("checking motion.see: %w", err)
 	}
 
-	return seeMotion, nil
+	if len(allowedMotionIDs) == len(submitterToMotion) {
+		return motionSubmitterIDs, nil
+	}
+
+	if len(allowedMotionIDs) == 0 {
+		return nil, nil
+	}
+
+	s := set.New(allowedMotionIDs...)
+	allowed := make([]int, 0, len(motionSubmitterIDs))
+	for _, submitterID := range motionSubmitterIDs {
+		if s.Has(submitterToMotion[submitterID]) {
+			allowed = append(allowed, submitterID)
+		}
+	}
+
+	if err := ds.Err(); err != nil {
+		return nil, fmt.Errorf("getting motionIDs: %w", err)
+	}
+
+	return allowed, nil
 }
