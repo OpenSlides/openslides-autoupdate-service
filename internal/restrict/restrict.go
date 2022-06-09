@@ -184,7 +184,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 		restrictModeIDs[cm].Remove(allowedIDs...)
 
 		duration := time.Since(start)
-		times[cm.collection] = timeCount{time: duration, count: idsCount}
+		times[cm.collection+"/"+cm.mode] = timeCount{time: duration, count: idsCount}
 	}
 
 	// Remove restricted keys

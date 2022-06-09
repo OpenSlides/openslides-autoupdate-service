@@ -150,14 +150,26 @@ func (m Motion) modeA(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeti
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("echking for agenda item: %w", err)
+		return nil, fmt.Errorf("checking for agenda item: %w", err)
 	}
 
 	return append(allowed, allowed2...), nil
 }
 
 func (m Motion) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionIDs ...int) ([]int, error) {
-	return eachCondition(motionIDs, func(motionID int) (bool, error) {
+	allowed, err := m.see(ctx, ds, mperms, motionIDs...)
+	if err != nil {
+		return nil, fmt.Errorf("see motion: %w", err)
+	}
+
+	if len(allowed) == len(motionIDs) {
+		return allowed, nil
+	}
+
+	notAllowed := set.New(motionIDs...)
+	notAllowed.Remove(allowed...)
+
+	allowed2, err := eachCondition(notAllowed.List(), func(motionID int) (bool, error) {
 		allOriginIDs := ds.Motion_AllOriginIDs(motionID).ErrorLater(ctx)
 		allDerivedMotionIDs := ds.Motion_AllDerivedMotionIDs(motionID).ErrorLater(ctx)
 		originID, hasOrigin := ds.Motion_OriginID(motionID).ErrorLater(ctx)
@@ -197,4 +209,10 @@ func (m Motion) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeti
 		}
 		return false, nil
 	})
+
+	if err != nil {
+		return nil, fmt.Errorf("checkinging for referenced motions: %w", err)
+	}
+
+	return append(allowed, allowed2...), nil
 }
