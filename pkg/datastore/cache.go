@@ -53,10 +53,13 @@ func newCache() *cache {
 // Possible Errors: context.Canceled or context.DeadlineExeeded or the return
 // value from hte set func.
 func (c *cache) GetOrSet(ctx context.Context, keys []Key, set cacheSetFunc) (map[Key][]byte, error) {
-	// Blocks until all missing keys are fetched.
+	// Blocks until all missing (but not pending) keys are fetched.
 	//
 	// After this call, all keys are either pending (from another parallel call)
 	// or in the c.data. This is a requirement to call c.data.get().
+	//
+	// TODO: if set fails from a parallel caller, then a key is not pending and
+	// not in the cache!!!
 	if err := c.fetchMissing(ctx, keys, set); err != nil {
 		return nil, fmt.Errorf("fetching missing keys: %w", err)
 	}
@@ -153,7 +156,7 @@ func newPendingMap() *pendingMap {
 // latest version.
 //
 // Expects, that all keys are either pending or in the data. It is not allowed,
-// that a key is not pending when this starts and gets pending whil it runs.
+// that a key is not pending when this starts and gets pending while it runs.
 //
 // Possible Errors: context.Canceled or context.DeadlineExeeded
 func (pm *pendingMap) get(ctx context.Context, keys []Key) (map[Key][]byte, error) {
@@ -177,7 +180,7 @@ func (pm *pendingMap) get(ctx context.Context, keys []Key) (map[Key][]byte, erro
 //
 // Returns all keys that where marked as pending (did not exist).
 func (pm *pendingMap) markPending(keys ...Key) []Key {
-	var marked []Key
+	var needMark []Key
 	reading(pm, func() {
 		for _, key := range keys {
 			if _, ok := pm.data[key]; ok {
@@ -187,21 +190,28 @@ func (pm *pendingMap) markPending(keys ...Key) []Key {
 				continue
 			}
 
-			marked = append(marked, key)
+			needMark = append(needMark, key)
 		}
 	})
 
-	if len(marked) > 0 {
-		pm.Lock()
-		defer pm.Unlock()
-
-		for _, key := range marked {
-			pm.pending[key] = make(chan struct{})
-		}
-		return marked
+	if len(needMark) == 0 {
+		return nil
 	}
 
-	return nil
+	marked := make([]Key, 0, len(needMark))
+	pm.Lock()
+	defer pm.Unlock()
+
+	for _, key := range needMark {
+		if _, ok := pm.pending[key]; ok {
+			// It can happen, that another caller has already set the key.
+			continue
+		}
+
+		pm.pending[key] = make(chan struct{})
+		marked = append(marked, key)
+	}
+	return marked
 }
 
 // unMarkPending sets any key that is still pending not to be pending.
@@ -313,7 +323,7 @@ func (pm *pendingMap) setIfPending(key Key, value []byte) {
 	}
 }
 
-// setIfPendingMany like setIfPending but with many keys.
+// setEmptyIfPending set all keys that are still pending to nil.
 func (pm *pendingMap) setEmptyIfPending(keys ...Key) {
 	pm.Lock()
 	defer pm.Unlock()
