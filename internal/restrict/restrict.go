@@ -220,6 +220,11 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 
 	// Remove entries from relation-list fields
 	for key := range relationListKeys {
+		if data[key] == nil {
+			// The field was restricted.
+			continue
+		}
+
 		keyPrefix := templateKeyPrefix(key.CollectionField())
 		cm, ids, _, err := isRelationList(keyPrefix, data[key])
 		if err != nil {
