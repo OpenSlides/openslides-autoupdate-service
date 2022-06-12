@@ -80,7 +80,7 @@ func (p Poll) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPe
 
 		see, err := collection.see(ctx, ds, mperms, objectID)
 		if err != nil {
-			return nil, fmt.Errorf("checking see of content objet %d: %w", objectID, err)
+			return nil, fmt.Errorf("checking see of content object %d: %w", objectID, err)
 		}
 
 		if len(see) == 1 {

@@ -20,7 +20,8 @@ func TestPollModeA(t *testing.T) {
 			meeting_id: 30
 			content_object_id: topic/5
 
-		topic/5/id: 5
+		topic/5:
+			meeting_id: 30
 
 		meeting/30:
 			id: 1

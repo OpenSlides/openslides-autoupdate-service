@@ -22,15 +22,21 @@ func MustKey(in string) datastore.Key {
 
 func TestRestrict(t *testing.T) {
 	ds := dsmock.Stub(dsmock.YAMLData(`---
-	meeting/30/enable_anonymous: true
-	meeting/2:
-		enable_anonymous: false
-		committee_id: 404
+	meeting:
+		30:
+			enable_anonymous: true
+		2:
+			enable_anonymous: false
+			committee_id: 404
+		22:
+			enable_anonymous: false
+			admin_group_id: 32
 
 	user/1:
 		group_$_ids: ["30","2"]
 		group_$30_ids: [10]
 		group_$2_ids: [2]
+
 	group:
 		1:
 			meeting_id: 30
@@ -41,6 +47,9 @@ func TestRestrict(t *testing.T) {
 			permissions:
 			- agenda_item.can_manage
 			- motion.can_see
+		32:
+			meeting_id: 22
+
 	agenda_item:
 		1:
 			meeting_id: 30
@@ -87,6 +96,7 @@ func TestRestrict(t *testing.T) {
 		MustKey("agenda_item/2/content_object_id"),
 		MustKey("agenda_item/2/parent_id"),
 		MustKey("motion/1/origin_id"),
+		MustKey("meeting/22/admin_group_id"),
 	}
 
 	data, err := restricter.Get(context.Background(), keys...)
