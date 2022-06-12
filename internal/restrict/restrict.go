@@ -207,6 +207,11 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 
 	// Remove entries from relation fields
 	for key := range relationKeys {
+		if data[key] == nil {
+			// The field was restricted.
+			continue
+		}
+
 		keyPrefix := templateKeyPrefix(key.CollectionField())
 		cm, id, _, err := isRelation(keyPrefix, data[key])
 		if err != nil {
@@ -249,6 +254,11 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 
 	// Remove entries from generic-relation fields
 	for key := range genericRelationKeys {
+		if data[key] == nil {
+			// The field was restricted.
+			continue
+		}
+
 		keyPrefix := templateKeyPrefix(key.CollectionField())
 		cm, id, _, err := isGenericRelation(keyPrefix, data[key])
 		if err != nil {
@@ -262,6 +272,11 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 
 	// Remove entries from generic-relation-list fields
 	for key := range genericRelationListKeys {
+		if data[key] == nil {
+			// The field was restricted.
+			continue
+		}
+
 		keyPrefix := templateKeyPrefix(key.CollectionField())
 		mcm, genericIDs, _, err := isGenericRelationList(keyPrefix, data[key])
 		if err != nil {
