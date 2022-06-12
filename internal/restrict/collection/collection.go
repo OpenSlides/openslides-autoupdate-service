@@ -145,6 +145,10 @@ func eachMeeting(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int
 		if !hasMeeting {
 			return nil, fmt.Errorf("calling eachMeeting for object, that has no meeting")
 		}
+		if meetingID == 0 {
+			// TODO Last Error
+			return nil, fmt.Errorf("element with id %d has no meeting", id)
+		}
 		meetingToIDs[meetingID] = append(meetingToIDs[meetingID], id)
 	}
 
@@ -181,6 +185,10 @@ func eachRelationField(ctx context.Context, toField func(int) *dsfetch.ValueInt,
 		fieldID, err := toField(id).Value(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("getting id for element %d: %w", id, err)
+		}
+		if fieldID == 0 {
+			// TODO Last Error
+			return nil, fmt.Errorf("element with id %d has no relation", id)
 		}
 		filteredIDs[fieldID] = append(filteredIDs[fieldID], id)
 	}

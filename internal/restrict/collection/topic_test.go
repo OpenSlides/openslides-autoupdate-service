@@ -16,7 +16,7 @@ func TestTopicModeA(t *testing.T) {
 		f,
 		false,
 		`---
-		topic/1/id: 1
+		topic/1/meeting_id: 2
 		`,
 	)
 
