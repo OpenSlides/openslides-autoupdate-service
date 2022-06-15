@@ -37,7 +37,6 @@ func TestMotionBlock(t *testing.T) {
 	        title: Motion Title 2
 	        number: MNR 456
 	        meeting_id: 1
-	        agenda_item_id: 2
 	    3:
 	        title: RecommendationExtensionReferenceMotion3 title
 	        number: RecommendationExtensionReferenceMotion3 number
@@ -53,7 +52,6 @@ func TestMotionBlock(t *testing.T) {
 	    css_class: Css-Class1
 	    show_recommendation_extension_field: true
 	agenda_item/1/item_number: ItemNr Motion1
-	agenda_item/2/item_number: ItemNr Motion2
 	agenda_item/3/item_number: ItemNr Motion3
 	agenda_item/4/item_number: ItemNr Motion4
 	`)
@@ -81,8 +79,7 @@ func TestMotionBlock(t *testing.T) {
                     },
                     {
                         "title": "Motion Title 2",
-                        "number": "MNR 456",
-                        "agenda_item_number": "ItemNr Motion2"
+                        "number": "MNR 456"
                     }
                 ],
                 "referenced": {
