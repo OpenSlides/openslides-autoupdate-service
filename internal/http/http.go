@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -249,7 +248,7 @@ func handleError(w http.ResponseWriter, err error, writeStatusCode bool) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 	}
 
-	if oserror.ContextDone(err) || errors.Is(err, syscall.EPIPE) {
+	if oserror.ContextDone(err) || errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) {
 		// Client closed connection.
 		return
 	}
@@ -267,7 +266,8 @@ func handleError(w http.ResponseWriter, err error, writeStatusCode bool) {
 	if writeStatusCode {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-	log.Printf("Internal Error: %v", err)
+
+	oserror.Handle(err)
 	fmt.Fprintln(w, `{"error": {"type": "InternalError", "msg": "Something went wrong on the server. The admin is already informed."}}`)
 }
 
