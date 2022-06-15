@@ -143,7 +143,7 @@ func (s *SourceDatastore) getPosition(ctx context.Context, position int, keys ..
 	if err != nil {
 		if oserror.Timeout(err) {
 			return nil, oserror.ForAdmin(
-				"A request to the datastore got a timeout. The current timeout value is %d seconds. Please check that the datastore has enough CPU to handle the request in time",
+				"A request to the datastore got a timeout. The current timeout value is %d seconds. Please check that the datastore has enough CPU or set a lower value to the environment variable MAX_PARALLEL_KEYS.",
 				httpTimeout/time.Second,
 			)
 		}
