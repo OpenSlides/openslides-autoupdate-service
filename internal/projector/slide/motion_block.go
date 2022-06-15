@@ -32,7 +32,7 @@ func motionBlockFromMap(in map[string]json.RawMessage) (*dbMotionBlock, error) {
 type motionRepr struct {
 	Title                   string         `json:"title"`
 	Number                  string         `json:"number"`
-	AgendaItemNumber        string         `json:"agenda_item_number"`
+	AgendaItemNumber        string         `json:"agenda_item_number,omitempty"`
 	Recommendation          *dbMotionState `json:"recommendation,omitempty"`
 	RecommendationExtension *string        `json:"recommendation_extension,omitempty"`
 }
@@ -95,9 +95,13 @@ func MotionBlock(store *projector.SlideStore) {
 				}
 				recommendation.MotionStateWork = nil // don't export
 			}
-			itemNumber := datastore.String(ctx, fetch.FetchIfExist, "agenda_item/%d/item_number", motion.MotionWork.AgendaItemID)
-			if err := fetch.Err(); err != nil {
-				return nil, err
+
+			var itemNumber string
+			if motion.MotionWork.AgendaItemID > 0 {
+				itemNumber = datastore.String(ctx, fetch.FetchIfExist, "agenda_item/%d/item_number", motion.MotionWork.AgendaItemID)
+				if err := fetch.Err(); err != nil {
+					return nil, err
+				}
 			}
 
 			motions = append(motions, motionRepr{

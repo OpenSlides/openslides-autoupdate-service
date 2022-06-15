@@ -12,24 +12,48 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 type testData struct {
 	name          string
 	data          map[datastore.Key][]byte
-	expect        bool
+	expect        []int
+	expectOne     bool
 	requestUserID int
-	elementID     int
+	elementIDs    []int
 }
 
 func testCase(name string, t *testing.T, f collection.FieldRestricter, expect bool, yaml string, op ...testCaseOption) {
 	t.Helper()
 	td := testData{
 		name:          name,
+		expect:        nil,
+		expectOne:     expect,
+		data:          dsmock.YAMLData(yaml),
+		requestUserID: 1,
+		elementIDs:    []int{1},
+	}
+
+	for _, o := range op {
+		o(&td)
+	}
+
+	userIDKey, _ := datastore.KeyFromString(fmt.Sprintf("user/%d/id", td.requestUserID))
+
+	td.data[userIDKey] = []byte(strconv.Itoa(td.requestUserID))
+
+	td.test(t, f)
+}
+
+func testCaseMulti(name string, t *testing.T, f collection.FieldRestricter, ids, expect []int, yaml string, op ...testCaseOption) {
+	t.Helper()
+	td := testData{
+		name:          name,
 		expect:        expect,
 		data:          dsmock.YAMLData(yaml),
 		requestUserID: 1,
-		elementID:     1,
+		elementIDs:    ids,
 	}
 
 	for _, o := range op {
@@ -51,15 +75,23 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 		ds := dsfetch.New(dsmock.Stub(tt.data))
 		perms := perm.NewMeetingPermission(ds, tt.requestUserID)
 
-		allowedIDs, err := f(context.Background(), ds, perms, tt.elementID)
-		got := len(allowedIDs) == 1
-
+		allowedIDs, err := f(context.Background(), ds, perms, tt.elementIDs...)
 		if err != nil {
 			t.Fatalf("restriction mode returned unexpected error: %v", err)
 		}
 
-		if got != tt.expect {
-			t.Errorf("restriction mode returned %t, expected %t", got, tt.expect)
+		if tt.expect == nil {
+			// test for one value
+			got := len(allowedIDs) == 1
+
+			if got != tt.expectOne {
+				t.Errorf("restriction mode returned %t, expected %t", got, tt.expectOne)
+			}
+			return
+		}
+
+		if !set.Equal(set.New(allowedIDs...), set.New(tt.expect...)) {
+			t.Errorf("restriction mode returned %v, expected %v", allowedIDs, tt.expect)
 		}
 	})
 }
@@ -99,7 +131,7 @@ func withRequestUser(userID int) testCaseOption {
 
 func withElementID(id int) testCaseOption {
 	return func(td *testData) {
-		td.elementID = id
+		td.elementIDs = []int{id}
 	}
 }
 

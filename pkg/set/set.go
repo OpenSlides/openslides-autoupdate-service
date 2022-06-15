@@ -52,3 +52,18 @@ func (s Set[T]) Remove(es ...T) {
 func (s Set[T]) Len() int {
 	return len(s.m)
 }
+
+// Equal returns true if both sets have the same values
+func Equal[T comparable](s1, s2 *Set[T]) bool {
+	if s1.Len() != s2.Len() {
+		return false
+	}
+
+	for k := range s1.m {
+		if !s2.Has(k) {
+			return false
+		}
+	}
+
+	return true
+}

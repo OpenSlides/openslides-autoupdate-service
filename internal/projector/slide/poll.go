@@ -12,7 +12,7 @@ import (
 )
 
 type optionRepr struct {
-	Text            string          `json:"text"`
+	Text            string          `json:"text,omitempty"`
 	ContentObjectID string          `json:"content_object_id"`
 	ContentObject   json.RawMessage `json:"content_object"`
 	Yes             *string         `json:"yes,omitempty"`     // Python-DecimalField
@@ -37,6 +37,9 @@ func optionFromMap(in map[string]json.RawMessage) (*optionRepr, error) {
 	}
 	if err := json.Unmarshal(in["id"], &or.id); err != nil {
 		return nil, fmt.Errorf("decoding option id: %w", err)
+	}
+	if err := json.Unmarshal(in["text"], &or.Text); err != nil {
+		return nil, fmt.Errorf("decoding option text: %w", err)
 	}
 	return &or, nil
 }
@@ -193,10 +196,14 @@ func getOptions(ctx context.Context, fetch *datastore.Fetcher, store *projector.
 		if err != nil {
 			return nil, fmt.Errorf("get option data: %w", err)
 		}
-		option.ContentObject, err = getTitleInfoFromContentObject(ctx, fetch, store, option.ContentObjectID, "", meetingID)
-		if err != nil {
-			return nil, fmt.Errorf("getTitleInfoFromContentObject: %w", err)
+
+		if option.ContentObjectID != "" {
+			option.ContentObject, err = getTitleInfoFromContentObject(ctx, fetch, store, option.ContentObjectID, "", meetingID)
+			if err != nil {
+				return nil, fmt.Errorf("getTitleInfoFromContentObject: %w", err)
+			}
 		}
+
 		options = append(options, option)
 	}
 	if err := fetch.Err(); err != nil {
