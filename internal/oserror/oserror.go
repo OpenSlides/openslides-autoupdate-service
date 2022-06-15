@@ -15,6 +15,10 @@ func Handle(err error) {
 		return
 	}
 
+	if errAdmin := ErrorForAdmin(err); errAdmin != nil {
+		err = errAdmin
+	}
+
 	log.Printf("Error: %v", err)
 }
 
@@ -40,6 +44,16 @@ func ForAdmin(format string, a ...interface{}) error {
 	return adminError{
 		msg: fmt.Sprintf(format, a...),
 	}
+}
+
+// ErrorForAdmin returns an error, if it was created with the "ForAdmin"
+// function. In other case, it returns nil.
+func ErrorForAdmin(err error) error {
+	var errForAdmin adminError
+	if errors.As(err, &errForAdmin) {
+		return errForAdmin
+	}
+	return nil
 }
 
 type adminError struct {
