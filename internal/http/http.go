@@ -19,6 +19,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/klauspost/compress/zstd"
 )
 
 const (
@@ -121,6 +122,11 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 			ctx = oserror.ContextWithTag(ctx, "profile_restrict")
 		}
 
+		var compress bool
+		if r.URL.Query().Has("compress") {
+			compress = true
+		}
+
 		if r.URL.Query().Has("single") || position != 0 {
 			data, err := connecter.SingleData(ctx, uid, builder, position)
 			if err != nil {
@@ -133,15 +139,23 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 				converted[k.String()] = v
 			}
 
-			if err := json.NewEncoder(w).Encode(converted); err != nil {
-				// TODO EXTERNAL ERROR
-				handleError(w, fmt.Errorf("encoding end sending next message: %w", err), true)
+			bs, err := json.Marshal(converted)
+			if err != nil {
+				handleError(w, fmt.Errorf("encode line: %w", err), true)
 				return
 			}
+
+			if compress {
+				var zw zstd.Encoder
+				bs = zw.EncodeAll(bs, nil)
+			}
+			bs = append(bs, '\n')
+
+			w.Write(bs)
 			return
 		}
 
-		if err := sendMessages(ctx, w, uid, builder, connecter); err != nil {
+		if err := sendMessages(ctx, w, uid, builder, connecter, compress); err != nil {
 			handleError(w, err, false)
 			return
 		}
@@ -188,9 +202,9 @@ func HistoryInformation(mux *http.ServeMux, auth Authenticater, hi HistoryInform
 	mux.Handle(prefixPublic+"/history_information", authMiddleware(handler, auth))
 }
 
-func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter) error {
+func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool) error {
+	var zstdWriter zstd.Encoder
 	next := connecter.Connect(uid, kb)
-	encoder := json.NewEncoder(w)
 
 	for ctx.Err() == nil {
 		// This blocks, until there is new data. It also unblocks, when the
@@ -205,11 +219,17 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 			converted[k.String()] = v
 		}
 
-		if err := encoder.Encode(converted); err != nil {
-			// TODO EXTERNAL ERROR
-			return fmt.Errorf("encoding and sending next message: %w", err)
+		bs, err := json.Marshal(converted)
+		if err != nil {
+			return fmt.Errorf("encode line: %w", err)
 		}
 
+		if compress {
+			bs = zstdWriter.EncodeAll(bs, nil)
+		}
+		bs = append(bs, '\n')
+
+		w.Write(bs)
 		w.(http.Flusher).Flush()
 	}
 	return ctx.Err()
