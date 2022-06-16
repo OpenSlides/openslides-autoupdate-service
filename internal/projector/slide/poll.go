@@ -38,8 +38,11 @@ func optionFromMap(in map[string]json.RawMessage) (*optionRepr, error) {
 	if err := json.Unmarshal(in["id"], &or.id); err != nil {
 		return nil, fmt.Errorf("decoding option id: %w", err)
 	}
-	if err := json.Unmarshal(in["text"], &or.Text); err != nil {
-		return nil, fmt.Errorf("decoding option text: %w", err)
+
+	if in["text"] != nil {
+		if err := json.Unmarshal(in["text"], &or.Text); err != nil {
+			return nil, fmt.Errorf("decoding option text: %w", err)
+		}
 	}
 	return &or, nil
 }

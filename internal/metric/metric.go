@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -75,7 +76,7 @@ func (c Container) MarshalJSON() ([]byte, error) {
 // CurrentCounter is a metric that shows a current value.
 type CurrentCounter struct {
 	name    string
-	current int
+	current int64
 	total   uint64
 }
 
@@ -87,17 +88,17 @@ func NewCurrentCounter(name string) *CurrentCounter {
 
 // Add increases the counter by one.
 func (c *CurrentCounter) Add() {
-	c.current++
-	c.total++
+	atomic.AddInt64(&c.current, 1)
+	atomic.AddUint64(&c.total, 1)
 }
 
 // Done decreases the counter by one.
 func (c *CurrentCounter) Done() {
-	c.current--
+	atomic.AddInt64(&c.current, -1)
 }
 
 // Metric writes the current counter.
 func (c *CurrentCounter) Metric(con Container) {
-	con.Add(c.name+"current", c.current)
+	con.Add(c.name+"current", int(c.current))
 	con.Add(c.name+"total", int(c.total))
 }
