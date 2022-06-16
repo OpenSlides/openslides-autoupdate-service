@@ -69,6 +69,11 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("loading p7on: %w", err)
 		}
 
+		// This should not be possible in the datastore.
+		if p7on.ContentObjectID == "" {
+			return nil, nil
+		}
+
 		slideName, err := p7on.slideName()
 		if err != nil {
 			return nil, fmt.Errorf("getting slide name: %w", err)
