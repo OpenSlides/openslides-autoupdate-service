@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // Datastore gets values for keys and informs, if they change.
@@ -18,12 +19,12 @@ type Datastore interface {
 
 // Register initializes a new projector.
 func Register(ds Datastore, slides *SlideStore) {
-	hotKeys := map[datastore.Key]map[datastore.Key]struct{}{}
+	hotKeys := make(map[datastore.Key]*set.Set[datastore.Key])
 	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield datastore.Key, changed map[datastore.Key][]byte) (bs []byte, err error) {
 		if changed != nil {
 			var needUpdate bool
 			for k := range changed {
-				if _, ok := hotKeys[fqfield][k]; ok {
+				if hotKeys[fqfield].Has(k) {
 					needUpdate = true
 					break
 				}

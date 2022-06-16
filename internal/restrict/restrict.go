@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -40,29 +39,18 @@ func (r restricter) Get(ctx context.Context, keys ...datastore.Key) (map[datasto
 		return nil, fmt.Errorf("getting data: %w", err)
 	}
 
-	start := time.Now()
-	times, err := restrict(ctx, r.getter, r.uid, data)
-	if err != nil {
+	if _, err := Restrict(ctx, r.getter, r.uid, data); err != nil {
 		return nil, fmt.Errorf("restricting data: %w", err)
-	}
-
-	duration := time.Since(start)
-
-	if times != nil && (duration > slowCalls || oserror.HasTagFromContext(ctx, "profile_restrict")) {
-		body, ok := oserror.BodyFromContext(ctx)
-		if !ok {
-			body = "unknown body, probably simple request"
-		}
-		profile(body, duration, times)
 	}
 
 	return data, nil
 }
 
-// restrict changes the keys and values in data for the user with the given user
+// Restrict changes the keys and values in data for the user with the given user
 // id.
-func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[datastore.Key][]byte) (map[string]timeCount, error) {
-	ds := dsfetch.New(getter)
+func Restrict(ctx context.Context, getter datastore.Getter, uid int, data map[datastore.Key][]byte) (*set.Set[datastore.Key], error) {
+	recorder := datastore.NewRecorder(getter)
+	ds := dsfetch.New(recorder)
 
 	isSuperAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, uid, perm.OMLSuperadmin)
 	if err != nil {
@@ -78,8 +66,11 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 		if err := restrictSuperAdmin(ctx, getter, uid, data); err != nil {
 			return nil, fmt.Errorf("restrict as superadmin: %w", err)
 		}
-		return nil, nil
+		return recorder.Keys(), nil
 	}
+
+	var times map[string]timeCount
+	defer logTimes(ctx)(times)
 
 	// Get all required collections with there ids.
 	restrictModeIDs := make(map[collectionMode]*set.Set[int])
@@ -93,13 +84,9 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 		}
 	}
 
-	if len(restrictModeIDs) == 0 {
-		return nil, nil
-	}
-
 	// Call restrict Mode function for each collection.
 	mperms := perm.NewMeetingPermission(ds, uid)
-	times := make(map[string]timeCount, len(restrictModeIDs))
+	times = make(map[string]timeCount, len(restrictModeIDs))
 	for cm, ids := range restrictModeIDs {
 		idsCount := ids.Len()
 		start := time.Now()
@@ -149,7 +136,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 		}
 	}
 
-	return times, nil
+	return recorder.Keys(), nil
 }
 
 func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, data map[datastore.Key][]byte) error {

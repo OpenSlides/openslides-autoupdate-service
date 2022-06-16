@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // connection holds the state of a client. It has to be created by colling
@@ -15,7 +17,9 @@ type connection struct {
 	kb         KeysBuilder
 	tid        uint64
 	filter     filter
-	hotkeys    map[datastore.Key]struct{}
+
+	restrictHotkeys    *set.Set[datastore.Key]
+	keysbuilderHotKeys *set.Set[datastore.Key]
 }
 
 // Next returns the next data for the user.
@@ -28,7 +32,7 @@ type connection struct {
 func (c *connection) Next(ctx context.Context) (map[datastore.Key][]byte, error) {
 	if c.filter.empty() {
 		c.tid = c.autoupdate.topic.LastID()
-		data, err := c.updatedData(ctx)
+		data, err := c.updatedData(ctx, nil)
 		if err != nil {
 			return nil, fmt.Errorf("creating first time data: %w", err)
 		}
@@ -36,6 +40,7 @@ func (c *connection) Next(ctx context.Context) (map[datastore.Key][]byte, error)
 		return data, nil
 	}
 
+	requestedKeys := set.New(c.kb.Keys()...)
 	for {
 		// Blocks until new data or the context is done.
 		tid, changedKeys, err := c.autoupdate.topic.Receive(ctx, c.tid)
@@ -45,48 +50,67 @@ func (c *connection) Next(ctx context.Context) (map[datastore.Key][]byte, error)
 		}
 		c.tid = tid
 
-		foundKey := false
-		for _, key := range changedKeys {
-			if _, ok := c.hotkeys[key]; ok {
-				foundKey = true
-				break
-			}
+		changedKeysSet := set.New(changedKeys...)
+		if !(set.Intersect(changedKeysSet, c.restrictHotkeys) || set.Intersect(changedKeysSet, requestedKeys)) {
+			continue
 		}
 
-		if foundKey {
-			data, err := c.updatedData(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("creating later data: %w", err)
-			}
-
-			if len(data) > 0 {
-				return data, nil
-			}
+		data, err := c.updatedData(ctx, changedKeysSet)
+		if err != nil {
+			return nil, fmt.Errorf("creating later data: %w", err)
 		}
+
+		if len(data) == 0 {
+			continue
+		}
+
+		return data, nil
 	}
 }
 
 // updatedData returns all values from the datastore.getter.
-func (c *connection) updatedData(ctx context.Context) (map[datastore.Key][]byte, error) {
-	recorder := datastore.NewRecorder(c.autoupdate.datastore)
-	restricter := c.autoupdate.restricter(recorder, c.uid)
+func (c *connection) updatedData(ctx context.Context, changedKeys *set.Set[datastore.Key]) (map[datastore.Key][]byte, error) {
+	var fullUpdate bool
+	var requestedKeys []datastore.Key
 
-	oldKeys := c.kb.Keys()
-	if err := c.kb.Update(ctx, restricter); err != nil {
-		return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
+	// Check if keysbuilder has to be updated.
+	if changedKeys == nil || set.Intersect(c.keysbuilderHotKeys, changedKeys) {
+		kbRecorder := datastore.NewRecorder(c.autoupdate.datastore)
+		oldKeys := c.kb.Keys()
+		if err := c.kb.Update(ctx, c.autoupdate.restricter(kbRecorder, c.uid)); err != nil {
+			return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
+		}
+		c.keysbuilderHotKeys = kbRecorder.Keys()
+
+		newKeys := c.kb.Keys()
+		removedKeys := notInSlice(oldKeys, newKeys)
+		for _, key := range removedKeys {
+			c.filter.delete(key)
+		}
+
+		requestedKeys = newKeys
+		fullUpdate = true
+	} else if set.Intersect(c.restrictHotkeys, changedKeys) {
+		requestedKeys = c.kb.Keys()
+	} else {
+		requestedKeys = changedKeys.List()
 	}
 
-	newKeys := c.kb.Keys()
-	removedKeys := notInSlice(oldKeys, newKeys)
-	for _, key := range removedKeys {
-		c.filter.delete(key)
-	}
-
-	data, err := restricter.Get(ctx, newKeys...)
+	data, err := c.autoupdate.datastore.Get(ctx, requestedKeys...)
 	if err != nil {
-		return nil, fmt.Errorf("get restricted data: %w", err)
+		return nil, fmt.Errorf("getting full data: %w", err)
 	}
-	c.hotkeys = recorder.Keys()
+
+	restrictHotKeys, err := restrict.Restrict(ctx, c.autoupdate.datastore, c.uid, data)
+	if err != nil {
+		return nil, fmt.Errorf("restricting keys: %w", err)
+	}
+
+	if fullUpdate {
+		c.restrictHotkeys = restrictHotKeys
+	} else {
+		c.restrictHotkeys.AddOther(restrictHotKeys)
+	}
 
 	c.filter.filter(data)
 

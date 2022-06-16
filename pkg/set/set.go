@@ -19,6 +19,12 @@ func (s Set[T]) Add(es ...T) {
 	}
 }
 
+func (s Set[T]) AddOther(other *Set[T]) {
+	for e := range other.m {
+		s.m[e] = struct{}{}
+	}
+}
+
 // Merge adds all elements from the other set to this set.
 func (s Set[T]) Merge(other Set[T]) {
 	for e := range other.m {
@@ -66,4 +72,15 @@ func Equal[T comparable](s1, s2 *Set[T]) bool {
 	}
 
 	return true
+}
+
+// Intersect returns true, if the both sets have at lease one same element.
+func Intersect[T comparable](s1, s2 *Set[T]) bool {
+	for k := range s1.m {
+		if s2.Has(k) {
+			return true
+		}
+	}
+
+	return false
 }

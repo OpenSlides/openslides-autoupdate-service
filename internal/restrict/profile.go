@@ -1,12 +1,15 @@
 package restrict
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 )
 
 const slowCalls = 100 * time.Millisecond
@@ -39,4 +42,22 @@ func profile(request string, duration time.Duration, times map[string]timeCount)
 	})
 
 	log.Printf("Profile: Restrict: Slow request:\nProfile: Request: %s\nProfile: Duration: %d ms\nProfile: %s\n", request, duration.Milliseconds(), strings.Join(timeStrings, "\nProfile: "))
+}
+
+func logTimes(ctx context.Context) func(map[string]timeCount) {
+	start := time.Now()
+
+	return func(times map[string]timeCount) {
+		duration := time.Since(start)
+
+		if times == nil || duration < slowCalls && !oserror.HasTagFromContext(ctx, "profile_restrict") {
+			return
+		}
+
+		body, ok := oserror.BodyFromContext(ctx)
+		if !ok {
+			body = "unknown body, probably simple request"
+		}
+		profile(body, duration, times)
+	}
 }
