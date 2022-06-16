@@ -13,8 +13,8 @@ import (
 
 type optionRepr struct {
 	Text            string          `json:"text,omitempty"`
-	ContentObjectID string          `json:"content_object_id"`
-	ContentObject   json.RawMessage `json:"content_object"`
+	ContentObjectID string          `json:"content_object_id,omitempty"`
+	ContentObject   json.RawMessage `json:"content_object,omitempty"`
 	Yes             *string         `json:"yes,omitempty"`     // Python-DecimalField
 	No              *string         `json:"no,omitempty"`      // Python-DecimalField
 	Abstain         *string         `json:"abstain,omitempty"` // Python-DecimalField
