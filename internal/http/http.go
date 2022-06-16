@@ -167,9 +167,8 @@ func writeData(w io.Writer, data map[datastore.Key][]byte, compress bool) error 
 		converted[k.String()] = v
 	}
 
-	defer fmt.Fprintln(w)
-
 	if compress {
+		defer fmt.Fprintln(w)
 		base64Encoder := base64.NewEncoder(base64.RawStdEncoding, w)
 		defer base64Encoder.Close()
 
