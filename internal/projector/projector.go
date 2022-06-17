@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
@@ -69,8 +70,9 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("loading p7on: %w", err)
 		}
 
-		// This should not be possible in the datastore.
 		if p7on.ContentObjectID == "" {
+			// There are broken projections in the datastore. Ignore them.
+			log.Printf("Bug in Backend: The projection %d has an empty content_object_id", p7on.ID)
 			return nil, nil
 		}
 

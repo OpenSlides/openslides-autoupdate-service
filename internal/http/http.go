@@ -4,6 +4,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -134,28 +135,20 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 				return
 			}
 
-			converted := make(map[string]json.RawMessage, len(data))
-			for k, v := range data {
-				converted[k.String()] = v
+			if err := writeData(w, data, compress); err != nil {
+				handleError(w, err, false)
 			}
-
-			bs, err := json.Marshal(converted)
-			if err != nil {
-				handleError(w, fmt.Errorf("encode line: %w", err), true)
-				return
-			}
-
-			if compress {
-				var zw zstd.Encoder
-				bs = zw.EncodeAll(bs, nil)
-			}
-			bs = append(bs, '\n')
-
-			w.Write(bs)
 			return
 		}
 
-		if err := sendMessages(ctx, w, uid, builder, connecter, compress); err != nil {
+		var wr io.Writer = w
+		if r.URL.Query().Has("skip_first") {
+			// TODO: This will not compress the first data. For the performance
+			// tool this does not matter.
+			wr = newSkipFirst(w)
+		}
+
+		if err := sendMessages(ctx, wr, uid, builder, connecter, compress); err != nil {
 			handleError(w, err, false)
 			return
 		}
@@ -173,6 +166,32 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 			),
 		),
 	)
+}
+
+func writeData(w io.Writer, data map[datastore.Key][]byte, compress bool) error {
+	converted := make(map[string]json.RawMessage, len(data))
+	for k, v := range data {
+		converted[k.String()] = v
+	}
+
+	if compress {
+		defer fmt.Fprintln(w)
+		base64Encoder := base64.NewEncoder(base64.RawStdEncoding, w)
+		defer base64Encoder.Close()
+
+		zstdEncoder, err := zstd.NewWriter(base64Encoder)
+		if err != nil {
+			return fmt.Errorf("create encoder: %w", err)
+		}
+		defer zstdEncoder.Close()
+		w = zstdEncoder
+	}
+
+	if err := json.NewEncoder(w).Encode(converted); err != nil {
+		return fmt.Errorf("encode data: %w", err)
+	}
+
+	return nil
 }
 
 // HistoryInformationer is an object, that can write the history information for
@@ -203,7 +222,6 @@ func HistoryInformation(mux *http.ServeMux, auth Authenticater, hi HistoryInform
 }
 
 func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool) error {
-	var zstdWriter zstd.Encoder
 	next := connecter.Connect(uid, kb)
 
 	for ctx.Err() == nil {
@@ -214,22 +232,9 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 			return fmt.Errorf("getting next message: %w", err)
 		}
 
-		converted := make(map[string]json.RawMessage, len(data))
-		for k, v := range data {
-			converted[k.String()] = v
+		if err := writeData(w, data, compress); err != nil {
+			return fmt.Errorf("write data: %w", err)
 		}
-
-		bs, err := json.Marshal(converted)
-		if err != nil {
-			return fmt.Errorf("encode line: %w", err)
-		}
-
-		if compress {
-			bs = zstdWriter.EncodeAll(bs, nil)
-		}
-		bs = append(bs, '\n')
-
-		w.Write(bs)
 		w.(http.Flusher).Flush()
 	}
 	return ctx.Err()
