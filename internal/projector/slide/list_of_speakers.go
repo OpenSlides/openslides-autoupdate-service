@@ -168,6 +168,9 @@ func CurrentSpeakerChyron(store *projector.SlideStore) {
 
 // getLosID determines the losID and first current_projection of the reference_projector.
 func getLosID(ctx context.Context, ContentObjectID string, fetch *datastore.Fetcher) (losID int, referenceProjectorID int, err error) {
+	if ContentObjectID == "" {
+		return 0, 0, nil
+	}
 	parts := strings.Split(ContentObjectID, "/")
 	if len(parts) != 2 || parts[0] != "meeting" {
 		return losID, referenceProjectorID, fmt.Errorf("invalid ContentObjectID %s. Expected a meeting-objectID", ContentObjectID)
