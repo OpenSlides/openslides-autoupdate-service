@@ -8,6 +8,7 @@ import (
 
 // This is a debuggin feature. Remove me after the performance tests
 
+// skipFirst is a wrapper around a io.Writer that replaces all the bytes before the first newline with {}
 type skipFirst struct {
 	io.Writer
 
@@ -28,8 +29,12 @@ func (w *skipFirst) Write(p []byte) (int, error) {
 		return len(p), nil
 	}
 
-	n, err := w.Writer.Write(p[idx+1:])
+	if _, err := w.Writer.Write([]byte("{}\n")); err != nil {
+		return 0, err
+	}
 	w.gotFirstNewLine = true
+
+	n, err := w.Writer.Write(p[idx+1:])
 	return n + idx + 1, err
 }
 

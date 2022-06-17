@@ -143,6 +143,8 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 
 		var wr io.Writer = w
 		if r.URL.Query().Has("skip_first") {
+			// TODO: This will not compress the first data. For the performance
+			// tool this does not matter.
 			wr = newSkipFirst(w)
 		}
 
