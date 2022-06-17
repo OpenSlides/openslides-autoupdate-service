@@ -141,7 +141,12 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 			return
 		}
 
-		if err := sendMessages(ctx, w, uid, builder, connecter, compress); err != nil {
+		var wr io.Writer = w
+		if r.URL.Query().Has("skip_first") {
+			wr = newSkipFirst(w)
+		}
+
+		if err := sendMessages(ctx, wr, uid, builder, connecter, compress); err != nil {
 			handleError(w, err, false)
 			return
 		}
