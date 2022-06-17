@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -100,26 +101,30 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 	// Call restrict Mode function for each collection.
 	mperms := perm.NewMeetingPermission(ds, uid)
 	times := make(map[string]timeCount, len(restrictModeIDs))
-	for cm, ids := range restrictModeIDs {
+	orderedCMs := sortRestrictModeIDs(restrictModeIDs)
+	allowed := make(map[collectionMode]*set.Set[int])
+	for _, cm := range orderedCMs {
+		ids := restrictModeIDs[cm]
 		idsCount := ids.Len()
 		start := time.Now()
 
-		modeFunc, err := restrictModefunc(cm.collection, cm.mode)
+		modeFunc, err := restrictModefunc(cm.Collection, cm.Mode)
 		if err != nil {
-			return nil, fmt.Errorf("getting restiction mode for %s/%s: %w", cm.collection, cm.mode, err)
+			return nil, fmt.Errorf("getting restiction mode for %s/%s: %w", cm.Collection, cm.Mode, err)
 		}
 
 		allowedIDs, err := modeFunc(ctx, ds, mperms, ids.List()...)
 		if err != nil {
 			var errDoesNotExist dsfetch.DoesNotExistError
 			if !errors.As(err, &errDoesNotExist) {
-				return nil, fmt.Errorf("calling collection %s modefunc %s with ids %v: %w", cm.collection, cm.mode, ids.List(), err)
+				return nil, fmt.Errorf("calling collection %s modefunc %s with ids %v: %w", cm.Collection, cm.Mode, ids.List(), err)
 			}
 		}
+		allowed[cm] = set.New(allowedIDs...)
 		restrictModeIDs[cm].Remove(allowedIDs...)
 
 		duration := time.Since(start)
-		times[cm.collection+"/"+cm.mode] = timeCount{time: duration, count: idsCount}
+		times[cm.Collection+"/"+cm.Mode] = timeCount{time: duration, count: idsCount}
 	}
 
 	// Remove restricted keys.
@@ -198,9 +203,14 @@ func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, d
 	return nil
 }
 
+// collectionMode is the name of a collection and a mode.
 type collectionMode struct {
-	collection string
-	mode       string
+	Collection string
+	Mode       string
+}
+
+func (cm collectionMode) String() string {
+	return cm.Collection + "/" + cm.Mode
 }
 
 // groupKeysByCollection groups all the keys in data by there collection.
@@ -370,7 +380,7 @@ func isRelation(keyPrefix string, value []byte) (collectionMode, int, bool, erro
 		return collectionMode{}, 0, false, fmt.Errorf("building relation field field mode: %w", err)
 	}
 
-	return collectionMode{collection: collection, mode: fieldMode}, id, true, nil
+	return collectionMode{Collection: collection, Mode: fieldMode}, id, true, nil
 }
 
 func isRelationList(keyPrefix string, value []byte) (collectionMode, []int, bool, error) {
@@ -390,7 +400,7 @@ func isRelationList(keyPrefix string, value []byte) (collectionMode, []int, bool
 		return collectionMode{}, nil, false, fmt.Errorf("building relation field field mode: %w", err)
 	}
 
-	return collectionMode{collection: collection, mode: fieldMode}, ids, true, nil
+	return collectionMode{Collection: collection, Mode: fieldMode}, ids, true, nil
 }
 
 func isGenericRelation(keyPrefix string, value []byte) (collectionMode, int, bool, error) {
@@ -465,7 +475,7 @@ func genericKeyToCollectionMode(genericID string, toCollectionFieldMap map[strin
 		return collectionMode{}, 0, fmt.Errorf("building generic relation field mode: %w", err)
 	}
 
-	return collectionMode{collection: collection, mode: fieldMode}, id, nil
+	return collectionMode{Collection: collection, Mode: fieldMode}, id, nil
 }
 
 // restrictModeName returns the restriction mode for a collection and field.
@@ -507,4 +517,69 @@ func restrictModefunc(collectionName, fieldMode string) (collection.FieldRestric
 	}
 
 	return modefunc, nil
+}
+
+func sortRestrictModeIDs(data map[collectionMode]*set.Set[int]) []collectionMode {
+	keys := make([]collectionMode, 0, len(data))
+	for k := range data {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(a, b int) bool {
+		var aid, bid int
+		if id, ok := collectionOrder[keys[a].String()]; ok {
+			aid = id
+		} else if id, ok := collectionOrder[keys[a].Collection]; ok {
+			aid = id
+		}
+
+		if id, ok := collectionOrder[keys[b].String()]; ok {
+			bid = id
+		} else if id, ok := collectionOrder[keys[b].Collection]; ok {
+			bid = id
+		}
+
+		return aid < bid
+	})
+
+	return keys
+}
+
+var collectionOrder = map[string]int{
+	"agenda_item":                  1,
+	"assignment":                   2,
+	"assignment_candidate":         3,
+	"chat_group":                   4,
+	"chat_message":                 5,
+	"committee":                    6,
+	"meeting":                      7,
+	"group":                        8,
+	"mediafile":                    9,
+	"tag":                          10,
+	"motion/C":                     11,
+	"motion/B":                     12,
+	"motion_block":                 13,
+	"motion_category":              14,
+	"motion_change_recommendation": 15,
+	"motion_comment_section":       16,
+	"motion_comment":               17,
+	"motion_state":                 18,
+	"motion_statute_paragraph":     19,
+	"motion_submitter":             20,
+	"motion_workflow":              21,
+	"poll":                         22,
+	"option":                       23,
+	"vote":                         24,
+	"organization":                 25,
+	"organization_tag":             26,
+	"personal_note":                27,
+	"projection":                   28,
+	"projector":                    29,
+	"projector_countdown":          30,
+	"projector_message":            31,
+	"theme":                        32,
+	"topic":                        33,
+	"list_of_speakers":             34,
+	"speaker":                      35,
+	"user":                         36,
 }
