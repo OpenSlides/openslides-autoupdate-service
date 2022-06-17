@@ -14,7 +14,7 @@ func TestSkipFirst(t *testing.T) {
 
 		io.Copy(w, strings.NewReader("hello world\n"))
 
-		if got := buf.String(); got != "" {
+		if got := buf.String(); got != "{}\n" {
 			t.Errorf("Got `%s`, expected ``", got)
 		}
 	})
@@ -25,7 +25,7 @@ func TestSkipFirst(t *testing.T) {
 
 		io.Copy(w, strings.NewReader("hello world\nAnd More"))
 
-		if got := buf.String(); got != "And More" {
+		if got := buf.String(); got != "{}\nAnd More" {
 			t.Errorf("Got `%s`, expected `And More`", got)
 		}
 	})
@@ -45,7 +45,7 @@ func TestSkipFirst(t *testing.T) {
 			nCount += n
 		}
 
-		if got := buf.String(); got != "barlast" {
+		if got := buf.String(); got != "{}\nbarlast" {
 			t.Errorf("Got `%s`, expected `barlast`", got)
 		}
 
@@ -69,7 +69,7 @@ func TestSkipFirst(t *testing.T) {
 			nCount += n
 		}
 
-		if got := buf.String(); got != "foobarlast" {
+		if got := buf.String(); got != "{}\nfoobarlast" {
 			t.Errorf("Got `%s`, expected `foobarlast`", got)
 		}
 
@@ -93,7 +93,7 @@ func TestSkipFirst(t *testing.T) {
 			nCount += n
 		}
 
-		if got := buf.String(); got != "last" {
+		if got := buf.String(); got != "{}\nlast" {
 			t.Errorf("Got `%s`, expected `last`", got)
 		}
 
