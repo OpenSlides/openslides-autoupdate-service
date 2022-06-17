@@ -67,7 +67,7 @@ func (v *ValueBool) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -136,7 +136,7 @@ func (v *ValueFloat) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -283,7 +283,7 @@ func (v *ValueInt) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -352,7 +352,7 @@ func (v *ValueIntSlice) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -421,7 +421,7 @@ func (v *ValueJSON) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -490,7 +490,7 @@ func (v *ValueMaybeInt) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -559,7 +559,7 @@ func (v *ValueMaybeString) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -628,7 +628,7 @@ func (v *ValueString) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -697,7 +697,7 @@ func (v *ValueStringSlice) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -3697,8 +3697,8 @@ func (r *Fetch) Projection_Content(projectionID int) *ValueJSON {
 	return v
 }
 
-func (r *Fetch) Projection_ContentObjectID(projectionID int) *ValueMaybeString {
-	v := &ValueMaybeString{fetch: r}
+func (r *Fetch) Projection_ContentObjectID(projectionID int) *ValueString {
+	v := &ValueString{fetch: r}
 	r.requested[datastore.Key{Collection: "projection", ID: projectionID, Field: "content_object_id"}] = v
 	return v
 }
