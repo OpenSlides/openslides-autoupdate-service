@@ -181,6 +181,9 @@ func getLosID(ctx context.Context, ContentObjectID string, fetch *datastore.Fetc
 
 	for _, pID := range referenceP7onIDs {
 		contentObjectID := datastore.String(ctx, fetch.FetchIfExist, "projection/%d/content_object_id", pID)
+		if contentObjectID == "" {
+			continue
+		}
 		losID = datastore.Int(ctx, fetch.FetchIfExist, "%s/list_of_speakers_id", contentObjectID)
 
 		if losID != 0 {

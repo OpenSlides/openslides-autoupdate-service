@@ -60,7 +60,7 @@ func TestKeysHandler(t *testing.T) {
 	expect := `{"collection/1/field":"bar"}` + "\n"
 	got, _ := io.ReadAll(res.Body)
 	if string(got) != expect {
-		t.Errorf("Got content %s, expected %s", got, expect)
+		t.Errorf("Got content `%s`, expected `%s`", got, expect)
 	}
 }
 
