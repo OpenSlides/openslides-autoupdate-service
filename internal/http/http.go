@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -148,6 +149,7 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 			wr = newSkipFirst(w)
 		}
 
+		log.Printf("Got Request: %v", r)
 		if err := sendMessages(ctx, wr, uid, builder, connecter, compress); err != nil {
 			handleError(w, err, false)
 			return
