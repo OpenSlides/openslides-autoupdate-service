@@ -16,3 +16,7 @@ func (a authError) Error() string {
 func (a authError) Unwrap() error {
 	return a.wrapped
 }
+
+func (a authError) StatusCode() int {
+	return 403
+}
