@@ -7,9 +7,12 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 )
+
+const longCalculation = time.Second
 
 // Datastore gets values for keys and informs, if they change.
 type Datastore interface {
@@ -21,6 +24,20 @@ type Datastore interface {
 func Register(ds Datastore, slides *SlideStore) {
 	hotKeys := map[datastore.Key]map[datastore.Key]struct{}{}
 	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield datastore.Key, changed map[datastore.Key][]byte) (bs []byte, err error) {
+		var p7on *Projection
+		start := time.Now()
+		defer func() {
+			duration := time.Since(start)
+			if duration > longCalculation {
+				slide := "[unknown]"
+				if p7on != nil {
+					slide = fmt.Sprintf("content_object: %s, type: %s", p7on.ContentObjectID, p7on.Type)
+				}
+
+				log.Printf("Profile: Calculating fqfield %s with slide %s took %d ms", fqfield, slide, duration.Milliseconds())
+			}
+		}()
+
 		if changed != nil {
 			var needUpdate bool
 			for k := range changed {
@@ -65,7 +82,7 @@ func Register(ds Datastore, slides *SlideStore) {
 			return nil, fmt.Errorf("fetching projection %d from datastore: %w", fqfield.ID, err)
 		}
 
-		p7on, err := p7onFromMap(data)
+		p7on, err = p7onFromMap(data)
 		if err != nil {
 			return nil, fmt.Errorf("loading p7on: %w", err)
 		}
