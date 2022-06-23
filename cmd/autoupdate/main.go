@@ -65,12 +65,13 @@ func run() error {
 
 	// Start metrics.
 	metric.Register(metric.Runtime)
-	metricSeconds := 0
-	if got, err := strconv.Atoi(env["METRIC_INTERVAL_SECONDS"]); err == nil {
-		metricSeconds = got
+	metricTime, err := time.ParseDuration(env["METRIC_INTERVAL"])
+	if err != nil {
+		return fmt.Errorf("invalid value for `METRIC_INTERVAL`, expected duration got %s: %w", env["METRIC_INTERVAL"], err)
 	}
-	if metricSeconds > 0 {
-		go metric.Loop(ctx, time.Duration(metricSeconds)*time.Second, log.Default())
+
+	if metricTime > 0 {
+		go metric.Loop(ctx, metricTime, log.Default())
 	}
 
 	// Start http server.
@@ -101,9 +102,11 @@ func defaultEnv() map[string]string {
 		"AUTH_HOST":     "localhost",
 		"AUTH_PORT":     "9004",
 
-		"OPENSLIDES_DEVELOPMENT":  "false",
-		"METRIC_INTERVAL_SECONDS": "300",
-		"MAX_PARALLEL_KEYS":       "1000",
+		"OPENSLIDES_DEVELOPMENT": "false",
+
+		"METRIC_INTERVAL":   "5m",
+		"MAX_PARALLEL_KEYS": "1000",
+		"DATASTORE_TIMEOUT": "3s",
 	}
 
 	for k := range defaults {
@@ -170,13 +173,19 @@ func initRedis(env map[string]string) (*redis.Redis, error) {
 func initDatastore(env map[string]string, mb *redis.Redis) (*datastore.Datastore, error) {
 	maxParallel, err := strconv.Atoi(env["MAX_PARALLEL_KEYS"])
 	if err != nil {
-		return nil, fmt.Errorf("environmentvariable MAX_PARALLEL_KEYS has to be a number, not %s", env["MAX_PARALLEL_KEYS"])
+		return nil, fmt.Errorf("environment variable MAX_PARALLEL_KEYS has to be a number, not %s", env["MAX_PARALLEL_KEYS"])
+	}
+
+	timeout, err := time.ParseDuration(env["DATASTORE_TIMEOUT"])
+	if err != nil {
+		return nil, fmt.Errorf("environment variable DATASTORE_TIMEOUT has to be a duration like 3s, not %s: %w", env["DATASTORE_TIMEOUT"], err)
 	}
 
 	datastoreSource := datastore.NewSourceDatastore(
 		env["DATASTORE_READER_PROTOCOL"]+"://"+env["DATASTORE_READER_HOST"]+":"+env["DATASTORE_READER_PORT"],
 		mb,
 		maxParallel,
+		timeout,
 	)
 	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCOL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
 

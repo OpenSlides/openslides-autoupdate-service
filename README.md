@@ -199,11 +199,14 @@ The Service uses the following environment variables:
 * `AUTH_PROTOCOL`: Protocol of the auth servicer. The default is `http`.
 * `OPENSLIDES_DEVELOPMENT`: If set, the service uses the default secrets. The
   default is `false`.
-* `METRIC_INTERVAL_SECONDS`: Time in how often the metrics are gathered. Zero
-  disables the metrics. The default is `300`.
+* `METRIC_INTERVAL`: Time in how often the metrics are gathered. Zero disables
+  the metrics. The default is `5m`.
 * `MAX_PARALLEL_KEYS`: Max keys that are send in one request to the datastore.
   The default is `1000`.
+* `DATASTORE_TIMEOUT`: Time until a request to the datastore times out. The
+  default is `3s`.
 
+Valid units for duration values are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 
 ### Secrets
 
