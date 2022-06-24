@@ -282,7 +282,7 @@ func (d *Datastore) loadKeys(keys []Key, set func(Key, []byte)) error {
 }
 
 func (d *Datastore) calculateField(field string, key Key, updated map[Key][]byte) []byte {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
 	calculated, err := d.calculatedFields[field](ctx, key, updated)

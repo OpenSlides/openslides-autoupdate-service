@@ -254,6 +254,9 @@ func (a *Auth) refreshToken(ctx context.Context, token, cookie string) (string, 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
+		if resp.StatusCode == 403 {
+			return "", authError{msg: "Invalid Session", wrapped: err}
+		}
 		// TODO LAST ERROR
 		return "", fmt.Errorf("auth-service returned status %s", resp.Status)
 	}
