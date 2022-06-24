@@ -65,7 +65,7 @@ func run() error {
 
 	// Start metrics.
 	metric.Register(metric.Runtime)
-	metricTime, err := time.ParseDuration(env["METRIC_INTERVAL"])
+	metricTime, err := parseDuration(env["METRIC_INTERVAL"])
 	if err != nil {
 		return fmt.Errorf("invalid value for `METRIC_INTERVAL`, expected duration got %s: %w", env["METRIC_INTERVAL"], err)
 	}
@@ -176,7 +176,7 @@ func initDatastore(env map[string]string, mb *redis.Redis) (*datastore.Datastore
 		return nil, fmt.Errorf("environment variable MAX_PARALLEL_KEYS has to be a number, not %s", env["MAX_PARALLEL_KEYS"])
 	}
 
-	timeout, err := time.ParseDuration(env["DATASTORE_TIMEOUT"])
+	timeout, err := parseDuration(env["DATASTORE_TIMEOUT"])
 	if err != nil {
 		return nil, fmt.Errorf("environment variable DATASTORE_TIMEOUT has to be a duration like 3s, not %s: %w", env["DATASTORE_TIMEOUT"], err)
 	}
@@ -236,4 +236,14 @@ func initAuth(env map[string]string, messageBus auth.LogoutEventer) (http.Authen
 		// TODO LAST ERROR
 		return nil, nil, fmt.Errorf("unknown auth method: %s", method)
 	}
+}
+
+func parseDuration(s string) (time.Duration, error) {
+	sec, err := strconv.Atoi(s)
+	if err == nil {
+		// TODO External error
+		return time.Duration(sec) * time.Second, nil
+	}
+
+	return time.ParseDuration(s)
 }

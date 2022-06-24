@@ -207,6 +207,7 @@ The Service uses the following environment variables:
   default is `3s`.
 
 Valid units for duration values are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+One number without a unit is interpreted as seconds. So `3` is the same as `3s`.
 
 ### Secrets
 
