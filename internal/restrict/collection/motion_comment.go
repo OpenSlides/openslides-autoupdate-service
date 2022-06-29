@@ -48,6 +48,7 @@ func (m MotionComment) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.
 		allowed, err := eachCondition(ids, func(motionCommentID int) (bool, error) {
 			motionID := ds.MotionComment_MotionID(motionCommentID).ErrorLater(ctx)
 
+			// TODO: Do this outside of section
 			seeMotion, err := Motion{}.see(ctx, ds, mperms, motionID)
 			if err != nil {
 				return false, fmt.Errorf("checking motion %d can see: %w", motionID, err)

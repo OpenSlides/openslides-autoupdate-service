@@ -52,7 +52,7 @@ func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms *per
 		return nil, fmt.Errorf("checking motion.see: %w", err)
 	}
 
-	if len(allowedMotionIDs) == len(submitterToMotion) {
+	if len(allowedMotionIDs) == motionIDs.Len() {
 		return motionSubmitterIDs, nil
 	}
 
@@ -60,16 +60,12 @@ func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms *per
 		return nil, nil
 	}
 
-	alloedMotionSet := set.New(allowedMotionIDs...)
+	allowedMotionSet := set.New(allowedMotionIDs...)
 	allowed := make([]int, 0, len(motionSubmitterIDs))
 	for _, submitterID := range motionSubmitterIDs {
-		if alloedMotionSet.Has(submitterToMotion[submitterID]) {
+		if allowedMotionSet.Has(submitterToMotion[submitterID]) {
 			allowed = append(allowed, submitterID)
 		}
-	}
-
-	if err := ds.Err(); err != nil {
-		return nil, fmt.Errorf("getting motionIDs: %w", err)
 	}
 
 	return allowed, nil
