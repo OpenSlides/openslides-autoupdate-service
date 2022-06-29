@@ -278,10 +278,16 @@ func handleError(w http.ResponseWriter, err error, writeStatusCode bool) {
 		return
 	}
 
+	status := http.StatusBadRequest
+	var StatusCoder interface{ StatusCode() int }
+	if errors.As(err, &StatusCoder) {
+		status = StatusCoder.StatusCode()
+	}
+
 	var errClient ClientError
 	if errors.As(err, &errClient) {
 		if writeStatusCode {
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(status)
 		}
 
 		fmt.Fprintf(w, `{"error": {"type": "%s", "msg": "%s"}}`, errClient.Type(), quote(errClient.Error()))
