@@ -19,7 +19,7 @@ import (
 //         If: `restriction` is `is_submitter`: The user needs to be a submitter of the motion
 //         Else: (a permission string): The user needs the permission
 //
-// Mode A: Mode C restrictions or can see a referenced motion in motion/all_origin_ids and motion/all_derived_motion_ids.
+// Mode A: The user can see the motion or can see a referenced motion in motion/all_origin_ids and motion/all_derived_motion_ids.
 //
 // Mode C: The user can see the motion.
 //

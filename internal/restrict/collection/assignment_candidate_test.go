@@ -14,9 +14,6 @@ func TestAssignmentCandidateModeA(t *testing.T) {
 	
 	assignment/7:
 		meeting_id: 30
-		agenda_item_id: 5
-	
-	agenda_item/5/meeting_id: 30
 	`
 
 	testCase(
@@ -26,15 +23,6 @@ func TestAssignmentCandidateModeA(t *testing.T) {
 		true,
 		ds,
 		withPerms(30, perm.AssignmentCanSee),
-	)
-
-	testCase(
-		"Can only see the linked assignment",
-		t,
-		a.Modes("A"),
-		true,
-		ds,
-		withPerms(30, perm.AgendaItemCanSee),
 	)
 
 	testCase(

@@ -194,54 +194,6 @@ func TestMotionModeA(t *testing.T) {
 		motion/1:
 			id: 1
 			meeting_id: 30
-		`,
-	)
-
-	testCase(
-		"motion.can_see",
-		t,
-		f,
-		true,
-		`---
-		motion/1:
-			meeting_id: 30
-			state_id: 3
-		
-		motion_state/3/id: 3
-		`,
-		withPerms(30, perm.MotionCanSee),
-	)
-
-	testCase(
-		"See Agenda",
-		t,
-		f,
-		true,
-		`---
-		motion/1:
-			meeting_id: 30
-			state_id: 3
-			agenda_item_id: 8
-		
-		motion_state/3/id: 3
-		agenda_item/8/meeting_id: 30
-		`,
-		withPerms(30, perm.AgendaItemCanSee),
-	)
-}
-
-func TestMotionModeB(t *testing.T) {
-	f := collection.Motion{}.Modes("B")
-
-	testCase(
-		"no permissions",
-		t,
-		f,
-		false,
-		`---
-		motion/1:
-			id: 1
-			meeting_id: 30
 		
 		meeting/30/committee_id: 300
 		`,
@@ -383,58 +335,6 @@ func TestMotionModeB(t *testing.T) {
 
 		motion_submitter/4/user_id: 2
 		motion_submitter/5/user_id: 2
-		`,
-		withPerms(30, perm.MotionCanSee),
-	)
-
-	testCase(
-		"see origin_id",
-		t,
-		f,
-		true,
-		`---
-		motion:
-			1:
-				meeting_id: 30
-				state_id: 3
-				submitter_ids: [4]
-				origin_id: 2
-			2:
-				meeting_id: 30
-				state_id: 3
-				submitter_ids: [5]
-
-		motion_state/3/restrictions:
-		- is_submitter
-
-		motion_submitter/4/user_id: 2
-		motion_submitter/5/user_id: 1
-		`,
-		withPerms(30, perm.MotionCanSee),
-	)
-
-	testCase(
-		"see derived_motion_ids",
-		t,
-		f,
-		true,
-		`---
-		motion:
-			1:
-				meeting_id: 30
-				state_id: 3
-				submitter_ids: [4]
-				derived_motion_ids: [2]
-			2:
-				meeting_id: 30
-				state_id: 3
-				submitter_ids: [5]
-
-		motion_state/3/restrictions:
-		- is_submitter
-
-		motion_submitter/4/user_id: 2
-		motion_submitter/5/user_id: 1
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)
