@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
@@ -35,7 +36,7 @@ func TestSourceDefaultRequestCount(t *testing.T) {
 	} {
 		t.Run(fmt.Sprintf("%d-%d", tt.maxKeysPerRequest, tt.keyCount), func(t *testing.T) {
 			count = 0
-			sd := datastore.NewSourceDatastore(ts.URL, nil, tt.maxKeysPerRequest)
+			sd := datastore.NewSourceDatastore(ts.URL, nil, tt.maxKeysPerRequest, time.Second)
 			keys := make([]datastore.Key, tt.keyCount)
 			for i := 0; i < len(keys); i++ {
 				keys[i] = datastore.Key{Collection: "coll", ID: i + 1, Field: "field"}

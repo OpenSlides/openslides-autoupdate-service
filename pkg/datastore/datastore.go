@@ -22,7 +22,6 @@ import (
 
 const (
 	messageBusReconnectPause = time.Second
-	httpTimeout              = 3 * time.Second
 )
 
 // Getter can get values from keys.
