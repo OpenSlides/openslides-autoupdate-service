@@ -3,7 +3,6 @@ package datastore
 import (
 	"context"
 	"errors"
-	"log"
 	"strconv"
 	"sync"
 	"testing"
@@ -338,7 +337,6 @@ func TestCacheConcurency(t *testing.T) {
 			defer wg.Done()
 
 			v, err := c.GetOrSet(context.Background(), []Key{myKey}, func(keys []Key, set func(k Key, v []byte)) error {
-				log.Printf("called from %d", i)
 				time.Sleep(time.Millisecond)
 				for _, k := range keys {
 					set(k, []byte("value"))

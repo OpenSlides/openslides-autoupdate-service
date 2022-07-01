@@ -85,7 +85,10 @@ func (s *VoteCountSource) connect(ctx context.Context) error {
 			s.voteCount[k] = v
 		}
 		s.mu.Unlock()
-		s.update <- counts
+		select {
+		case s.update <- counts:
+		default:
+		}
 	}
 }
 
@@ -111,11 +114,21 @@ func (s *VoteCountSource) Get(ctx context.Context, keys ...Key) (map[Key][]byte,
 
 // Update is called frequently and should block until there is new data.
 func (s *VoteCountSource) Update(ctx context.Context) (map[Key][]byte, error) {
-	data := <-s.update
+	var data map[int]int
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+
+	case data = <-s.update:
+	}
 
 	out := make(map[Key][]byte, len(data))
 	for pollID, count := range data {
-		out[Key{"poll", pollID, "vote_count"}] = []byte(strconv.Itoa(count))
+		bs := []byte(strconv.Itoa(count))
+		if count == 0 {
+			bs = nil
+		}
+		out[Key{"poll", pollID, "vote_count"}] = bs
 	}
 	return out, nil
 }
