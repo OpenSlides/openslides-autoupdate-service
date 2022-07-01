@@ -37,7 +37,7 @@ func NewVoteCountSource(url string) *VoteCountSource {
 // Connect creates a connection to the vote service and makes sure, it stays
 // open.
 func (s *VoteCountSource) Connect(ctx context.Context, errHandler func(error)) {
-	for ctx.Err() != nil {
+	for {
 		if err := s.connect(ctx); err != nil {
 			errHandler(fmt.Errorf("connecting to vote service: %w", err))
 		}
