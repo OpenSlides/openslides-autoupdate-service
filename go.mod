@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/golang-jwt/jwt/v4 v4.4.2
-	github.com/gomodule/redigo v1.8.8
+	github.com/gomodule/redigo v1.8.9
 	github.com/klauspost/compress v1.15.6
 	github.com/ostcar/topic v0.4.1
 	github.com/stretchr/testify v1.7.5
