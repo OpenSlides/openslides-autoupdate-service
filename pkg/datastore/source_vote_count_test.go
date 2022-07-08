@@ -25,7 +25,8 @@ func TestVoteCountSourceGet(t *testing.T) {
 	defer cancel()
 
 	source := datastore.NewVoteCountSource(ts.URL)
-	go source.Connect(ctx, func(error) {})
+	eventer := func() (<-chan time.Time, func()) { return make(chan time.Time), func() {} }
+	go source.Connect(ctx, eventer, func(error) {})
 
 	key1 := datastore.MustKey("poll/1/vote_count")
 
@@ -106,7 +107,8 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 	defer cancel()
 
 	source := datastore.NewVoteCountSource(ts.URL)
-	go source.Connect(ctx, func(error) {})
+	eventer := func() (<-chan time.Time, func()) { return make(chan time.Time), func() {} }
+	go source.Connect(ctx, eventer, func(error) {})
 
 	key1 := datastore.MustKey("poll/1/vote_count")
 
@@ -161,4 +163,71 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 			t.Errorf("Update() returned %v, expected %v", got, expect)
 		}
 	})
+}
+
+func TestReconnect(t *testing.T) {
+	msg := `{"1":23}`
+	sender := make(chan struct{})
+	var counter int
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, msg)
+		w.(http.Flusher).Flush()
+		counter++
+		<-sender
+	}))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	event := make(chan time.Time)
+	close(event)
+	eventer := func() (<-chan time.Time, func()) {
+		return event, func() {}
+	}
+
+	source := datastore.NewVoteCountSource(ts.URL)
+	go source.Connect(ctx, eventer, func(error) {})
+
+	sender <- struct{}{} // Close connection so there is a reconnect
+	sender <- struct{}{} // Close connection again
+
+	if counter < 2 {
+		t.Errorf("Got %d connections, expected 2", counter)
+	}
+}
+
+func TestReconnectWhenDeletedBetween(t *testing.T) {
+	msg := make(chan string)
+	var counter int
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, <-msg)
+
+		w.(http.Flusher).Flush()
+		counter++
+	}))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	event := make(chan time.Time, 1)
+	close(event)
+	eventer := func() (<-chan time.Time, func()) {
+		return event, func() {}
+	}
+
+	source := datastore.NewVoteCountSource(ts.URL)
+	go source.Connect(ctx, eventer, func(error) {})
+	msg <- `{"1":23,"2":42}`
+	msg <- `{"1":23}`
+	time.Sleep(time.Millisecond)
+
+	key := datastore.MustKey("poll/2/vote_count")
+	data, err := source.Get(ctx, key)
+	if err != nil {
+		t.Errorf("Get: %v", err)
+	}
+
+	if data[key] != nil {
+		t.Errorf("Get for deleted key returned `%s`, expected nil", data[key])
+	}
 }

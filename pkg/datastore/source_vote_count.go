@@ -36,19 +36,24 @@ func NewVoteCountSource(url string) *VoteCountSource {
 
 // Connect creates a connection to the vote service and makes sure, it stays
 // open.
-func (s *VoteCountSource) Connect(ctx context.Context, errHandler func(error)) {
-	for {
+func (s *VoteCountSource) Connect(ctx context.Context, eventProvider func() (<-chan time.Time, func()), errHandler func(error)) {
+	for ctx.Err() == nil {
 		if err := s.connect(ctx); err != nil {
 			errHandler(fmt.Errorf("connecting to vote service: %w", err))
 		}
 
-		timer := time.NewTimer(time.Second)
-		defer timer.Stop()
-		select {
-		case <-ctx.Done():
-			return
-		case <-timer.C:
-		}
+		s.wait(ctx, eventProvider)
+	}
+}
+
+// wait waits for an event in s.eventProvider.
+func (s *VoteCountSource) wait(ctx context.Context, eventProvider func() (<-chan time.Time, func())) {
+	event, close := eventProvider()
+	defer close()
+
+	select {
+	case <-ctx.Done():
+	case <-event:
 	}
 }
 
@@ -66,7 +71,7 @@ func (s *VoteCountSource) connect(ctx context.Context) error {
 	defer resp.Body.Close()
 
 	decoder := json.NewDecoder(resp.Body)
-
+	first := true
 	for {
 		var counts map[int]int
 		if err := decoder.Decode(&counts); err != nil {
@@ -77,14 +82,19 @@ func (s *VoteCountSource) connect(ctx context.Context) error {
 		}
 
 		s.mu.Lock()
-		for k, v := range counts {
-			if v == 0 {
-				delete(s.voteCount, k)
-				continue
+		if first {
+			s.voteCount = counts
+		} else {
+			for k, v := range counts {
+				if v == 0 {
+					delete(s.voteCount, k)
+					continue
+				}
+				s.voteCount[k] = v
 			}
-			s.voteCount[k] = v
 		}
 		s.mu.Unlock()
+
 		select {
 		case s.update <- counts:
 		default:
