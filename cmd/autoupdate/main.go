@@ -197,8 +197,13 @@ func initDatastore(env map[string]string, mb *redis.Redis) (*datastore.Datastore
 		datastoreSource,
 	)
 
+	eventer := func() (<-chan time.Time, func() bool) {
+		timer := time.NewTimer(time.Second)
+		return timer.C, timer.Stop
+	}
+
 	background := func(ctx context.Context) {
-		go voteCountSource.Connect(ctx, oserror.Handle)
+		go voteCountSource.Connect(ctx, eventer, oserror.Handle)
 		go ds.ListenOnUpdates(ctx, oserror.Handle)
 	}
 

@@ -36,7 +36,7 @@ func NewVoteCountSource(url string) *VoteCountSource {
 
 // Connect creates a connection to the vote service and makes sure, it stays
 // open.
-func (s *VoteCountSource) Connect(ctx context.Context, eventProvider func() (<-chan time.Time, func()), errHandler func(error)) {
+func (s *VoteCountSource) Connect(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool), errHandler func(error)) {
 	for ctx.Err() == nil {
 		if err := s.connect(ctx); err != nil {
 			errHandler(fmt.Errorf("connecting to vote service: %w", err))
@@ -47,7 +47,7 @@ func (s *VoteCountSource) Connect(ctx context.Context, eventProvider func() (<-c
 }
 
 // wait waits for an event in s.eventProvider.
-func (s *VoteCountSource) wait(ctx context.Context, eventProvider func() (<-chan time.Time, func())) {
+func (s *VoteCountSource) wait(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool)) {
 	event, close := eventProvider()
 	defer close()
 
