@@ -7,7 +7,7 @@ require (
 	github.com/gomodule/redigo v1.8.9
 	github.com/klauspost/compress v1.15.6
 	github.com/ostcar/topic v0.4.1
-	github.com/stretchr/testify v1.7.5
+	github.com/stretchr/testify v1.8.0
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
 	golang.org/x/sys v0.0.0-20220627191245-f75cf1eec38b
 	gopkg.in/yaml.v3 v3.0.1
