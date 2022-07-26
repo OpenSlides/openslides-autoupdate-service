@@ -498,7 +498,7 @@ func templateKeyPrefix(collectionField string) string {
 // restrictModefunc returns the field restricter function to use.
 func restrictModefunc(collectionName, fieldMode string) (collection.FieldRestricter, error) {
 	restricter := collection.Collection(collectionName)
-	if restricter == nil {
+	if _, ok := restricter.(collection.Unknown); ok {
 		// TODO LAST ERROR
 		return nil, fmt.Errorf("collection %q is not implemented, maybe run go generate ./... to fetch all fields from the models.yml", collectionName)
 	}

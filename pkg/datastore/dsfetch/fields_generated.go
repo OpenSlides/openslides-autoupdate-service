@@ -709,6 +709,42 @@ func (v *ValueStringSlice) execute(p []byte) error {
 	return nil
 }
 
+func (r *Fetch) ActionWorker_Created(actionWorkerID int) *ValueInt {
+	v := &ValueInt{fetch: r}
+	r.requested[datastore.Key{Collection: "action_worker", ID: actionWorkerID, Field: "created"}] = v
+	return v
+}
+
+func (r *Fetch) ActionWorker_ID(actionWorkerID int) *ValueInt {
+	v := &ValueInt{fetch: r}
+	r.requested[datastore.Key{Collection: "action_worker", ID: actionWorkerID, Field: "id"}] = v
+	return v
+}
+
+func (r *Fetch) ActionWorker_Name(actionWorkerID int) *ValueString {
+	v := &ValueString{fetch: r}
+	r.requested[datastore.Key{Collection: "action_worker", ID: actionWorkerID, Field: "name"}] = v
+	return v
+}
+
+func (r *Fetch) ActionWorker_Result(actionWorkerID int) *ValueJSON {
+	v := &ValueJSON{fetch: r}
+	r.requested[datastore.Key{Collection: "action_worker", ID: actionWorkerID, Field: "result"}] = v
+	return v
+}
+
+func (r *Fetch) ActionWorker_State(actionWorkerID int) *ValueString {
+	v := &ValueString{fetch: r}
+	r.requested[datastore.Key{Collection: "action_worker", ID: actionWorkerID, Field: "state"}] = v
+	return v
+}
+
+func (r *Fetch) ActionWorker_Timestamp(actionWorkerID int) *ValueInt {
+	v := &ValueInt{fetch: r}
+	r.requested[datastore.Key{Collection: "action_worker", ID: actionWorkerID, Field: "timestamp"}] = v
+	return v
+}
+
 func (r *Fetch) AgendaItem_ChildIDs(agendaItemID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r}
 	r.requested[datastore.Key{Collection: "agenda_item", ID: agendaItemID, Field: "child_ids"}] = v
