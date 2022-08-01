@@ -29,7 +29,6 @@ func NewVoteCountSource(url string) *VoteCountSource {
 	return &VoteCountSource{
 		voteServiceURL: url,
 		client:         &http.Client{},
-		voteCount:      make(map[int]int),
 		update:         make(chan map[int]int, 1),
 	}
 }
@@ -71,7 +70,7 @@ func (s *VoteCountSource) connect(ctx context.Context) error {
 	defer resp.Body.Close()
 
 	decoder := json.NewDecoder(resp.Body)
-	first := true
+	s.voteCount = make(map[int]int)
 	for {
 		var counts map[int]int
 		if err := decoder.Decode(&counts); err != nil {
@@ -82,17 +81,15 @@ func (s *VoteCountSource) connect(ctx context.Context) error {
 		}
 
 		s.mu.Lock()
-		if first {
-			s.voteCount = counts
-		} else {
-			for k, v := range counts {
-				if v == 0 {
-					delete(s.voteCount, k)
-					continue
-				}
-				s.voteCount[k] = v
+
+		for k, v := range counts {
+			if v == 0 {
+				delete(s.voteCount, k)
+				continue
 			}
+			s.voteCount[k] = v
 		}
+
 		s.mu.Unlock()
 
 		select {

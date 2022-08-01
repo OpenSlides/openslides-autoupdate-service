@@ -231,3 +231,28 @@ func TestReconnectWhenDeletedBetween(t *testing.T) {
 		t.Errorf("Get for deleted key returned `%s`, expected nil", data[key])
 	}
 }
+
+func TestGetWithoutConnect(t *testing.T) {
+	sender := make(chan string)
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		for msg := range sender {
+			fmt.Fprintln(w, msg)
+			w.(http.Flusher).Flush()
+		}
+	}))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	source := datastore.NewVoteCountSource(ts.URL)
+
+	key := datastore.MustKey("poll/1/vote_count")
+	data, err := source.Get(ctx, key)
+	if err != nil {
+		t.Errorf("Get: %v", err)
+	}
+
+	if data[key] != nil {
+		t.Errorf("Got %q, expected nil", data[key])
+	}
+}
