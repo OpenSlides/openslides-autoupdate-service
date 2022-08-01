@@ -56,6 +56,8 @@ type Restricter interface {
 // Collection returns the restricter for a collection
 func Collection(collection string) Restricter {
 	switch collection {
+	case "action_worker":
+		return ActionWorker{}
 	case "agenda_item":
 		return AgendaItem{}
 	case "assignment":

@@ -4,12 +4,12 @@ go 1.18
 
 require (
 	github.com/golang-jwt/jwt/v4 v4.4.2
-	github.com/gomodule/redigo v1.8.8
-	github.com/klauspost/compress v1.15.6
+	github.com/gomodule/redigo v1.8.9
+	github.com/klauspost/compress v1.15.9
 	github.com/ostcar/topic v0.4.1
-	github.com/stretchr/testify v1.7.5
-	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
-	golang.org/x/sys v0.0.0-20220627191245-f75cf1eec38b
+	github.com/stretchr/testify v1.8.0
+	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
+	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f
 	gopkg.in/yaml.v3 v3.0.1
 )
 

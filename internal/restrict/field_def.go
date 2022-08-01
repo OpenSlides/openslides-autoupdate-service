@@ -267,6 +267,14 @@ var genericRelationListFields = map[string]map[string]string{
 
 // restrictionModes are all fields to there restriction_mode.
 var restrictionModes = map[string]string{
+	// action_worker
+	"action_worker/created":   "A",
+	"action_worker/id":        "A",
+	"action_worker/name":      "A",
+	"action_worker/result":    "A",
+	"action_worker/state":     "A",
+	"action_worker/timestamp": "A",
+
 	// agenda_item
 	"agenda_item/child_ids":         "A",
 	"agenda_item/closed":            "A",
