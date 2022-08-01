@@ -42,11 +42,11 @@ func run() error {
 	}
 
 	// Datastore Service.
-	datastoreService, err := initDatastore(env, messageBus)
+	datastoreService, background, err := initDatastore(env, messageBus)
 	if err != nil {
 		return fmt.Errorf("creating datastore adapter: %w", err)
 	}
-	go datastoreService.ListenOnUpdates(ctx, oserror.Handle)
+	background(ctx)
 
 	// Register projector in datastore.
 	projector.Register(datastoreService, slide.Slides())
@@ -56,7 +56,7 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("creating auth adapter: %w", err)
 	}
-	go authBackground(ctx)
+	authBackground(ctx)
 
 	// Autoupdate Service.
 	service := autoupdate.New(datastoreService, restrict.Middleware)
@@ -170,15 +170,15 @@ func initRedis(env map[string]string) (*redis.Redis, error) {
 	return &redis.Redis{Conn: conn}, nil
 }
 
-func initDatastore(env map[string]string, mb *redis.Redis) (*datastore.Datastore, error) {
+func initDatastore(env map[string]string, mb *redis.Redis) (*datastore.Datastore, func(context.Context), error) {
 	maxParallel, err := strconv.Atoi(env["MAX_PARALLEL_KEYS"])
 	if err != nil {
-		return nil, fmt.Errorf("environment variable MAX_PARALLEL_KEYS has to be a number, not %s", env["MAX_PARALLEL_KEYS"])
+		return nil, nil, fmt.Errorf("environment variable MAX_PARALLEL_KEYS has to be a number, not %s", env["MAX_PARALLEL_KEYS"])
 	}
 
 	timeout, err := parseDuration(env["DATASTORE_TIMEOUT"])
 	if err != nil {
-		return nil, fmt.Errorf("environment variable DATASTORE_TIMEOUT has to be a duration like 3s, not %s: %w", env["DATASTORE_TIMEOUT"], err)
+		return nil, nil, fmt.Errorf("environment variable DATASTORE_TIMEOUT has to be a duration like 3s, not %s: %w", env["DATASTORE_TIMEOUT"], err)
 	}
 
 	datastoreSource := datastore.NewSourceDatastore(
@@ -189,13 +189,25 @@ func initDatastore(env map[string]string, mb *redis.Redis) (*datastore.Datastore
 	)
 	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCOL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
 
-	return datastore.New(
+	ds := datastore.New(
 		datastoreSource,
 		map[string]datastore.Source{
 			"poll/vote_count": voteCountSource,
 		},
 		datastoreSource,
-	), nil
+	)
+
+	eventer := func() (<-chan time.Time, func() bool) {
+		timer := time.NewTimer(time.Second)
+		return timer.C, timer.Stop
+	}
+
+	background := func(ctx context.Context) {
+		go voteCountSource.Connect(ctx, eventer, oserror.Handle)
+		go ds.ListenOnUpdates(ctx, oserror.Handle)
+	}
+
+	return ds, background, nil
 }
 
 func initAuth(env map[string]string, messageBus auth.LogoutEventer) (http.Authenticater, func(context.Context), error) {
