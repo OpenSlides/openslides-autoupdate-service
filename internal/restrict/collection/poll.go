@@ -11,21 +11,24 @@ import (
 
 // Poll handels restrictions of the collection poll.
 // If the user can see a poll depends on the content object:
-//     motion: The user can see the linked motion.
-//     assignment: The user can see the linked assignment.
-//     topic: The user can see the topic.
+//
+//	motion: The user can see the linked motion.
+//	assignment: The user can see the linked assignment.
+//	topic: The user can see the topic.
 //
 // If the user can manage the poll depends on the content object:
-//     motion: The user needs motion.can_manage_polls.
-//     assignment: The user needs assignment.can_manage.
-//     topic: The user needs poll.can_manage.
+//
+//	motion: The user needs motion.can_manage_polls.
+//	assignment: The user needs assignment.can_manage.
+//	topic: The user needs poll.can_manage.
 //
 // Mode A: The user can see the poll.
 //
 // Mode B: Depends on poll/state:
-//     published: Accessible if the user can see the poll.
-//     finished: Accessible if the user can manage the poll.
-//     others: Not accessible for anyone.
+//
+//	published: Accessible if the user can see the poll.
+//	finished: Accessible if the user can manage the poll.
+//	others: Not accessible for anyone.
 //
 // Mode C: The user can manage the poll and it is in the started state.
 //

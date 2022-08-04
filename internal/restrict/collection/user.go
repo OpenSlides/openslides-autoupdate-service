@@ -13,34 +13,37 @@ import (
 // Y is the request user and X the user, that is requested.
 //
 // The user Y can see a user X, if at least one condition is true:
-//     Y==X
-//     Y has the OML can_manage_users or higher.
-//     There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
-//     X is in a group of a meeting where Y has user.can_see.
-//     There exists a meeting where Y has the CML can_manage for the meeting's committee X is in meeting/user_ids.
-//     There is a related object:
-//         There exists a motion which Y can see and X is a submitter/supporter.
-//         There exists an option which Y can see and X is the linked content object.
-//         There exists an assignment candidate which Y can see and X is the linked user.
-//         There exists a speaker which Y can see and X is the linked user.
-//         There exists a poll where Y can see the poll/voted_ids and X is part of that list.
-//         There exists a vote which Y can see and X is linked in user_id or delegated_user_id.
-//         There exists a chat_message which Y can see and X has sent it (specified by chat_message/user_id).
-//     X is linked in one of the relations vote_delegated_$_to_id or vote_delegations_$_from_ids of Y.
+//
+//	Y==X
+//	Y has the OML can_manage_users or higher.
+//	There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
+//	X is in a group of a meeting where Y has user.can_see.
+//	There exists a meeting where Y has the CML can_manage for the meeting's committee X is in meeting/user_ids.
+//	There is a related object:
+//	    There exists a motion which Y can see and X is a submitter/supporter.
+//	    There exists an option which Y can see and X is the linked content object.
+//	    There exists an assignment candidate which Y can see and X is the linked user.
+//	    There exists a speaker which Y can see and X is the linked user.
+//	    There exists a poll where Y can see the poll/voted_ids and X is part of that list.
+//	    There exists a vote which Y can see and X is linked in user_id or delegated_user_id.
+//	    There exists a chat_message which Y can see and X has sent it (specified by chat_message/user_id).
+//	X is linked in one of the relations vote_delegated_$_to_id or vote_delegations_$_from_ids of Y.
 //
 // Mode A: Y can see X.
 //
 // Mode B: Y==X.
 //
 // Mode D: Y can see these fields if at least one condition is true:
-//     Y has the OML can_manage_users or higher.
-//     X is in a group of a meeting where Y has user.can_manage.
+//
+//	Y has the OML can_manage_users or higher.
+//	X is in a group of a meeting where Y has user.can_manage.
 //
 // Mode E: Y can see these fields if at least one condition is true:
-//     Y has the OML can_manage_users or higher.
-//     There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
-//     X is in a group of a meeting where Y has user.can_manage.
-//     Y==X.
+//
+//	Y has the OML can_manage_users or higher.
+//	There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
+//	X is in a group of a meeting where Y has user.can_manage.
+//	Y==X.
 //
 // Mode F: Y has the OML can_manage_users or higher or Y==X.
 //

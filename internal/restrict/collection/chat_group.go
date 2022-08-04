@@ -11,9 +11,10 @@ import (
 // ChatGroup handels restrictions for the collection chat_group.
 //
 // A user can see a chat group if any of:
-//     The user has the permission chat.can_manage in the respective meeting (dedicated by the key meeting_id).
-//     The user is assigned to groups in common with chat_group/read_group_ids.
-//     The user is assigned to groups in common with chat_group/write_group_ids.
+//
+//	The user has the permission chat.can_manage in the respective meeting (dedicated by the key meeting_id).
+//	The user is assigned to groups in common with chat_group/read_group_ids.
+//	The user is assigned to groups in common with chat_group/write_group_ids.
 //
 // Mode A: The user can see the chat_group.
 type ChatGroup struct{}

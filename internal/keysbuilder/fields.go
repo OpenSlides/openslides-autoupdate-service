@@ -101,17 +101,17 @@ func (b *body) keys(data map[datastore.Key]fieldDescription) {
 
 // relationField is a fieldtype that redirects to one other collection.
 //
-// {
-//	"ids": [1],
-//	"collection": "user",
-//	"fields": {
-//		"note_id": {
-//			"type": "relation",
-//			"collection": "note",
-//			"fields": {"important": null}
+//	{
+//		"ids": [1],
+//		"collection": "user",
+//		"fields": {
+//			"note_id": {
+//				"type": "relation",
+//				"collection": "note",
+//				"fields": {"important": null}
+//			}
 //		}
 //	}
-// }
 type relationField struct {
 	collection string
 	fieldsMap
@@ -152,17 +152,17 @@ func (r *relationField) keys(key datastore.Key, value json.RawMessage, data map[
 
 // relationListField is a fieldtype like relation, but redirects to a list of objects.
 //
-// {
-//	"ids": [1],
-//	"collection": "user",
-//	"fields": {
-//		"group_ids": {
-//			"type": "relation-list",
-//			"collection": "group",
-//			"fields": {"name": null}
+//	{
+//		"ids": [1],
+//		"collection": "user",
+//		"fields": {
+//			"group_ids": {
+//				"type": "relation-list",
+//				"collection": "group",
+//				"fields": {"name": null}
+//			}
 //		}
 //	}
-// }
 type relationListField struct {
 	relationField
 }
@@ -184,16 +184,16 @@ func (r *relationListField) keys(key datastore.Key, value json.RawMessage, data 
 
 // genericRelationField is like a relationField but the collection is given from the restricter.
 //
-//{
-//	"ids": [1],
-//	"collection": "user",
-//	"fields": {
-//		"most_seen": {
-//			"type": "generic-relation",
-//			"fields": {"name": null}
+//	{
+//		"ids": [1],
+//		"collection": "user",
+//		"fields": {
+//			"most_seen": {
+//				"type": "generic-relation",
+//				"fields": {"name": null}
+//			}
 //		}
 //	}
-// }
 type genericRelationField struct {
 	fieldsMap
 }
@@ -224,16 +224,16 @@ func (g *genericRelationField) keys(key datastore.Key, value json.RawMessage, da
 
 // genericRelationListField is like a genericRelationField but with a list of relations.
 //
-// {
-//	"ids": [1],
-//	"collection": "user",
-//	"fields": {
-//		"seen": {
-//			"type": "generic-relation-list",
-//			"fields": {"name": null}
+//	{
+//		"ids": [1],
+//		"collection": "user",
+//		"fields": {
+//			"seen": {
+//				"type": "generic-relation-list",
+//				"fields": {"name": null}
+//			}
 //		}
 //	}
-// }
 type genericRelationListField struct {
 	genericRelationField
 }
@@ -252,20 +252,20 @@ func (g *genericRelationListField) keys(key datastore.Key, value json.RawMessage
 
 // templateField requests a list of fields from a template.
 //
-// {
-//	"ids": [1],
-//	"collection": "user",
-//	"fields": {
-//		"group_$_ids": {
-//			"type": "template",
-//			"values": {
-//				"type": "relation-list",
-//				"collection": "group",
-//				"fields": {"name": null}
+//	{
+//		"ids": [1],
+//		"collection": "user",
+//		"fields": {
+//			"group_$_ids": {
+//				"type": "template",
+//				"values": {
+//					"type": "relation-list",
+//					"collection": "group",
+//					"fields": {"name": null}
+//				}
 //			}
 //		}
 //	}
-// }
 type templateField struct {
 	values fieldDescription
 }

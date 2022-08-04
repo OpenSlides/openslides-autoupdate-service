@@ -14,10 +14,10 @@ import (
 //
 // The user can see a motion if:
 //
-//     The user has motion.can_see in the meeting, and
-//     For one `restriction` in the motion's state `state/restriction` field:
-//         If: `restriction` is `is_submitter`: The user needs to be a submitter of the motion
-//         Else: (a permission string): The user needs the permission
+//	The user has motion.can_see in the meeting, and
+//	For one `restriction` in the motion's state `state/restriction` field:
+//	    If: `restriction` is `is_submitter`: The user needs to be a submitter of the motion
+//	    Else: (a permission string): The user needs the permission
 //
 // Mode A: The user can see the motion or can see a referenced motion in motion/all_origin_ids and motion/all_derived_motion_ids.
 //
