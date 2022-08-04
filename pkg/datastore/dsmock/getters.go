@@ -87,8 +87,9 @@ func (s *StubWithUpdate) Send(values map[datastore.Key][]byte) {
 // NewStubWithUpdates.
 //
 // For example:
-//     ds := NewStubWithUpdate(stub, dsmock.NewCounter)
-//     counter := ds.Middlewares()[0].(*dsmock.Counter)
+//
+//	ds := NewStubWithUpdate(stub, dsmock.NewCounter)
+//	counter := ds.Middlewares()[0].(*dsmock.Counter)
 func (s *StubWithUpdate) Middlewares() []datastore.Getter {
 	return s.middlewares
 }

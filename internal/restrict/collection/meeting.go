@@ -11,11 +11,12 @@ import (
 // Meeting handels restrictions of the collection meeting.
 //
 // The user can see a meeting if one of the following is True:
-//     `meeting/enable_anonymous`.
-//     The user is in meeting/user_ids.
-//     The user has the CML can_manage of the meeting's committee.
-//     The user has the CML can_manage of any meeting and the meeting is a template meeting.
-//     The user has the OML can_manage_organization.
+//
+//	`meeting/enable_anonymous`.
+//	The user is in meeting/user_ids.
+//	The user has the CML can_manage of the meeting's committee.
+//	The user has the CML can_manage of any meeting and the meeting is a template meeting.
+//	The user has the OML can_manage_organization.
 //
 // Mode A: Always visible to everyone.
 //
