@@ -3499,6 +3499,12 @@ func (r *Fetch) Organization_Url(organizationID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Organization_UserIDs(organizationID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r}
+	r.requested[datastore.Key{Collection: "organization", ID: organizationID, Field: "user_ids"}] = v
+	return v
+}
+
 func (r *Fetch) Organization_UsersEmailBody(organizationID int) *ValueString {
 	v := &ValueString{fetch: r}
 	r.requested[datastore.Key{Collection: "organization", ID: organizationID, Field: "users_email_body"}] = v
@@ -4660,6 +4666,12 @@ func (r *Fetch) User_OptionIDsTmpl(userID int) *ValueIDSlice {
 func (r *Fetch) User_OptionIDs(userID int, meetingID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r}
 	r.requested[datastore.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("option_$%d_ids", meetingID)}] = v
+	return v
+}
+
+func (r *Fetch) User_OrganizationID(userID int) *ValueInt {
+	v := &ValueInt{fetch: r}
+	r.requested[datastore.Key{Collection: "user", ID: userID, Field: "organization_id"}] = v
 	return v
 }
 

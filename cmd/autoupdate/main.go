@@ -82,7 +82,6 @@ func run() error {
 
 func defaultEnv() map[string]string {
 	defaults := map[string]string{
-		"AUTOUPDATE_HOST": "",
 		"AUTOUPDATE_PORT": "9012",
 
 		"DATASTORE_READER_HOST":     "localhost",

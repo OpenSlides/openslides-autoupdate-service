@@ -2,7 +2,9 @@ package collection
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -13,6 +15,8 @@ import (
 // Mode A: The user can see the organization (always).
 //
 // Mode B: The user must be logged in (no anonymous).
+//
+// Mode C: The user has the OML can_manage_users or higher.
 type Organization struct{}
 
 // MeetingID returns the meetingID for the object.
@@ -27,6 +31,21 @@ func (o Organization) Modes(mode string) FieldRestricter {
 		return Allways
 	case "B":
 		return loggedIn
+	case "C":
+		return o.modeC
 	}
 	return nil
+}
+
+func (Organization) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
+	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
+	if err != nil {
+		return nil, fmt.Errorf("check organization management level: %w", err)
+	}
+
+	if isUserManager {
+		return userIDs, nil
+	}
+
+	return nil, nil
 }

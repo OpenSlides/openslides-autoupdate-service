@@ -1567,6 +1567,7 @@ var exampleData = map[string]json.RawMessage{
                 3
             ]`),
 	"organization/1/url":                 []byte(`"https://example.com"`),
+	"organization/1/user_ids":            []byte(`[1, 2, 3]`),
 	"organization/1/users_email_body":    []byte(`"Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."`),
 	"organization/1/users_email_sender":  []byte(`"OpenSlides"`),
 	"organization/1/users_email_subject": []byte(`"OpenSlides access data"`),
@@ -2037,6 +2038,7 @@ var exampleData = map[string]json.RawMessage{
 	"user/1/option_$_ids": []byte(`[
                 "1"
             ]`),
+	"user/1/organization_id":               []byte(`1`),
 	"user/1/organization_management_level": []byte(`"superadmin"`),
 	"user/1/password":                      []byte(`"316af7b2ddc20ead599c38541fbe87e9a9e4e960d4017d6e59de188b41b2758flD5BVZAZ8jLy4nYW9iomHcnkXWkfk3PgBjeiTSxjGG7+fBjMBxsaS1vIiAMxYh+K38l0gDW4wcP+i8tgoc4UBg=="`),
 	"user/1/personal_note_$1_ids": []byte(`[
@@ -2136,7 +2138,8 @@ var exampleData = map[string]json.RawMessage{
 	"user/2/option_$_ids": []byte(`[
                 "1"
             ]`),
-	"user/2/password": []byte(`"316af7b2ddc20ead599c38541fbe87e9a9e4e960d4017d6e59de188b41b2758fDB3tv5HcCtPRREt7bPGqerTf1AbmoKXt/fVFkLY4znDRh2Yy0m3ZjXD0nHI8oa6KrGlHH/cvysfvf8i2fWIzmw=="`),
+	"user/2/organization_id": []byte(`1`),
+	"user/2/password":        []byte(`"316af7b2ddc20ead599c38541fbe87e9a9e4e960d4017d6e59de188b41b2758fDB3tv5HcCtPRREt7bPGqerTf1AbmoKXt/fVFkLY4znDRh2Yy0m3ZjXD0nHI8oa6KrGlHH/cvysfvf8i2fWIzmw=="`),
 	"user/2/speaker_$1_ids": []byte(`[
                 2,
                 3,
@@ -2203,7 +2206,8 @@ var exampleData = map[string]json.RawMessage{
 	"user/3/option_$_ids": []byte(`[
                 "1"
             ]`),
-	"user/3/password": []byte(`"316af7b2ddc20ead599c38541fbe87e9a9e4e960d4017d6e59de188b41b2758fIxDxvpkn6dDLRxT9DxJhZ/f04AL2oK2beICRFobSw53CI93U+dfN+w+NaL7BvrcR4JWuMj9NkH4dVjnnI0YTkg=="`),
+	"user/3/organization_id": []byte(`1`),
+	"user/3/password":        []byte(`"316af7b2ddc20ead599c38541fbe87e9a9e4e960d4017d6e59de188b41b2758fIxDxvpkn6dDLRxT9DxJhZ/f04AL2oK2beICRFobSw53CI93U+dfN+w+NaL7BvrcR4JWuMj9NkH4dVjnnI0YTkg=="`),
 	"user/3/speaker_$1_ids": []byte(`[
                 4,
                 8,
