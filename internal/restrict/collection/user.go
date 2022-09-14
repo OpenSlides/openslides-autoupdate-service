@@ -45,13 +45,13 @@ import (
 //	X is in a group of a meeting where Y has user.can_manage.
 //	Y==X.
 //
-// Mode F: Y has the OML can_manage_users or higher or Y==X.
+// Mode F: Y has the OML can_manage_users or higher.
 //
 // Mode G: No one. Not even the superadmin.
 type User struct{}
 
 // MeetingID returns the meetingID for the object.
-func (u User) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
+func (User) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	return 0, false, nil
 }
 
@@ -66,6 +66,8 @@ func (u User) Modes(mode string) FieldRestricter {
 		return u.modeD
 	case "E":
 		return u.modeE
+	case "F":
+		return u.modeF
 	case "G":
 		return never
 	}
@@ -73,7 +75,7 @@ func (u User) Modes(mode string) FieldRestricter {
 }
 
 // SuperAdmin restricts the super admin.
-func (u User) SuperAdmin(mode string) FieldRestricter {
+func (User) SuperAdmin(mode string) FieldRestricter {
 	if mode == "G" {
 		return never
 	}
@@ -82,21 +84,21 @@ func (u User) SuperAdmin(mode string) FieldRestricter {
 
 // TODO: this is not good.
 func (u User) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
+	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
+	if err != nil {
+		return nil, fmt.Errorf("check organization management level: %w", err)
+	}
+
+	if isUserManager {
+		return userIDs, nil
+	}
+
 	return eachCondition(userIDs, func(userID int) (bool, error) {
 		if mperms.UserID() == userID {
 			return true, nil
 		}
 
 		if mperms.UserID() != 0 {
-			canManageUsers, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
-			if err != nil {
-				return false, fmt.Errorf("get organization level: %w", err)
-			}
-
-			if canManageUsers {
-				return true, nil
-			}
-
 			commiteeIDs, err := perm.ManagementLevelCommittees(ctx, ds, mperms.UserID())
 			if err != nil {
 				return false, fmt.Errorf("getting committee ids: %w", err)
@@ -201,7 +203,7 @@ type UserRequiredObject struct {
 }
 
 // RequiredObjects returns all references to other objects from the user.
-func (u User) RequiredObjects(ds *dsfetch.Fetch) []UserRequiredObject {
+func (User) RequiredObjects(ds *dsfetch.Fetch) []UserRequiredObject {
 	return []UserRequiredObject{
 		{
 			"motion submitter",
@@ -268,13 +270,13 @@ func (u User) RequiredObjects(ds *dsfetch.Fetch) []UserRequiredObject {
 	}
 }
 
-func (u User) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
+func (User) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
 	return eachCondition(userIDs, func(userID int) (bool, error) {
 		return mperms.UserID() == userID, nil
 	})
 }
 
-func (u User) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
+func (User) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
 	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
 	if err != nil {
 		return nil, fmt.Errorf("cheching oml: %w", err)
@@ -305,7 +307,7 @@ func (u User) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 	})
 }
 
-func (u User) modeE(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
+func (User) modeE(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
 	if mperms.UserID() == 0 {
 		return nil, nil
 	}
@@ -359,4 +361,17 @@ func (u User) modeE(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 
 		return false, nil
 	})
+}
+
+func (User) modeF(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
+	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
+	if err != nil {
+		return nil, fmt.Errorf("check organization management level: %w", err)
+	}
+
+	if isUserManager {
+		return userIDs, nil
+	}
+
+	return nil, nil
 }

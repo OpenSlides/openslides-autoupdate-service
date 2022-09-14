@@ -39,3 +39,36 @@ func TestOrganizationModeB(t *testing.T) {
 		withRequestUser(1),
 	)
 }
+
+func TestOrganizationModeC(t *testing.T) {
+	f := collection.Organization{}.Modes("C")
+
+	testCase(
+		"anonymous",
+		t,
+		f,
+		false,
+		``,
+		withRequestUser(0),
+	)
+
+	testCase(
+		"logged in",
+		t,
+		f,
+		false,
+		``,
+		withRequestUser(1),
+	)
+
+	testCase(
+		"OML can manage users",
+		t,
+		f,
+		true,
+		`---
+		user/1/organization_management_level: can_manage_users
+		`,
+		withRequestUser(1),
+	)
+}

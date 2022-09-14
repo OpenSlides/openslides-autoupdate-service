@@ -107,6 +107,7 @@ var relationFields = map[string]string{
 	"topic/agenda_item_id":                                              "agenda_item/content_object_id",
 	"topic/list_of_speakers_id":                                         "list_of_speakers/content_object_id",
 	"topic/meeting_id":                                                  "meeting/topic_ids",
+	"user/organization_id":                                              "organization/user_ids",
 	"user/vote_delegated_$":                                             "user/vote_delegations_$_from_ids",
 	"vote/delegated_user_id":                                            "user/vote_delegated_vote_$_ids",
 	"vote/meeting_id":                                                   "meeting/vote_ids",
@@ -216,6 +217,7 @@ var relationListFields = map[string]string{
 	"organization/organization_tag_ids":                        "organization_tag/organization_id",
 	"organization/template_meeting_ids":                        "meeting/template_for_organization_id",
 	"organization/theme_ids":                                   "theme/organization_id",
+	"organization/user_ids":                                    "user/organization_id",
 	"poll/entitled_group_ids":                                  "group/poll_ids",
 	"poll/option_ids":                                          "option/poll_id",
 	"poll/projection_ids":                                      "projection/content_object_id",
@@ -775,6 +777,7 @@ var restrictionModes = map[string]string{
 	"organization/limit_of_users":                "B",
 	"organization/organization_tag_ids":          "B",
 	"organization/reset_password_verbose_errors": "B",
+	"organization/user_ids":                      "C",
 
 	// organization_tag
 	"organization_tag/color":           "A",
@@ -1017,6 +1020,7 @@ var restrictionModes = map[string]string{
 	"user/forwarding_committee_ids":      "E",
 	"user/meeting_ids":                   "E",
 	"user/organization_management_level": "E",
+	"user/organization_id":               "F",
 	"user/password":                      "G",
 
 	// vote
