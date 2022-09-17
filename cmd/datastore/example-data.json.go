@@ -849,7 +849,6 @@ var exampleData = map[string]json.RawMessage{
 	"meeting/1/users_enable_vote_weight":     []byte(`false`),
 	"meeting/1/users_pdf_welcometext":        []byte(`"[Place for your welcome and help text.]"`),
 	"meeting/1/users_pdf_welcometitle":       []byte(`"Welcome to OpenSlides"`),
-	"meeting/1/users_sort_by":                []byte(`"first_name"`),
 	"meeting/1/vote_ids": []byte(`[
                 1,
                 2,
