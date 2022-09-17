@@ -1783,6 +1783,12 @@ func (r *Fetch) Meeting_FontID(meetingID int, replacement string) *ValueInt {
 	return v
 }
 
+func (r *Fetch) Meeting_ForwardedMotionIDs(meetingID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r}
+	r.requested[datastore.Key{Collection: "meeting", ID: meetingID, Field: "forwarded_motion_ids"}] = v
+	return v
+}
+
 func (r *Fetch) Meeting_GroupIDs(meetingID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r}
 	r.requested[datastore.Key{Collection: "meeting", ID: meetingID, Field: "group_ids"}] = v
@@ -2467,12 +2473,6 @@ func (r *Fetch) Meeting_UsersPdfWlanSsid(meetingID int) *ValueString {
 	return v
 }
 
-func (r *Fetch) Meeting_UsersSortBy(meetingID int) *ValueString {
-	v := &ValueString{fetch: r}
-	r.requested[datastore.Key{Collection: "meeting", ID: meetingID, Field: "users_sort_by"}] = v
-	return v
-}
-
 func (r *Fetch) Meeting_VoteIDs(meetingID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r}
 	r.requested[datastore.Key{Collection: "meeting", ID: meetingID, Field: "vote_ids"}] = v
@@ -3154,6 +3154,12 @@ func (r *Fetch) Motion_OptionIDs(motionID int) *ValueIntSlice {
 func (r *Fetch) Motion_OriginID(motionID int) *ValueMaybeInt {
 	v := &ValueMaybeInt{fetch: r}
 	r.requested[datastore.Key{Collection: "motion", ID: motionID, Field: "origin_id"}] = v
+	return v
+}
+
+func (r *Fetch) Motion_OriginMeetingID(motionID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r}
+	r.requested[datastore.Key{Collection: "motion", ID: motionID, Field: "origin_meeting_id"}] = v
 	return v
 }
 
