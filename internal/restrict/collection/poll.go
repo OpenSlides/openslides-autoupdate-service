@@ -30,7 +30,10 @@ import (
 //	finished: Accessible if the user can manage the poll.
 //	others: Not accessible for anyone.
 //
-// Mode C: The user can manage the poll and it is in the started state.
+// Mode C: The poll is in the started state and
+//
+//	the user can manage the poll or
+//	the user has the permissions `user.can_see` and `list_of_speakers.can_manage`.
 //
 // Mode D: Same as Mode B, but for `finished`: Accessible if the user can manage the poll or the user has list_of_speakers.can_manage.
 type Poll struct{}
@@ -182,7 +185,18 @@ func (p Poll) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 			return nil, nil
 		}
 
-		return p.manage(ctx, ds, mperms, ids...)
+		return eachMeeting(ctx, ds, p, ids, func(meetingID int, ids []int) ([]int, error) {
+			perms, err := mperms.Meeting(ctx, meetingID)
+			if err != nil {
+				return nil, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
+			}
+
+			if perms.Has(perm.UserCanSee) && perms.Has(perm.ListOfSpeakersCanManage) {
+				return ids, nil
+			}
+
+			return p.manage(ctx, ds, mperms, ids...)
+		})
 	})
 }
 
