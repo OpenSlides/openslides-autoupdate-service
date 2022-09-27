@@ -3583,6 +3583,18 @@ func (r *Fetch) Poll_ContentObjectID(pollID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Poll_CryptographicKey(pollID int) *ValueString {
+	v := &ValueString{fetch: r}
+	r.requested[datastore.Key{Collection: "poll", ID: pollID, Field: "cryptographic_key"}] = v
+	return v
+}
+
+func (r *Fetch) Poll_CryptographicKeySignature(pollID int) *ValueString {
+	v := &ValueString{fetch: r}
+	r.requested[datastore.Key{Collection: "poll", ID: pollID, Field: "cryptographic_key_signature"}] = v
+	return v
+}
+
 func (r *Fetch) Poll_Description(pollID int) *ValueString {
 	v := &ValueString{fetch: r}
 	r.requested[datastore.Key{Collection: "poll", ID: pollID, Field: "description"}] = v
@@ -3718,6 +3730,18 @@ func (r *Fetch) Poll_VoteCount(pollID int) *ValueInt {
 func (r *Fetch) Poll_VotedIDs(pollID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r}
 	r.requested[datastore.Key{Collection: "poll", ID: pollID, Field: "voted_ids"}] = v
+	return v
+}
+
+func (r *Fetch) Poll_VotesRaw(pollID int) *ValueString {
+	v := &ValueString{fetch: r}
+	r.requested[datastore.Key{Collection: "poll", ID: pollID, Field: "votes_raw"}] = v
+	return v
+}
+
+func (r *Fetch) Poll_VotesSignature(pollID int) *ValueString {
+	v := &ValueString{fetch: r}
+	r.requested[datastore.Key{Collection: "poll", ID: pollID, Field: "votes_signature"}] = v
 	return v
 }
 
