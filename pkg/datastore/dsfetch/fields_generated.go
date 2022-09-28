@@ -3583,15 +3583,15 @@ func (r *Fetch) Poll_ContentObjectID(pollID int) *ValueString {
 	return v
 }
 
-func (r *Fetch) Poll_CryptographicKey(pollID int) *ValueString {
+func (r *Fetch) Poll_CryptKey(pollID int) *ValueString {
 	v := &ValueString{fetch: r}
-	r.requested[datastore.Key{Collection: "poll", ID: pollID, Field: "cryptographic_key"}] = v
+	r.requested[datastore.Key{Collection: "poll", ID: pollID, Field: "crypt_key"}] = v
 	return v
 }
 
-func (r *Fetch) Poll_CryptographicKeySignature(pollID int) *ValueString {
+func (r *Fetch) Poll_CryptSignature(pollID int) *ValueString {
 	v := &ValueString{fetch: r}
-	r.requested[datastore.Key{Collection: "poll", ID: pollID, Field: "cryptographic_key_signature"}] = v
+	r.requested[datastore.Key{Collection: "poll", ID: pollID, Field: "crypt_signature"}] = v
 	return v
 }
 
