@@ -859,8 +859,8 @@ func (r *Fetch) AssignmentCandidate_MeetingID(assignmentCandidateID int) *ValueI
 	return v
 }
 
-func (r *Fetch) AssignmentCandidate_UserID(assignmentCandidateID int) *ValueInt {
-	v := &ValueInt{fetch: r}
+func (r *Fetch) AssignmentCandidate_UserID(assignmentCandidateID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r}
 	r.requested[datastore.Key{Collection: "assignment_candidate", ID: assignmentCandidateID, Field: "user_id"}] = v
 	return v
 }
@@ -4660,6 +4660,12 @@ func (r *Fetch) User_IsPresentInMeetingIDs(userID int) *ValueIntSlice {
 func (r *Fetch) User_LastEmailSend(userID int) *ValueInt {
 	v := &ValueInt{fetch: r}
 	r.requested[datastore.Key{Collection: "user", ID: userID, Field: "last_email_send"}] = v
+	return v
+}
+
+func (r *Fetch) User_LastLogin(userID int) *ValueInt {
+	v := &ValueInt{fetch: r}
+	r.requested[datastore.Key{Collection: "user", ID: userID, Field: "last_login"}] = v
 	return v
 }
 
