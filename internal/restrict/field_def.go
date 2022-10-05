@@ -988,6 +988,7 @@ var restrictionModes = map[string]string{
 	"user/is_demo_user":                  "A",
 	"user/is_physical_person":            "A",
 	"user/is_present_in_meeting_ids":     "A",
+	"user/last_login":                    "A",
 	"user/last_name":                     "A",
 	"user/number_$":                      "A",
 	"user/option_$":                      "A",
