@@ -8,8 +8,8 @@ require (
 	github.com/klauspost/compress v1.15.11
 	github.com/ostcar/topic v0.4.1
 	github.com/stretchr/testify v1.8.0
-	golang.org/x/sync v0.0.0-20220907140024-f12130a52804
-	golang.org/x/sys v0.0.0-20220915200043-7b5979e65e41
+	golang.org/x/sync v0.0.0-20220929204114-8fcdb60fdcc0
+	golang.org/x/sys v0.0.0-20221010170243-090e33056c14
 	gopkg.in/yaml.v3 v3.0.1
 )
 

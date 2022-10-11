@@ -566,6 +566,7 @@ var restrictionModes = map[string]string{
 	"meeting/users_email_sender":                                 "B",
 	"meeting/users_email_subject":                                "B",
 	"meeting/users_enable_presence_view":                         "B",
+	"meeting/users_enable_vote_delegations":                      "B",
 	"meeting/users_enable_vote_weight":                           "B",
 	"meeting/users_pdf_welcometext":                              "B",
 	"meeting/users_pdf_welcometitle":                             "B",
