@@ -2437,6 +2437,12 @@ func (r *Fetch) Meeting_UsersEnablePresenceView(meetingID int) *ValueBool {
 	return v
 }
 
+func (r *Fetch) Meeting_UsersEnableVoteDelegations(meetingID int) *ValueBool {
+	v := &ValueBool{fetch: r}
+	r.requested[datastore.Key{Collection: "meeting", ID: meetingID, Field: "users_enable_vote_delegations"}] = v
+	return v
+}
+
 func (r *Fetch) Meeting_UsersEnableVoteWeight(meetingID int) *ValueBool {
 	v := &ValueBool{fetch: r}
 	r.requested[datastore.Key{Collection: "meeting", ID: meetingID, Field: "users_enable_vote_weight"}] = v
