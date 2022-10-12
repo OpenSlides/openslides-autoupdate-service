@@ -186,12 +186,17 @@ func initDatastore(env map[string]string, mb *redis.Redis) (*datastore.Datastore
 		maxParallel,
 		timeout,
 	)
-	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCOL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
+
+	voteServiceURL := env["VOTE_PROTOCOL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"]
+	voteCountSource := datastore.NewVoteCountSource(voteServiceURL)
+
+	voteKeySource := datastore.NewVoteDecryptPubKeySource(voteServiceURL)
 
 	ds := datastore.New(
 		datastoreSource,
 		map[string]datastore.Source{
 			"poll/vote_count": voteCountSource,
+			"organization/vote_decrypt_public_main_key": voteKeySource,
 		},
 		datastoreSource,
 	)
