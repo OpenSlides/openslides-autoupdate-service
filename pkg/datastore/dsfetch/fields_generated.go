@@ -3541,6 +3541,12 @@ func (r *Fetch) Organization_UsersEmailSubject(organizationID int) *ValueString 
 	return v
 }
 
+func (r *Fetch) Organization_VoteDecryptPublicMainKey(organizationID int) *ValueString {
+	v := &ValueString{fetch: r}
+	r.requested[datastore.Key{Collection: "organization", ID: organizationID, Field: "vote_decrypt_public_main_key"}] = v
+	return v
+}
+
 func (r *Fetch) PersonalNote_ContentObjectID(personalNoteID int) *ValueMaybeString {
 	v := &ValueMaybeString{fetch: r}
 	r.requested[datastore.Key{Collection: "personal_note", ID: personalNoteID, Field: "content_object_id"}] = v
