@@ -774,6 +774,7 @@ var restrictionModes = map[string]string{
 	"organization/users_email_replyto":           "A",
 	"organization/users_email_sender":            "A",
 	"organization/users_email_subject":           "A",
+	"organization/vote_decrypt_public_main_key":  "A",
 	"organization/active_meeting_ids":            "B",
 	"organization/archived_meeting_ids":          "B",
 	"organization/committee_ids":                 "B",
