@@ -327,6 +327,66 @@ func TestPollModeC(t *testing.T) {
 		`,
 		withPerms(30, perm.PollCanManage),
 	)
+
+	testCase(
+		"User.can_see",
+		t,
+		f,
+		false,
+		`---
+		poll/1:
+			content_object_id: topic/5
+			state: started
+			meeting_id: 30
+		topic/5/meeting_id: 30
+		`,
+		withPerms(30, perm.UserCanSee),
+	)
+
+	testCase(
+		"ListOfSpeaker.can_manage",
+		t,
+		f,
+		false,
+		`---
+		poll/1:
+			content_object_id: topic/5
+			state: started
+			meeting_id: 30
+		topic/5/meeting_id: 30
+		`,
+		withPerms(30, perm.ListOfSpeakersCanManage),
+	)
+
+	testCase(
+		"User.can_see and ListOfSpeaker.can_manage",
+		t,
+		f,
+		true,
+		`---
+		poll/1:
+			content_object_id: topic/5
+			state: started
+			meeting_id: 30
+		topic/5/meeting_id: 30
+		`,
+		withPerms(30, perm.UserCanSee, perm.ListOfSpeakersCanManage),
+	)
+
+	testCase(
+		"User.can_see and ListOfSpeaker.can_manage but wrong state",
+		t,
+		f,
+		false,
+		`---
+		poll/1:
+			content_object_id: topic/5
+			state: finished
+			meeting_id: 30
+		topic/5/meeting_id: 30
+		`,
+		withPerms(30, perm.UserCanSee, perm.ListOfSpeakersCanManage),
+	)
 }
 
 func TestPollModeD(t *testing.T) {

@@ -383,7 +383,7 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 // TestKeyRequestedAgain makes sure, that when a key is requested again, it is
 // send to the client, even when it has not changed.
 //
-// See the TestKeyNotRequestedAnymore test and the issue
+// See the TestKeyNotRequestedAnymore test and the issue.
 //
 // https://github.com/OpenSlides/openslides-autoupdate-service/issues/382
 func TestKeyRequestedAgain(t *testing.T) {

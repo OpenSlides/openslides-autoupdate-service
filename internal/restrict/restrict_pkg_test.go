@@ -6,16 +6,20 @@ import (
 )
 
 func TestRestrictModeForAll(t *testing.T) {
-	for field := range restrictionModes {
-		parts := strings.Split(field, "/")
+	for collectionField := range restrictionModes {
+		collection, field, found := strings.Cut(collectionField, "/")
 
-		fieldMode, err := restrictModeName(parts[0], parts[1])
+		if !found {
+			t.Fatalf("invalid field %s, expected one /", collectionField)
+		}
+
+		fieldMode, err := restrictModeName(collection, field)
 		if err != nil {
 			t.Fatalf("building field mode: %v", err)
 		}
 
-		if _, err := restrictModefunc(parts[0], fieldMode); err != nil {
-			t.Errorf("restrictMode(%s, %s) returned: %v", parts[0], parts[1], err)
+		if _, err := restrictModefunc(collection, fieldMode); err != nil {
+			t.Errorf("restrictMode(%s, %s) returned: %v", collection, field, err)
 		}
 	}
 }

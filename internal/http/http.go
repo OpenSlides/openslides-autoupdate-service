@@ -4,6 +4,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/klauspost/compress/zstd"
 )
 
 const (
@@ -121,6 +123,11 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 			ctx = oserror.ContextWithTag(ctx, "profile_restrict")
 		}
 
+		var compress bool
+		if r.URL.Query().Has("compress") {
+			compress = true
+		}
+
 		if r.URL.Query().Has("single") || position != 0 {
 			data, err := connecter.SingleData(ctx, uid, builder, position)
 			if err != nil {
@@ -128,20 +135,20 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 				return
 			}
 
-			converted := make(map[string]json.RawMessage, len(data))
-			for k, v := range data {
-				converted[k.String()] = v
-			}
-
-			if err := json.NewEncoder(w).Encode(converted); err != nil {
-				// TODO EXTERNAL ERROR
-				handleError(w, fmt.Errorf("encoding end sending next message: %w", err), true)
-				return
+			if err := writeData(w, data, compress); err != nil {
+				handleError(w, err, false)
 			}
 			return
 		}
 
-		if err := sendMessages(ctx, w, uid, builder, connecter); err != nil {
+		var wr io.Writer = w
+		if r.URL.Query().Has("skip_first") {
+			// TODO: This will not compress the first data. For the performance
+			// tool this does not matter.
+			wr = newSkipFirst(w)
+		}
+
+		if err := sendMessages(ctx, wr, uid, builder, connecter, compress); err != nil {
 			handleError(w, err, false)
 			return
 		}
@@ -159,6 +166,32 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 			),
 		),
 	)
+}
+
+func writeData(w io.Writer, data map[datastore.Key][]byte, compress bool) error {
+	converted := make(map[string]json.RawMessage, len(data))
+	for k, v := range data {
+		converted[k.String()] = v
+	}
+
+	if compress {
+		defer fmt.Fprintln(w)
+		base64Encoder := base64.NewEncoder(base64.RawStdEncoding, w)
+		defer base64Encoder.Close()
+
+		zstdEncoder, err := zstd.NewWriter(base64Encoder)
+		if err != nil {
+			return fmt.Errorf("create encoder: %w", err)
+		}
+		defer zstdEncoder.Close()
+		w = zstdEncoder
+	}
+
+	if err := json.NewEncoder(w).Encode(converted); err != nil {
+		return fmt.Errorf("encode data: %w", err)
+	}
+
+	return nil
 }
 
 // HistoryInformationer is an object, that can write the history information for
@@ -188,9 +221,8 @@ func HistoryInformation(mux *http.ServeMux, auth Authenticater, hi HistoryInform
 	mux.Handle(prefixPublic+"/history_information", authMiddleware(handler, auth))
 }
 
-func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter) error {
+func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool) error {
 	next := connecter.Connect(uid, kb)
-	encoder := json.NewEncoder(w)
 
 	for ctx.Err() == nil {
 		// This blocks, until there is new data. It also unblocks, when the
@@ -200,16 +232,9 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 			return fmt.Errorf("getting next message: %w", err)
 		}
 
-		converted := make(map[string]json.RawMessage, len(data))
-		for k, v := range data {
-			converted[k.String()] = v
+		if err := writeData(w, data, compress); err != nil {
+			return fmt.Errorf("write data: %w", err)
 		}
-
-		if err := encoder.Encode(converted); err != nil {
-			// TODO EXTERNAL ERROR
-			return fmt.Errorf("encoding and sending next message: %w", err)
-		}
-
 		w.(http.Flusher).Flush()
 	}
 	return ctx.Err()
@@ -253,10 +278,16 @@ func handleError(w http.ResponseWriter, err error, writeStatusCode bool) {
 		return
 	}
 
+	status := http.StatusBadRequest
+	var StatusCoder interface{ StatusCode() int }
+	if errors.As(err, &StatusCoder) {
+		status = StatusCoder.StatusCode()
+	}
+
 	var errClient ClientError
 	if errors.As(err, &errClient) {
 		if writeStatusCode {
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(status)
 		}
 
 		fmt.Fprintf(w, `{"error": {"type": "%s", "msg": "%s"}}`, errClient.Type(), quote(errClient.Error()))

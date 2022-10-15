@@ -11,23 +11,29 @@ import (
 
 // Poll handels restrictions of the collection poll.
 // If the user can see a poll depends on the content object:
-//     motion: The user can see the linked motion.
-//     assignment: The user can see the linked assignment.
-//     topic: The user can see the topic.
+//
+//	motion: The user can see the linked motion.
+//	assignment: The user can see the linked assignment.
+//	topic: The user can see the topic.
 //
 // If the user can manage the poll depends on the content object:
-//     motion: The user needs motion.can_manage_polls.
-//     assignment: The user needs assignment.can_manage.
-//     topic: The user needs poll.can_manage.
+//
+//	motion: The user needs motion.can_manage_polls.
+//	assignment: The user needs assignment.can_manage.
+//	topic: The user needs poll.can_manage.
 //
 // Mode A: The user can see the poll.
 //
 // Mode B: Depends on poll/state:
-//     published: Accessible if the user can see the poll.
-//     finished: Accessible if the user can manage the poll.
-//     others: Not accessible for anyone.
 //
-// Mode C: The user can manage the poll and it is in the started state.
+//	published: Accessible if the user can see the poll.
+//	finished: Accessible if the user can manage the poll.
+//	others: Not accessible for anyone.
+//
+// Mode C: The poll is in the started state and
+//
+//	the user can manage the poll or
+//	the user has the permissions `user.can_see` and `list_of_speakers.can_manage`.
 //
 // Mode D: Same as Mode B, but for `finished`: Accessible if the user can manage the poll or the user has list_of_speakers.can_manage.
 type Poll struct{}
@@ -179,7 +185,18 @@ func (p Poll) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 			return nil, nil
 		}
 
-		return p.manage(ctx, ds, mperms, ids...)
+		return eachMeeting(ctx, ds, p, ids, func(meetingID int, ids []int) ([]int, error) {
+			perms, err := mperms.Meeting(ctx, meetingID)
+			if err != nil {
+				return nil, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
+			}
+
+			if perms.Has(perm.UserCanSee) && perms.Has(perm.ListOfSpeakersCanManage) {
+				return ids, nil
+			}
+
+			return p.manage(ctx, ds, mperms, ids...)
+		})
 	})
 }
 

@@ -67,7 +67,7 @@ func (v *ValueBool) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -136,7 +136,7 @@ func (v *ValueFloat) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -283,7 +283,7 @@ func (v *ValueInt) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -352,7 +352,7 @@ func (v *ValueIntSlice) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -421,7 +421,7 @@ func (v *ValueJSON) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -490,7 +490,7 @@ func (v *ValueMaybeInt) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -559,7 +559,7 @@ func (v *ValueMaybeString) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -628,7 +628,7 @@ func (v *ValueString) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -697,7 +697,7 @@ func (v *ValueStringSlice) execute(p []byte) error {
 		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %v", p, err)
+			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
 	}
 
@@ -707,6 +707,42 @@ func (v *ValueStringSlice) execute(p []byte) error {
 
 	v.executed = true
 	return nil
+}
+
+func (r *Fetch) ActionWorker_Created(actionWorkerID int) *ValueInt {
+	v := &ValueInt{fetch: r}
+	r.requested[datastore.Key{Collection: "action_worker", ID: actionWorkerID, Field: "created"}] = v
+	return v
+}
+
+func (r *Fetch) ActionWorker_ID(actionWorkerID int) *ValueInt {
+	v := &ValueInt{fetch: r}
+	r.requested[datastore.Key{Collection: "action_worker", ID: actionWorkerID, Field: "id"}] = v
+	return v
+}
+
+func (r *Fetch) ActionWorker_Name(actionWorkerID int) *ValueString {
+	v := &ValueString{fetch: r}
+	r.requested[datastore.Key{Collection: "action_worker", ID: actionWorkerID, Field: "name"}] = v
+	return v
+}
+
+func (r *Fetch) ActionWorker_Result(actionWorkerID int) *ValueJSON {
+	v := &ValueJSON{fetch: r}
+	r.requested[datastore.Key{Collection: "action_worker", ID: actionWorkerID, Field: "result"}] = v
+	return v
+}
+
+func (r *Fetch) ActionWorker_State(actionWorkerID int) *ValueString {
+	v := &ValueString{fetch: r}
+	r.requested[datastore.Key{Collection: "action_worker", ID: actionWorkerID, Field: "state"}] = v
+	return v
+}
+
+func (r *Fetch) ActionWorker_Timestamp(actionWorkerID int) *ValueInt {
+	v := &ValueInt{fetch: r}
+	r.requested[datastore.Key{Collection: "action_worker", ID: actionWorkerID, Field: "timestamp"}] = v
+	return v
 }
 
 func (r *Fetch) AgendaItem_ChildIDs(agendaItemID int) *ValueIntSlice {
@@ -823,8 +859,8 @@ func (r *Fetch) AssignmentCandidate_MeetingID(assignmentCandidateID int) *ValueI
 	return v
 }
 
-func (r *Fetch) AssignmentCandidate_UserID(assignmentCandidateID int) *ValueInt {
-	v := &ValueInt{fetch: r}
+func (r *Fetch) AssignmentCandidate_UserID(assignmentCandidateID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r}
 	r.requested[datastore.Key{Collection: "assignment_candidate", ID: assignmentCandidateID, Field: "user_id"}] = v
 	return v
 }
@@ -1747,6 +1783,12 @@ func (r *Fetch) Meeting_FontID(meetingID int, replacement string) *ValueInt {
 	return v
 }
 
+func (r *Fetch) Meeting_ForwardedMotionIDs(meetingID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r}
+	r.requested[datastore.Key{Collection: "meeting", ID: meetingID, Field: "forwarded_motion_ids"}] = v
+	return v
+}
+
 func (r *Fetch) Meeting_GroupIDs(meetingID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r}
 	r.requested[datastore.Key{Collection: "meeting", ID: meetingID, Field: "group_ids"}] = v
@@ -2395,6 +2437,12 @@ func (r *Fetch) Meeting_UsersEnablePresenceView(meetingID int) *ValueBool {
 	return v
 }
 
+func (r *Fetch) Meeting_UsersEnableVoteDelegations(meetingID int) *ValueBool {
+	v := &ValueBool{fetch: r}
+	r.requested[datastore.Key{Collection: "meeting", ID: meetingID, Field: "users_enable_vote_delegations"}] = v
+	return v
+}
+
 func (r *Fetch) Meeting_UsersEnableVoteWeight(meetingID int) *ValueBool {
 	v := &ValueBool{fetch: r}
 	r.requested[datastore.Key{Collection: "meeting", ID: meetingID, Field: "users_enable_vote_weight"}] = v
@@ -2428,12 +2476,6 @@ func (r *Fetch) Meeting_UsersPdfWlanPassword(meetingID int) *ValueString {
 func (r *Fetch) Meeting_UsersPdfWlanSsid(meetingID int) *ValueString {
 	v := &ValueString{fetch: r}
 	r.requested[datastore.Key{Collection: "meeting", ID: meetingID, Field: "users_pdf_wlan_ssid"}] = v
-	return v
-}
-
-func (r *Fetch) Meeting_UsersSortBy(meetingID int) *ValueString {
-	v := &ValueString{fetch: r}
-	r.requested[datastore.Key{Collection: "meeting", ID: meetingID, Field: "users_sort_by"}] = v
 	return v
 }
 
@@ -3121,6 +3163,12 @@ func (r *Fetch) Motion_OriginID(motionID int) *ValueMaybeInt {
 	return v
 }
 
+func (r *Fetch) Motion_OriginMeetingID(motionID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r}
+	r.requested[datastore.Key{Collection: "motion", ID: motionID, Field: "origin_meeting_id"}] = v
+	return v
+}
+
 func (r *Fetch) Motion_PersonalNoteIDs(motionID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r}
 	r.requested[datastore.Key{Collection: "motion", ID: motionID, Field: "personal_note_ids"}] = v
@@ -3463,6 +3511,12 @@ func (r *Fetch) Organization_Url(organizationID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Organization_UserIDs(organizationID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r}
+	r.requested[datastore.Key{Collection: "organization", ID: organizationID, Field: "user_ids"}] = v
+	return v
+}
+
 func (r *Fetch) Organization_UsersEmailBody(organizationID int) *ValueString {
 	v := &ValueString{fetch: r}
 	r.requested[datastore.Key{Collection: "organization", ID: organizationID, Field: "users_email_body"}] = v
@@ -3484,6 +3538,12 @@ func (r *Fetch) Organization_UsersEmailSender(organizationID int) *ValueString {
 func (r *Fetch) Organization_UsersEmailSubject(organizationID int) *ValueString {
 	v := &ValueString{fetch: r}
 	r.requested[datastore.Key{Collection: "organization", ID: organizationID, Field: "users_email_subject"}] = v
+	return v
+}
+
+func (r *Fetch) Organization_VoteDecryptPublicMainKey(organizationID int) *ValueString {
+	v := &ValueString{fetch: r}
+	r.requested[datastore.Key{Collection: "organization", ID: organizationID, Field: "vote_decrypt_public_main_key"}] = v
 	return v
 }
 
@@ -3532,6 +3592,18 @@ func (r *Fetch) Poll_Backend(pollID int) *ValueString {
 func (r *Fetch) Poll_ContentObjectID(pollID int) *ValueString {
 	v := &ValueString{fetch: r}
 	r.requested[datastore.Key{Collection: "poll", ID: pollID, Field: "content_object_id"}] = v
+	return v
+}
+
+func (r *Fetch) Poll_CryptKey(pollID int) *ValueString {
+	v := &ValueString{fetch: r}
+	r.requested[datastore.Key{Collection: "poll", ID: pollID, Field: "crypt_key"}] = v
+	return v
+}
+
+func (r *Fetch) Poll_CryptSignature(pollID int) *ValueString {
+	v := &ValueString{fetch: r}
+	r.requested[datastore.Key{Collection: "poll", ID: pollID, Field: "crypt_signature"}] = v
 	return v
 }
 
@@ -3673,6 +3745,18 @@ func (r *Fetch) Poll_VotedIDs(pollID int) *ValueIntSlice {
 	return v
 }
 
+func (r *Fetch) Poll_VotesRaw(pollID int) *ValueString {
+	v := &ValueString{fetch: r}
+	r.requested[datastore.Key{Collection: "poll", ID: pollID, Field: "votes_raw"}] = v
+	return v
+}
+
+func (r *Fetch) Poll_VotesSignature(pollID int) *ValueString {
+	v := &ValueString{fetch: r}
+	r.requested[datastore.Key{Collection: "poll", ID: pollID, Field: "votes_signature"}] = v
+	return v
+}
+
 func (r *Fetch) Poll_Votescast(pollID int) *ValueString {
 	v := &ValueString{fetch: r}
 	r.requested[datastore.Key{Collection: "poll", ID: pollID, Field: "votescast"}] = v
@@ -3697,8 +3781,8 @@ func (r *Fetch) Projection_Content(projectionID int) *ValueJSON {
 	return v
 }
 
-func (r *Fetch) Projection_ContentObjectID(projectionID int) *ValueMaybeString {
-	v := &ValueMaybeString{fetch: r}
+func (r *Fetch) Projection_ContentObjectID(projectionID int) *ValueString {
+	v := &ValueString{fetch: r}
 	r.requested[datastore.Key{Collection: "projection", ID: projectionID, Field: "content_object_id"}] = v
 	return v
 }
@@ -4591,6 +4675,12 @@ func (r *Fetch) User_LastEmailSend(userID int) *ValueInt {
 	return v
 }
 
+func (r *Fetch) User_LastLogin(userID int) *ValueInt {
+	v := &ValueInt{fetch: r}
+	r.requested[datastore.Key{Collection: "user", ID: userID, Field: "last_login"}] = v
+	return v
+}
+
 func (r *Fetch) User_LastName(userID int) *ValueString {
 	v := &ValueString{fetch: r}
 	r.requested[datastore.Key{Collection: "user", ID: userID, Field: "last_name"}] = v
@@ -4624,6 +4714,12 @@ func (r *Fetch) User_OptionIDsTmpl(userID int) *ValueIDSlice {
 func (r *Fetch) User_OptionIDs(userID int, meetingID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r}
 	r.requested[datastore.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("option_$%d_ids", meetingID)}] = v
+	return v
+}
+
+func (r *Fetch) User_OrganizationID(userID int) *ValueInt {
+	v := &ValueInt{fetch: r}
+	r.requested[datastore.Key{Collection: "user", ID: userID, Field: "organization_id"}] = v
 	return v
 }
 

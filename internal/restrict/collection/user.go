@@ -13,42 +13,45 @@ import (
 // Y is the request user and X the user, that is requested.
 //
 // The user Y can see a user X, if at least one condition is true:
-//     Y==X
-//     Y has the OML can_manage_users or higher.
-//     There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
-//     X is in a group of a meeting where Y has user.can_see.
-//     There exists a meeting where Y has the CML can_manage for the meeting's committee X is in meeting/user_ids.
-//     There is a related object:
-//         There exists a motion which Y can see and X is a submitter/supporter.
-//         There exists an option which Y can see and X is the linked content object.
-//         There exists an assignment candidate which Y can see and X is the linked user.
-//         There exists a speaker which Y can see and X is the linked user.
-//         There exists a poll where Y can see the poll/voted_ids and X is part of that list.
-//         There exists a vote which Y can see and X is linked in user_id or delegated_user_id.
-//         There exists a chat_message which Y can see and X has sent it (specified by chat_message/user_id).
-//     X is linked in one of the relations vote_delegated_$_to_id or vote_delegations_$_from_ids of Y.
+//
+//	Y==X
+//	Y has the OML can_manage_users or higher.
+//	There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
+//	X is in a group of a meeting where Y has user.can_see.
+//	There exists a meeting where Y has the CML can_manage for the meeting's committee X is in meeting/user_ids.
+//	There is a related object:
+//	    There exists a motion which Y can see and X is a submitter/supporter.
+//	    There exists an option which Y can see and X is the linked content object.
+//	    There exists an assignment candidate which Y can see and X is the linked user.
+//	    There exists a speaker which Y can see and X is the linked user.
+//	    There exists a poll where Y can see the poll/voted_ids and X is part of that list.
+//	    There exists a vote which Y can see and X is linked in user_id or delegated_user_id.
+//	    There exists a chat_message which Y can see and X has sent it (specified by chat_message/user_id).
+//	X is linked in one of the relations vote_delegated_$_to_id or vote_delegations_$_from_ids of Y.
 //
 // Mode A: Y can see X.
 //
 // Mode B: Y==X.
 //
 // Mode D: Y can see these fields if at least one condition is true:
-//     Y has the OML can_manage_users or higher.
-//     X is in a group of a meeting where Y has user.can_manage.
+//
+//	Y has the OML can_manage_users or higher.
+//	X is in a group of a meeting where Y has user.can_manage.
 //
 // Mode E: Y can see these fields if at least one condition is true:
-//     Y has the OML can_manage_users or higher.
-//     There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
-//     X is in a group of a meeting where Y has user.can_manage.
-//     Y==X.
 //
-// Mode F: Y has the OML can_manage_users or higher or Y==X.
+//	Y has the OML can_manage_users or higher.
+//	There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
+//	X is in a group of a meeting where Y has user.can_manage.
+//	Y==X.
+//
+// Mode F: Y has the OML can_manage_users or higher.
 //
 // Mode G: No one. Not even the superadmin.
 type User struct{}
 
 // MeetingID returns the meetingID for the object.
-func (u User) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
+func (User) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	return 0, false, nil
 }
 
@@ -63,6 +66,8 @@ func (u User) Modes(mode string) FieldRestricter {
 		return u.modeD
 	case "E":
 		return u.modeE
+	case "F":
+		return u.modeF
 	case "G":
 		return never
 	}
@@ -70,7 +75,7 @@ func (u User) Modes(mode string) FieldRestricter {
 }
 
 // SuperAdmin restricts the super admin.
-func (u User) SuperAdmin(mode string) FieldRestricter {
+func (User) SuperAdmin(mode string) FieldRestricter {
 	if mode == "G" {
 		return never
 	}
@@ -79,21 +84,21 @@ func (u User) SuperAdmin(mode string) FieldRestricter {
 
 // TODO: this is not good.
 func (u User) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
+	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
+	if err != nil {
+		return nil, fmt.Errorf("check organization management level: %w", err)
+	}
+
+	if isUserManager {
+		return userIDs, nil
+	}
+
 	return eachCondition(userIDs, func(userID int) (bool, error) {
 		if mperms.UserID() == userID {
 			return true, nil
 		}
 
 		if mperms.UserID() != 0 {
-			canManageUsers, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
-			if err != nil {
-				return false, fmt.Errorf("get organization level: %w", err)
-			}
-
-			if canManageUsers {
-				return true, nil
-			}
-
 			commiteeIDs, err := perm.ManagementLevelCommittees(ctx, ds, mperms.UserID())
 			if err != nil {
 				return false, fmt.Errorf("getting committee ids: %w", err)
@@ -198,7 +203,7 @@ type UserRequiredObject struct {
 }
 
 // RequiredObjects returns all references to other objects from the user.
-func (u User) RequiredObjects(ds *dsfetch.Fetch) []UserRequiredObject {
+func (User) RequiredObjects(ds *dsfetch.Fetch) []UserRequiredObject {
 	return []UserRequiredObject{
 		{
 			"motion submitter",
@@ -265,13 +270,13 @@ func (u User) RequiredObjects(ds *dsfetch.Fetch) []UserRequiredObject {
 	}
 }
 
-func (u User) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
+func (User) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
 	return eachCondition(userIDs, func(userID int) (bool, error) {
 		return mperms.UserID() == userID, nil
 	})
 }
 
-func (u User) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
+func (User) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
 	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
 	if err != nil {
 		return nil, fmt.Errorf("cheching oml: %w", err)
@@ -302,7 +307,7 @@ func (u User) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 	})
 }
 
-func (u User) modeE(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
+func (User) modeE(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
 	if mperms.UserID() == 0 {
 		return nil, nil
 	}
@@ -356,4 +361,17 @@ func (u User) modeE(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 
 		return false, nil
 	})
+}
+
+func (User) modeF(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
+	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
+	if err != nil {
+		return nil, fmt.Errorf("check organization management level: %w", err)
+	}
+
+	if isUserManager {
+		return userIDs, nil
+	}
+
+	return nil, nil
 }

@@ -841,15 +841,15 @@ var exampleData = map[string]json.RawMessage{
                 2,
                 3
             ]`),
-	"meeting/1/users_allow_self_set_present": []byte(`true`),
-	"meeting/1/users_email_body":             []byte(`"Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."`),
-	"meeting/1/users_email_sender":           []byte(`"Openslides"`),
-	"meeting/1/users_email_subject":          []byte(`"OpenSlides access data"`),
-	"meeting/1/users_enable_presence_view":   []byte(`true`),
-	"meeting/1/users_enable_vote_weight":     []byte(`false`),
-	"meeting/1/users_pdf_welcometext":        []byte(`"[Place for your welcome and help text.]"`),
-	"meeting/1/users_pdf_welcometitle":       []byte(`"Welcome to OpenSlides"`),
-	"meeting/1/users_sort_by":                []byte(`"first_name"`),
+	"meeting/1/users_allow_self_set_present":  []byte(`true`),
+	"meeting/1/users_email_body":              []byte(`"Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."`),
+	"meeting/1/users_email_sender":            []byte(`"Openslides"`),
+	"meeting/1/users_email_subject":           []byte(`"OpenSlides access data"`),
+	"meeting/1/users_enable_presence_view":    []byte(`true`),
+	"meeting/1/users_enable_vote_delegations": []byte(`true`),
+	"meeting/1/users_enable_vote_weight":      []byte(`false`),
+	"meeting/1/users_pdf_welcometext":         []byte(`"[Place for your welcome and help text.]"`),
+	"meeting/1/users_pdf_welcometitle":        []byte(`"Welcome to OpenSlides"`),
 	"meeting/1/vote_ids": []byte(`[
                 1,
                 2,
@@ -1567,6 +1567,7 @@ var exampleData = map[string]json.RawMessage{
                 3
             ]`),
 	"organization/1/url":                 []byte(`"https://example.com"`),
+	"organization/1/user_ids":            []byte(`[1, 2, 3]`),
 	"organization/1/users_email_body":    []byte(`"Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."`),
 	"organization/1/users_email_sender":  []byte(`"OpenSlides"`),
 	"organization/1/users_email_subject": []byte(`"OpenSlides access data"`),
@@ -1818,7 +1819,7 @@ var exampleData = map[string]json.RawMessage{
 	"projector_countdown/1/id":                                            []byte(`1`),
 	"projector_countdown/1/meeting_id":                                    []byte(`1`),
 	"projector_countdown/1/running":                                       []byte(`false`),
-	"projector_countdown/1/title":                                         []byte(`"List of speaker countdown"`),
+	"projector_countdown/1/title":                                         []byte(`"Speaking time"`),
 	"projector_countdown/1/used_as_list_of_speakers_countdown_meeting_id": []byte(`1`),
 	"projector_countdown/2/countdown_time":                                []byte(`60`),
 	"projector_countdown/2/default_time":                                  []byte(`60`),
@@ -1826,7 +1827,7 @@ var exampleData = map[string]json.RawMessage{
 	"projector_countdown/2/id":                                            []byte(`2`),
 	"projector_countdown/2/meeting_id":                                    []byte(`1`),
 	"projector_countdown/2/running":                                       []byte(`false`),
-	"projector_countdown/2/title":                                         []byte(`"Voting countdown"`),
+	"projector_countdown/2/title":                                         []byte(`"Voting"`),
 	"projector_countdown/2/used_as_poll_countdown_meeting_id":             []byte(`1`),
 	"projector_message/1/id":                                              []byte(`1`),
 	"projector_message/1/meeting_id":                                      []byte(`1`),
@@ -2037,6 +2038,7 @@ var exampleData = map[string]json.RawMessage{
 	"user/1/option_$_ids": []byte(`[
                 "1"
             ]`),
+	"user/1/organization_id":               []byte(`1`),
 	"user/1/organization_management_level": []byte(`"superadmin"`),
 	"user/1/password":                      []byte(`"316af7b2ddc20ead599c38541fbe87e9a9e4e960d4017d6e59de188b41b2758flD5BVZAZ8jLy4nYW9iomHcnkXWkfk3PgBjeiTSxjGG7+fBjMBxsaS1vIiAMxYh+K38l0gDW4wcP+i8tgoc4UBg=="`),
 	"user/1/personal_note_$1_ids": []byte(`[
@@ -2136,7 +2138,8 @@ var exampleData = map[string]json.RawMessage{
 	"user/2/option_$_ids": []byte(`[
                 "1"
             ]`),
-	"user/2/password": []byte(`"316af7b2ddc20ead599c38541fbe87e9a9e4e960d4017d6e59de188b41b2758fDB3tv5HcCtPRREt7bPGqerTf1AbmoKXt/fVFkLY4znDRh2Yy0m3ZjXD0nHI8oa6KrGlHH/cvysfvf8i2fWIzmw=="`),
+	"user/2/organization_id": []byte(`1`),
+	"user/2/password":        []byte(`"316af7b2ddc20ead599c38541fbe87e9a9e4e960d4017d6e59de188b41b2758fDB3tv5HcCtPRREt7bPGqerTf1AbmoKXt/fVFkLY4znDRh2Yy0m3ZjXD0nHI8oa6KrGlHH/cvysfvf8i2fWIzmw=="`),
 	"user/2/speaker_$1_ids": []byte(`[
                 2,
                 3,
@@ -2203,7 +2206,8 @@ var exampleData = map[string]json.RawMessage{
 	"user/3/option_$_ids": []byte(`[
                 "1"
             ]`),
-	"user/3/password": []byte(`"316af7b2ddc20ead599c38541fbe87e9a9e4e960d4017d6e59de188b41b2758fIxDxvpkn6dDLRxT9DxJhZ/f04AL2oK2beICRFobSw53CI93U+dfN+w+NaL7BvrcR4JWuMj9NkH4dVjnnI0YTkg=="`),
+	"user/3/organization_id": []byte(`1`),
+	"user/3/password":        []byte(`"316af7b2ddc20ead599c38541fbe87e9a9e4e960d4017d6e59de188b41b2758fIxDxvpkn6dDLRxT9DxJhZ/f04AL2oK2beICRFobSw53CI93U+dfN+w+NaL7BvrcR4JWuMj9NkH4dVjnnI0YTkg=="`),
 	"user/3/speaker_$1_ids": []byte(`[
                 4,
                 8,

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -82,7 +83,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 	}
 
 	// Get all required collections with there ids.
-	restrictModeIDs := make(map[collectionMode]*set.Set[int])
+	restrictModeIDs := make(map[collection.CM]*set.Set[int])
 	for key := range data {
 		if data[key] == nil {
 			continue
@@ -100,26 +101,29 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 	// Call restrict Mode function for each collection.
 	mperms := perm.NewMeetingPermission(ds, uid)
 	times := make(map[string]timeCount, len(restrictModeIDs))
-	for cm, ids := range restrictModeIDs {
+	orderedCMs := sortRestrictModeIDs(restrictModeIDs)
+	allowedMods := make(map[collection.CM]*set.Set[int])
+	for _, cm := range orderedCMs {
+		ids := restrictModeIDs[cm]
 		idsCount := ids.Len()
 		start := time.Now()
 
-		modeFunc, err := restrictModefunc(cm.collection, cm.mode)
+		modeFunc, err := restrictModefunc(cm.Collection, cm.Mode)
 		if err != nil {
-			return nil, fmt.Errorf("getting restiction mode for %s/%s: %w", cm.collection, cm.mode, err)
+			return nil, fmt.Errorf("getting restiction mode for %s/%s: %w", cm.Collection, cm.Mode, err)
 		}
 
 		allowedIDs, err := modeFunc(ctx, ds, mperms, ids.List()...)
 		if err != nil {
 			var errDoesNotExist dsfetch.DoesNotExistError
 			if !errors.As(err, &errDoesNotExist) {
-				return nil, fmt.Errorf("calling collection %s modefunc %s with ids %v: %w", cm.collection, cm.mode, ids.List(), err)
+				return nil, fmt.Errorf("calling collection %s modefunc %s with ids %v: %w", cm.Collection, cm.Mode, ids.List(), err)
 			}
 		}
-		restrictModeIDs[cm].Remove(allowedIDs...)
+		allowedMods[cm] = set.New(allowedIDs...)
 
 		duration := time.Since(start)
-		times[cm.collection+"/"+cm.mode] = timeCount{time: duration, count: idsCount}
+		times[cm.Collection+"/"+cm.Mode] = timeCount{time: duration, count: idsCount}
 	}
 
 	// Remove restricted keys.
@@ -133,13 +137,13 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 			return nil, fmt.Errorf("getting restriction Mode for %s: %w", key, err)
 		}
 
-		cm := collectionMode{key.Collection, restrictionMode}
-		if restrictModeIDs[cm].Has(key.ID) {
+		cm := collection.CM{Collection: key.Collection, Mode: restrictionMode}
+		if !allowedMods[cm].Has(key.ID) {
 			data[key] = nil
 			continue
 		}
 
-		newValue, ok, err := manipulateRelations(key, data[key], restrictModeIDs)
+		newValue, ok, err := manipulateRelations(key, data[key], allowedMods)
 		if err != nil {
 			return nil, fmt.Errorf("new value for relation key %s: %w", key, err)
 		}
@@ -198,19 +202,14 @@ func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, d
 	return nil
 }
 
-type collectionMode struct {
-	collection string
-	mode       string
-}
-
 // groupKeysByCollection groups all the keys in data by there collection.
-func groupKeysByCollection(key datastore.Key, value []byte, restrictModeIDs map[collectionMode]*set.Set[int]) error {
+func groupKeysByCollection(key datastore.Key, value []byte, restrictModeIDs map[collection.CM]*set.Set[int]) error {
 	restrictionMode, err := restrictModeName(key.Collection, key.Field)
 	if err != nil {
 		return fmt.Errorf("getting restriction Mode for %s: %w", key, err)
 	}
 
-	cm := collectionMode{key.Collection, restrictionMode}
+	cm := collection.CM{Collection: key.Collection, Mode: restrictionMode}
 	if restrictModeIDs[cm] == nil {
 		restrictModeIDs[cm] = set.New[int]()
 	}
@@ -223,7 +222,7 @@ func groupKeysByCollection(key datastore.Key, value []byte, restrictModeIDs map[
 	return nil
 }
 
-func addRelationToRestrictModeIDs(key datastore.Key, value []byte, restrictModeIDs map[collectionMode]*set.Set[int]) error {
+func addRelationToRestrictModeIDs(key datastore.Key, value []byte, restrictModeIDs map[collection.CM]*set.Set[int]) error {
 	keyPrefix := templateKeyPrefix(key.CollectionField())
 
 	cm, id, ok, err := isRelation(keyPrefix, value)
@@ -282,7 +281,11 @@ func addRelationToRestrictModeIDs(key datastore.Key, value []byte, restrictModeI
 	return nil
 }
 
-func manipulateRelations(key datastore.Key, value []byte, restrictModeIDs map[collectionMode]*set.Set[int]) ([]byte, bool, error) {
+// manipulateRelations changes the value of relation fields.
+//
+// The first return value is the new value. The second is, if the value was
+// manipulated.q
+func manipulateRelations(key datastore.Key, value []byte, allowedRestrictions map[collection.CM]*set.Set[int]) ([]byte, bool, error) {
 	keyPrefix := templateKeyPrefix(key.CollectionField())
 
 	cm, id, ok, err := isRelation(keyPrefix, value)
@@ -291,7 +294,7 @@ func manipulateRelations(key datastore.Key, value []byte, restrictModeIDs map[co
 	}
 
 	if ok {
-		return nil, restrictModeIDs[cm].Has(id), nil
+		return nil, !allowedRestrictions[cm].Has(id), nil
 	}
 
 	cm, ids, ok, err := isRelationList(keyPrefix, value)
@@ -302,7 +305,7 @@ func manipulateRelations(key datastore.Key, value []byte, restrictModeIDs map[co
 	if ok {
 		allowed := make([]int, 0, len(ids))
 		for _, id := range ids {
-			if !restrictModeIDs[cm].Has(id) {
+			if allowedRestrictions[cm].Has(id) {
 				allowed = append(allowed, id)
 			}
 		}
@@ -323,7 +326,7 @@ func manipulateRelations(key datastore.Key, value []byte, restrictModeIDs map[co
 	}
 
 	if ok {
-		return nil, restrictModeIDs[cm].Has(id), nil
+		return nil, !allowedRestrictions[cm].Has(id), nil
 	}
 
 	mcm, genericIDs, ok, err := isGenericRelationList(keyPrefix, value)
@@ -334,7 +337,7 @@ func manipulateRelations(key datastore.Key, value []byte, restrictModeIDs map[co
 	if ok {
 		allowed := make([]string, 0, len(genericIDs))
 		for genericID, cmID := range mcm {
-			if !restrictModeIDs[cmID.cm].Has(cmID.id) {
+			if allowedRestrictions[cmID.cm].Has(cmID.id) {
 				allowed = append(allowed, genericID)
 			}
 		}
@@ -353,67 +356,67 @@ func manipulateRelations(key datastore.Key, value []byte, restrictModeIDs map[co
 	return nil, false, nil
 }
 
-func isRelation(keyPrefix string, value []byte) (collectionMode, int, bool, error) {
+func isRelation(keyPrefix string, value []byte) (collection.CM, int, bool, error) {
 	toCollectionfield, ok := relationFields[keyPrefix]
 	if !ok {
-		return collectionMode{}, 0, false, nil
+		return collection.CM{}, 0, false, nil
 	}
 
 	var id int
 	if err := json.Unmarshal(value, &id); err != nil {
-		return collectionMode{}, 0, false, fmt.Errorf("decoding %q (`%s`): %w", keyPrefix, value, err)
+		return collection.CM{}, 0, false, fmt.Errorf("decoding %q (`%s`): %w", keyPrefix, value, err)
 	}
 
-	collection, field, _ := strings.Cut(toCollectionfield, "/")
-	fieldMode, err := restrictModeName(collection, field)
+	coll, field, _ := strings.Cut(toCollectionfield, "/")
+	fieldMode, err := restrictModeName(coll, field)
 	if err != nil {
-		return collectionMode{}, 0, false, fmt.Errorf("building relation field field mode: %w", err)
+		return collection.CM{}, 0, false, fmt.Errorf("building relation field field mode: %w", err)
 	}
 
-	return collectionMode{collection: collection, mode: fieldMode}, id, true, nil
+	return collection.CM{Collection: coll, Mode: fieldMode}, id, true, nil
 }
 
-func isRelationList(keyPrefix string, value []byte) (collectionMode, []int, bool, error) {
+func isRelationList(keyPrefix string, value []byte) (collection.CM, []int, bool, error) {
 	toCollectionfield, ok := relationListFields[keyPrefix]
 	if !ok {
-		return collectionMode{}, nil, false, nil
+		return collection.CM{}, nil, false, nil
 	}
 
 	var ids []int
 	if err := json.Unmarshal(value, &ids); err != nil {
-		return collectionMode{}, nil, false, fmt.Errorf("decoding value (size: %d): %w", len(value), err)
+		return collection.CM{}, nil, false, fmt.Errorf("decoding value (size: %d): %w", len(value), err)
 	}
 
-	collection, field, _ := strings.Cut(toCollectionfield, "/")
-	fieldMode, err := restrictModeName(collection, field)
+	coll, field, _ := strings.Cut(toCollectionfield, "/")
+	fieldMode, err := restrictModeName(coll, field)
 	if err != nil {
-		return collectionMode{}, nil, false, fmt.Errorf("building relation field field mode: %w", err)
+		return collection.CM{}, nil, false, fmt.Errorf("building relation field field mode: %w", err)
 	}
 
-	return collectionMode{collection: collection, mode: fieldMode}, ids, true, nil
+	return collection.CM{Collection: coll, Mode: fieldMode}, ids, true, nil
 }
 
-func isGenericRelation(keyPrefix string, value []byte) (collectionMode, int, bool, error) {
+func isGenericRelation(keyPrefix string, value []byte) (collection.CM, int, bool, error) {
 	toCollectionfield, ok := genericRelationFields[keyPrefix]
 	if !ok {
-		return collectionMode{}, 0, false, nil
+		return collection.CM{}, 0, false, nil
 	}
 
 	var genericID string
 	if err := json.Unmarshal(value, &genericID); err != nil {
-		return collectionMode{}, 0, false, fmt.Errorf("decoding %q: %w", keyPrefix, err)
+		return collection.CM{}, 0, false, fmt.Errorf("decoding %q: %w", keyPrefix, err)
 	}
 
 	cm, id, err := genericKeyToCollectionMode(genericID, toCollectionfield)
 	if err != nil {
-		return collectionMode{}, 0, false, fmt.Errorf("parsing generic key: %w", err)
+		return collection.CM{}, 0, false, fmt.Errorf("parsing generic key: %w", err)
 	}
 
 	return cm, id, true, nil
 }
 
 type collectionModeID struct {
-	cm collectionMode
+	cm collection.CM
 	id int
 }
 
@@ -441,31 +444,31 @@ func isGenericRelationList(keyPrefix string, value []byte) (map[string]collectio
 }
 
 // genericKeyToCollectionMode calls f for each collection mode.
-func genericKeyToCollectionMode(genericID string, toCollectionFieldMap map[string]string) (collectionMode, int, error) {
-	collection, rawID, found := strings.Cut(genericID, "/")
+func genericKeyToCollectionMode(genericID string, toCollectionFieldMap map[string]string) (collection.CM, int, error) {
+	coll, rawID, found := strings.Cut(genericID, "/")
 	if !found {
 		// TODO LAST ERROR
-		return collectionMode{}, 0, fmt.Errorf("invalid generic relation: %s", genericID)
+		return collection.CM{}, 0, fmt.Errorf("invalid generic relation: %s", genericID)
 	}
 
 	id, err := strconv.Atoi(rawID)
 	if err != nil {
 		// TODO LAST ERROR
-		return collectionMode{}, 0, fmt.Errorf("invalid generic relation, no id: %s", genericID)
+		return collection.CM{}, 0, fmt.Errorf("invalid generic relation, no id: %s", genericID)
 	}
 
-	toField := toCollectionFieldMap[collection]
+	toField := toCollectionFieldMap[coll]
 	if toField == "" {
 		// TODO LAST ERROR
-		return collectionMode{}, 0, fmt.Errorf("unknown generic relation: %s", collection)
+		return collection.CM{}, 0, fmt.Errorf("unknown generic relation: %s", coll)
 	}
 
-	fieldMode, err := restrictModeName(collection, toField)
+	fieldMode, err := restrictModeName(coll, toField)
 	if err != nil {
-		return collectionMode{}, 0, fmt.Errorf("building generic relation field mode: %w", err)
+		return collection.CM{}, 0, fmt.Errorf("building generic relation field mode: %w", err)
 	}
 
-	return collectionMode{collection: collection, mode: fieldMode}, id, nil
+	return collection.CM{Collection: coll, Mode: fieldMode}, id, nil
 }
 
 // restrictModeName returns the restriction mode for a collection and field.
@@ -495,7 +498,7 @@ func templateKeyPrefix(collectionField string) string {
 // restrictModefunc returns the field restricter function to use.
 func restrictModefunc(collectionName, fieldMode string) (collection.FieldRestricter, error) {
 	restricter := collection.Collection(collectionName)
-	if restricter == nil {
+	if _, ok := restricter.(collection.Unknown); ok {
 		// TODO LAST ERROR
 		return nil, fmt.Errorf("collection %q is not implemented, maybe run go generate ./... to fetch all fields from the models.yml", collectionName)
 	}
@@ -507,4 +510,69 @@ func restrictModefunc(collectionName, fieldMode string) (collection.FieldRestric
 	}
 
 	return modefunc, nil
+}
+
+func sortRestrictModeIDs(data map[collection.CM]*set.Set[int]) []collection.CM {
+	keys := make([]collection.CM, 0, len(data))
+	for k := range data {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(a, b int) bool {
+		var aid, bid int
+		if id, ok := collectionOrder[keys[a].String()]; ok {
+			aid = id
+		} else if id, ok := collectionOrder[keys[a].Collection]; ok {
+			aid = id
+		}
+
+		if id, ok := collectionOrder[keys[b].String()]; ok {
+			bid = id
+		} else if id, ok := collectionOrder[keys[b].Collection]; ok {
+			bid = id
+		}
+
+		return aid < bid
+	})
+
+	return keys
+}
+
+var collectionOrder = map[string]int{
+	"agenda_item":                  1,
+	"assignment":                   2,
+	"assignment_candidate":         3,
+	"chat_group":                   4,
+	"chat_message":                 5,
+	"committee":                    6,
+	"meeting":                      7,
+	"group":                        8,
+	"mediafile":                    9,
+	"tag":                          10,
+	"motion/C":                     11,
+	"motion/B":                     12,
+	"motion_block":                 13,
+	"motion_category":              14,
+	"motion_change_recommendation": 15,
+	"motion_comment_section":       16,
+	"motion_comment":               17,
+	"motion_state":                 18,
+	"motion_statute_paragraph":     19,
+	"motion_submitter":             20,
+	"motion_workflow":              21,
+	"poll":                         22,
+	"option":                       23,
+	"vote":                         24,
+	"organization":                 25,
+	"organization_tag":             26,
+	"personal_note":                27,
+	"projection":                   28,
+	"projector":                    29,
+	"projector_countdown":          30,
+	"projector_message":            31,
+	"theme":                        32,
+	"topic":                        33,
+	"list_of_speakers":             34,
+	"speaker":                      35,
+	"user":                         36,
 }

@@ -85,3 +85,31 @@ func TestHistoryInformationWrongFQID(t *testing.T) {
 		t.Errorf("got %s, expected no output", buf)
 	}
 }
+
+func TestHistoryInformationSuperAdminOnMeetingCollection(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+		user/1/organization_management_level: superadmin
+
+		motion/5/id: 1
+	`))
+	s := autoupdate.New(ds, RestrictAllowed)
+
+	buf := new(bytes.Buffer)
+	err := s.HistoryInformation(ctx, 1, "motion/5", buf)
+
+	if err != nil {
+		t.Fatalf("HistoryInformation: %v", err)
+	}
+
+	var information []interface{}
+	if err := json.Unmarshal(buf.Bytes(), &information); err != nil {
+		t.Fatalf("HistoryInformation returned invalid data `%v`: %v", buf.String(), err)
+	}
+
+	if len(information) == 0 {
+		t.Errorf("No History returned")
+	}
+}

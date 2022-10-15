@@ -42,11 +42,11 @@ func run() error {
 	}
 
 	// Datastore Service.
-	datastoreService, err := initDatastore(ctx, env, messageBus)
+	datastoreService, background, err := initDatastore(ctx, env, messageBus)
 	if err != nil {
 		return fmt.Errorf("creating datastore adapter: %w", err)
 	}
-	go datastoreService.ListenOnUpdates(ctx, oserror.Handle)
+	background(ctx)
 
 	// Register projector in datastore.
 	projector.Register(datastoreService, slide.Slides())
@@ -56,7 +56,7 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("creating auth adapter: %w", err)
 	}
-	go authBackground(ctx)
+	authBackground(ctx)
 
 	// Autoupdate Service.
 	service := autoupdate.New(datastoreService, restrict.Middleware)
@@ -65,12 +65,13 @@ func run() error {
 
 	// Start metrics.
 	metric.Register(metric.Runtime)
-	metricSeconds := 0
-	if got, err := strconv.Atoi(env["METRIC_INTERVAL_SECONDS"]); err == nil {
-		metricSeconds = got
+	metricTime, err := parseDuration(env["METRIC_INTERVAL"])
+	if err != nil {
+		return fmt.Errorf("invalid value for `METRIC_INTERVAL`, expected duration got %s: %w", env["METRIC_INTERVAL"], err)
 	}
-	if metricSeconds > 0 {
-		go metric.Loop(ctx, time.Duration(metricSeconds)*time.Second, log.Default())
+
+	if metricTime > 0 {
+		go metric.Loop(ctx, metricTime, log.Default())
 	}
 
 	// Start http server.
@@ -81,7 +82,6 @@ func run() error {
 
 func defaultEnv() map[string]string {
 	defaults := map[string]string{
-		"AUTOUPDATE_HOST": "",
 		"AUTOUPDATE_PORT": "9012",
 
 		"DATASTORE_DATABASE_HOST": "postgres",
@@ -106,9 +106,11 @@ func defaultEnv() map[string]string {
 		"AUTH_HOST":     "localhost",
 		"AUTH_PORT":     "9004",
 
-		"OPENSLIDES_DEVELOPMENT":  "false",
-		"METRIC_INTERVAL_SECONDS": "300",
-		"MAX_PARALLEL_KEYS":       "1000",
+		"OPENSLIDES_DEVELOPMENT": "false",
+
+		"METRIC_INTERVAL":   "5m",
+		"MAX_PARALLEL_KEYS": "1000",
+		"DATASTORE_TIMEOUT": "3s",
 	}
 
 	for k := range defaults {
@@ -172,23 +174,29 @@ func initRedis(env map[string]string) (*redis.Redis, error) {
 	return &redis.Redis{Conn: conn}, nil
 }
 
-func initDatastore(ctx context.Context, env map[string]string, mb *redis.Redis) (*datastore.Datastore, error) {
+func initDatastore(ctx context.Context, env map[string]string, mb *redis.Redis) (*datastore.Datastore, func(context.Context), error) {
 	maxParallel, err := strconv.Atoi(env["MAX_PARALLEL_KEYS"])
 	if err != nil {
-		return nil, fmt.Errorf("environmentvariable MAX_PARALLEL_KEYS has to be a number, not %s", env["MAX_PARALLEL_KEYS"])
+		return nil, nil, fmt.Errorf("environment variable MAX_PARALLEL_KEYS has to be a number, not %s", env["MAX_PARALLEL_KEYS"])
+	}
+
+	timeout, err := parseDuration(env["DATASTORE_TIMEOUT"])
+	if err != nil {
+		return nil, nil, fmt.Errorf("environment variable DATASTORE_TIMEOUT has to be a duration like 3s, not %s: %w", env["DATASTORE_TIMEOUT"], err)
 	}
 
 	datastoreSource := datastore.NewSourceDatastore(
 		env["DATASTORE_READER_PROTOCOL"]+"://"+env["DATASTORE_READER_HOST"]+":"+env["DATASTORE_READER_PORT"],
 		mb,
 		maxParallel,
+		timeout,
 	)
 	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCOL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
 
 	useDev, _ := strconv.ParseBool(env["OPENSLIDES_DEVELOPMENT"])
 	password, err := secret("postgres_password", useDev)
 	if err != nil {
-		return nil, fmt.Errorf("getting postgres password: %w", err)
+		return nil, nil, fmt.Errorf("getting postgres password: %w", err)
 	}
 
 	addr := fmt.Sprintf(
@@ -201,16 +209,28 @@ func initDatastore(ctx context.Context, env map[string]string, mb *redis.Redis) 
 
 	postgresSource, err := datastore.NewSourcePostgres(ctx, addr, string(password), datastoreSource)
 	if err != nil {
-		return nil, fmt.Errorf("creating connection to postgres: %w", err)
+		return nil, nil, fmt.Errorf("creating connection to postgres: %w", err)
 	}
 
-	return datastore.New(
+	ds := datastore.New(
 		postgresSource,
 		map[string]datastore.Source{
 			"poll/vote_count": voteCountSource,
 		},
 		datastoreSource,
-	), nil
+	)
+
+	eventer := func() (<-chan time.Time, func() bool) {
+		timer := time.NewTimer(time.Second)
+		return timer.C, timer.Stop
+	}
+
+	background := func(ctx context.Context) {
+		go voteCountSource.Connect(ctx, eventer, oserror.Handle)
+		go ds.ListenOnUpdates(ctx, oserror.Handle)
+	}
+
+	return ds, background, nil
 }
 
 func initAuth(env map[string]string, messageBus auth.LogoutEventer) (http.Authenticater, func(context.Context), error) {
@@ -251,4 +271,14 @@ func initAuth(env map[string]string, messageBus auth.LogoutEventer) (http.Authen
 		// TODO LAST ERROR
 		return nil, nil, fmt.Errorf("unknown auth method: %s", method)
 	}
+}
+
+func parseDuration(s string) (time.Duration, error) {
+	sec, err := strconv.Atoi(s)
+	if err == nil {
+		// TODO External error
+		return time.Duration(sec) * time.Second, nil
+	}
+
+	return time.ParseDuration(s)
 }

@@ -10,6 +10,16 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
+// CM is the name of a collection and a mode.
+type CM struct {
+	Collection string
+	Mode       string
+}
+
+func (cm CM) String() string {
+	return cm.Collection + "/" + cm.Mode
+}
+
 // FieldRestricter is a function to restrict fields of a collection.
 type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, id ...int) ([]int, error)
 
@@ -46,6 +56,8 @@ type Restricter interface {
 // Collection returns the restricter for a collection
 func Collection(collection string) Restricter {
 	switch collection {
+	case "action_worker":
+		return ActionWorker{}
 	case "agenda_item":
 		return AgendaItem{}
 	case "assignment":

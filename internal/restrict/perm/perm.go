@@ -24,6 +24,14 @@ func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permis
 		return newAnonymous(ctx, ds, meetingID)
 	}
 
+	isSuperAdmin, err := HasOrganizationManagementLevel(ctx, ds, userID, OMLSuperadmin)
+	if err != nil {
+		return nil, fmt.Errorf("getting organization management level: %w", err)
+	}
+	if isSuperAdmin {
+		return &Permission{admin: true}, nil
+	}
+
 	groupIDs, err := ds.User_GroupIDs(userID, meetingID).Value(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get group ids: %w", err)
@@ -112,6 +120,8 @@ func permissionsFromGroups(ctx context.Context, ds *dsfetch.Fetch, groupIDs ...i
 }
 
 // Has returns true, if the permission object contains the given permissions.
+//
+// It also returns true, if the user is a superadmin or an admin in the meeting.
 func (p *Permission) Has(perm TPermission) bool {
 	if p == nil {
 		return false
