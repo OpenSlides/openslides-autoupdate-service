@@ -190,6 +190,10 @@ The Service uses the following environment variables:
 * `MESSAGE_BUS_PORT`: Port of the redis server. The default is `6379`.
 * `REDIS_TEST_CONN`: Test the redis connection on startup. Disable on the cloud
   if redis needs more time to start then this service. The default is `true`.
+* `DATASTORE_DATABASE_HOST`: Postgres Host. The default is `postgres`.
+* `DATASTORE_DATABASE_PORT`: Postgres Port. The default is `5432`.
+* `DATASTORE_DATABASE_USER`: Postgres User. The default is `openslides`.
+* `DATASTORE_DATABASE_NAME`: Postgres Database. The default is `openslides`.
 * `VOTE_HOST`: Host of the vote-service. The default is `localhost`.
 * `VOTE_PORT`: Port of the vote-service. The default is `9013`.
 * `VOTE_PROTOCOL`: Protocol of the vote-service. The default is `http`.
@@ -217,6 +221,7 @@ environment variable `OPENSLIDES_DEVELOPMENT` is set.
 
 * `auth_token_key`: Key to sign the JWT auth tocken.
 * `auth_cookie_key`: Key to sign the JWT auth cookie.
+* `postgres_password`: Postgres password.
 
 
 ## Update models.yml
