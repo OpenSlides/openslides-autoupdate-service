@@ -2,6 +2,7 @@
 /performance
 /datastore
 /healthcheck
+/secrets
 cert
 .vscode
 workspace.code-workspace

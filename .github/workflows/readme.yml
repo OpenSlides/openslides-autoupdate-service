@@ -11,6 +11,15 @@ jobs:
         ports:
         - 6379:6379
 
+      postgres:
+        image: postgres
+        env: 
+          POSTGRES_USER: openslides
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: openslides
+        ports:
+        - 5432:5432
+
     steps:
     - name: Set up Go
       uses: actions/setup-go@v3
@@ -21,17 +30,23 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v3
 
+    - name: create secrets
+      run: |
+        mkdir secrets
+        printf "postgres" > secrets/postgres_password
+        printf "my_token_key" > secrets/auth_token_key 
+        printf "my_cookie_key" > secrets/auth_cookie_key
+
     - name: Start With golang
       run: |
         go build ./cmd/autoupdate
+        export SECRETS_PATH=secrets
         timeout --preserve-status --signal=SIGINT 2s ./autoupdate
 
     - name: Start With Docker
       run: |
         docker build . --tag openslides-autoupdate
-        printf "my_token_key" > auth_token_key 
-        printf "my_cookie_key" > auth_cookie_key
-        timeout --preserve-status --signal=SIGINT 5s docker run --network host -v $PWD/auth_token_key:/run/secrets/auth_token_key -v $PWD/auth_cookie_key:/run/secrets/auth_cookie_key openslides-autoupdate
+        timeout --preserve-status --signal=SIGINT 5s docker run --network host -v $PWD/secrets:/run/secrets openslides-autoupdate
       env:
         DOCKER_BUILDKIT: 1
 

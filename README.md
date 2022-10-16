@@ -11,9 +11,19 @@ browser has to connect to the service with http2 and therefore needs https.
 
 ## Start
 
+The service needs some secrets to run. You can create them with:
+
+```
+mkdir secrets
+printf "postgres" > secrets/postgres_password
+printf "my_token_key" > secrets/auth_token_key 
+printf "my_cookie_key" > secrets/auth_cookie_key
+```
+
 ### With Golang
 
 ```
+export SECRETS_PATH=secrets
 go build ./cmd/autoupdate
 ./autoupdate
 ```
@@ -28,12 +38,10 @@ the docker argument --network host. The auth-secrets have to given as a file.
 
 ```
 docker build . --tag openslides-autoupdate
-printf "my_token_key" > auth_token_key 
-printf "my_cookie_key" > auth_cookie_key
-docker run --network host -v $PWD/auth_token_key:/run/secrets/auth_token_key -v $PWD/auth_cookie_key:/run/secrets/auth_cookie_key openslides-autoupdate
+docker run --network host -v $PWD/secrets:/run/secrets openslides-autoupdate
 ```
 
-It uses the host network to connect to redis.
+It uses the host network to connect to redis and postgres.
 
 
 ### With Auto Restart
@@ -190,7 +198,7 @@ The Service uses the following environment variables:
 * `MESSAGE_BUS_PORT`: Port of the redis server. The default is `6379`.
 * `REDIS_TEST_CONN`: Test the redis connection on startup. Disable on the cloud
   if redis needs more time to start then this service. The default is `true`.
-* `DATASTORE_DATABASE_HOST`: Postgres Host. The default is `postgres`.
+* `DATASTORE_DATABASE_HOST`: Postgres Host. The default is `localhost`.
 * `DATASTORE_DATABASE_PORT`: Postgres Port. The default is `5432`.
 * `DATASTORE_DATABASE_USER`: Postgres User. The default is `openslides`.
 * `DATASTORE_DATABASE_NAME`: Postgres Database. The default is `openslides`.
@@ -209,15 +217,18 @@ The Service uses the following environment variables:
   The default is `1000`.
 * `DATASTORE_TIMEOUT`: Time until a request to the datastore times out. The
   default is `3s`.
+* `SECRETS_PATH`: Path where the secrets are stored. The default is
+  `/run/secrets/`.
 
 Valid units for duration values are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 One number without a unit is interpreted as seconds. So `3` is the same as `3s`.
 
 ### Secrets
 
-Secrets are filenames in `/run/secrets/`. The service only starts if it can find
-each secret file and read its content. The default values are only used, if the
-environment variable `OPENSLIDES_DEVELOPMENT` is set.
+Secrets are filenames in the directory `SECRETS_PATH` (default:
+`/run/secrets/`). The service only starts if it can find each secret file and
+read its content. The default values are only used, if the environment variable
+`OPENSLIDES_DEVELOPMENT` is set.
 
 * `auth_token_key`: Key to sign the JWT auth tocken.
 * `auth_cookie_key`: Key to sign the JWT auth cookie.
