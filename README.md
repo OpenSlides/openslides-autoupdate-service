@@ -29,7 +29,7 @@ docker run  --network host -e POSTGRES_PASSWORD=password -e POSTGRES_USER=opensl
 and
 
 ```
-TODO
+docker run --network host redis
 ```
 
 
