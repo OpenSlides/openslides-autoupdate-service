@@ -110,5 +110,9 @@ func pollID(ctx context.Context, ds *dsfetch.Fetch, optionID int) (int, error) {
 	}
 
 	// TODO LAST ERROR
-	return 0, fmt.Errorf("database seems corrupted. option %d has no poll id", optionID)
+	return 0, fmt.Errorf(
+		"database seems corrupted. Both fields option/%d/poll_id and option/%d/used_as_global_option_in_poll_id are empty. One of the fields is required",
+		optionID,
+		optionID,
+	)
 }
