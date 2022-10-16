@@ -238,9 +238,9 @@ func TestGetWhileUpdate(t *testing.T) {
 
 // TODO: Flaky test
 func TestCacheGetOrSetOldData(t *testing.T) {
-	// GetOrSet is called with key1. It returns key1 and key2 on version1 but
-	// takes a long time. In the meantime there is an update via setIfExist for
-	// key1 and key2 on version2. At the end, there should not be the old
+	// GetOrSet is called only with key1. It returns key1 and key2 on version1
+	// but takes a long time. In the meantime there is an update via setIfExist
+	// for key1 and key2 on version2. At the end, there should not be the old
 	// version1 in the cache (version2 or 'does not exist' is ok).
 	myKey1 := MustKey("key/1/field")
 	myKey2 := MustKey("key/2/field")
@@ -253,7 +253,7 @@ func TestCacheGetOrSetOldData(t *testing.T) {
 	go func() {
 		c.GetOrSet(context.Background(), []Key{myKey1}, func(key []Key, set func(map[Key][]byte)) error {
 			close(waitForGetOrSetStart)
-			set(map[Key][]byte{myKey1: []byte("v1"), myKey2: []byte("v2")})
+			set(map[Key][]byte{myKey1: []byte("v1"), myKey2: []byte("v1")})
 			<-waitForSetIfExist
 			return nil
 		})
@@ -269,9 +269,11 @@ func TestCacheGetOrSetOldData(t *testing.T) {
 
 	<-waitForGetOrSetEnd
 	data, err := c.GetOrSet(context.Background(), []Key{myKey1, myKey2}, func(keys []Key, set func(map[Key][]byte)) error {
+		data := make(map[Key][]byte, len(keys))
 		for _, key := range keys {
-			set(map[Key][]byte{key: []byte("key not in cache")})
+			data[key] = []byte("key not in cache")
 		}
+		set(data)
 		return nil
 	})
 	if err != nil {
