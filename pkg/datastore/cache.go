@@ -8,7 +8,7 @@ import (
 )
 
 // cacheSetFunc is a function to update cache keys.
-type cacheSetFunc func(keys []Key, set func(key Key, value []byte)) error
+type cacheSetFunc func(keys []Key, set func(map[Key][]byte)) error
 
 // cache stores the values to the datastore.
 //
@@ -83,11 +83,14 @@ func (c *cache) fetchMissing(ctx context.Context, keys []Key, set cacheSetFunc) 
 	// when the context is done. Other calls could also request it.
 	errChan := make(chan error, 1)
 	go func() {
-		err := set(keys, func(key Key, value []byte) {
-			if string(value) == "null" {
-				value = nil
+		err := set(keys, func(data map[Key][]byte) {
+			for key, value := range data {
+				if string(value) == "null" {
+					data[key] = nil
+				}
 			}
-			c.data.SetIfPending(key, value)
+
+			c.data.SetIfPending(data)
 		})
 
 		if err != nil {
@@ -120,7 +123,7 @@ func (c *cache) SetIfExist(key Key, value []byte) {
 	if string(value) == "null" {
 		value = nil
 	}
-	c.data.SetIfExist(key, value)
+	c.data.SetIfExist(map[Key][]byte{key: value})
 }
 
 // SetIfExistMany is like SetIfExist but with many keys.
@@ -130,7 +133,7 @@ func (c *cache) SetIfExistMany(data map[Key][]byte) {
 			data[k] = nil
 		}
 	}
-	c.data.SetIfExistMany(data)
+	c.data.SetIfExist(data)
 }
 
 func (c *cache) len() int {

@@ -104,7 +104,7 @@ func New(defaultSource Source, keySource map[string]Source, history HistoryInfor
 // If a key does not exist, the value nil is returned for that key.
 func (d *Datastore) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
 	atomic.AddUint64(&d.metricGetHitCount, 1)
-	values, err := d.cache.GetOrSet(ctx, keys, func(keys []Key, set func(key Key, value []byte)) error {
+	values, err := d.cache.GetOrSet(ctx, keys, func(keys []Key, set func(map[Key][]byte)) error {
 		return d.loadKeys(keys, set)
 	})
 	if err != nil {
@@ -261,22 +261,20 @@ func (d *Datastore) splitCalculatedKeys(keys []Key) (map[Key]string, map[Source]
 	return calculated, normal
 }
 
-func (d *Datastore) loadKeys(keys []Key, set func(Key, []byte)) error {
+func (d *Datastore) loadKeys(keys []Key, set func(map[Key][]byte)) error {
 	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
 	for source, keys := range normalKeys {
 		data, err := source.Get(context.Background(), keys...)
 		if err != nil {
 			return fmt.Errorf("requesting keys from datastore: %w", err)
 		}
-		for k, v := range data {
-			set(k, v)
-		}
+		set(data)
 	}
 
 	for key, field := range calculatedKeys {
 		calculated := d.calculateField(field, key, nil)
 		d.calculatedKeys[key] = field
-		set(key, calculated)
+		set(map[Key][]byte{key: calculated})
 	}
 	return nil
 }

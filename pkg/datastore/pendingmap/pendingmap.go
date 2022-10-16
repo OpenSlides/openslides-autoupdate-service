@@ -7,6 +7,15 @@ import (
 
 // PendingMap is like a map but values can be in a pending state. When a value
 // is requested, the function blocks until the pending state is done.
+//
+// To get values, just use pendingmap.Get(ctx, key).
+//
+// Before calculating a value, set it as pending with
+// pendingmap.MarkPending(key). When a key is marked as pending, it can not
+// retrieved until it is set or unmarked.
+//
+// To set a value, there are different methods. SetIfExist() sets values if they
+// are pending or already stored.
 type PendingMap[K comparable, V any] struct {
 	sync.RWMutex
 	data    map[K]V
@@ -138,56 +147,43 @@ func (pm *PendingMap[K, V]) waitForPending(ctx context.Context, keys []K) error 
 	return nil
 }
 
-// setIfExiists is like setIfExist but without setting a lock. Should not be
-// used directly.
-func (pm *PendingMap[K, V]) setIfExistUnlocked(key K, value V) {
-	pending := pm.pending[key]
-	_, exists := pm.data[key]
-
-	if pending == nil && !exists {
-		return
-	}
-
-	pm.data[key] = value
-
-	if pending != nil {
-		close(pending)
-		delete(pm.pending, key)
-	}
-}
-
-// SetIfExist updates a value but only if the key already exists or is
-// pending.
+// SetIfExist updates values, but only if the key already exists or is pending.
 //
-// If the key is pending, informs all listeners.
-func (pm *PendingMap[K, V]) SetIfExist(key K, value V) {
+// If the key is pending, it is unmarked and all listeners are informed.
+func (pm *PendingMap[K, V]) SetIfExist(data map[K]V) {
 	pm.Lock()
 	defer pm.Unlock()
 
-	pm.setIfExistUnlocked(key, value)
-}
+	for key, value := range data {
+		pending := pm.pending[key]
+		_, exists := pm.data[key]
 
-// SetIfExistMany is like setIfExists but for many values.
-func (pm *PendingMap[K, V]) SetIfExistMany(data map[K]V) {
-	pm.Lock()
-	defer pm.Unlock()
+		if pending == nil && !exists {
+			return
+		}
 
-	for k, v := range data {
-		pm.setIfExistUnlocked(k, v)
+		pm.data[key] = value
+
+		if pending != nil {
+			close(pending)
+			delete(pm.pending, key)
+		}
 	}
 }
 
 // SetIfPending updates values but only if the key is pending.
 //
 // Informs all listeners.
-func (pm *PendingMap[K, V]) SetIfPending(key K, value V) {
+func (pm *PendingMap[K, V]) SetIfPending(data map[K]V) {
 	pm.Lock()
 	defer pm.Unlock()
 
-	if pending, isPending := pm.pending[key]; isPending {
-		pm.data[key] = value
-		close(pending)
-		delete(pm.pending, key)
+	for key, value := range data {
+		if pending, isPending := pm.pending[key]; isPending {
+			pm.data[key] = value
+			close(pending)
+			delete(pm.pending, key)
+		}
 	}
 }
 
