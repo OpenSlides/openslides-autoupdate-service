@@ -32,6 +32,11 @@ func ContextDone(err error) bool {
 //
 // This is true, if a wrapped error implements the method Timeout()  and it
 // returns true.
+//
+// This is specialiy the case for http.Do that returns the url.Error type.
+//
+// This function is simular to os.IsTimeout, but it uses the errors.As function
+// to find sub-erros.
 func Timeout(err error) bool {
 	var errTimeout interface {
 		Timeout() bool
