@@ -2,13 +2,29 @@ package pendingmap
 
 import (
 	"context"
+	"errors"
 	"sync"
 )
+
+// ErrNotExist is returned from pendingmap.Get() when a key was not pending at
+// the beginning but did not exist at the end. This can happen when a key gets
+// unmarked.
+var ErrNotExist = errors.New("key does not exist")
 
 // PendingMap is like a map but values can be in a pending state. When a value
 // is requested, the function blocks until the pending state is done.
 //
 // To get values, just use pendingmap.Get(ctx, key).
+//
+// Each key has one of three states: Not exists, pending, exists.
+//
+// A key that exists can be updated but not deleted. So if a key exists once, it
+// will be in the existing state forever.
+//
+// A key that not exists can be set to pending or to existing.
+//
+// A key that is pending can get existing or (in error cases) go back to not
+// existing.
 //
 // Before calculating a value, set it as pending with
 // pendingmap.MarkPending(key). When a key is marked as pending, it can not
@@ -21,7 +37,7 @@ import (
 // are pending or already stored. SetIfPending() sets a value only if it is
 // pending. SetEmptyIfPending() sets a value to its zero value if it is pending.
 type PendingMap[K comparable, V any] struct {
-	sync.RWMutex
+	mu      sync.RWMutex
 	data    map[K]V
 	pending map[K]chan struct{}
 }
@@ -44,43 +60,80 @@ func New[K comparable, V any]() *PendingMap[K, V] {
 // is called while the function is running, then all values are returned at the
 // latest version.
 //
-// Expects, that all keys are either pending or in the data. It is not allowed,
-// that a key is not pending when this starts and gets pending while it runs.
+// Only waits for keys that are pending when the function starts. If a key gets
+// pending later (or switches between pending and not existing), the function
+// returns an error.
 //
-// Possible Errors: context.Canceled or context.DeadlineExeeded
+// Possible Errors: context.Canceled, context.DeadlineExeeded or ErrNotExist
 func (pm *PendingMap[K, V]) Get(ctx context.Context, keys ...K) (map[K]V, error) {
 	if err := pm.waitForPending(ctx, keys); err != nil {
 		return nil, err
 	}
 
 	out := make(map[K]V, len(keys))
-	reading(pm, func() {
+	err := pm.reading(func() error {
 		for _, k := range keys {
-			out[k] = pm.data[k]
+			v, ok := pm.data[k]
+			if !ok {
+				return ErrNotExist
+			}
+			out[k] = v
 		}
+		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	return out, nil
 }
 
+// waitForPending blocks until all the given keys are not pending anymore.
+//
+// Expects, that all keys are either pending or in the data. It is not allowed,
+// that a key is not pending when this starts and gets pending whil it runs.
+//
+// Possible Errors: context.Canceled or context.DeadlineExeeded
+func (pm *PendingMap[K, V]) waitForPending(ctx context.Context, keys []K) error {
+	for _, k := range keys {
+		var pending chan struct{}
+		pm.reading(func() error {
+			pending = pm.pending[k]
+			return nil
+		})
+
+		if pending == nil {
+			continue
+		}
+
+		select {
+		case <-pending:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	return nil
+}
+
 // MarkPending marks one or more keys as pending.
 //
-// Skips keys that are already pending or are already in the datastructure.
+// Skips keys that are already pending or are already in the map.
 //
 // Returns all keys that where marked as pending (did not exist).
 func (pm *PendingMap[K, V]) MarkPending(keys ...K) []K {
 	var needMark []K
-	reading(pm, func() {
+	pm.reading(func() error {
 		for _, key := range keys {
-			if _, ok := pm.data[key]; ok {
+			if _, inStore := pm.data[key]; inStore {
 				continue
 			}
-			if _, ok := pm.pending[key]; ok {
+			if _, isPending := pm.pending[key]; isPending {
 				continue
 			}
 
 			needMark = append(needMark, key)
 		}
+		return nil
 	})
 
 	if len(needMark) == 0 {
@@ -88,8 +141,8 @@ func (pm *PendingMap[K, V]) MarkPending(keys ...K) []K {
 	}
 
 	marked := make([]K, 0, len(needMark))
-	pm.Lock()
-	defer pm.Unlock()
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 
 	for _, key := range needMark {
 		if _, ok := pm.pending[key]; ok {
@@ -107,8 +160,8 @@ func (pm *PendingMap[K, V]) MarkPending(keys ...K) []K {
 //
 // Skips keys that are already pending or are already in the database.
 func (pm *PendingMap[K, V]) UnMarkPending(keys ...K) {
-	pm.Lock()
-	defer pm.Unlock()
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 
 	for _, key := range keys {
 		if _, ok := pm.data[key]; ok {
@@ -125,38 +178,12 @@ func (pm *PendingMap[K, V]) UnMarkPending(keys ...K) {
 	}
 }
 
-// waitForPending blocks until all the given keys are not pending anymore.
-//
-// Expects, that all keys are either pending or in the data. It is not allowed,
-// that a key is not pending when this starts and gets pending whil it runs.
-//
-// Possible Errors: context.Canceled or context.DeadlineExeeded
-func (pm *PendingMap[K, V]) waitForPending(ctx context.Context, keys []K) error {
-	for _, k := range keys {
-		var pending chan struct{}
-		reading(pm, func() {
-			pending = pm.pending[k]
-		})
-
-		if pending == nil {
-			continue
-		}
-
-		select {
-		case <-pending:
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
-	return nil
-}
-
-// SetIfExist updates values, but only if the key already exists or is pending.
+// SetIfPendingOrExists updates values, but only if the key already exists or is pending.
 //
 // If the key is pending, it is unmarked and all listeners are informed.
-func (pm *PendingMap[K, V]) SetIfExist(data map[K]V) {
-	pm.Lock()
-	defer pm.Unlock()
+func (pm *PendingMap[K, V]) SetIfPendingOrExists(data map[K]V) {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 
 	for key, value := range data {
 		pending := pm.pending[key]
@@ -179,8 +206,8 @@ func (pm *PendingMap[K, V]) SetIfExist(data map[K]V) {
 //
 // Informs all listeners.
 func (pm *PendingMap[K, V]) SetIfPending(data map[K]V) {
-	pm.Lock()
-	defer pm.Unlock()
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 
 	for key, value := range data {
 		if pending, isPending := pm.pending[key]; isPending {
@@ -193,8 +220,8 @@ func (pm *PendingMap[K, V]) SetIfPending(data map[K]V) {
 
 // SetEmptyIfPending set all keys that are still pending to the zero value.
 func (pm *PendingMap[K, V]) SetEmptyIfPending(keys ...K) {
-	pm.Lock()
-	defer pm.Unlock()
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 
 	for _, key := range keys {
 		if pending, isPending := pm.pending[key]; isPending {
@@ -207,10 +234,16 @@ func (pm *PendingMap[K, V]) SetEmptyIfPending(keys ...K) {
 }
 
 func (pm *PendingMap[K, V]) Len() int {
-	pm.RLock()
-	defer pm.RUnlock()
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
 
 	return len(pm.data)
+}
+
+func (pm *PendingMap[K, V]) reading(cmd func() error) error {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+	return cmd()
 }
 
 // // size returns the size of all values in the cache in bytes.
@@ -224,14 +257,3 @@ func (pm *PendingMap[K, V]) Len() int {
 // 	}
 // 	return size
 // }
-
-type rlocker interface {
-	RLock()
-	RUnlock()
-}
-
-func reading(l rlocker, cmd func()) {
-	l.RLock()
-	defer l.RUnlock()
-	cmd()
-}

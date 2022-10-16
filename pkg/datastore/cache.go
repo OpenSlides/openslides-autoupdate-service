@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/pendingmap"
@@ -36,7 +37,8 @@ func newCache() *cache {
 // first call fetches the result, the other calles get blocked until it the
 // answer was fetched.
 //
-// A non existing value is returned as nil.
+// If a key is not returned by set, GetOrSet returns nil for it. But if a
+// parallel call gets an error, GetOrSet also returns an error.
 //
 // All values get returned together. If only one key is missing, this function
 // blocks, until all values are retrieved.
@@ -56,15 +58,20 @@ func (c *cache) GetOrSet(ctx context.Context, keys []Key, set cacheSetFunc) (map
 	// Blocks until all missing (but not pending) keys are fetched.
 	//
 	// After this call, all keys are either pending (from another parallel call)
-	// or in the c.data. This is a requirement to call c.data.get().
-	//
-	// TODO: if set fails from a parallel caller, then a key is not pending and
-	// not in the cache!!!
+	// or in the c.data.
 	if err := c.fetchMissing(ctx, keys, set); err != nil {
 		return nil, fmt.Errorf("fetching missing keys: %w", err)
 	}
 
-	return c.data.Get(ctx, keys...)
+	got, err := c.data.Get(ctx, keys...)
+	if err != nil {
+		if errors.Is(err, pendingmap.ErrNotExist) {
+			return nil, fmt.Errorf("fetching data in a parallel call failed")
+		}
+		return nil, err
+	}
+
+	return got, nil
 }
 
 // fetchMissing loads the given keys with the set method. Does not update keys
@@ -123,7 +130,7 @@ func (c *cache) SetIfExist(key Key, value []byte) {
 	if string(value) == "null" {
 		value = nil
 	}
-	c.data.SetIfExist(map[Key][]byte{key: value})
+	c.data.SetIfPendingOrExists(map[Key][]byte{key: value})
 }
 
 // SetIfExistMany is like SetIfExist but with many keys.
@@ -133,7 +140,7 @@ func (c *cache) SetIfExistMany(data map[Key][]byte) {
 			data[k] = nil
 		}
 	}
-	c.data.SetIfExist(data)
+	c.data.SetIfPendingOrExists(data)
 }
 
 func (c *cache) len() int {
