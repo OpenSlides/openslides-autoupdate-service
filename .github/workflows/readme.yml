@@ -33,7 +33,7 @@ jobs:
     - name: create secrets
       run: |
         mkdir secrets
-        printf "postgres" > secrets/postgres_password
+        printf "password" > secrets/postgres_password
         printf "my_token_key" > secrets/auth_token_key 
         printf "my_cookie_key" > secrets/auth_cookie_key
 
