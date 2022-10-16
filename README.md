@@ -15,10 +15,23 @@ The service needs some secrets to run. You can create them with:
 
 ```
 mkdir secrets
-printf "postgres" > secrets/postgres_password
+printf "password" > secrets/postgres_password
 printf "my_token_key" > secrets/auth_token_key 
 printf "my_cookie_key" > secrets/auth_cookie_key
 ```
+
+It also needs a running postgres and redis instance. You can start one with:
+
+```
+docker run  --network host -e POSTGRES_PASSWORD=password -e POSTGRES_USER=openslides -e POSTGRES_DB=openslides postgres:11
+```
+
+and
+
+```
+TODO
+```
+
 
 ### With Golang
 
