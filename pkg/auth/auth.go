@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/ostcar/topic"
 )
@@ -145,6 +146,10 @@ func (a *Auth) ListenOnLogouts(ctx context.Context, logoutEventer LogoutEventer,
 	for {
 		data, err := logoutEventer.LogoutEvent(ctx)
 		if err != nil {
+			if oserror.ContextDone(err) {
+				return
+			}
+
 			errHandler(fmt.Errorf("receiving logout event: %w", err))
 			time.Sleep(time.Second)
 			continue
