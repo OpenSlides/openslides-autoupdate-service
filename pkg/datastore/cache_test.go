@@ -3,6 +3,7 @@ package datastore
 import (
 	"context"
 	"errors"
+	"reflect"
 	"strconv"
 	"sync"
 	"testing"
@@ -124,6 +125,30 @@ func TestCacheGetOrSetBlockSecondCall(t *testing.T) {
 	case <-done:
 	case <-timer.C:
 		t.Errorf("Second GetOrSet-Call was not done one Millisecond after the frist GetOrSet-Call was called.")
+	}
+}
+
+func TestCacheGetOrSetErrorInTheMiddle(t *testing.T) {
+	myKey1 := MustKey("key/1/field")
+	myKey2 := MustKey("key/2/field")
+	c := newCache()
+	_, err := c.GetOrSet(context.Background(), []Key{myKey1, myKey2}, func(key []Key, set func(map[Key][]byte)) error {
+		set(map[Key][]byte{myKey1: []byte("value")})
+		return errors.New("some error")
+	})
+	if err == nil {
+		t.Fatalf("got not error, expected some")
+	}
+
+	// Request key2 a second time, but this time outout an error
+	got, err := c.GetOrSet(context.Background(), []Key{myKey2}, func(key []Key, set func(map[Key][]byte)) error {
+		set(map[Key][]byte{myKey2: []byte("expected Value")})
+		return nil
+	})
+
+	expect := map[Key][]byte{myKey2: []byte("expected Value")}
+	if !reflect.DeepEqual(got, expect) {
+		t.Errorf("got value %v, expected %v", got, expect)
 	}
 }
 

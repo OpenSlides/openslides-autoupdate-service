@@ -14,8 +14,12 @@ import (
 // pendingmap.MarkPending(key). When a key is marked as pending, it can not
 // retrieved until it is set or unmarked.
 //
+// pendingmap.UnMarkPending(key) can be used to undo a MarkPending call. This is
+// usefull in error cases where a value should be freed for other callers.
+//
 // To set a value, there are different methods. SetIfExist() sets values if they
-// are pending or already stored.
+// are pending or already stored. SetIfPending() sets a value only if it is
+// pending. SetEmptyIfPending() sets a value to its zero value if it is pending.
 type PendingMap[K comparable, V any] struct {
 	sync.RWMutex
 	data    map[K]V
@@ -159,7 +163,7 @@ func (pm *PendingMap[K, V]) SetIfExist(data map[K]V) {
 		_, exists := pm.data[key]
 
 		if pending == nil && !exists {
-			return
+			continue
 		}
 
 		pm.data[key] = value
@@ -187,15 +191,15 @@ func (pm *PendingMap[K, V]) SetIfPending(data map[K]V) {
 	}
 }
 
-// SetEmptyIfPending set all keys that are still pending to nil.
+// SetEmptyIfPending set all keys that are still pending to the zero value.
 func (pm *PendingMap[K, V]) SetEmptyIfPending(keys ...K) {
 	pm.Lock()
 	defer pm.Unlock()
 
 	for _, key := range keys {
 		if pending, isPending := pm.pending[key]; isPending {
-			var v V
-			pm.data[key] = v
+			var zero V
+			pm.data[key] = zero
 			close(pending)
 			delete(pm.pending, key)
 		}
