@@ -83,7 +83,9 @@ func TestMeetingModeB(t *testing.T) {
 		m.Modes("B"),
 		false,
 		`---
-		meeting/30/template_for_committee_id: 16
+		meeting/30:
+			template_for_committee_id: 16
+			committee_id: 4
 		`,
 		withElementID(30),
 	)

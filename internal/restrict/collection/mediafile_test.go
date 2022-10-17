@@ -179,6 +179,7 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/1:
 			owner_id: meeting/7
+			is_public: false
 
 		meeting/7:
 			id: 7
@@ -213,6 +214,7 @@ func TestMediafileModeA(t *testing.T) {
 		mediafile/1:
 			owner_id: meeting/7
 			inherited_access_group_ids: [3]
+			is_public: false
 
 		meeting/7:
 			id: 7
@@ -232,6 +234,7 @@ func TestMediafileModeA(t *testing.T) {
 		mediafile/1:
 			owner_id: meeting/7
 			inherited_access_group_ids: [3]
+			is_public: false
 
 		meeting/7:
 			id: 7

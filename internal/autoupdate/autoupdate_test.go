@@ -93,7 +93,7 @@ func TestHistoryInformationSuperAdminOnMeetingCollection(t *testing.T) {
 	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 
-		motion/5/id: 1
+		motion/5/meeting_id: 1
 	`))
 	s := autoupdate.New(ds, RestrictAllowed)
 
