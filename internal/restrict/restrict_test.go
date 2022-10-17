@@ -31,6 +31,7 @@ func TestRestrict(t *testing.T) {
 		22:
 			enable_anonymous: false
 			admin_group_id: 32
+			committee_id: 404
 
 	user/1:
 		group_$_ids: ["30","2"]
