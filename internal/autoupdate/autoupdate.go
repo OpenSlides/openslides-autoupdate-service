@@ -239,6 +239,55 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 	return nil
 }
 
+// RestrictFQIDs returns the full collections, restricted for the user for a
+// list of fqids.
+//
+// The return format is a map from fqid to an object as map from field to value.
+func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []string) (map[string]map[string][]byte, error) {
+	var keys []datastore.Key
+	for _, fqid := range fqids {
+		collection, _, found := strings.Cut(fqid, "/")
+		if !found {
+			return nil, fmt.Errorf("invalid fqid %s, expected one /", fqid)
+		}
+
+		fields := restrict.FieldsForCollection(collection)
+		if fields == nil {
+			return nil, fmt.Errorf("unknown collection in fqid %s", fqid)
+		}
+
+		for _, field := range fields {
+			key, err := datastore.KeyFromString(fqid + "/" + field)
+			if err != nil {
+				return nil, fmt.Errorf("fqid  %s can not be added to field %s: %w", fqid, field, err)
+			}
+
+			keys = append(keys, key)
+		}
+	}
+
+	values, err := a.restricter(a.datastore, userID).Get(ctx, keys...)
+	if err != nil {
+		return nil, fmt.Errorf("getting data: %w", err)
+	}
+
+	result := make(map[string]map[string][]byte, len(fqids))
+	for key, value := range values {
+		fqid := key.FQID()
+		if _, ok := result[fqid]; !ok {
+			result[fqid] = make(map[string][]byte)
+		}
+
+		if value == nil {
+			continue
+		}
+
+		result[fqid][key.Field] = value
+	}
+
+	return result, nil
+}
+
 type permissionDeniedError struct {
 	err error
 }
