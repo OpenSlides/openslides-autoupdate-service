@@ -51,6 +51,11 @@ func (p *SourcePostgres) Get(ctx context.Context, keys ...Key) (map[Key][]byte, 
 		copied := make([][]byte, len(r)-1)
 		for i := 1; i < len(r); i++ {
 			copied[i-1] = r[i]
+			if r[i] == nil {
+				continue
+			}
+			copied[i-1] = make([]byte, len(r[i]))
+			copy(copied[i-1], r[i])
 		}
 		table[string(r[0])] = copied
 	}
