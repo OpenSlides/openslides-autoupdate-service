@@ -16,6 +16,10 @@ import (
 )
 
 func TestSourcePostgresGetSomeData(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Postgres Test")
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
