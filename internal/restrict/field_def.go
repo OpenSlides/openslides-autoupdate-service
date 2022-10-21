@@ -685,14 +685,15 @@ var restrictionModes = map[string]string{
 	"motion_comment/section_id": "A",
 
 	// motion_comment_section
-	"motion_comment_section/comment_ids":       "A",
-	"motion_comment_section/id":                "A",
-	"motion_comment_section/meeting_id":        "A",
-	"motion_comment_section/name":              "A",
-	"motion_comment_section/read_group_ids":    "A",
-	"motion_comment_section/sequential_number": "A",
-	"motion_comment_section/weight":            "A",
-	"motion_comment_section/write_group_ids":   "A",
+	"motion_comment_section/comment_ids":         "A",
+	"motion_comment_section/id":                  "A",
+	"motion_comment_section/meeting_id":          "A",
+	"motion_comment_section/name":                "A",
+	"motion_comment_section/read_group_ids":      "A",
+	"motion_comment_section/sequential_number":   "A",
+	"motion_comment_section/submitter_can_write": "A",
+	"motion_comment_section/weight":              "A",
+	"motion_comment_section/write_group_ids":     "A",
 
 	// motion_state
 	"motion_state/allow_create_poll":                   "A",

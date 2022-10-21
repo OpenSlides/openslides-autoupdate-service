@@ -2793,6 +2793,12 @@ func (r *Fetch) MotionCommentSection_SequentialNumber(motionCommentSectionID int
 	return v
 }
 
+func (r *Fetch) MotionCommentSection_SubmitterCanWrite(motionCommentSectionID int) *ValueBool {
+	v := &ValueBool{fetch: r, collection: "motionCommentSection", id: motionCommentSectionID, field: "submitter_can_write"}
+	r.requested[datastore.Key{Collection: "motion_comment_section", ID: motionCommentSectionID, Field: "submitter_can_write"}] = v
+	return v
+}
+
 func (r *Fetch) MotionCommentSection_Weight(motionCommentSectionID int) *ValueInt {
 	v := &ValueInt{fetch: r, collection: "motionCommentSection", id: motionCommentSectionID, field: "weight"}
 	r.requested[datastore.Key{Collection: "motion_comment_section", ID: motionCommentSectionID, Field: "weight"}] = v
