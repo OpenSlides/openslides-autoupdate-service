@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // SourcePostgres uses postgres to get the connections.
@@ -22,9 +23,9 @@ func NewSourcePostgres(ctx context.Context, addr string, password string, positi
 	}
 
 	config.ConnConfig.Password = password
-	config.ConnConfig.PreferSimpleProtocol = true
+	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
-	pool, err := pgxpool.ConnectConfig(context.Background(), config)
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
 		return nil, fmt.Errorf("creating connection pool: %w", err)
 	}
