@@ -150,6 +150,11 @@ func (pm *PendingMap[K, V]) MarkPending(keys ...K) []K {
 			continue
 		}
 
+		if _, inStore := pm.data[key]; inStore {
+			// The other caller has already the data
+			continue
+		}
+
 		pm.pending[key] = make(chan struct{})
 		marked = append(marked, key)
 	}
