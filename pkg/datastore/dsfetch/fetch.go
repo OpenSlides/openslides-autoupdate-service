@@ -2,7 +2,6 @@ package dsfetch
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -79,72 +78,6 @@ func (r *Fetch) Err() error {
 
 type executer interface {
 	execute([]byte) error
-}
-
-// ValueRequiredInt is a lazy value from the datastore.
-type ValueRequiredInt struct {
-	value    int
-	isNull   bool
-	executed bool
-
-	lazies []*int
-
-	request *Fetch
-}
-
-// Value returns the value.
-func (v *ValueRequiredInt) Value(ctx context.Context) (int, bool, error) {
-	if v.request.err != nil {
-		return 0, false, v.request.err
-	}
-
-	if v.executed {
-		return v.value, !v.isNull, nil
-	}
-
-	if err := v.request.Execute(ctx); err != nil {
-		return 0, false, fmt.Errorf("executing request: %w", err)
-	}
-
-	return v.value, !v.isNull, nil
-}
-
-// ErrorLater is like Value but does not return an error.
-//
-// If an error happs, it is saved internaly. Make sure to call request.Err() later to
-// access it.
-func (v *ValueRequiredInt) ErrorLater(ctx context.Context) (int, bool) {
-	if v.request.err != nil {
-		return 0, false
-	}
-
-	if v.executed {
-		return v.value, !v.isNull
-	}
-
-	if err := v.request.Execute(ctx); err != nil {
-		return 0, false
-	}
-
-	return v.value, !v.isNull
-}
-
-// execute will be called from request.
-func (v *ValueRequiredInt) execute(p []byte) error {
-	if p == nil {
-		v.isNull = true
-	} else {
-		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %w", p, err)
-		}
-	}
-
-	for i := 0; i < len(v.lazies); i++ {
-		*v.lazies[i] = v.value
-	}
-
-	v.executed = true
-	return nil
 }
 
 // DoesNotExistError is thrown when an object does not exist.
