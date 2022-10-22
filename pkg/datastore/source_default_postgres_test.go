@@ -151,7 +151,7 @@ func TestBigQuery(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(got, testData) {
-		t.Errorf("testdata is diffrent then the result: %s got('%s') expect ('%s')", keys[1600], got[keys[1600]], testData[keys[1600]])
+		t.Errorf("testdata is diffrent then the result: for key %s got('%s') expect ('%s')", keys[1600], got[keys[1600]], testData[keys[1600]])
 	}
 }
 
