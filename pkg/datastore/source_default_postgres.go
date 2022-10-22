@@ -3,6 +3,7 @@ package datastore
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -36,6 +37,23 @@ func NewSourcePostgres(ctx context.Context, addr string, password string, positi
 // Get fetches the keys from postgres.
 func (p *SourcePostgres) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
 	uniqueFieldsStr, fieldIndex, uniqueFQID := prepareQuery(keys)
+
+	// For very big SQL Queries, split them in part
+	if len(fieldIndex) > maxFieldsOnQuery {
+		keysList := splitFieldKeys(keys)
+		result := make(map[Key][]byte, len(keys))
+		for _, keys := range keysList {
+			resultPart, err := p.Get(ctx, keys...)
+			if err != nil {
+				return nil, fmt.Errorf("get key list: %w", err)
+			}
+
+			for k, v := range resultPart {
+				result[k] = v
+			}
+		}
+		return result, nil
+	}
 
 	sql := fmt.Sprintf(`SELECT fqid, %s from models where fqid = ANY ($1) AND deleted=false;`, uniqueFieldsStr)
 
@@ -101,4 +119,35 @@ func prepareQuery(keys []Key) (uniqueFieldsStr string, fieldIndex map[string]int
 	}
 	uniqueFieldsStr = strings.Join(uniqueFields, ",")
 	return uniqueFieldsStr, fieldIndex, uniqueFQID
+}
+
+const maxFieldsOnQuery = 1_500
+
+// splitFieldKeys splits a list of keys to many lists where any list has a
+// maximum of different fields.
+func splitFieldKeys(keys []Key) [][]Key {
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i].Field < keys[j].Field
+	})
+
+	var out [][]Key
+	keyCount := 0
+	var nextList []Key
+	var lastField string
+	for _, k := range keys {
+		nextList = append(nextList, k)
+
+		if k.Field != lastField {
+			keyCount++
+			if keyCount >= maxFieldsOnQuery {
+				out = append(out, nextList)
+				nextList = nil
+				keyCount = 0
+			}
+		}
+		lastField = k.Field
+	}
+	out = append(out, nextList)
+
+	return out
 }

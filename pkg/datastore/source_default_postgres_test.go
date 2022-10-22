@@ -110,6 +110,51 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 	}
 }
 
+func TestBigQuery(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Postgres Test")
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	tp, err := newTestPostgres(ctx)
+	if err != nil {
+		t.Fatalf("starting postgres: %v", err)
+	}
+	defer tp.Close()
+
+	source, err := datastore.NewSourcePostgres(ctx, tp.Addr, "password", nil)
+	if err != nil {
+		t.Fatalf("NewSource(): %v", err)
+	}
+
+	count := 2_000
+
+	keys := make([]datastore.Key, count)
+	for i := 0; i < count; i++ {
+		keys[i] = datastore.Key{"user", 1, fmt.Sprintf("f%d", i)}
+	}
+
+	testData := make(map[datastore.Key][]byte)
+	for _, key := range keys {
+		testData[key] = []byte(fmt.Sprintf(`"%s"`, key.String()))
+	}
+
+	if err := tp.addTestData(ctx, testData); err != nil {
+		t.Fatalf("Writing test data: %v", err)
+	}
+
+	got, err := source.Get(ctx, keys...)
+	if err != nil {
+		t.Errorf("Sending request with %d fields returns: %v", count, err)
+	}
+
+	if !reflect.DeepEqual(got, testData) {
+		t.Errorf("testdata is diffrent then the result: for key %s got('%s') expect ('%s')", keys[1600], got[keys[1600]], testData[keys[1600]])
+	}
+}
+
 type testPostgres struct {
 	dockerPool     *dockertest.Pool
 	dockerResource *dockertest.Resource
