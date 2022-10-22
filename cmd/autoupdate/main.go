@@ -37,10 +37,7 @@ func run() error {
 	env := defaultEnv()
 
 	// Redis as message bus for datastore and logout events.
-	messageBus, err := initRedis(env)
-	if err != nil {
-		return fmt.Errorf("init redis as message bus: %w", err)
-	}
+	messageBus := initRedis(env)
 
 	// Datastore Service.
 	datastoreService, background, err := initDatastore(ctx, env, messageBus)
@@ -82,46 +79,13 @@ func run() error {
 }
 
 func defaultEnv() map[string]string {
-	defaults := map[string]string{
-		"AUTOUPDATE_PORT": "9012",
-
-		"DATASTORE_DATABASE_HOST": "localhost",
-		"DATASTORE_DATABASE_PORT": "5432",
-		"DATASTORE_DATABASE_USER": "openslides",
-		"DATASTORE_DATABASE_NAME": "openslides",
-
-		"DATASTORE_READER_HOST":     "localhost",
-		"DATASTORE_READER_PORT":     "9010",
-		"DATASTORE_READER_PROTOCOL": "http",
-
-		"MESSAGE_BUS_HOST": "localhost",
-		"MESSAGE_BUS_PORT": "6379",
-		"REDIS_TEST_CONN":  "true",
-
-		"VOTE_HOST":     "localhost",
-		"VOTE_PORT":     "9013",
-		"VOTE_PROTOCOL": "http",
-
-		"AUTH":          "fake",
-		"AUTH_PROTOCOL": "http",
-		"AUTH_HOST":     "localhost",
-		"AUTH_PORT":     "9004",
-
-		"OPENSLIDES_DEVELOPMENT": "false",
-		"SECRETS_PATH":           "/run/secrets",
-
-		"METRIC_INTERVAL":   "5m",
-		"MAX_PARALLEL_KEYS": "1000",
-		"DATASTORE_TIMEOUT": "3s",
-	}
-
-	for k := range defaults {
+	for k := range defaultEnvironment {
 		e, ok := os.LookupEnv(k)
 		if ok {
-			defaults[k] = e
+			defaultEnvironment[k] = e
 		}
 	}
-	return defaults
+	return defaultEnvironment
 }
 
 func secret(env map[string]string, name string) ([]byte, error) {
@@ -167,35 +131,32 @@ func interruptContext() (context.Context, context.CancelFunc) {
 	return ctx, cancel
 }
 
-func initRedis(env map[string]string) (*redis.Redis, error) {
+func initRedis(env map[string]string) *redis.Redis {
 	redisAddress := env["MESSAGE_BUS_HOST"] + ":" + env["MESSAGE_BUS_PORT"]
 	conn := redis.NewConnection(redisAddress)
-	if ok, _ := strconv.ParseBool(env["REDIS_TEST_CONN"]); ok {
-		if err := conn.TestConn(); err != nil {
-			return nil, fmt.Errorf("connect to redis: %w", err)
-		}
-	}
-
-	return &redis.Redis{Conn: conn}, nil
+	return &redis.Redis{Conn: conn}
 }
 
 func initDatastore(ctx context.Context, env map[string]string, mb *redis.Redis) (*datastore.Datastore, func(context.Context), error) {
-	maxParallel, err := strconv.Atoi(env["MAX_PARALLEL_KEYS"])
+	// Init Source datastore-reader for history requests
+	maxParallel, err := strconv.Atoi(env["DATASTORE_READER_MAX_PARALLEL_KEYS"])
 	if err != nil {
-		return nil, nil, fmt.Errorf("environment variable MAX_PARALLEL_KEYS has to be a number, not %s", env["MAX_PARALLEL_KEYS"])
+		return nil, nil, fmt.Errorf("environment variable DATASTORE_READER_MAX_PARALLEL_KEYS has to be a number, not %s", env["DATASTORE_READER_MAX_PARALLEL_KEYS"])
 	}
 
-	timeout, err := parseDuration(env["DATASTORE_TIMEOUT"])
+	timeout, err := parseDuration(env["DATASTORE_READER_TIMEOUT"])
 	if err != nil {
-		return nil, nil, fmt.Errorf("environment variable DATASTORE_TIMEOUT has to be a duration like 3s, not %s: %w", env["DATASTORE_TIMEOUT"], err)
+		return nil, nil, fmt.Errorf("environment variable DATASTORE_READER_TIMEOUT has to be a duration like 3s, not %s: %w", env["DATASTORE_READER_TIMEOUT"], err)
 	}
 
-	datastoreSource := datastore.NewSourceDatastore(
+	datastoreSource := datastore.NewSourceDatastoreReader(
 		env["DATASTORE_READER_PROTOCOL"]+"://"+env["DATASTORE_READER_HOST"]+":"+env["DATASTORE_READER_PORT"],
 		mb,
 		maxParallel,
 		timeout,
 	)
+
+	// Init Source for poll/vote_count
 	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCOL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
 
 	password, err := secret(env, "postgres_password")
@@ -203,15 +164,17 @@ func initDatastore(ctx context.Context, env map[string]string, mb *redis.Redis) 
 		return nil, nil, fmt.Errorf("getting postgres password: %w", err)
 	}
 
+	// Init Source for postgres requests.
 	addr := fmt.Sprintf(
-		"postgres://%s@%s:%s/%s",
+		"postgres://%s:%s@%s:%s/%s",
 		env["DATASTORE_DATABASE_USER"],
+		password,
 		env["DATASTORE_DATABASE_HOST"],
 		env["DATASTORE_DATABASE_PORT"],
 		env["DATASTORE_DATABASE_NAME"],
 	)
 
-	postgresSource, err := datastore.NewSourcePostgres(ctx, addr, string(password), datastoreSource)
+	postgresSource, err := datastore.NewSourcePostgres(ctx, addr, mb)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating connection to postgres: %w", err)
 	}

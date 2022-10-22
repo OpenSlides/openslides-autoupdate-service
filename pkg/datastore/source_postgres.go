@@ -9,20 +9,22 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// SourcePostgres uses postgres to get the connections.
+// SourcePostgres uses postgres to get the data.
+//
+// Only supports the current data and not the history.
 type SourcePostgres struct {
 	pool *pgxpool.Pool
-	SourcePosition
+
+	updater Updater
 }
 
 // NewSourcePostgres initializes a SourcePostgres.
-func NewSourcePostgres(ctx context.Context, addr string, password string, positioner SourcePosition) (*SourcePostgres, error) {
+func NewSourcePostgres(ctx context.Context, addr string, updater Updater) (*SourcePostgres, error) {
 	config, err := pgxpool.ParseConfig(addr)
 	if err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
 
-	config.ConnConfig.Password = password
 	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
@@ -30,7 +32,7 @@ func NewSourcePostgres(ctx context.Context, addr string, password string, positi
 		return nil, fmt.Errorf("creating connection pool: %w", err)
 	}
 
-	return &SourcePostgres{pool: pool, SourcePosition: positioner}, nil
+	return &SourcePostgres{pool: pool, updater: updater}, nil
 }
 
 // Get fetches the keys from postgres.
@@ -78,6 +80,11 @@ func (p *SourcePostgres) Get(ctx context.Context, keys ...Key) (map[Key][]byte, 
 	}
 
 	return values, nil
+}
+
+// Update blocks for new data using the updater the source was initialized with.
+func (p *SourcePostgres) Update(ctx context.Context) (map[Key][]byte, error) {
+	return p.updater.Update(ctx)
 }
 
 func prepareQuery(keys []Key) (uniqueFieldsStr string, fieldIndex map[string]int, uniqueFQID []string) {

@@ -194,42 +194,44 @@ attribute `position`. See above.
 
 ## Configuration
 
-### Environment variables
+### Environment Variables
 
 The Service uses the following environment variables:
 
 * `AUTOUPDATE_PORT`: Lets the service listen on port 9012. The default is
   `9012`.
-* `AUTOUPDATE_HOST`: The device where the service starts. The default is am
-  empty string which starts the service on any device.
+* `METRIC_INTERVAL`: Time in how often the metrics are gathered. Zero disables
+  the metrics. The default is `5m`.
+
+* `DATASTORE_DATABASE_HOST`: Postgres Host. The default is `localhost`.
+* `DATASTORE_DATABASE_PORT`: Postgres Port. The default is `5432`.
+* `DATASTORE_DATABASE_USER`: Postgres User. The default is `openslides`.
+* `DATASTORE_DATABASE_NAME`: Postgres Database. The default is `openslides`.
+
 * `DATASTORE_READER_HOST`: Host of the datastore reader. The default is
   `localhost`.
 * `DATASTORE_READER_PORT`: Port of the datastore reader. The default is `9010`.
 * `DATASTORE_READER_PROTOCOL`: Protocol of the datastore reader. The default is
   `http`.
+* `DATASTORE_READER_MAX_PARALLEL_KEYS`: Max keys that are send in one request to
+  the datastore. The default is `1000`.
+* `DATASTORE_READER_TIMEOUT`: Time until a request to the datastore times out.
+  The default is `3s`.
+
 * `MESSAGE_BUS_HOST`: Host of the redis server. The default is `localhost`.
 * `MESSAGE_BUS_PORT`: Port of the redis server. The default is `6379`.
-* `REDIS_TEST_CONN`: Test the redis connection on startup. Disable on the cloud
-  if redis needs more time to start then this service. The default is `true`.
-* `DATASTORE_DATABASE_HOST`: Postgres Host. The default is `localhost`.
-* `DATASTORE_DATABASE_PORT`: Postgres Port. The default is `5432`.
-* `DATASTORE_DATABASE_USER`: Postgres User. The default is `openslides`.
-* `DATASTORE_DATABASE_NAME`: Postgres Database. The default is `openslides`.
+
 * `VOTE_HOST`: Host of the vote-service. The default is `localhost`.
 * `VOTE_PORT`: Port of the vote-service. The default is `9013`.
 * `VOTE_PROTOCOL`: Protocol of the vote-service. The default is `http`.
+
 * `AUTH`: Sets the type of the auth service. `fake` (default) or `ticket`.
 * `AUTH_HOST`: Host of the auth service. The default is `localhost`.
 * `AUTH_PORT`: Port of the auth service. The default is `9004`.
 * `AUTH_PROTOCOL`: Protocol of the auth servicer. The default is `http`.
+
 * `OPENSLIDES_DEVELOPMENT`: If set, the service uses the default secrets. The
   default is `false`.
-* `METRIC_INTERVAL`: Time in how often the metrics are gathered. Zero disables
-  the metrics. The default is `5m`.
-* `MAX_PARALLEL_KEYS`: Max keys that are send in one request to the datastore.
-  The default is `1000`.
-* `DATASTORE_TIMEOUT`: Time until a request to the datastore times out. The
-  default is `3s`.
 * `SECRETS_PATH`: Path where the secrets are stored. The default is
   `/run/secrets/`.
 

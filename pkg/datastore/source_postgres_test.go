@@ -77,7 +77,7 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			source, err := datastore.NewSourcePostgres(ctx, tp.Addr, "password", nil)
+			source, err := datastore.NewSourcePostgres(ctx, tp.Addr, nil)
 			if err != nil {
 				t.Fatalf("NewSource(): %v", err)
 			}
@@ -141,7 +141,7 @@ func newTestPostgres(ctx context.Context) (tp *testPostgres, err error) {
 	}
 
 	port := resource.GetPort("5432/tcp")
-	addr := fmt.Sprintf("postgres://postgres@localhost:%s/database", port)
+	addr := fmt.Sprintf("postgres://postgres:password@localhost:%s/database", port)
 	config, err := pgx.ParseConfig(addr)
 	if err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)

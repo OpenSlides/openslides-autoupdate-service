@@ -29,9 +29,11 @@ type Updater interface {
 	Update(context.Context) (map[Key][]byte, error)
 }
 
-// SourceDatastore receives the data from the datastore-reader via http and
+// SourceDatastoreReader receives the data from the datastore-reader via http and
 // updates via the redis message bus.
-type SourceDatastore struct {
+//
+// Is is currently only used for the histroy data.
+type SourceDatastoreReader struct {
 	url     string
 	client  *http.Client
 	updater Updater
@@ -40,9 +42,9 @@ type SourceDatastore struct {
 	maxKeysPerRequest int
 }
 
-// NewSourceDatastore initializes a SourceDatastore.
-func NewSourceDatastore(url string, updater Updater, maxKeysPerRequest int, timeout time.Duration) *SourceDatastore {
-	return &SourceDatastore{
+// NewSourceDatastoreReader initializes a SourceDatastore.
+func NewSourceDatastoreReader(url string, updater Updater, maxKeysPerRequest int, timeout time.Duration) *SourceDatastoreReader {
+	return &SourceDatastoreReader{
 		url: url,
 		client: &http.Client{
 			Timeout: timeout,
@@ -53,7 +55,7 @@ func NewSourceDatastore(url string, updater Updater, maxKeysPerRequest int, time
 }
 
 // Get fetches the request keys from the datastore-reader.
-func (s *SourceDatastore) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
+func (s *SourceDatastoreReader) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
 	atomic.AddUint64(&s.metricDSHitCount, 1)
 	return s.GetPosition(ctx, 0, keys...)
 }
@@ -61,7 +63,7 @@ func (s *SourceDatastore) Get(ctx context.Context, keys ...Key) (map[Key][]byte,
 // GetPosition gets keys from the datastore at a specifi position.
 //
 // Position 0 means the current position.
-func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
+func (s *SourceDatastoreReader) GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
 	if len(keys) <= s.maxKeysPerRequest {
 		return s.getPosition(ctx, position, keys...)
 	}
@@ -125,7 +127,7 @@ func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ..
 	return combined, nil
 }
 
-func (s *SourceDatastore) getPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
+func (s *SourceDatastoreReader) getPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
 	requestData, err := keysToGetManyRequest(keys, position)
 	if err != nil {
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)
@@ -179,12 +181,12 @@ func (s *SourceDatastore) getPosition(ctx context.Context, position int, keys ..
 }
 
 // Update updates the data from the redis message bus.
-func (s *SourceDatastore) Update(ctx context.Context) (map[Key][]byte, error) {
+func (s *SourceDatastoreReader) Update(ctx context.Context) (map[Key][]byte, error) {
 	return s.updater.Update(ctx)
 }
 
 // HistoryInformation requests the history information for an fqid from the datastore.
-func (s *SourceDatastore) HistoryInformation(ctx context.Context, fqid string, w io.Writer) error {
+func (s *SourceDatastoreReader) HistoryInformation(ctx context.Context, fqid string, w io.Writer) error {
 	req, err := http.NewRequestWithContext(
 		ctx,
 		"POST",
