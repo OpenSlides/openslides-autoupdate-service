@@ -110,6 +110,37 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 	}
 }
 
+func TestBigQuery(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Postgres Test")
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	tp, err := newTestPostgres(ctx)
+	if err != nil {
+		t.Fatalf("starting postgres: %v", err)
+	}
+	defer tp.Close()
+
+	source, err := datastore.NewSourcePostgres(ctx, tp.Addr, "password", nil)
+	if err != nil {
+		t.Fatalf("NewSource(): %v", err)
+	}
+
+	count := 2_000
+
+	keys := make([]datastore.Key, count)
+	for i := 0; i < count; i++ {
+		keys[i] = datastore.Key{"user", 1, fmt.Sprintf("f%d", i)}
+	}
+
+	if _, err := source.Get(ctx, keys...); err != nil {
+		t.Errorf("Sending request with %d fields returns: %v", count, err)
+	}
+}
+
 type testPostgres struct {
 	dockerPool     *dockertest.Pool
 	dockerResource *dockertest.Resource
