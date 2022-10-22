@@ -6,9 +6,7 @@ RUN apk add git
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY cmd cmd
-COPY internal internal
-COPY pkg pkg
+COPY . .
 
 # Build service in seperate stage.
 FROM base as builder

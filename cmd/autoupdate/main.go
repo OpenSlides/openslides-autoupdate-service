@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"runtime/debug"
 	"strconv"
 	"time"
 
@@ -24,9 +25,24 @@ import (
 )
 
 func main() {
+	printCommitInfo()
+
 	if err := run(); err != nil {
 		oserror.Handle(err)
 		os.Exit(1)
+	}
+}
+
+func printCommitInfo() {
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, setting := range info.Settings {
+			switch setting.Key {
+			case "vcs.revision":
+				fmt.Printf("Commit Hash: %s\n", setting.Value)
+			case "vcs.time":
+				fmt.Printf("Commit Time: %s\n", setting.Value)
+			}
+		}
 	}
 }
 
