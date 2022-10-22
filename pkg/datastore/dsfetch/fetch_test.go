@@ -2,6 +2,7 @@ package dsfetch_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
@@ -40,5 +41,20 @@ func TestRequestEmpty(t *testing.T) {
 
 	if got := counter.Value(); got != 0 {
 		t.Errorf("Got %d requests, expected 0: %v", got, counter.Requests())
+	}
+}
+
+func TestFetch_required_field_when_object_does_not_exist(t *testing.T) {
+	ds := dsfetch.New(dsmock.Stub(dsmock.YAMLData(``)))
+
+	var username string
+	ds.User_Username(404).Lazy(&username)
+
+	ctx := context.Background()
+	err := ds.Execute(ctx)
+
+	var errDoesNotExist dsfetch.DoesNotExistError
+	if !errors.As(err, &errDoesNotExist) {
+		t.Errorf("got err `%v`, expected DoesNotExistError", err)
 	}
 }
