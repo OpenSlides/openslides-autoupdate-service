@@ -136,8 +136,22 @@ func TestBigQuery(t *testing.T) {
 		keys[i] = datastore.Key{"user", 1, fmt.Sprintf("f%d", i)}
 	}
 
-	if _, err := source.Get(ctx, keys...); err != nil {
+	testData := make(map[datastore.Key][]byte)
+	for _, key := range keys {
+		testData[key] = []byte(fmt.Sprintf(`"%s"`, key.String()))
+	}
+
+	if err := tp.addTestData(ctx, testData); err != nil {
+		t.Fatalf("Writing test data: %v", err)
+	}
+
+	got, err := source.Get(ctx, keys...)
+	if err != nil {
 		t.Errorf("Sending request with %d fields returns: %v", count, err)
+	}
+
+	if !reflect.DeepEqual(got, testData) {
+		t.Errorf("testdata is diffrent then the result: %s got('%s') expect ('%s')", keys[1600], got[keys[1600]], testData[keys[1600]])
 	}
 }
 

@@ -135,7 +135,9 @@ func splitFieldKeys(keys []Key) [][]Key {
 	var nextList []Key
 	var lastField string
 	for _, k := range keys {
-		if k.Field == lastField {
+		nextList = append(nextList, k)
+
+		if k.Field != lastField {
 			keyCount++
 			if keyCount >= maxFieldsOnQuery {
 				out = append(out, nextList)
@@ -143,8 +145,9 @@ func splitFieldKeys(keys []Key) [][]Key {
 				keyCount = 0
 			}
 		}
-		nextList = append(nextList, k)
+		lastField = k.Field
 	}
+	out = append(out, nextList)
 
 	return out
 }
