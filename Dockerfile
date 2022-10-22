@@ -6,7 +6,7 @@ RUN apk add git
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY . .
+COPY --chown=root . .
 
 # Build service in seperate stage.
 FROM base as builder
