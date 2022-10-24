@@ -45,7 +45,7 @@ func TestMotionCommentSectionModeA(t *testing.T) {
 	)
 
 	testCase(
-		"see with other group",
+		"see with not related other group",
 		t,
 		f,
 		false,
@@ -58,7 +58,7 @@ func TestMotionCommentSectionModeA(t *testing.T) {
 	)
 
 	testCase(
-		"see with group",
+		"see with read group",
 		t,
 		f,
 		true,
@@ -69,6 +69,35 @@ func TestMotionCommentSectionModeA(t *testing.T) {
 		motion_comment_section/1:
 			meeting_id: 30
 			read_group_ids: [2]
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"see with write group",
+		t,
+		f,
+		true,
+		`---
+		user/1/group_$30_ids: [2]
+		group/2/id: 2
+
+		motion_comment_section/1:
+			meeting_id: 30
+			write_group_ids: [2]
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"see with submitter_can_write",
+		t,
+		f,
+		true,
+		`---
+		motion_comment_section/1:
+			meeting_id: 30
+			submitter_can_write: true
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)

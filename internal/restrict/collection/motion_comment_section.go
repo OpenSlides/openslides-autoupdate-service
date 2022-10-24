@@ -12,7 +12,11 @@ import (
 //
 // The user can see a motion comment section if any of:
 //
-//	The user has motion.can_see and has at least one group in common with motion_comment_section/read_group_ids
+//	The user has motion.can_see and
+//		has at least one group in common with motion_comment_section/read_group_ids or
+//		has at least one group in common with motion_comment_section/write_group_ids or
+//		submitter_can_write is set to true for this comment section
+//
 //	The user has motion.can_manage.
 //
 // The user can see the motion comment section.
@@ -53,17 +57,12 @@ func (m MotionCommentSection) see(ctx context.Context, ds *dsfetch.Fetch, mperms
 		}
 
 		allowed, err := eachCondition(ids, func(motionCommentSectionID int) (bool, error) {
-			readGroups, err := ds.MotionCommentSection_ReadGroupIDs(motionCommentSectionID).Value(ctx)
+			seeAs, err := m.seeAs(ctx, ds, perms, motionCommentSectionID)
 			if err != nil {
-				return false, fmt.Errorf("getting readGroups: %w", err)
+				return false, err
 			}
 
-			for _, gid := range readGroups {
-				if perms.InGroup(gid) {
-					return true, nil
-				}
-			}
-			return false, nil
+			return seeAs > 0, nil
 		})
 
 		if err != nil {
@@ -72,4 +71,36 @@ func (m MotionCommentSection) see(ctx context.Context, ds *dsfetch.Fetch, mperms
 
 		return allowed, nil
 	})
+}
+
+// SeeAs checks if the request user can see a comment section. Returns 1 the
+// user can be seen the object because of a read or write group. Returns 2 if
+// the user can see the object because of the submitter rule.
+func (m MotionCommentSection) seeAs(ctx context.Context, ds *dsfetch.Fetch, perms *perm.Permission, motionCommentSectionID int) (int, error) {
+	readGroups, err := ds.MotionCommentSection_ReadGroupIDs(motionCommentSectionID).Value(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("getting read_groups: %w", err)
+	}
+
+	writeGroups, err := ds.MotionCommentSection_WriteGroupIDs(motionCommentSectionID).Value(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("getting write_groups: %w", err)
+	}
+
+	for _, gid := range append(readGroups, writeGroups...) {
+		if perms.InGroup(gid) {
+			return 1, nil
+		}
+	}
+
+	submitterCanWrite, err := ds.MotionCommentSection_SubmitterCanWrite(motionCommentSectionID).Value(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("getting submitter_can_write: %w", err)
+	}
+
+	if submitterCanWrite {
+		return 2, nil
+	}
+
+	return 0, nil
 }
