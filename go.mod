@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/gomodule/redigo v1.8.9
-	github.com/jackc/pgx/v5 v5.0.3
+	github.com/jackc/pgx/v5 v5.0.4
 	github.com/klauspost/compress v1.15.11
 	github.com/ory/dockertest/v3 v3.9.1
 	github.com/ostcar/topic v0.4.1
