@@ -19,6 +19,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
 	"golang.org/x/sys/unix"
 )
@@ -242,28 +243,13 @@ func initAuth(env map[string]string, messageBus auth.LogoutEventer) (http.Authen
 
 	switch method {
 	case "ticket":
-		tokenKey, err := secret(env, "auth_token_key")
-		if err != nil {
-			return nil, nil, fmt.Errorf("getting token secret: %w", err)
-		}
 
-		cookieKey, err := secret(env, "auth_cookie_key")
-		if err != nil {
-			return nil, nil, fmt.Errorf("getting cookie secret: %w", err)
-		}
+		lookup := environment.Getenvfunc(os.Getenv)
+		a, usedEnv, background := auth.New(lookup, messageBus)
 
-		url := fmt.Sprintf("%s://%s:%s", env["AUTH_PROTOCOL"], env["AUTH_HOST"], env["AUTH_PORT"])
-		a, err := auth.New(url, tokenKey, cookieKey)
-		if err != nil {
-			return nil, nil, fmt.Errorf("creating auth service: %w", err)
-		}
+		_ = usedEnv
 
-		backgroundtask := func(ctx context.Context) {
-			go a.ListenOnLogouts(ctx, messageBus, oserror.Handle)
-			go a.PruneOldData(ctx)
-		}
-
-		return a, backgroundtask, nil
+		return a, background, nil
 
 	case "fake":
 		fmt.Println("Auth Method: FakeAuth (User ID 1 for all requests)")

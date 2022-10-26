@@ -3,14 +3,26 @@ package auth_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/golang-jwt/jwt/v4"
 )
+
+func parseURL(raw string) (host, port, protocol string) {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		panic(fmt.Sprintf("parsing url %s: %v", raw, err))
+	}
+
+	return parsed.Hostname(), parsed.Port(), parsed.Scheme
+}
 
 func TestAuth(t *testing.T) {
 	const invalidSecret = "wrong-auth-dev-key"
@@ -63,10 +75,14 @@ func TestAuth(t *testing.T) {
 
 	authSRV := httptest.NewServer(&mockAuth{token: "NEWTOKEN"})
 	defer authSRV.Close()
-	a, err := auth.New(authSRV.URL, []byte(auth.DebugTokenKey), []byte(auth.DebugCookieKey))
-	if err != nil {
-		t.Fatalf("Can not create auth service: %v", err)
-	}
+
+	host, port, schema := parseURL(authSRV.URL)
+	env := environment.ForTests(map[string]string{
+		"AUTH_HOST":     host,
+		"AUTH_PORT":     port,
+		"AUTH_PROTOCOL": schema,
+	})
+	a, _, _ := auth.New(env, nil)
 
 	for _, tt := range []struct {
 		name    string
@@ -197,10 +213,7 @@ func TestAuth(t *testing.T) {
 }
 
 func TestFromContext(t *testing.T) {
-	a, err := auth.New("", []byte(""), []byte(""))
-	if err != nil {
-		t.Fatalf("Can not create auth serivce: %v", err)
-	}
+	a, _, _ := auth.New(environment.ForTests{}, nil)
 
 	t.Run("Empty Context", func(t *testing.T) {
 		defer func() {
@@ -237,10 +250,7 @@ func TestLogout(t *testing.T) {
 	logouter := NewLockoutEventMock()
 	defer logouter.Close()
 
-	a, err := auth.New("", []byte(""), []byte(""))
-	if err != nil {
-		t.Fatalf("Can not create auth serivce: %v", err)
-	}
+	a, _, _ := auth.New(environment.ForTests{}, nil)
 	go a.ListenOnLogouts(shutdownCtx, logouter, errHandler)
 
 	t.Run("Closing session", func(t *testing.T) {
@@ -316,7 +326,7 @@ func validSession(t *testing.T, opts ...validOption) (http.ResponseWriter, *http
 
 	validCookie, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sessionId": config.sessionID,
-	}).SignedString([]byte(""))
+	}).SignedString([]byte(auth.DebugCookieKey))
 	if err != nil {
 		t.Fatalf("Can not sign cookie token: %v", err)
 	}
@@ -325,7 +335,7 @@ func validSession(t *testing.T, opts ...validOption) (http.ResponseWriter, *http
 	validHeader, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId":    1,
 		"sessionId": config.sessionID,
-	}).SignedString([]byte(""))
+	}).SignedString([]byte(auth.DebugTokenKey))
 	if err != nil {
 		t.Fatalf("Can not sign token token: %v", err)
 	}

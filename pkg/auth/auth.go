@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/ostcar/topic"
 )
@@ -20,6 +21,15 @@ import (
 const (
 	DebugTokenKey  = "auth-dev-token-key"
 	DebugCookieKey = "auth-dev-cookie-key"
+)
+
+var (
+	envAuthHost     = environment.Variable{Key: "AUTH_HOST", Default: "localhost", Description: "Host of the auth service."}
+	envAuthPort     = environment.Variable{Key: "AUTH_PORT", Default: "9004", Description: "Port of the auth service."}
+	envAuthProtocol = environment.Variable{Key: "AUTH_PROTOCOL", Default: "http", Description: "Protocol of the auth service."}
+
+	envAuthToken  = environment.Variable{Key: "auth_token_key", Default: DebugTokenKey, Description: "Key to sign the JWT auth tocken."}
+	envAuthCookie = environment.Variable{Key: "auth_cookie_key", Default: DebugCookieKey, Description: "Key to sign the JWT auth cookie."}
 )
 
 // pruneTime defines how long a topic id will be valid. This should be higher
@@ -40,23 +50,45 @@ type Auth struct {
 
 	authServiceURL string
 
-	tokenKey  []byte
-	cookieKey []byte
+	tokenKey  string
+	cookieKey string
 }
 
 // New initializes an Auth service.
-func New(authServiceURL string, tokenKey, cookieKey []byte) (*Auth, error) {
+//
+// Returns the initialized Auth object, the used environment varialbes and a
+// function to be called in the background.
+func New(lookup environment.Getenver, messageBus LogoutEventer) (*Auth, []environment.Variable, func(context.Context)) {
+	url := fmt.Sprintf(
+		"%s://%s:%s",
+		envAuthProtocol.Value(lookup),
+		envAuthHost.Value(lookup),
+		envAuthPort.Value(lookup),
+	)
+
 	a := &Auth{
 		logedoutSessions: topic.New[string](),
-		authServiceURL:   authServiceURL,
-		tokenKey:         tokenKey,
-		cookieKey:        cookieKey,
+		authServiceURL:   url,
+		tokenKey:         envAuthToken.Secret(lookup),
+		cookieKey:        envAuthCookie.Secret(lookup),
 	}
 
 	// Make sure the topic is not empty
 	a.logedoutSessions.Publish("")
 
-	return a, nil
+	background := func(ctx context.Context) {
+		go a.ListenOnLogouts(ctx, messageBus, oserror.Handle)
+		go a.PruneOldData(ctx)
+	}
+
+	usedEnv := []environment.Variable{
+		envAuthHost,
+		envAuthPort,
+		envAuthPort, envAuthToken,
+		envAuthCookie,
+	}
+
+	return a, usedEnv, background
 }
 
 // Authenticate uses the headers from the given request to get the user id. The
@@ -201,7 +233,7 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 	encodedCookie := strings.TrimPrefix(cookie.Value, "bearer%20")
 
 	_, err = jwt.Parse(encodedCookie, func(token *jwt.Token) (interface{}, error) {
-		return a.cookieKey, nil
+		return []byte(a.cookieKey), nil
 	})
 	if err != nil {
 		var invalid *jwt.ValidationError
@@ -212,7 +244,7 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 	}
 
 	_, err = jwt.ParseWithClaims(encodedToken, payload, func(token *jwt.Token) (interface{}, error) {
-		return a.tokenKey, nil
+		return []byte(a.tokenKey), nil
 	})
 	if err != nil {
 		var invalid *jwt.ValidationError

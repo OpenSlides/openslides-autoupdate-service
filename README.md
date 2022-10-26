@@ -200,8 +200,6 @@ The Service uses the following environment variables:
 
 * `AUTOUPDATE_PORT`: Lets the service listen on port 9012. The default is
   `9012`.
-* `AUTOUPDATE_HOST`: The device where the service starts. The default is am
-  empty string which starts the service on any device.
 * `DATASTORE_READER_HOST`: Host of the datastore reader. The default is
   `localhost`.
 * `DATASTORE_READER_PORT`: Port of the datastore reader. The default is `9010`.
