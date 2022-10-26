@@ -30,8 +30,8 @@ var (
 	envAuthProtocol = environment.NewVariable("AUTH_PROTOCOL", "http", "Protocol of the auth service.")
 	envAuthFake     = environment.NewVariable("AUTH_Fake", "false", "Use user id 1 for every request. Ignores all other auth environment variables.")
 
-	envAuthToken  = environment.NewSecret("auth_token_key", DebugTokenKey, "Key to sign the JWT auth tocken.")
-	envAuthCookie = environment.NewSecret("auth_cookie_key", DebugCookieKey, "Key to sign the JWT auth cookie.")
+	envAuthToken  = environment.NewSecretWithDefault("auth_token_key", DebugTokenKey, "Key to sign the JWT auth tocken.")
+	envAuthCookie = environment.NewSecretWithDefault("auth_cookie_key", DebugCookieKey, "Key to sign the JWT auth cookie.")
 )
 
 // pruneTime defines how long a topic id will be valid. This should be higher

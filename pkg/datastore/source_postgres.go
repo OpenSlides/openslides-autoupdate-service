@@ -6,32 +6,59 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+var (
+	envPostgresHost     = environment.NewVariable("DATASTORE_DATABASE_HOST", "localhost", "Postgres Host.")
+	envPostgresPort     = environment.NewVariable("DATASTORE_DATABASE_PORT", "5432", "Postgres Post.")
+	envPostgresUser     = environment.NewVariable("DATASTORE_DATABASE_USER", "openslides", "Postgres User.")
+	envPostgresDatabase = environment.NewVariable("DATASTORE_DATABASE_NAME", "openslides", "Postgres Database.")
+	envPostgresPassword = environment.NewSecret("postgres_password", "Postgres Password.")
+)
+
 // SourcePostgres uses postgres to get the connections.
 type SourcePostgres struct {
-	pool *pgxpool.Pool
-	SourcePosition
+	pool    *pgxpool.Pool
+	updater Updater
 }
 
 // NewSourcePostgres initializes a SourcePostgres.
-func NewSourcePostgres(ctx context.Context, addr string, password string, positioner SourcePosition) (*SourcePostgres, error) {
+func NewSourcePostgres(ctx context.Context, lookup environment.Getenver, updater Updater) (*SourcePostgres, []environment.Variable, error) {
+	addr := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s",
+		envPostgresHost.Value(lookup),
+		envPostgresPassword.Value(lookup),
+		envPostgresHost.Value(lookup),
+		envPostgresPort.Value(lookup),
+		envPostgresDatabase.Value(lookup),
+	)
+
 	config, err := pgxpool.ParseConfig(addr)
 	if err != nil {
-		return nil, fmt.Errorf("parse config: %w", err)
+		return nil, nil, fmt.Errorf("parse config: %w", err)
 	}
 
-	config.ConnConfig.Password = password
 	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
-		return nil, fmt.Errorf("creating connection pool: %w", err)
+		return nil, nil, fmt.Errorf("creating connection pool: %w", err)
 	}
 
-	return &SourcePostgres{pool: pool, SourcePosition: positioner}, nil
+	source := SourcePostgres{pool: pool, updater: updater}
+
+	usedEnv := []environment.Variable{
+		envPostgresHost,
+		envPostgresPassword,
+		envPostgresHost,
+		envPostgresPort,
+		envPostgresDatabase,
+	}
+
+	return &source, usedEnv, nil
 }
 
 // Get fetches the keys from postgres.
@@ -96,6 +123,11 @@ func (p *SourcePostgres) Get(ctx context.Context, keys ...Key) (map[Key][]byte, 
 	}
 
 	return values, nil
+}
+
+// Update calls the updater.
+func (p *SourcePostgres) Update(ctx context.Context) (map[Key][]byte, error) {
+	return p.updater.Update(ctx)
 }
 
 func prepareQuery(keys []Key) (uniqueFieldsStr string, fieldIndex map[string]int, uniqueFQID []string) {

@@ -11,6 +11,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/jackc/pgx/v5"
 	"github.com/ory/dockertest/v3"
 )
@@ -77,7 +78,7 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			source, err := datastore.NewSourcePostgres(ctx, tp.Addr, "password", nil)
+			source, _, err := datastore.NewSourcePostgres(ctx, environment.ForTests(tp.Env), nil)
 			if err != nil {
 				t.Fatalf("NewSource(): %v", err)
 			}
@@ -124,7 +125,7 @@ func TestBigQuery(t *testing.T) {
 	}
 	defer tp.Close()
 
-	source, err := datastore.NewSourcePostgres(ctx, tp.Addr, "password", nil)
+	source, _, err := datastore.NewSourcePostgres(ctx, environment.ForTests(tp.Env), nil)
 	if err != nil {
 		t.Fatalf("NewSource(): %v", err)
 	}
@@ -159,7 +160,7 @@ type testPostgres struct {
 	dockerPool     *dockertest.Pool
 	dockerResource *dockertest.Resource
 
-	Addr string
+	Env map[string]string
 
 	pgxConfig *pgx.ConnConfig
 }
@@ -186,20 +187,21 @@ func newTestPostgres(ctx context.Context) (tp *testPostgres, err error) {
 	}
 
 	port := resource.GetPort("5432/tcp")
-	addr := fmt.Sprintf("postgres://postgres@localhost:%s/database", port)
+	addr := fmt.Sprintf("postgres://postgres:password@localhost:%s/database", port)
 	config, err := pgx.ParseConfig(addr)
 	if err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
-
-	config.Password = "password"
 
 	tp = &testPostgres{
 		dockerPool:     pool,
 		dockerResource: resource,
 		pgxConfig:      config,
 
-		Addr: addr,
+		Env: map[string]string{
+			"DATASTORE_DATABASE_HOST": "postgres",
+			"DATASTORE_DATABASE_PORT": port,
+		},
 	}
 
 	defer func() {

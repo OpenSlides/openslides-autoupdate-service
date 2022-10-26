@@ -200,17 +200,9 @@ The Service uses the following environment variables:
 
 * `AUTOUPDATE_PORT`: Lets the service listen on port 9012. The default is
   `9012`.
-* `DATASTORE_READER_HOST`: Host of the datastore reader. The default is
-  `localhost`.
-* `DATASTORE_READER_PORT`: Port of the datastore reader. The default is `9010`.
-* `DATASTORE_READER_PROTOCOL`: Protocol of the datastore reader. The default is
-  `http`.
 
 
-* `DATASTORE_DATABASE_HOST`: Postgres Host. The default is `localhost`.
-* `DATASTORE_DATABASE_PORT`: Postgres Port. The default is `5432`.
-* `DATASTORE_DATABASE_USER`: Postgres User. The default is `openslides`.
-* `DATASTORE_DATABASE_NAME`: Postgres Database. The default is `openslides`.
+
 * `VOTE_HOST`: Host of the vote-service. The default is `localhost`.
 * `VOTE_PORT`: Port of the vote-service. The default is `9013`.
 * `VOTE_PROTOCOL`: Protocol of the vote-service. The default is `http`.
@@ -227,16 +219,7 @@ The Service uses the following environment variables:
 Valid units for duration values are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 One number without a unit is interpreted as seconds. So `3` is the same as `3s`.
 
-### Secrets
 
-Secrets are filenames in the directory `SECRETS_PATH` (default:
-`/run/secrets/`). The service only starts if it can find each secret file and
-read its content. The default values are only used, if the environment variable
-`OPENSLIDES_DEVELOPMENT` is set.
-
-* `auth_token_key`: Key to sign the JWT auth tocken.
-* `auth_cookie_key`: Key to sign the JWT auth cookie.
-* `postgres_password`: Postgres password.
 
 
 ## Update models.yml

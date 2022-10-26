@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"time"
 )
 
 // Environment variables used to configure the environment.
@@ -35,7 +36,19 @@ func NewVariable(key, defaultValue, description string) Variable {
 }
 
 // NewSecret initializes a secret.
-func NewSecret(key, defaultValue, description string) Variable {
+func NewSecret(key, description string) Variable {
+	return Variable{
+		Key:         key,
+		Default:     "openslides",
+		Description: description,
+		isSecret:    true,
+	}
+}
+
+// NewSecretWithDefault initializes a secret with a secial default value.
+//
+// Try not to use this. The default value for all secrets should be 'openslides'.
+func NewSecretWithDefault(key, defaultValue, description string) Variable {
 	return Variable{
 		Key:         key,
 		Default:     defaultValue,
@@ -115,4 +128,14 @@ func (e ForTests) Getenv(key string) string {
 	}
 
 	return v
+}
+
+// ParseDuration is like time.ParseDuration but uses second as default unit.
+func ParseDuration(s string) (time.Duration, error) {
+	sec, err := strconv.Atoi(s)
+	if err == nil {
+		return time.Duration(sec) * time.Second, nil
+	}
+
+	return time.ParseDuration(s)
 }

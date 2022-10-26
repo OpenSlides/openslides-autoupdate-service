@@ -6,13 +6,24 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
+
+func parseURL(raw string) (host, port, protocol string) {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		panic(fmt.Sprintf("parsing url %s: %v", raw, err))
+	}
+
+	return parsed.Hostname(), parsed.Port(), parsed.Scheme
+}
 
 func TestSourceDefaultRequestCount(t *testing.T) {
 	var mu sync.Mutex
@@ -36,7 +47,21 @@ func TestSourceDefaultRequestCount(t *testing.T) {
 	} {
 		t.Run(fmt.Sprintf("%d-%d", tt.maxKeysPerRequest, tt.keyCount), func(t *testing.T) {
 			count = 0
-			sd := datastore.NewSourceDatastore(ts.URL, nil, tt.maxKeysPerRequest, time.Second)
+
+			host, port, schema := parseURL(ts.URL)
+			env := environment.ForTests(map[string]string{
+				"DATASTORE_READER_HOST":       host,
+				"DATASTORE_READER_PORT":       port,
+				"DATASTORE_READER_PROTOCOL":   schema,
+				"DATASTORE_TIMEOUT":           "1s",
+				"DATASTORE_MAX_PARALLEL_KEYS": strconv.Itoa(tt.maxKeysPerRequest),
+			})
+
+			sd, _, err := datastore.NewSourceDatastore(env, nil)
+			if err != nil {
+				t.Fatalf("Initialize: %v", err)
+			}
+
 			keys := make([]datastore.Key, tt.keyCount)
 			for i := 0; i < len(keys); i++ {
 				keys[i] = datastore.Key{Collection: "coll", ID: i + 1, Field: "field"}

@@ -44,11 +44,11 @@ func run() error {
 	environmentVariables = append(environmentVariables, redisEnv...)
 
 	// Datastore Service.
-	datastoreService, background, err := initDatastore(ctx, env, messageBus)
+	datastoreService, background, err := initDatastore(ctx, env, lookup, messageBus)
 	if err != nil {
 		return fmt.Errorf("creating datastore adapter: %w", err)
 	}
-	background(ctx)
+	go background(ctx)
 
 	// Register projector in datastore.
 	projector.Register(datastoreService, slide.Slides())
@@ -154,42 +154,21 @@ func interruptContext() (context.Context, context.CancelFunc) {
 	return ctx, cancel
 }
 
-func initDatastore(ctx context.Context, env map[string]string, mb *redis.Redis) (*datastore.Datastore, func(context.Context), error) {
-	maxParallel, err := strconv.Atoi(env["MAX_PARALLEL_KEYS"])
-	if err != nil {
-		return nil, nil, fmt.Errorf("environment variable MAX_PARALLEL_KEYS has to be a number, not %s", env["MAX_PARALLEL_KEYS"])
-	}
-
-	timeout, err := parseDuration(env["DATASTORE_TIMEOUT"])
-	if err != nil {
-		return nil, nil, fmt.Errorf("environment variable DATASTORE_TIMEOUT has to be a duration like 3s, not %s: %w", env["DATASTORE_TIMEOUT"], err)
-	}
-
-	datastoreSource := datastore.NewSourceDatastore(
-		env["DATASTORE_READER_PROTOCOL"]+"://"+env["DATASTORE_READER_HOST"]+":"+env["DATASTORE_READER_PORT"],
-		mb,
-		maxParallel,
-		timeout,
-	)
-	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCOL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
-
-	password, err := secret(env, "postgres_password")
-	if err != nil {
-		return nil, nil, fmt.Errorf("getting postgres password: %w", err)
-	}
-
-	addr := fmt.Sprintf(
-		"postgres://%s@%s:%s/%s",
-		env["DATASTORE_DATABASE_USER"],
-		env["DATASTORE_DATABASE_HOST"],
-		env["DATASTORE_DATABASE_PORT"],
-		env["DATASTORE_DATABASE_NAME"],
-	)
-
-	postgresSource, err := datastore.NewSourcePostgres(ctx, addr, string(password), datastoreSource)
+func initDatastore(ctx context.Context, env map[string]string, lookup environment.Getenver, mb *redis.Redis) (*datastore.Datastore, func(context.Context), error) {
+	postgresSource, _, err := datastore.NewSourcePostgres(ctx, lookup, mb)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating connection to postgres: %w", err)
 	}
+	// TODO env
+
+	datastoreSource, _, err := datastore.NewSourceDatastore(
+		lookup,
+		mb,
+	)
+	// TODO Err
+	// TODO env
+
+	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCOL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
 
 	ds := datastore.New(
 		postgresSource,
@@ -210,14 +189,4 @@ func initDatastore(ctx context.Context, env map[string]string, mb *redis.Redis) 
 	}
 
 	return ds, background, nil
-}
-
-func parseDuration(s string) (time.Duration, error) {
-	sec, err := strconv.Atoi(s)
-	if err == nil {
-		// TODO External error
-		return time.Duration(sec) * time.Second, nil
-	}
-
-	return time.ParseDuration(s)
 }
