@@ -9,8 +9,8 @@ import (
 
 // Environment variables used to configure the environment.
 var (
-	EnvSecretsPath = Variable{Key: "SECRETS_PATH", Default: "/run/secrets", Description: "Path where the secrets are stored."}
-	EnvDevelopment = Variable{Key: "OPENSLIDES_DEVELOPMENT", Default: "false", Description: "If set, the service uses the default secrets."}
+	envSecretsPath = NewVariable("SECRETS_PATH", "/run/secrets", "Path where the secrets are stored.")
+	envDevelopment = NewVariable("OPENSLIDES_DEVELOPMENT", "false", "If set, the service uses the default secrets.")
 )
 
 // Variable represents a environment variable. It can be used by the packages
@@ -21,10 +21,35 @@ type Variable struct {
 	Key         string
 	Default     string
 	Description string
+	isSecret    bool
+}
+
+// NewVariable initializes a environment.Variable
+func NewVariable(key, defaultValue, description string) Variable {
+	return Variable{
+		Key:         key,
+		Default:     defaultValue,
+		Description: description,
+		isSecret:    false,
+	}
+}
+
+// NewSecret initializes a secret.
+func NewSecret(key, defaultValue, description string) Variable {
+	return Variable{
+		Key:         key,
+		Default:     defaultValue,
+		Description: description,
+		isSecret:    true,
+	}
 }
 
 // Value returns the value for an environment.Variable using a Getenver.
 func (v Variable) Value(lookup Getenver) string {
+	if v.isSecret {
+		return v.secret(lookup)
+	}
+
 	if lookup == nil {
 		return v.Default
 	}
@@ -41,8 +66,8 @@ func (v Variable) Value(lookup Getenver) string {
 // It uses the environment varialbe SECRETS_PATH to find the secrets. The
 // defaults are only (and allways) used if OPENSLIDES_DEVELOPMENT is set to
 // true. If no Default is set, then "openslides" is used as default.
-func (v Variable) Secret(lookup Getenver) string {
-	useDev, _ := strconv.ParseBool(EnvDevelopment.Value(lookup))
+func (v Variable) secret(lookup Getenver) string {
+	useDev, _ := strconv.ParseBool(envDevelopment.Value(lookup))
 
 	if useDev {
 		defaultVal := v.Default
@@ -53,7 +78,7 @@ func (v Variable) Secret(lookup Getenver) string {
 		return defaultVal
 	}
 
-	path := path.Join(EnvSecretsPath.Value(lookup), v.Key)
+	path := path.Join(envSecretsPath.Value(lookup), v.Key)
 	secret, err := os.ReadFile(path)
 	if err != nil {
 		panic(fmt.Sprintf("Can not read secret in %s: %v", path, err))
@@ -85,7 +110,7 @@ type ForTests map[string]string
 func (e ForTests) Getenv(key string) string {
 	v := e[key]
 
-	if key == EnvDevelopment.Key && v == "" {
+	if key == envDevelopment.Key && v == "" {
 		return "true"
 	}
 

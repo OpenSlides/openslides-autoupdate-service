@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	envMessageBusHost = environment.Variable{Key: "MESSAGE_BUS_HOST", Default: "localhost", Description: "Host of the redis server."}
-	envMessageBusPort = environment.Variable{Key: "MESSAGE_BUS_PORT", Default: "6379", Description: "Port of the redis server."}
+	envMessageBusHost = environment.NewVariable("MESSAGE_BUS_HOST", "localhost", "Host of the redis server.")
+	envMessageBusPort = environment.NewVariable("MESSAGE_BUS_PORT", "6379", "Port of the redis server.")
 )
 
 // Pool hold the redis connection.

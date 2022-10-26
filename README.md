@@ -206,8 +206,7 @@ The Service uses the following environment variables:
 * `DATASTORE_READER_PROTOCOL`: Protocol of the datastore reader. The default is
   `http`.
 
-* `REDIS_TEST_CONN`: Test the redis connection on startup. Disable on the cloud
-  if redis needs more time to start then this service. The default is `true`.
+
 * `DATASTORE_DATABASE_HOST`: Postgres Host. The default is `localhost`.
 * `DATASTORE_DATABASE_PORT`: Postgres Port. The default is `5432`.
 * `DATASTORE_DATABASE_USER`: Postgres User. The default is `openslides`.
