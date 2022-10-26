@@ -37,12 +37,11 @@ func run() error {
 
 	env := defaultEnv()
 	lookup := environment.Getenvfunc(os.Getenv)
+	var environmentVariables []environment.Variable
 
 	// Redis as message bus for datastore and logout events.
-	messageBus, err := initRedis(env)
-	if err != nil {
-		return fmt.Errorf("init redis as message bus: %w", err)
-	}
+	messageBus, redisEnv := redis.New(lookup)
+	environmentVariables = append(environmentVariables, redisEnv...)
 
 	// Datastore Service.
 	datastoreService, background, err := initDatastore(ctx, env, messageBus)
@@ -55,10 +54,9 @@ func run() error {
 	projector.Register(datastoreService, slide.Slides())
 
 	// Auth Service.
-	authService, usedEnv, authBackground := auth.New(lookup, messageBus)
+	authService, authEnv, authBackground := auth.New(lookup, messageBus)
+	environmentVariables = append(environmentVariables, authEnv...)
 	go authBackground(ctx)
-
-	_ = usedEnv
 
 	// Autoupdate Service.
 	service := autoupdate.New(datastoreService, restrict.Middleware)
@@ -95,21 +93,9 @@ func defaultEnv() map[string]string {
 		"DATASTORE_READER_PORT":     "9010",
 		"DATASTORE_READER_PROTOCOL": "http",
 
-		"MESSAGE_BUS_HOST": "localhost",
-		"MESSAGE_BUS_PORT": "6379",
-		"REDIS_TEST_CONN":  "true",
-
 		"VOTE_HOST":     "localhost",
 		"VOTE_PORT":     "9013",
 		"VOTE_PROTOCOL": "http",
-
-		"AUTH":          "fake",
-		"AUTH_PROTOCOL": "http",
-		"AUTH_HOST":     "localhost",
-		"AUTH_PORT":     "9004",
-
-		"OPENSLIDES_DEVELOPMENT": "false",
-		"SECRETS_PATH":           "/run/secrets",
 
 		"METRIC_INTERVAL":   "5m",
 		"MAX_PARALLEL_KEYS": "1000",
@@ -166,18 +152,6 @@ func interruptContext() (context.Context, context.CancelFunc) {
 		os.Exit(2)
 	}()
 	return ctx, cancel
-}
-
-func initRedis(env map[string]string) (*redis.Redis, error) {
-	redisAddress := env["MESSAGE_BUS_HOST"] + ":" + env["MESSAGE_BUS_PORT"]
-	conn := redis.NewConnection(redisAddress)
-	if ok, _ := strconv.ParseBool(env["REDIS_TEST_CONN"]); ok {
-		if err := conn.TestConn(); err != nil {
-			return nil, fmt.Errorf("connect to redis: %w", err)
-		}
-	}
-
-	return &redis.Redis{Conn: conn}, nil
 }
 
 func initDatastore(ctx context.Context, env map[string]string, mb *redis.Redis) (*datastore.Datastore, func(context.Context), error) {

@@ -6,13 +6,14 @@ import (
 	"encoding/json"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
 )
 
 func getRedis() *redis.Redis {
 	var c redis.Connection = mockConn{}
 	if useRealRedis {
-		c = redis.NewConnection("localhost:6379")
+		c, _ = redis.NewConn(environment.ForTests{})
 	}
 	return &redis.Redis{Conn: c}
 }

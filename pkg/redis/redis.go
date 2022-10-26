@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
 const (
@@ -35,6 +36,14 @@ type Redis struct {
 	Conn             Connection
 	lastAutoupdateID string
 	lastLogoutID     string
+}
+
+// New initializes a Redis instance.
+func New(lookup environment.Getenver) (*Redis, []environment.Variable) {
+	conn, env := NewConn(lookup)
+	return &Redis{
+		Conn: conn,
+	}, env
 }
 
 // Update is a blocking function that returns, when there is new data.
