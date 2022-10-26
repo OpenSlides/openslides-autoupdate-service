@@ -130,7 +130,7 @@ func TestAuth(t *testing.T) {
 			},
 			0,
 			"",
-			"Invalid auth ticket",
+			"Invalid auth token",
 		},
 		{
 			"Valid cookie Invalid token",
@@ -142,7 +142,7 @@ func TestAuth(t *testing.T) {
 			},
 			0,
 			"",
-			"Invalid auth ticket",
+			"Invalid auth token",
 		},
 		{
 			"Valid cookie Valid token",

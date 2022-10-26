@@ -12,7 +12,6 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	ahttp "github.com/OpenSlides/openslides-autoupdate-service/internal/http"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 )
 
@@ -45,7 +44,7 @@ func TestKeysHandler(t *testing.T) {
 		},
 	}
 
-	ahttp.Autoupdate(mux, auth.Fake(1), connecter, nil)
+	ahttp.Autoupdate(mux, fakeAuth(1), connecter, nil)
 
 	req := httptest.NewRequest("GET", "/system/autoupdate?k=user/1/name,user/2/name", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()
@@ -76,7 +75,7 @@ func TestComplexHandler(t *testing.T) {
 		},
 	}
 
-	ahttp.Autoupdate(mux, auth.Fake(1), connecter, nil)
+	ahttp.Autoupdate(mux, fakeAuth(1), connecter, nil)
 
 	req := httptest.NewRequest(
 		"GET",
@@ -125,7 +124,7 @@ func TestErrors(t *testing.T) {
 			return map[datastore.Key][]byte{myKey1: []byte(`"bar"`)}, nil
 		},
 	}
-	ahttp.Autoupdate(mux, auth.Fake(1), connecter, nil)
+	ahttp.Autoupdate(mux, fakeAuth(1), connecter, nil)
 
 	for _, tt := range []struct {
 		name    string
@@ -243,7 +242,7 @@ func TestHistoryInformation(t *testing.T) {
 	hi := &HistoryInformationStub{
 		write: "my information",
 	}
-	ahttp.HistoryInformation(mux, auth.Fake(1), hi)
+	ahttp.HistoryInformation(mux, fakeAuth(1), hi)
 
 	resp := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/system/autoupdate/history_information?fqid=motion/42", nil)
@@ -272,7 +271,7 @@ func TestHistoryInformationNoFQID(t *testing.T) {
 	hi := &HistoryInformationStub{
 		write: "my information",
 	}
-	ahttp.HistoryInformation(mux, auth.Fake(1), hi)
+	ahttp.HistoryInformation(mux, fakeAuth(1), hi)
 
 	resp := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/system/autoupdate/history_information", nil)
@@ -294,7 +293,7 @@ func TestHistoryInformationError(t *testing.T) {
 	hi := &HistoryInformationStub{
 		err: fmt.Errorf("my error"),
 	}
-	ahttp.HistoryInformation(mux, auth.Fake(1), hi)
+	ahttp.HistoryInformation(mux, fakeAuth(1), hi)
 
 	resp := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/system/autoupdate/history_information?fqid=motion/42", nil)
@@ -309,4 +308,18 @@ func TestHistoryInformationError(t *testing.T) {
 	if body, _ := io.ReadAll(resp.Result().Body); strings.TrimSpace(string(body)) != expect {
 		t.Errorf("got body `%s`, expected `%s`", body, expect)
 	}
+}
+
+// fakeAuth implements the http.Authenticater interface. It allways returs the given
+// user id.
+type fakeAuth int
+
+// Authenticate does nothing.
+func (a fakeAuth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Context, error) {
+	return r.Context(), nil
+}
+
+// FromContext returns the uid the object was initialiced with.
+func (a fakeAuth) FromContext(ctx context.Context) int {
+	return int(a)
 }

@@ -36,6 +36,7 @@ func run() error {
 	defer cancel()
 
 	env := defaultEnv()
+	lookup := environment.Getenvfunc(os.Getenv)
 
 	// Redis as message bus for datastore and logout events.
 	messageBus, err := initRedis(env)
@@ -54,11 +55,10 @@ func run() error {
 	projector.Register(datastoreService, slide.Slides())
 
 	// Auth Service.
-	authService, authBackground, err := initAuth(env, messageBus)
-	if err != nil {
-		return fmt.Errorf("creating auth adapter: %w", err)
-	}
-	authBackground(ctx)
+	authService, usedEnv, authBackground := auth.New(lookup, messageBus)
+	go authBackground(ctx)
+
+	_ = usedEnv
 
 	// Autoupdate Service.
 	service := autoupdate.New(datastoreService, restrict.Middleware)
@@ -236,29 +236,6 @@ func initDatastore(ctx context.Context, env map[string]string, mb *redis.Redis) 
 	}
 
 	return ds, background, nil
-}
-
-func initAuth(env map[string]string, messageBus auth.LogoutEventer) (http.Authenticater, func(context.Context), error) {
-	method := env["AUTH"]
-
-	switch method {
-	case "ticket":
-
-		lookup := environment.Getenvfunc(os.Getenv)
-		a, usedEnv, background := auth.New(lookup, messageBus)
-
-		_ = usedEnv
-
-		return a, background, nil
-
-	case "fake":
-		fmt.Println("Auth Method: FakeAuth (User ID 1 for all requests)")
-		return auth.Fake(1), func(context.Context) {}, nil
-
-	default:
-		// TODO LAST ERROR
-		return nil, nil, fmt.Errorf("unknown auth method: %s", method)
-	}
 }
 
 func parseDuration(s string) (time.Duration, error) {

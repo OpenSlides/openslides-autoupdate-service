@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,6 +28,7 @@ var (
 	envAuthHost     = environment.Variable{Key: "AUTH_HOST", Default: "localhost", Description: "Host of the auth service."}
 	envAuthPort     = environment.Variable{Key: "AUTH_PORT", Default: "9004", Description: "Port of the auth service."}
 	envAuthProtocol = environment.Variable{Key: "AUTH_PROTOCOL", Default: "http", Description: "Protocol of the auth service."}
+	envAuthFake     = environment.Variable{Key: "AUTH_Fake", Default: "false", Description: "Use user id 1 for every request. Ignores all other auth environment variables."}
 
 	envAuthToken  = environment.Variable{Key: "auth_token_key", Default: DebugTokenKey, Description: "Key to sign the JWT auth tocken."}
 	envAuthCookie = environment.Variable{Key: "auth_cookie_key", Default: DebugCookieKey, Description: "Key to sign the JWT auth cookie."}
@@ -46,6 +48,8 @@ const (
 //
 // Has to be initialized with auth.New().
 type Auth struct {
+	fake bool
+
 	logedoutSessions *topic.Topic[string]
 
 	authServiceURL string
@@ -66,7 +70,10 @@ func New(lookup environment.Getenver, messageBus LogoutEventer) (*Auth, []enviro
 		envAuthPort.Value(lookup),
 	)
 
+	fake, _ := strconv.ParseBool(envAuthFake.Value(lookup))
+
 	a := &Auth{
+		fake:             fake,
 		logedoutSessions: topic.New[string](),
 		authServiceURL:   url,
 		tokenKey:         envAuthToken.Secret(lookup),
@@ -77,6 +84,10 @@ func New(lookup environment.Getenver, messageBus LogoutEventer) (*Auth, []enviro
 	a.logedoutSessions.Publish("")
 
 	background := func(ctx context.Context) {
+		if fake {
+			return
+		}
+
 		go a.ListenOnLogouts(ctx, messageBus, oserror.Handle)
 		go a.PruneOldData(ctx)
 	}
@@ -84,7 +95,9 @@ func New(lookup environment.Getenver, messageBus LogoutEventer) (*Auth, []enviro
 	usedEnv := []environment.Variable{
 		envAuthHost,
 		envAuthPort,
-		envAuthPort, envAuthToken,
+		envAuthPort,
+		envAuthFake,
+		envAuthToken,
 		envAuthCookie,
 	}
 
@@ -94,6 +107,10 @@ func New(lookup environment.Getenver, messageBus LogoutEventer) (*Auth, []enviro
 // Authenticate uses the headers from the given request to get the user id. The
 // returned context will be cancled, if the session is revoked.
 func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Context, error) {
+	if a.fake {
+		return r.Context(), nil
+	}
+
 	ctx := context.WithValue(r.Context(), authenticateCalled, "yes")
 
 	p := new(payload)
@@ -148,6 +165,10 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 //
 // Panics, if the context was not returned from Authenticate
 func (a *Auth) FromContext(ctx context.Context) int {
+	if a.fake {
+		return 1
+	}
+
 	initialized := ctx.Value(authenticateCalled)
 	if initialized == nil {
 		panic("call to auth.FromContext() without auth.Authenticate()")
@@ -206,7 +227,7 @@ func (a *Auth) PruneOldData(ctx context.Context) {
 	}
 }
 
-// loadToken loads and validates the ticket. If the token is expires, it tries
+// loadToken loads and validates the token. If the token is expires, it tries
 // to renews it and writes the new token to the responsewriter.
 func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Claims) error {
 	header := r.Header.Get(authHeader)
@@ -238,7 +259,7 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 	if err != nil {
 		var invalid *jwt.ValidationError
 		if errors.As(err, &invalid) {
-			return authError{"Invalid auth ticket", err}
+			return authError{"Invalid auth token", err}
 		}
 		return fmt.Errorf("validating auth cookie: %w", err)
 	}
@@ -258,7 +279,7 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 
 func (a *Auth) handleInvalidToken(ctx context.Context, invalid *jwt.ValidationError, w http.ResponseWriter, encodedToken, encodedCookie string) error {
 	if !tokenExpired(invalid.Errors) {
-		return authError{"Invalid auth ticket", invalid}
+		return authError{"Invalid auth token", invalid}
 	}
 
 	token, err := a.refreshToken(ctx, encodedToken, encodedCookie)

@@ -29,7 +29,6 @@ FROM base as development
 
 RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
 EXPOSE 9012
-ENV AUTH ticket
 
 CMD CompileDaemon -log-prefix=false -build="go build ./cmd/autoupdate" -command="./autoupdate"
 
@@ -45,6 +44,5 @@ LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-
 COPY --from=builder /root/autoupdate .
 COPY --from=builder /root/healthcheck .
 EXPOSE 9012
-ENV AUTH ticket
 ENTRYPOINT ["/autoupdate"]
 HEALTHCHECK CMD ["/healthcheck"]
