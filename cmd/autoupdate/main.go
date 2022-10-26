@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path"
 	"strconv"
 	"time"
 
@@ -42,7 +43,7 @@ func run() error {
 	}
 
 	// Datastore Service.
-	datastoreService, background, err := initDatastore(env, messageBus)
+	datastoreService, background, err := initDatastore(ctx, env, messageBus)
 	if err != nil {
 		return fmt.Errorf("creating datastore adapter: %w", err)
 	}
@@ -84,6 +85,11 @@ func defaultEnv() map[string]string {
 	defaults := map[string]string{
 		"AUTOUPDATE_PORT": "9012",
 
+		"DATASTORE_DATABASE_HOST": "localhost",
+		"DATASTORE_DATABASE_PORT": "5432",
+		"DATASTORE_DATABASE_USER": "openslides",
+		"DATASTORE_DATABASE_NAME": "openslides",
+
 		"DATASTORE_READER_HOST":     "localhost",
 		"DATASTORE_READER_PORT":     "9010",
 		"DATASTORE_READER_PROTOCOL": "http",
@@ -102,6 +108,7 @@ func defaultEnv() map[string]string {
 		"AUTH_PORT":     "9004",
 
 		"OPENSLIDES_DEVELOPMENT": "false",
+		"SECRETS_PATH":           "/run/secrets",
 
 		"METRIC_INTERVAL":   "5m",
 		"MAX_PARALLEL_KEYS": "1000",
@@ -117,8 +124,10 @@ func defaultEnv() map[string]string {
 	return defaults
 }
 
-func secret(name string, dev bool) ([]byte, error) {
-	if dev {
+func secret(env map[string]string, name string) ([]byte, error) {
+	useDev, _ := strconv.ParseBool(env["OPENSLIDES_DEVELOPMENT"])
+
+	if useDev {
 		debugSecred := "openslides"
 		switch name {
 		case "auth_token_key":
@@ -130,10 +139,11 @@ func secret(name string, dev bool) ([]byte, error) {
 		return []byte(debugSecred), nil
 	}
 
-	secret, err := os.ReadFile("/run/secrets/" + name)
+	path := path.Join(env["SECRETS_PATH"], name)
+	secret, err := os.ReadFile(path)
 	if err != nil {
 		// TODO EXTERMAL ERROR
-		return nil, fmt.Errorf("reading `/run/secrets/%s`: %w", name, err)
+		return nil, fmt.Errorf("reading `%s`: %w", path, err)
 	}
 
 	return secret, nil
@@ -169,7 +179,7 @@ func initRedis(env map[string]string) (*redis.Redis, error) {
 	return &redis.Redis{Conn: conn}, nil
 }
 
-func initDatastore(env map[string]string, mb *redis.Redis) (*datastore.Datastore, func(context.Context), error) {
+func initDatastore(ctx context.Context, env map[string]string, mb *redis.Redis) (*datastore.Datastore, func(context.Context), error) {
 	maxParallel, err := strconv.Atoi(env["MAX_PARALLEL_KEYS"])
 	if err != nil {
 		return nil, nil, fmt.Errorf("environment variable MAX_PARALLEL_KEYS has to be a number, not %s", env["MAX_PARALLEL_KEYS"])
@@ -188,8 +198,26 @@ func initDatastore(env map[string]string, mb *redis.Redis) (*datastore.Datastore
 	)
 	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCOL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
 
+	password, err := secret(env, "postgres_password")
+	if err != nil {
+		return nil, nil, fmt.Errorf("getting postgres password: %w", err)
+	}
+
+	addr := fmt.Sprintf(
+		"postgres://%s@%s:%s/%s",
+		env["DATASTORE_DATABASE_USER"],
+		env["DATASTORE_DATABASE_HOST"],
+		env["DATASTORE_DATABASE_PORT"],
+		env["DATASTORE_DATABASE_NAME"],
+	)
+
+	postgresSource, err := datastore.NewSourcePostgres(ctx, addr, string(password), datastoreSource)
+	if err != nil {
+		return nil, nil, fmt.Errorf("creating connection to postgres: %w", err)
+	}
+
 	ds := datastore.New(
-		datastoreSource,
+		postgresSource,
 		map[string]datastore.Source{
 			"poll/vote_count": voteCountSource,
 		},
@@ -214,14 +242,12 @@ func initAuth(env map[string]string, messageBus auth.LogoutEventer) (http.Authen
 
 	switch method {
 	case "ticket":
-		useDev, _ := strconv.ParseBool(env["OPENSLIDES_DEVELOPMENT"])
-
-		tokenKey, err := secret("auth_token_key", useDev)
+		tokenKey, err := secret(env, "auth_token_key")
 		if err != nil {
 			return nil, nil, fmt.Errorf("getting token secret: %w", err)
 		}
 
-		cookieKey, err := secret("auth_cookie_key", useDev)
+		cookieKey, err := secret(env, "auth_cookie_key")
 		if err != nil {
 			return nil, nil, fmt.Errorf("getting cookie secret: %w", err)
 		}

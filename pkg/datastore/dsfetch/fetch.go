@@ -51,18 +51,18 @@ func (r *Fetch) Execute(ctx context.Context) error {
 		return r.err
 	}
 
-	for fqfield, value := range data {
-		if fqfield.Field == "id" && value == nil {
-			r.err = DoesNotExistError(fqfield)
+	for key, value := range data {
+		if data[key.IDField()] == nil {
+			r.err = DoesNotExistError(key)
 			return r.err
 		}
 
-		exec := r.requested[fqfield]
+		exec := r.requested[key]
 		if exec == nil {
 			continue
 		}
 		if err := exec.execute(value); err != nil {
-			r.err = fmt.Errorf("executing field %q: %w", fqfield, err)
+			r.err = fmt.Errorf("executing field %q: %w", key, err)
 			return r.err
 		}
 	}

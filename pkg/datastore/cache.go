@@ -90,7 +90,7 @@ func (c *cache) fetchMissing(ctx context.Context, keys []Key, set cacheSetFunc) 
 	// when the context is done. Other calls could also request it.
 	errChan := make(chan error, 1)
 	go func() {
-		err := set(keys, func(data map[Key][]byte) {
+		err := set(missingKeys, func(data map[Key][]byte) {
 			for key, value := range data {
 				if string(value) == "null" {
 					data[key] = nil
@@ -101,14 +101,14 @@ func (c *cache) fetchMissing(ctx context.Context, keys []Key, set cacheSetFunc) 
 		})
 
 		if err != nil {
-			c.data.UnMarkPending(keys...)
+			c.data.UnMarkPending(missingKeys...)
 			errChan <- fmt.Errorf("fetching missing keys: %w", err)
 			return
 		}
 
 		// Make sure all pending keys are closed. Make also sure, that
 		// missing keys are set to nil.
-		c.data.SetEmptyIfPending(keys...)
+		c.data.SetEmptyIfPending(missingKeys...)
 
 		errChan <- nil
 	}()
