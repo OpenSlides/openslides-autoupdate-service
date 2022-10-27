@@ -19,7 +19,7 @@ func TestSingleDataEmptyValues(t *testing.T) {
 	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 	`))
-	s := autoupdate.New(ds, RestrictAllowed)
+	s, _ := autoupdate.New(ds, RestrictAllowed)
 
 	kb, err := keysbuilder.FromKeys("user/1/username")
 	if err != nil {
@@ -43,7 +43,7 @@ func TestHistoryInformation(t *testing.T) {
 	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 	`))
-	s := autoupdate.New(ds, RestrictAllowed)
+	s, _ := autoupdate.New(ds, RestrictAllowed)
 
 	buf := new(bytes.Buffer)
 	err := s.HistoryInformation(ctx, 1, "collection/1", buf)
@@ -69,7 +69,7 @@ func TestHistoryInformationWrongFQID(t *testing.T) {
 	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 	`))
-	s := autoupdate.New(ds, RestrictAllowed)
+	s, _ := autoupdate.New(ds, RestrictAllowed)
 
 	buf := new(bytes.Buffer)
 	err := s.HistoryInformation(ctx, 1, "collection", buf)
@@ -95,7 +95,7 @@ func TestHistoryInformationSuperAdminOnMeetingCollection(t *testing.T) {
 
 		motion/5/meeting_id: 1
 	`))
-	s := autoupdate.New(ds, RestrictAllowed)
+	s, _ := autoupdate.New(ds, RestrictAllowed)
 
 	buf := new(bytes.Buffer)
 	err := s.HistoryInformation(ctx, 1, "motion/5", buf)

@@ -76,7 +76,7 @@ type Autoupdate struct {
 //
 // You should call `go a.PruneOldData()` and `go a.ResetCache()` after creating
 // the service.
-func New(ds Datastore, restricter RestrictMiddleware) *Autoupdate {
+func New(ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context.Context)) {
 	a := &Autoupdate{
 		datastore:  ds,
 		topic:      topic.New[datastore.Key](),
@@ -94,7 +94,12 @@ func New(ds Datastore, restricter RestrictMiddleware) *Autoupdate {
 		return nil
 	})
 
-	return a
+	background := func(ctx context.Context) {
+		go a.PruneOldData(ctx)
+		go a.ResetCache(ctx)
+	}
+
+	return a, background
 }
 
 // DataProvider is a function that returns the next data for a user.

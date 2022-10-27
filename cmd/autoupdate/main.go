@@ -1,14 +1,9 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
-	"os/signal"
-	"path"
-	"strconv"
-	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/http"
@@ -21,7 +16,11 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
-	"golang.org/x/sys/unix"
+)
+
+var (
+	envAutoupdatePort = environment.NewVariable("AUTOUPDATE_PORT", "9012", "Port on which the service listen on.")
+	envMetricInterval = environment.NewVariable("METRIC_INTERVAL", "5m", "Time in how often the metrics are gathered. Zero disables the metrics.")
 )
 
 func main() {
@@ -32,10 +31,9 @@ func main() {
 }
 
 func run() error {
-	ctx, cancel := interruptContext()
+	ctx, cancel := environment.InterruptContext()
 	defer cancel()
 
-	env := defaultEnv()
 	lookup := environment.Getenvfunc(os.Getenv)
 	var environmentVariables []environment.Variable
 
@@ -44,13 +42,14 @@ func run() error {
 	environmentVariables = append(environmentVariables, redisEnv...)
 
 	// Datastore Service.
-	datastoreService, background, err := initDatastore(ctx, env, lookup, messageBus)
+	datastoreService, dsEnv, dsBackground, err := datastore.New(ctx, lookup, messageBus, datastore.WithVoteCount(), datastore.WithHistory())
 	if err != nil {
-		return fmt.Errorf("creating datastore adapter: %w", err)
+		return fmt.Errorf("init datastore: %w", err)
 	}
-	go background(ctx)
+	environmentVariables = append(environmentVariables, dsEnv...)
+	go dsBackground(ctx)
 
-	// Register projector in datastore.
+	// Register projector in datastore. (TODO: Should be an option from datastore.New)
 	projector.Register(datastoreService, slide.Slides())
 
 	// Auth Service.
@@ -59,15 +58,14 @@ func run() error {
 	go authBackground(ctx)
 
 	// Autoupdate Service.
-	service := autoupdate.New(datastoreService, restrict.Middleware)
-	go service.PruneOldData(ctx)
-	go service.ResetCache(ctx)
+	service, auBackground := autoupdate.New(datastoreService, restrict.Middleware)
+	go auBackground(ctx)
 
 	// Start metrics.
 	metric.Register(metric.Runtime)
-	metricTime, err := parseDuration(env["METRIC_INTERVAL"])
+	metricTime, err := environment.ParseDuration(envMetricInterval.Value(lookup))
 	if err != nil {
-		return fmt.Errorf("invalid value for `METRIC_INTERVAL`, expected duration got %s: %w", env["METRIC_INTERVAL"], err)
+		return fmt.Errorf("invalid value for `METRIC_INTERVAL`, expected duration got %s: %w", envMetricInterval.Value(lookup), err)
 	}
 
 	if metricTime > 0 {
@@ -75,118 +73,7 @@ func run() error {
 	}
 
 	// Start http server.
-	listenAddr := ":" + env["AUTOUPDATE_PORT"]
+	listenAddr := ":" + envAutoupdatePort.Value(lookup)
 	fmt.Printf("Listen on %s\n", listenAddr)
 	return http.Run(ctx, listenAddr, authService, service)
-}
-
-func defaultEnv() map[string]string {
-	defaults := map[string]string{
-		"AUTOUPDATE_PORT": "9012",
-
-		"DATASTORE_DATABASE_HOST": "localhost",
-		"DATASTORE_DATABASE_PORT": "5432",
-		"DATASTORE_DATABASE_USER": "openslides",
-		"DATASTORE_DATABASE_NAME": "openslides",
-
-		"DATASTORE_READER_HOST":     "localhost",
-		"DATASTORE_READER_PORT":     "9010",
-		"DATASTORE_READER_PROTOCOL": "http",
-
-		"VOTE_HOST":     "localhost",
-		"VOTE_PORT":     "9013",
-		"VOTE_PROTOCOL": "http",
-
-		"METRIC_INTERVAL":   "5m",
-		"MAX_PARALLEL_KEYS": "1000",
-		"DATASTORE_TIMEOUT": "3s",
-	}
-
-	for k := range defaults {
-		e, ok := os.LookupEnv(k)
-		if ok {
-			defaults[k] = e
-		}
-	}
-	return defaults
-}
-
-func secret(env map[string]string, name string) ([]byte, error) {
-	useDev, _ := strconv.ParseBool(env["OPENSLIDES_DEVELOPMENT"])
-
-	if useDev {
-		debugSecred := "openslides"
-		switch name {
-		case "auth_token_key":
-			debugSecred = auth.DebugTokenKey
-		case "auth_cookie_key":
-			debugSecred = auth.DebugCookieKey
-		}
-
-		return []byte(debugSecred), nil
-	}
-
-	path := path.Join(env["SECRETS_PATH"], name)
-	secret, err := os.ReadFile(path)
-	if err != nil {
-		// TODO EXTERMAL ERROR
-		return nil, fmt.Errorf("reading `%s`: %w", path, err)
-	}
-
-	return secret, nil
-}
-
-// interruptContext works like signal.NotifyContext. It returns a context that
-// is canceled, when a signal is received.
-//
-// It listens on os.Interrupt and unix.SIGTERM. If the signal is received two
-// times, os.Exit(2) is called.
-func interruptContext() (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		sig := make(chan os.Signal, 1)
-		signal.Notify(sig, os.Interrupt, unix.SIGTERM)
-		<-sig
-		cancel()
-		<-sig
-		os.Exit(2)
-	}()
-	return ctx, cancel
-}
-
-func initDatastore(ctx context.Context, env map[string]string, lookup environment.Getenver, mb *redis.Redis) (*datastore.Datastore, func(context.Context), error) {
-	postgresSource, _, err := datastore.NewSourcePostgres(ctx, lookup, mb)
-	if err != nil {
-		return nil, nil, fmt.Errorf("creating connection to postgres: %w", err)
-	}
-	// TODO env
-
-	datastoreSource, _, err := datastore.NewSourceDatastore(
-		lookup,
-		mb,
-	)
-	// TODO Err
-	// TODO env
-
-	voteCountSource := datastore.NewVoteCountSource(env["VOTE_PROTOCOL"] + "://" + env["VOTE_HOST"] + ":" + env["VOTE_PORT"])
-
-	ds := datastore.New(
-		postgresSource,
-		map[string]datastore.Source{
-			"poll/vote_count": voteCountSource,
-		},
-		datastoreSource,
-	)
-
-	eventer := func() (<-chan time.Time, func() bool) {
-		timer := time.NewTimer(time.Second)
-		return timer.C, timer.Stop
-	}
-
-	background := func(ctx context.Context) {
-		go voteCountSource.Connect(ctx, eventer, oserror.Handle)
-		go ds.ListenOnUpdates(ctx, oserror.Handle)
-	}
-
-	return ds, background, nil
 }

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"gopkg.in/yaml.v3"
 )
 
@@ -132,9 +133,14 @@ type MockDatastore struct {
 // It is a wrapper around the datastore.Datastore object.
 func NewMockDatastore(data map[datastore.Key][]byte) *MockDatastore {
 	source := NewStubWithUpdate(data, NewCounter)
+	rawDS, _, _, err := datastore.New(context.Background(), environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	if err != nil {
+		panic(err)
+	}
+
 	ds := &MockDatastore{
 		source:    source,
-		Datastore: datastore.New(source, nil, source),
+		Datastore: rawDS,
 	}
 
 	ds.counter = source.Middlewares()[0].(*Counter)

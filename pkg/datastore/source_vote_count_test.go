@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
 func TestVoteCountSourceGet(t *testing.T) {
@@ -24,7 +25,14 @@ func TestVoteCountSourceGet(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := datastore.NewVoteCountSource(ts.URL)
+	host, port, schema := parseURL(ts.URL)
+	env := environment.ForTests(map[string]string{
+		"VOTE_HOST":     host,
+		"VOTE_PORT":     port,
+		"VOTE_PROTOCOL": schema,
+	})
+
+	source, _ := datastore.NewVoteCountSource(env)
 	eventer := func() (<-chan time.Time, func() bool) { return make(chan time.Time), func() bool { return true } }
 	go source.Connect(ctx, eventer, func(error) {})
 
@@ -106,7 +114,14 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := datastore.NewVoteCountSource(ts.URL)
+	host, port, schema := parseURL(ts.URL)
+	env := environment.ForTests(map[string]string{
+		"VOTE_HOST":     host,
+		"VOTE_PORT":     port,
+		"VOTE_PROTOCOL": schema,
+	})
+
+	source, _ := datastore.NewVoteCountSource(env)
 	eventer := func() (<-chan time.Time, func() bool) { return make(chan time.Time), func() bool { return true } }
 	go source.Connect(ctx, eventer, func(error) {})
 
@@ -185,7 +200,14 @@ func TestReconnect(t *testing.T) {
 		return event, func() bool { return false }
 	}
 
-	source := datastore.NewVoteCountSource(ts.URL)
+	host, port, schema := parseURL(ts.URL)
+	env := environment.ForTests(map[string]string{
+		"VOTE_HOST":     host,
+		"VOTE_PORT":     port,
+		"VOTE_PROTOCOL": schema,
+	})
+
+	source, _ := datastore.NewVoteCountSource(env)
 	go source.Connect(ctx, eventer, func(error) {})
 
 	sender <- struct{}{} // Close connection so there is a reconnect
@@ -215,7 +237,14 @@ func TestReconnectWhenDeletedBetween(t *testing.T) {
 		return event, func() bool { return false }
 	}
 
-	source := datastore.NewVoteCountSource(ts.URL)
+	host, port, schema := parseURL(ts.URL)
+	env := environment.ForTests(map[string]string{
+		"VOTE_HOST":     host,
+		"VOTE_PORT":     port,
+		"VOTE_PROTOCOL": schema,
+	})
+
+	source, _ := datastore.NewVoteCountSource(env)
 	go source.Connect(ctx, eventer, func(error) {})
 	msg <- `{"1":23,"2":42}`
 	msg <- `{"1":23}`
@@ -244,7 +273,14 @@ func TestGetWithoutConnect(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := datastore.NewVoteCountSource(ts.URL)
+	host, port, schema := parseURL(ts.URL)
+	env := environment.ForTests(map[string]string{
+		"VOTE_HOST":     host,
+		"VOTE_PORT":     port,
+		"VOTE_PROTOCOL": schema,
+	})
+
+	source, _ := datastore.NewVoteCountSource(env)
 
 	key := datastore.MustKey("poll/1/vote_count")
 	data, err := source.Get(ctx, key)

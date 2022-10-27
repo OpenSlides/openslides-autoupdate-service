@@ -9,8 +9,10 @@ func (d *Datastore) metric(values metric.Container) {
 	values.Add("datastore_cache_size", d.cache.size())
 	values.Add("datastore_get_calls", int(d.metricGetHitCount))
 
-	ds, ok := d.defaultSource.(*SourceDatastore)
-	if ok {
-		values.Add("datastore_hits", int(ds.metricDSHitCount))
+	if d.history != nil {
+		ds, ok := d.history.(*SourceDatastore)
+		if ok {
+			values.Add("datastore_hits", int(ds.metricDSHitCount))
+		}
 	}
 }

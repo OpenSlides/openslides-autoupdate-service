@@ -42,16 +42,15 @@ type Updater interface {
 // SourceDatastore receives the data from the datastore-reader via http and
 // updates via the redis message bus.
 type SourceDatastore struct {
-	url     string
-	client  *http.Client
-	updater Updater
+	url    string
+	client *http.Client
 
 	metricDSHitCount  uint64
 	maxKeysPerRequest int
 }
 
 // NewSourceDatastore initializes a SourceDatastore.
-func NewSourceDatastore(lookup environment.Getenver, updater Updater) (*SourceDatastore, []environment.Variable, error) {
+func NewSourceDatastore(lookup environment.Getenver) (*SourceDatastore, []environment.Variable, error) {
 	url := fmt.Sprintf(
 		"%s://%s:%s",
 		envDatastoreProtocol.Value(lookup),
@@ -77,7 +76,6 @@ func NewSourceDatastore(lookup environment.Getenver, updater Updater) (*SourceDa
 		client: &http.Client{
 			Timeout: timeout,
 		},
-		updater:           updater,
 		maxKeysPerRequest: maxParallel,
 	}
 
@@ -90,16 +88,11 @@ func NewSourceDatastore(lookup environment.Getenver, updater Updater) (*SourceDa
 	return &source, usedEnv, nil
 }
 
-// Get fetches the request keys from the datastore-reader.
-func (s *SourceDatastore) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
-	atomic.AddUint64(&s.metricDSHitCount, 1)
-	return s.GetPosition(ctx, 0, keys...)
-}
-
 // GetPosition gets keys from the datastore at a specifi position.
 //
 // Position 0 means the current position.
 func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
+	atomic.AddUint64(&s.metricDSHitCount, 1)
 	if len(keys) <= s.maxKeysPerRequest {
 		return s.getPosition(ctx, position, keys...)
 	}
@@ -214,11 +207,6 @@ func (s *SourceDatastore) getPosition(ctx context.Context, position int, keys ..
 	}
 
 	return responseData, nil
-}
-
-// Update updates the data from the redis message bus.
-func (s *SourceDatastore) Update(ctx context.Context) (map[Key][]byte, error) {
-	return s.updater.Update(ctx)
 }
 
 // HistoryInformation requests the history information for an fqid from the datastore.

@@ -18,6 +18,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
 const (
@@ -77,26 +78,53 @@ type Datastore struct {
 }
 
 // New returns a new Datastore object.
-func New(defaultSource Source, keySource map[string]Source, history HistoryInformationer) *Datastore {
-	if keySource == nil {
-		keySource = make(map[string]Source)
-	}
-
-	d := &Datastore{
+// func New(defaultSource Source, keySource map[string]Source, history HistoryInformationer) *Datastore {
+func New(ctx context.Context, lookup environment.Getenver, mb Updater, options ...Option) (*Datastore, []environment.Variable, func(context.Context), error) {
+	var usedEnv []environment.Variable
+	ds := Datastore{
 		cache: newCache(),
 
-		defaultSource: defaultSource,
-		keySource:     keySource,
+		keySource: make(map[string]Source),
 
 		calculatedFields: make(map[string]func(ctx context.Context, key Key, changed map[Key][]byte) ([]byte, error)),
 		calculatedKeys:   make(map[Key]string),
-
-		history: history,
 	}
 
-	metric.Register(d.metric)
+	var backgroundFuncs []func(context.Context)
+	for _, o := range options {
+		ev, bgFunc, err := o(&ds, lookup)
+		if err != nil {
+			return nil, nil, nil, err
+		}
 
-	return d
+		usedEnv = append(usedEnv, ev...)
+		backgroundFuncs = append(backgroundFuncs, bgFunc)
+	}
+
+	if ds.defaultSource == nil {
+		sourcePostgres, envPostgres, err := NewSourcePostgres(ctx, lookup, mb)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("initilizing postgres source: %w", err)
+		}
+		ds.defaultSource = sourcePostgres
+		usedEnv = append(usedEnv, envPostgres...)
+	}
+
+	metric.Register(ds.metric)
+
+	background := func(ctx context.Context) {
+		go ds.ListenOnUpdates(ctx, oserror.Handle)
+
+		for _, f := range backgroundFuncs {
+			if f == nil {
+				continue
+			}
+
+			go f(ctx)
+		}
+	}
+
+	return &ds, usedEnv, background, nil
 }
 
 // Get returns the value for one or many keys.

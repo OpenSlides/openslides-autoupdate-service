@@ -9,6 +9,14 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
+)
+
+var (
+	envVoteHost     = environment.NewVariable("VOTE_HOST", "localhost", "Host of the vote-service.")
+	envVotePort     = environment.NewVariable("VOTE_PORT", "9013", "Port of the vote-service.")
+	envVoteProtocol = environment.NewVariable("VOTE_PROTOCOL", "http", "Protocol of the vote-service.")
 )
 
 const voteCountPath = "/internal/vote/vote_count"
@@ -25,12 +33,27 @@ type VoteCountSource struct {
 }
 
 // NewVoteCountSource initializes the object.
-func NewVoteCountSource(url string) *VoteCountSource {
-	return &VoteCountSource{
+func NewVoteCountSource(lookup environment.Getenver) (*VoteCountSource, []environment.Variable) {
+	url := fmt.Sprintf(
+		"%s://%s:%s",
+		envVoteProtocol.Value(lookup),
+		envVoteHost.Value(lookup),
+		envVoteProtocol.Value(lookup),
+	)
+
+	source := VoteCountSource{
 		voteServiceURL: url,
 		client:         &http.Client{},
 		update:         make(chan map[int]int, 1),
 	}
+
+	usedEnv := []environment.Variable{
+		envVoteHost,
+		envVoteProtocol,
+		envVoteProtocol,
+	}
+
+	return &source, usedEnv
 }
 
 // Connect creates a connection to the vote service and makes sure, it stays

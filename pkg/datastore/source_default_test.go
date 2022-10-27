@@ -57,7 +57,7 @@ func TestSourceDefaultRequestCount(t *testing.T) {
 				"DATASTORE_MAX_PARALLEL_KEYS": strconv.Itoa(tt.maxKeysPerRequest),
 			})
 
-			sd, _, err := datastore.NewSourceDatastore(env, nil)
+			sd, _, err := datastore.NewSourceDatastore(env)
 			if err != nil {
 				t.Fatalf("Initialize: %v", err)
 			}
@@ -67,7 +67,7 @@ func TestSourceDefaultRequestCount(t *testing.T) {
 				keys[i] = datastore.Key{Collection: "coll", ID: i + 1, Field: "field"}
 			}
 
-			got, err := sd.Get(context.Background(), keys...)
+			got, err := sd.GetPosition(context.Background(), 0, keys...)
 			if err != nil {
 				t.Fatalf("Get: %v", err)
 			}

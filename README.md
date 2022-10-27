@@ -194,32 +194,7 @@ attribute `position`. See above.
 
 ## Configuration
 
-### Environment variables
-
-The Service uses the following environment variables:
-
-* `AUTOUPDATE_PORT`: Lets the service listen on port 9012. The default is
-  `9012`.
-
-
-
-* `VOTE_HOST`: Host of the vote-service. The default is `localhost`.
-* `VOTE_PORT`: Port of the vote-service. The default is `9013`.
-* `VOTE_PROTOCOL`: Protocol of the vote-service. The default is `http`.
-
-* `METRIC_INTERVAL`: Time in how often the metrics are gathered. Zero disables
-  the metrics. The default is `5m`.
-* `MAX_PARALLEL_KEYS`: Max keys that are send in one request to the datastore.
-  The default is `1000`.
-* `DATASTORE_TIMEOUT`: Time until a request to the datastore times out. The
-  default is `3s`.
-* `SECRETS_PATH`: Path where the secrets are stored. The default is
-  `/run/secrets/`.
-
-Valid units for duration values are "ns", "us" (or "µs"), "ms", "s", "m", "h".
-One number without a unit is interpreted as seconds. So `3` is the same as `3s`.
-
-
+TODO
 
 
 ## Update models.yml

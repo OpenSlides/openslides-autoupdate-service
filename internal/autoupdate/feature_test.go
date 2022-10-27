@@ -77,7 +77,7 @@ gb/1:
 
 func TestFeatures(t *testing.T) {
 	datastore := dsmock.NewMockDatastore(dsmock.YAMLData(dataSet))
-	service := autoupdate.New(datastore, RestrictAllowed)
+	service, _ := autoupdate.New(datastore, RestrictAllowed)
 
 	for _, tt := range []struct {
 		name string

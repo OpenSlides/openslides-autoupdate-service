@@ -1,11 +1,15 @@
 package environment
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"path"
 	"strconv"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 // Environment variables used to configure the environment.
@@ -138,4 +142,22 @@ func ParseDuration(s string) (time.Duration, error) {
 	}
 
 	return time.ParseDuration(s)
+}
+
+// InterruptContext works like signal.NotifyContext. It returns a context that
+// is canceled, when a signal is received.
+//
+// It listens on os.Interrupt and unix.SIGTERM. If the signal is received two
+// times, os.Exit(2) is called.
+func InterruptContext() (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, os.Interrupt, unix.SIGTERM)
+		<-sig
+		cancel()
+		<-sig
+		os.Exit(2)
+	}()
+	return ctx, cancel
 }
