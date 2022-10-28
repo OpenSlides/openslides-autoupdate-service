@@ -79,13 +79,13 @@ type Datastore struct {
 
 // New returns a new Datastore object.
 // func New(defaultSource Source, keySource map[string]Source, history HistoryInformationer) *Datastore {
-func New(ctx context.Context, lookup environment.Getenver, mb Updater, options ...Option) (*Datastore, func(context.Context), error) {
+func New(lookup environment.Getenver, mb Updater, options ...Option) (*Datastore, func(context.Context), error) {
 	ds := Datastore{
 		cache: newCache(),
 
 		keySource: make(map[string]Source),
 
-		calculatedFields: make(map[string]func(ctx context.Context, key Key, changed map[Key][]byte) ([]byte, error)),
+		calculatedFields: make(map[string]func(context.Context, Key, map[Key][]byte) ([]byte, error)),
 		calculatedKeys:   make(map[Key]string),
 	}
 
@@ -100,7 +100,7 @@ func New(ctx context.Context, lookup environment.Getenver, mb Updater, options .
 	}
 
 	if ds.defaultSource == nil {
-		sourcePostgres, err := NewSourcePostgres(ctx, lookup, mb)
+		sourcePostgres, err := NewSourcePostgres(lookup, mb)
 		if err != nil {
 			return nil, nil, fmt.Errorf("initilizing postgres source: %w", err)
 		}

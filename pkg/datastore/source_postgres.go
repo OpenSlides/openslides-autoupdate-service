@@ -26,7 +26,7 @@ type SourcePostgres struct {
 }
 
 // NewSourcePostgres initializes a SourcePostgres.
-func NewSourcePostgres(ctx context.Context, lookup environment.Getenver, updater Updater) (*SourcePostgres, error) {
+func NewSourcePostgres(lookup environment.Getenver, updater Updater) (*SourcePostgres, error) {
 	addr := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s",
 		envPostgresHost.Value(lookup),

@@ -47,7 +47,7 @@ func main() {
 func run(ctx context.Context) error {
 	lookup := environment.Getenvfunc(os.Getenv)
 
-	service, background, err := initService(ctx, lookup)
+	service, background, err := initService(lookup)
 	if err != nil {
 		return fmt.Errorf("init services: %w", err)
 	}
@@ -59,7 +59,7 @@ func run(ctx context.Context) error {
 func buildDoku(ctx context.Context) error {
 	lookup := new(environment.ForDocu)
 
-	_, _, err := initService(ctx, lookup)
+	_, _, err := initService(lookup)
 	if err != nil {
 		return fmt.Errorf("init services: %w", err)
 	}
@@ -76,14 +76,14 @@ func buildDoku(ctx context.Context) error {
 // initService build all packages needed for the autoupdate serive.
 //
 // Returns a list of all used environment variables, a task to run the server and a function to be callend in the background.
-func initService(ctx context.Context, lookup environment.Getenver) (func(context.Context) error, func(ctx context.Context), error) {
+func initService(lookup environment.Getenver) (func(context.Context) error, func(ctx context.Context), error) {
 	var backgroundTasks []func(context.Context)
 
 	// Redis as message bus for datastore and logout events.
 	messageBus := redis.New(lookup)
 
 	// Datastore Service.
-	datastoreService, dsBackground, err := datastore.New(ctx, lookup, messageBus, datastore.WithVoteCount(), datastore.WithHistory())
+	datastoreService, dsBackground, err := datastore.New(lookup, messageBus, datastore.WithVoteCount(), datastore.WithHistory())
 	if err != nil {
 		return nil, nil, fmt.Errorf("init datastore: %w", err)
 	}
@@ -108,7 +108,10 @@ func initService(ctx context.Context, lookup environment.Getenver) (func(context
 	}
 
 	if metricTime > 0 {
-		go metric.Loop(ctx, metricTime, log.Default())
+		runMetirc := func(ctx context.Context) {
+			metric.Loop(ctx, metricTime, log.Default())
+		}
+		backgroundTasks = append(backgroundTasks, runMetirc)
 	}
 
 	task := func(ctx context.Context) error {
