@@ -3,6 +3,7 @@ module github.com/OpenSlides/openslides-autoupdate-service
 go 1.19
 
 require (
+	github.com/alecthomas/kong v0.7.0
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/gomodule/redigo v1.8.9
 	github.com/jackc/pgx/v5 v5.0.4
@@ -19,7 +20,6 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
-	github.com/alecthomas/kong v0.7.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/containerd/continuity v0.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
