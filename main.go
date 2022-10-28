@@ -3,8 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
+	gohttp "net/http"
 	"os"
+	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/http"
@@ -17,30 +20,45 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
+	"github.com/alecthomas/kong"
 )
+
+//go:generate  sh -c "go run main.go build-doc > environment.md"
 
 var (
 	envAutoupdatePort = environment.NewVariable("AUTOUPDATE_PORT", "9012", "Port on which the service listen on.")
 	envMetricInterval = environment.NewVariable("METRIC_INTERVAL", "5m", "Time in how often the metrics are gathered. Zero disables the metrics.")
 )
 
+var cli struct {
+	Run      struct{} `cmd:"" help:"Runs the service." default:"withargs"`
+	BuildDoc struct{} `cmd:"" help:"Build the environment documentation."`
+	Health   struct{} `cmd:"" help:"Runs a health check."`
+}
+
 func main() {
 	ctx, cancel := environment.InterruptContext()
 	defer cancel()
 
-	for _, arg := range os.Args {
-		if arg == "build-doc" {
-			if err := buildDoku(ctx); err != nil {
-				oserror.Handle(err)
-				os.Exit(1)
-			}
-			return
+	kongCTX := kong.Parse(&cli, kong.UsageOnError())
+	switch kongCTX.Command() {
+	case "run":
+		if err := run(ctx); err != nil {
+			oserror.Handle(err)
+			os.Exit(1)
 		}
-	}
 
-	if err := run(ctx); err != nil {
-		oserror.Handle(err)
-		os.Exit(1)
+	case "build-doc":
+		if err := buildDoku(ctx); err != nil {
+			oserror.Handle(err)
+			os.Exit(1)
+		}
+
+	case "health":
+		if err := health(ctx); err != nil {
+			oserror.Handle(err)
+			os.Exit(1)
+		}
 	}
 }
 
@@ -70,6 +88,40 @@ func buildDoku(ctx context.Context) error {
 	}
 
 	fmt.Println(doc)
+	return nil
+}
+
+func health(ctx context.Context) error {
+	port, found := os.LookupEnv("AUTOUPDATE_PORT")
+	if !found {
+		port = "9012"
+	}
+
+	req, err := gohttp.NewRequestWithContext(ctx, "GET", "http://localhost:"+port+"/system/autoupdate/health", nil)
+	if err != nil {
+		return fmt.Errorf("creating request: %w", err)
+	}
+
+	resp, err := gohttp.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("sending request: %w", err)
+	}
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("health returned status %s", resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("reading response body: %w", err)
+	}
+
+	expect := `{"healthy": true}`
+	got := strings.TrimSpace(string(body))
+	if got != expect {
+		return fmt.Errorf("got `%s`, expected `%s`", body, expect)
+	}
+
 	return nil
 }
 

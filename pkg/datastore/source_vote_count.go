@@ -38,7 +38,7 @@ func NewVoteCountSource(lookup environment.Getenver) *VoteCountSource {
 		"%s://%s:%s",
 		envVoteProtocol.Value(lookup),
 		envVoteHost.Value(lookup),
-		envVoteProtocol.Value(lookup),
+		envVotePort.Value(lookup),
 	)
 
 	source := VoteCountSource{
