@@ -34,9 +34,10 @@ func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autou
 	metric.Register(requestCount.Metric)
 
 	mux := http.NewServeMux()
-	Health(mux)
-	Autoupdate(mux, auth, autoupdate, requestCount)
-	HistoryInformation(mux, auth, autoupdate)
+	HandleHealth(mux)
+	HandleAutoupdate(mux, auth, autoupdate, requestCount)
+	HandleHistoryInformation(mux, auth, autoupdate)
+	HandleRestrictFQIDs(mux, autoupdate)
 
 	srv := &http.Server{
 		Addr:        addr,
@@ -70,9 +71,9 @@ type Connecter interface {
 	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[datastore.Key][]byte, error)
 }
 
-// Autoupdate builds the requested keys from the body of a request. The
+// HandleAutoupdate builds the requested keys from the body of a request. The
 // body has to be in the format specified in the keysbuilder package.
-func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, counter *metric.CurrentCounter) {
+func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, counter *metric.CurrentCounter) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Cache-Control", "no-store, max-age=0")
@@ -83,14 +84,14 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 
 		queryBuilder, err := keysbuilder.FromKeys(strings.Split(r.URL.Query().Get("k"), ",")...)
 		if err != nil {
-			handleError(w, fmt.Errorf("building keysbuilder from query: %w", err), true)
+			handleErrorWithStatus(w, fmt.Errorf("building keysbuilder from query: %w", err))
 			return
 		}
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			// TODO EXTERNAL ERROR
-			handleError(w, fmt.Errorf("reading body: %w", err), true)
+			handleErrorWithStatus(w, fmt.Errorf("reading body: %w", err))
 			return
 		}
 
@@ -102,7 +103,7 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 
 		bodyBuilder, err := keysbuilder.ManyFromJSON(bytes.NewReader(body))
 		if err != nil {
-			handleError(w, fmt.Errorf("building keysbuilder from body: %w", err), true)
+			handleErrorWithStatus(w, fmt.Errorf("building keysbuilder from body: %w", err))
 			return
 		}
 
@@ -113,7 +114,7 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 		if rawPosition != "" {
 			p, err := strconv.Atoi(rawPosition)
 			if err != nil {
-				handleError(w, invalidRequestError{fmt.Errorf("position has to be a number, not %s", rawPosition)}, true)
+				handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("position has to be a number, not %s", rawPosition)})
 				return
 			}
 			position = p
@@ -131,12 +132,12 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 		if r.URL.Query().Has("single") || position != 0 {
 			data, err := connecter.SingleData(ctx, uid, builder, position)
 			if err != nil {
-				handleError(w, fmt.Errorf("getting single data: %w", err), true)
+				handleErrorWithStatus(w, fmt.Errorf("getting single data: %w", err))
 				return
 			}
 
 			if err := writeData(w, data, compress); err != nil {
-				handleError(w, err, false)
+				handleErrorWithoutStatus(w, err)
 			}
 			return
 		}
@@ -149,7 +150,7 @@ func Autoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, cou
 		}
 
 		if err := sendMessages(ctx, wr, uid, builder, connecter, compress); err != nil {
-			handleError(w, err, false)
+			handleErrorWithoutStatus(w, err)
 			return
 		}
 	})
@@ -200,20 +201,20 @@ type HistoryInformationer interface {
 	HistoryInformation(ctx context.Context, uid int, fqid string, w io.Writer) error
 }
 
-// HistoryInformation registers the route to return the history information info
+// HandleHistoryInformation registers the route to return the history information info
 // for an fqid.
-func HistoryInformation(mux *http.ServeMux, auth Authenticater, hi HistoryInformationer) {
+func HandleHistoryInformation(mux *http.ServeMux, auth Authenticater, hi HistoryInformationer) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		uid := auth.FromContext(r.Context())
 
 		fqid := r.URL.Query().Get("fqid")
 		if fqid == "" {
-			handleError(w, invalidRequestError{fmt.Errorf("History Information needs an fqid")}, true)
+			handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("History Information needs an fqid")})
 			return
 		}
 
 		if err := hi.HistoryInformation(r.Context(), uid, fqid, w); err != nil {
-			handleError(w, fmt.Errorf("getting history information: %w", err), true)
+			handleErrorWithStatus(w, fmt.Errorf("getting history information: %w", err))
 			return
 		}
 	})
@@ -240,8 +241,54 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 	return ctx.Err()
 }
 
-// Health tells, if the service is running.
-func Health(mux *http.ServeMux) {
+type restrictFQIDser interface {
+	RestrictFQIDs(ctx context.Context, uid int, fqids []string) (map[string]map[string][]byte, error)
+}
+
+// HandleRestrictFQIDs returns restricted objects for a list of fqids.
+func HandleRestrictFQIDs(mux *http.ServeMux, service restrictFQIDser) {
+	mux.HandleFunc(
+		prefixInternal+"/restrict_fqids",
+		func(w http.ResponseWriter, r *http.Request) {
+			var requestBody struct {
+				UserID int      `json:"user_id"`
+				FQIDs  []string `json:"fqids"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+				handleErrorInternal(w, fmt.Errorf("decoding body"))
+				return
+			}
+
+			if requestBody.UserID == 0 {
+				handleErrorInternal(w, fmt.Errorf("no user_id provided. A json-body with the attributes 'user_id' and 'fqids' is expected"))
+				return
+			}
+
+			restricted, err := service.RestrictFQIDs(r.Context(), requestBody.UserID, requestBody.FQIDs)
+			if err != nil {
+				handleErrorInternal(w, fmt.Errorf("restrictFQIDs: %w", err))
+				return
+			}
+
+			responseBody := make(map[string]map[string]json.RawMessage, len(restricted))
+			for fqid, data := range restricted {
+				converted := make(map[string]json.RawMessage, len(data))
+				for k, v := range data {
+					converted[k] = v
+				}
+				responseBody[fqid] = converted
+			}
+
+			if err := json.NewEncoder(w).Encode(responseBody); err != nil {
+				handleErrorInternal(w, fmt.Errorf("encode response body: %w", err))
+				return
+			}
+		},
+	)
+}
+
+// HandleHealth tells, if the service is running.
+func HandleHealth(mux *http.ServeMux) {
 	url := prefixPublic + "/health"
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
@@ -255,7 +302,7 @@ func authMiddleware(next http.Handler, auth Authenticater) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, err := auth.Authenticate(w, r)
 		if err != nil {
-			handleError(w, fmt.Errorf("authenticate request: %w", err), true)
+			handleErrorWithStatus(w, fmt.Errorf("authenticate request: %w", err))
 			return
 		}
 
@@ -263,12 +310,29 @@ func authMiddleware(next http.Handler, auth Authenticater) http.Handler {
 	})
 }
 
+func handleErrorWithStatus(w http.ResponseWriter, err error) {
+	handleError(w, err, true, false)
+}
+
+func handleErrorWithoutStatus(w http.ResponseWriter, err error) {
+	handleError(w, err, false, false)
+}
+
+// handleErrorInternal is only for internal request routes. It returns the full
+// error message to the client.
+func handleErrorInternal(w http.ResponseWriter, err error) {
+	handleError(w, err, true, true)
+}
+
 // handleError interprets the given error and writes a corresponding message to
 // the client and/or stdout.
 //
+// Do not use this function directly but use handleErrorWithStatus,
+// handleErrorWithoutStatus or handleErrorInternal.
+//
 // If the handler already started to write the body then it is not allowed to
 // set the http-status-code. In this case, writeStatusCode has to be fales.
-func handleError(w http.ResponseWriter, err error, writeStatusCode bool) {
+func handleError(w http.ResponseWriter, err error, writeStatusCode bool, internal bool) {
 	if writeStatusCode {
 		w.Header().Set("Content-Type", "application/octet-stream")
 	}
@@ -298,8 +362,13 @@ func handleError(w http.ResponseWriter, err error, writeStatusCode bool) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
+	clientOutput := `{"error": {"type": "InternalError", "msg": "Something went wrong on the server. The admin is already informed."}}`
+	if internal {
+		clientOutput = err.Error()
+	}
+
 	oserror.Handle(err)
-	fmt.Fprintln(w, `{"error": {"type": "InternalError", "msg": "Something went wrong on the server. The admin is already informed."}}`)
+	fmt.Fprintln(w, clientOutput)
 }
 
 // quote decodes changes quotation marks with a backslash to make sure, they are
@@ -312,7 +381,7 @@ func validRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Only allow GET or POST requests.
 		if !(r.Method == http.MethodPost || r.Method == http.MethodGet) {
-			handleError(w, invalidRequestError{fmt.Errorf("Only GET or POST requests are supported")}, true)
+			handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("Only GET or POST requests are supported")})
 			return
 		}
 

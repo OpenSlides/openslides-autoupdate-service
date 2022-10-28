@@ -46,8 +46,14 @@ func loadDefition() (io.ReadCloser, error) {
 }
 
 type restriction struct {
-	Field string
-	Mode  string
+	Collection string
+	Field      string
+	Mode       string
+}
+
+func (r restriction) CollectionField() string {
+	collectionField := fmt.Sprintf("%s/%s", r.Collection, r.Field)
+	return collectionField
 }
 
 type templateData struct {
@@ -75,9 +81,9 @@ func parse(r io.Reader) (td templateData, err error) {
 		for fieldName, field := range model.Fields {
 			collectionField := fmt.Sprintf("%s/%s", modelName, fieldName)
 			reducedKey := reduceKey(collectionField)
-			td.Restrictions[modelName] = append(td.Restrictions[modelName], restriction{Field: reducedKey, Mode: field.RestrictionMode()})
+			td.Restrictions[modelName] = append(td.Restrictions[modelName], restriction{Collection: modelName, Field: fieldName, Mode: field.RestrictionMode()})
 			if reducedKey != collectionField {
-				td.Restrictions[modelName] = append(td.Restrictions[modelName], restriction{Field: collectionField, Mode: field.RestrictionMode()})
+				td.Restrictions[modelName] = append(td.Restrictions[modelName], restriction{Collection: modelName, Field: reduceKey(fieldName), Mode: field.RestrictionMode()})
 			}
 
 			relation := field.Relation()
@@ -114,7 +120,7 @@ func parse(r io.Reader) (td templateData, err error) {
 
 		sort.Slice(td.Restrictions[modelName], func(i, j int) bool {
 			if td.Restrictions[modelName][i].Mode == td.Restrictions[modelName][j].Mode {
-				return td.Restrictions[modelName][i].Field < td.Restrictions[modelName][j].Field
+				return td.Restrictions[modelName][i].CollectionField() < td.Restrictions[modelName][j].CollectionField()
 			}
 			return td.Restrictions[modelName][i].Mode < td.Restrictions[modelName][j].Mode
 		})
@@ -166,9 +172,16 @@ var restrictionModes = map[string]string{
 	{{- range $modelName, $model := .Restrictions}}
 		// {{$modelName}}
 		{{- range $field := $model}}
-			"{{$field.Field}}": "{{$field.Mode}}",
+			"{{$field.CollectionField}}": "{{$field.Mode}}",
 		{{- end}}
 	{{end}}
+}
+
+// collectionFields is an index from a collection name to all of its fieldnames.
+var collectionFields = map[string][]string{
+	{{- range $modelName, $model := .Restrictions}}
+		"{{$modelName}}": { {{range $field := $model}}"{{$field.Field}}", {{end}} },
+	{{- end}}
 }
 `
 
