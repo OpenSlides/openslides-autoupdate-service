@@ -78,7 +78,7 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			source, _, err := datastore.NewSourcePostgres(ctx, environment.ForTests(tp.Env), nil)
+			source, err := datastore.NewSourcePostgres(ctx, environment.ForTests(tp.Env), nil)
 			if err != nil {
 				t.Fatalf("NewSource(): %v", err)
 			}
@@ -125,7 +125,7 @@ func TestBigQuery(t *testing.T) {
 	}
 	defer tp.Close()
 
-	source, _, err := datastore.NewSourcePostgres(ctx, environment.ForTests(tp.Env), nil)
+	source, err := datastore.NewSourcePostgres(ctx, environment.ForTests(tp.Env), nil)
 	if err != nil {
 		t.Fatalf("NewSource(): %v", err)
 	}

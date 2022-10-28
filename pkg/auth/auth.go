@@ -62,7 +62,7 @@ type Auth struct {
 //
 // Returns the initialized Auth object, the used environment varialbes and a
 // function to be called in the background.
-func New(lookup environment.Getenver, messageBus LogoutEventer) (*Auth, []environment.Variable, func(context.Context)) {
+func New(lookup environment.Getenver, messageBus LogoutEventer) (*Auth, func(context.Context)) {
 	url := fmt.Sprintf(
 		"%s://%s:%s",
 		envAuthProtocol.Value(lookup),
@@ -92,16 +92,7 @@ func New(lookup environment.Getenver, messageBus LogoutEventer) (*Auth, []enviro
 		go a.PruneOldData(ctx)
 	}
 
-	usedEnv := []environment.Variable{
-		envAuthHost,
-		envAuthPort,
-		envAuthPort,
-		envAuthFake,
-		envAuthToken,
-		envAuthCookie,
-	}
-
-	return a, usedEnv, background
+	return a, background
 }
 
 // Authenticate uses the headers from the given request to get the user id. The

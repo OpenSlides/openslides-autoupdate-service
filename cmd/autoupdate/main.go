@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -24,56 +25,104 @@ var (
 )
 
 func main() {
-	if err := run(); err != nil {
+	ctx, cancel := environment.InterruptContext()
+	defer cancel()
+
+	for _, arg := range os.Args {
+		if arg == "build-doc" {
+			if err := buildDoku(ctx); err != nil {
+				oserror.Handle(err)
+				os.Exit(1)
+			}
+			return
+		}
+	}
+
+	if err := run(ctx); err != nil {
 		oserror.Handle(err)
 		os.Exit(1)
 	}
 }
 
-func run() error {
-	ctx, cancel := environment.InterruptContext()
-	defer cancel()
-
+func run(ctx context.Context) error {
 	lookup := environment.Getenvfunc(os.Getenv)
-	var environmentVariables []environment.Variable
+
+	service, background, err := initService(ctx, lookup)
+	if err != nil {
+		return fmt.Errorf("init services: %w", err)
+	}
+
+	go background(ctx)
+	return service(ctx)
+}
+
+func buildDoku(ctx context.Context) error {
+	lookup := new(environment.ForDocu)
+
+	_, _, err := initService(ctx, lookup)
+	if err != nil {
+		return fmt.Errorf("init services: %w", err)
+	}
+
+	doc, err := environment.BuildDoc(lookup.Variables)
+	if err != nil {
+		return fmt.Errorf("build doc: %w", err)
+	}
+
+	fmt.Println(doc)
+	return nil
+}
+
+// initService build all packages needed for the autoupdate serive.
+//
+// Returns a list of all used environment variables, a task to run the server and a function to be callend in the background.
+func initService(ctx context.Context, lookup environment.Getenver) (func(context.Context) error, func(ctx context.Context), error) {
+	var backgroundTasks []func(context.Context)
 
 	// Redis as message bus for datastore and logout events.
-	messageBus, redisEnv := redis.New(lookup)
-	environmentVariables = append(environmentVariables, redisEnv...)
+	messageBus := redis.New(lookup)
 
 	// Datastore Service.
-	datastoreService, dsEnv, dsBackground, err := datastore.New(ctx, lookup, messageBus, datastore.WithVoteCount(), datastore.WithHistory())
+	datastoreService, dsBackground, err := datastore.New(ctx, lookup, messageBus, datastore.WithVoteCount(), datastore.WithHistory())
 	if err != nil {
-		return fmt.Errorf("init datastore: %w", err)
+		return nil, nil, fmt.Errorf("init datastore: %w", err)
 	}
-	environmentVariables = append(environmentVariables, dsEnv...)
-	go dsBackground(ctx)
+	backgroundTasks = append(backgroundTasks, dsBackground)
 
 	// Register projector in datastore. (TODO: Should be an option from datastore.New)
 	projector.Register(datastoreService, slide.Slides())
 
 	// Auth Service.
-	authService, authEnv, authBackground := auth.New(lookup, messageBus)
-	environmentVariables = append(environmentVariables, authEnv...)
-	go authBackground(ctx)
+	authService, authBackground := auth.New(lookup, messageBus)
+	backgroundTasks = append(backgroundTasks, authBackground)
 
 	// Autoupdate Service.
 	service, auBackground := autoupdate.New(datastoreService, restrict.Middleware)
-	go auBackground(ctx)
+	backgroundTasks = append(backgroundTasks, auBackground)
 
 	// Start metrics.
 	metric.Register(metric.Runtime)
 	metricTime, err := environment.ParseDuration(envMetricInterval.Value(lookup))
 	if err != nil {
-		return fmt.Errorf("invalid value for `METRIC_INTERVAL`, expected duration got %s: %w", envMetricInterval.Value(lookup), err)
+		return nil, nil, fmt.Errorf("invalid value for `METRIC_INTERVAL`, expected duration got %s: %w", envMetricInterval.Value(lookup), err)
 	}
 
 	if metricTime > 0 {
 		go metric.Loop(ctx, metricTime, log.Default())
 	}
 
-	// Start http server.
-	listenAddr := ":" + envAutoupdatePort.Value(lookup)
-	fmt.Printf("Listen on %s\n", listenAddr)
-	return http.Run(ctx, listenAddr, authService, service)
+	task := func(ctx context.Context) error {
+		// Start http server.
+		listenAddr := ":" + envAutoupdatePort.Value(lookup)
+		fmt.Printf("Listen on %s\n", listenAddr)
+		return http.Run(ctx, listenAddr, authService, service)
+	}
+
+	backgroundTask := func(ctx context.Context) {
+		for _, bg := range backgroundTasks {
+			go bg(ctx)
+		}
+	}
+
+	return task, backgroundTask, nil
 }

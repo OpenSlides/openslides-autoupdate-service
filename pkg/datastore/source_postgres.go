@@ -26,7 +26,7 @@ type SourcePostgres struct {
 }
 
 // NewSourcePostgres initializes a SourcePostgres.
-func NewSourcePostgres(ctx context.Context, lookup environment.Getenver, updater Updater) (*SourcePostgres, []environment.Variable, error) {
+func NewSourcePostgres(ctx context.Context, lookup environment.Getenver, updater Updater) (*SourcePostgres, error) {
 	addr := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s",
 		envPostgresHost.Value(lookup),
@@ -38,27 +38,19 @@ func NewSourcePostgres(ctx context.Context, lookup environment.Getenver, updater
 
 	config, err := pgxpool.ParseConfig(addr)
 	if err != nil {
-		return nil, nil, fmt.Errorf("parse config: %w", err)
+		return nil, fmt.Errorf("parse config: %w", err)
 	}
 
 	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
-		return nil, nil, fmt.Errorf("creating connection pool: %w", err)
+		return nil, fmt.Errorf("creating connection pool: %w", err)
 	}
 
 	source := SourcePostgres{pool: pool, updater: updater}
 
-	usedEnv := []environment.Variable{
-		envPostgresHost,
-		envPostgresPassword,
-		envPostgresHost,
-		envPostgresPort,
-		envPostgresDatabase,
-	}
-
-	return &source, usedEnv, nil
+	return &source, nil
 }
 
 // Get fetches the keys from postgres.

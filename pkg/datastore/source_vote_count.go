@@ -33,7 +33,7 @@ type VoteCountSource struct {
 }
 
 // NewVoteCountSource initializes the object.
-func NewVoteCountSource(lookup environment.Getenver) (*VoteCountSource, []environment.Variable) {
+func NewVoteCountSource(lookup environment.Getenver) *VoteCountSource {
 	url := fmt.Sprintf(
 		"%s://%s:%s",
 		envVoteProtocol.Value(lookup),
@@ -47,13 +47,7 @@ func NewVoteCountSource(lookup environment.Getenver) (*VoteCountSource, []enviro
 		update:         make(chan map[int]int, 1),
 	}
 
-	usedEnv := []environment.Variable{
-		envVoteHost,
-		envVoteProtocol,
-		envVoteProtocol,
-	}
-
-	return &source, usedEnv
+	return &source
 }
 
 // Connect creates a connection to the vote service and makes sure, it stays

@@ -57,7 +57,7 @@ func TestSourceDefaultRequestCount(t *testing.T) {
 				"DATASTORE_MAX_PARALLEL_KEYS": strconv.Itoa(tt.maxKeysPerRequest),
 			})
 
-			sd, _, err := datastore.NewSourceDatastore(env)
+			sd, err := datastore.NewSourceDatastore(env)
 			if err != nil {
 				t.Fatalf("Initialize: %v", err)
 			}

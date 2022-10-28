@@ -1,12 +1,17 @@
+// Package environment implements helpers to handle environment varialbes and
+// other function for startup.
 package environment
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
 	"os/signal"
 	"path"
 	"strconv"
+	"strings"
+	"text/template"
 	"time"
 
 	"golang.org/x/sys/unix"
@@ -63,6 +68,15 @@ func NewSecretWithDefault(key, defaultValue, description string) Variable {
 
 // Value returns the value for an environment.Variable using a Getenver.
 func (v Variable) Value(lookup Getenver) string {
+	type usedEnver interface {
+		usedEnv(Variable)
+	}
+
+	if usedEnv, ok := lookup.(usedEnver); ok {
+		usedEnv.usedEnv(v)
+		return v.Default
+	}
+
 	if v.isSecret {
 		return v.secret(lookup)
 	}
@@ -134,6 +148,20 @@ func (e ForTests) Getenv(key string) string {
 	return v
 }
 
+// ForDocu implements the Getenver interface to generate the docu.
+type ForDocu struct {
+	Variables []Variable
+}
+
+// Getenv returns an empty string.
+func (e *ForDocu) Getenv(key string) string {
+	return ""
+}
+
+func (e *ForDocu) usedEnv(v Variable) {
+	e.Variables = append(e.Variables, v)
+}
+
 // ParseDuration is like time.ParseDuration but uses second as default unit.
 func ParseDuration(s string) (time.Duration, error) {
 	sec, err := strconv.Atoi(s)
@@ -160,4 +188,54 @@ func InterruptContext() (context.Context, context.CancelFunc) {
 		os.Exit(2)
 	}()
 	return ctx, cancel
+}
+
+const tmplDoc = `# Configuration
+
+## Environment Varialbes
+
+The Service uses the following environment variables:
+{{range .Env}}
+* ${{.Key}}$: {{.Description}} The default is ${{.Default}}$.
+{{- end}}
+
+{{if .Secret}}
+## Secrets
+
+Secrets are filenames in the directory $SECRETS_PATH$ (default: $/run/secrets/$). 
+The service only starts if it can find each secret file and read its content. 
+The default values are only used, if the environment variable $OPENSLIDES_DEVELOPMENT$ is set.
+{{range .Secret}}
+* ${{.Key}}$: {{.Description}} The default is ${{.Default}}$.
+{{- end}}
+{{- end}}
+`
+
+// BuildDoc create a documentation from a list of environment variables.
+func BuildDoc(env []Variable) (string, error) {
+	var variables struct {
+		Env    []Variable
+		Secret []Variable
+	}
+
+	for _, v := range env {
+		if v.isSecret {
+			variables.Secret = append(variables.Secret, v)
+			continue
+		}
+
+		variables.Env = append(variables.Env, v)
+	}
+
+	tmpl, err := template.New("Doc").Parse(tmplDoc)
+	if err != nil {
+		return "", fmt.Errorf("parsing template: %w", err)
+	}
+
+	buf := new(bytes.Buffer)
+	if err := tmpl.Execute(buf, variables); err != nil {
+		return "", fmt.Errorf("executing template: %w", err)
+	}
+
+	return strings.ReplaceAll(buf.String(), "$", "`"), nil
 }

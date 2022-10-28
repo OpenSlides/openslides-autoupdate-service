@@ -79,8 +79,7 @@ type Datastore struct {
 
 // New returns a new Datastore object.
 // func New(defaultSource Source, keySource map[string]Source, history HistoryInformationer) *Datastore {
-func New(ctx context.Context, lookup environment.Getenver, mb Updater, options ...Option) (*Datastore, []environment.Variable, func(context.Context), error) {
-	var usedEnv []environment.Variable
+func New(ctx context.Context, lookup environment.Getenver, mb Updater, options ...Option) (*Datastore, func(context.Context), error) {
 	ds := Datastore{
 		cache: newCache(),
 
@@ -92,22 +91,20 @@ func New(ctx context.Context, lookup environment.Getenver, mb Updater, options .
 
 	var backgroundFuncs []func(context.Context)
 	for _, o := range options {
-		ev, bgFunc, err := o(&ds, lookup)
+		bgFunc, err := o(&ds, lookup)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
 
-		usedEnv = append(usedEnv, ev...)
 		backgroundFuncs = append(backgroundFuncs, bgFunc)
 	}
 
 	if ds.defaultSource == nil {
-		sourcePostgres, envPostgres, err := NewSourcePostgres(ctx, lookup, mb)
+		sourcePostgres, err := NewSourcePostgres(ctx, lookup, mb)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("initilizing postgres source: %w", err)
+			return nil, nil, fmt.Errorf("initilizing postgres source: %w", err)
 		}
 		ds.defaultSource = sourcePostgres
-		usedEnv = append(usedEnv, envPostgres...)
 	}
 
 	metric.Register(ds.metric)
@@ -124,7 +121,7 @@ func New(ctx context.Context, lookup environment.Getenver, mb Updater, options .
 		}
 	}
 
-	return &ds, usedEnv, background, nil
+	return &ds, background, nil
 }
 
 // Get returns the value for one or many keys.

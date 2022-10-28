@@ -20,7 +20,7 @@ type Pool struct {
 }
 
 // NewConn creates a new pool.
-func NewConn(lookup environment.Getenver) (*Pool, []environment.Variable) {
+func NewConn(lookup environment.Getenver) *Pool {
 	addr := envMessageBusHost.Value(lookup) + ":" + envMessageBusPort.Value(lookup)
 
 	pool := Pool{
@@ -33,12 +33,7 @@ func NewConn(lookup environment.Getenver) (*Pool, []environment.Variable) {
 		},
 	}
 
-	usedEnv := []environment.Variable{
-		envMessageBusHost,
-		envMessageBusPort,
-	}
-
-	return &pool, usedEnv
+	return &pool
 }
 
 // TestConn sends a ping command to redis. Does not return the response, but an

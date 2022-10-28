@@ -50,7 +50,7 @@ type SourceDatastore struct {
 }
 
 // NewSourceDatastore initializes a SourceDatastore.
-func NewSourceDatastore(lookup environment.Getenver) (*SourceDatastore, []environment.Variable, error) {
+func NewSourceDatastore(lookup environment.Getenver) (*SourceDatastore, error) {
 	url := fmt.Sprintf(
 		"%s://%s:%s",
 		envDatastoreProtocol.Value(lookup),
@@ -60,12 +60,12 @@ func NewSourceDatastore(lookup environment.Getenver) (*SourceDatastore, []enviro
 
 	timeout, err := environment.ParseDuration(envDatastoreTimeout.Value(lookup))
 	if err != nil {
-		return nil, nil, fmt.Errorf("parsing timeout: %w", err)
+		return nil, fmt.Errorf("parsing timeout: %w", err)
 	}
 
 	maxParallel, err := strconv.Atoi(envDatastoreMaxParallelKeys.Value(lookup))
 	if err != nil {
-		return nil, nil, fmt.Errorf(
+		return nil, fmt.Errorf(
 			"environment variable MAX_PARALLEL_KEYS has to be a number, not %s",
 			envDatastoreMaxParallelKeys.Value(lookup),
 		)
@@ -79,13 +79,7 @@ func NewSourceDatastore(lookup environment.Getenver) (*SourceDatastore, []enviro
 		maxKeysPerRequest: maxParallel,
 	}
 
-	usedEnv := []environment.Variable{
-		envDatastoreHost,
-		envDatastorePort,
-		envDatastoreProtocol,
-	}
-
-	return &source, usedEnv, nil
+	return &source, nil
 }
 
 // GetPosition gets keys from the datastore at a specifi position.

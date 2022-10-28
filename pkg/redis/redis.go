@@ -39,11 +39,11 @@ type Redis struct {
 }
 
 // New initializes a Redis instance.
-func New(lookup environment.Getenver) (*Redis, []environment.Variable) {
-	conn, env := NewConn(lookup)
+func New(lookup environment.Getenver) *Redis {
+	conn := NewConn(lookup)
 	return &Redis{
 		Conn: conn,
-	}, env
+	}
 }
 
 // Update is a blocking function that returns, when there is new data.

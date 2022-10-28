@@ -13,7 +13,7 @@ import (
 func getRedis() *redis.Redis {
 	var c redis.Connection = mockConn{}
 	if useRealRedis {
-		c, _ = redis.NewConn(environment.ForTests{})
+		c = redis.NewConn(environment.ForTests{})
 	}
 	return &redis.Redis{Conn: c}
 }
