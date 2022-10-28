@@ -44,9 +44,9 @@ jobs:
 
     - name: Start With golang
       run: |
-        go build ./cmd/autoupdate
+        go build
         export SECRETS_PATH=secrets
-        timeout --preserve-status --signal=SIGINT 2s ./autoupdate
+        timeout --preserve-status --signal=SIGINT 2s ./openslides-autoupdate-service
 
     - name: Start With Docker
       run: |

@@ -37,7 +37,7 @@ docker run --network host redis
 
 ```
 export SECRETS_PATH=secrets
-go build ./cmd/autoupdate
+go build
 ./autoupdate
 ```
 
@@ -64,7 +64,7 @@ To restart the service when ever a source file has shanged, the tool
 
 ```
 go install github.com/githubnemo/CompileDaemon@latest
-CompileDaemon -log-prefix=false -build "go build ./cmd/autoupdate" -command "./autoupdate"
+CompileDaemon -log-prefix=false -build "go build" -command "./autoupdate"
 ```
 
 The make target `build-dev` creates a docker image that uses this tool. The
