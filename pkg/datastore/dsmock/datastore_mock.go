@@ -133,7 +133,7 @@ type MockDatastore struct {
 // It is a wrapper around the datastore.Datastore object.
 func NewMockDatastore(data map[datastore.Key][]byte) *MockDatastore {
 	source := NewStubWithUpdate(data, NewCounter)
-	rawDS, _, err := datastore.New(context.Background(), environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	rawDS, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
 	if err != nil {
 		panic(err)
 	}

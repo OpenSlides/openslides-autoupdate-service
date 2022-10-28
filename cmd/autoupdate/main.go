@@ -78,6 +78,7 @@ func buildDoku(ctx context.Context) error {
 // Returns a list of all used environment variables, a task to run the server and a function to be callend in the background.
 func initService(lookup environment.Getenver) (func(context.Context) error, func(ctx context.Context), error) {
 	var backgroundTasks []func(context.Context)
+	listenAddr := ":" + envAutoupdatePort.Value(lookup)
 
 	// Redis as message bus for datastore and logout events.
 	messageBus := redis.New(lookup)
@@ -116,7 +117,7 @@ func initService(lookup environment.Getenver) (func(context.Context) error, func
 
 	task := func(ctx context.Context) error {
 		// Start http server.
-		listenAddr := ":" + envAutoupdatePort.Value(lookup)
+
 		fmt.Printf("Listen on %s\n", listenAddr)
 		return http.Run(ctx, listenAddr, authService, service)
 	}
