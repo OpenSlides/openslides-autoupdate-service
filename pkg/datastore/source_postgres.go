@@ -36,8 +36,6 @@ func NewSourcePostgres(lookup environment.Getenver, updater Updater) (*SourcePos
 		envPostgresDatabase.Value(lookup),
 	)
 
-	fmt.Println(addr)
-
 	config, err := pgxpool.ParseConfig(addr)
 	if err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
