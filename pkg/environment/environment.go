@@ -190,7 +190,8 @@ func InterruptContext() (context.Context, context.CancelFunc) {
 	return ctx, cancel
 }
 
-const tmplDoc = `# Configuration
+const tmplDoc = `<!--- Code generated with go generate ./... DO NOT EDIT. --->
+# Configuration
 
 ## Environment Varialbes
 
@@ -208,8 +209,7 @@ The default values are only used, if the environment variable $OPENSLIDES_DEVELO
 {{range .Secret}}
 * ${{.Key}}$: {{.Description}} The default is ${{.Default}}$.
 {{- end}}
-{{- end}}
-`
+{{- end}}`
 
 // BuildDoc create a documentation from a list of environment variables.
 func BuildDoc(env []Variable) (string, error) {

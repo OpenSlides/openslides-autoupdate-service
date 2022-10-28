@@ -194,7 +194,7 @@ attribute `position`. See above.
 
 ## Configuration
 
-TODO
+The service is configurated with environment variables. See [all environment varialbes](environment.md).
 
 
 ## Update models.yml
