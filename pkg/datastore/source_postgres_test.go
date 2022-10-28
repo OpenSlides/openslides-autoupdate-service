@@ -176,7 +176,7 @@ func newTestPostgres(ctx context.Context) (tp *testPostgres, err error) {
 		Tag:        "11",
 		Env: []string{
 			"POSTGRES_USER=postgres",
-			"POSTGRES_PASSWORD=password",
+			"POSTGRES_PASSWORD=openslides",
 			"POSTGRES_DB=database",
 		},
 	}
@@ -187,7 +187,7 @@ func newTestPostgres(ctx context.Context) (tp *testPostgres, err error) {
 	}
 
 	port := resource.GetPort("5432/tcp")
-	addr := fmt.Sprintf("postgres://postgres:password@localhost:%s/database", port)
+	addr := fmt.Sprintf("postgres://postgres:openslides@localhost:%s/database", port)
 	config, err := pgx.ParseConfig(addr)
 	if err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
@@ -199,8 +199,10 @@ func newTestPostgres(ctx context.Context) (tp *testPostgres, err error) {
 		pgxConfig:      config,
 
 		Env: map[string]string{
-			"DATASTORE_DATABASE_HOST": "postgres",
+			"DATASTORE_DATABASE_HOST": "localhost",
 			"DATASTORE_DATABASE_PORT": port,
+			"DATASTORE_DATABASE_NAME": "database",
+			"DATASTORE_DATABASE_USER": "postgres",
 		},
 	}
 

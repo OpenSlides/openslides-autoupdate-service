@@ -29,12 +29,14 @@ type SourcePostgres struct {
 func NewSourcePostgres(lookup environment.Getenver, updater Updater) (*SourcePostgres, error) {
 	addr := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s",
-		envPostgresHost.Value(lookup),
+		envPostgresUser.Value(lookup),
 		envPostgresPassword.Value(lookup),
 		envPostgresHost.Value(lookup),
 		envPostgresPort.Value(lookup),
 		envPostgresDatabase.Value(lookup),
 	)
+
+	fmt.Println(addr)
 
 	config, err := pgxpool.ParseConfig(addr)
 	if err != nil {
