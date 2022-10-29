@@ -79,7 +79,7 @@ type Datastore struct {
 
 // New returns a new Datastore object.
 // func New(defaultSource Source, keySource map[string]Source, history HistoryInformationer) *Datastore {
-func New(lookup environment.Getenver, mb Updater, options ...Option) (*Datastore, func(context.Context), error) {
+func New(lookup environment.Environmenter, mb Updater, options ...Option) (*Datastore, func(context.Context), error) {
 	ds := Datastore{
 		cache: newCache(),
 

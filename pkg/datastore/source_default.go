@@ -50,7 +50,7 @@ type SourceDatastore struct {
 }
 
 // NewSourceDatastore initializes a SourceDatastore.
-func NewSourceDatastore(lookup environment.Getenver) (*SourceDatastore, error) {
+func NewSourceDatastore(lookup environment.Environmenter) (*SourceDatastore, error) {
 	url := fmt.Sprintf(
 		"%s://%s:%s",
 		envDatastoreProtocol.Value(lookup),

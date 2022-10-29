@@ -20,7 +20,7 @@ type Pool struct {
 }
 
 // NewConn creates a new pool.
-func NewConn(lookup environment.Getenver) *Pool {
+func NewConn(lookup environment.Environmenter) *Pool {
 	addr := envMessageBusHost.Value(lookup) + ":" + envMessageBusPort.Value(lookup)
 
 	pool := Pool{

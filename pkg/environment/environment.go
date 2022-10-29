@@ -67,15 +67,8 @@ func NewSecretWithDefault(key, defaultValue, description string) Variable {
 }
 
 // Value returns the value for an environment.Variable using a Getenver.
-func (v Variable) Value(lookup Getenver) string {
-	type usedEnver interface {
-		usedEnv(Variable)
-	}
-
-	if usedEnv, ok := lookup.(usedEnver); ok {
-		usedEnv.usedEnv(v)
-		return v.Default
-	}
+func (v Variable) Value(lookup Environmenter) string {
+	lookup.UseVariable(v)
 
 	if v.isSecret {
 		return v.secret(lookup)
@@ -97,7 +90,7 @@ func (v Variable) Value(lookup Getenver) string {
 // It uses the environment varialbe SECRETS_PATH to find the secrets. The
 // defaults are only (and allways) used if OPENSLIDES_DEVELOPMENT is set to
 // true. If no Default is set, then "openslides" is used as default.
-func (v Variable) secret(lookup Getenver) string {
+func (v Variable) secret(lookup Environmenter) string {
 	useDev, _ := strconv.ParseBool(envDevelopment.Value(lookup))
 
 	if useDev {
@@ -118,20 +111,59 @@ func (v Variable) secret(lookup Getenver) string {
 	return string(secret)
 }
 
-// Getenver is an type, that can return environment variables with a function like
-// os.Getenver().
-type Getenver interface {
+// Environmenter is an type, that can return the value for environment
+// variables.
+//
+// It also saves the used environment variables.
+type Environmenter interface {
 	Getenv(key string) string
+	UseVariable(v Variable)
 }
 
-// Getenvfunc is a function that implements the Getenver interface.
+// ForProduction is an environment used for production.
 //
-// Example: lookup := Getenvfunc(os.Getenv)
-type Getenvfunc func(key string) string
+// It fetches the environment variables from os.Getenv()
+type ForProduction struct {
+	usedVariables []Variable
+}
 
-// Getenv calls the function.
-func (f Getenvfunc) Getenv(key string) string {
-	return f(key)
+// Getenv calls os.Getenv.
+func (e *ForProduction) Getenv(key string) string {
+	return os.Getenv(key)
+}
+
+// UseVariable saves the used Variables
+func (e *ForProduction) UseVariable(v Variable) {
+	e.usedVariables = append(e.usedVariables, v)
+}
+
+// BuildDoc create the environment documentation with all used variables.
+func (e *ForProduction) BuildDoc() (string, error) {
+	var variables struct {
+		Env    []Variable
+		Secret []Variable
+	}
+
+	for _, v := range e.usedVariables {
+		if v.isSecret {
+			variables.Secret = append(variables.Secret, v)
+			continue
+		}
+
+		variables.Env = append(variables.Env, v)
+	}
+
+	tmpl, err := template.New("Doc").Parse(tmplDoc)
+	if err != nil {
+		return "", fmt.Errorf("parsing template: %w", err)
+	}
+
+	buf := new(bytes.Buffer)
+	if err := tmpl.Execute(buf, variables); err != nil {
+		return "", fmt.Errorf("executing template: %w", err)
+	}
+
+	return strings.ReplaceAll(buf.String(), "$", "`"), nil
 }
 
 // ForTests is a map that simulates environment variables.
@@ -148,19 +180,8 @@ func (e ForTests) Getenv(key string) string {
 	return v
 }
 
-// ForDocu implements the Getenver interface to generate the docu.
-type ForDocu struct {
-	Variables []Variable
-}
-
-// Getenv returns an empty string.
-func (e *ForDocu) Getenv(key string) string {
-	return ""
-}
-
-func (e *ForDocu) usedEnv(v Variable) {
-	e.Variables = append(e.Variables, v)
-}
+// UseVariable does nothing for tests.
+func (e ForTests) UseVariable(v Variable) {}
 
 // ParseDuration is like time.ParseDuration but uses second as default unit.
 func ParseDuration(s string) (time.Duration, error) {
@@ -193,7 +214,7 @@ func InterruptContext() (context.Context, context.CancelFunc) {
 const tmplDoc = `<!--- Code generated with go generate ./... DO NOT EDIT. --->
 # Configuration
 
-## Environment Varialbes
+## Environment Variables
 
 The Service uses the following environment variables:
 {{range .Env}}
@@ -210,32 +231,3 @@ The default values are only used, if the environment variable $OPENSLIDES_DEVELO
 * ${{.Key}}$: {{.Description}} The default is ${{.Default}}$.
 {{- end}}
 {{- end}}`
-
-// BuildDoc create a documentation from a list of environment variables.
-func BuildDoc(env []Variable) (string, error) {
-	var variables struct {
-		Env    []Variable
-		Secret []Variable
-	}
-
-	for _, v := range env {
-		if v.isSecret {
-			variables.Secret = append(variables.Secret, v)
-			continue
-		}
-
-		variables.Env = append(variables.Env, v)
-	}
-
-	tmpl, err := template.New("Doc").Parse(tmplDoc)
-	if err != nil {
-		return "", fmt.Errorf("parsing template: %w", err)
-	}
-
-	buf := new(bytes.Buffer)
-	if err := tmpl.Execute(buf, variables); err != nil {
-		return "", fmt.Errorf("executing template: %w", err)
-	}
-
-	return strings.ReplaceAll(buf.String(), "$", "`"), nil
-}

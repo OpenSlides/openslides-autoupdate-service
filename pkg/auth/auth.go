@@ -62,7 +62,7 @@ type Auth struct {
 //
 // Returns the initialized Auth object, the used environment varialbes and a
 // function to be called in the background.
-func New(lookup environment.Getenver, messageBus LogoutEventer) (*Auth, func(context.Context)) {
+func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, func(context.Context)) {
 	url := fmt.Sprintf(
 		"%s://%s:%s",
 		envAuthProtocol.Value(lookup),

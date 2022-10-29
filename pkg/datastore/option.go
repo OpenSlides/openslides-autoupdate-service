@@ -10,7 +10,7 @@ import (
 )
 
 // Option to configure datastore.New()
-type Option func(*Datastore, environment.Getenver) (func(context.Context), error)
+type Option func(*Datastore, environment.Environmenter) (func(context.Context), error)
 
 // WithVoteCount adds the poll/vote_count field.
 func WithVoteCount() Option {
@@ -19,7 +19,7 @@ func WithVoteCount() Option {
 		return timer.C, timer.Stop
 	}
 
-	return func(ds *Datastore, lookup environment.Getenver) (func(context.Context), error) {
+	return func(ds *Datastore, lookup environment.Environmenter) (func(context.Context), error) {
 		voteCountSource := NewVoteCountSource(lookup)
 		ds.keySource["poll/vote_count"] = voteCountSource
 		background := func(ctx context.Context) {
@@ -31,7 +31,7 @@ func WithVoteCount() Option {
 
 // WithHistory adds the posibility to fetch history data.
 func WithHistory() Option {
-	return func(ds *Datastore, lookup environment.Getenver) (func(context.Context), error) {
+	return func(ds *Datastore, lookup environment.Environmenter) (func(context.Context), error) {
 		datastoreSource, err := NewSourceDatastore(lookup)
 		if err != nil {
 			return nil, fmt.Errorf("init datastore: %w", err)
@@ -44,7 +44,7 @@ func WithHistory() Option {
 
 // WithDefaultSource uses a different (not postgres) source. Helpful for testing.
 func WithDefaultSource(source Source) Option {
-	return func(ds *Datastore, lookup environment.Getenver) (func(context.Context), error) {
+	return func(ds *Datastore, lookup environment.Environmenter) (func(context.Context), error) {
 		ds.defaultSource = source
 		return nil, nil
 	}

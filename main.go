@@ -49,7 +49,7 @@ func main() {
 		}
 
 	case "build-doc":
-		if err := buildDoku(ctx); err != nil {
+		if err := buildDocu(); err != nil {
 			oserror.Handle(err)
 			os.Exit(1)
 		}
@@ -63,26 +63,24 @@ func main() {
 }
 
 func run(ctx context.Context) error {
-	lookup := environment.Getenvfunc(os.Getenv)
+	lookup := new(environment.ForProduction)
 
-	service, background, err := initService(lookup)
+	service, err := initService(lookup)
 	if err != nil {
 		return fmt.Errorf("init services: %w", err)
 	}
 
-	go background(ctx)
 	return service(ctx)
 }
 
-func buildDoku(ctx context.Context) error {
-	lookup := new(environment.ForDocu)
+func buildDocu() error {
+	lookup := new(environment.ForProduction)
 
-	_, _, err := initService(lookup)
-	if err != nil {
+	if _, err := initService(lookup); err != nil {
 		return fmt.Errorf("init services: %w", err)
 	}
 
-	doc, err := environment.BuildDoc(lookup.Variables)
+	doc, err := lookup.BuildDoc()
 	if err != nil {
 		return fmt.Errorf("build doc: %w", err)
 	}
@@ -125,10 +123,10 @@ func health(ctx context.Context) error {
 	return nil
 }
 
-// initService build all packages needed for the autoupdate serive.
+// initService initializes all packages needed for the autoupdate service.
 //
-// Returns a list of all used environment variables, a task to run the server and a function to be callend in the background.
-func initService(lookup environment.Getenver) (func(context.Context) error, func(ctx context.Context), error) {
+// Returns a the service as callable.
+func initService(lookup environment.Environmenter) (func(context.Context) error, error) {
 	var backgroundTasks []func(context.Context)
 	listenAddr := ":" + envAutoupdatePort.Value(lookup)
 
@@ -138,7 +136,7 @@ func initService(lookup environment.Getenver) (func(context.Context) error, func
 	// Datastore Service.
 	datastoreService, dsBackground, err := datastore.New(lookup, messageBus, datastore.WithVoteCount(), datastore.WithHistory())
 	if err != nil {
-		return nil, nil, fmt.Errorf("init datastore: %w", err)
+		return nil, fmt.Errorf("init datastore: %w", err)
 	}
 	backgroundTasks = append(backgroundTasks, dsBackground)
 
@@ -150,14 +148,14 @@ func initService(lookup environment.Getenver) (func(context.Context) error, func
 	backgroundTasks = append(backgroundTasks, authBackground)
 
 	// Autoupdate Service.
-	service, auBackground := autoupdate.New(datastoreService, restrict.Middleware)
+	auService, auBackground := autoupdate.New(datastoreService, restrict.Middleware)
 	backgroundTasks = append(backgroundTasks, auBackground)
 
 	// Start metrics.
 	metric.Register(metric.Runtime)
 	metricTime, err := environment.ParseDuration(envMetricInterval.Value(lookup))
 	if err != nil {
-		return nil, nil, fmt.Errorf("invalid value for `METRIC_INTERVAL`, expected duration got %s: %w", envMetricInterval.Value(lookup), err)
+		return nil, fmt.Errorf("invalid value for `METRIC_INTERVAL`, expected duration got %s: %w", envMetricInterval.Value(lookup), err)
 	}
 
 	if metricTime > 0 {
@@ -167,18 +165,15 @@ func initService(lookup environment.Getenver) (func(context.Context) error, func
 		backgroundTasks = append(backgroundTasks, runMetirc)
 	}
 
-	task := func(ctx context.Context) error {
-		// Start http server.
-
-		fmt.Printf("Listen on %s\n", listenAddr)
-		return http.Run(ctx, listenAddr, authService, service)
-	}
-
-	backgroundTask := func(ctx context.Context) {
+	service := func(ctx context.Context) error {
 		for _, bg := range backgroundTasks {
 			go bg(ctx)
 		}
+
+		// Start http server.
+		fmt.Printf("Listen on %s\n", listenAddr)
+		return http.Run(ctx, listenAddr, authService, auService)
 	}
 
-	return task, backgroundTask, nil
+	return service, nil
 }

@@ -33,7 +33,7 @@ type VoteCountSource struct {
 }
 
 // NewVoteCountSource initializes the object.
-func NewVoteCountSource(lookup environment.Getenver) *VoteCountSource {
+func NewVoteCountSource(lookup environment.Environmenter) *VoteCountSource {
 	url := fmt.Sprintf(
 		"%s://%s:%s",
 		envVoteProtocol.Value(lookup),

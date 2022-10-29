@@ -39,7 +39,7 @@ type Redis struct {
 }
 
 // New initializes a Redis instance.
-func New(lookup environment.Getenver) *Redis {
+func New(lookup environment.Environmenter) *Redis {
 	conn := NewConn(lookup)
 	return &Redis{
 		Conn: conn,
