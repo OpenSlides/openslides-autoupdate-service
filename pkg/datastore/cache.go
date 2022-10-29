@@ -21,13 +21,13 @@ type cacheSetFunc func(keys []Key, set func(map[Key][]byte)) error
 //
 // A new cache instance has to be created with newCache().
 type cache struct {
-	data *pendingmap.PendingMap[Key, []byte]
+	data *pendingmap.PendingMap
 }
 
 // newCache creates an initialized cache instance.
 func newCache() *cache {
 	return &cache{
-		data: pendingmap.New[Key, []byte](),
+		data: pendingmap.New(),
 	}
 }
 
