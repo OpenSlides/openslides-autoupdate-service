@@ -31,14 +31,6 @@ const (
 	urlHistoryInformation = "/internal/datastore/reader/history_information"
 )
 
-// Updater returns keys that have changes. Blocks until there is
-// changed data.
-//
-// Deprivated: Use redis directly.
-type Updater interface {
-	Update(context.Context) (map[Key][]byte, error)
-}
-
 // SourceDatastore receives the data from the datastore-reader via http and
 // updates via the redis message bus.
 type SourceDatastore struct {

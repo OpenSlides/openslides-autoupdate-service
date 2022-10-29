@@ -45,15 +45,10 @@ type Source interface {
 	Update(ctx context.Context) (map[Key][]byte, error)
 }
 
-// SourcePosition is a Source that also supports getting the data at a specific position.
-type SourcePosition interface {
-	Source
-	GetPosition(ctx context.Context, position int, key ...Key) (map[Key][]byte, error)
-}
-
 // HistoryInformationer returns the history information.
 type HistoryInformationer interface {
 	HistoryInformation(ctx context.Context, fqid string, w io.Writer) error
+	GetPosition(ctx context.Context, position int, key ...Key) (map[Key][]byte, error)
 }
 
 // Datastore can be used to get values from the datastore-service.
@@ -77,7 +72,6 @@ type Datastore struct {
 }
 
 // New returns a new Datastore object.
-// func New(defaultSource Source, keySource map[string]Source, history HistoryInformationer) *Datastore {
 func New(lookup environment.Environmenter, mb Updater, options ...Option) (*Datastore, func(context.Context), error) {
 	ds := Datastore{
 		cache: newCache(),
@@ -140,32 +134,10 @@ func (d *Datastore) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error
 
 // GetPosition is like Get() but returns the data at a specific position.
 func (d *Datastore) GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
-	var data map[Key][]byte
-	// Ignore calculated keys. They are not supported on GetPosition.
-	_, normalKeys := d.splitCalculatedKeys(keys)
-	for source, keys := range normalKeys {
-		sourcePosition, ok := source.(SourcePosition)
-		if !ok {
-			// Ignore keys from sources that do not support the history.
-			continue
-		}
-
-		values, err := sourcePosition.GetPosition(ctx, position, keys...)
-		if err != nil {
-			return nil, fmt.Errorf("get keys: %w", err)
-		}
-
-		if data == nil {
-			data = values
-			continue
-		}
-
-		for k, v := range values {
-			data[k] = v
-		}
+	if d.history == nil {
+		return nil, fmt.Errorf("histroy not supported")
 	}
-
-	return data, nil
+	return d.history.GetPosition(ctx, position, keys...)
 }
 
 // RegisterChangeListener registers a function that is called whenever an
@@ -202,7 +174,7 @@ func (d *Datastore) HistoryInformation(ctx context.Context, fqid string, w io.Wr
 	return d.history.HistoryInformation(ctx, fqid, w)
 }
 
-// ListenOnUpdates listens for updates and informs all listeners.
+// listenOnUpdates listens for updates and informs all listeners.
 func (d *Datastore) listenOnUpdates(ctx context.Context, errHandler func(error)) {
 	if errHandler == nil {
 		errHandler = func(error) {}

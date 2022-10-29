@@ -125,8 +125,6 @@ func (a *Autoupdate) Connect(userID int, kb KeysBuilder) DataProvider {
 func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder, position int) (map[datastore.Key][]byte, error) {
 	var restricter datastore.Getter = a.restricter(a.datastore, userID)
 
-	//restricter = datastore.NewRecorder(restricter)
-
 	if position != 0 {
 		getter := datastore.NewGetPosition(a.datastore, position)
 		restricter = restrict.NewHistory(a.datastore, getter, userID)
@@ -140,13 +138,6 @@ func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder,
 	if err != nil {
 		return nil, fmt.Errorf("get restricted data: %w", err)
 	}
-
-	// recorder := restricter.(*datastore.Recorder)
-	// db, err := recorder.DB()
-	// if err != nil {
-	// 	return nil, fmt.Errorf("creating db: %w", err)
-	// }
-	// fmt.Println(string(db))
 
 	for k, v := range data {
 		if len(v) == 0 {

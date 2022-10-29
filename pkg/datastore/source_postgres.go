@@ -19,6 +19,14 @@ var (
 	envPostgresPassword = environment.NewSecret("postgres_password", "Postgres Password.")
 )
 
+// Updater returns keys that have changes. Blocks until there is
+// changed data.
+//
+// Deprivated: Use redis directly.
+type Updater interface {
+	Update(context.Context) (map[Key][]byte, error)
+}
+
 // SourcePostgres uses postgres to get the connections.
 type SourcePostgres struct {
 	pool    *pgxpool.Pool
