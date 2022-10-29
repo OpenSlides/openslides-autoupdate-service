@@ -125,7 +125,7 @@ func health(ctx context.Context) error {
 //
 // Returns a the service as callable.
 func initService(lookup environment.Environmenter) (func(context.Context) error, error) {
-	var backgroundTasks []func(context.Context)
+	var backgroundTasks []func(context.Context, func(error))
 	listenAddr := ":" + envAutoupdatePort.Value(lookup)
 
 	// Redis as message bus for datastore and logout events.
@@ -145,7 +145,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	backgroundTasks = append(backgroundTasks, dsBackground)
 
 	// Auth Service.
-	authService, authBackground := auth.New(lookup, messageBus, oserror.Handle)
+	authService, authBackground := auth.New(lookup, messageBus)
 	backgroundTasks = append(backgroundTasks, authBackground)
 
 	// Autoupdate Service.
@@ -160,7 +160,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	}
 
 	if metricTime > 0 {
-		runMetirc := func(ctx context.Context) {
+		runMetirc := func(ctx context.Context, errorHandler func(error)) {
 			metric.Loop(ctx, metricTime, log.Default())
 		}
 		backgroundTasks = append(backgroundTasks, runMetirc)
@@ -168,7 +168,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 
 	service := func(ctx context.Context) error {
 		for _, bg := range backgroundTasks {
-			go bg(ctx)
+			go bg(ctx, oserror.Handle)
 		}
 
 		// Start http server.

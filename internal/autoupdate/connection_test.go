@@ -8,6 +8,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
@@ -50,7 +51,7 @@ func TestConnectionReadNewData(t *testing.T) {
 	defer cancel()
 
 	next, ds, bg := getConnection()
-	go bg(shutdownCtx)
+	go bg(shutdownCtx, oserror.Handle)
 
 	if _, err := next(context.Background()); err != nil {
 		t.Errorf("next(): %v", err)
@@ -83,7 +84,7 @@ func TestConnectionEmptyData(t *testing.T) {
 	ds, bg := dsmock.NewMockDatastore(map[dskey.Key][]byte{
 		doesExistKey: []byte(`"Hello World"`),
 	})
-	go bg(shutdownCtx)
+	go bg(shutdownCtx, oserror.Handle)
 
 	s, _ := autoupdate.New(ds, RestrictAllowed)
 	kb, _ := keysbuilder.FromKeys(doesExistKey.String(), doesNotExistKey.String())
@@ -224,7 +225,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	ds, bg := dsmock.NewMockDatastore(map[dskey.Key][]byte{
 		userNameKey: []byte(`"Hello World"`),
 	})
-	go bg(shutdownCtx)
+	go bg(shutdownCtx, oserror.Handle)
 
 	s, _ := autoupdate.New(ds, RestrictAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
@@ -327,7 +328,7 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 		organization_tag/1/id: 1
 		organization_tag/2/id: 2
 	`))
-	go bg(shutdownCtx)
+	go bg(shutdownCtx, oserror.Handle)
 
 	s, _ := autoupdate.New(datastore, RestrictAllowed)
 	kb, err := keysbuilder.FromJSON(strings.NewReader(`{
@@ -394,7 +395,7 @@ func TestKeyRequestedAgain(t *testing.T) {
 		organization_tag/1/id: 1
 		organization_tag/2/id: 2
 	`))
-	go bg(shutdownCtx)
+	go bg(shutdownCtx, oserror.Handle)
 
 	s, _ := autoupdate.New(datastore, RestrictAllowed)
 	kb, err := keysbuilder.FromJSON(strings.NewReader(`{

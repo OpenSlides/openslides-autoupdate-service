@@ -77,7 +77,7 @@ type Autoupdate struct {
 //
 // You should call `go a.PruneOldData()` and `go a.ResetCache()` after creating
 // the service.
-func New(ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context.Context)) {
+func New(ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context.Context, func(error))) {
 	a := &Autoupdate{
 		datastore:  ds,
 		topic:      topic.New[dskey.Key](),
@@ -95,9 +95,9 @@ func New(ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context
 		return nil
 	})
 
-	background := func(ctx context.Context) {
-		go a.PruneOldData(ctx)
-		go a.ResetCache(ctx)
+	background := func(ctx context.Context, errorHandler func(error)) {
+		go a.pruneOldData(ctx)
+		go a.resetCache(ctx)
 	}
 
 	return a, background
@@ -149,9 +149,9 @@ func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder,
 	return data, nil
 }
 
-// PruneOldData removes old data from the topic. Blocks until the service is
+// pruneOldData removes old data from the topic. Blocks until the service is
 // closed.
-func (a *Autoupdate) PruneOldData(ctx context.Context) {
+func (a *Autoupdate) pruneOldData(ctx context.Context) {
 	tick := time.NewTicker(time.Minute)
 	defer tick.Stop()
 
@@ -165,9 +165,9 @@ func (a *Autoupdate) PruneOldData(ctx context.Context) {
 	}
 }
 
-// ResetCache runs in the background and cleans the cache from time to time.
+// resetCache runs in the background and cleans the cache from time to time.
 // Blocks until the service is closed.
-func (a *Autoupdate) ResetCache(ctx context.Context) {
+func (a *Autoupdate) resetCache(ctx context.Context) {
 	tick := time.NewTicker(datastoreCacheResetTime)
 	defer tick.Stop()
 

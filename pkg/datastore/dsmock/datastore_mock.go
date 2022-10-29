@@ -132,7 +132,7 @@ type MockDatastore struct {
 // NewMockDatastore create a MockDatastore with data.
 //
 // It is a wrapper around the datastore.Datastore object.
-func NewMockDatastore(data map[dskey.Key][]byte) (*MockDatastore, func(context.Context)) {
+func NewMockDatastore(data map[dskey.Key][]byte) (*MockDatastore, func(context.Context, func(error))) {
 	source := NewStubWithUpdate(data, NewCounter)
 	rawDS, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
 	if err != nil {

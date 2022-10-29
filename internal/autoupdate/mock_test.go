@@ -12,7 +12,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
 
-func getConnection() (autoupdate.DataProvider, *dsmock.MockDatastore, func(context.Context)) {
+func getConnection() (autoupdate.DataProvider, *dsmock.MockDatastore, func(context.Context, func(error))) {
 	datastore, dsBackground := dsmock.NewMockDatastore(map[dskey.Key][]byte{
 		userNameKey: []byte(`"Hello World"`),
 	})

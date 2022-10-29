@@ -82,7 +82,7 @@ func TestAuth(t *testing.T) {
 		"AUTH_PORT":     port,
 		"AUTH_PROTOCOL": schema,
 	})
-	a, _ := auth.New(env, nil, nil)
+	a, _ := auth.New(env, nil)
 
 	for _, tt := range []struct {
 		name    string
@@ -213,7 +213,7 @@ func TestAuth(t *testing.T) {
 }
 
 func TestFromContext(t *testing.T) {
-	a, _ := auth.New(environment.ForTests{}, nil, nil)
+	a, _ := auth.New(environment.ForTests{}, nil)
 
 	t.Run("Empty Context", func(t *testing.T) {
 		defer func() {
@@ -250,8 +250,8 @@ func TestLogout(t *testing.T) {
 	logouter := NewLockoutEventMock()
 	defer logouter.Close()
 
-	a, bg := auth.New(environment.ForTests{}, logouter, errHandler)
-	go bg(shutdownCtx)
+	a, bg := auth.New(environment.ForTests{}, logouter)
+	go bg(shutdownCtx, errHandler)
 
 	t.Run("Closing session", func(t *testing.T) {
 		ctx, err := a.Authenticate(validSession(t, withSessionID("session1")))

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
@@ -19,7 +20,7 @@ func TestProjectionDoesNotExist(t *testing.T) {
 	defer cancel()
 
 	ds, bg := dsmock.NewMockDatastore(nil)
-	go bg(shutdownCtx)
+	go bg(shutdownCtx, oserror.Handle)
 
 	projector.Register(ds, testSlides())
 
@@ -66,7 +67,7 @@ func TestProjectionUpdateProjection(t *testing.T) {
 		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
 		dskey.MustKey("projection/1/type"):              []byte(`"test1"`),
 	})
-	go bg(shutdownCtx)
+	go bg(shutdownCtx, oserror.Handle)
 
 	projector.Register(ds, testSlides())
 
@@ -101,7 +102,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 		dskey.MustKey("projection/1/type"):              []byte(`"projection"`),
 		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
 	})
-	go bg(shutdownCtx)
+	go bg(shutdownCtx, oserror.Handle)
 
 	projector.Register(ds, testSlides())
 
@@ -149,7 +150,7 @@ func TestProjectionUpdateSlide(t *testing.T) {
 		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/6"`),
 		dskey.MustKey("projection/1/type"):              []byte(`"test_model"`),
 	})
-	go bg(shutdownCtx)
+	go bg(shutdownCtx, oserror.Handle)
 
 	projector.Register(ds, testSlides())
 
@@ -182,7 +183,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
 		dskey.MustKey("projection/1/type"):              []byte(`"test_model"`),
 	})
-	go bg(shutdownCtx)
+	go bg(shutdownCtx, oserror.Handle)
 
 	projector.Register(ds, testSlides())
 

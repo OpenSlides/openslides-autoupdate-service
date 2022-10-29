@@ -70,7 +70,7 @@ type Auth struct {
 //
 // Returns the initialized Auth objectand a function to be called in the
 // background.
-func New(lookup environment.Environmenter, messageBus LogoutEventer, errHandler func(error)) (*Auth, func(context.Context)) {
+func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, func(context.Context, func(error))) {
 	url := fmt.Sprintf(
 		"%s://%s:%s",
 		envAuthProtocol.Value(lookup),
@@ -91,12 +91,12 @@ func New(lookup environment.Environmenter, messageBus LogoutEventer, errHandler 
 	// Make sure the topic is not empty
 	a.logedoutSessions.Publish("")
 
-	background := func(ctx context.Context) {
+	background := func(ctx context.Context, errorHandler func(error)) {
 		if fake {
 			return
 		}
 
-		go a.listenOnLogouts(ctx, messageBus, errHandler)
+		go a.listenOnLogouts(ctx, messageBus, errorHandler)
 		go a.pruneOldData(ctx)
 	}
 
@@ -181,7 +181,7 @@ func (a *Auth) FromContext(ctx context.Context) int {
 	return v.(int)
 }
 
-// ListenOnLogouts listen on logout events and closes the connections.
+// listenOnLogouts listen on logout events and closes the connections.
 func (a *Auth) listenOnLogouts(ctx context.Context, logoutEventer LogoutEventer, errHandler func(error)) {
 	if errHandler == nil {
 		errHandler = func(error) {}

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
@@ -130,7 +131,7 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
-	go bg(shutdownCtx)
+	go bg(shutdownCtx, oserror.Handle)
 
 	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
 		fields, err := ds.Get(context.Background(), myKey1)
@@ -167,7 +168,7 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
-	go bg(shutdownCtx)
+	go bg(shutdownCtx, oserror.Handle)
 
 	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
 		fields, err := ds.Get(context.Background(), myKey1)
@@ -207,7 +208,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
-	go bg(shutdownCtx)
+	go bg(shutdownCtx, oserror.Handle)
 
 	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
 		field, err := ds.Get(ctx, myKey1)
@@ -322,7 +323,7 @@ func TestChangeListeners(t *testing.T) {
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
-	go bg(shutdownCtx)
+	go bg(shutdownCtx, oserror.Handle)
 
 	var receivedData map[dskey.Key][]byte
 	received := make(chan struct{}, 1)
@@ -348,7 +349,7 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
-	go bg(shutdownCtx)
+	go bg(shutdownCtx, oserror.Handle)
 
 	var callCounter int
 	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
@@ -407,7 +408,7 @@ func TestResetWhileUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
-	go bg(shutdownCtx)
+	go bg(shutdownCtx, oserror.Handle)
 
 	// Fetch key to fill the cache.
 	ds.Get(context.Background(), myKey1)

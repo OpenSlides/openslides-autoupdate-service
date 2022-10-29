@@ -71,7 +71,7 @@ type Datastore struct {
 }
 
 // New returns a new Datastore object.
-func New(lookup environment.Environmenter, mb Updater, options ...Option) (*Datastore, func(context.Context), error) {
+func New(lookup environment.Environmenter, mb Updater, options ...Option) (*Datastore, func(context.Context, func(error)), error) {
 	ds := Datastore{
 		cache: newCache(),
 
@@ -81,14 +81,16 @@ func New(lookup environment.Environmenter, mb Updater, options ...Option) (*Data
 		calculatedKey:    make(map[dskey.Key]string),
 	}
 
-	var backgroundFuncs []func(context.Context)
+	var backgroundFuncs []func(context.Context, func(error))
 	for _, o := range options {
 		bgFunc, err := o(&ds, lookup)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		backgroundFuncs = append(backgroundFuncs, bgFunc)
+		if bgFunc != nil {
+			backgroundFuncs = append(backgroundFuncs, bgFunc)
+		}
 	}
 
 	if ds.defaultSource == nil {
@@ -101,15 +103,11 @@ func New(lookup environment.Environmenter, mb Updater, options ...Option) (*Data
 
 	metric.Register(ds.metric)
 
-	background := func(ctx context.Context) {
-		go ds.listenOnUpdates(ctx, oserror.Handle)
+	background := func(ctx context.Context, errorHandler func(error)) {
+		go ds.listenOnUpdates(ctx, errorHandler)
 
 		for _, f := range backgroundFuncs {
-			if f == nil {
-				continue
-			}
-
-			go f(ctx)
+			go f(ctx, errorHandler)
 		}
 	}
 
