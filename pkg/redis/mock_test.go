@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
 )
 
 func getRedis() *redis.Redis {
 	var c redis.Connection = mockConn{}
 	if useRealRedis {
-		c = redis.NewConnection("localhost:6379")
+		c = redis.NewConn(environment.ForTests{})
 	}
 	return &redis.Redis{Conn: c}
 }
@@ -62,7 +63,7 @@ func (c mockConn) XREAD(ctx context.Context, count, stream, lastID string) (inte
 	return data, err
 }
 
-func cmpMap(one, two map[datastore.Key][]byte) bool {
+func cmpMap(one, two map[dskey.Key][]byte) bool {
 	if len(one) != len(two) {
 		return false
 	}

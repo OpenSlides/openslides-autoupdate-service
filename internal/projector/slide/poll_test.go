@@ -7,6 +7,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -81,7 +82,7 @@ func TestPoll(t *testing.T) {
 
 	for _, tt := range []struct {
 		name   string
-		data   map[datastore.Key][]byte
+		data   map[dskey.Key][]byte
 		expect string
 	}{
 		{
@@ -152,8 +153,8 @@ func TestPoll(t *testing.T) {
 		},
 		{
 			"Poll state finished",
-			changeData(data, map[datastore.Key][]byte{
-				MustKey("poll/1/state"): []byte(`"finished"`),
+			changeData(data, map[dskey.Key][]byte{
+				dskey.MustKey("poll/1/state"): []byte(`"finished"`),
 			}),
 			`{
                 "id":1,
@@ -199,7 +200,8 @@ func TestPoll(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(tt.data))
+			ds, _ := dsmock.NewMockDatastore(tt.data)
+			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
 				ContentObjectID: "poll/1",

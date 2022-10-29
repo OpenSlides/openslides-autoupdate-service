@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // Fetcher is a helper to fetch many keys from the datastore.
@@ -19,12 +19,12 @@ import (
 //
 // Make sure to call Fetcher.Err() at the end to see, if an error happened.
 type Fetcher struct {
-	getter datastore.Getter
+	getter Getter
 	err    error
 }
 
 // NewFetcher initializes a Fetcher object.
-func NewFetcher(getter datastore.Getter) *Fetcher {
+func NewFetcher(getter Getter) *Fetcher {
 	return &Fetcher{getter: getter}
 }
 
@@ -38,7 +38,7 @@ func (f *Fetcher) Fetch(ctx context.Context, value interface{}, keyFmt string, a
 		return
 	}
 
-	fqfield, err := datastore.KeyFromString(fmt.Sprintf(keyFmt, a...))
+	fqfield, err := dskey.FromString(fmt.Sprintf(keyFmt, a...))
 	if err != nil {
 		f.err = fmt.Errorf("invalid key: %s", fmt.Sprintf(keyFmt, a...))
 		return
@@ -66,7 +66,7 @@ func (f *Fetcher) FetchIfExist(ctx context.Context, value interface{}, keyFmt st
 		return
 	}
 
-	fqfield, err := datastore.KeyFromString(fmt.Sprintf(keyFmt, a...))
+	fqfield, err := dskey.FromString(fmt.Sprintf(keyFmt, a...))
 	if err != nil {
 		f.err = fmt.Errorf("invalid key: %s", fmt.Sprintf(keyFmt, a...))
 		return
@@ -103,8 +103,8 @@ func (f *Fetcher) Object(ctx context.Context, fqID string, fields ...string) map
 		return nil
 	}
 
-	keys := make([]datastore.Key, len(fields)+1)
-	idKey, err := datastore.KeyFromString(fqID + "/id")
+	keys := make([]dskey.Key, len(fields)+1)
+	idKey, err := dskey.FromString(fqID + "/id")
 	if err != nil {
 		f.err = fmt.Errorf("invalid key: %s", fqID+"/id")
 		return nil
@@ -112,7 +112,7 @@ func (f *Fetcher) Object(ctx context.Context, fqID string, fields ...string) map
 	keys[0] = idKey
 
 	for i := 0; i < len(fields); i++ {
-		k, err := datastore.KeyFromString(fqID + "/" + fields[i])
+		k, err := dskey.FromString(fqID + "/" + fields[i])
 		if err != nil {
 			f.err = fmt.Errorf("invalid key: %s", fqID+fields[i])
 			return nil
@@ -133,7 +133,7 @@ func (f *Fetcher) Object(ctx context.Context, fqID string, fields ...string) map
 
 	object := make(map[string]json.RawMessage, len(fields))
 	for i := 0; i < len(fields); i++ {
-		key, err := datastore.KeyFromString(fqID + "/" + fields[i])
+		key, err := dskey.FromString(fqID + "/" + fields[i])
 		if err != nil {
 			f.err = fmt.Errorf("invalid key: %s", fqID+"/"+fields[i])
 			return nil

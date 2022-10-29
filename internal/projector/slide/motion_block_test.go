@@ -7,6 +7,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -58,7 +59,7 @@ func TestMotionBlock(t *testing.T) {
 
 	for _, tt := range []struct {
 		name   string
-		data   map[datastore.Key][]byte
+		data   map[dskey.Key][]byte
 		expect string
 	}{
 		{
@@ -104,7 +105,8 @@ func TestMotionBlock(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(tt.data))
+			ds, _ := dsmock.NewMockDatastore(tt.data)
+			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
 				ContentObjectID: "motion_block/1",

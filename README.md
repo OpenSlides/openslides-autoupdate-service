@@ -37,7 +37,7 @@ docker run --network host redis
 
 ```
 export SECRETS_PATH=secrets
-go build ./cmd/autoupdate
+go build
 ./autoupdate
 ```
 
@@ -64,7 +64,7 @@ To restart the service when ever a source file has shanged, the tool
 
 ```
 go install github.com/githubnemo/CompileDaemon@latest
-CompileDaemon -log-prefix=false -build "go build ./cmd/autoupdate" -command "./autoupdate"
+CompileDaemon -log-prefix=false -build "go build" -command "./autoupdate"
 ```
 
 The make target `build-dev` creates a docker image that uses this tool. The
@@ -203,58 +203,7 @@ It returns all fields for the given objects restricted for the given user id.
 
 ## Configuration
 
-### Environment variables
-
-The Service uses the following environment variables:
-
-* `AUTOUPDATE_PORT`: Lets the service listen on port 9012. The default is
-  `9012`.
-* `AUTOUPDATE_HOST`: The device where the service starts. The default is am
-  empty string which starts the service on any device.
-* `DATASTORE_READER_HOST`: Host of the datastore reader. The default is
-  `localhost`.
-* `DATASTORE_READER_PORT`: Port of the datastore reader. The default is `9010`.
-* `DATASTORE_READER_PROTOCOL`: Protocol of the datastore reader. The default is
-  `http`.
-* `MESSAGE_BUS_HOST`: Host of the redis server. The default is `localhost`.
-* `MESSAGE_BUS_PORT`: Port of the redis server. The default is `6379`.
-* `REDIS_TEST_CONN`: Test the redis connection on startup. Disable on the cloud
-  if redis needs more time to start then this service. The default is `true`.
-* `DATASTORE_DATABASE_HOST`: Postgres Host. The default is `localhost`.
-* `DATASTORE_DATABASE_PORT`: Postgres Port. The default is `5432`.
-* `DATASTORE_DATABASE_USER`: Postgres User. The default is `openslides`.
-* `DATASTORE_DATABASE_NAME`: Postgres Database. The default is `openslides`.
-* `VOTE_HOST`: Host of the vote-service. The default is `localhost`.
-* `VOTE_PORT`: Port of the vote-service. The default is `9013`.
-* `VOTE_PROTOCOL`: Protocol of the vote-service. The default is `http`.
-* `AUTH`: Sets the type of the auth service. `fake` (default) or `ticket`.
-* `AUTH_HOST`: Host of the auth service. The default is `localhost`.
-* `AUTH_PORT`: Port of the auth service. The default is `9004`.
-* `AUTH_PROTOCOL`: Protocol of the auth servicer. The default is `http`.
-* `OPENSLIDES_DEVELOPMENT`: If set, the service uses the default secrets. The
-  default is `false`.
-* `METRIC_INTERVAL`: Time in how often the metrics are gathered. Zero disables
-  the metrics. The default is `5m`.
-* `MAX_PARALLEL_KEYS`: Max keys that are send in one request to the datastore.
-  The default is `1000`.
-* `DATASTORE_TIMEOUT`: Time until a request to the datastore times out. The
-  default is `3s`.
-* `SECRETS_PATH`: Path where the secrets are stored. The default is
-  `/run/secrets/`.
-
-Valid units for duration values are "ns", "us" (or "µs"), "ms", "s", "m", "h".
-One number without a unit is interpreted as seconds. So `3` is the same as `3s`.
-
-### Secrets
-
-Secrets are filenames in the directory `SECRETS_PATH` (default:
-`/run/secrets/`). The service only starts if it can find each secret file and
-read its content. The default values are only used, if the environment variable
-`OPENSLIDES_DEVELOPMENT` is set.
-
-* `auth_token_key`: Key to sign the JWT auth tocken.
-* `auth_cookie_key`: Key to sign the JWT auth cookie.
-* `postgres_password`: Postgres password.
+The service is configurated with environment variables. See [all environment varialbes](environment.md).
 
 
 ## Update models.yml

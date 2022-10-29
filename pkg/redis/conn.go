@@ -5,7 +5,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/gomodule/redigo/redis"
+)
+
+var (
+	envMessageBusHost = environment.NewVariable("MESSAGE_BUS_HOST", "localhost", "Host of the redis server.")
+	envMessageBusPort = environment.NewVariable("MESSAGE_BUS_PORT", "6379", "Port of the redis server.")
 )
 
 // Pool hold the redis connection.
@@ -13,9 +19,11 @@ type Pool struct {
 	pool *redis.Pool
 }
 
-// NewConnection creates a new pool.
-func NewConnection(addr string) *Pool {
-	return &Pool{
+// NewConn creates a new pool.
+func NewConn(lookup environment.Environmenter) *Pool {
+	addr := envMessageBusHost.Value(lookup) + ":" + envMessageBusPort.Value(lookup)
+
+	pool := Pool{
 		pool: &redis.Pool{
 			MaxActive:   100,
 			Wait:        true,
@@ -24,6 +32,8 @@ func NewConnection(addr string) *Pool {
 			Dial:        func() (redis.Conn, error) { return redis.Dial("tcp", addr) },
 		},
 	}
+
+	return &pool
 }
 
 // TestConn sends a ping command to redis. Does not return the response, but an

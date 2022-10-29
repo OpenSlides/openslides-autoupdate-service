@@ -10,20 +10,22 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsrecorder"
 )
 
 const longCalculation = time.Second
 
 // Datastore gets values for keys and informs, if they change.
 type Datastore interface {
-	Get(ctx context.Context, keys ...datastore.Key) (map[datastore.Key][]byte, error)
-	RegisterCalculatedField(field string, f func(ctx context.Context, key datastore.Key, changed map[datastore.Key][]byte) ([]byte, error))
+	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
+	RegisterCalculatedField(field string, f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error))
 }
 
 // Register initializes a new projector.
 func Register(ds Datastore, slides *SlideStore) {
-	hotKeys := map[datastore.Key]map[datastore.Key]struct{}{}
-	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield datastore.Key, changed map[datastore.Key][]byte) (bs []byte, err error) {
+	hotKeys := map[dskey.Key]map[dskey.Key]struct{}{}
+	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield dskey.Key, changed map[dskey.Key][]byte) (bs []byte, err error) {
 		var p7on *Projection
 		start := time.Now()
 		defer func() {
@@ -55,7 +57,7 @@ func Register(ds Datastore, slides *SlideStore) {
 			}
 		}
 
-		recorder := datastore.NewRecorder(ds)
+		recorder := dsrecorder.New(ds)
 		fetch := datastore.NewFetcher(recorder)
 
 		defer func() {

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"sync"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // ErrNotExist is returned from pendingmap.Get() when a key was not pending at
@@ -36,17 +38,17 @@ var ErrNotExist = errors.New("key does not exist")
 // To set a value, there are different methods. SetIfExist() sets values if they
 // are pending or already stored. SetIfPending() sets a value only if it is
 // pending. SetEmptyIfPending() sets a value to its zero value if it is pending.
-type PendingMap[K comparable, V any] struct {
+type PendingMap struct {
 	mu      sync.RWMutex
-	data    map[K]V
-	pending map[K]chan struct{}
+	data    map[dskey.Key][]byte
+	pending map[dskey.Key]chan struct{}
 }
 
 // New initializes a pendingDict.
-func New[K comparable, V any]() *PendingMap[K, V] {
-	return &PendingMap[K, V]{
-		data:    map[K]V{},
-		pending: map[K]chan struct{}{},
+func New() *PendingMap {
+	return &PendingMap{
+		data:    make(map[dskey.Key][]byte),
+		pending: make(map[dskey.Key]chan struct{}),
 	}
 }
 
@@ -65,12 +67,12 @@ func New[K comparable, V any]() *PendingMap[K, V] {
 // returns an error.
 //
 // Possible Errors: context.Canceled, context.DeadlineExeeded or ErrNotExist
-func (pm *PendingMap[K, V]) Get(ctx context.Context, keys ...K) (map[K]V, error) {
+func (pm *PendingMap) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	if err := pm.waitForPending(ctx, keys); err != nil {
 		return nil, err
 	}
 
-	out := make(map[K]V, len(keys))
+	out := make(map[dskey.Key][]byte, len(keys))
 	err := pm.reading(func() error {
 		for _, k := range keys {
 			v, ok := pm.data[k]
@@ -94,7 +96,7 @@ func (pm *PendingMap[K, V]) Get(ctx context.Context, keys ...K) (map[K]V, error)
 // that a key is not pending when this starts and gets pending whil it runs.
 //
 // Possible Errors: context.Canceled or context.DeadlineExeeded
-func (pm *PendingMap[K, V]) waitForPending(ctx context.Context, keys []K) error {
+func (pm *PendingMap) waitForPending(ctx context.Context, keys []dskey.Key) error {
 	for _, k := range keys {
 		var pending chan struct{}
 		pm.reading(func() error {
@@ -120,8 +122,8 @@ func (pm *PendingMap[K, V]) waitForPending(ctx context.Context, keys []K) error 
 // Skips keys that are already pending or are already in the map.
 //
 // Returns all keys that where marked as pending (did not exist).
-func (pm *PendingMap[K, V]) MarkPending(keys ...K) []K {
-	var needMark []K
+func (pm *PendingMap) MarkPending(keys ...dskey.Key) []dskey.Key {
+	var needMark []dskey.Key
 	pm.reading(func() error {
 		for _, key := range keys {
 			if _, inStore := pm.data[key]; inStore {
@@ -140,7 +142,7 @@ func (pm *PendingMap[K, V]) MarkPending(keys ...K) []K {
 		return nil
 	}
 
-	marked := make([]K, 0, len(needMark))
+	marked := make([]dskey.Key, 0, len(needMark))
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
@@ -164,7 +166,7 @@ func (pm *PendingMap[K, V]) MarkPending(keys ...K) []K {
 // UnMarkPending sets any key that is still pending not to be pending.
 //
 // Skips keys that are already pending or are already in the database.
-func (pm *PendingMap[K, V]) UnMarkPending(keys ...K) {
+func (pm *PendingMap) UnMarkPending(keys ...dskey.Key) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
@@ -186,7 +188,7 @@ func (pm *PendingMap[K, V]) UnMarkPending(keys ...K) {
 // SetIfPendingOrExists updates values, but only if the key already exists or is pending.
 //
 // If the key is pending, it is unmarked and all listeners are informed.
-func (pm *PendingMap[K, V]) SetIfPendingOrExists(data map[K]V) {
+func (pm *PendingMap) SetIfPendingOrExists(data map[dskey.Key][]byte) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
@@ -210,7 +212,7 @@ func (pm *PendingMap[K, V]) SetIfPendingOrExists(data map[K]V) {
 // SetIfPending updates values but only if the key is pending.
 //
 // Informs all listeners.
-func (pm *PendingMap[K, V]) SetIfPending(data map[K]V) {
+func (pm *PendingMap) SetIfPending(data map[dskey.Key][]byte) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
@@ -224,41 +226,41 @@ func (pm *PendingMap[K, V]) SetIfPending(data map[K]V) {
 }
 
 // SetEmptyIfPending set all keys that are still pending to the zero value.
-func (pm *PendingMap[K, V]) SetEmptyIfPending(keys ...K) {
+func (pm *PendingMap) SetEmptyIfPending(keys ...dskey.Key) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
 	for _, key := range keys {
 		if pending, isPending := pm.pending[key]; isPending {
-			var zero V
-			pm.data[key] = zero
+			pm.data[key] = nil
 			close(pending)
 			delete(pm.pending, key)
 		}
 	}
 }
 
-func (pm *PendingMap[K, V]) Len() int {
+// Len returns the amout of keys in the pending map.
+func (pm *PendingMap) Len() int {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
 	return len(pm.data)
 }
 
-func (pm *PendingMap[K, V]) reading(cmd func() error) error {
+func (pm *PendingMap) reading(cmd func() error) error {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 	return cmd()
 }
 
-// // size returns the size of all values in the cache in bytes.
-// func (pm *pendingMap[K,V]) size() int {
-// 	pm.RLock()
-// 	defer pm.RUnlock()
+// size returns the size of all values in the cache in bytes.
+func (pm *PendingMap) size() int {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
 
-// 	var size int
-// 	for _, v := range pm.data {
-// 		size += len(v)
-// 	}
-// 	return size
-// }
+	var size int
+	for _, v := range pm.data {
+		size += len(v)
+	}
+	return size
+}

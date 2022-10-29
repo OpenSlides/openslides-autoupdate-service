@@ -4,31 +4,23 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
-func MustKey(in string) datastore.Key {
-	k, err := datastore.KeyFromString(in)
-	if err != nil {
-		panic(err)
-	}
-	return k
-}
-
 var (
-	myKey1 = MustKey("collection/1/field")
-	myKey2 = MustKey("collection/2/field")
+	myKey1 = dskey.MustKey("collection/1/field")
+	myKey2 = dskey.MustKey("collection/2/field")
 )
 
 func TestFilterFirstCall(t *testing.T) {
-	data := map[datastore.Key][]byte{
+	data := map[dskey.Key][]byte{
 		myKey1: []byte("v1"),
 		myKey2: nil,
 	}
 
 	new(filter).filter(data)
 
-	expect := map[datastore.Key][]byte{
+	expect := map[dskey.Key][]byte{
 		myKey1: []byte("v1"),
 	}
 
@@ -40,100 +32,100 @@ func TestFilterFirstCall(t *testing.T) {
 func TestFilterChange(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
-		origian map[datastore.Key][]byte
-		new     map[datastore.Key][]byte
-		expect  map[datastore.Key][]byte
+		origian map[dskey.Key][]byte
+		new     map[dskey.Key][]byte
+		expect  map[dskey.Key][]byte
 	}{
 		{
 			"Data does not change",
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: []byte("v1"),
 			},
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: []byte("v1"),
 			},
-			map[datastore.Key][]byte{},
+			map[dskey.Key][]byte{},
 		},
 		{
 			"nil does not change",
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: nil,
 			},
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: nil,
 			},
-			map[datastore.Key][]byte{},
+			map[dskey.Key][]byte{},
 		},
 		{
 			"data does change to nil",
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: []byte("v1"),
 			},
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: nil,
 			},
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: nil,
 			},
 		},
 		{
 			"nil does change to data",
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: nil,
 			},
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: []byte("v1"),
 			},
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: []byte("v1"),
 			},
 		},
 		{
 			"new key",
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: []byte("v1"),
 			},
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: []byte("v1"),
 				myKey2: []byte("v2"),
 			},
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey2: []byte("v2"),
 			},
 		},
 		{
 			"new key with old key",
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: []byte("v1"),
 			},
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: []byte("v1"),
 				myKey2: []byte("v2"),
 			},
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey2: []byte("v2"),
 			},
 		},
 		{
 			"new key nil",
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: []byte("v1"),
 			},
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: []byte("v1"),
 				myKey2: nil,
 			},
-			map[datastore.Key][]byte{},
+			map[dskey.Key][]byte{},
 		},
 		{
 			"don't ask for second key",
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: []byte("v1"),
 			},
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey2: []byte("v2"),
 			},
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey2: []byte("v2"),
 			},
 		},
@@ -152,23 +144,23 @@ func TestFilterChange(t *testing.T) {
 func TestFilterChangeTwice(t *testing.T) {
 	for _, tt := range []struct {
 		name        string
-		origian     map[datastore.Key][]byte
-		firstChange map[datastore.Key][]byte
-		new         map[datastore.Key][]byte
-		expect      map[datastore.Key][]byte
+		origian     map[dskey.Key][]byte
+		firstChange map[dskey.Key][]byte
+		new         map[dskey.Key][]byte
+		expect      map[dskey.Key][]byte
 	}{
 		{
 			"Key does not change",
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: []byte("v1"),
 			},
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: []byte("v1"),
 			},
-			map[datastore.Key][]byte{
+			map[dskey.Key][]byte{
 				myKey1: []byte("v1"),
 			},
-			map[datastore.Key][]byte{},
+			map[dskey.Key][]byte{},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

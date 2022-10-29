@@ -9,15 +9,15 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 type testData struct {
 	name          string
-	data          map[datastore.Key][]byte
+	data          map[dskey.Key][]byte
 	expect        []int
 	expectOne     bool
 	requestUserID int
@@ -39,9 +39,14 @@ func testCase(name string, t *testing.T, f collection.FieldRestricter, expect bo
 		o(&td)
 	}
 
-	userIDKey, _ := datastore.KeyFromString(fmt.Sprintf("user/%d/id", td.requestUserID))
+	if td.requestUserID != 0 {
+		userIDKey, err := dskey.FromString(fmt.Sprintf("user/%d/id", td.requestUserID))
+		if err != nil {
+			t.Fatalf("invalid key %v", fmt.Sprintf("user/%d/id", td.requestUserID))
+		}
 
-	td.data[userIDKey] = []byte(strconv.Itoa(td.requestUserID))
+		td.data[userIDKey] = []byte(strconv.Itoa(td.requestUserID))
+	}
 
 	td.test(t, f)
 }
@@ -60,7 +65,7 @@ func testCaseMulti(name string, t *testing.T, f collection.FieldRestricter, ids,
 		o(&td)
 	}
 
-	userIDKey, _ := datastore.KeyFromString(fmt.Sprintf("user/%d/id", td.requestUserID))
+	userIDKey := dskey.MustKey(fmt.Sprintf("user/%d/id", td.requestUserID))
 
 	td.data[userIDKey] = []byte(strconv.Itoa(td.requestUserID))
 
@@ -111,10 +116,10 @@ func withPerms(meetingID int, perms ...perm.TPermission) testCaseOption {
 		permString = permString[:len(permString)-1] + "]"
 		groupID := 1000 + 337
 
-		groupsKey, _ := datastore.KeyFromString(fmt.Sprintf("user/1/group_$%d_ids", meetingID))
-		groupIDKey, _ := datastore.KeyFromString(fmt.Sprintf("group/%d/id", groupID))
-		groupPermissionKey, _ := datastore.KeyFromString(fmt.Sprintf("group/%d/permissions", groupID))
-		meetingIDKey, _ := datastore.KeyFromString(fmt.Sprintf("meeting/%d/id", meetingID))
+		groupsKey := dskey.MustKey(fmt.Sprintf("user/1/group_$%d_ids", meetingID))
+		groupIDKey := dskey.MustKey(fmt.Sprintf("group/%d/id", groupID))
+		groupPermissionKey := dskey.MustKey(fmt.Sprintf("group/%d/permissions", groupID))
+		meetingIDKey := dskey.MustKey(fmt.Sprintf("meeting/%d/id", meetingID))
 
 		td.data[groupsKey] = jsonAppend(td.data[groupsKey], groupID)
 		td.data[groupIDKey] = []byte(strconv.Itoa(groupID))

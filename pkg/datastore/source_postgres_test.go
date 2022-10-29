@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/jackc/pgx/v5"
 	"github.com/ory/dockertest/v3"
 )
@@ -77,7 +79,7 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			source, err := datastore.NewSourcePostgres(ctx, tp.Addr, "password", nil)
+			source, err := datastore.NewSourcePostgres(environment.ForTests(tp.Env), nil)
 			if err != nil {
 				t.Fatalf("NewSource(): %v", err)
 			}
@@ -88,9 +90,9 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 			}
 			defer tp.dropData(ctx)
 
-			keys := make([]datastore.Key, 0, len(tt.data))
+			keys := make([]dskey.Key, 0, len(tt.data))
 			for k := range tt.expect {
-				keys = append(keys, datastore.MustKey(k))
+				keys = append(keys, dskey.MustKey(k))
 			}
 
 			got, err := source.Get(ctx, keys...)
@@ -98,9 +100,9 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 				t.Fatalf("Get: %v", err)
 			}
 
-			expect := make(map[datastore.Key][]byte)
+			expect := make(map[dskey.Key][]byte)
 			for k, v := range tt.expect {
-				expect[datastore.MustKey(k)] = v
+				expect[dskey.MustKey(k)] = v
 			}
 
 			if !reflect.DeepEqual(got, expect) {
@@ -124,19 +126,19 @@ func TestBigQuery(t *testing.T) {
 	}
 	defer tp.Close()
 
-	source, err := datastore.NewSourcePostgres(ctx, tp.Addr, "password", nil)
+	source, err := datastore.NewSourcePostgres(environment.ForTests(tp.Env), nil)
 	if err != nil {
 		t.Fatalf("NewSource(): %v", err)
 	}
 
 	count := 2_000
 
-	keys := make([]datastore.Key, count)
+	keys := make([]dskey.Key, count)
 	for i := 0; i < count; i++ {
-		keys[i] = datastore.Key{"user", 1, fmt.Sprintf("f%d", i)}
+		keys[i] = dskey.Key{Collection: "user", ID: 1, Field: fmt.Sprintf("f%d", i)}
 	}
 
-	testData := make(map[datastore.Key][]byte)
+	testData := make(map[dskey.Key][]byte)
 	for _, key := range keys {
 		testData[key] = []byte(fmt.Sprintf(`"%s"`, key.String()))
 	}
@@ -159,7 +161,7 @@ type testPostgres struct {
 	dockerPool     *dockertest.Pool
 	dockerResource *dockertest.Resource
 
-	Addr string
+	Env map[string]string
 
 	pgxConfig *pgx.ConnConfig
 }
@@ -175,7 +177,7 @@ func newTestPostgres(ctx context.Context) (tp *testPostgres, err error) {
 		Tag:        "11",
 		Env: []string{
 			"POSTGRES_USER=postgres",
-			"POSTGRES_PASSWORD=password",
+			"POSTGRES_PASSWORD=openslides",
 			"POSTGRES_DB=database",
 		},
 	}
@@ -186,20 +188,23 @@ func newTestPostgres(ctx context.Context) (tp *testPostgres, err error) {
 	}
 
 	port := resource.GetPort("5432/tcp")
-	addr := fmt.Sprintf("postgres://postgres@localhost:%s/database", port)
+	addr := fmt.Sprintf("postgres://postgres:openslides@localhost:%s/database", port)
 	config, err := pgx.ParseConfig(addr)
 	if err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
-
-	config.Password = "password"
 
 	tp = &testPostgres{
 		dockerPool:     pool,
 		dockerResource: resource,
 		pgxConfig:      config,
 
-		Addr: addr,
+		Env: map[string]string{
+			"DATASTORE_DATABASE_HOST": "localhost",
+			"DATASTORE_DATABASE_PORT": port,
+			"DATASTORE_DATABASE_NAME": "database",
+			"DATASTORE_DATABASE_USER": "postgres",
+		},
 	}
 
 	defer func() {
@@ -261,7 +266,7 @@ func (tp *testPostgres) addSchema(ctx context.Context) error {
 	return nil
 }
 
-func (tp *testPostgres) addTestData(ctx context.Context, data map[datastore.Key][]byte) error {
+func (tp *testPostgres) addTestData(ctx context.Context, data map[dskey.Key][]byte) error {
 	objects := make(map[string]map[string]json.RawMessage)
 	for k, v := range data {
 		fqid := k.FQID()

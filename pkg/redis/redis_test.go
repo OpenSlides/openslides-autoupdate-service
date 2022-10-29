@@ -5,21 +5,13 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
 )
 
 // useRealRedis desides, if a real redis instance is used or a fake redis
 // mock.
 const useRealRedis = false
-
-func MustKey(in string) datastore.Key {
-	k, err := datastore.KeyFromString(in)
-	if err != nil {
-		panic(err)
-	}
-	return k
-}
 
 func TestUpdateOnce(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -30,10 +22,10 @@ func TestUpdateOnce(t *testing.T) {
 		t.Errorf("Update() returned an unexpected error %v", err)
 	}
 
-	expect := map[datastore.Key][]byte{
-		MustKey("user/1/name"): []byte("Hubert"),
-		MustKey("user/2/name"): []byte("Isolde"),
-		MustKey("user/3/name"): []byte("Igor"),
+	expect := map[dskey.Key][]byte{
+		dskey.MustKey("user/1/name"): []byte("Hubert"),
+		dskey.MustKey("user/2/name"): []byte("Isolde"),
+		dskey.MustKey("user/3/name"): []byte("Igor"),
 	}
 	if !cmpMap(data, expect) {
 		t.Errorf("Update() returned %v, expected %v", data, expect)
@@ -54,7 +46,7 @@ func TestUpdateTwice(t *testing.T) {
 		t.Errorf("Update() returned an unexpected error %v", err)
 	}
 
-	expect := map[datastore.Key][]byte{}
+	expect := map[dskey.Key][]byte{}
 	if !cmpMap(keys, expect) {
 		t.Errorf("Update() returned %v, expected %v", keys, expect)
 	}

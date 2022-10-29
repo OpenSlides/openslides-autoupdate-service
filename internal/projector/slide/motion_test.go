@@ -7,6 +7,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -193,7 +194,7 @@ func TestMotion(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		options []byte
-		data    map[datastore.Key][]byte
+		data    map[dskey.Key][]byte
 		expect  string
 	}{
 		{
@@ -297,13 +298,13 @@ func TestMotion(t *testing.T) {
 		{
 			"motion including conditional fields",
 			[]byte(`{"mode":"final"}`),
-			changeData(data, map[datastore.Key][]byte{
-				MustKey("meeting/1/motions_enable_text_on_projector"):           []byte(`true`),
-				MustKey("meeting/1/motions_enable_reason_on_projector"):         []byte(`true`),
-				MustKey("meeting/1/motions_show_referring_motions"):             []byte(`true`),
-				MustKey("meeting/1/motions_enable_recommendation_on_projector"): []byte(`true`),
-				MustKey("motion/1/lead_motion_id"):                              []byte(`2`),
-				MustKey("motion/1/statute_paragraph_id"):                        []byte(`1`),
+			changeData(data, map[dskey.Key][]byte{
+				dskey.MustKey("meeting/1/motions_enable_text_on_projector"):           []byte(`true`),
+				dskey.MustKey("meeting/1/motions_enable_reason_on_projector"):         []byte(`true`),
+				dskey.MustKey("meeting/1/motions_show_referring_motions"):             []byte(`true`),
+				dskey.MustKey("meeting/1/motions_enable_recommendation_on_projector"): []byte(`true`),
+				dskey.MustKey("motion/1/lead_motion_id"):                              []byte(`2`),
+				dskey.MustKey("motion/1/statute_paragraph_id"):                        []byte(`1`),
 			}),
 			`{
                 "id":1,
@@ -448,7 +449,8 @@ func TestMotion(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(tt.data))
+			ds, _ := dsmock.NewMockDatastore(tt.data)
+			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
 				ContentObjectID: "motion/1",
