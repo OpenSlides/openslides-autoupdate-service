@@ -7,6 +7,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -184,7 +185,7 @@ func TestUserWithoutMeeting(t *testing.T) {
 func TestUserWithError(t *testing.T) {
 	userSlide := setup(t)
 	data := map[datastore.Key][]byte{
-		MustKey("user/1/id"): []byte(`1`),
+		dskey.MustKey("user/1/id"): []byte(`1`),
 	}
 
 	ds, _ := dsmock.NewMockDatastore(data)

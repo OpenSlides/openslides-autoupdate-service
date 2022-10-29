@@ -7,18 +7,11 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func MustKey(in string) datastore.Key {
-	k, err := datastore.KeyFromString(in)
-	if err != nil {
-		panic(err)
-	}
-	return k
-}
 
 func TestListOfSpeakers(t *testing.T) {
 	s := new(projector.SlideStore)
@@ -170,8 +163,8 @@ func TestListOfSpeakers(t *testing.T) {
 		{
 			"No Current speaker",
 			changeData(data, map[datastore.Key][]byte{
-				MustKey("list_of_speakers/1/speaker_ids"):                              []byte("[1,4]"),
-				MustKey("meeting/1/list_of_speakers_show_amount_of_speakers_on_slide"): []byte("false"),
+				dskey.MustKey("list_of_speakers/1/speaker_ids"):                              []byte("[1,4]"),
+				dskey.MustKey("meeting/1/list_of_speakers_show_amount_of_speakers_on_slide"): []byte("false"),
 			}),
 			`{
 				"waiting": [{
@@ -302,7 +295,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 		{
 			"don't find speaker list in current projections",
 			changeData(data, map[datastore.Key][]byte{
-				MustKey("motion_block/1/list_of_speakers_id"): []byte("0"),
+				dskey.MustKey("motion_block/1/list_of_speakers_id"): []byte("0"),
 			}),
 			`{}`,
 		},
@@ -374,7 +367,7 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 		{
 			"current speaker chyron test no current projection",
 			changeData(data, map[datastore.Key][]byte{
-				MustKey("motion_block/1/list_of_speakers_id"): []byte("0"),
+				dskey.MustKey("motion_block/1/list_of_speakers_id"): []byte("0"),
 			}),
 			`{
 				"background_color": "green",

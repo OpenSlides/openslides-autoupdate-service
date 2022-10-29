@@ -8,18 +8,12 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
-func MustKey(in string) Key {
-	k, err := KeyFromString(in)
-	if err != nil {
-		panic(err)
-	}
-	return k
-}
-
 func TestCacheGetOrSet(t *testing.T) {
-	myKey := MustKey("key/1/field")
+	myKey := dskey.MustKey("key/1/field")
 	c := newCache()
 	got, err := c.GetOrSet(context.Background(), []Key{myKey}, func(keys []Key, set func(map[Key][]byte)) error {
 		set(map[Key][]byte{myKey: []byte("value")})
@@ -36,8 +30,8 @@ func TestCacheGetOrSet(t *testing.T) {
 }
 
 func TestCacheGetOrSetMissingKeys(t *testing.T) {
-	myKey1 := MustKey("key/1/field")
-	myKey2 := MustKey("key/2/field")
+	myKey1 := dskey.MustKey("key/1/field")
+	myKey2 := dskey.MustKey("key/2/field")
 	c := newCache()
 	got, err := c.GetOrSet(context.Background(), []Key{myKey1, myKey2}, func(key []Key, set func(map[Key][]byte)) error {
 		set(map[Key][]byte{myKey1: []byte("value")})
@@ -62,7 +56,7 @@ func TestCacheGetOrSetMissingKeys(t *testing.T) {
 }
 
 func TestCacheGetOrSetNoSecondCall(t *testing.T) {
-	myKey := MustKey("key/1/field")
+	myKey := dskey.MustKey("key/1/field")
 	c := newCache()
 	c.GetOrSet(context.Background(), []Key{myKey}, func(key []Key, set func(map[Key][]byte)) error {
 		set(map[Key][]byte{myKey: []byte("value")})
@@ -90,7 +84,7 @@ func TestCacheGetOrSetNoSecondCall(t *testing.T) {
 }
 
 func TestCacheGetOrSetBlockSecondCall(t *testing.T) {
-	myKey := MustKey("key/1/field")
+	myKey := dskey.MustKey("key/1/field")
 	c := newCache()
 	wait := make(chan struct{})
 	go func() {
@@ -129,8 +123,8 @@ func TestCacheGetOrSetBlockSecondCall(t *testing.T) {
 }
 
 func TestCacheGetOrSetErrorInTheMiddle(t *testing.T) {
-	myKey1 := MustKey("key/1/field")
-	myKey2 := MustKey("key/2/field")
+	myKey1 := dskey.MustKey("key/1/field")
+	myKey2 := dskey.MustKey("key/2/field")
 	c := newCache()
 	_, err := c.GetOrSet(context.Background(), []Key{myKey1, myKey2}, func(key []Key, set func(map[Key][]byte)) error {
 		set(map[Key][]byte{myKey1: []byte("value")})
@@ -153,8 +147,8 @@ func TestCacheGetOrSetErrorInTheMiddle(t *testing.T) {
 }
 
 func TestCacheSetIfExist(t *testing.T) {
-	myKey1 := MustKey("key/1/field")
-	myKey2 := MustKey("key/2/field")
+	myKey1 := dskey.MustKey("key/1/field")
+	myKey2 := dskey.MustKey("key/2/field")
 	c := newCache()
 	c.GetOrSet(context.Background(), []Key{myKey1}, func(key []Key, set func(map[Key][]byte)) error {
 		set(map[Key][]byte{myKey1: []byte("Shut not be returned")})
@@ -183,7 +177,7 @@ func TestCacheSetIfExist(t *testing.T) {
 }
 
 func TestCacheSetIfExistParallelToGetOrSet(t *testing.T) {
-	myKey := MustKey("key/1/field")
+	myKey := dskey.MustKey("key/1/field")
 	c := newCache()
 
 	waitForGetOrSet := make(chan struct{})
@@ -221,8 +215,8 @@ func TestGetWhileUpdate(t *testing.T) {
 
 	c := newCache()
 
-	myKey1 := MustKey("key/1/field")
-	myKey2 := MustKey("key/2/field")
+	myKey1 := dskey.MustKey("key/1/field")
+	myKey2 := dskey.MustKey("key/2/field")
 	c.GetOrSet(context.Background(), []Key{myKey1, myKey2}, func(key []Key, set func(map[Key][]byte)) error {
 		set(map[Key][]byte{myKey1: []byte("Init Value")})
 		set(map[Key][]byte{myKey2: []byte("Init Value")})
@@ -267,8 +261,8 @@ func TestCacheGetOrSetOldData(t *testing.T) {
 	// but takes a long time. In the meantime there is an update via setIfExist
 	// for key1 and key2 on version2. At the end, there should not be the old
 	// version1 in the cache (version2 or 'does not exist' is ok).
-	myKey1 := MustKey("key/1/field")
-	myKey2 := MustKey("key/2/field")
+	myKey1 := dskey.MustKey("key/1/field")
+	myKey2 := dskey.MustKey("key/2/field")
 	c := newCache()
 
 	waitForGetOrSetStart := make(chan struct{})
@@ -317,7 +311,7 @@ func TestCacheGetOrSetOldData(t *testing.T) {
 func TestCacheErrorOnFetching(t *testing.T) {
 	// Make sure, that if a GetOrSet call fails the requested keys are not left
 	// in pending state.
-	myKey := MustKey("key/1/field")
+	myKey := dskey.MustKey("key/1/field")
 	c := newCache()
 	rErr := errors.New("GetOrSet Error")
 	_, err := c.GetOrSet(context.Background(), []Key{myKey}, func(key []Key, set func(map[Key][]byte)) error {
@@ -353,7 +347,7 @@ func TestCacheErrorOnFetching(t *testing.T) {
 }
 
 func TestCacheConcurency(t *testing.T) {
-	myKey := MustKey("key/1/field")
+	myKey := dskey.MustKey("key/1/field")
 	const count = 100
 	c := newCache()
 	var wg sync.WaitGroup
@@ -385,7 +379,7 @@ func TestCacheConcurency(t *testing.T) {
 }
 
 func TestGetNull(t *testing.T) {
-	myKey := MustKey("key/1/field")
+	myKey := dskey.MustKey("key/1/field")
 	c := newCache()
 	got, err := c.GetOrSet(context.Background(), []Key{myKey}, func(key []Key, set func(map[Key][]byte)) error {
 		set(map[Key][]byte{myKey: []byte("null")})
@@ -402,7 +396,7 @@ func TestGetNull(t *testing.T) {
 }
 
 func TestUpdateNull(t *testing.T) {
-	myKey := MustKey("key/1/field")
+	myKey := dskey.MustKey("key/1/field")
 	c := newCache()
 	c.GetOrSet(context.Background(), []Key{myKey}, func(key []Key, set func(map[Key][]byte)) error {
 		set(map[Key][]byte{myKey: []byte("value")})
@@ -426,7 +420,7 @@ func TestUpdateNull(t *testing.T) {
 }
 
 func TestUpdateManyNull(t *testing.T) {
-	myKey := MustKey("key/1/field")
+	myKey := dskey.MustKey("key/1/field")
 	c := newCache()
 	c.GetOrSet(context.Background(), []Key{myKey}, func(key []Key, set func(map[Key][]byte)) error {
 		set(map[Key][]byte{myKey: []byte("value")})

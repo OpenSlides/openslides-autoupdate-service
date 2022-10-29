@@ -9,10 +9,11 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
 
-var userNameKey = autoupdate.MustKey("user/1/name")
+var userNameKey = dskey.MustKey("user/1/name")
 
 func TestConnect(t *testing.T) {
 	next, _, _ := getConnection()
@@ -73,7 +74,7 @@ func TestConnectionReadNewData(t *testing.T) {
 
 func TestConnectionEmptyData(t *testing.T) {
 	var (
-		doesNotExistKey = autoupdate.MustKey("doesnot/1/exist")
+		doesNotExistKey = dskey.MustKey("doesnot/1/exist")
 		doesExistKey    = userNameKey
 	)
 
@@ -370,11 +371,11 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 		t.Errorf("Second data contained 2 values, expected only one. Got: %v", secondData)
 	}
 
-	if v := string(secondData[autoupdate.MustKey("organization/1/organization_tag_ids")]); v != "[1]" {
+	if v := string(secondData[dskey.MustKey("organization/1/organization_tag_ids")]); v != "[1]" {
 		t.Errorf("Got organization/1/organization_tag_ids: %q, expected [1]", v)
 	}
 
-	if v, ok := secondData[autoupdate.MustKey("organization_tag/2/id")]; ok {
+	if v, ok := secondData[dskey.MustKey("organization_tag/2/id")]; ok {
 		t.Errorf("Got value for deleted object organization_tag/2/id: %s", v)
 	}
 }
@@ -446,11 +447,11 @@ func TestKeyRequestedAgain(t *testing.T) {
 		t.Errorf("Second data contained %d values, expected two. Got: %v", len(testData), testData)
 	}
 
-	if v := string(testData[autoupdate.MustKey("organization/1/organization_tag_ids")]); v != "[1,2]" {
+	if v := string(testData[dskey.MustKey("organization/1/organization_tag_ids")]); v != "[1,2]" {
 		t.Errorf("Got organization/1/organization_tag_ids: %q, expected [1,2]", v)
 	}
 
-	if v := string(testData[autoupdate.MustKey("organization_tag/2/id")]); v != "2" {
+	if v := string(testData[dskey.MustKey("organization_tag/2/id")]); v != "2" {
 		t.Errorf("Got organization_tag/2/id: %q, expected 2", v)
 	}
 }

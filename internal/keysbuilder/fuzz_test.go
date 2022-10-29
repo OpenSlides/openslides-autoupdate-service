@@ -9,16 +9,9 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
-
-func MustKey(in string) datastore.Key {
-	k, err := datastore.KeyFromString(in)
-	if err != nil {
-		panic(err)
-	}
-	return k
-}
 
 func FuzzFromJSON(f *testing.F) {
 	f.Add(`{
@@ -150,18 +143,18 @@ func FuzzFromJSON(f *testing.F) {
 	}`)
 
 	ds := dsmock.Stub(map[datastore.Key][]byte{
-		MustKey("user/1/note_id"):       []byte(`1`),
-		MustKey("user/1/group_ids"):     []byte(`[1,2]`),
-		MustKey("note/1/motion_id"):     []byte(`1`),
-		MustKey("group/1/perm_ids"):     []byte(`[1,2]`),
-		MustKey("group/2/perm_ids"):     []byte(`[1,2]`),
-		MustKey("user/1/group_$_ids"):   []byte(`["1","2"]`),
-		MustKey("user/1/group_$1_ids"):  []byte(`[1,2]`),
-		MustKey("user/1/group_$_2_ids"): []byte(`[1,2]`),
-		MustKey("user/1/like"):          []byte(`"topic/1"`),
-		MustKey("user/1/likes"):         []byte(`["topic/1","agenda/1"]`),
-		MustKey("topic/1/tag_ids"):      []byte(`[1,2]`),
-		MustKey("agenda/1/tag_ids"):     []byte(`[1,2]`),
+		dskey.MustKey("user/1/note_id"):       []byte(`1`),
+		dskey.MustKey("user/1/group_ids"):     []byte(`[1,2]`),
+		dskey.MustKey("note/1/motion_id"):     []byte(`1`),
+		dskey.MustKey("group/1/perm_ids"):     []byte(`[1,2]`),
+		dskey.MustKey("group/2/perm_ids"):     []byte(`[1,2]`),
+		dskey.MustKey("user/1/group_$_ids"):   []byte(`["1","2"]`),
+		dskey.MustKey("user/1/group_$1_ids"):  []byte(`[1,2]`),
+		dskey.MustKey("user/1/group_$_2_ids"): []byte(`[1,2]`),
+		dskey.MustKey("user/1/like"):          []byte(`"topic/1"`),
+		dskey.MustKey("user/1/likes"):         []byte(`["topic/1","agenda/1"]`),
+		dskey.MustKey("topic/1/tag_ids"):      []byte(`[1,2]`),
+		dskey.MustKey("agenda/1/tag_ids"):     []byte(`[1,2]`),
 	})
 
 	f.Fuzz(func(t *testing.T, query string) {

@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // Builder builds the keys. It is not save for concourent use. There is one
@@ -34,7 +35,7 @@ func FromKeys(rawKeys ...string) (*Builder, error) {
 
 	keys := make([]datastore.Key, len(rawKeys))
 	for i, k := range rawKeys {
-		key, err := datastore.KeyFromString(k)
+		key, err := dskey.FromString(k)
 		if err != nil {
 			// TODO LAST ERROR
 			return nil, fmt.Errorf("invalid key: %s", k)
@@ -163,7 +164,7 @@ func (b *Builder) Keys() []datastore.Key {
 //
 // buildGenericKey("motion/5", "title") -> "motion/5/title".
 func buildGenericKey(collectionID string, field string) datastore.Key {
-	key, err := datastore.KeyFromString(collectionID + "/" + field)
+	key, err := dskey.FromString(collectionID + "/" + field)
 	_ = err // TODO: Can this happen?
 
 	return key

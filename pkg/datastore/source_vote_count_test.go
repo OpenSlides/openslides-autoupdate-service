@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
@@ -36,7 +37,7 @@ func TestVoteCountSourceGet(t *testing.T) {
 	eventer := func() (<-chan time.Time, func() bool) { return make(chan time.Time), func() bool { return true } }
 	go source.Connect(ctx, eventer, func(error) {})
 
-	key1 := datastore.MustKey("poll/1/vote_count")
+	key1 := dskey.MustKey("poll/1/vote_count")
 
 	t.Run("no data from vote-service", func(t *testing.T) {
 		got, err := source.Get(ctx, key1)
@@ -125,7 +126,7 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 	eventer := func() (<-chan time.Time, func() bool) { return make(chan time.Time), func() bool { return true } }
 	go source.Connect(ctx, eventer, func(error) {})
 
-	key1 := datastore.MustKey("poll/1/vote_count")
+	key1 := dskey.MustKey("poll/1/vote_count")
 
 	t.Run("no data from vote-service", func(t *testing.T) {
 		ctxTimeout, cancel := context.WithTimeout(ctx, time.Millisecond)
@@ -250,7 +251,7 @@ func TestReconnectWhenDeletedBetween(t *testing.T) {
 	msg <- `{"1":23}`
 	time.Sleep(time.Millisecond)
 
-	key := datastore.MustKey("poll/2/vote_count")
+	key := dskey.MustKey("poll/2/vote_count")
 	data, err := source.Get(ctx, key)
 	if err != nil {
 		t.Errorf("Get: %v", err)
@@ -282,7 +283,7 @@ func TestGetWithoutConnect(t *testing.T) {
 
 	source := datastore.NewVoteCountSource(env)
 
-	key := datastore.MustKey("poll/1/vote_count")
+	key := dskey.MustKey("poll/1/vote_count")
 	data, err := source.Get(ctx, key)
 	if err != nil {
 		t.Errorf("Get: %v", err)

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
@@ -69,7 +70,7 @@ func (r *Redis) Update(ctx context.Context) (map[datastore.Key][]byte, error) {
 
 	converted := make(map[datastore.Key][]byte, len(data))
 	for k, v := range data {
-		key, err := datastore.KeyFromString(k)
+		key, err := dskey.FromString(k)
 		if err != nil {
 			// TODO End Error
 			return nil, fmt.Errorf("invalid key: %s", k)

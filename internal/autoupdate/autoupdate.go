@@ -21,6 +21,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/ostcar/topic"
 )
 
@@ -253,7 +254,7 @@ func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []stri
 		}
 
 		for _, field := range fields {
-			key, err := datastore.KeyFromString(fqid + "/" + field)
+			key, err := dskey.FromString(fqid + "/" + field)
 			if err != nil {
 				return nil, fmt.Errorf("fqid  %s can not be added to field %s: %w", fqid, field, err)
 			}

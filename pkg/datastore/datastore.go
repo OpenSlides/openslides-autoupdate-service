@@ -321,7 +321,7 @@ func parseGetManyResponse(r io.Reader) (map[Key][]byte, error) {
 				return nil, fmt.Errorf("invalid key. Id is no number: %s", idstr)
 			}
 			for field, value := range fieldValue {
-				keyValue[Key{collection, id, field}] = value
+				keyValue[Key{Collection: collection, ID: id, Field: field}] = value
 			}
 		}
 	}

@@ -152,7 +152,7 @@ func (s *VoteCountSource) Update(ctx context.Context) (map[Key][]byte, error) {
 		if count == 0 {
 			bs = nil
 		}
-		out[Key{"poll", pollID, "vote_count"}] = bs
+		out[Key{Collection: "poll", ID: pollID, Field: "vote_count"}] = bs
 	}
 	return out, nil
 }

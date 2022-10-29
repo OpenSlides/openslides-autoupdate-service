@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"gopkg.in/yaml.v3"
 )
@@ -19,7 +20,7 @@ import (
 // It is expected, that the input is a constant string. So there can not be any
 // error at runtime. Therefore this function does not return an error but panics
 // to get the developer a fast feetback.
-func YAMLData(input string) map[datastore.Key][]byte {
+func YAMLData(input string) map[dskey.Key][]byte {
 	input = strings.ReplaceAll(input, "\t", "  ")
 
 	var db map[string]interface{}
@@ -27,7 +28,7 @@ func YAMLData(input string) map[datastore.Key][]byte {
 		panic(err)
 	}
 
-	data := make(map[datastore.Key][]byte)
+	data := make(map[dskey.Key][]byte)
 	for dbKey, dbValue := range db {
 		parts := strings.Split(dbKey, "/")
 		switch len(parts) {
@@ -47,7 +48,7 @@ func YAMLData(input string) map[datastore.Key][]byte {
 				}
 
 				for fieldName, fieldValue := range field {
-					key, err := datastore.KeyFromString(fmt.Sprintf("%s/%d/%s", dbKey, id, fieldName))
+					key, err := dskey.FromString(fmt.Sprintf("%s/%d/%s", dbKey, id, fieldName))
 					if err != nil {
 						panic(err)
 					}
@@ -58,7 +59,7 @@ func YAMLData(input string) map[datastore.Key][]byte {
 					data[key] = bs
 				}
 
-				idKey, err := datastore.KeyFromString(fmt.Sprintf("%s/%d/id", dbKey, id))
+				idKey, err := dskey.FromString(fmt.Sprintf("%s/%d/id", dbKey, id))
 				if err != nil {
 					panic(err)
 				}
@@ -72,7 +73,7 @@ func YAMLData(input string) map[datastore.Key][]byte {
 			}
 
 			for fieldName, fieldValue := range field {
-				fqfield, err := datastore.KeyFromString(fmt.Sprintf("%s/%s/%s", parts[0], parts[1], fieldName))
+				fqfield, err := dskey.FromString(fmt.Sprintf("%s/%s/%s", parts[0], parts[1], fieldName))
 				if err != nil {
 					panic(err)
 				}
@@ -83,14 +84,14 @@ func YAMLData(input string) map[datastore.Key][]byte {
 				data[fqfield] = bs
 			}
 
-			idKey, err := datastore.KeyFromString(fmt.Sprintf("%s/%s/id", parts[0], parts[1]))
+			idKey, err := dskey.FromString(fmt.Sprintf("%s/%s/id", parts[0], parts[1]))
 			if err != nil {
 				panic(err)
 			}
 			data[idKey] = []byte(parts[1])
 
 		case 3:
-			key, err := datastore.KeyFromString(dbKey)
+			key, err := dskey.FromString(dbKey)
 			if err != nil {
 				panic(err)
 			}
@@ -101,7 +102,7 @@ func YAMLData(input string) map[datastore.Key][]byte {
 
 			data[key] = bs
 
-			idKey, err := datastore.KeyFromString(fmt.Sprintf("%s/%s/id", parts[0], parts[1]))
+			idKey, err := dskey.FromString(fmt.Sprintf("%s/%s/id", parts[0], parts[1]))
 			if err != nil {
 				panic(err)
 			}
@@ -131,7 +132,7 @@ type MockDatastore struct {
 // NewMockDatastore create a MockDatastore with data.
 //
 // It is a wrapper around the datastore.Datastore object.
-func NewMockDatastore(data map[datastore.Key][]byte) (*MockDatastore, func(context.Context)) {
+func NewMockDatastore(data map[dskey.Key][]byte) (*MockDatastore, func(context.Context)) {
 	source := NewStubWithUpdate(data, NewCounter)
 	rawDS, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
 	if err != nil {
@@ -149,7 +150,7 @@ func NewMockDatastore(data map[datastore.Key][]byte) (*MockDatastore, func(conte
 }
 
 // Get calls the Get() method of the datastore.
-func (d *MockDatastore) Get(ctx context.Context, keys ...datastore.Key) (map[datastore.Key][]byte, error) {
+func (d *MockDatastore) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	if d.err != nil {
 		return nil, d.err
 	}
@@ -163,7 +164,7 @@ func (d *MockDatastore) InjectError(err error) {
 }
 
 // Requests returns a list of all requested keys.
-func (d *MockDatastore) Requests() [][]datastore.Key {
+func (d *MockDatastore) Requests() [][]dskey.Key {
 	return d.counter.Requests()
 }
 
@@ -179,8 +180,8 @@ func (d *MockDatastore) HistoryInformation(ctx context.Context, fqid string, w i
 }
 
 // KeysRequested returns true, if all given keys where requested.
-func (d *MockDatastore) KeysRequested(keys ...datastore.Key) bool {
-	requestedKeys := make(map[datastore.Key]bool)
+func (d *MockDatastore) KeysRequested(keys ...dskey.Key) bool {
+	requestedKeys := make(map[dskey.Key]bool)
 	for _, l := range d.Requests() {
 		for _, k := range l {
 			requestedKeys[k] = true
@@ -199,11 +200,11 @@ func (d *MockDatastore) KeysRequested(keys ...datastore.Key) bool {
 //
 // This method is unblocking. If you want to fetch data afterwards, make sure to
 // block until data is processed. For example with RegisterChanceListener.
-func (d *MockDatastore) Send(data map[datastore.Key][]byte) {
+func (d *MockDatastore) Send(data map[dskey.Key][]byte) {
 	d.source.Send(data)
 }
 
 // Update implements the datastore.Updater interface.
-func (d *MockDatastore) Update(ctx context.Context) (map[datastore.Key][]byte, error) {
+func (d *MockDatastore) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
 	return d.source.Update(ctx)
 }

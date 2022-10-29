@@ -10,6 +10,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
 
@@ -75,7 +76,7 @@ func initDB(in string) (datastore.Getter, error) {
 		if string(v) == "null" {
 			continue
 		}
-		key, err := datastore.KeyFromString(k)
+		key, err := dskey.FromString(k)
 		if err != nil {
 			return nil, fmt.Errorf("invalid key %s: %v", k, err)
 		}

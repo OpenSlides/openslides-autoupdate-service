@@ -4,6 +4,7 @@ import (
 	"sort"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 func cmpSlice(one, two []string) bool {
@@ -49,7 +50,7 @@ func set(keys ...datastore.Key) map[datastore.Key]bool {
 func keys(ks ...string) []datastore.Key {
 	keys := make([]datastore.Key, len(ks))
 	for i, k := range ks {
-		key, err := datastore.KeyFromString(k)
+		key, err := dskey.FromString(k)
 		if err != nil {
 			panic(err)
 		}

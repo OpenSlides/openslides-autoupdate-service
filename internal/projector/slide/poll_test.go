@@ -7,6 +7,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -153,7 +154,7 @@ func TestPoll(t *testing.T) {
 		{
 			"Poll state finished",
 			changeData(data, map[datastore.Key][]byte{
-				MustKey("poll/1/state"): []byte(`"finished"`),
+				dskey.MustKey("poll/1/state"): []byte(`"finished"`),
 			}),
 			`{
                 "id":1,

@@ -3,6 +3,7 @@ package datastore
 import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // NewRecorder from datastore.NewRecorder
@@ -14,5 +15,5 @@ type DoesNotExistError = dsfetch.DoesNotExistError
 // Key is a type alias from datastore.Key
 type Key = datastore.Key
 
-// KeyFromString from package datastore.
-var KeyFromString = datastore.KeyFromString
+// KeyFromString from package dskey.
+var KeyFromString = dskey.FromString

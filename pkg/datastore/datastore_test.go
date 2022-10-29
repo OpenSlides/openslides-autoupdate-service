@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/stretchr/testify/assert"
@@ -15,10 +16,10 @@ import (
 )
 
 var (
-	myKey1       = datastore.MustKey("collection/1/field")
-	myKey2       = datastore.MustKey("collection/2/field")
+	myKey1       = dskey.MustKey("collection/1/field")
+	myKey2       = dskey.MustKey("collection/2/field")
 	myField1     = "collection/calculated"
-	myCalculated = datastore.MustKey("collection/2/calculated")
+	myCalculated = dskey.MustKey("collection/2/calculated")
 )
 
 func TestDataStoreGet(t *testing.T) {

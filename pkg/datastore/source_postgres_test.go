@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/jackc/pgx/v5"
@@ -91,7 +92,7 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 
 			keys := make([]datastore.Key, 0, len(tt.data))
 			for k := range tt.expect {
-				keys = append(keys, datastore.MustKey(k))
+				keys = append(keys, dskey.MustKey(k))
 			}
 
 			got, err := source.Get(ctx, keys...)
@@ -101,7 +102,7 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 
 			expect := make(map[datastore.Key][]byte)
 			for k, v := range tt.expect {
-				expect[datastore.MustKey(k)] = v
+				expect[dskey.MustKey(k)] = v
 			}
 
 			if !reflect.DeepEqual(got, expect) {

@@ -5,19 +5,12 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
-func MustKey(in string) datastore.Key {
-	k, err := datastore.KeyFromString(in)
-	if err != nil {
-		panic(err)
-	}
-	return k
-}
-
 var (
-	myKey1 = MustKey("collection/1/field")
-	myKey2 = MustKey("collection/2/field")
+	myKey1 = dskey.MustKey("collection/1/field")
+	myKey2 = dskey.MustKey("collection/2/field")
 )
 
 func TestFilterFirstCall(t *testing.T) {
