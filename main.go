@@ -145,7 +145,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	backgroundTasks = append(backgroundTasks, dsBackground)
 
 	// Auth Service.
-	authService, authBackground := auth.New(lookup, messageBus)
+	authService, authBackground := auth.New(lookup, messageBus, oserror.Handle)
 	backgroundTasks = append(backgroundTasks, authBackground)
 
 	// Autoupdate Service.

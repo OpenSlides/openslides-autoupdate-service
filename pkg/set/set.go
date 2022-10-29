@@ -1,3 +1,4 @@
+// Package set implements a set datastructure that contains unique items.
 package set
 
 // Set a datastructure of unique items.

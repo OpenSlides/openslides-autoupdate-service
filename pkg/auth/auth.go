@@ -44,6 +44,14 @@ const (
 	authPath   = "/internal/auth/authenticate"
 )
 
+// LogoutEventer tells, when a sessionID gets revoked.
+//
+// The method LogoutEvent has to block until there are new data. The returned
+// data is a list of sessionIDs that are revoked.
+type LogoutEventer interface {
+	LogoutEvent(context.Context) ([]string, error)
+}
+
 // Auth authenticates a request against the openslides-auth-service.
 //
 // Has to be initialized with auth.New().
@@ -58,11 +66,11 @@ type Auth struct {
 	cookieKey string
 }
 
-// New initializes an Auth service.
+// New initializes the Auth object.
 //
-// Returns the initialized Auth object, the used environment varialbes and a
-// function to be called in the background.
-func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, func(context.Context)) {
+// Returns the initialized Auth objectand a function to be called in the
+// background.
+func New(lookup environment.Environmenter, messageBus LogoutEventer, errHandler func(error)) (*Auth, func(context.Context)) {
 	url := fmt.Sprintf(
 		"%s://%s:%s",
 		envAuthProtocol.Value(lookup),
@@ -88,8 +96,8 @@ func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, fun
 			return
 		}
 
-		go a.ListenOnLogouts(ctx, messageBus, oserror.Handle)
-		go a.PruneOldData(ctx)
+		go a.listenOnLogouts(ctx, messageBus, errHandler)
+		go a.pruneOldData(ctx)
 	}
 
 	return a, background
@@ -173,16 +181,8 @@ func (a *Auth) FromContext(ctx context.Context) int {
 	return v.(int)
 }
 
-// LogoutEventer tells, when a sessionID gets revoked.
-//
-// The method LogoutEvent has to block until there are new data. The returned
-// data is a list of sessionIDs that are revoked.
-type LogoutEventer interface {
-	LogoutEvent(context.Context) ([]string, error)
-}
-
 // ListenOnLogouts listen on logout events and closes the connections.
-func (a *Auth) ListenOnLogouts(ctx context.Context, logoutEventer LogoutEventer, errHandler func(error)) {
+func (a *Auth) listenOnLogouts(ctx context.Context, logoutEventer LogoutEventer, errHandler func(error)) {
 	if errHandler == nil {
 		errHandler = func(error) {}
 	}
@@ -203,8 +203,8 @@ func (a *Auth) ListenOnLogouts(ctx context.Context, logoutEventer LogoutEventer,
 	}
 }
 
-// PruneOldData removes old logout events.
-func (a *Auth) PruneOldData(ctx context.Context) {
+// pruneOldData removes old logout events.
+func (a *Auth) pruneOldData(ctx context.Context) {
 	tick := time.NewTicker(5 * time.Minute)
 	defer tick.Stop()
 

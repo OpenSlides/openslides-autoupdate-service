@@ -40,11 +40,8 @@ type Updater interface {
 
 // Source gives the data for keys.
 type Source interface {
-	// Get is called when a key is not in the cache.
-	Get(ctx context.Context, key ...dskey.Key) (map[dskey.Key][]byte, error)
-
-	// Update is called frequently and should block until there is new data.
-	Update(ctx context.Context) (map[dskey.Key][]byte, error)
+	Getter
+	Updater
 }
 
 // HistoryInformationer returns the history information.

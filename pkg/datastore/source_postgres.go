@@ -21,12 +21,16 @@ var (
 )
 
 // SourcePostgres uses postgres to get the connections.
+//
+// TODO: This should be unexported, but there is an import cycle in the tests.
 type SourcePostgres struct {
 	pool    *pgxpool.Pool
 	updater Updater
 }
 
 // NewSourcePostgres initializes a SourcePostgres.
+//
+// TODO: This should be unexported, but there is an import cycle in the tests.
 func NewSourcePostgres(lookup environment.Environmenter, updater Updater) (*SourcePostgres, error) {
 	addr := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s",
