@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
@@ -46,6 +48,14 @@ func WithHistory() Option {
 func WithDefaultSource(source Source) Option {
 	return func(ds *Datastore, lookup environment.Environmenter) (func(context.Context), error) {
 		ds.defaultSource = source
+		return nil, nil
+	}
+}
+
+// WithProjector activates the field projection/content
+func WithProjector() Option {
+	return func(ds *Datastore, lookup environment.Environmenter) (func(context.Context), error) {
+		projector.Register(ds, slide.Slides())
 		return nil, nil
 	}
 }

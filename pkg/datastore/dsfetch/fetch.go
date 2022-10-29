@@ -4,25 +4,29 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 //go:generate sh -c "go run gen_fields/main.go > fields_generated.go"
+
+// Getter is the same as datastore.Getter
+type Getter interface {
+	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
+}
 
 // Fetch provides functions to access the fields of the datastore.
 //
 // Fetch is not save for concurent use. One Fetch object AND its value can only be
 // used in one goroutine.
 type Fetch struct {
-	getter datastore.Getter
+	getter Getter
 	err    error
 
 	requested map[dskey.Key]executer
 }
 
 // New initializes a Request object.
-func New(getter datastore.Getter) *Fetch {
+func New(getter Getter) *Fetch {
 	r := Fetch{
 		getter:    getter,
 		requested: make(map[dskey.Key]executer),

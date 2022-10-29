@@ -13,8 +13,6 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/http"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -134,14 +132,17 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	messageBus := redis.New(lookup)
 
 	// Datastore Service.
-	datastoreService, dsBackground, err := datastore.New(lookup, messageBus, datastore.WithVoteCount(), datastore.WithHistory())
+	datastoreService, dsBackground, err := datastore.New(
+		lookup,
+		messageBus,
+		datastore.WithVoteCount(),
+		datastore.WithHistory(),
+		datastore.WithProjector(),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("init datastore: %w", err)
 	}
 	backgroundTasks = append(backgroundTasks, dsBackground)
-
-	// Register projector in datastore. (TODO: Should be an option from datastore.New)
-	projector.Register(datastoreService, slide.Slides())
 
 	// Auth Service.
 	authService, authBackground := auth.New(lookup, messageBus)

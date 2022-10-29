@@ -157,6 +157,8 @@ func (d *Datastore) RegisterChangeListener(f func(map[dskey.Key][]byte) error) {
 // When a fqfield, that matches the field, is fetched for the first time, then f
 // is called with `changed==nil`. On every ds-update, `f` is called again with the
 // data, that has changed.
+//
+// depricated. Do not use this, instead add an option to register a field.
 func (d *Datastore) RegisterCalculatedField(
 	field string,
 	f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error),
