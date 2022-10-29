@@ -54,7 +54,7 @@ func (s Set[T]) Len() int {
 	return len(s.m)
 }
 
-// Equal returns true if both sets have the same values
+// Equal returns true if both sets have the same values.
 func Equal[T comparable](s1, s2 *Set[T]) bool {
 	if s1.Len() != s2.Len() {
 		return false

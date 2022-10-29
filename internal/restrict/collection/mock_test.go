@@ -39,9 +39,14 @@ func testCase(name string, t *testing.T, f collection.FieldRestricter, expect bo
 		o(&td)
 	}
 
-	userIDKey := dskey.MustKey(fmt.Sprintf("user/%d/id", td.requestUserID))
+	if td.requestUserID != 0 {
+		userIDKey, err := dskey.FromString(fmt.Sprintf("user/%d/id", td.requestUserID))
+		if err != nil {
+			t.Fatalf("invalid key %v", fmt.Sprintf("user/%d/id", td.requestUserID))
+		}
 
-	td.data[userIDKey] = []byte(strconv.Itoa(td.requestUserID))
+		td.data[userIDKey] = []byte(strconv.Itoa(td.requestUserID))
+	}
 
 	td.test(t, f)
 }
