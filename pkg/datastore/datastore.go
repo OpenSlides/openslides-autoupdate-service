@@ -1,7 +1,6 @@
-// Package datastore connects to the openslies-datastore-service to receive
-// values.
+// Package datastore fetches the data from postgres or other sources.
 //
-// The Datastore object uses a cache to only request keys once. If a key in the
+// The datastore object uses a cache to only request keys once. If a key in the
 // cache gets an update via the keychanger, the cache gets updated.
 package datastore
 
@@ -110,7 +109,7 @@ func New(lookup environment.Environmenter, mb Updater, options ...Option) (*Data
 	metric.Register(ds.metric)
 
 	background := func(ctx context.Context) {
-		go ds.ListenOnUpdates(ctx, oserror.Handle)
+		go ds.listenOnUpdates(ctx, oserror.Handle)
 
 		for _, f := range backgroundFuncs {
 			if f == nil {
@@ -204,7 +203,7 @@ func (d *Datastore) HistoryInformation(ctx context.Context, fqid string, w io.Wr
 }
 
 // ListenOnUpdates listens for updates and informs all listeners.
-func (d *Datastore) ListenOnUpdates(ctx context.Context, errHandler func(error)) {
+func (d *Datastore) listenOnUpdates(ctx context.Context, errHandler func(error)) {
 	if errHandler == nil {
 		errHandler = func(error) {}
 	}

@@ -199,7 +199,8 @@ func TestListOfSpeakers(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(tt.data))
+			ds, _ := dsmock.NewMockDatastore(tt.data)
+			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
 				ContentObjectID: "list_of_speakers/1",
@@ -307,7 +308,8 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(tt.data))
+			ds, _ := dsmock.NewMockDatastore(tt.data)
+			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
 				ID:              1,
@@ -384,7 +386,8 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(tt.data))
+			ds, _ := dsmock.NewMockDatastore(tt.data)
+			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
 				ID:              1,

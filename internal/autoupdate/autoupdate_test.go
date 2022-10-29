@@ -17,7 +17,7 @@ func TestSingleDataEmptyValues(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 	`))
 	s, _ := autoupdate.New(ds, RestrictAllowed)
@@ -41,7 +41,7 @@ func TestHistoryInformation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 	`))
 	s, _ := autoupdate.New(ds, RestrictAllowed)
@@ -67,7 +67,7 @@ func TestHistoryInformationWrongFQID(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 	`))
 	s, _ := autoupdate.New(ds, RestrictAllowed)
@@ -91,7 +91,7 @@ func TestHistoryInformationSuperAdminOnMeetingCollection(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 
 		motion/5/meeting_id: 1
@@ -119,7 +119,7 @@ func TestRestrictFQIDs(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1:
 			username: superadmin
 			first_name: kevin

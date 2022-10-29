@@ -448,7 +448,8 @@ func TestMotion(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			fetch := datastore.NewFetcher(dsmock.NewMockDatastore(tt.data))
+			ds, _ := dsmock.NewMockDatastore(tt.data)
+			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
 				ContentObjectID: "motion/1",

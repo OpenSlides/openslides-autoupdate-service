@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
@@ -26,8 +25,8 @@ func TestProjectionDoesNotExist(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(nil)
-	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
+	ds, bg := dsmock.NewMockDatastore(nil)
+	go bg(shutdownCtx)
 
 	projector.Register(ds, testSlides())
 
@@ -39,7 +38,7 @@ func TestProjectionDoesNotExist(t *testing.T) {
 }
 
 func TestProjectionFromContentObject(t *testing.T) {
-	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, _ := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		MustKey("projection/1/id"):                []byte("1"),
 		MustKey("projection/1/content_object_id"): []byte(`"test_model/1"`),
 	})
@@ -52,7 +51,7 @@ func TestProjectionFromContentObject(t *testing.T) {
 }
 
 func TestProjectionFromType(t *testing.T) {
-	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, _ := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		MustKey("projection/1/id"):                []byte("1"),
 		MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
 		MustKey("projection/1/type"):              []byte(`"test1"`),
@@ -69,12 +68,12 @@ func TestProjectionUpdateProjection(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, bg := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		MustKey("projection/1/id"):                []byte("1"),
 		MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
 		MustKey("projection/1/type"):              []byte(`"test1"`),
 	})
-	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
+	go bg(shutdownCtx)
 
 	projector.Register(ds, testSlides())
 
@@ -104,12 +103,12 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, bg := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		MustKey("projection/1/id"):                []byte("1"),
 		MustKey("projection/1/type"):              []byte(`"projection"`),
 		MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
 	})
-	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
+	go bg(shutdownCtx)
 
 	projector.Register(ds, testSlides())
 
@@ -133,7 +132,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 }
 
 func TestProjectionWithOptionsData(t *testing.T) {
-	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, _ := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		MustKey("projection/1/id"):                []byte("1"),
 		MustKey("projection/1/content_object_id"): []byte(`"meeting/6"`),
 		MustKey("projection/1/type"):              []byte(`"projection"`),
@@ -152,12 +151,12 @@ func TestProjectionUpdateSlide(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, bg := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		MustKey("projection/1/id"):                []byte("1"),
 		MustKey("projection/1/content_object_id"): []byte(`"meeting/6"`),
 		MustKey("projection/1/type"):              []byte(`"test_model"`),
 	})
-	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
+	go bg(shutdownCtx)
 
 	projector.Register(ds, testSlides())
 
@@ -185,12 +184,12 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, bg := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		MustKey("projection/1/id"):                []byte("1"),
 		MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
 		MustKey("projection/1/type"):              []byte(`"test_model"`),
 	})
-	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
+	go bg(shutdownCtx)
 
 	projector.Register(ds, testSlides())
 
@@ -214,7 +213,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 }
 
 func TestProjectionTypeDoesNotExist(t *testing.T) {
-	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, _ := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		MustKey("projection/1/id"):                []byte("1"),
 		MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
 		MustKey("projection/1/type"):              []byte(`"unexistingTestSlide"`),

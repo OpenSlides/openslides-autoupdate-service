@@ -3,7 +3,6 @@ package autoupdate_test
 import (
 	"context"
 	"errors"
-	"log"
 	"strings"
 	"testing"
 
@@ -16,7 +15,7 @@ import (
 var userNameKey = autoupdate.MustKey("user/1/name")
 
 func TestConnect(t *testing.T) {
-	next, _ := getConnection()
+	next, _, _ := getConnection()
 
 	data, err := next(context.Background())
 	if err != nil {
@@ -29,7 +28,7 @@ func TestConnect(t *testing.T) {
 }
 
 func TestConnectionAfterDisconnect(t *testing.T) {
-	next, _ := getConnection()
+	next, _, _ := getConnection()
 	ctx, disconnect := context.WithCancel(context.Background())
 
 	if _, err := next(ctx); err != nil {
@@ -50,8 +49,8 @@ func TestConnectionReadNewData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	next, ds := getConnection()
-	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
+	next, ds, bg := getConnection()
+	go bg(shutdownCtx)
 
 	if _, err := next(context.Background()); err != nil {
 		t.Errorf("next(): %v", err)
@@ -81,10 +80,10 @@ func TestConnectionEmptyData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, bg := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		doesExistKey: []byte(`"Hello World"`),
 	})
-	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
+	go bg(shutdownCtx)
 
 	s, _ := autoupdate.New(ds, RestrictAllowed)
 	kb, _ := keysbuilder.FromKeys(doesExistKey.String(), doesNotExistKey.String())
@@ -222,10 +221,10 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, bg := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		userNameKey: []byte(`"Hello World"`),
 	})
-	go ds.ListenOnUpdates(shutdownCtx, func(err error) { log.Println(err) })
+	go bg(shutdownCtx)
 
 	s, _ := autoupdate.New(ds, RestrictAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
@@ -254,7 +253,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 }
 
 func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
-	ds := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, _ := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		userNameKey: []byte(`"Hello World"`),
 	})
 
@@ -323,12 +322,12 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	datastore, bg := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		organization/1/organization_tag_ids: [1,2]
 		organization_tag/1/id: 1
 		organization_tag/2/id: 2
 	`))
-	go datastore.ListenOnUpdates(shutdownCtx, nil)
+	go bg(shutdownCtx)
 
 	s, _ := autoupdate.New(datastore, RestrictAllowed)
 	kb, err := keysbuilder.FromJSON(strings.NewReader(`{
@@ -390,12 +389,12 @@ func TestKeyRequestedAgain(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	datastore, bg := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		organization/1/organization_tag_ids: [1,2]
 		organization_tag/1/id: 1
 		organization_tag/2/id: 2
 	`))
-	go datastore.ListenOnUpdates(shutdownCtx, nil)
+	go bg(shutdownCtx)
 
 	s, _ := autoupdate.New(datastore, RestrictAllowed)
 	kb, err := keysbuilder.FromJSON(strings.NewReader(`{

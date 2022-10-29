@@ -11,7 +11,7 @@ import (
 
 func TestHasSuperAdmin(t *testing.T) {
 	ctx := context.Background()
-	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 
 		meeting/3/id: 3

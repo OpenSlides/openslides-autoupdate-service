@@ -11,15 +11,15 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
 
-func getConnection() (autoupdate.DataProvider, *dsmock.MockDatastore) {
-	datastore := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+func getConnection() (autoupdate.DataProvider, *dsmock.MockDatastore, func(context.Context)) {
+	datastore, dsBackground := dsmock.NewMockDatastore(map[datastore.Key][]byte{
 		userNameKey: []byte(`"Hello World"`),
 	})
 	s, _ := autoupdate.New(datastore, RestrictAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 	next := s.Connect(1, kb)
 
-	return next, datastore
+	return next, datastore, dsBackground
 }
 
 func blocking(f func()) bool {
