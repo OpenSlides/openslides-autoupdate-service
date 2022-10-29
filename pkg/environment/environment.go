@@ -14,6 +14,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 	"golang.org/x/sys/unix"
 )
 
@@ -122,10 +123,8 @@ type Environmenter interface {
 
 // ForProduction is an environment used for production.
 //
-// It fetches the environment variables from os.Getenv()
-type ForProduction struct {
-	usedVariables []Variable
-}
+// It fetches the environment variables from os.Getenv().
+type ForProduction struct{}
 
 // Getenv calls os.Getenv.
 func (e *ForProduction) Getenv(key string) string {
@@ -133,18 +132,46 @@ func (e *ForProduction) Getenv(key string) string {
 }
 
 // UseVariable saves the used Variables
-func (e *ForProduction) UseVariable(v Variable) {
+func (e *ForProduction) UseVariable(v Variable) {}
+
+// ForDocu is an environment to gether the used environment variables.
+//
+// It does not access the real environment varialbes but returns an empty string
+// so that the default value is used.
+type ForDocu struct {
+	usedVariables []Variable
+}
+
+// Getenv returns an empty string.
+//
+// But activates development mode to use the default values for secrets.
+func (e *ForDocu) Getenv(key string) string {
+	if key == envDevelopment.Key {
+		return "true"
+	}
+	return ""
+}
+
+// UseVariable saves the used Variables
+func (e *ForDocu) UseVariable(v Variable) {
 	e.usedVariables = append(e.usedVariables, v)
 }
 
 // BuildDoc create the environment documentation with all used variables.
-func (e *ForProduction) BuildDoc() (string, error) {
+func (e *ForDocu) BuildDoc() (string, error) {
 	var variables struct {
 		Env    []Variable
 		Secret []Variable
 	}
 
+	seen := set.New[string]()
+
 	for _, v := range e.usedVariables {
+		if seen.Has(v.Key) {
+			continue
+		}
+		seen.Add(v.Key)
+
 		if v.isSecret {
 			variables.Secret = append(variables.Secret, v)
 			continue
