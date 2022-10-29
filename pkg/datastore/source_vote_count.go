@@ -22,8 +22,8 @@ var (
 
 const voteCountPath = "/internal/vote/vote_count"
 
-// VoteCountSource is a datastore source for the poll/vote_count value.
-type VoteCountSource struct {
+// voteCountSource is a datastore source for the poll/vote_count value.
+type voteCountSource struct {
 	voteServiceURL string
 	client         *http.Client
 	id             uint64
@@ -33,8 +33,8 @@ type VoteCountSource struct {
 	update    chan map[int]int
 }
 
-// NewVoteCountSource initializes the object.
-func NewVoteCountSource(lookup environment.Environmenter) *VoteCountSource {
+// newVoteCountSource initializes the object.
+func newVoteCountSource(lookup environment.Environmenter) *voteCountSource {
 	url := fmt.Sprintf(
 		"%s://%s:%s",
 		envVoteProtocol.Value(lookup),
@@ -42,7 +42,7 @@ func NewVoteCountSource(lookup environment.Environmenter) *VoteCountSource {
 		envVotePort.Value(lookup),
 	)
 
-	source := VoteCountSource{
+	source := voteCountSource{
 		voteServiceURL: url,
 		client:         &http.Client{},
 		update:         make(chan map[int]int, 1),
@@ -53,7 +53,7 @@ func NewVoteCountSource(lookup environment.Environmenter) *VoteCountSource {
 
 // Connect creates a connection to the vote service and makes sure, it stays
 // open.
-func (s *VoteCountSource) Connect(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool), errHandler func(error)) {
+func (s *voteCountSource) Connect(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool), errHandler func(error)) {
 	for ctx.Err() == nil {
 		if err := s.connect(ctx); err != nil {
 			errHandler(fmt.Errorf("connecting to vote service: %w", err))
@@ -64,7 +64,7 @@ func (s *VoteCountSource) Connect(ctx context.Context, eventProvider func() (<-c
 }
 
 // wait waits for an event in s.eventProvider.
-func (s *VoteCountSource) wait(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool)) {
+func (s *voteCountSource) wait(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool)) {
 	event, close := eventProvider()
 	defer close()
 
@@ -74,7 +74,7 @@ func (s *VoteCountSource) wait(ctx context.Context, eventProvider func() (<-chan
 	}
 }
 
-func (s *VoteCountSource) connect(ctx context.Context) error {
+func (s *voteCountSource) connect(ctx context.Context) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", s.voteServiceURL+voteCountPath, nil)
 	if err != nil {
 		return fmt.Errorf("building request: %w", err)
@@ -118,7 +118,7 @@ func (s *VoteCountSource) connect(ctx context.Context) error {
 }
 
 // Get is called when a key is not in the cache.
-func (s *VoteCountSource) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+func (s *voteCountSource) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -138,7 +138,7 @@ func (s *VoteCountSource) Get(ctx context.Context, keys ...dskey.Key) (map[dskey
 }
 
 // Update is called frequently and should block until there is new data.
-func (s *VoteCountSource) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
+func (s *voteCountSource) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
 	var data map[int]int
 	select {
 	case <-ctx.Done():

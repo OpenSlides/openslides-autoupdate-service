@@ -1,4 +1,4 @@
-package datastore_test
+package datastore
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
@@ -33,7 +32,7 @@ func TestVoteCountSourceGet(t *testing.T) {
 		"VOTE_PROTOCOL": schema,
 	})
 
-	source := datastore.NewVoteCountSource(env)
+	source := newVoteCountSource(env)
 	eventer := func() (<-chan time.Time, func() bool) { return make(chan time.Time), func() bool { return true } }
 	go source.Connect(ctx, eventer, func(error) {})
 
@@ -122,7 +121,7 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 		"VOTE_PROTOCOL": schema,
 	})
 
-	source := datastore.NewVoteCountSource(env)
+	source := newVoteCountSource(env)
 	eventer := func() (<-chan time.Time, func() bool) { return make(chan time.Time), func() bool { return true } }
 	go source.Connect(ctx, eventer, func(error) {})
 
@@ -208,7 +207,7 @@ func TestReconnect(t *testing.T) {
 		"VOTE_PROTOCOL": schema,
 	})
 
-	source := datastore.NewVoteCountSource(env)
+	source := newVoteCountSource(env)
 	go source.Connect(ctx, eventer, func(error) {})
 
 	sender <- struct{}{} // Close connection so there is a reconnect
@@ -245,7 +244,7 @@ func TestReconnectWhenDeletedBetween(t *testing.T) {
 		"VOTE_PROTOCOL": schema,
 	})
 
-	source := datastore.NewVoteCountSource(env)
+	source := newVoteCountSource(env)
 	go source.Connect(ctx, eventer, func(error) {})
 	msg <- `{"1":23,"2":42}`
 	msg <- `{"1":23}`
@@ -281,7 +280,7 @@ func TestGetWithoutConnect(t *testing.T) {
 		"VOTE_PROTOCOL": schema,
 	})
 
-	source := datastore.NewVoteCountSource(env)
+	source := newVoteCountSource(env)
 
 	key := dskey.MustKey("poll/1/vote_count")
 	data, err := source.Get(ctx, key)

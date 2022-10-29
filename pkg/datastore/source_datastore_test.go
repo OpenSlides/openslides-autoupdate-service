@@ -1,4 +1,4 @@
-package datastore_test
+package datastore
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
@@ -58,7 +57,7 @@ func TestSourceDefaultRequestCount(t *testing.T) {
 				"DATASTORE_MAX_PARALLEL_KEYS": strconv.Itoa(tt.maxKeysPerRequest),
 			})
 
-			sd, err := datastore.NewSourceDatastore(env)
+			sd, err := newSourceDatastore(env)
 			if err != nil {
 				t.Fatalf("Initialize: %v", err)
 			}

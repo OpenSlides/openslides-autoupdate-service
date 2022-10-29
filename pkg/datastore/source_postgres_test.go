@@ -135,7 +135,7 @@ func TestBigQuery(t *testing.T) {
 
 	keys := make([]dskey.Key, count)
 	for i := 0; i < count; i++ {
-		keys[i] = dskey.Key{"user", 1, fmt.Sprintf("f%d", i)}
+		keys[i] = dskey.Key{Collection: "user", ID: 1, Field: fmt.Sprintf("f%d", i)}
 	}
 
 	testData := make(map[dskey.Key][]byte)

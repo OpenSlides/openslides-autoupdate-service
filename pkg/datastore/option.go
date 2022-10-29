@@ -22,7 +22,7 @@ func WithVoteCount() Option {
 	}
 
 	return func(ds *Datastore, lookup environment.Environmenter) (func(context.Context), error) {
-		voteCountSource := NewVoteCountSource(lookup)
+		voteCountSource := newVoteCountSource(lookup)
 		ds.keySource["poll/vote_count"] = voteCountSource
 		background := func(ctx context.Context) {
 			voteCountSource.Connect(ctx, eventer, oserror.Handle)
@@ -34,7 +34,7 @@ func WithVoteCount() Option {
 // WithHistory adds the posibility to fetch history data.
 func WithHistory() Option {
 	return func(ds *Datastore, lookup environment.Environmenter) (func(context.Context), error) {
-		datastoreSource, err := NewSourceDatastore(lookup)
+		datastoreSource, err := newSourceDatastore(lookup)
 		if err != nil {
 			return nil, fmt.Errorf("init datastore: %w", err)
 		}
