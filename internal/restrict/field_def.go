@@ -1065,7 +1065,7 @@ var collectionFields = map[string][]string{
 	"motion_category":              {"child_ids", "id", "level", "meeting_id", "motion_ids", "name", "parent_id", "prefix", "sequential_number", "weight"},
 	"motion_change_recommendation": {"creation_time", "id", "internal", "line_from", "line_to", "meeting_id", "motion_id", "other_description", "rejected", "text", "type"},
 	"motion_comment":               {"comment", "id", "meeting_id", "motion_id", "section_id"},
-	"motion_comment_section":       {"comment_ids", "id", "meeting_id", "name", "read_group_ids", "sequential_number", "weight", "write_group_ids"},
+	"motion_comment_section":       {"comment_ids", "id", "meeting_id", "name", "read_group_ids", "sequential_number", "submitter_can_write", "weight", "write_group_ids"},
 	"motion_state":                 {"allow_create_poll", "allow_motion_forwarding", "allow_submitter_edit", "allow_support", "css_class", "first_state_of_workflow_id", "id", "meeting_id", "merge_amendment_into_final", "motion_ids", "motion_recommendation_ids", "name", "next_state_ids", "previous_state_ids", "recommendation_label", "restrictions", "set_created_timestamp", "set_number", "show_recommendation_extension_field", "show_state_extension_field", "weight", "workflow_id"},
 	"motion_statute_paragraph":     {"id", "meeting_id", "motion_ids", "sequential_number", "text", "title", "weight"},
 	"motion_submitter":             {"id", "meeting_id", "motion_id", "user_id", "weight"},

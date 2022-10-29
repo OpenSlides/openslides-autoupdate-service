@@ -72,7 +72,7 @@ func run(ctx context.Context) error {
 }
 
 func buildDocu() error {
-	lookup := new(environment.ForProduction)
+	lookup := new(environment.ForDocu)
 
 	if _, err := initService(lookup); err != nil {
 		return fmt.Errorf("init services: %w", err)
