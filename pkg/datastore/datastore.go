@@ -61,7 +61,7 @@ type Datastore struct {
 
 	changeListeners  []func(map[dskey.Key][]byte) error
 	calculatedFields map[string]func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error)
-	calculatedKey    map[dskey.Key]string
+	calculatedKeys   map[dskey.Key]string
 
 	history HistoryInformationer
 
@@ -78,7 +78,7 @@ func New(lookup environment.Environmenter, mb Updater, options ...Option) (*Data
 		keySource: make(map[string]Source),
 
 		calculatedFields: make(map[string]func(context.Context, dskey.Key, map[dskey.Key][]byte) ([]byte, error)),
-		calculatedKey:    make(map[dskey.Key]string),
+		calculatedKeys:   make(map[dskey.Key]string),
 	}
 
 	var backgroundFuncs []func(context.Context, func(error))
@@ -120,7 +120,7 @@ func New(lookup environment.Environmenter, mb Updater, options ...Option) (*Data
 func (d *Datastore) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	atomic.AddUint64(&d.metricGetHitCount, 1)
 	values, err := d.cache.GetOrSet(ctx, keys, func(keys []dskey.Key, set func(map[dskey.Key][]byte)) error {
-		return d.loadKey(keys, set)
+		return d.loadKeys(keys, set)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("getOrSet`: %w", err)
@@ -217,7 +217,7 @@ func (d *Datastore) listenOnUpdates(ctx context.Context, errHandler func(error))
 		d.resetMu.Lock()
 		d.cache.SetIfExistMany(data)
 
-		for key, field := range d.calculatedKey {
+		for key, field := range d.calculatedKeys {
 			bs := d.calculateField(field, key, data)
 
 			// Update the cache and also update the data-map. The data-map is
@@ -237,7 +237,7 @@ func (d *Datastore) listenOnUpdates(ctx context.Context, errHandler func(error))
 
 // splitCalculateddskey.Key splits a list of keys in calculated keys and "normal"
 // keys. The calculated keys are returned as map that point to the field name.
-func (d *Datastore) splitCalculatedKey(keys []dskey.Key) (map[dskey.Key]string, map[Source][]dskey.Key) {
+func (d *Datastore) splitCalculatedKeys(keys []dskey.Key) (map[dskey.Key]string, map[Source][]dskey.Key) {
 	normal := make(map[Source][]dskey.Key)
 	calculated := make(map[dskey.Key]string)
 	for _, k := range keys {
@@ -256,9 +256,9 @@ func (d *Datastore) splitCalculatedKey(keys []dskey.Key) (map[dskey.Key]string, 
 	return calculated, normal
 }
 
-func (d *Datastore) loadKey(keys []dskey.Key, set func(map[dskey.Key][]byte)) error {
-	calculatedKey, normalKey := d.splitCalculatedKey(keys)
-	for source, keys := range normalKey {
+func (d *Datastore) loadKeys(keys []dskey.Key, set func(map[dskey.Key][]byte)) error {
+	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
+	for source, keys := range normalKeys {
 		data, err := source.Get(context.Background(), keys...)
 		if err != nil {
 			return fmt.Errorf("requesting keys from datastore: %w", err)
@@ -266,9 +266,9 @@ func (d *Datastore) loadKey(keys []dskey.Key, set func(map[dskey.Key][]byte)) er
 		set(data)
 	}
 
-	for key, field := range calculatedKey {
+	for key, field := range calculatedKeys {
 		calculated := d.calculateField(field, key, nil)
-		d.calculatedKey[key] = field
+		d.calculatedKeys[key] = field
 		set(map[dskey.Key][]byte{key: calculated})
 	}
 	return nil

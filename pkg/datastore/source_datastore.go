@@ -21,7 +21,7 @@ import (
 var (
 	envDatastoreHost     = environment.NewVariable("DATASTORE_READER_HOST", "localhost", "Host of the datastore reader.")
 	envDatastorePort     = environment.NewVariable("DATASTORE_READER_PORT", "9010", "Port of the datastore reader.")
-	envDatastoreProtocol = environment.NewVariable("DATASTORE_READER_PROTOCOL", "openslides", "Protocol of the datastore reader.")
+	envDatastoreProtocol = environment.NewVariable("DATASTORE_READER_PROTOCOL", "http", "Protocol of the datastore reader.")
 
 	envDatastoreTimeout         = environment.NewVariable("DATASTORE_TIMEOUT", "3s", "Time until a request to the datastore times out.")
 	envDatastoreMaxParallelKeys = environment.NewVariable("DATASTORE_MAX_PARALLEL_KEYS", "1000", "Max keys that are send in one request to the datastore.")
