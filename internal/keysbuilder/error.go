@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // InvalidError is an error that happens on an invalid request.
@@ -72,7 +72,7 @@ func (e JSONError) Type() string {
 // ValueError in returned by keysbuilder.Update(), when the value of a key has
 // not the expected format.
 type ValueError struct {
-	key        datastore.Key
+	key        dskey.Key
 	gotType    string
 	expectType reflect.Type
 	err        error

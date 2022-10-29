@@ -146,7 +146,7 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 			t.Fatalf("Update: %v", err)
 		}
 
-		expect := map[datastore.Key][]byte{key1: []byte("42")}
+		expect := map[dskey.Key][]byte{key1: []byte("42")}
 		if !reflect.DeepEqual(got, expect) {
 			t.Errorf("Update() returned %v, expected %v", got, expect)
 		}
@@ -160,7 +160,7 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 			t.Fatalf("Update: %v", err)
 		}
 
-		expect := map[datastore.Key][]byte{key1: []byte("43")}
+		expect := map[dskey.Key][]byte{key1: []byte("43")}
 		if !reflect.DeepEqual(got, expect) {
 			t.Errorf("Update() returned %v, expected %v", got, expect)
 		}
@@ -174,7 +174,7 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 			t.Fatalf("Update: %v", err)
 		}
 
-		expect := map[datastore.Key][]byte{key1: nil}
+		expect := map[dskey.Key][]byte{key1: nil}
 		if !reflect.DeepEqual(got, expect) {
 			t.Errorf("Update() returned %v, expected %v", got, expect)
 		}

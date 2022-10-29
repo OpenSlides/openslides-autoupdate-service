@@ -9,7 +9,6 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
@@ -18,7 +17,7 @@ import (
 
 type testData struct {
 	name          string
-	data          map[datastore.Key][]byte
+	data          map[dskey.Key][]byte
 	expect        []int
 	expectOne     bool
 	requestUserID int

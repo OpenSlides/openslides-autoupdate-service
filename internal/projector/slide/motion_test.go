@@ -194,7 +194,7 @@ func TestMotion(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		options []byte
-		data    map[datastore.Key][]byte
+		data    map[dskey.Key][]byte
 		expect  string
 	}{
 		{
@@ -298,7 +298,7 @@ func TestMotion(t *testing.T) {
 		{
 			"motion including conditional fields",
 			[]byte(`{"mode":"final"}`),
-			changeData(data, map[datastore.Key][]byte{
+			changeData(data, map[dskey.Key][]byte{
 				dskey.MustKey("meeting/1/motions_enable_text_on_projector"):           []byte(`true`),
 				dskey.MustKey("meeting/1/motions_enable_reason_on_projector"):         []byte(`true`),
 				dskey.MustKey("meeting/1/motions_show_referring_motions"):             []byte(`true`),

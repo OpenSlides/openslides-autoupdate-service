@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
@@ -62,9 +63,9 @@ func TestSourceDefaultRequestCount(t *testing.T) {
 				t.Fatalf("Initialize: %v", err)
 			}
 
-			keys := make([]datastore.Key, tt.keyCount)
+			keys := make([]dskey.Key, tt.keyCount)
 			for i := 0; i < len(keys); i++ {
-				keys[i] = datastore.Key{Collection: "coll", ID: i + 1, Field: "field"}
+				keys[i] = dskey.Key{Collection: "coll", ID: i + 1, Field: "field"}
 			}
 
 			got, err := sd.GetPosition(context.Background(), 0, keys...)

@@ -31,7 +31,7 @@ func TestProjectionDoesNotExist(t *testing.T) {
 }
 
 func TestProjectionFromContentObject(t *testing.T) {
-	ds, _ := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, _ := dsmock.NewMockDatastore(map[dskey.Key][]byte{
 		dskey.MustKey("projection/1/id"):                []byte("1"),
 		dskey.MustKey("projection/1/content_object_id"): []byte(`"test_model/1"`),
 	})
@@ -44,7 +44,7 @@ func TestProjectionFromContentObject(t *testing.T) {
 }
 
 func TestProjectionFromType(t *testing.T) {
-	ds, _ := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, _ := dsmock.NewMockDatastore(map[dskey.Key][]byte{
 		dskey.MustKey("projection/1/id"):                []byte("1"),
 		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
 		dskey.MustKey("projection/1/type"):              []byte(`"test1"`),
@@ -61,7 +61,7 @@ func TestProjectionUpdateProjection(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds, bg := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, bg := dsmock.NewMockDatastore(map[dskey.Key][]byte{
 		dskey.MustKey("projection/1/id"):                []byte("1"),
 		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
 		dskey.MustKey("projection/1/type"):              []byte(`"test1"`),
@@ -75,7 +75,7 @@ func TestProjectionUpdateProjection(t *testing.T) {
 	require.NoError(t, err, "Get returned unexpected error")
 
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(map[datastore.Key][]byte) error {
+	ds.RegisterChangeListener(func(map[dskey.Key][]byte) error {
 		close(done)
 		return nil
 	})
@@ -96,7 +96,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds, bg := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, bg := dsmock.NewMockDatastore(map[dskey.Key][]byte{
 		dskey.MustKey("projection/1/id"):                []byte("1"),
 		dskey.MustKey("projection/1/type"):              []byte(`"projection"`),
 		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
@@ -110,7 +110,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 	require.NoError(t, err, "Get returned unexpected error")
 
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(map[datastore.Key][]byte) error {
+	ds.RegisterChangeListener(func(map[dskey.Key][]byte) error {
 		close(done)
 		return nil
 	})
@@ -125,7 +125,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 }
 
 func TestProjectionWithOptionsData(t *testing.T) {
-	ds, _ := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, _ := dsmock.NewMockDatastore(map[dskey.Key][]byte{
 		dskey.MustKey("projection/1/id"):                []byte("1"),
 		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/6"`),
 		dskey.MustKey("projection/1/type"):              []byte(`"projection"`),
@@ -144,7 +144,7 @@ func TestProjectionUpdateSlide(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds, bg := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, bg := dsmock.NewMockDatastore(map[dskey.Key][]byte{
 		dskey.MustKey("projection/1/id"):                []byte("1"),
 		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/6"`),
 		dskey.MustKey("projection/1/type"):              []byte(`"test_model"`),
@@ -159,7 +159,7 @@ func TestProjectionUpdateSlide(t *testing.T) {
 
 	// Register a listener that tells, when cache is updated.
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(data map[datastore.Key][]byte) error {
+	ds.RegisterChangeListener(func(data map[dskey.Key][]byte) error {
 		close(done)
 		return nil
 	})
@@ -177,7 +177,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds, bg := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, bg := dsmock.NewMockDatastore(map[dskey.Key][]byte{
 		dskey.MustKey("projection/1/id"):                []byte("1"),
 		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
 		dskey.MustKey("projection/1/type"):              []byte(`"test_model"`),
@@ -191,7 +191,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 
 	// Register a listener that tells, when cache is updated.
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(data map[datastore.Key][]byte) error {
+	ds.RegisterChangeListener(func(data map[dskey.Key][]byte) error {
 		close(done)
 		return nil
 	})
@@ -206,7 +206,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 }
 
 func TestProjectionTypeDoesNotExist(t *testing.T) {
-	ds, _ := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, _ := dsmock.NewMockDatastore(map[dskey.Key][]byte{
 		dskey.MustKey("projection/1/id"):                []byte("1"),
 		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
 		dskey.MustKey("projection/1/type"):              []byte(`"unexistingTestSlide"`),

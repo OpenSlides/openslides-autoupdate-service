@@ -104,7 +104,7 @@ func (f *Fetcher) Object(ctx context.Context, fqID string, fields ...string) map
 		return nil
 	}
 
-	keys := make([]datastore.Key, len(fields)+1)
+	keys := make([]dskey.Key, len(fields)+1)
 	idKey, err := dskey.FromString(fqID + "/id")
 	if err != nil {
 		f.err = fmt.Errorf("invalid key: %s", fqID+"/id")

@@ -90,7 +90,7 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 			}
 			defer tp.dropData(ctx)
 
-			keys := make([]datastore.Key, 0, len(tt.data))
+			keys := make([]dskey.Key, 0, len(tt.data))
 			for k := range tt.expect {
 				keys = append(keys, dskey.MustKey(k))
 			}
@@ -100,7 +100,7 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 				t.Fatalf("Get: %v", err)
 			}
 
-			expect := make(map[datastore.Key][]byte)
+			expect := make(map[dskey.Key][]byte)
 			for k, v := range tt.expect {
 				expect[dskey.MustKey(k)] = v
 			}
@@ -133,12 +133,12 @@ func TestBigQuery(t *testing.T) {
 
 	count := 2_000
 
-	keys := make([]datastore.Key, count)
+	keys := make([]dskey.Key, count)
 	for i := 0; i < count; i++ {
-		keys[i] = datastore.Key{"user", 1, fmt.Sprintf("f%d", i)}
+		keys[i] = dskey.Key{"user", 1, fmt.Sprintf("f%d", i)}
 	}
 
-	testData := make(map[datastore.Key][]byte)
+	testData := make(map[dskey.Key][]byte)
 	for _, key := range keys {
 		testData[key] = []byte(fmt.Sprintf(`"%s"`, key.String()))
 	}
@@ -266,7 +266,7 @@ func (tp *testPostgres) addSchema(ctx context.Context) error {
 	return nil
 }
 
-func (tp *testPostgres) addTestData(ctx context.Context, data map[datastore.Key][]byte) error {
+func (tp *testPostgres) addTestData(ctx context.Context, data map[dskey.Key][]byte) error {
 	objects := make(map[string]map[string]json.RawMessage)
 	for k, v := range data {
 		fqid := k.FQID()

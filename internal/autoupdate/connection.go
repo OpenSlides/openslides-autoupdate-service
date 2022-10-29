@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // connection holds the state of a client. It has to be created by colling
@@ -15,7 +16,7 @@ type connection struct {
 	kb         KeysBuilder
 	tid        uint64
 	filter     filter
-	hotkeys    map[datastore.Key]struct{}
+	hotkeys    map[dskey.Key]struct{}
 }
 
 // Next returns the next data for the user.
@@ -25,7 +26,7 @@ type connection struct {
 //
 // On every other call, it blocks until there is new data. In this case, the map
 // is never empty.
-func (c *connection) Next(ctx context.Context) (map[datastore.Key][]byte, error) {
+func (c *connection) Next(ctx context.Context) (map[dskey.Key][]byte, error) {
 	if c.filter.empty() {
 		c.tid = c.autoupdate.topic.LastID()
 		data, err := c.updatedData(ctx)
@@ -67,7 +68,7 @@ func (c *connection) Next(ctx context.Context) (map[datastore.Key][]byte, error)
 }
 
 // updatedData returns all values from the datastore.getter.
-func (c *connection) updatedData(ctx context.Context) (map[datastore.Key][]byte, error) {
+func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, error) {
 	recorder := datastore.NewRecorder(c.autoupdate.datastore)
 	restricter := c.autoupdate.restricter(recorder, c.uid)
 
@@ -94,13 +95,13 @@ func (c *connection) updatedData(ctx context.Context) (map[datastore.Key][]byte,
 }
 
 // notInSlice returns elements that are in slice a but not in b.
-func notInSlice(a, b []datastore.Key) []datastore.Key {
-	bSet := make(map[datastore.Key]struct{}, len(b))
+func notInSlice(a, b []dskey.Key) []dskey.Key {
+	bSet := make(map[dskey.Key]struct{}, len(b))
 	for _, k := range b {
 		bSet[k] = struct{}{}
 	}
 
-	var missing []datastore.Key
+	var missing []dskey.Key
 	for _, k := range a {
 		if _, ok := bSet[k]; !ok {
 			missing = append(missing, k)

@@ -45,13 +45,13 @@ const (
 
 // Datastore is the source for the data.
 type Datastore interface {
-	Get(ctx context.Context, keys ...datastore.Key) (map[datastore.Key][]byte, error)
-	GetPosition(ctx context.Context, position int, keys ...datastore.Key) (map[datastore.Key][]byte, error)
-	RegisterChangeListener(f func(map[datastore.Key][]byte) error)
+	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
+	GetPosition(ctx context.Context, position int, keys ...dskey.Key) (map[dskey.Key][]byte, error)
+	RegisterChangeListener(f func(map[dskey.Key][]byte) error)
 	ResetCache()
 	RegisterCalculatedField(
 		field string,
-		f func(ctx context.Context, key datastore.Key, changed map[datastore.Key][]byte) ([]byte, error),
+		f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error),
 	)
 	HistoryInformation(ctx context.Context, fqid string, w io.Writer) error
 }
@@ -59,7 +59,7 @@ type Datastore interface {
 // KeysBuilder holds the keys that are requested by a user.
 type KeysBuilder interface {
 	Update(ctx context.Context, ds datastore.Getter) error
-	Keys() []datastore.Key
+	Keys() []dskey.Key
 }
 
 // RestrictMiddleware is a function that can restrict data.
@@ -69,7 +69,7 @@ type RestrictMiddleware func(getter datastore.Getter, uid int) datastore.Getter
 // with autoupdate.New().
 type Autoupdate struct {
 	datastore  Datastore
-	topic      *topic.Topic[datastore.Key]
+	topic      *topic.Topic[dskey.Key]
 	restricter RestrictMiddleware
 }
 
@@ -80,13 +80,13 @@ type Autoupdate struct {
 func New(ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context.Context)) {
 	a := &Autoupdate{
 		datastore:  ds,
-		topic:      topic.New[datastore.Key](),
+		topic:      topic.New[dskey.Key](),
 		restricter: restricter,
 	}
 
 	// Update the topic when an data update is received.
-	a.datastore.RegisterChangeListener(func(data map[datastore.Key][]byte) error {
-		keys := make([]datastore.Key, 0, len(data))
+	a.datastore.RegisterChangeListener(func(data map[dskey.Key][]byte) error {
+		keys := make([]dskey.Key, 0, len(data))
 		for k := range data {
 			keys = append(keys, k)
 		}
@@ -104,7 +104,7 @@ func New(ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context
 }
 
 // DataProvider is a function that returns the next data for a user.
-type DataProvider func(ctx context.Context) (map[datastore.Key][]byte, error)
+type DataProvider func(ctx context.Context) (map[dskey.Key][]byte, error)
 
 // Connect has to be called by a client to register to the service. The method
 // returns a Connection object, that can be used to receive the data.
@@ -123,7 +123,7 @@ func (a *Autoupdate) Connect(userID int, kb KeysBuilder) DataProvider {
 // SingleData returns the data for the given keysbuilder without autoupdates.
 //
 // The attribute position can be used to get data from the history.
-func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder, position int) (map[datastore.Key][]byte, error) {
+func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder, position int) (map[dskey.Key][]byte, error) {
 	var restricter datastore.Getter = a.restricter(a.datastore, userID)
 
 	if position != 0 {
@@ -200,7 +200,7 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 		var errNotExist dsfetch.DoesNotExistError
 		if errors.As(err, &errNotExist) {
 			// TODO Client Error
-			return notExistError{datastore.Key(errNotExist)}
+			return notExistError{dskey.Key(errNotExist)}
 		}
 		return fmt.Errorf("getting meeting id for collection %s id %d: %w", coll, id, err)
 	}
@@ -241,7 +241,7 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 //
 // The return format is a map from fqid to an object as map from field to value.
 func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []string) (map[string]map[string][]byte, error) {
-	var keys []datastore.Key
+	var keys []dskey.Key
 	for _, fqid := range fqids {
 		collection, _, found := strings.Cut(fqid, "/")
 		if !found {
@@ -298,7 +298,7 @@ func (e permissionDeniedError) Type() string {
 }
 
 type notExistError struct {
-	key datastore.Key
+	key dskey.Key
 }
 
 func (e notExistError) Error() string {

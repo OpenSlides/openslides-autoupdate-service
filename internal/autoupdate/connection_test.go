@@ -8,7 +8,6 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
@@ -57,7 +56,7 @@ func TestConnectionReadNewData(t *testing.T) {
 		t.Errorf("next(): %v", err)
 	}
 
-	ds.Send(map[datastore.Key][]byte{userNameKey: []byte(`"new value"`)})
+	ds.Send(map[dskey.Key][]byte{userNameKey: []byte(`"new value"`)})
 	data, err := next(context.Background())
 	if err != nil {
 		t.Errorf("next(): %v", err)
@@ -68,7 +67,7 @@ func TestConnectionReadNewData(t *testing.T) {
 	}
 
 	if value, ok := data[userNameKey]; !ok || string(value) != `"new value"` {
-		t.Errorf("next() returned %v, expected %v", data, map[datastore.Key]string{userNameKey: `"new value"`})
+		t.Errorf("next() returned %v, expected %v", data, map[dskey.Key]string{userNameKey: `"new value"`})
 	}
 }
 
@@ -81,7 +80,7 @@ func TestConnectionEmptyData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds, bg := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, bg := dsmock.NewMockDatastore(map[dskey.Key][]byte{
 		doesExistKey: []byte(`"Hello World"`),
 	})
 	go bg(shutdownCtx)
@@ -108,31 +107,31 @@ func TestConnectionEmptyData(t *testing.T) {
 
 	for _, tt := range []struct {
 		name           string
-		update         map[datastore.Key][]byte
+		update         map[dskey.Key][]byte
 		expectBlocking bool
 		expectExist    bool
 		expectNotExist bool
 	}{
 		{
 			name:           "not exist->not exist",
-			update:         map[datastore.Key][]byte{doesNotExistKey: nil},
+			update:         map[dskey.Key][]byte{doesNotExistKey: nil},
 			expectBlocking: true,
 		},
 		{
 			name:           "not exist->exist",
-			update:         map[datastore.Key][]byte{doesNotExistKey: []byte("value")},
+			update:         map[dskey.Key][]byte{doesNotExistKey: []byte("value")},
 			expectExist:    false, // existing key gets filtered.
 			expectNotExist: true,
 		},
 		{
 			name:           "exist->not exist",
-			update:         map[datastore.Key][]byte{doesExistKey: nil},
+			update:         map[dskey.Key][]byte{doesExistKey: nil},
 			expectExist:    true,
 			expectNotExist: false,
 		},
 		{
 			name:           "exist->exist",
-			update:         map[datastore.Key][]byte{doesExistKey: []byte("new value")},
+			update:         map[dskey.Key][]byte{doesExistKey: []byte("new value")},
 			expectExist:    true,
 			expectNotExist: false,
 		},
@@ -145,7 +144,7 @@ func TestConnectionEmptyData(t *testing.T) {
 
 			ds.Send(tt.update)
 
-			var data map[datastore.Key][]byte
+			var data map[dskey.Key][]byte
 			var err error
 			isBlocking := blocking(func() {
 				data, err = next(context.Background())
@@ -194,14 +193,14 @@ func TestConnectionEmptyData(t *testing.T) {
 		}
 
 		// First time not exist
-		ds.Send(map[datastore.Key][]byte{doesExistKey: nil})
+		ds.Send(map[dskey.Key][]byte{doesExistKey: nil})
 
 		blocking(func() {
 			next(context.Background())
 		})
 
 		// Second time not exist
-		ds.Send(map[datastore.Key][]byte{doesExistKey: nil})
+		ds.Send(map[dskey.Key][]byte{doesExistKey: nil})
 
 		var err error
 		isBlocking := blocking(func() {
@@ -222,7 +221,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds, bg := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, bg := dsmock.NewMockDatastore(map[dskey.Key][]byte{
 		userNameKey: []byte(`"Hello World"`),
 	})
 	go bg(shutdownCtx)
@@ -234,7 +233,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 		t.Errorf("next(): %v", err)
 	}
 
-	ds.Send(map[datastore.Key][]byte{userNameKey: []byte(`"newname"`)})
+	ds.Send(map[dskey.Key][]byte{userNameKey: []byte(`"newname"`)})
 	data, err := next(context.Background())
 	if err != nil {
 		t.Errorf("next(): %v", err)
@@ -254,7 +253,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 }
 
 func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
-	ds, _ := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	ds, _ := dsmock.NewMockDatastore(map[dskey.Key][]byte{
 		userNameKey: []byte(`"Hello World"`),
 	})
 
@@ -264,7 +263,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 	next := s.Connect(1, kb)
 
 	t.Run("first call", func(t *testing.T) {
-		var data map[datastore.Key][]byte
+		var data map[dskey.Key][]byte
 		var err error
 		isBlocked := blocking(func() {
 			data, err = next(context.Background())
@@ -284,7 +283,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 	})
 
 	t.Run("next call", func(t *testing.T) {
-		var data map[datastore.Key][]byte
+		var data map[dskey.Key][]byte
 		var err error
 		isBlocked := blocking(func() {
 			data, err = next(context.Background())

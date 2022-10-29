@@ -12,8 +12,8 @@ var NewRecorder = datastore.NewRecorder
 // DoesNotExistError is a type alias from datastore.DoesNotExistError
 type DoesNotExistError = dsfetch.DoesNotExistError
 
-// Key is a type alias from datastore.Key
-type Key = datastore.Key
+// Key is a type alias from dskey.Key
+type Key = dskey.Key
 
 // KeyFromString from package dskey.
 var KeyFromString = dskey.FromString

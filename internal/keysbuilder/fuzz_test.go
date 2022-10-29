@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
@@ -142,7 +141,7 @@ func FuzzFromJSON(f *testing.F) {
 		}
 	}`)
 
-	ds := dsmock.Stub(map[datastore.Key][]byte{
+	ds := dsmock.Stub(map[dskey.Key][]byte{
 		dskey.MustKey("user/1/note_id"):       []byte(`1`),
 		dskey.MustKey("user/1/group_ids"):     []byte(`[1,2]`),
 		dskey.MustKey("note/1/motion_id"):     []byte(`1`),

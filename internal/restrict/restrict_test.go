@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	restrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
@@ -79,7 +78,7 @@ func TestRestrict(t *testing.T) {
 
 	restricter := restrict.Middleware(ds, 1)
 
-	keys := []datastore.Key{
+	keys := []dskey.Key{
 		dskey.MustKey("agenda_item/1/item_number"),
 		dskey.MustKey("agenda_item/1/tag_ids"),
 		dskey.MustKey("agenda_item/10/item_number"),
@@ -145,7 +144,7 @@ func TestRestrictSuperAdmin(t *testing.T) {
 
 	restricter := restrict.Middleware(ds, 1)
 
-	keys := []datastore.Key{
+	keys := []dskey.Key{
 		dskey.MustKey("personal_note/1/id"),
 		dskey.MustKey("personal_note/2/id"),
 	}

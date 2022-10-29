@@ -8,11 +8,12 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
 
 func getConnection() (autoupdate.DataProvider, *dsmock.MockDatastore, func(context.Context)) {
-	datastore, dsBackground := dsmock.NewMockDatastore(map[datastore.Key][]byte{
+	datastore, dsBackground := dsmock.NewMockDatastore(map[dskey.Key][]byte{
 		userNameKey: []byte(`"Hello World"`),
 	})
 	s, _ := autoupdate.New(datastore, RestrictAllowed)
@@ -58,7 +59,7 @@ type mockRestricter struct {
 	allow  bool
 }
 
-func (r mockRestricter) Get(ctx context.Context, keys ...datastore.Key) (map[datastore.Key][]byte, error) {
+func (r mockRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	data, err := r.getter.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("getting data: %w", err)

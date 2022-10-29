@@ -71,7 +71,7 @@ func initDB(in string) (datastore.Getter, error) {
 		return nil, fmt.Errorf("loading db: %w", err)
 	}
 
-	converted := make(map[datastore.Key][]byte)
+	converted := make(map[dskey.Key][]byte)
 	for k, v := range raw {
 		if string(v) == "null" {
 			continue

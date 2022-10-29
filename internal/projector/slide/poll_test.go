@@ -82,7 +82,7 @@ func TestPoll(t *testing.T) {
 
 	for _, tt := range []struct {
 		name   string
-		data   map[datastore.Key][]byte
+		data   map[dskey.Key][]byte
 		expect string
 	}{
 		{
@@ -153,7 +153,7 @@ func TestPoll(t *testing.T) {
 		},
 		{
 			"Poll state finished",
-			changeData(data, map[datastore.Key][]byte{
+			changeData(data, map[dskey.Key][]byte{
 				dskey.MustKey("poll/1/state"): []byte(`"finished"`),
 			}),
 			`{

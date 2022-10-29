@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
 
@@ -16,7 +16,7 @@ func TestKeys(t *testing.T) {
 		name    string
 		request string
 		data    string
-		keys    []datastore.Key
+		keys    []dskey.Key
 	}{
 		{
 			"One Field",
@@ -284,7 +284,7 @@ func TestUpdate(t *testing.T) {
 		request string
 		data    string
 		newData string
-		got     []datastore.Key
+		got     []dskey.Key
 		count   int
 	}{
 		{

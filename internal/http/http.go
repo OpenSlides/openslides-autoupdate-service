@@ -19,7 +19,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/klauspost/compress/zstd"
 )
 
@@ -68,7 +68,7 @@ func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autou
 // Connecter returns an connect object.
 type Connecter interface {
 	Connect(userID int, kb autoupdate.KeysBuilder) autoupdate.DataProvider
-	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[datastore.Key][]byte, error)
+	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[dskey.Key][]byte, error)
 }
 
 // HandleAutoupdate builds the requested keys from the body of a request. The
@@ -169,7 +169,7 @@ func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecte
 	)
 }
 
-func writeData(w io.Writer, data map[datastore.Key][]byte, compress bool) error {
+func writeData(w io.Writer, data map[dskey.Key][]byte, compress bool) error {
 	converted := make(map[string]json.RawMessage, len(data))
 	for k, v := range data {
 		converted[k.String()] = v

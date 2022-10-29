@@ -3,7 +3,7 @@ package autoupdate
 import (
 	"hash/maphash"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 func createHash(hasher *maphash.Hash, value []byte) uint64 {
@@ -16,14 +16,14 @@ func createHash(hasher *maphash.Hash, value []byte) uint64 {
 
 type filter struct {
 	hasher  maphash.Hash
-	history map[datastore.Key]uint64
+	history map[dskey.Key]uint64
 }
 
 // filter removes nil values from a map. If filter is called multiple times it
 // removes values from the map, that did not chance.
-func (f *filter) filter(data map[datastore.Key][]byte) {
+func (f *filter) filter(data map[dskey.Key][]byte) {
 	if f.history == nil {
-		f.history = make(map[datastore.Key]uint64)
+		f.history = make(map[dskey.Key]uint64)
 	}
 
 	for key, value := range data {
@@ -54,6 +54,6 @@ func (f *filter) empty() bool {
 // delete removes the key k from the filter.
 //
 // The next time the filter is called with the key, it will not be filtered.
-func (f *filter) delete(k datastore.Key) {
+func (f *filter) delete(k dskey.Key) {
 	delete(f.history, k)
 }

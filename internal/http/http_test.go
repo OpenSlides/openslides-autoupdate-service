@@ -12,12 +12,12 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	ahttp "github.com/OpenSlides/openslides-autoupdate-service/internal/http"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 var (
-	myKey1 = datastore.Key{Collection: "collection", ID: 1, Field: "field"}
-	myKey2 = datastore.Key{Collection: "collection", ID: 2, Field: "field"}
+	myKey1 = dskey.Key{Collection: "collection", ID: 1, Field: "field"}
+	myKey2 = dskey.Key{Collection: "collection", ID: 2, Field: "field"}
 )
 
 type connecterMock struct {
@@ -28,7 +28,7 @@ func (c *connecterMock) Connect(userID int, kb autoupdate.KeysBuilder) autoupdat
 	return c.f
 }
 
-func (c *connecterMock) SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[datastore.Key][]byte, error) {
+func (c *connecterMock) SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[dskey.Key][]byte, error) {
 	return c.f(ctx)
 }
 
@@ -38,9 +38,9 @@ func TestKeysHandler(t *testing.T) {
 
 	mux := http.NewServeMux()
 	connecter := &connecterMock{
-		func(ctx context.Context) (map[datastore.Key][]byte, error) {
+		func(ctx context.Context) (map[dskey.Key][]byte, error) {
 			cancel()
-			return map[datastore.Key][]byte{myKey1: []byte(`"bar"`)}, nil
+			return map[dskey.Key][]byte{myKey1: []byte(`"bar"`)}, nil
 		},
 	}
 
@@ -69,9 +69,9 @@ func TestComplexHandler(t *testing.T) {
 
 	mux := http.NewServeMux()
 	connecter := &connecterMock{
-		func(ctx context.Context) (map[datastore.Key][]byte, error) {
+		func(ctx context.Context) (map[dskey.Key][]byte, error) {
 			cancel()
-			return map[datastore.Key][]byte{myKey1: []byte(`"bar"`)}, nil
+			return map[dskey.Key][]byte{myKey1: []byte(`"bar"`)}, nil
 		},
 	}
 
@@ -120,8 +120,8 @@ func TestHealth(t *testing.T) {
 func TestErrors(t *testing.T) {
 	mux := http.NewServeMux()
 	connecter := &connecterMock{
-		func(ctx context.Context) (map[datastore.Key][]byte, error) {
-			return map[datastore.Key][]byte{myKey1: []byte(`"bar"`)}, nil
+		func(ctx context.Context) (map[dskey.Key][]byte, error) {
+			return map[dskey.Key][]byte{myKey1: []byte(`"bar"`)}, nil
 		},
 	}
 	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil)

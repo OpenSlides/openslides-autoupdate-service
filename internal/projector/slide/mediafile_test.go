@@ -7,6 +7,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,7 +25,7 @@ func TestMediafile(t *testing.T) {
 
 	for _, tt := range []struct {
 		name   string
-		data   map[datastore.Key][]byte
+		data   map[dskey.Key][]byte
 		expect string
 	}{
 		{

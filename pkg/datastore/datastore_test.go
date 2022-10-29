@@ -23,7 +23,7 @@ var (
 )
 
 func TestDataStoreGet(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[datastore.Key][]byte{
+	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"Hello World"`),
 	}))
 
@@ -42,7 +42,7 @@ func TestDataStoreGet(t *testing.T) {
 }
 
 func TestDataStoreGetMultiValue(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[datastore.Key][]byte{
+	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"v1"`),
 		myKey2: []byte(`"v2"`),
 	}), dsmock.NewCounter)
@@ -66,7 +66,7 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 }
 
 func TestDataStoreGetKeyTwice(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[datastore.Key][]byte{
+	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"v1"`),
 	}), dsmock.NewCounter)
 
@@ -89,13 +89,13 @@ func TestDataStoreGetKeyTwice(t *testing.T) {
 }
 
 func TestCalculatedFields(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[datastore.Key][]byte{}))
+	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
 
 	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key datastore.Key, changed map[datastore.Key][]byte) ([]byte, error) {
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
 		if changed == nil {
 			return []byte("my value"), nil
 		}
@@ -122,7 +122,7 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[datastore.Key][]byte{
+	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"original value"`),
 	}))
 
@@ -132,7 +132,7 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 	}
 	go bg(shutdownCtx)
 
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key datastore.Key, changed map[datastore.Key][]byte) ([]byte, error) {
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
 		fields, err := ds.Get(context.Background(), myKey1)
 		if err != nil {
 			return nil, err
@@ -141,7 +141,7 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 	})
 
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(map[datastore.Key][]byte) error {
+	ds.RegisterChangeListener(func(map[dskey.Key][]byte) error {
 		// Signal, that the data is updated.
 		close(done)
 		return nil
@@ -159,7 +159,7 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[datastore.Key][]byte{
+	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"original value"`),
 	}))
 
@@ -169,7 +169,7 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 	}
 	go bg(shutdownCtx)
 
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key datastore.Key, changed map[datastore.Key][]byte) ([]byte, error) {
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
 		fields, err := ds.Get(context.Background(), myKey1)
 		if err != nil {
 			return nil, err
@@ -181,7 +181,7 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 	ds.Get(context.Background(), myKey1)
 
 	done := make(chan struct{})
-	ds.RegisterChangeListener(func(map[datastore.Key][]byte) error {
+	ds.RegisterChangeListener(func(map[dskey.Key][]byte) error {
 		// Signal, that the data is updated.
 		close(done)
 		return nil
@@ -199,7 +199,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[datastore.Key][]byte{
+	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"original value"`),
 	}))
 
@@ -209,7 +209,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 	}
 	go bg(shutdownCtx)
 
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key datastore.Key, changed map[datastore.Key][]byte) ([]byte, error) {
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
 		field, err := ds.Get(ctx, myKey1)
 		if err != nil {
 			return nil, fmt.Errorf("getting normal field: %w", err)
@@ -224,7 +224,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 }
 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[datastore.Key][]byte{
+	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"original value"`),
 	}))
 
@@ -232,7 +232,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key datastore.Key, changed map[datastore.Key][]byte) ([]byte, error) {
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
 		fields, err := ds.Get(ctx, myKey1, myKey1)
 		if err != nil {
 			return nil, fmt.Errorf("getting normal field: %w", err)
@@ -247,14 +247,14 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.
 }
 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExist(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[datastore.Key][]byte{}))
+	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
 
 	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
 
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key datastore.Key, changed map[datastore.Key][]byte) ([]byte, error) {
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
 		field, err := ds.Get(ctx, myKey1)
 		if err != nil {
 			return nil, fmt.Errorf("getting normal field: %w", err)
@@ -269,14 +269,14 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExist(t 
 }
 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExistTwice(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[datastore.Key][]byte{}))
+	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
 
 	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
 
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key datastore.Key, changed map[datastore.Key][]byte) ([]byte, error) {
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
 		fields, err := ds.Get(ctx, myKey1, myKey1)
 		if err != nil {
 			return nil, fmt.Errorf("getting normal field: %w", err)
@@ -291,14 +291,14 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExistTwi
 }
 
 func TestCalculatedFieldsNoDBQuery(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[datastore.Key][]byte{}), dsmock.NewCounter)
+	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}), dsmock.NewCounter)
 
 	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
 
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key datastore.Key, changed map[datastore.Key][]byte) ([]byte, error) {
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
 		return []byte("foobar"), nil
 	})
 
@@ -316,7 +316,7 @@ func TestChangeListeners(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[datastore.Key][]byte{}))
+	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
 
 	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
 	if err != nil {
@@ -324,10 +324,10 @@ func TestChangeListeners(t *testing.T) {
 	}
 	go bg(shutdownCtx)
 
-	var receivedData map[datastore.Key][]byte
+	var receivedData map[dskey.Key][]byte
 	received := make(chan struct{}, 1)
 
-	ds.RegisterChangeListener(func(data map[datastore.Key][]byte) error {
+	ds.RegisterChangeListener(func(data map[dskey.Key][]byte) error {
 		receivedData = data
 		close(received)
 		return nil
@@ -343,7 +343,7 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[datastore.Key][]byte{}))
+	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
 	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
@@ -351,7 +351,7 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 	go bg(shutdownCtx)
 
 	var callCounter int
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key datastore.Key, changed map[datastore.Key][]byte) ([]byte, error) {
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
 		callCounter++
 		return []byte("foobar" + strconv.Itoa(callCounter)), nil
 	})
@@ -359,26 +359,26 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 	// Load calculated field in cache.
 	ds.Get(context.Background(), myCalculated)
 
-	var receivedData map[datastore.Key][]byte
+	var receivedData map[dskey.Key][]byte
 	received := make(chan struct{}, 1)
 
-	ds.RegisterChangeListener(func(data map[datastore.Key][]byte) error {
+	ds.RegisterChangeListener(func(data map[dskey.Key][]byte) error {
 		receivedData = data
 		close(received)
 		return nil
 	})
 
-	source.Send(map[datastore.Key][]byte{myKey1: []byte(`"my value"`)})
+	source.Send(map[dskey.Key][]byte{myKey1: []byte(`"my value"`)})
 
 	<-received
-	assert.Equal(t, map[datastore.Key][]byte{
+	assert.Equal(t, map[dskey.Key][]byte{
 		myKey1:       []byte(`"my value"`),
 		myCalculated: []byte("foobar2"),
 	}, receivedData)
 }
 
 func TestResetCache(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[datastore.Key][]byte{}), dsmock.NewCounter)
+	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}), dsmock.NewCounter)
 
 	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
 	if err != nil {
@@ -401,7 +401,7 @@ func TestResetWhileUpdate(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[datastore.Key][]byte{}))
+	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
 
 	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
 	if err != nil {

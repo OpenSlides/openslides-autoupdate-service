@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
@@ -48,7 +47,7 @@ func New(lookup environment.Environmenter) *Redis {
 }
 
 // Update is a blocking function that returns, when there is new data.
-func (r *Redis) Update(ctx context.Context) (map[datastore.Key][]byte, error) {
+func (r *Redis) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
 	id := r.lastAutoupdateID
 	if id == "" {
 		id = "$"
@@ -68,7 +67,7 @@ func (r *Redis) Update(ctx context.Context) (map[datastore.Key][]byte, error) {
 		r.lastAutoupdateID = id
 	}
 
-	converted := make(map[datastore.Key][]byte, len(data))
+	converted := make(map[dskey.Key][]byte, len(data))
 	for k, v := range data {
 		key, err := dskey.FromString(k)
 		if err != nil {

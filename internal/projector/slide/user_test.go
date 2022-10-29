@@ -184,7 +184,7 @@ func TestUserWithoutMeeting(t *testing.T) {
 
 func TestUserWithError(t *testing.T) {
 	userSlide := setup(t)
-	data := map[datastore.Key][]byte{
+	data := map[dskey.Key][]byte{
 		dskey.MustKey("user/1/id"): []byte(`1`),
 	}
 
