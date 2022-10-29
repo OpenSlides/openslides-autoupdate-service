@@ -5,11 +5,12 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/pendingmap"
 )
 
 // cacheSetFunc is a function to update cache keys.
-type cacheSetFunc func(keys []Key, set func(map[Key][]byte)) error
+type cacheSetFunc func(keys []dskey.Key, set func(map[dskey.Key][]byte)) error
 
 // cache stores the values to the datastore.
 //
@@ -54,7 +55,7 @@ func newCache() *cache {
 //
 // Possible Errors: context.Canceled or context.DeadlineExeeded or the return
 // value from hte set func.
-func (c *cache) GetOrSet(ctx context.Context, keys []Key, set cacheSetFunc) (map[Key][]byte, error) {
+func (c *cache) GetOrSet(ctx context.Context, keys []dskey.Key, set cacheSetFunc) (map[dskey.Key][]byte, error) {
 	// Blocks until all missing (but not pending) keys are fetched.
 	//
 	// After this call, all keys are either pending (from another parallel call)
@@ -79,7 +80,7 @@ func (c *cache) GetOrSet(ctx context.Context, keys []Key, set cacheSetFunc) (map
 //
 // Possible Errors: context.Canceled or context.DeadlineExeeded or the return
 // value from the set func.
-func (c *cache) fetchMissing(ctx context.Context, keys []Key, set cacheSetFunc) error {
+func (c *cache) fetchMissing(ctx context.Context, keys []dskey.Key, set cacheSetFunc) error {
 	missingKeys := c.data.MarkPending(keys...)
 
 	if len(missingKeys) == 0 {
@@ -90,7 +91,7 @@ func (c *cache) fetchMissing(ctx context.Context, keys []Key, set cacheSetFunc) 
 	// when the context is done. Other calls could also request it.
 	errChan := make(chan error, 1)
 	go func() {
-		err := set(missingKeys, func(data map[Key][]byte) {
+		err := set(missingKeys, func(data map[dskey.Key][]byte) {
 			for key, value := range data {
 				if string(value) == "null" {
 					data[key] = nil
@@ -126,15 +127,15 @@ func (c *cache) fetchMissing(ctx context.Context, keys []Key, set cacheSetFunc) 
 }
 
 // SetIfExist updates the cache if the key exists or is pending.
-func (c *cache) SetIfExist(key Key, value []byte) {
+func (c *cache) SetIfExist(key dskey.Key, value []byte) {
 	if string(value) == "null" {
 		value = nil
 	}
-	c.data.SetIfPendingOrExists(map[Key][]byte{key: value})
+	c.data.SetIfPendingOrExists(map[dskey.Key][]byte{key: value})
 }
 
 // SetIfExistMany is like SetIfExist but with many keys.
-func (c *cache) SetIfExistMany(data map[Key][]byte) {
+func (c *cache) SetIfExistMany(data map[dskey.Key][]byte) {
 	for k, v := range data {
 		if string(v) == "null" {
 			data[k] = nil

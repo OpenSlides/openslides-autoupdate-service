@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
@@ -117,11 +118,11 @@ func (s *VoteCountSource) connect(ctx context.Context) error {
 }
 
 // Get is called when a key is not in the cache.
-func (s *VoteCountSource) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
+func (s *VoteCountSource) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	out := make(map[Key][]byte, len(keys))
+	out := make(map[dskey.Key][]byte, len(keys))
 	for _, key := range keys {
 		out[key] = nil
 
@@ -137,7 +138,7 @@ func (s *VoteCountSource) Get(ctx context.Context, keys ...Key) (map[Key][]byte,
 }
 
 // Update is called frequently and should block until there is new data.
-func (s *VoteCountSource) Update(ctx context.Context) (map[Key][]byte, error) {
+func (s *VoteCountSource) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
 	var data map[int]int
 	select {
 	case <-ctx.Done():
@@ -146,13 +147,13 @@ func (s *VoteCountSource) Update(ctx context.Context) (map[Key][]byte, error) {
 	case data = <-s.update:
 	}
 
-	out := make(map[Key][]byte, len(data))
+	out := make(map[dskey.Key][]byte, len(data))
 	for pollID, count := range data {
 		bs := []byte(strconv.Itoa(count))
 		if count == 0 {
 			bs = nil
 		}
-		out[Key{Collection: "poll", ID: pollID, Field: "vote_count"}] = bs
+		out[dskey.Key{Collection: "poll", ID: pollID, Field: "vote_count"}] = bs
 	}
 	return out, nil
 }

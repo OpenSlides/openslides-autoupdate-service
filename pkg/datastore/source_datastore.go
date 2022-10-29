@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"golang.org/x/sync/errgroup"
 )
@@ -77,7 +78,7 @@ func NewSourceDatastore(lookup environment.Environmenter) (*SourceDatastore, err
 // GetPosition gets keys from the datastore at a specifi position.
 //
 // Position 0 means the current position.
-func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
+func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	atomic.AddUint64(&s.metricDSHitCount, 1)
 	if len(keys) <= s.maxKeysPerRequest {
 		return s.getPosition(ctx, position, keys...)
@@ -107,7 +108,7 @@ func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ..
 		requestCount++
 	}
 
-	results := make([]map[Key][]byte, requestCount)
+	results := make([]map[dskey.Key][]byte, requestCount)
 	for i := 0; i < len(results); i++ {
 		i := i
 
@@ -132,7 +133,7 @@ func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ..
 		return nil, err
 	}
 
-	combined := make(map[Key][]byte, len(keys))
+	combined := make(map[dskey.Key][]byte, len(keys))
 	for _, r := range results {
 		for k, v := range r {
 			combined[k] = v
@@ -142,7 +143,7 @@ func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ..
 	return combined, nil
 }
 
-func (s *SourceDatastore) getPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
+func (s *SourceDatastore) getPosition(ctx context.Context, position int, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	requestData, err := keysToGetManyRequest(keys, position)
 	if err != nil {
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)

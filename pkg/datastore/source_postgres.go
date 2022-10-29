@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -54,13 +55,13 @@ func NewSourcePostgres(lookup environment.Environmenter, updater Updater) (*Sour
 }
 
 // Get fetches the keys from postgres.
-func (p *SourcePostgres) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
+func (p *SourcePostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	uniqueFieldsStr, fieldIndex, uniqueFQID := prepareQuery(keys)
 
 	// For very big SQL Queries, split them in part
 	if len(fieldIndex) > maxFieldsOnQuery {
 		keysList := splitFieldKeys(keys)
-		result := make(map[Key][]byte, len(keys))
+		result := make(map[dskey.Key][]byte, len(keys))
 		for _, keys := range keysList {
 			resultPart, err := p.Get(ctx, keys...)
 			if err != nil {
@@ -101,7 +102,7 @@ func (p *SourcePostgres) Get(ctx context.Context, keys ...Key) (map[Key][]byte, 
 		return nil, fmt.Errorf("reading postgres result: %w", rows.Err())
 	}
 
-	values := make(map[Key][]byte, len(keys))
+	values := make(map[dskey.Key][]byte, len(keys))
 	for _, k := range keys {
 		var value []byte
 		element, ok := table[k.FQID()]
@@ -118,11 +119,11 @@ func (p *SourcePostgres) Get(ctx context.Context, keys ...Key) (map[Key][]byte, 
 }
 
 // Update calls the updater.
-func (p *SourcePostgres) Update(ctx context.Context) (map[Key][]byte, error) {
+func (p *SourcePostgres) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
 	return p.updater.Update(ctx)
 }
 
-func prepareQuery(keys []Key) (uniqueFieldsStr string, fieldIndex map[string]int, uniqueFQID []string) {
+func prepareQuery(keys []dskey.Key) (uniqueFieldsStr string, fieldIndex map[string]int, uniqueFQID []string) {
 	uniqueFQIDSet := make(map[string]struct{})
 	uniqueFieldsSet := make(map[string]struct{})
 	for _, k := range keys {
@@ -149,14 +150,14 @@ const maxFieldsOnQuery = 1_500
 
 // splitFieldKeys splits a list of keys to many lists where any list has a
 // maximum of different fields.
-func splitFieldKeys(keys []Key) [][]Key {
+func splitFieldKeys(keys []dskey.Key) [][]dskey.Key {
 	sort.Slice(keys, func(i, j int) bool {
 		return keys[i].Field < keys[j].Field
 	})
 
-	var out [][]Key
+	var out [][]dskey.Key
 	keyCount := 0
-	var nextList []Key
+	var nextList []dskey.Key
 	var lastField string
 	for _, k := range keys {
 		nextList = append(nextList, k)

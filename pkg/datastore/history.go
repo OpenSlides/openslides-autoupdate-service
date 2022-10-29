@@ -1,10 +1,14 @@
 package datastore
 
-import "context"
+import (
+	"context"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+)
 
 // GetPositioner is like a Getter but also taks a position
 type GetPositioner interface {
-	GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error)
+	GetPosition(ctx context.Context, position int, keys ...dskey.Key) (map[dskey.Key][]byte, error)
 }
 
 // GetPosition translates a GetPositioner to a Getter.
@@ -22,6 +26,6 @@ func NewGetPosition(g GetPositioner, position int) *GetPosition {
 }
 
 // Get fetches the keys at a position.
-func (g *GetPosition) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
+func (g *GetPosition) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	return g.getter.GetPosition(ctx, g.position, keys...)
 }

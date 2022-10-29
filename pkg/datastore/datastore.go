@@ -17,6 +17,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
@@ -28,28 +29,28 @@ const (
 //
 // The Datastore object implements this interface.
 type Getter interface {
-	Get(ctx context.Context, keys ...Key) (map[Key][]byte, error)
+	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
 }
 
 // Updater returns keys that have changes. Blocks until there is
 // changed data.
 type Updater interface {
-	Update(context.Context) (map[Key][]byte, error)
+	Update(context.Context) (map[dskey.Key][]byte, error)
 }
 
 // Source gives the data for keys.
 type Source interface {
 	// Get is called when a key is not in the cache.
-	Get(ctx context.Context, key ...Key) (map[Key][]byte, error)
+	Get(ctx context.Context, key ...dskey.Key) (map[dskey.Key][]byte, error)
 
 	// Update is called frequently and should block until there is new data.
-	Update(ctx context.Context) (map[Key][]byte, error)
+	Update(ctx context.Context) (map[dskey.Key][]byte, error)
 }
 
 // HistoryInformationer returns the history information.
 type HistoryInformationer interface {
 	HistoryInformation(ctx context.Context, fqid string, w io.Writer) error
-	GetPosition(ctx context.Context, position int, key ...Key) (map[Key][]byte, error)
+	GetPosition(ctx context.Context, position int, key ...dskey.Key) (map[dskey.Key][]byte, error)
 }
 
 // Datastore can be used to get values from the datastore-service.
@@ -61,9 +62,9 @@ type Datastore struct {
 	defaultSource Source
 	keySource     map[string]Source
 
-	changeListeners  []func(map[Key][]byte) error
-	calculatedFields map[string]func(ctx context.Context, key Key, changed map[Key][]byte) ([]byte, error)
-	calculatedKeys   map[Key]string
+	changeListeners  []func(map[dskey.Key][]byte) error
+	calculatedFields map[string]func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error)
+	calculatedKey    map[dskey.Key]string
 
 	history HistoryInformationer
 
@@ -79,8 +80,8 @@ func New(lookup environment.Environmenter, mb Updater, options ...Option) (*Data
 
 		keySource: make(map[string]Source),
 
-		calculatedFields: make(map[string]func(context.Context, Key, map[Key][]byte) ([]byte, error)),
-		calculatedKeys:   make(map[Key]string),
+		calculatedFields: make(map[string]func(context.Context, dskey.Key, map[dskey.Key][]byte) ([]byte, error)),
+		calculatedKey:    make(map[dskey.Key]string),
 	}
 
 	var backgroundFuncs []func(context.Context)
@@ -121,10 +122,10 @@ func New(lookup environment.Environmenter, mb Updater, options ...Option) (*Data
 // Get returns the value for one or many keys.
 //
 // If a key does not exist, the value nil is returned for that key.
-func (d *Datastore) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
+func (d *Datastore) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	atomic.AddUint64(&d.metricGetHitCount, 1)
-	values, err := d.cache.GetOrSet(ctx, keys, func(keys []Key, set func(map[Key][]byte)) error {
-		return d.loadKeys(keys, set)
+	values, err := d.cache.GetOrSet(ctx, keys, func(keys []dskey.Key, set func(map[dskey.Key][]byte)) error {
+		return d.loadKey(keys, set)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("getOrSet`: %w", err)
@@ -134,7 +135,7 @@ func (d *Datastore) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error
 }
 
 // GetPosition is like Get() but returns the data at a specific position.
-func (d *Datastore) GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
+func (d *Datastore) GetPosition(ctx context.Context, position int, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	if d.history == nil {
 		return nil, fmt.Errorf("histroy not supported")
 	}
@@ -143,7 +144,7 @@ func (d *Datastore) GetPosition(ctx context.Context, position int, keys ...Key) 
 
 // RegisterChangeListener registers a function that is called whenever an
 // datastore update happens.
-func (d *Datastore) RegisterChangeListener(f func(map[Key][]byte) error) {
+func (d *Datastore) RegisterChangeListener(f func(map[dskey.Key][]byte) error) {
 	d.changeListeners = append(d.changeListeners, f)
 }
 
@@ -158,7 +159,7 @@ func (d *Datastore) RegisterChangeListener(f func(map[Key][]byte) error) {
 // data, that has changed.
 func (d *Datastore) RegisterCalculatedField(
 	field string,
-	f func(ctx context.Context, key Key, changed map[Key][]byte) ([]byte, error),
+	f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error),
 ) {
 	d.calculatedFields[field] = f
 }
@@ -181,7 +182,7 @@ func (d *Datastore) listenOnUpdates(ctx context.Context, errHandler func(error))
 		errHandler = func(error) {}
 	}
 
-	updatedValues := make(chan map[Key][]byte)
+	updatedValues := make(chan map[dskey.Key][]byte)
 	sources := make([]Source, 0, len(d.keySource)+1)
 	sources = append(sources, d.defaultSource)
 	for _, s := range d.keySource {
@@ -219,7 +220,7 @@ func (d *Datastore) listenOnUpdates(ctx context.Context, errHandler func(error))
 		d.resetMu.Lock()
 		d.cache.SetIfExistMany(data)
 
-		for key, field := range d.calculatedKeys {
+		for key, field := range d.calculatedKey {
 			bs := d.calculateField(field, key, data)
 
 			// Update the cache and also update the data-map. The data-map is
@@ -237,11 +238,11 @@ func (d *Datastore) listenOnUpdates(ctx context.Context, errHandler func(error))
 	}
 }
 
-// splitCalculatedKeys splits a list of keys in calculated keys and "normal"
+// splitCalculateddskey.Key splits a list of keys in calculated keys and "normal"
 // keys. The calculated keys are returned as map that point to the field name.
-func (d *Datastore) splitCalculatedKeys(keys []Key) (map[Key]string, map[Source][]Key) {
-	normal := make(map[Source][]Key)
-	calculated := make(map[Key]string)
+func (d *Datastore) splitCalculatedKey(keys []dskey.Key) (map[dskey.Key]string, map[Source][]dskey.Key) {
+	normal := make(map[Source][]dskey.Key)
+	calculated := make(map[dskey.Key]string)
 	for _, k := range keys {
 		field := k.Collection + "/" + k.Field
 		_, ok := d.calculatedFields[field]
@@ -258,9 +259,9 @@ func (d *Datastore) splitCalculatedKeys(keys []Key) (map[Key]string, map[Source]
 	return calculated, normal
 }
 
-func (d *Datastore) loadKeys(keys []Key, set func(map[Key][]byte)) error {
-	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
-	for source, keys := range normalKeys {
+func (d *Datastore) loadKey(keys []dskey.Key, set func(map[dskey.Key][]byte)) error {
+	calculatedKey, normalKey := d.splitCalculatedKey(keys)
+	for source, keys := range normalKey {
 		data, err := source.Get(context.Background(), keys...)
 		if err != nil {
 			return fmt.Errorf("requesting keys from datastore: %w", err)
@@ -268,15 +269,15 @@ func (d *Datastore) loadKeys(keys []Key, set func(map[Key][]byte)) error {
 		set(data)
 	}
 
-	for key, field := range calculatedKeys {
+	for key, field := range calculatedKey {
 		calculated := d.calculateField(field, key, nil)
-		d.calculatedKeys[key] = field
-		set(map[Key][]byte{key: calculated})
+		d.calculatedKey[key] = field
+		set(map[dskey.Key][]byte{key: calculated})
 	}
 	return nil
 }
 
-func (d *Datastore) calculateField(field string, key Key, updated map[Key][]byte) []byte {
+func (d *Datastore) calculateField(field string, key dskey.Key, updated map[dskey.Key][]byte) []byte {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
@@ -296,23 +297,23 @@ func (d *Datastore) calculateField(field string, key Key, updated map[Key][]byte
 }
 
 // keysToGetManyRequest a json envoding of the get_many request.
-func keysToGetManyRequest(keys []Key, position int) ([]byte, error) {
+func keysToGetManyRequest(keys []dskey.Key, position int) ([]byte, error) {
 	request := struct {
-		Requests []Key `json:"requests"`
-		Position int   `json:"position,omitempty"`
+		Requests []dskey.Key `json:"requests"`
+		Position int         `json:"position,omitempty"`
 	}{keys, position}
 	return json.Marshal(request)
 }
 
 // parseGetManyResponse reads the response from the getMany request and
 // returns the content as key-values.
-func parseGetManyResponse(r io.Reader) (map[Key][]byte, error) {
+func parseGetManyResponse(r io.Reader) (map[dskey.Key][]byte, error) {
 	var data map[string]map[string]map[string]json.RawMessage
 	if err := json.NewDecoder(r).Decode(&data); err != nil {
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 
-	keyValue := make(map[Key][]byte)
+	keyValue := make(map[dskey.Key][]byte)
 	for collection, idField := range data {
 		for idstr, fieldValue := range idField {
 			id, err := strconv.Atoi(idstr)
@@ -321,7 +322,7 @@ func parseGetManyResponse(r io.Reader) (map[Key][]byte, error) {
 				return nil, fmt.Errorf("invalid key. Id is no number: %s", idstr)
 			}
 			for field, value := range fieldValue {
-				keyValue[Key{Collection: collection, ID: id, Field: field}] = value
+				keyValue[dskey.Key{Collection: collection, ID: id, Field: field}] = value
 			}
 		}
 	}
