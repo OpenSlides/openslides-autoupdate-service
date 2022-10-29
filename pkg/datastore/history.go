@@ -2,6 +2,11 @@ package datastore
 
 import "context"
 
+// GetPositioner is like a Getter but also taks a position
+type GetPositioner interface {
+	GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error)
+}
+
 // GetPosition translates a GetPositioner to a Getter.
 type GetPosition struct {
 	position int

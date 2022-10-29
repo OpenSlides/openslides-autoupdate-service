@@ -31,9 +31,10 @@ type Getter interface {
 	Get(ctx context.Context, keys ...Key) (map[Key][]byte, error)
 }
 
-// GetPositioner is like a Getter but also taks a position
-type GetPositioner interface {
-	GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error)
+// Updater returns keys that have changes. Blocks until there is
+// changed data.
+type Updater interface {
+	Update(context.Context) (map[Key][]byte, error)
 }
 
 // Source gives the data for keys.
