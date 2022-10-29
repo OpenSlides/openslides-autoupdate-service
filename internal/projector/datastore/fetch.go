@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
@@ -20,12 +19,12 @@ import (
 //
 // Make sure to call Fetcher.Err() at the end to see, if an error happened.
 type Fetcher struct {
-	getter datastore.Getter
+	getter Getter
 	err    error
 }
 
 // NewFetcher initializes a Fetcher object.
-func NewFetcher(getter datastore.Getter) *Fetcher {
+func NewFetcher(getter Getter) *Fetcher {
 	return &Fetcher{getter: getter}
 }
 

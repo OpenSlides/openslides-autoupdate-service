@@ -1,4 +1,4 @@
-package datastore
+package dsrecorder
 
 import (
 	"context"
@@ -8,6 +8,11 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
+// Getter is the same as datastore.Getter
+type Getter interface {
+	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
+}
+
 // Recorder implements the datastore.Getter interface. It records all requested
 // keys. They can be get with Recorder.Keys().
 type Recorder struct {
@@ -15,8 +20,8 @@ type Recorder struct {
 	keys   map[dskey.Key]struct{}
 }
 
-// NewRecorder initializes a Recorder.
-func NewRecorder(g Getter) *Recorder {
+// New initializes a Recorder.
+func New(g Getter) *Recorder {
 	return &Recorder{
 		getter: g,
 		keys:   map[dskey.Key]struct{}{},

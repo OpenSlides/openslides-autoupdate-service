@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsrecorder"
 )
 
 // connection holds the state of a client. It has to be created by colling
@@ -69,7 +69,7 @@ func (c *connection) Next(ctx context.Context) (map[dskey.Key][]byte, error) {
 
 // updatedData returns all values from the datastore.getter.
 func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, error) {
-	recorder := datastore.NewRecorder(c.autoupdate.datastore)
+	recorder := dsrecorder.New(c.autoupdate.datastore)
 	restricter := c.autoupdate.restricter(recorder, c.uid)
 
 	oldKeys := c.kb.Keys()

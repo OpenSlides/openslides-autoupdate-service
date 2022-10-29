@@ -11,6 +11,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsrecorder"
 )
 
 const longCalculation = time.Second
@@ -56,7 +57,7 @@ func Register(ds Datastore, slides *SlideStore) {
 			}
 		}
 
-		recorder := datastore.NewRecorder(ds)
+		recorder := dsrecorder.New(ds)
 		fetch := datastore.NewFetcher(recorder)
 
 		defer func() {
