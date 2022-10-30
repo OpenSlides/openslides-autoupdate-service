@@ -3,6 +3,7 @@ package datastore
 import (
 	"context"
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 
@@ -80,6 +81,7 @@ func (p *SourcePostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.
 	}
 
 	sql := fmt.Sprintf(`SELECT fqid, %s from models where fqid = ANY ($1) AND deleted=false;`, uniqueFieldsStr)
+	log.Println(sql)
 
 	rows, err := p.pool.Query(ctx, sql, uniqueFQID)
 	if err != nil {
