@@ -48,7 +48,6 @@ type Datastore interface {
 	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
 	GetPosition(ctx context.Context, position int, keys ...dskey.Key) (map[dskey.Key][]byte, error)
 	RegisterChangeListener(f func(map[dskey.Key][]byte) error)
-	ResetCache()
 	RegisterCalculatedField(
 		field string,
 		f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error),
@@ -97,7 +96,6 @@ func New(ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context
 
 	background := func(ctx context.Context, errorHandler func(error)) {
 		go a.pruneOldData(ctx)
-		go a.resetCache(ctx)
 	}
 
 	return a, background
@@ -161,22 +159,6 @@ func (a *Autoupdate) pruneOldData(ctx context.Context) {
 			return
 		case <-tick.C:
 			a.topic.Prune(time.Now().Add(-pruneTime))
-		}
-	}
-}
-
-// resetCache runs in the background and cleans the cache from time to time.
-// Blocks until the service is closed.
-func (a *Autoupdate) resetCache(ctx context.Context) {
-	tick := time.NewTicker(datastoreCacheResetTime)
-	defer tick.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-tick.C:
-			a.datastore.ResetCache()
 		}
 	}
 }

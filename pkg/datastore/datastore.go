@@ -54,8 +54,6 @@ type HistoryInformationer interface {
 //
 // Has to be created with datastore.New().
 type Datastore struct {
-	cache *cache
-
 	defaultSource Source
 	keySource     map[string]Source
 
@@ -65,16 +63,12 @@ type Datastore struct {
 
 	history HistoryInformationer
 
-	resetMu sync.Mutex
-
 	metricGetHitCount uint64
 }
 
 // New returns a new Datastore object.
 func New(lookup environment.Environmenter, mb Updater, options ...Option) (*Datastore, func(context.Context, func(error)), error) {
 	ds := Datastore{
-		cache: newCache(),
-
 		keySource: make(map[string]Source),
 
 		calculatedFields: make(map[string]func(context.Context, dskey.Key, map[dskey.Key][]byte) ([]byte, error)),
@@ -119,11 +113,9 @@ func New(lookup environment.Environmenter, mb Updater, options ...Option) (*Data
 // If a key does not exist, the value nil is returned for that key.
 func (d *Datastore) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	atomic.AddUint64(&d.metricGetHitCount, 1)
-	values, err := d.cache.GetOrSet(ctx, keys, func(keys []dskey.Key, set func(map[dskey.Key][]byte)) error {
-		return d.loadKeys(keys, set)
-	})
+	values, err := d.loadKeys(ctx, keys)
 	if err != nil {
-		return nil, fmt.Errorf("getOrSet`: %w", err)
+		return nil, fmt.Errorf("load data`: %w", err)
 	}
 
 	return values, nil
@@ -159,13 +151,6 @@ func (d *Datastore) RegisterCalculatedField(
 	f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error),
 ) {
 	d.calculatedFields[field] = f
-}
-
-// ResetCache clears the internal cache.
-func (d *Datastore) ResetCache() {
-	d.resetMu.Lock()
-	d.cache = newCache()
-	d.resetMu.Unlock()
 }
 
 // HistoryInformation writes the history information for a fqid.
@@ -213,16 +198,8 @@ func (d *Datastore) listenOnUpdates(ctx context.Context, errHandler func(error))
 	}()
 
 	for data := range updatedValues {
-		// The lock prefents a cache reset while data is updating.
-		d.resetMu.Lock()
-		d.cache.SetIfExistMany(data)
-
 		for key, field := range d.calculatedKeys {
 			bs := d.calculateField(field, key, data)
-
-			// Update the cache and also update the data-map. The data-map is
-			// used later in this function to inform the changeListeners.
-			d.cache.SetIfExist(key, bs)
 			data[key] = bs
 		}
 
@@ -231,7 +208,6 @@ func (d *Datastore) listenOnUpdates(ctx context.Context, errHandler func(error))
 				errHandler(err)
 			}
 		}
-		d.resetMu.Unlock()
 	}
 }
 
@@ -256,22 +232,25 @@ func (d *Datastore) splitCalculatedKeys(keys []dskey.Key) (map[dskey.Key]string,
 	return calculated, normal
 }
 
-func (d *Datastore) loadKeys(keys []dskey.Key, set func(map[dskey.Key][]byte)) error {
+func (d *Datastore) loadKeys(ctx context.Context, keys []dskey.Key) (map[dskey.Key][]byte, error) {
 	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
+	out := make(map[dskey.Key][]byte, len(keys))
 	for source, keys := range normalKeys {
 		data, err := source.Get(context.Background(), keys...)
 		if err != nil {
-			return fmt.Errorf("requesting keys from datastore: %w", err)
+			return nil, fmt.Errorf("requesting keys from datastore: %w", err)
 		}
-		set(data)
+		for k, v := range data {
+			out[k] = v
+		}
 	}
 
 	for key, field := range calculatedKeys {
 		calculated := d.calculateField(field, key, nil)
 		d.calculatedKeys[key] = field
-		set(map[dskey.Key][]byte{key: calculated})
+		out[key] = calculated
 	}
-	return nil
+	return out, nil
 }
 
 func (d *Datastore) calculateField(field string, key dskey.Key, updated map[dskey.Key][]byte) []byte {

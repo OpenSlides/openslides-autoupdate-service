@@ -5,8 +5,6 @@ import (
 )
 
 func (d *Datastore) metric(values metric.Container) {
-	values.Add("datastore_cache_key_len", d.cache.len())
-	values.Add("datastore_cache_size", d.cache.size())
 	values.Add("datastore_get_calls", int(d.metricGetHitCount))
 
 	if d.history != nil {
