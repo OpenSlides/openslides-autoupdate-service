@@ -73,9 +73,6 @@ type Autoupdate struct {
 }
 
 // New creates a new autoupdate service.
-//
-// You should call `go a.PruneOldData()` and `go a.ResetCache()` after creating
-// the service.
 func New(ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context.Context, func(error))) {
 	a := &Autoupdate{
 		datastore:  ds,

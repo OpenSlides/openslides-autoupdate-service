@@ -236,7 +236,7 @@ func (d *Datastore) loadKeys(ctx context.Context, keys []dskey.Key) (map[dskey.K
 	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
 	out := make(map[dskey.Key][]byte, len(keys))
 	for source, keys := range normalKeys {
-		data, err := source.Get(context.Background(), keys...)
+		data, err := source.Get(ctx, keys...)
 		if err != nil {
 			return nil, fmt.Errorf("requesting keys from datastore: %w", err)
 		}
