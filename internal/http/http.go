@@ -225,10 +225,10 @@ func HandleHistoryInformation(mux *http.ServeMux, auth Authenticater, hi History
 func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool) error {
 	next := connecter.Connect(uid, kb)
 
-	for ctx.Err() == nil {
+	for f, ok := next(); ok; f, ok = next() {
 		// This blocks, until there is new data. It also unblocks, when the
 		// client context is done.
-		data, err := next(ctx)
+		data, err := f(ctx)
 		if err != nil {
 			return fmt.Errorf("getting next message: %w", err)
 		}

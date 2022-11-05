@@ -18,6 +18,7 @@ The Service uses the following environment variables:
 * `DATASTORE_MAX_PARALLEL_KEYS`: Max keys that are send in one request to the datastore. The default is `1000`.
 * `DATASTORE_DATABASE_USER`: Postgres User. The default is `openslides`.
 * `OPENSLIDES_DEVELOPMENT`: If set, the service uses the default secrets. The default is `false`.
+* `SECRETS_PATH`: Path where the secrets are stored. The default is `/run/secrets`.
 * `DATASTORE_DATABASE_HOST`: Postgres Host. The default is `localhost`.
 * `DATASTORE_DATABASE_PORT`: Postgres Post. The default is `5432`.
 * `DATASTORE_DATABASE_NAME`: Postgres Database. The default is `openslides`.

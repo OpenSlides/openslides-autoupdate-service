@@ -90,7 +90,7 @@ func TestConnectionEmptyData(t *testing.T) {
 	kb, _ := keysbuilder.FromKeys(doesExistKey.String(), doesNotExistKey.String())
 
 	t.Run("First response", func(t *testing.T) {
-		next := s.Connect(1, kb)
+		next, _ := s.Connect(1, kb)()
 
 		data, err := next(context.Background())
 		if err != nil {
@@ -138,7 +138,8 @@ func TestConnectionEmptyData(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			next := s.Connect(1, kb)
+			next, _ := s.Connect(1, kb)()
+
 			if _, err := next(context.Background()); err != nil {
 				t.Errorf("next(): %v", err)
 			}
@@ -188,7 +189,7 @@ func TestConnectionEmptyData(t *testing.T) {
 	}
 
 	t.Run("exit->not exist-> not exist", func(t *testing.T) {
-		next := s.Connect(1, kb)
+		next, _ := s.Connect(1, kb)()
 		if _, err := next(context.Background()); err != nil {
 			t.Errorf("next() returned an error: %v", err)
 		}
@@ -229,7 +230,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 
 	s, _ := autoupdate.New(ds, RestrictAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
-	next := s.Connect(1, kb)
+	next, _ := s.Connect(1, kb)()
 	if _, err := next(context.Background()); err != nil {
 		t.Errorf("next(): %v", err)
 	}
@@ -261,7 +262,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 	s, _ := autoupdate.New(ds, RestrictNotAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 
-	next := s.Connect(1, kb)
+	next, _ := s.Connect(1, kb)()
 
 	t.Run("first call", func(t *testing.T) {
 		var data map[dskey.Key][]byte
@@ -351,7 +352,7 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 		t.Fatalf("Can not build request: %v", err)
 	}
 
-	next := s.Connect(1, kb)
+	next, _ := s.Connect(1, kb)()
 
 	if _, err := next(shutdownCtx); err != nil {
 		t.Fatalf("Getting first data: %v", err)
@@ -418,7 +419,7 @@ func TestKeyRequestedAgain(t *testing.T) {
 		t.Fatalf("Can not build request: %v", err)
 	}
 
-	next := s.Connect(1, kb)
+	next, _ := s.Connect(1, kb)()
 
 	// Receive the initial data
 	if _, err := next(shutdownCtx); err != nil {

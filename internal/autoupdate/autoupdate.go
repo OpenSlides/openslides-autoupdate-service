@@ -104,7 +104,7 @@ func New(ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context
 }
 
 // DataProvider is a function that returns the next data for a user.
-type DataProvider func(ctx context.Context) (map[dskey.Key][]byte, error)
+type DataProvider func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool)
 
 // Connect has to be called by a client to register to the service. The method
 // returns a Connection object, that can be used to receive the data.

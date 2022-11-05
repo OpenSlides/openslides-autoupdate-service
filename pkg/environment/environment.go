@@ -21,7 +21,7 @@ import (
 // Environment variables used to configure the environment.
 var (
 	envSecretsPath = NewVariable("SECRETS_PATH", "/run/secrets", "Path where the secrets are stored.")
-	envDevelopment = NewVariable("OPENSLIDES_DEVELOPMENT", "false", "If set, the service uses the default secrets.")
+	EnvDevelopment = NewVariable("OPENSLIDES_DEVELOPMENT", "false", "If set, the service uses the default secrets.")
 )
 
 // Variable represents a environment variable. It can be used by the packages
@@ -92,7 +92,8 @@ func (v Variable) Value(lookup Environmenter) string {
 // defaults are only (and allways) used if OPENSLIDES_DEVELOPMENT is set to
 // true. If no Default is set, then "openslides" is used as default.
 func (v Variable) secret(lookup Environmenter) string {
-	useDev, _ := strconv.ParseBool(envDevelopment.Value(lookup))
+	useDev, _ := strconv.ParseBool(EnvDevelopment.Value(lookup))
+	path := path.Join(envSecretsPath.Value(lookup), v.Key)
 
 	if useDev {
 		defaultVal := v.Default
@@ -103,7 +104,6 @@ func (v Variable) secret(lookup Environmenter) string {
 		return defaultVal
 	}
 
-	path := path.Join(envSecretsPath.Value(lookup), v.Key)
 	secret, err := os.ReadFile(path)
 	if err != nil {
 		panic(fmt.Sprintf("Can not read secret in %s: %v", path, err))
@@ -146,7 +146,7 @@ type ForDocu struct {
 //
 // But activates development mode to use the default values for secrets.
 func (e *ForDocu) Getenv(key string) string {
-	if key == envDevelopment.Key {
+	if key == EnvDevelopment.Key {
 		return "true"
 	}
 	return ""
@@ -200,7 +200,7 @@ type ForTests map[string]string
 func (e ForTests) Getenv(key string) string {
 	v := e[key]
 
-	if key == envDevelopment.Key && v == "" {
+	if key == EnvDevelopment.Key && v == "" {
 		return "true"
 	}
 
