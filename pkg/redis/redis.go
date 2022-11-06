@@ -122,7 +122,7 @@ func (r *Redis) LogoutEvent(ctx context.Context) ([]string, error) {
 	return sessionIDs, nil
 }
 
-// Wait blocks until a connection can be established
+// Wait blocks until a connection can be established.
 func (r *Redis) Wait(ctx context.Context) error {
 	var lastErr error
 	for {
