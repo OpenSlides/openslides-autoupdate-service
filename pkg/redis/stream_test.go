@@ -1,18 +1,19 @@
 package redis
 
 import (
-	"bytes"
 	"encoding/json"
-	"strings"
+	"reflect"
 	"testing"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 func TestStream(t *testing.T) {
-	var data interface{}
+	var data any
 	err := json.Unmarshal([]byte(`
 	[
 		[
-			"stream1",
+			"ModifiedFields",
 			[
 				[
 					"12345-0",
@@ -29,18 +30,20 @@ func TestStream(t *testing.T) {
 		t.Fatalf("Data is invalid json: %v", err)
 	}
 
-	id, retData, err := autoupdateStream(data, nil)
+	id, got, err := parseMessageBus(data)
 	if err != nil {
 		t.Errorf("Returned unexpected error %v", err)
 	}
-	expect := map[string][]byte{
-		"user/1/name": []byte("Hubert"),
-		"user/2/name": []byte("Isolde"),
-		"user/3/name": []byte("Igor"),
+
+	expect := map[dskey.Key][]byte{
+		dskey.MustKey("user/1/name"): []byte("Hubert"),
+		dskey.MustKey("user/2/name"): []byte("Isolde"),
+		dskey.MustKey("user/3/name"): []byte("Igor"),
 	}
-	if !cmpMap(retData, expect) {
-		t.Errorf("Got %v, expected %v", retData, expect)
+	if !reflect.DeepEqual(got, expect) {
+		t.Errorf("Got %v, expected %v", got, expect)
 	}
+
 	if id != "12346-0" {
 		t.Errorf("Expected id to be 12346-0, got: %v", id)
 	}
@@ -50,52 +53,35 @@ func TestStreamInvalidData(t *testing.T) {
 	td := []struct {
 		name string
 		json string
-		err  string
 	}{
-		{"Outer list", `"data"`, "invalid input. Data has to be a list"},
-		{"One stream", `[]`, "invalid input. No stream in data"},
-		{"Stream no list", `["data"]`, "invalid input. Stream has to be a two-tuple"},
-		{"Stream no elements", `[[]]`, "invalid input. Stream has to be a two-tuple"},
-		{"Stream one element", `[["one"]]`, "invalid input. Stream has to be a two-tuple"},
-		{"Stream tree elements", `[["one", "two", "tree"]]`, "invalid input. Stream has to be a two-tuple"},
-		{"Stream data no list", `[["one", "two"]]`, "invalid input. Stream data has to be a list"},
-		{"Stream element no list", `[["one", ["data"]]]`, "invalid input. Stream element has to be a two-tuple"},
-		{"Stream element no elements", `[["one", [[]]]]`, "invalid input. Stream element has to be a two-tuple"},
-		{"Stream element one element", `[["one", [["one"]]]]`, "invalid input. Stream element has to be a two-tuple"},
-		{"Stream element tree elements", `[["one", [["one", "two", "tree"]]]]`, "invalid input. Stream element has to be a two-tuple"},
-		{"id no string", `[["one", [[123, ["data"]]]]]`, "invalid input. Stream ID has to be a string"},
-		{"key-value no string list", `[["one", [["123", "data"]]]]`, "invalid input. Key values has to be a list of strings"},
-		{"Odd key value", `[["one", [["123", ["1"]]]]]`, "invalid input. Odd number of key value pairs"},
-		{"Key no string", `[["one", [["123", [1, "2"]]]]]`, "invalid input. Key has to be a string"},
+		{"Outer list", `"data"`},
+		{"One stream", `[]`},
+		{"Stream no list", `["data"]`},
+		{"Stream no elements", `[[]]`},
+		{"Stream one element", `[["one"]]`},
+		{"Stream tree elements", `[["one", "two", "tree"]]`},
+		{"Stream data no list", `[["one", "two"]]`},
+		{"Stream element no list", `[["one", ["data"]]]`},
+		{"Stream element no elements", `[["one", [[]]]]`},
+		{"Stream element one element", `[["one", [["one"]]]]`},
+		{"Stream element tree elements", `[["one", [["one", "two", "tree"]]]]`},
+		{"id no string", `[["one", [[123, ["data"]]]]]`},
+		{"key-value no string list", `[["one", [["123", "data"]]]]`},
+		{"Odd key value", `[["one", [["123", ["1"]]]]]`},
+		{"Key no string", `[["one", [["123", [1, "2"]]]]]`},
 	}
 	for _, tt := range td {
 		t.Run(tt.name, func(t *testing.T) {
-			var data interface{}
+			var data any
 			err := json.Unmarshal([]byte(tt.json), &data)
 			if err != nil {
 				t.Fatalf("Data is invalid json: %v", err)
 			}
 
-			_, _, err = autoupdateStream(data, nil)
+			_, _, err = parseMessageBus(data)
 			if err == nil {
 				t.Fatalf("Expected an error, got none")
 			}
-			if got := err.Error(); !strings.HasPrefix(got, tt.err) {
-				t.Errorf("Expect error message to be \"%s\", got: %v", tt.err, got)
-			}
 		})
 	}
-}
-
-func cmpMap(one, two map[string][]byte) bool {
-	if len(one) != len(two) {
-		return false
-	}
-
-	for key := range one {
-		if !bytes.Equal(one[key], two[key]) {
-			return false
-		}
-	}
-	return true
 }
