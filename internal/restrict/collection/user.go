@@ -48,6 +48,9 @@ import (
 // Mode F: Y has the OML can_manage_users or higher.
 //
 // Mode G: No one. Not even the superadmin.
+//
+// Mode H: Like D but the fields are not visible, if the request has a lower
+// organization management level then the requested user.
 type User struct{}
 
 // MeetingID returns the meetingID for the object.
@@ -70,6 +73,8 @@ func (u User) Modes(mode string) FieldRestricter {
 		return u.modeF
 	case "G":
 		return never
+	case "H":
+		return u.modeH
 	}
 	return nil
 }
@@ -374,4 +379,58 @@ func (User) modeF(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPe
 	}
 
 	return nil, nil
+}
+
+// higherThenOrgaManagement returns true if request equal or higher  then
+// request.
+//
+// An empty string is a valid organization management level for this function
+// that has the lowest value.
+func higherThenOrgaManagement(request, requested perm.OrganizationManagementLevel) bool {
+	toNum := func(level perm.OrganizationManagementLevel) int {
+		switch level {
+		case perm.OMLNone:
+			return 0
+		case perm.OMLCanManageUsers:
+			return 1
+		case perm.OMLCanManageOrganization:
+			return 2
+		case perm.OMLSuperadmin:
+			return 3
+		default:
+			return 4
+		}
+	}
+
+	return toNum(request) >= toNum(requested)
+}
+
+func (u User) modeH(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
+	ownOrgaManagementLevel, err := ds.User_OrganizationManagementLevel(mperms.UserID()).Value(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting own managament: %w", err)
+	}
+
+	ownLevel := perm.OrganizationManagementLevel(ownOrgaManagementLevel)
+
+	fromD, err := u.modeD(ctx, ds, mperms, userIDs...)
+	if err != nil {
+		return nil, fmt.Errorf("restriction with mode d: %w", err)
+	}
+
+	allowed := make([]int, 0, len(fromD))
+	for _, userID := range fromD {
+		requestedOrgaManagementLevel, err := ds.User_OrganizationManagementLevel(userID).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting orga managament level for user %d: %w", userID, err)
+		}
+
+		otherLevel := perm.OrganizationManagementLevel(requestedOrgaManagementLevel)
+
+		if higherThenOrgaManagement(ownLevel, otherLevel) {
+			allowed = append(allowed, userID)
+		}
+	}
+
+	return allowed, nil
 }

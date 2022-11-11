@@ -1023,7 +1023,7 @@ var restrictionModes = map[string]string{
 	"user/personal_note_$_ids":           "B",
 	"user/can_change_own_password":       "D",
 	"user/comment_$":                     "D",
-	"user/default_password":              "D",
+	"user/default_password":              "H",
 	"user/is_active":                     "D",
 	"user/last_email_send":               "D",
 	"user/committee_$":                   "E",
