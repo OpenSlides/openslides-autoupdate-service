@@ -360,11 +360,11 @@ func getSpeakerLists(ctx context.Context, los *dbListOfSpeakers, meetingID int, 
 		numberOfWaitingSpeakers = &number
 	}
 
-	if len(*speakersWaiting) > 1 || len(*speakersFinished) > 1 {
-		if len(*speakersWaiting) > 1 && meeting.ListOfSpeakersAmountNextOnProjector >= 0 && meeting.ListOfSpeakersAmountNextOnProjector < len(*speakersWaiting) {
+	if len(*speakersWaiting) >= 1 || len(*speakersFinished) >= 1 {
+		if len(*speakersWaiting) >= 1 && meeting.ListOfSpeakersAmountNextOnProjector >= 0 && meeting.ListOfSpeakersAmountNextOnProjector < len(*speakersWaiting) && meeting.ListOfSpeakersShowAmountOfSpeakersOnSlide {
 			*speakersWaiting = (*speakersWaiting)[:meeting.ListOfSpeakersAmountNextOnProjector]
 		}
-		if len(*speakersFinished) > 1 && meeting.ListOfSpeakersAmountLastOnProjector >= 0 && meeting.ListOfSpeakersAmountLastOnProjector < len(*speakersFinished) {
+		if len(*speakersFinished) >= 1 && meeting.ListOfSpeakersAmountLastOnProjector >= 0 && meeting.ListOfSpeakersAmountLastOnProjector < len(*speakersFinished) {
 			*speakersFinished = (*speakersFinished)[:meeting.ListOfSpeakersAmountLastOnProjector]
 		}
 	}
