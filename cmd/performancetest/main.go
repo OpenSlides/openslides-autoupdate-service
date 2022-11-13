@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"runtime/pprof"
-	"strconv"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
@@ -14,25 +13,22 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
+	"github.com/alecthomas/kong"
 	"golang.org/x/sync/errgroup"
 )
 
+var cli struct {
+	Amount int `help:"Number of users to test." short:"a" required:""`
+	Limit  int `help:"Use a workpool with limit parallel callers." short:"l" default:"-1"`
+}
+
 func main() {
+	kong.Parse(&cli, kong.UsageOnError())
+
 	ctx, cancel := environment.InterruptContext()
 	defer cancel()
 
-	if len(os.Args) < 2 {
-		fmt.Printf("Usage: %s AMOUNT", os.Args[0])
-		os.Exit(2)
-	}
-
-	amount, err := strconv.Atoi(os.Args[1])
-	if err != nil {
-		fmt.Printf("Usage: %s AMOUNT", os.Args[0])
-		os.Exit(2)
-	}
-
-	if err := run(ctx, amount); err != nil {
+	if err := run(ctx, cli.Amount, cli.Limit); err != nil {
 		fmt.Printf("Error: %v", err)
 		os.Exit(1)
 	}
@@ -55,7 +51,7 @@ func memProfile() error {
 	return nil
 }
 
-func run(ctx context.Context, amount int) error {
+func run(ctx context.Context, amount int, limit int) error {
 	ds, usernameIndex, err := buildDB()
 	if err != nil {
 		return fmt.Errorf("build db: %w", err)
@@ -64,6 +60,8 @@ func run(ctx context.Context, amount int) error {
 	au, _ := autoupdate.New(ds, restrict.Middleware)
 
 	eg, ctx := errgroup.WithContext(ctx)
+
+	eg.SetLimit(limit)
 
 	for i := 0; i < amount; i++ {
 		i := i
