@@ -1,0 +1,898 @@
+[
+    {
+        "collection": "meeting",
+        "ids": [
+            96
+        ],
+        "fields": {
+            "admin_group_id": null,
+            "default_group_id": null,
+            "id": null,
+            "group_ids": {
+                "type": "relation-list",
+                "collection": "group",
+                "fields": {
+                    "name": null,
+                    "permissions": null,
+                    "admin_group_for_meeting_id": null,
+                    "default_group_for_meeting_id": null,
+                    "weight": null,
+                    "user_ids": null,
+                    "id": null
+                }
+            }
+        }
+    },
+    {
+        "collection": "meeting",
+        "ids": [
+            96
+        ],
+        "fields": {
+            "description": null,
+            "name": null,
+            "start_time": null,
+            "end_time": null,
+            "is_active_in_organization_id": null,
+            "is_archived_organization_id": null,
+            "template_for_organization_id": null,
+            "user_ids": null,
+            "location": null,
+            "organization_tag_ids": null,
+            "welcome_title": null,
+            "welcome_text": null,
+            "enable_anonymous": null,
+            "logo_$_id": {
+                "type": "template"
+            },
+            "font_$_id": {
+                "type": "template"
+            },
+            "export_csv_separator": null,
+            "export_csv_encoding": null,
+            "export_pdf_pagenumber_alignment": null,
+            "export_pdf_fontsize": null,
+            "export_pdf_line_height": null,
+            "export_pdf_page_margin_left": null,
+            "export_pdf_page_margin_right": null,
+            "export_pdf_page_margin_top": null,
+            "export_pdf_page_margin_bottom": null,
+            "export_pdf_pagesize": null,
+            "agenda_enable_numbering": null,
+            "agenda_number_prefix": null,
+            "agenda_numeral_system": null,
+            "agenda_item_creation": null,
+            "agenda_new_items_default_visibility": null,
+            "agenda_show_internal_items_on_projector": null,
+            "agenda_show_subtitles": null,
+            "list_of_speakers_enable_point_of_order_speakers": null,
+            "list_of_speakers_enable_pro_contra_speech": null,
+            "list_of_speakers_can_set_contribution_self": null,
+            "list_of_speakers_present_users_only": null,
+            "list_of_speakers_speaker_note_for_everyone": null,
+            "list_of_speakers_initially_closed": null,
+            "list_of_speakers_show_first_contribution": null,
+            "list_of_speakers_couple_countdown": null,
+            "list_of_speakers_show_amount_of_speakers_on_slide": null,
+            "list_of_speakers_amount_last_on_projector": null,
+            "list_of_speakers_amount_next_on_projector": null,
+            "projector_countdown_warning_time": null,
+            "projector_countdown_default_time": null,
+            "motions_default_workflow_id": null,
+            "motions_default_amendment_workflow_id": null,
+            "motions_default_statute_amendment_workflow_id": null,
+            "motions_preamble": null,
+            "motions_default_line_numbering": null,
+            "motions_line_length": null,
+            "motions_reason_required": null,
+            "motions_enable_text_on_projector": null,
+            "motions_enable_reason_on_projector": null,
+            "motions_enable_recommendation_on_projector": null,
+            "motions_show_referring_motions": null,
+            "motions_enable_sidebox_on_projector": null,
+            "motions_show_sequential_number": null,
+            "motions_recommendations_by": null,
+            "motions_statute_recommendations_by": null,
+            "motions_recommendation_text_mode": null,
+            "motions_default_sorting": null,
+            "motions_number_type": null,
+            "motions_number_min_digits": null,
+            "motions_number_with_blank": null,
+            "motions_amendments_enabled": null,
+            "motions_statutes_enabled": null,
+            "motions_amendments_in_main_list": null,
+            "motions_amendments_prefix": null,
+            "motions_amendments_text_mode": null,
+            "motions_amendments_multiple_paragraphs": null,
+            "motions_amendments_of_amendments": null,
+            "motions_supporters_min_amount": null,
+            "motion_poll_default_type": null,
+            "motion_poll_default_100_percent_base": null,
+            "motion_poll_default_group_ids": null,
+            "motion_poll_ballot_paper_selection": null,
+            "motion_poll_ballot_paper_number": null,
+            "motion_poll_default_backend": null,
+            "motions_export_title": null,
+            "motions_export_preamble": null,
+            "motions_export_submitter_recommendation": null,
+            "motions_export_follow_recommendation": null,
+            "assignment_poll_default_method": null,
+            "assignment_poll_default_type": null,
+            "assignment_poll_default_100_percent_base": null,
+            "assignment_poll_default_group_ids": null,
+            "assignment_poll_sort_poll_result_by_votes": null,
+            "assignment_poll_add_candidates_to_list_of_speakers": null,
+            "assignment_poll_enable_max_votes_per_option": null,
+            "assignment_poll_default_backend": null,
+            "assignment_poll_ballot_paper_selection": null,
+            "assignment_poll_ballot_paper_number": null,
+            "assignments_export_title": null,
+            "assignments_export_preamble": null,
+            "users_allow_self_set_present": null,
+            "users_enable_presence_view": null,
+            "users_enable_vote_weight": null,
+            "users_enable_vote_delegations": null,
+            "users_pdf_welcometitle": null,
+            "users_pdf_welcometext": null,
+            "users_pdf_wlan_ssid": null,
+            "users_pdf_wlan_password": null,
+            "users_pdf_wlan_encryption": null,
+            "users_email_sender": null,
+            "users_email_replyto": null,
+            "users_email_subject": null,
+            "users_email_body": null,
+            "conference_stream_url": null,
+            "conference_stream_poster_url": null,
+            "conference_show": null,
+            "conference_los_restriction": null,
+            "conference_auto_connect": null,
+            "conference_open_microphone": null,
+            "conference_open_video": null,
+            "conference_auto_connect_next_speakers": null,
+            "conference_enable_helpdesk": null,
+            "applause_enable": null,
+            "applause_show_level": null,
+            "applause_type": null,
+            "applause_particle_image_url": null,
+            "applause_min_amount": null,
+            "applause_max_amount": null,
+            "applause_timeout": null,
+            "custom_translations": null,
+            "id": null,
+            "jitsi_domain": null,
+            "jitsi_room_name": null,
+            "jitsi_room_password": null,
+            "chat_group_ids": {
+                "type": "relation-list",
+                "collection": "chat_group",
+                "fields": {
+                    "chat_message_ids": null,
+                    "name": null,
+                    "weight": null,
+                    "read_group_ids": null,
+                    "write_group_ids": null,
+                    "id": null
+                }
+            },
+            "chat_message_ids": {
+                "type": "relation-list",
+                "collection": "chat_message",
+                "fields": {
+                    "chat_group_id": null,
+                    "content": null,
+                    "created": null,
+                    "user_id": null,
+                    "id": null
+                }
+            },
+            "poll_ids": {
+                "type": "relation-list",
+                "collection": "poll",
+                "fields": {
+                    "entitled_group_ids": null,
+                    "state": null,
+                    "title": null,
+                    "type": null,
+                    "pollmethod": null,
+                    "onehundred_percent_base": null,
+                    "backend": null,
+                    "content_object_id": {
+                        "type": "generic-relation",
+                        "fields": {
+                            "sequential_number": null,
+                            "title": null,
+                            "number": null,
+                            "created": null,
+                            "forwarded": null,
+                            "sort_weight": null,
+                            "start_line_number": null,
+                            "category_weight": null,
+                            "lead_motion_id": null,
+                            "amendment_ids": null,
+                            "submitter_ids": null,
+                            "supporter_ids": null,
+                            "reason": null,
+                            "recommendation_id": null,
+                            "tag_ids": null,
+                            "personal_note_ids": null,
+                            "block_id": null,
+                            "category_id": null,
+                            "comment_ids": null,
+                            "modified_final_version": null,
+                            "state_extension": null,
+                            "recommendation_extension": null,
+                            "list_of_speakers_id": null,
+                            "agenda_item_id": null,
+                            "amendment_paragraph_$": {
+                                "type": "template"
+                            },
+                            "origin_id": null,
+                            "origin_meeting_id": null,
+                            "all_origin_ids": null,
+                            "derived_motion_ids": null,
+                            "all_derived_motion_ids": null,
+                            "poll_ids": null,
+                            "sort_parent_id": null,
+                            "state_id": null,
+                            "text": null,
+                            "change_recommendation_ids": null,
+                            "attachment_ids": null,
+                            "id": null,
+                            "open_posts": null,
+                            "phase": null,
+                            "candidate_ids": null,
+                            "description": null,
+                            "default_poll_description": null,
+                            "number_poll_candidates": null
+                        }
+                    },
+                    "voted_ids": null,
+                    "votescast": null,
+                    "votesinvalid": null,
+                    "votesvalid": null,
+                    "option_ids": null,
+                    "global_option_id": null,
+                    "global_yes": null,
+                    "global_no": null,
+                    "global_abstain": null,
+                    "min_votes_amount": null,
+                    "max_votes_amount": null,
+                    "max_votes_per_option": null,
+                    "entitled_users_at_stop": null,
+                    "vote_count": null,
+                    "id": null
+                }
+            },
+            "group_ids": {
+                "type": "relation-list",
+                "collection": "group",
+                "fields": {
+                    "name": null,
+                    "permissions": null,
+                    "admin_group_for_meeting_id": null,
+                    "default_group_for_meeting_id": null,
+                    "weight": null,
+                    "user_ids": null,
+                    "id": null
+                }
+            },
+            "option_ids": {
+                "type": "relation-list",
+                "collection": "option",
+                "fields": {
+                    "vote_ids": null,
+                    "poll_id": null,
+                    "content_object_id": {
+                        "type": "generic-relation",
+                        "fields": {
+                            "about_me_$": {
+                                "type": "template"
+                            },
+                            "id": null
+                        }
+                    },
+                    "yes": null,
+                    "no": null,
+                    "abstain": null,
+                    "id": null,
+                    "text": null
+                }
+            },
+            "vote_ids": {
+                "type": "relation-list",
+                "collection": "vote",
+                "fields": {
+                    "delegated_user_id": null,
+                    "option_id": null,
+                    "user_id": null,
+                    "value": null,
+                    "weight": null,
+                    "user_token": null,
+                    "id": null
+                }
+            },
+            "committee_id": {
+                "type": "relation",
+                "collection": "committee",
+                "fields": {
+                    "default_meeting_id": null,
+                    "id": null,
+                    "name": null
+                }
+            }
+        }
+    },
+    {
+        "collection": "meeting",
+        "ids": [
+            96
+        ],
+        "fields": {
+            "id": null,
+            "mediafile_ids": {
+                "type": "relation-list",
+                "collection": "mediafile",
+                "fields": {
+                    "title": null,
+                    "is_directory": null,
+                    "parent_id": null,
+                    "child_ids": null,
+                    "owner_id": null,
+                    "mimetype": null,
+                    "filesize": null,
+                    "create_timestamp": null,
+                    "has_inherited_access_groups": null,
+                    "pdf_information": null,
+                    "access_group_ids": null,
+                    "inherited_access_group_ids": null,
+                    "used_as_logo_$_in_meeting_id": {
+                        "type": "template"
+                    },
+                    "used_as_font_$_in_meeting_id": {
+                        "type": "template"
+                    },
+                    "id": null
+                }
+            }
+        }
+    },
+    {
+        "collection": "meeting",
+        "ids": [
+            96
+        ],
+        "fields": {
+            "id": null,
+            "reference_projector_id": null,
+            "projector_ids": {
+                "type": "relation-list",
+                "collection": "projector",
+                "fields": {
+                    "sequential_number": null,
+                    "name": null,
+                    "scale": null,
+                    "scroll": null,
+                    "width": null,
+                    "aspect_ratio_numerator": null,
+                    "aspect_ratio_denominator": null,
+                    "color": null,
+                    "background_color": null,
+                    "header_background_color": null,
+                    "header_font_color": null,
+                    "header_h1_color": null,
+                    "chyron_background_color": null,
+                    "chyron_font_color": null,
+                    "show_header_footer": null,
+                    "show_title": null,
+                    "show_logo": null,
+                    "show_clock": null,
+                    "used_as_reference_projector_meeting_id": null,
+                    "preview_projection_ids": {
+                        "type": "relation-list",
+                        "collection": "projection",
+                        "fields": {
+                            "stable": null,
+                            "type": null,
+                            "options": null,
+                            "weight": null,
+                            "content_object_id": {
+                                "type": "generic-relation",
+                                "fields": {
+                                    "sequential_number": null,
+                                    "title": null,
+                                    "number": null,
+                                    "created": null,
+                                    "forwarded": null,
+                                    "sort_weight": null,
+                                    "start_line_number": null,
+                                    "category_weight": null,
+                                    "lead_motion_id": null,
+                                    "amendment_ids": null,
+                                    "submitter_ids": null,
+                                    "supporter_ids": null,
+                                    "reason": null,
+                                    "recommendation_id": null,
+                                    "tag_ids": null,
+                                    "personal_note_ids": null,
+                                    "block_id": null,
+                                    "category_id": null,
+                                    "comment_ids": null,
+                                    "modified_final_version": null,
+                                    "state_extension": null,
+                                    "recommendation_extension": null,
+                                    "list_of_speakers_id": null,
+                                    "agenda_item_id": null,
+                                    "amendment_paragraph_$": {
+                                        "type": "template"
+                                    },
+                                    "origin_id": null,
+                                    "origin_meeting_id": null,
+                                    "all_origin_ids": null,
+                                    "derived_motion_ids": null,
+                                    "all_derived_motion_ids": null,
+                                    "poll_ids": null,
+                                    "sort_parent_id": null,
+                                    "state_id": null,
+                                    "text": null,
+                                    "change_recommendation_ids": null,
+                                    "attachment_ids": null,
+                                    "id": null,
+                                    "is_directory": null,
+                                    "parent_id": null,
+                                    "child_ids": null,
+                                    "owner_id": null,
+                                    "mimetype": null,
+                                    "filesize": null,
+                                    "create_timestamp": null,
+                                    "has_inherited_access_groups": null,
+                                    "pdf_information": null,
+                                    "access_group_ids": null,
+                                    "inherited_access_group_ids": null,
+                                    "used_as_logo_$_in_meeting_id": {
+                                        "type": "template"
+                                    },
+                                    "used_as_font_$_in_meeting_id": {
+                                        "type": "template"
+                                    },
+                                    "closed": null,
+                                    "content_object_id": null,
+                                    "speaker_ids": null,
+                                    "meeting_id": null,
+                                    "internal": null,
+                                    "motion_ids": null,
+                                    "open_posts": null,
+                                    "phase": null,
+                                    "candidate_ids": null,
+                                    "description": null,
+                                    "default_poll_description": null,
+                                    "number_poll_candidates": null,
+                                    "item_number": null,
+                                    "comment": null,
+                                    "type": null,
+                                    "is_hidden": null,
+                                    "is_internal": null,
+                                    "duration": null,
+                                    "weight": null,
+                                    "level": null,
+                                    "about_me_$": {
+                                        "type": "template"
+                                    },
+                                    "entitled_group_ids": null,
+                                    "state": null,
+                                    "pollmethod": null,
+                                    "onehundred_percent_base": null,
+                                    "backend": null,
+                                    "voted_ids": null,
+                                    "votescast": null,
+                                    "votesinvalid": null,
+                                    "votesvalid": null,
+                                    "option_ids": null,
+                                    "global_option_id": null,
+                                    "global_yes": null,
+                                    "global_no": null,
+                                    "global_abstain": null,
+                                    "min_votes_amount": null,
+                                    "max_votes_amount": null,
+                                    "max_votes_per_option": null,
+                                    "entitled_users_at_stop": null,
+                                    "vote_count": null,
+                                    "message": null,
+                                    "default_time": null,
+                                    "countdown_time": null,
+                                    "running": null,
+                                    "used_as_list_of_speakers_countdown_meeting_id": null,
+                                    "used_as_poll_countdown_meeting_id": null
+                                }
+                            },
+                            "preview_projector_id": null,
+                            "current_projector_id": null,
+                            "history_projector_id": null,
+                            "id": null
+                        }
+                    },
+                    "current_projection_ids": {
+                        "type": "relation-list",
+                        "collection": "projection",
+                        "fields": {
+                            "stable": null,
+                            "type": null,
+                            "options": null,
+                            "weight": null,
+                            "content_object_id": {
+                                "type": "generic-relation",
+                                "fields": {
+                                    "sequential_number": null,
+                                    "title": null,
+                                    "number": null,
+                                    "created": null,
+                                    "forwarded": null,
+                                    "sort_weight": null,
+                                    "start_line_number": null,
+                                    "category_weight": null,
+                                    "lead_motion_id": null,
+                                    "amendment_ids": null,
+                                    "submitter_ids": null,
+                                    "supporter_ids": null,
+                                    "reason": null,
+                                    "recommendation_id": null,
+                                    "tag_ids": null,
+                                    "personal_note_ids": null,
+                                    "block_id": null,
+                                    "category_id": null,
+                                    "comment_ids": null,
+                                    "modified_final_version": null,
+                                    "state_extension": null,
+                                    "recommendation_extension": null,
+                                    "list_of_speakers_id": null,
+                                    "agenda_item_id": null,
+                                    "amendment_paragraph_$": {
+                                        "type": "template"
+                                    },
+                                    "origin_id": null,
+                                    "origin_meeting_id": null,
+                                    "all_origin_ids": null,
+                                    "derived_motion_ids": null,
+                                    "all_derived_motion_ids": null,
+                                    "poll_ids": null,
+                                    "sort_parent_id": null,
+                                    "state_id": null,
+                                    "text": null,
+                                    "change_recommendation_ids": null,
+                                    "attachment_ids": null,
+                                    "id": null,
+                                    "is_directory": null,
+                                    "parent_id": null,
+                                    "child_ids": null,
+                                    "owner_id": null,
+                                    "mimetype": null,
+                                    "filesize": null,
+                                    "create_timestamp": null,
+                                    "has_inherited_access_groups": null,
+                                    "pdf_information": null,
+                                    "access_group_ids": null,
+                                    "inherited_access_group_ids": null,
+                                    "used_as_logo_$_in_meeting_id": {
+                                        "type": "template"
+                                    },
+                                    "used_as_font_$_in_meeting_id": {
+                                        "type": "template"
+                                    },
+                                    "closed": null,
+                                    "content_object_id": null,
+                                    "speaker_ids": null,
+                                    "meeting_id": null,
+                                    "internal": null,
+                                    "motion_ids": null,
+                                    "open_posts": null,
+                                    "phase": null,
+                                    "candidate_ids": null,
+                                    "description": null,
+                                    "default_poll_description": null,
+                                    "number_poll_candidates": null,
+                                    "item_number": null,
+                                    "comment": null,
+                                    "type": null,
+                                    "is_hidden": null,
+                                    "is_internal": null,
+                                    "duration": null,
+                                    "weight": null,
+                                    "level": null,
+                                    "about_me_$": {
+                                        "type": "template"
+                                    },
+                                    "entitled_group_ids": null,
+                                    "state": null,
+                                    "pollmethod": null,
+                                    "onehundred_percent_base": null,
+                                    "backend": null,
+                                    "voted_ids": null,
+                                    "votescast": null,
+                                    "votesinvalid": null,
+                                    "votesvalid": null,
+                                    "option_ids": null,
+                                    "global_option_id": null,
+                                    "global_yes": null,
+                                    "global_no": null,
+                                    "global_abstain": null,
+                                    "min_votes_amount": null,
+                                    "max_votes_amount": null,
+                                    "max_votes_per_option": null,
+                                    "entitled_users_at_stop": null,
+                                    "vote_count": null,
+                                    "message": null,
+                                    "default_time": null,
+                                    "countdown_time": null,
+                                    "running": null,
+                                    "used_as_list_of_speakers_countdown_meeting_id": null,
+                                    "used_as_poll_countdown_meeting_id": null
+                                }
+                            },
+                            "preview_projector_id": null,
+                            "current_projector_id": null,
+                            "history_projector_id": null,
+                            "content": null,
+                            "id": null
+                        }
+                    },
+                    "history_projection_ids": {
+                        "type": "relation-list",
+                        "collection": "projection",
+                        "fields": {
+                            "stable": null,
+                            "type": null,
+                            "options": null,
+                            "weight": null,
+                            "content_object_id": {
+                                "type": "generic-relation",
+                                "fields": {
+                                    "sequential_number": null,
+                                    "title": null,
+                                    "number": null,
+                                    "created": null,
+                                    "forwarded": null,
+                                    "sort_weight": null,
+                                    "start_line_number": null,
+                                    "category_weight": null,
+                                    "lead_motion_id": null,
+                                    "amendment_ids": null,
+                                    "submitter_ids": null,
+                                    "supporter_ids": null,
+                                    "reason": null,
+                                    "recommendation_id": null,
+                                    "tag_ids": null,
+                                    "personal_note_ids": null,
+                                    "block_id": null,
+                                    "category_id": null,
+                                    "comment_ids": null,
+                                    "modified_final_version": null,
+                                    "state_extension": null,
+                                    "recommendation_extension": null,
+                                    "list_of_speakers_id": null,
+                                    "agenda_item_id": null,
+                                    "amendment_paragraph_$": {
+                                        "type": "template"
+                                    },
+                                    "origin_id": null,
+                                    "origin_meeting_id": null,
+                                    "all_origin_ids": null,
+                                    "derived_motion_ids": null,
+                                    "all_derived_motion_ids": null,
+                                    "poll_ids": null,
+                                    "sort_parent_id": null,
+                                    "state_id": null,
+                                    "text": null,
+                                    "change_recommendation_ids": null,
+                                    "attachment_ids": null,
+                                    "id": null,
+                                    "is_directory": null,
+                                    "parent_id": null,
+                                    "child_ids": null,
+                                    "owner_id": null,
+                                    "mimetype": null,
+                                    "filesize": null,
+                                    "create_timestamp": null,
+                                    "has_inherited_access_groups": null,
+                                    "pdf_information": null,
+                                    "access_group_ids": null,
+                                    "inherited_access_group_ids": null,
+                                    "used_as_logo_$_in_meeting_id": {
+                                        "type": "template"
+                                    },
+                                    "used_as_font_$_in_meeting_id": {
+                                        "type": "template"
+                                    },
+                                    "closed": null,
+                                    "content_object_id": null,
+                                    "speaker_ids": null,
+                                    "meeting_id": null,
+                                    "internal": null,
+                                    "motion_ids": null,
+                                    "open_posts": null,
+                                    "phase": null,
+                                    "candidate_ids": null,
+                                    "description": null,
+                                    "default_poll_description": null,
+                                    "number_poll_candidates": null,
+                                    "item_number": null,
+                                    "comment": null,
+                                    "type": null,
+                                    "is_hidden": null,
+                                    "is_internal": null,
+                                    "duration": null,
+                                    "weight": null,
+                                    "level": null,
+                                    "about_me_$": {
+                                        "type": "template"
+                                    },
+                                    "entitled_group_ids": null,
+                                    "state": null,
+                                    "pollmethod": null,
+                                    "onehundred_percent_base": null,
+                                    "backend": null,
+                                    "voted_ids": null,
+                                    "votescast": null,
+                                    "votesinvalid": null,
+                                    "votesvalid": null,
+                                    "option_ids": null,
+                                    "global_option_id": null,
+                                    "global_yes": null,
+                                    "global_no": null,
+                                    "global_abstain": null,
+                                    "min_votes_amount": null,
+                                    "max_votes_amount": null,
+                                    "max_votes_per_option": null,
+                                    "entitled_users_at_stop": null,
+                                    "vote_count": null,
+                                    "message": null,
+                                    "default_time": null,
+                                    "countdown_time": null,
+                                    "running": null,
+                                    "used_as_list_of_speakers_countdown_meeting_id": null,
+                                    "used_as_poll_countdown_meeting_id": null
+                                }
+                            },
+                            "preview_projector_id": null,
+                            "current_projector_id": null,
+                            "history_projector_id": null,
+                            "id": null
+                        }
+                    },
+                    "id": null
+                }
+            },
+            "projector_countdown_ids": {
+                "type": "relation-list",
+                "collection": "projector_countdown",
+                "fields": {
+                    "title": null,
+                    "description": null,
+                    "default_time": null,
+                    "countdown_time": null,
+                    "running": null,
+                    "used_as_list_of_speakers_countdown_meeting_id": null,
+                    "used_as_poll_countdown_meeting_id": null,
+                    "id": null
+                }
+            },
+            "projector_message_ids": {
+                "type": "relation-list",
+                "collection": "projector_message",
+                "fields": {
+                    "message": null,
+                    "id": null
+                }
+            },
+            "default_projector_$_id": {
+                "type": "template",
+                "values": {
+                    "type": "relation",
+                    "collection": "projector",
+                    "fields": {
+                        "sequential_number": null,
+                        "name": null,
+                        "scale": null,
+                        "scroll": null,
+                        "width": null,
+                        "aspect_ratio_numerator": null,
+                        "aspect_ratio_denominator": null,
+                        "color": null,
+                        "background_color": null,
+                        "header_background_color": null,
+                        "header_font_color": null,
+                        "header_h1_color": null,
+                        "chyron_background_color": null,
+                        "chyron_font_color": null,
+                        "show_header_footer": null,
+                        "show_title": null,
+                        "show_logo": null,
+                        "show_clock": null,
+                        "used_as_reference_projector_meeting_id": null,
+                        "preview_projection_ids": null,
+                        "current_projection_ids": null,
+                        "history_projection_ids": null,
+                        "id": null
+                    }
+                }
+            },
+            "speaker_ids": {
+                "type": "relation-list",
+                "collection": "speaker",
+                "fields": {
+                    "begin_time": null,
+                    "end_time": null,
+                    "point_of_order": null,
+                    "speech_state": null,
+                    "weight": null,
+                    "note": null,
+                    "user_id": null,
+                    "id": null
+                }
+            },
+            "list_of_speakers_ids": {
+                "type": "relation-list",
+                "collection": "list_of_speakers",
+                "fields": {
+                    "closed": null,
+                    "content_object_id": null,
+                    "speaker_ids": null,
+                    "id": null
+                }
+            }
+        }
+    },
+    {
+        "collection": "meeting",
+        "ids": [
+            96
+        ],
+        "fields": {
+            "id": null,
+            "user_ids": {
+                "type": "relation-list",
+                "collection": "user",
+                "fields": {
+                    "title": null,
+                    "first_name": null,
+                    "last_name": null,
+                    "pronoun": null,
+                    "username": null,
+                    "is_active": null,
+                    "is_physical_person": null,
+                    "default_password": null,
+                    "can_change_own_password": null,
+                    "gender": null,
+                    "default_number": null,
+                    "default_structure_level": null,
+                    "default_vote_weight": null,
+                    "email": null,
+                    "last_email_send": null,
+                    "organization_management_level": null,
+                    "meeting_ids": null,
+                    "vote_delegated_$_to_id": {
+                        "type": "template"
+                    },
+                    "vote_delegations_$_from_ids": {
+                        "type": "template"
+                    },
+                    "vote_weight_$": {
+                        "type": "template"
+                    },
+                    "structure_level_$": {
+                        "type": "template"
+                    },
+                    "number_$": {
+                        "type": "template"
+                    },
+                    "comment_$": {
+                        "type": "template"
+                    },
+                    "group_$_ids": {
+                        "type": "template"
+                    },
+                    "is_present_in_meeting_ids": null,
+                    "id": null
+                }
+            }
+        }
+    }
+]

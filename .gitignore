@@ -5,3 +5,5 @@ cert
 workspace.code-workspace
 __debug_bin
 debug.test
+mem.profile
+/cmd/performancetest/performancetest
