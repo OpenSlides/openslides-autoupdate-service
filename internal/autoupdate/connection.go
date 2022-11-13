@@ -95,6 +95,12 @@ func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, error)
 
 // updatedData returns all values from the datastore.getter.
 func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, error) {
+	done, err := c.autoupdate.pool.Wait(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer done()
+
 	recorder := dsrecorder.New(c.autoupdate.datastore)
 	restricter := c.autoupdate.restricter(recorder, c.uid)
 

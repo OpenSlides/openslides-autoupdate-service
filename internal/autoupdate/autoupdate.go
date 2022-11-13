@@ -71,6 +71,7 @@ type Autoupdate struct {
 	datastore  Datastore
 	topic      *topic.Topic[dskey.Key]
 	restricter RestrictMiddleware
+	pool       *workPool
 }
 
 // New creates a new autoupdate service.
@@ -82,6 +83,7 @@ func New(ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context
 		datastore:  ds,
 		topic:      topic.New[dskey.Key](),
 		restricter: restricter,
+		pool:       newWorkPool(20), // TODO: Use an environment variable and a better default
 	}
 
 	// Update the topic when an data update is received.
