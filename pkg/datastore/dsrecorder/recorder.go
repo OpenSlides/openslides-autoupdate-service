@@ -21,30 +21,25 @@ type getkver interface {
 // keys. They can be get with Recorder.Keys().
 type Recorder struct {
 	getter Getter
-	keys   map[dskey.Key]struct{}
+	keys   []dskey.Key
 }
 
 // New initializes a Recorder.
 func New(g Getter) *Recorder {
 	return &Recorder{
 		getter: g,
-		keys:   map[dskey.Key]struct{}{},
 	}
 }
 
 // Get fetches the keys from the datastore.
 func (r *Recorder) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
-	for _, k := range keys {
-		r.keys[k] = struct{}{}
-	}
+	r.keys = append(r.keys, keys...)
 	return r.getter.Get(ctx, keys...)
 }
 
 // GetKV fetches the keys from the datastore.
 func (r *Recorder) GetKV(ctx context.Context, keys ...dskey.Key) ([][]byte, error) {
-	for _, k := range keys {
-		r.keys[k] = struct{}{}
-	}
+	r.keys = append(r.keys, keys...)
 
 	kver, ok := r.getter.(getkver)
 	if ok {
@@ -63,17 +58,16 @@ func (r *Recorder) GetKV(ctx context.Context, keys ...dskey.Key) ([][]byte, erro
 
 // Keys returns all datastore keys that where fetched in the process.
 func (r *Recorder) Keys() map[dskey.Key]struct{} {
-	return r.keys
+	out := make(map[dskey.Key]struct{}, len(r.keys))
+	for _, k := range r.keys {
+		out[k] = struct{}{}
+	}
+	return out
 }
 
 // DB creates a json database that contains all values from the recorder.
 func (r *Recorder) DB() ([]byte, error) {
-	keys := make([]dskey.Key, 0, len(r.keys))
-	for k := range r.keys {
-		keys = append(keys, k)
-	}
-
-	data, err := r.getter.Get(context.Background(), keys...)
+	data, err := r.getter.Get(context.Background(), r.keys...)
 	if err != nil {
 		return nil, fmt.Errorf("getting all values: %w", err)
 	}
