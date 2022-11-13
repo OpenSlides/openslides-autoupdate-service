@@ -22,7 +22,7 @@ func FromString(in string) (Key, error) {
 
 	parts := strings.Split(in, "/")
 	id, _ := strconv.Atoi(parts[1])
-	return Key{parts[0], id, parts[2]}, nil
+	return Key{Collection: parts[0], ID: id, Field: parts[2]}, nil
 }
 
 // MustKey is like FromString but panics, if the key is invalid.

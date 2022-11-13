@@ -1,8 +1,10 @@
 package pendingmap_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -20,7 +22,7 @@ func TestGet_When_a_key_gets_unmarked_while_waiting_an_error_is_returned(t *test
 
 	// Reader requests 1 and 2
 	type Done struct {
-		data map[dskey.Key][]byte
+		data [][]byte
 		err  error
 	}
 	done := make(chan Done)
@@ -45,5 +47,65 @@ func TestGet_When_a_key_gets_unmarked_while_waiting_an_error_is_returned(t *test
 
 	if result.data != nil {
 		t.Errorf("got %v, expected nil", result.data)
+	}
+}
+
+func BenchmarkGet(b *testing.B) {
+	ctx := context.Background()
+
+	for _, bt := range []struct {
+		keysAmount int
+		valueSize  int
+	}{
+		{100, 100},
+		{1_000, 100},
+		{10_000, 100},
+		{20_000, 100},
+		{40_000, 100},
+		{60_000, 100},
+		{80_000, 100},
+		{85_000, 100},
+		{90_000, 100},
+		{100_000, 100},
+		{100, 100_000},
+	} {
+		b.Run(fmt.Sprintf("%dK %dB", bt.keysAmount, bt.valueSize), func(b *testing.B) {
+			pm := pendingmap.New()
+			keys := make([]dskey.Key, bt.keysAmount)
+			data := make(map[dskey.Key][]byte, bt.keysAmount)
+			for i := range keys {
+				k := dskey.Key{Collection: "collection", ID: i + 1, Field: "field"}
+				keys[i] = k
+				data[k] = bytes.Repeat([]byte("X"), bt.valueSize)
+			}
+
+			pm.MarkPending(keys...)
+
+			pm.SetIfPending(data)
+
+			b.ResetTimer()
+			for n := 0; n < b.N; n++ {
+				pm.Get(ctx, keys...)
+			}
+		})
+		b.Run(fmt.Sprintf("%dK %dB Only V", bt.keysAmount, bt.valueSize), func(b *testing.B) {
+			pm := pendingmap.New()
+			keys := make([]dskey.Key, bt.keysAmount)
+			data := make(map[dskey.Key][]byte, bt.keysAmount)
+			for i := range keys {
+				k := dskey.Key{Collection: "collection", ID: i + 1, Field: "field"}
+				keys[i] = k
+				data[k] = bytes.Repeat([]byte("X"), bt.valueSize)
+			}
+
+			pm.MarkPending(keys...)
+
+			pm.SetIfPending(data)
+
+			b.ResetTimer()
+			for n := 0; n < b.N; n++ {
+				pm.Get(ctx, keys...)
+			}
+		})
 	}
 }

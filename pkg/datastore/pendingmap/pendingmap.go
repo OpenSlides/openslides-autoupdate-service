@@ -52,7 +52,7 @@ func New() *PendingMap {
 	}
 }
 
-// Get returns a list o keys from the pendingMap.
+// Get returns the values for a list of keys from the pendingMap.
 //
 // The function blocks, until all values are not pending anymore.
 //
@@ -67,19 +67,19 @@ func New() *PendingMap {
 // returns an error.
 //
 // Possible Errors: context.Canceled, context.DeadlineExeeded or ErrNotExist
-func (pm *PendingMap) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+func (pm *PendingMap) Get(ctx context.Context, keys ...dskey.Key) ([][]byte, error) {
 	if err := pm.waitForPending(ctx, keys); err != nil {
 		return nil, err
 	}
 
-	out := make(map[dskey.Key][]byte, len(keys))
+	out := make([][]byte, len(keys))
 	err := pm.reading(func() error {
-		for _, k := range keys {
+		for i, k := range keys {
 			v, ok := pm.data[k]
 			if !ok {
 				return ErrNotExist
 			}
-			out[k] = v
+			out[i] = v
 		}
 		return nil
 	})

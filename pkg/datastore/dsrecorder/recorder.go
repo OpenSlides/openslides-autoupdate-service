@@ -13,6 +13,10 @@ type Getter interface {
 	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
 }
 
+type getkver interface {
+	GetKV(ctx context.Context, keys ...dskey.Key) ([][]byte, error)
+}
+
 // Recorder implements the datastore.Getter interface. It records all requested
 // keys. They can be get with Recorder.Keys().
 type Recorder struct {
@@ -34,6 +38,27 @@ func (r *Recorder) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]
 		r.keys[k] = struct{}{}
 	}
 	return r.getter.Get(ctx, keys...)
+}
+
+// GetKV fetches the keys from the datastore.
+func (r *Recorder) GetKV(ctx context.Context, keys ...dskey.Key) ([][]byte, error) {
+	for _, k := range keys {
+		r.keys[k] = struct{}{}
+	}
+
+	kver, ok := r.getter.(getkver)
+	if ok {
+		return kver.GetKV(ctx, keys...)
+	}
+
+	data, err := r.getter.Get(ctx, keys...)
+
+	converted := make([][]byte, len(keys))
+	for i, key := range keys {
+		converted[i] = data[key]
+	}
+
+	return converted, err
 }
 
 // Keys returns all datastore keys that where fetched in the process.

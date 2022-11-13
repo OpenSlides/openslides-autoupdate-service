@@ -14,6 +14,10 @@ type Getter interface {
 	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
 }
 
+type getKVter interface {
+	GetKV(ctx context.Context, keys ...dskey.Key) ([][]byte, error)
+}
+
 // Fetch provides functions to access the fields of the datastore.
 //
 // Fetch is not save for concurent use. One Fetch object AND its value can only be
@@ -41,12 +45,43 @@ func (r *Fetch) Execute(ctx context.Context) error {
 		r.requested = make(map[dskey.Key]executer)
 	}()
 
-	keys := make([]dskey.Key, 0, len(r.requested)*2)
-	for key := range r.requested {
-		keys = append(keys, key, key.IDField())
+	if len(r.requested) == 0 {
+		return nil
 	}
 
-	if len(keys) == 0 {
+	keys := make([]dskey.Key, 0, len(r.requested)*2)
+	for key := range r.requested {
+		keys = append(keys, key.IDField(), key)
+	}
+
+	// Handle the case that the getter supports the GetKV interface.
+	if gettkver, ok := r.getter.(getKVter); ok {
+		values, err := gettkver.GetKV(ctx, keys...)
+		if err != nil {
+			r.err = fmt.Errorf("fetching all requested keys: %w", err)
+			return r.err
+		}
+
+		for i, key := range keys {
+			value := values[i]
+			if i%2 == 1 && value == nil {
+				// Check for IDFields that they exist or return that the
+				// requested field (that is behind the IDField) does not exist.
+				r.err = DoesNotExistError(keys[i+1])
+				return r.err
+			}
+
+			exec := r.requested[key]
+			if exec == nil {
+				continue
+			}
+			if err := exec.execute(value); err != nil {
+				r.err = fmt.Errorf("executing field %q: %w", key, err)
+				return r.err
+			}
+		}
+
+		r.err = nil
 		return nil
 	}
 

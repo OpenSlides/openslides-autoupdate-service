@@ -55,7 +55,7 @@ func newCache() *cache {
 //
 // Possible Errors: context.Canceled or context.DeadlineExeeded or the return
 // value from hte set func.
-func (c *cache) GetOrSet(ctx context.Context, keys []dskey.Key, set cacheSetFunc) (map[dskey.Key][]byte, error) {
+func (c *cache) GetOrSet(ctx context.Context, keys []dskey.Key, set cacheSetFunc) ([][]byte, error) {
 	// Blocks until all missing (but not pending) keys are fetched.
 	//
 	// After this call, all keys are either pending (from another parallel call)

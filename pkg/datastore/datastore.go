@@ -126,7 +126,12 @@ func (d *Datastore) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][
 		return nil, fmt.Errorf("getOrSet`: %w", err)
 	}
 
-	return values, nil
+	converted := make(map[dskey.Key][]byte)
+	for i := range keys {
+		converted[keys[i]] = values[i]
+	}
+
+	return converted, nil
 }
 
 // GetPosition is like Get() but returns the data at a specific position.
