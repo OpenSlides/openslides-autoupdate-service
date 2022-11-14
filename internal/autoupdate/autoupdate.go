@@ -85,10 +85,13 @@ type Autoupdate struct {
 // You should call `go a.PruneOldData()` and `go a.ResetCache()` after creating
 // the service.
 func New(lookup environment.Environmenter, ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context.Context, func(error)), error) {
-	workers := runtime.GOMAXPROCS(0)
 	workers, err := strconv.Atoi(envConcurentWorker.Value(lookup))
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid value for %s: %w", envConcurentWorker.Key, err)
+	}
+
+	if workers == 0 {
+		workers = runtime.GOMAXPROCS(0)
 	}
 
 	a := &Autoupdate{
