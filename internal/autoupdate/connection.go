@@ -15,7 +15,7 @@ type connection struct {
 	uid        int
 	kb         KeysBuilder
 	tid        uint64
-	filter     filter
+	first      bool
 	hotkeys    map[dskey.Key]struct{}
 }
 
@@ -52,7 +52,8 @@ type connection struct {
 // is never empty.
 func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, error), bool) {
 	return func(ctx context.Context) (map[dskey.Key][]byte, error) {
-		if c.filter.empty() {
+		if !c.first {
+			c.first = true
 			c.tid = c.autoupdate.topic.LastID()
 			data, err := c.updatedData(ctx)
 			if err != nil {
@@ -104,24 +105,17 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 	recorder := dsrecorder.New(c.autoupdate.datastore)
 	restricter := c.autoupdate.restricter(recorder, c.uid)
 
-	oldKeys := c.kb.Keys()
 	if err := c.kb.Update(ctx, restricter); err != nil {
 		return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
 	}
 
 	newKeys := c.kb.Keys()
-	removedKeys := notInSlice(oldKeys, newKeys)
-	for _, key := range removedKeys {
-		c.filter.delete(key)
-	}
 
 	data, err := restricter.Get(ctx, newKeys...)
 	if err != nil {
 		return nil, fmt.Errorf("get restricted data: %w", err)
 	}
 	c.hotkeys = recorder.Keys()
-
-	c.filter.filter(data)
 
 	return data, nil
 }
