@@ -9,6 +9,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
 const dataSet = `---
@@ -77,7 +78,8 @@ gb/1:
 
 func TestFeatures(t *testing.T) {
 	datastore, _ := dsmock.NewMockDatastore(dsmock.YAMLData(dataSet))
-	service, _ := autoupdate.New(datastore, RestrictAllowed)
+	lookup := environment.ForTests{}
+	service, _, _ := autoupdate.New(lookup, datastore, RestrictAllowed)
 
 	for _, tt := range []struct {
 		name string
