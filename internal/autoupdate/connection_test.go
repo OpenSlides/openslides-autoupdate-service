@@ -11,6 +11,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
 var userNameKey = dskey.MustKey("user/1/name")
@@ -86,7 +87,7 @@ func TestConnectionEmptyData(t *testing.T) {
 	})
 	go bg(shutdownCtx, oserror.Handle)
 
-	s, _ := autoupdate.New(ds, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
 	kb, _ := keysbuilder.FromKeys(doesExistKey.String(), doesNotExistKey.String())
 
 	t.Run("First response", func(t *testing.T) {
@@ -228,7 +229,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	})
 	go bg(shutdownCtx, oserror.Handle)
 
-	s, _ := autoupdate.New(ds, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 	next, _ := s.Connect(1, kb)()
 	if _, err := next(context.Background()); err != nil {
@@ -259,7 +260,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 		userNameKey: []byte(`"Hello World"`),
 	})
 
-	s, _ := autoupdate.New(ds, RestrictNotAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictNotAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 
 	next, _ := s.Connect(1, kb)()
@@ -331,7 +332,7 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 	`))
 	go bg(shutdownCtx, oserror.Handle)
 
-	s, _ := autoupdate.New(datastore, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, datastore, RestrictAllowed)
 	kb, err := keysbuilder.FromJSON(strings.NewReader(`{
 		"collection":"organization",
 		"ids":[
@@ -398,7 +399,7 @@ func TestKeyRequestedAgain(t *testing.T) {
 	`))
 	go bg(shutdownCtx, oserror.Handle)
 
-	s, _ := autoupdate.New(datastore, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, datastore, RestrictAllowed)
 	kb, err := keysbuilder.FromJSON(strings.NewReader(`{
 		"collection":"organization",
 		"ids":[

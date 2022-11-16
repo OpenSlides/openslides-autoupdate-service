@@ -11,6 +11,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
 func TestSingleDataEmptyValues(t *testing.T) {
@@ -20,7 +21,7 @@ func TestSingleDataEmptyValues(t *testing.T) {
 	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 	`))
-	s, _ := autoupdate.New(ds, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
 
 	kb, err := keysbuilder.FromKeys("user/1/username")
 	if err != nil {
@@ -44,7 +45,7 @@ func TestHistoryInformation(t *testing.T) {
 	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 	`))
-	s, _ := autoupdate.New(ds, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
 
 	buf := new(bytes.Buffer)
 	err := s.HistoryInformation(ctx, 1, "collection/1", buf)
@@ -70,7 +71,7 @@ func TestHistoryInformationWrongFQID(t *testing.T) {
 	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 	`))
-	s, _ := autoupdate.New(ds, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
 
 	buf := new(bytes.Buffer)
 	err := s.HistoryInformation(ctx, 1, "collection", buf)
@@ -96,7 +97,7 @@ func TestHistoryInformationSuperAdminOnMeetingCollection(t *testing.T) {
 
 		motion/5/meeting_id: 1
 	`))
-	s, _ := autoupdate.New(ds, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
 
 	buf := new(bytes.Buffer)
 	err := s.HistoryInformation(ctx, 1, "motion/5", buf)
@@ -124,7 +125,7 @@ func TestRestrictFQIDs(t *testing.T) {
 			username: superadmin
 			first_name: kevin
 	`))
-	s, _ := autoupdate.New(ds, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
 
 	got, err := s.RestrictFQIDs(ctx, 1, []string{"user/1"})
 	if err != nil {

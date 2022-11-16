@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/ostcar/topic"
 )
 
@@ -41,6 +43,10 @@ const (
 	// value means more Requests to the Datastore Service and therefore a slower
 	// response time for the clients.
 	datastoreCacheResetTime = 24 * time.Hour
+)
+
+var (
+	envConcurentWorker = environment.NewVariable("CONCURENT_WORKER", "0", "Amount of clients that calculate there values at the same time. Default to GOMAXPROCS.")
 )
 
 // Datastore is the source for the data.
@@ -71,17 +77,28 @@ type Autoupdate struct {
 	datastore  Datastore
 	topic      *topic.Topic[dskey.Key]
 	restricter RestrictMiddleware
+	pool       *workPool
 }
 
 // New creates a new autoupdate service.
 //
 // You should call `go a.PruneOldData()` and `go a.ResetCache()` after creating
 // the service.
-func New(ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context.Context, func(error))) {
+func New(lookup environment.Environmenter, ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context.Context, func(error)), error) {
+	workers, err := strconv.Atoi(envConcurentWorker.Value(lookup))
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid value for %s: %w", envConcurentWorker.Key, err)
+	}
+
+	if workers == 0 {
+		workers = runtime.GOMAXPROCS(0)
+	}
+
 	a := &Autoupdate{
 		datastore:  ds,
 		topic:      topic.New[dskey.Key](),
 		restricter: restricter,
+		pool:       newWorkPool(workers),
 	}
 
 	// Update the topic when an data update is received.
@@ -100,7 +117,7 @@ func New(ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context
 		go a.resetCache(ctx)
 	}
 
-	return a, background
+	return a, background, nil
 }
 
 // DataProvider is a function that returns the next data for a user.

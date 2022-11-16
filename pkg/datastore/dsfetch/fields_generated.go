@@ -2961,6 +2961,18 @@ func (r *Fetch) MotionState_ShowStateExtensionField(motionStateID int) *ValueBoo
 	return v
 }
 
+func (r *Fetch) MotionState_SubmitterWithdrawBackIDs(motionStateID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "motionState", id: motionStateID, field: "submitter_withdraw_back_ids"}
+	r.requested[dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "submitter_withdraw_back_ids"}] = v
+	return v
+}
+
+func (r *Fetch) MotionState_SubmitterWithdrawStateID(motionStateID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "motionState", id: motionStateID, field: "submitter_withdraw_state_id"}
+	r.requested[dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "submitter_withdraw_state_id"}] = v
+	return v
+}
+
 func (r *Fetch) MotionState_Weight(motionStateID int) *ValueInt {
 	v := &ValueInt{fetch: r, collection: "motionState", id: motionStateID, field: "weight", required: true}
 	r.requested[dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "weight"}] = v
