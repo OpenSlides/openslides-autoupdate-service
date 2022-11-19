@@ -1,76 +1,65 @@
 package redis_test
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
+	"fmt"
+	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
+	redigo "github.com/gomodule/redigo/redis"
+	"github.com/ory/dockertest/v3"
 )
 
-func getRedis() *redis.Redis {
-	var c redis.Connection = mockConn{}
-	if useRealRedis {
-		c = redis.NewConnection("localhost:6379")
-	}
-	return &redis.Redis{Conn: c}
+type testRedis struct {
+	dockerPool     *dockertest.Pool
+	dockerResource *dockertest.Resource
+	addr           string
+
+	Env map[string]string
 }
 
-type mockConn struct {
-	err error
+func newTestRedis(t *testing.T) *testRedis {
+	t.Helper()
+
+	if testing.Short() {
+		t.Skip("Redis Test")
+	}
+
+	pool, err := dockertest.NewPool("")
+	if err != nil {
+		t.Fatalf("Could not connect to docker: %s", err)
+	}
+
+	resource, err := pool.Run("redis", "6.2", nil)
+	if err != nil {
+		t.Fatalf("Could not start redis container: %s", err)
+	}
+
+	addr := resource.GetPort("6379/tcp")
+
+	tr := &testRedis{
+		dockerPool:     pool,
+		dockerResource: resource,
+		addr:           addr,
+		Env: map[string]string{
+			"MESSAGE_BUS_PORT": addr,
+		},
+	}
+
+	return tr
 }
 
-var testData = map[string]string{
-	"$": `[
-		[
-			"stream1",
-			[
-				[
-					"12345-0",
-					["user/1/name", "Helga", "user/2/name", "Isolde"]
-				],
-				[
-					"12346-0",
-					["user/1/name", "Hubert", "user/3/name", "Igor"]
-				]
-			]
-		]
-	]`,
-	"12345-0": `[
-		[
-			"stream1",
-			[
-				[
-					"12346-0",
-					["user/1/name", "Hubert", "user/3/name", "Igor"]
-				]
-			]
-		]
-	]`,
+func (tp *testRedis) Close() error {
+	if err := tp.dockerPool.Purge(tp.dockerResource); err != nil {
+		return fmt.Errorf("purge redis container: %w", err)
+	}
+	return nil
 }
 
-func (c mockConn) XREAD(ctx context.Context, count, stream, lastID string) (interface{}, error) {
-	if c.err != nil {
-		return nil, c.err
-	}
-	if _, ok := testData[lastID]; !ok {
-		return nil, nil
-	}
-	var data interface{}
-	err := json.Unmarshal([]byte(testData[lastID]), &data)
-	return data, err
-}
-
-func cmpMap(one, two map[datastore.Key][]byte) bool {
-	if len(one) != len(two) {
-		return false
+func (tr *testRedis) conn(ctx context.Context) (redigo.Conn, error) {
+	conn, err := redigo.DialContext(ctx, "tcp", ":"+tr.addr)
+	if err != nil {
+		return nil, fmt.Errorf("creating test connection: %w", err)
 	}
 
-	for key := range one {
-		if !bytes.Equal(one[key], two[key]) {
-			return false
-		}
-	}
-	return true
+	return conn, nil
 }

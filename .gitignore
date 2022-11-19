@@ -1,7 +1,5 @@
-/autoupdate
-/performance
-/datastore
-/healthcheck
+/openslides-autoupdate-service
+/secrets
 cert
 .vscode
 workspace.code-workspace

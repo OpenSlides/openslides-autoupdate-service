@@ -9,12 +9,21 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
+)
+
+var (
+	envVoteHost     = environment.NewVariable("VOTE_HOST", "localhost", "Host of the vote-service.")
+	envVotePort     = environment.NewVariable("VOTE_PORT", "9013", "Port of the vote-service.")
+	envVoteProtocol = environment.NewVariable("VOTE_PROTOCOL", "http", "Protocol of the vote-service.")
 )
 
 const voteCountPath = "/internal/vote/vote_count"
 
-// VoteCountSource is a datastore source for the poll/vote_count value.
-type VoteCountSource struct {
+// voteCountSource is a datastore source for the poll/vote_count value.
+type voteCountSource struct {
 	voteServiceURL string
 	client         *http.Client
 	id             uint64
@@ -24,18 +33,27 @@ type VoteCountSource struct {
 	update    chan map[int]int
 }
 
-// NewVoteCountSource initializes the object.
-func NewVoteCountSource(url string) *VoteCountSource {
-	return &VoteCountSource{
+// newVoteCountSource initializes the object.
+func newVoteCountSource(lookup environment.Environmenter) *voteCountSource {
+	url := fmt.Sprintf(
+		"%s://%s:%s",
+		envVoteProtocol.Value(lookup),
+		envVoteHost.Value(lookup),
+		envVotePort.Value(lookup),
+	)
+
+	source := voteCountSource{
 		voteServiceURL: url,
 		client:         &http.Client{},
 		update:         make(chan map[int]int, 1),
 	}
+
+	return &source
 }
 
 // Connect creates a connection to the vote service and makes sure, it stays
 // open.
-func (s *VoteCountSource) Connect(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool), errHandler func(error)) {
+func (s *voteCountSource) Connect(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool), errHandler func(error)) {
 	for ctx.Err() == nil {
 		if err := s.connect(ctx); err != nil {
 			errHandler(fmt.Errorf("connecting to vote service: %w", err))
@@ -46,7 +64,7 @@ func (s *VoteCountSource) Connect(ctx context.Context, eventProvider func() (<-c
 }
 
 // wait waits for an event in s.eventProvider.
-func (s *VoteCountSource) wait(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool)) {
+func (s *voteCountSource) wait(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool)) {
 	event, close := eventProvider()
 	defer close()
 
@@ -56,7 +74,7 @@ func (s *VoteCountSource) wait(ctx context.Context, eventProvider func() (<-chan
 	}
 }
 
-func (s *VoteCountSource) connect(ctx context.Context) error {
+func (s *voteCountSource) connect(ctx context.Context) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", s.voteServiceURL+voteCountPath, nil)
 	if err != nil {
 		return fmt.Errorf("building request: %w", err)
@@ -100,11 +118,11 @@ func (s *VoteCountSource) connect(ctx context.Context) error {
 }
 
 // Get is called when a key is not in the cache.
-func (s *VoteCountSource) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
+func (s *voteCountSource) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	out := make(map[Key][]byte, len(keys))
+	out := make(map[dskey.Key][]byte, len(keys))
 	for _, key := range keys {
 		out[key] = nil
 
@@ -120,7 +138,7 @@ func (s *VoteCountSource) Get(ctx context.Context, keys ...Key) (map[Key][]byte,
 }
 
 // Update is called frequently and should block until there is new data.
-func (s *VoteCountSource) Update(ctx context.Context) (map[Key][]byte, error) {
+func (s *voteCountSource) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
 	var data map[int]int
 	select {
 	case <-ctx.Done():
@@ -129,13 +147,13 @@ func (s *VoteCountSource) Update(ctx context.Context) (map[Key][]byte, error) {
 	case data = <-s.update:
 	}
 
-	out := make(map[Key][]byte, len(data))
+	out := make(map[dskey.Key][]byte, len(data))
 	for pollID, count := range data {
 		bs := []byte(strconv.Itoa(count))
 		if count == 0 {
 			bs = nil
 		}
-		out[Key{"poll", pollID, "vote_count"}] = bs
+		out[dskey.Key{Collection: "poll", ID: pollID, Field: "vote_count"}] = bs
 	}
 	return out, nil
 }

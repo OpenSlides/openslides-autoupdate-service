@@ -3,7 +3,7 @@ package keysbuilder_test
 import (
 	"sort"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 func cmpSlice(one, two []string) bool {
@@ -18,7 +18,7 @@ func cmpSlice(one, two []string) bool {
 	return true
 }
 
-func cmpSet(one, two map[datastore.Key]bool) []string {
+func cmpSet(one, two map[dskey.Key]bool) []string {
 	var out []string
 
 	for key := range one {
@@ -38,18 +38,18 @@ func cmpSet(one, two map[datastore.Key]bool) []string {
 	return out
 }
 
-func set(keys ...datastore.Key) map[datastore.Key]bool {
-	out := make(map[datastore.Key]bool)
+func set(keys ...dskey.Key) map[dskey.Key]bool {
+	out := make(map[dskey.Key]bool)
 	for _, key := range keys {
 		out[key] = true
 	}
 	return out
 }
 
-func keys(ks ...string) []datastore.Key {
-	keys := make([]datastore.Key, len(ks))
+func keys(ks ...string) []dskey.Key {
+	keys := make([]dskey.Key, len(ks))
 	for i, k := range ks {
-		key, err := datastore.KeyFromString(k)
+		key, err := dskey.FromString(k)
 		if err != nil {
 			panic(err)
 		}

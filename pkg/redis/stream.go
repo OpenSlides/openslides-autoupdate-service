@@ -3,125 +3,137 @@ package redis
 import (
 	"errors"
 	"fmt"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/gomodule/redigo/redis"
 )
 
-var errNil = errors.New("nil returned")
-
-func stream(reply interface{}, err error) (string, map[string][]byte, error) {
-	// TODO Many LAST ERRORs
+// parseStream parses one stream from a xread request.
+//
+// The provided function is valled for any field value pair in the stream.
+//
+// Returns the last id.
+func parseStream(reply any, f func(k, v []byte)) (string, error) {
+	valueList, err := redis.Values(reply, nil)
 	if err != nil {
-		return "", nil, err
+		return "", err
 	}
-	if reply == nil {
-		return "", nil, errNil
-	}
-	streams, ok := reply.([]interface{})
-	if !ok {
-		return "", nil, fmt.Errorf("invalid input. Data has to be a list, not %T", reply)
-	}
-	if len(streams) == 0 {
-		return "", nil, fmt.Errorf("invalid input. No stream in data")
-	}
-	stream1, ok := streams[0].([]interface{})
-	if !ok {
-		return "", nil, fmt.Errorf("invalid input. Stream has to be a two-tuple, not %T", streams[0])
-	}
-	if len(stream1) != 2 {
-		return "", nil, fmt.Errorf("invalid input. Stream has to be a two-tuple, got %d elements", len(stream1))
-	}
-	data, ok := stream1[1].([]interface{})
-	if !ok {
-		return "", nil, fmt.Errorf("invalid input. Stream data has to be a list, got %T", stream1[1])
-	}
-	var id string
-	retData := make(map[string][]byte)
-	for _, v := range data {
-		element, ok := v.([]interface{})
-		if !ok {
-			return "", nil, fmt.Errorf("invalid input. Stream element has to be a two-tuple, got %T", v)
+
+	var lastID string
+	for i, value := range valueList {
+		idFields, ok := value.([]any)
+		if !ok || len(idFields) != 2 {
+			return "", fmt.Errorf("invalid stream value %d, got %v", i, value)
 		}
-		if len(element) != 2 {
-			return "", nil, fmt.Errorf("invalid input. Stream element has to be a two-tuple, got %d elements", len(element))
+
+		id, err := redis.String(idFields[0], nil)
+		if err != nil {
+			return "", fmt.Errorf("parsing id from entry %d: %w", i, err)
 		}
-		id, ok = tostr(element[0])
-		if !ok {
-			return "", nil, fmt.Errorf("invalid input. Stream ID has to be a string, got %T", element[0])
+
+		lastID = id
+
+		fieldList, ok := idFields[1].([]any)
+		if !ok || len(fieldList)%2 != 0 {
+			return "", fmt.Errorf("invalid field list value %d, got %v", i, idFields[i])
 		}
-		kv, ok := element[1].([]interface{})
-		if !ok {
-			return "", nil, fmt.Errorf("invalid input. Key values has to be a list of strings, got %T", element[1])
-		}
-		if len(kv)%2 != 0 {
-			return "", nil, fmt.Errorf("invalid input. Odd number of key value pairs")
-		}
-		for i := 0; i < len(kv)-1; i += 2 {
-			key, ok := tostr(kv[i])
+
+		for fi := 0; fi < len(fieldList); fi += 2 {
+			key, ok := toByte(fieldList[fi])
 			if !ok {
-				return "", nil, fmt.Errorf("invalid input. Key has to be a string, got %T", kv[i])
+				return "", fmt.Errorf("field %d in entry %d is not a bulk string value, got %T", fi, i, fieldList[fi])
 			}
 
-			value, ok := toByte(kv[i+1])
+			value, ok := toByte(fieldList[fi+1])
 			if !ok {
-				return "", nil, fmt.Errorf("invalid input. Value has to be []byte, got %T", kv[i+1])
+				return "", fmt.Errorf("value %d in entry %d is not a bulk string value, got %T", fi+1, i, fieldList[fi])
 			}
 
-			retData[key] = value
+			f(key, value)
 		}
 	}
-	return id, retData, nil
+	return lastID, nil
 }
 
-// autoupdateStream parses a redis autoupdateStream object to an autoupdate.KeyChanges object.
-//
-// The first return value is the redis autoupdateStream id. The second one is the data and
-// the third is an error.
-func autoupdateStream(reply interface{}, err error) (string, map[string][]byte, error) {
-	id, data, err := stream(reply, err)
+// only Stream filters a xread request for one stream.
+func onlyStream(reply any, only string, f func(k, v []byte)) (string, error) {
+	streams, err := redis.Values(reply, nil)
 	if err != nil {
-		return "", nil, err
+		return "", fmt.Errorf("parsing reply: %w", err)
 	}
-	return id, data, nil
+
+	for i, stream := range streams {
+		nameEntries, ok := stream.([]any)
+		if !ok || len(nameEntries) != 2 {
+			return "", errors.New("stream entry expects two value result")
+		}
+
+		name, err := redis.String(nameEntries[0], nil)
+		if err != nil {
+			return "", fmt.Errorf("parsing name of stream %d: %w", i, err)
+		}
+
+		if name != only {
+			continue
+		}
+
+		lastID, err := parseStream(nameEntries[1], f)
+		if err != nil {
+			return "", fmt.Errorf("parsing entries of stream %d: %w", i, err)
+		}
+
+		return lastID, nil
+	}
+
+	return "", fmt.Errorf("stream not found")
+}
+
+func parseMessageBus(reply any) (string, map[dskey.Key][]byte, error) {
+	data := make(map[dskey.Key][]byte)
+	databuilder := func(k, v []byte) {
+		key, err := dskey.FromString(string(k))
+		if err != nil {
+			// Ignore invalid keys
+			return
+		}
+
+		data[key] = v
+	}
+
+	lastID, err := onlyStream(reply, fieldChangedTopic, databuilder)
+	if err != nil {
+		return "", nil, fmt.Errorf("parsing autoupdate stream: %w", err)
+	}
+
+	return lastID, data, nil
 }
 
 // logoutStream parses a redis logoutStream object to an list of sessionsIDs.
 //
 // The first return value is the redis autoupdateStream id. The second one is the data and
 // the third is an error.
-func logoutStream(reply interface{}, err error) (string, []string, error) {
-	id, data, err := stream(reply, err)
-	if err != nil {
-		return "", nil, err
-	}
-
+func logoutStream(reply any) (string, []string, error) {
 	var sessionIDs []string
-	for key, value := range data {
-		if key != "sessionId" {
-			continue
+	databuilder := func(k, v []byte) {
+		if string(k) != "sessionId" {
+			return
 		}
 
-		sessionIDs = append(sessionIDs, string(value))
+		sessionIDs = append(sessionIDs, string(v))
 	}
-	return id, sessionIDs, nil
-}
 
-// tostr converts an interface with value string or []byte to string this is an
-// helper, because the test-code generates strings but the redis code generates
-// []bytes.
-func tostr(i interface{}) (string, bool) {
-	switch rid := i.(type) {
-	case string:
-		return rid, true
-	case []byte:
-		return string(rid), true
-	default:
-		return "", false
+	lastID, err := onlyStream(reply, logoutTopic, databuilder)
+	if err != nil {
+		return "", nil, fmt.Errorf("parsing logout stream: %w", err)
 	}
+
+	return lastID, sessionIDs, nil
 }
 
 // toByte converts an interface with value string or []byte to []byte this is an
 // helper, because the test-code generates strings but the redis code generates
 // []bytes.
-func toByte(i interface{}) ([]byte, bool) {
+func toByte(i any) ([]byte, bool) {
 	switch rid := i.(type) {
 	case string:
 		return []byte(rid), true

@@ -16,7 +16,9 @@ func TestChatMessageModeA(t *testing.T) {
 		c.Modes("A"),
 		false,
 		`---
-		chat_message/1/chat_group_id: 5
+		chat_message/1:
+			chat_group_id: 5
+			user_id: 20
 		chat_group/5/meeting_id: 30
 		meeting/10/id: 10
 		`,

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
 
@@ -16,7 +16,7 @@ func TestKeys(t *testing.T) {
 		name    string
 		request string
 		data    string
-		keys    []datastore.Key
+		keys    []dskey.Key
 	}{
 		{
 			"One Field",
@@ -284,7 +284,7 @@ func TestUpdate(t *testing.T) {
 		request string
 		data    string
 		newData string
-		got     []datastore.Key
+		got     []dskey.Key
 		count   int
 	}{
 		{
@@ -484,7 +484,7 @@ func TestConcurency(t *testing.T) {
 
 	}`
 
-	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 	user/1/group_ids: [1,2]
 	user/2/group_ids: [1,2]
 	user/3/group_ids: [1,2]
@@ -540,7 +540,7 @@ func TestManyRequests(t *testing.T) {
 		}
 	]`
 
-	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 	user/1/note_id: 1
 	user/2/note_id: 1
 	`))
@@ -564,7 +564,7 @@ func TestManyRequests(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
-	ds := dsmock.NewMockDatastore(nil)
+	ds, _ := dsmock.NewMockDatastore(nil)
 	ds.InjectError(errors.New("Some Error"))
 	json := `
 	{
@@ -594,7 +594,7 @@ func TestError(t *testing.T) {
 }
 
 func TestRequestCount(t *testing.T) {
-	ds := dsmock.NewMockDatastore(nil)
+	ds, _ := dsmock.NewMockDatastore(nil)
 	json := `{
 		"ids": [1],
 		"collection": "user",

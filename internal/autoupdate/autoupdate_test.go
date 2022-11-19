@@ -5,21 +5,23 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
 func TestSingleDataEmptyValues(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 	`))
-	s := autoupdate.New(ds, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
 
 	kb, err := keysbuilder.FromKeys("user/1/username")
 	if err != nil {
@@ -40,10 +42,10 @@ func TestHistoryInformation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 	`))
-	s := autoupdate.New(ds, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
 
 	buf := new(bytes.Buffer)
 	err := s.HistoryInformation(ctx, 1, "collection/1", buf)
@@ -66,10 +68,10 @@ func TestHistoryInformationWrongFQID(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 	`))
-	s := autoupdate.New(ds, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
 
 	buf := new(bytes.Buffer)
 	err := s.HistoryInformation(ctx, 1, "collection", buf)
@@ -90,12 +92,12 @@ func TestHistoryInformationSuperAdminOnMeetingCollection(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 
-		motion/5/id: 1
+		motion/5/meeting_id: 1
 	`))
-	s := autoupdate.New(ds, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
 
 	buf := new(bytes.Buffer)
 	err := s.HistoryInformation(ctx, 1, "motion/5", buf)
@@ -111,5 +113,33 @@ func TestHistoryInformationSuperAdminOnMeetingCollection(t *testing.T) {
 
 	if len(information) == 0 {
 		t.Errorf("No History returned")
+	}
+}
+
+func TestRestrictFQIDs(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+		user/1:
+			username: superadmin
+			first_name: kevin
+	`))
+	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
+
+	got, err := s.RestrictFQIDs(ctx, 1, []string{"user/1"})
+	if err != nil {
+		t.Fatalf("RestrictFQIDs: %v", err)
+	}
+
+	expect := map[string]map[string][]byte{
+		"user/1": {
+			"id":         []byte("1"),
+			"username":   []byte(`"superadmin"`),
+			"first_name": []byte(`"kevin"`),
+		},
+	}
+	if !reflect.DeepEqual(got, expect) {
+		t.Errorf("\nGot\t\t\t%v\nexpected\t%v", got, expect)
 	}
 }

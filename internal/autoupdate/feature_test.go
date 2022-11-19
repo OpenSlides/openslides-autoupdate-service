@@ -9,6 +9,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
 const dataSet = `---
@@ -76,8 +77,9 @@ gb/1:
 `
 
 func TestFeatures(t *testing.T) {
-	datastore := dsmock.NewMockDatastore(dsmock.YAMLData(dataSet))
-	service := autoupdate.New(datastore, RestrictAllowed)
+	datastore, _ := dsmock.NewMockDatastore(dsmock.YAMLData(dataSet))
+	lookup := environment.ForTests{}
+	service, _, _ := autoupdate.New(lookup, datastore, RestrictAllowed)
 
 	for _, tt := range []struct {
 		name string
@@ -314,7 +316,7 @@ func TestFeatures(t *testing.T) {
 			if err != nil {
 				t.Fatalf("FromJSON() returned an unexpected error: %v", err)
 			}
-			next := service.Connect(1, builder)
+			next, _ := service.Connect(1, builder)()
 			data, err := next(context.Background())
 			if err != nil {
 				t.Fatalf("Can not get data: %v", err)

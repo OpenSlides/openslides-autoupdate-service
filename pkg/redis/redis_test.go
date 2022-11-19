@@ -2,74 +2,99 @@ package redis_test
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	"reflect"
 	"testing"
+	"time"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
 )
 
-// useRealRedis desides, if a real redis instance is used or a fake redis
-// mock.
-const useRealRedis = false
-
-func MustKey(in string) datastore.Key {
-	k, err := datastore.KeyFromString(in)
-	if err != nil {
-		panic(err)
-	}
-	return k
-}
-
-func TestUpdateOnce(t *testing.T) {
+func TestUpdate(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	data, err := getRedis().Update(ctx)
+	tr := newTestRedis(t)
+	defer tr.Close()
+
+	r := redis.New(environment.ForTests(tr.Env))
+	r.Wait(ctx)
+
+	done := make(chan error)
+	var got map[dskey.Key][]byte
+	go func() {
+		data, err := r.Update(ctx)
+		if err != nil {
+			done <- fmt.Errorf("Update() returned an unexpected error %w", err)
+		}
+
+		got = data
+		done <- nil
+	}()
+
+	time.Sleep(20 * time.Millisecond)
+	conn, err := tr.conn(ctx)
 	if err != nil {
-		t.Errorf("Update() returned an unexpected error %v", err)
+		t.Fatalf("Creating test connection: %v", err)
 	}
 
-	expect := map[datastore.Key][]byte{
-		MustKey("user/1/name"): []byte("Hubert"),
-		MustKey("user/2/name"): []byte("Isolde"),
-		MustKey("user/3/name"): []byte("Igor"),
+	if _, err := conn.Do("XADD", "ModifiedFields", "*", "user/1/name", "Hubert", "user/2/name", "Isolde"); err != nil {
+		t.Fatalf("Insert test data: %v", err)
 	}
-	if !cmpMap(data, expect) {
-		t.Errorf("Update() returned %v, expected %v", data, expect)
+
+	if err := <-done; err != nil {
+		t.Error(err)
+	}
+
+	expect := map[dskey.Key][]byte{
+		dskey.MustKey("user/1/name"): []byte("Hubert"),
+		dskey.MustKey("user/2/name"): []byte("Isolde"),
+	}
+	if !reflect.DeepEqual(got, expect) {
+		t.Errorf("Update() returned %v, expected %v", got, expect)
 	}
 }
 
-func TestUpdateTwice(t *testing.T) {
+func TestLogout(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	r := getRedis()
-	if _, err := r.Update(ctx); err != nil {
-		t.Errorf("Update() returned an unexpected error %v", err)
-	}
+	tr := newTestRedis(t)
+	defer tr.Close()
 
-	keys, err := r.Update(ctx)
+	r := redis.New(environment.ForTests(tr.Env))
+	r.Wait(ctx)
+
+	done := make(chan error)
+	var got []string
+	go func() {
+		data, err := r.LogoutEvent(ctx)
+		if err != nil {
+			done <- fmt.Errorf("Update() returned an unexpected error %w", err)
+		}
+
+		got = data
+		done <- nil
+	}()
+
+	time.Sleep(20 * time.Millisecond)
+	conn, err := tr.conn(ctx)
 	if err != nil {
-		t.Errorf("Update() returned an unexpected error %v", err)
+		t.Fatalf("Creating test connection: %v", err)
 	}
 
-	expect := map[datastore.Key][]byte{}
-	if !cmpMap(keys, expect) {
-		t.Errorf("Update() returned %v, expected %v", keys, expect)
+	if _, err := conn.Do("XADD", "logout", "*", "some Key", "Hubert", "sessionId", "12345", "sessionId", "6789"); err != nil {
+		t.Fatalf("Insert test data: %v", err)
 	}
-}
 
-func TestRedisError(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	r := &redis.Redis{Conn: mockConn{err: errors.New("my error")}}
-	keys, err := r.Update(ctx)
-	if err == nil {
-		t.Errorf("Update() did not return an error, expected one.")
+	if err := <-done; err != nil {
+		t.Error(err)
 	}
-	if keys != nil {
-		t.Errorf("Update() returned %v, expected no keys.", keys)
+
+	expect := []string{"12345", "6789"}
+	if !reflect.DeepEqual(got, expect) {
+		t.Errorf("LogoutEvent() returned %v, expected %v", got, expect)
 	}
 }

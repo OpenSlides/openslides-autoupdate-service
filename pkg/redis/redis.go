@@ -8,7 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
+	"github.com/gomodule/redigo/redis"
 )
 
 const (
@@ -25,50 +27,66 @@ const (
 	lastLogoutDuration = 15 * time.Minute
 )
 
-// Connection is the raw connection to a redis server.
-type Connection interface {
-	XREAD(ctx context.Context, count, stream, lastID string) (interface{}, error)
-}
+var (
+	envMessageBusHost = environment.NewVariable("MESSAGE_BUS_HOST", "localhost", "Host of the redis server.")
+	envMessageBusPort = environment.NewVariable("MESSAGE_BUS_PORT", "6379", "Port of the redis server.")
+)
 
 // Redis holds the state of the redis receiver.
 type Redis struct {
-	Conn             Connection
+	pool             *redis.Pool
 	lastAutoupdateID string
 	lastLogoutID     string
 }
 
+// New initializes a Redis instance.
+func New(lookup environment.Environmenter) *Redis {
+	addr := envMessageBusHost.Value(lookup) + ":" + envMessageBusPort.Value(lookup)
+
+	pool := &redis.Pool{
+		MaxActive:   100,
+		Wait:        true,
+		MaxIdle:     10,
+		IdleTimeout: 240 * time.Second,
+		Dial:        func() (redis.Conn, error) { return redis.Dial("tcp", addr) },
+	}
+
+	return &Redis{
+		pool: pool,
+	}
+}
+
 // Update is a blocking function that returns, when there is new data.
-func (r *Redis) Update(ctx context.Context) (map[datastore.Key][]byte, error) {
+func (r *Redis) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
 	id := r.lastAutoupdateID
 	if id == "" {
 		id = "$"
 	}
 
-	id, data, err := autoupdateStream(r.Conn.XREAD(ctx, maxMessages, fieldChangedTopic, id))
+	conn := r.pool.Get()
+	defer conn.Close()
+
+	reply, err := redis.DoContext(conn, ctx, "XREAD", "COUNT", maxMessages, "BLOCK", "0", "STREAMS", fieldChangedTopic, id)
 	if err != nil {
-		if err == errNil {
-			// No new data
-			return nil, nil
-		}
-		// TODO External Error
-		return nil, fmt.Errorf("get xread data from redis: %w", err)
+		return nil, fmt.Errorf("redis reply: %w", err)
+	}
+
+	if reply == nil {
+		// This happens, when the redis command times out.
+		return nil, nil
+	}
+
+	id, data, err := parseMessageBus(reply)
+	if err != nil {
+		return nil, fmt.Errorf("parsing message bus: %w", err)
 	}
 
 	if id != "" {
+		// TODO When is id empty????
 		r.lastAutoupdateID = id
 	}
 
-	converted := make(map[datastore.Key][]byte, len(data))
-	for k, v := range data {
-		key, err := datastore.KeyFromString(k)
-		if err != nil {
-			// TODO End Error
-			return nil, fmt.Errorf("invalid key: %s", k)
-		}
-		converted[key] = v
-	}
-
-	return converted, nil
+	return data, nil
 }
 
 // LogoutEvent is a blocking function that returns, when a session was revoked.
@@ -79,17 +97,48 @@ func (r *Redis) LogoutEvent(ctx context.Context) ([]string, error) {
 		id = strconv.FormatInt(time.Now().Add(-lastLogoutDuration).Unix(), 10)
 	}
 
-	id, sessionIDs, err := logoutStream(r.Conn.XREAD(ctx, maxMessages, logoutTopic, id))
+	conn := r.pool.Get()
+	defer conn.Close()
+
+	reply, err := redis.DoContext(conn, ctx, "XREAD", "COUNT", maxMessages, "BLOCK", "0", "STREAMS", logoutTopic, id)
 	if err != nil {
-		if err == errNil {
-			// No new data
-			return nil, nil
-		}
+		return nil, fmt.Errorf("redis reply: %w", err)
+	}
+
+	if reply == nil {
+		// This happens, when the redis command times out.
+		return nil, nil
+	}
+
+	id, sessionIDs, err := logoutStream(reply)
+	if err != nil {
 		// TODO External Error
-		return nil, fmt.Errorf("get xread data from redis: %w", err)
+		return nil, fmt.Errorf("parsing message bus: %w", err)
 	}
 	if id != "" {
+		// TODO When is id empty????
 		r.lastLogoutID = id
 	}
 	return sessionIDs, nil
+}
+
+// Wait blocks until a connection can be established.
+func (r *Redis) Wait(ctx context.Context) error {
+	var lastErr error
+	for {
+		conn := r.pool.Get()
+		_, err := redis.DoContext(conn, ctx, "PING")
+		conn.Close()
+
+		if err == nil {
+			return nil
+		}
+		lastErr = err
+
+		select {
+		case <-time.After(200 * time.Millisecond):
+		case <-ctx.Done():
+			return lastErr
+		}
+	}
 }

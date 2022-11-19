@@ -8,6 +8,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // History filters the keys for the history.
@@ -28,7 +29,7 @@ func NewHistory(current datastore.Getter, old datastore.Getter, userID int) Hist
 //
 // In summary, a organization manager can see nearly all keys. A meeting admin
 // can see all keys, that belong to there meeting.
-func (h History) Get(ctx context.Context, keys ...datastore.Key) (map[datastore.Key][]byte, error) {
+func (h History) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	if h.userID == 0 {
 		return nil, nil
 	}
@@ -63,7 +64,7 @@ func (h History) Get(ctx context.Context, keys ...datastore.Key) (map[datastore.
 		return nil, nil
 	}
 
-	allowedKeys := make([]datastore.Key, 0, len(keys))
+	allowedKeys := make([]dskey.Key, 0, len(keys))
 
 	for _, key := range keys {
 		canSee, err := h.canSeeKey(ctx, oldDS, currentDS, orgaManager, adminInMeeting, key)
@@ -89,7 +90,7 @@ func (h History) canSeeKey(
 	currentDS *dsfetch.Fetch,
 	isOrgaManager bool,
 	adminInMeeting map[int]struct{},
-	key datastore.Key,
+	key dskey.Key,
 ) (bool, error) {
 	if key.Collection == "user" && key.Field == "password" {
 		return false, nil

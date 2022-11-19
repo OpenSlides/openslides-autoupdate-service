@@ -17,6 +17,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
@@ -35,7 +36,7 @@ type restricter struct {
 }
 
 // Get returns restricted data.
-func (r restricter) Get(ctx context.Context, keys ...datastore.Key) (map[datastore.Key][]byte, error) {
+func (r restricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	data, err := r.getter.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("getting data: %w", err)
@@ -62,13 +63,13 @@ func (r restricter) Get(ctx context.Context, keys ...datastore.Key) (map[datasto
 
 // restrict changes the keys and values in data for the user with the given user
 // id.
-func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[datastore.Key][]byte) (map[string]timeCount, error) {
+func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[dskey.Key][]byte) (map[string]timeCount, error) {
 	ds := dsfetch.New(getter)
 
 	isSuperAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, uid, perm.OMLSuperadmin)
 	if err != nil {
 		var errDoesNotExist dsfetch.DoesNotExistError
-		if errors.As(err, &errDoesNotExist) || datastore.Key(errDoesNotExist).Collection == "user" {
+		if errors.As(err, &errDoesNotExist) || dskey.Key(errDoesNotExist).Collection == "user" {
 			// TODO LAST ERROR
 			return nil, fmt.Errorf("request user %d does not exist", uid)
 		}
@@ -156,7 +157,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[da
 	return times, nil
 }
 
-func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, data map[datastore.Key][]byte) error {
+func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, data map[dskey.Key][]byte) error {
 	ds := dsfetch.New(getter)
 	mperms := perm.NewMeetingPermission(ds, uid)
 
@@ -203,7 +204,7 @@ func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, d
 }
 
 // groupKeysByCollection groups all the keys in data by there collection.
-func groupKeysByCollection(key datastore.Key, value []byte, restrictModeIDs map[collection.CM]*set.Set[int]) error {
+func groupKeysByCollection(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]*set.Set[int]) error {
 	restrictionMode, err := restrictModeName(key.Collection, key.Field)
 	if err != nil {
 		return fmt.Errorf("getting restriction Mode for %s: %w", key, err)
@@ -222,7 +223,7 @@ func groupKeysByCollection(key datastore.Key, value []byte, restrictModeIDs map[
 	return nil
 }
 
-func addRelationToRestrictModeIDs(key datastore.Key, value []byte, restrictModeIDs map[collection.CM]*set.Set[int]) error {
+func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]*set.Set[int]) error {
 	keyPrefix := templateKeyPrefix(key.CollectionField())
 
 	cm, id, ok, err := isRelation(keyPrefix, value)
@@ -285,7 +286,7 @@ func addRelationToRestrictModeIDs(key datastore.Key, value []byte, restrictModeI
 //
 // The first return value is the new value. The second is, if the value was
 // manipulated.q
-func manipulateRelations(key datastore.Key, value []byte, allowedRestrictions map[collection.CM]*set.Set[int]) ([]byte, bool, error) {
+func manipulateRelations(key dskey.Key, value []byte, allowedRestrictions map[collection.CM]*set.Set[int]) ([]byte, bool, error) {
 	keyPrefix := templateKeyPrefix(key.CollectionField())
 
 	cm, id, ok, err := isRelation(keyPrefix, value)
@@ -575,4 +576,9 @@ var collectionOrder = map[string]int{
 	"list_of_speakers":             34,
 	"speaker":                      35,
 	"user":                         36,
+}
+
+// FieldsForCollection returns the list of fieldnames for an collection.
+func FieldsForCollection(collection string) []string {
+	return collectionFields[collection]
 }

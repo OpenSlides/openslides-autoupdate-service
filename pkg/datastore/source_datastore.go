@@ -8,12 +8,23 @@ import (
 	"io"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"sync/atomic"
-	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"golang.org/x/sync/errgroup"
+)
+
+var (
+	envDatastoreHost     = environment.NewVariable("DATASTORE_READER_HOST", "localhost", "Host of the datastore reader.")
+	envDatastorePort     = environment.NewVariable("DATASTORE_READER_PORT", "9010", "Port of the datastore reader.")
+	envDatastoreProtocol = environment.NewVariable("DATASTORE_READER_PROTOCOL", "http", "Protocol of the datastore reader.")
+
+	envDatastoreTimeout         = environment.NewVariable("DATASTORE_TIMEOUT", "3s", "Time until a request to the datastore times out.")
+	envDatastoreMaxParallelKeys = environment.NewVariable("DATASTORE_MAX_PARALLEL_KEYS", "1000", "Max keys that are send in one request to the datastore.")
 )
 
 const (
@@ -21,47 +32,54 @@ const (
 	urlHistoryInformation = "/internal/datastore/reader/history_information"
 )
 
-// Updater returns keys that have changes. Blocks until there is
-// changed data.
-//
-// Deprivated: Use redis directly.
-type Updater interface {
-	Update(context.Context) (map[Key][]byte, error)
-}
-
-// SourceDatastore receives the data from the datastore-reader via http and
+// sourceDatastore receives the data from the datastore-reader via http and
 // updates via the redis message bus.
-type SourceDatastore struct {
-	url     string
-	client  *http.Client
-	updater Updater
+type sourceDatastore struct {
+	url    string
+	client *http.Client
 
 	metricDSHitCount  uint64
 	maxKeysPerRequest int
 }
 
-// NewSourceDatastore initializes a SourceDatastore.
-func NewSourceDatastore(url string, updater Updater, maxKeysPerRequest int, timeout time.Duration) *SourceDatastore {
-	return &SourceDatastore{
+// newSourceDatastore initializes a SourceDatastore.
+func newSourceDatastore(lookup environment.Environmenter) (*sourceDatastore, error) {
+	url := fmt.Sprintf(
+		"%s://%s:%s",
+		envDatastoreProtocol.Value(lookup),
+		envDatastoreHost.Value(lookup),
+		envDatastorePort.Value(lookup),
+	)
+
+	timeout, err := environment.ParseDuration(envDatastoreTimeout.Value(lookup))
+	if err != nil {
+		return nil, fmt.Errorf("parsing timeout: %w", err)
+	}
+
+	maxParallel, err := strconv.Atoi(envDatastoreMaxParallelKeys.Value(lookup))
+	if err != nil {
+		return nil, fmt.Errorf(
+			"environment variable MAX_PARALLEL_KEYS has to be a number, not %s",
+			envDatastoreMaxParallelKeys.Value(lookup),
+		)
+	}
+
+	source := sourceDatastore{
 		url: url,
 		client: &http.Client{
 			Timeout: timeout,
 		},
-		updater:           updater,
-		maxKeysPerRequest: maxKeysPerRequest,
+		maxKeysPerRequest: maxParallel,
 	}
-}
 
-// Get fetches the request keys from the datastore-reader.
-func (s *SourceDatastore) Get(ctx context.Context, keys ...Key) (map[Key][]byte, error) {
-	atomic.AddUint64(&s.metricDSHitCount, 1)
-	return s.GetPosition(ctx, 0, keys...)
+	return &source, nil
 }
 
 // GetPosition gets keys from the datastore at a specifi position.
 //
 // Position 0 means the current position.
-func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
+func (s *sourceDatastore) GetPosition(ctx context.Context, position int, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+	atomic.AddUint64(&s.metricDSHitCount, 1)
 	if len(keys) <= s.maxKeysPerRequest {
 		return s.getPosition(ctx, position, keys...)
 	}
@@ -90,7 +108,7 @@ func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ..
 		requestCount++
 	}
 
-	results := make([]map[Key][]byte, requestCount)
+	results := make([]map[dskey.Key][]byte, requestCount)
 	for i := 0; i < len(results); i++ {
 		i := i
 
@@ -115,7 +133,7 @@ func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ..
 		return nil, err
 	}
 
-	combined := make(map[Key][]byte, len(keys))
+	combined := make(map[dskey.Key][]byte, len(keys))
 	for _, r := range results {
 		for k, v := range r {
 			combined[k] = v
@@ -125,7 +143,7 @@ func (s *SourceDatastore) GetPosition(ctx context.Context, position int, keys ..
 	return combined, nil
 }
 
-func (s *SourceDatastore) getPosition(ctx context.Context, position int, keys ...Key) (map[Key][]byte, error) {
+func (s *sourceDatastore) getPosition(ctx context.Context, position int, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	requestData, err := keysToGetManyRequest(keys, position)
 	if err != nil {
 		return nil, fmt.Errorf("creating GetManyRequest: %w", err)
@@ -178,13 +196,8 @@ func (s *SourceDatastore) getPosition(ctx context.Context, position int, keys ..
 	return responseData, nil
 }
 
-// Update updates the data from the redis message bus.
-func (s *SourceDatastore) Update(ctx context.Context) (map[Key][]byte, error) {
-	return s.updater.Update(ctx)
-}
-
 // HistoryInformation requests the history information for an fqid from the datastore.
-func (s *SourceDatastore) HistoryInformation(ctx context.Context, fqid string, w io.Writer) error {
+func (s *sourceDatastore) HistoryInformation(ctx context.Context, fqid string, w io.Writer) error {
 	req, err := http.NewRequestWithContext(
 		ctx,
 		"POST",

@@ -11,10 +11,33 @@ browser has to connect to the service with http2 and therefore needs https.
 
 ## Start
 
+The service needs some secrets to run. You can create them with:
+
+```
+mkdir secrets
+printf "password" > secrets/postgres_password
+printf "my_token_key" > secrets/auth_token_key 
+printf "my_cookie_key" > secrets/auth_cookie_key
+```
+
+It also needs a running postgres and redis instance. You can start one with:
+
+```
+docker run  --network host -e POSTGRES_PASSWORD=password -e POSTGRES_USER=openslides -e POSTGRES_DB=openslides postgres:11
+```
+
+and
+
+```
+docker run --network host redis
+```
+
+
 ### With Golang
 
 ```
-go build ./cmd/autoupdate
+export SECRETS_PATH=secrets
+go build
 ./autoupdate
 ```
 
@@ -28,12 +51,10 @@ the docker argument --network host. The auth-secrets have to given as a file.
 
 ```
 docker build . --tag openslides-autoupdate
-printf "my_token_key" > auth_token_key 
-printf "my_cookie_key" > auth_cookie_key
-docker run --network host -v $PWD/auth_token_key:/run/secrets/auth_token_key -v $PWD/auth_cookie_key:/run/secrets/auth_cookie_key openslides-autoupdate
+docker run --network host -v $PWD/secrets:/run/secrets openslides-autoupdate
 ```
 
-It uses the host network to connect to redis.
+It uses the host network to connect to redis and postgres.
 
 
 ### With Auto Restart
@@ -43,7 +64,7 @@ To restart the service when ever a source file has shanged, the tool
 
 ```
 go install github.com/githubnemo/CompileDaemon@latest
-CompileDaemon -log-prefix=false -build "go build ./cmd/autoupdate" -command "./autoupdate"
+CompileDaemon -log-prefix=false -build "go build" -command "./autoupdate"
 ```
 
 The make target `build-dev` creates a docker image that uses this tool. The
@@ -171,52 +192,18 @@ To get the data at a position, use the normal autoupdate request with the
 attribute `position`. See above.
 
 
+### Internal Restrict FQIDs
+
+The autoupdate service provides an internal route to restrict a list of fqids.
+
+`curl localhost:9012/internal/autoupdate -d '{"user_id":23,"fqids":["user/1","motion/6"]}'`
+
+It returns all fields for the given objects restricted for the given user id.
+
+
 ## Configuration
 
-### Environment variables
-
-The Service uses the following environment variables:
-
-* `AUTOUPDATE_PORT`: Lets the service listen on port 9012. The default is
-  `9012`.
-* `AUTOUPDATE_HOST`: The device where the service starts. The default is am
-  empty string which starts the service on any device.
-* `DATASTORE_READER_HOST`: Host of the datastore reader. The default is
-  `localhost`.
-* `DATASTORE_READER_PORT`: Port of the datastore reader. The default is `9010`.
-* `DATASTORE_READER_PROTOCOL`: Protocol of the datastore reader. The default is
-  `http`.
-* `MESSAGE_BUS_HOST`: Host of the redis server. The default is `localhost`.
-* `MESSAGE_BUS_PORT`: Port of the redis server. The default is `6379`.
-* `REDIS_TEST_CONN`: Test the redis connection on startup. Disable on the cloud
-  if redis needs more time to start then this service. The default is `true`.
-* `VOTE_HOST`: Host of the vote-service. The default is `localhost`.
-* `VOTE_PORT`: Port of the vote-service. The default is `9013`.
-* `VOTE_PROTOCOL`: Protocol of the vote-service. The default is `http`.
-* `AUTH`: Sets the type of the auth service. `fake` (default) or `ticket`.
-* `AUTH_HOST`: Host of the auth service. The default is `localhost`.
-* `AUTH_PORT`: Port of the auth service. The default is `9004`.
-* `AUTH_PROTOCOL`: Protocol of the auth servicer. The default is `http`.
-* `OPENSLIDES_DEVELOPMENT`: If set, the service uses the default secrets. The
-  default is `false`.
-* `METRIC_INTERVAL`: Time in how often the metrics are gathered. Zero disables
-  the metrics. The default is `5m`.
-* `MAX_PARALLEL_KEYS`: Max keys that are send in one request to the datastore.
-  The default is `1000`.
-* `DATASTORE_TIMEOUT`: Time until a request to the datastore times out. The
-  default is `3s`.
-
-Valid units for duration values are "ns", "us" (or "µs"), "ms", "s", "m", "h".
-One number without a unit is interpreted as seconds. So `3` is the same as `3s`.
-
-### Secrets
-
-Secrets are filenames in `/run/secrets/`. The service only starts if it can find
-each secret file and read its content. The default values are only used, if the
-environment variable `OPENSLIDES_DEVELOPMENT` is set.
-
-* `auth_token_key`: Key to sign the JWT auth tocken.
-* `auth_cookie_key`: Key to sign the JWT auth cookie.
+The service is configurated with environment variables. See [all environment varialbes](environment.md).
 
 
 ## Update models.yml

@@ -96,7 +96,7 @@ func TestMotionCommentModeA(t *testing.T) {
 	)
 
 	testCase(
-		"can see motion and comment section",
+		"can see motion and comment section with read_group",
 		t,
 		f,
 		true,
@@ -118,6 +118,85 @@ func TestMotionCommentModeA(t *testing.T) {
 		
 		user/1/group_$30_ids: [2]
 		group/2/id: 2
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"can see motion and comment section with write_group",
+		t,
+		f,
+		true,
+		`---
+		motion_comment/1:
+			meeting_id: 30
+			motion_id: 5
+			section_id: 7
+		
+		motion/5:
+			meeting_id: 30
+			state_id: 3
+		
+		motion_state/3/id: 3
+
+		motion_comment_section/7:
+			meeting_id: 30
+			write_group_ids: [2]
+		
+		user/1/group_$30_ids: [2]
+		group/2/id: 2
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"can see motion and comment section with submitter_can_write but no submitter",
+		t,
+		f,
+		false,
+		`---
+		motion_comment/1:
+			meeting_id: 30
+			motion_id: 5
+			section_id: 7
+		
+		motion/5:
+			meeting_id: 30
+			state_id: 3
+		
+		motion_state/3/id: 3
+
+		motion_comment_section/7:
+			meeting_id: 30
+			submitter_can_write: true
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"can see motion and comment section with submitter_can_write as submitter",
+		t,
+		f,
+		true,
+		`---
+		motion_comment/1:
+			meeting_id: 30
+			motion_id: 5
+			section_id: 7
+		
+		motion/5:
+			meeting_id: 30
+			state_id: 3
+			submitter_ids: [13]
+
+		motion_submitter/13:
+			user_id: 1
+		
+		motion_state/3/id: 3
+
+		motion_comment_section/7:
+			meeting_id: 30
+			submitter_can_write: true
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)

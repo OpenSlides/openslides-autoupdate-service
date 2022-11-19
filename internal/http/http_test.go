@@ -12,13 +12,12 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	ahttp "github.com/OpenSlides/openslides-autoupdate-service/internal/http"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 var (
-	myKey1 = datastore.Key{Collection: "collection", ID: 1, Field: "field"}
-	myKey2 = datastore.Key{Collection: "collection", ID: 2, Field: "field"}
+	myKey1 = dskey.Key{Collection: "collection", ID: 1, Field: "field"}
+	myKey2 = dskey.Key{Collection: "collection", ID: 2, Field: "field"}
 )
 
 type connecterMock struct {
@@ -29,8 +28,9 @@ func (c *connecterMock) Connect(userID int, kb autoupdate.KeysBuilder) autoupdat
 	return c.f
 }
 
-func (c *connecterMock) SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[datastore.Key][]byte, error) {
-	return c.f(ctx)
+func (c *connecterMock) SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[dskey.Key][]byte, error) {
+	next, _ := c.f()
+	return next(ctx)
 }
 
 func TestKeysHandler(t *testing.T) {
@@ -38,14 +38,19 @@ func TestKeysHandler(t *testing.T) {
 	defer cancel()
 
 	mux := http.NewServeMux()
+
+	f := func(ctx context.Context) (map[dskey.Key][]byte, error) {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		cancel()
+		return map[dskey.Key][]byte{myKey1: []byte(`"bar"`)}, nil
+	}
 	connecter := &connecterMock{
-		func(ctx context.Context) (map[datastore.Key][]byte, error) {
-			cancel()
-			return map[datastore.Key][]byte{myKey1: []byte(`"bar"`)}, nil
-		},
+		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
 	}
 
-	ahttp.Autoupdate(mux, auth.Fake(1), connecter, nil)
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil)
 
 	req := httptest.NewRequest("GET", "/system/autoupdate?k=user/1/name,user/2/name", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()
@@ -69,14 +74,19 @@ func TestComplexHandler(t *testing.T) {
 	defer cancel()
 
 	mux := http.NewServeMux()
-	connecter := &connecterMock{
-		func(ctx context.Context) (map[datastore.Key][]byte, error) {
-			cancel()
-			return map[datastore.Key][]byte{myKey1: []byte(`"bar"`)}, nil
-		},
+	f := func(ctx context.Context) (map[dskey.Key][]byte, error) {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		cancel()
+		return map[dskey.Key][]byte{myKey1: []byte(`"bar"`)}, nil
 	}
 
-	ahttp.Autoupdate(mux, auth.Fake(1), connecter, nil)
+	connecter := &connecterMock{
+		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
+	}
+
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil)
 
 	req := httptest.NewRequest(
 		"GET",
@@ -101,7 +111,7 @@ func TestComplexHandler(t *testing.T) {
 
 func TestHealth(t *testing.T) {
 	mux := http.NewServeMux()
-	ahttp.Health(mux)
+	ahttp.HandleHealth(mux)
 
 	req := httptest.NewRequest("", "/system/autoupdate/health", nil)
 	rec := httptest.NewRecorder()
@@ -120,12 +130,18 @@ func TestHealth(t *testing.T) {
 
 func TestErrors(t *testing.T) {
 	mux := http.NewServeMux()
-	connecter := &connecterMock{
-		func(ctx context.Context) (map[datastore.Key][]byte, error) {
-			return map[datastore.Key][]byte{myKey1: []byte(`"bar"`)}, nil
-		},
+	f := func(ctx context.Context) (map[dskey.Key][]byte, error) {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		return map[dskey.Key][]byte{myKey1: []byte(`"bar"`)}, nil
 	}
-	ahttp.Autoupdate(mux, auth.Fake(1), connecter, nil)
+
+	connecter := &connecterMock{
+		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
+	}
+
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil)
 
 	for _, tt := range []struct {
 		name    string
@@ -243,7 +259,7 @@ func TestHistoryInformation(t *testing.T) {
 	hi := &HistoryInformationStub{
 		write: "my information",
 	}
-	ahttp.HistoryInformation(mux, auth.Fake(1), hi)
+	ahttp.HandleHistoryInformation(mux, fakeAuth(1), hi)
 
 	resp := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/system/autoupdate/history_information?fqid=motion/42", nil)
@@ -272,7 +288,7 @@ func TestHistoryInformationNoFQID(t *testing.T) {
 	hi := &HistoryInformationStub{
 		write: "my information",
 	}
-	ahttp.HistoryInformation(mux, auth.Fake(1), hi)
+	ahttp.HandleHistoryInformation(mux, fakeAuth(1), hi)
 
 	resp := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/system/autoupdate/history_information", nil)
@@ -294,7 +310,7 @@ func TestHistoryInformationError(t *testing.T) {
 	hi := &HistoryInformationStub{
 		err: fmt.Errorf("my error"),
 	}
-	ahttp.HistoryInformation(mux, auth.Fake(1), hi)
+	ahttp.HandleHistoryInformation(mux, fakeAuth(1), hi)
 
 	resp := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/system/autoupdate/history_information?fqid=motion/42", nil)
@@ -309,4 +325,18 @@ func TestHistoryInformationError(t *testing.T) {
 	if body, _ := io.ReadAll(resp.Result().Body); strings.TrimSpace(string(body)) != expect {
 		t.Errorf("got body `%s`, expected `%s`", body, expect)
 	}
+}
+
+// fakeAuth implements the http.Authenticater interface. It allways returs the given
+// user id.
+type fakeAuth int
+
+// Authenticate does nothing.
+func (a fakeAuth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Context, error) {
+	return r.Context(), nil
+}
+
+// FromContext returns the uid the object was initialiced with.
+func (a fakeAuth) FromContext(ctx context.Context) int {
+	return int(a)
 }

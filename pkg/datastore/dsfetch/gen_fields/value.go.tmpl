@@ -1,8 +1,13 @@
 // {{.TypeName}} is a lazy value from the datastore.
 type {{.TypeName}} struct {
-	value    {{.GoType}}
-	isNull   bool
+	collection string
+	id         int
+	field      string
+	value      {{.GoType}}
+	required   bool
+
 	executed bool
+	isNull   bool
 
 	lazies []*{{.GoType}}
 
@@ -92,6 +97,9 @@ func (v *{{.TypeName}}) execute(p []byte) error {
 	{{- if eq .TypeName  "ValueIDSlice"}}
 		var values []string
 		if p == nil {
+			if v.required {
+				return fmt.Errorf("database is corrupted. Required field %s/%d/%s is null", v.collection, v.id, v.field)
+			}
 			v.isNull = true
 		} else {
 			if err := json.Unmarshal(p, &values); err != nil {
@@ -108,6 +116,9 @@ func (v *{{.TypeName}}) execute(p []byte) error {
 		}
 	{{- else}}
 		if p == nil {
+			if v.required {
+				return fmt.Errorf("database is corrupted. Required field %s/%d/%s is null", v.collection, v.id, v.field)
+			}
 			v.isNull = true
 		} else {
 			if err := json.Unmarshal(p, &v.value); err != nil {

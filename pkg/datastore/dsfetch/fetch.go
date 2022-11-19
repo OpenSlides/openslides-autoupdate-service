@@ -2,30 +2,34 @@ package dsfetch
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 //go:generate sh -c "go run gen_fields/main.go > fields_generated.go"
+
+// Getter is the same as datastore.Getter
+type Getter interface {
+	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
+}
 
 // Fetch provides functions to access the fields of the datastore.
 //
 // Fetch is not save for concurent use. One Fetch object AND its value can only be
 // used in one goroutine.
 type Fetch struct {
-	getter datastore.Getter
+	getter Getter
 	err    error
 
-	requested map[datastore.Key]executer
+	requested map[dskey.Key]executer
 }
 
 // New initializes a Request object.
-func New(getter datastore.Getter) *Fetch {
+func New(getter Getter) *Fetch {
 	r := Fetch{
 		getter:    getter,
-		requested: make(map[datastore.Key]executer),
+		requested: make(map[dskey.Key]executer),
 	}
 	return &r
 }
@@ -34,10 +38,10 @@ func New(getter datastore.Getter) *Fetch {
 func (r *Fetch) Execute(ctx context.Context) error {
 	defer func() {
 		// Clear all requested fields in the end. Even if errors happened.
-		r.requested = make(map[datastore.Key]executer)
+		r.requested = make(map[dskey.Key]executer)
 	}()
 
-	keys := make([]datastore.Key, 0, len(r.requested)*2)
+	keys := make([]dskey.Key, 0, len(r.requested)*2)
 	for key := range r.requested {
 		keys = append(keys, key, key.IDField())
 	}
@@ -52,18 +56,18 @@ func (r *Fetch) Execute(ctx context.Context) error {
 		return r.err
 	}
 
-	for fqfield, value := range data {
-		if fqfield.Field == "id" && value == nil {
-			r.err = DoesNotExistError(fqfield)
+	for key, value := range data {
+		if data[key.IDField()] == nil {
+			r.err = DoesNotExistError(key)
 			return r.err
 		}
 
-		exec := r.requested[fqfield]
+		exec := r.requested[key]
 		if exec == nil {
 			continue
 		}
 		if err := exec.execute(value); err != nil {
-			r.err = fmt.Errorf("executing field %q: %w", fqfield, err)
+			r.err = fmt.Errorf("executing field %q: %w", key, err)
 			return r.err
 		}
 	}
@@ -81,75 +85,9 @@ type executer interface {
 	execute([]byte) error
 }
 
-// ValueRequiredInt is a lazy value from the datastore.
-type ValueRequiredInt struct {
-	value    int
-	isNull   bool
-	executed bool
-
-	lazies []*int
-
-	request *Fetch
-}
-
-// Value returns the value.
-func (v *ValueRequiredInt) Value(ctx context.Context) (int, bool, error) {
-	if v.request.err != nil {
-		return 0, false, v.request.err
-	}
-
-	if v.executed {
-		return v.value, !v.isNull, nil
-	}
-
-	if err := v.request.Execute(ctx); err != nil {
-		return 0, false, fmt.Errorf("executing request: %w", err)
-	}
-
-	return v.value, !v.isNull, nil
-}
-
-// ErrorLater is like Value but does not return an error.
-//
-// If an error happs, it is saved internaly. Make sure to call request.Err() later to
-// access it.
-func (v *ValueRequiredInt) ErrorLater(ctx context.Context) (int, bool) {
-	if v.request.err != nil {
-		return 0, false
-	}
-
-	if v.executed {
-		return v.value, !v.isNull
-	}
-
-	if err := v.request.Execute(ctx); err != nil {
-		return 0, false
-	}
-
-	return v.value, !v.isNull
-}
-
-// execute will be called from request.
-func (v *ValueRequiredInt) execute(p []byte) error {
-	if p == nil {
-		v.isNull = true
-	} else {
-		if err := json.Unmarshal(p, &v.value); err != nil {
-			return fmt.Errorf("decoding value %q: %w", p, err)
-		}
-	}
-
-	for i := 0; i < len(v.lazies); i++ {
-		*v.lazies[i] = v.value
-	}
-
-	v.executed = true
-	return nil
-}
-
 // DoesNotExistError is thrown when an object does not exist.
-type DoesNotExistError datastore.Key
+type DoesNotExistError dskey.Key
 
 func (e DoesNotExistError) Error() string {
-	return fmt.Sprintf("%s does not exist.", datastore.Key(e))
+	return fmt.Sprintf("%s does not exist.", dskey.Key(e))
 }

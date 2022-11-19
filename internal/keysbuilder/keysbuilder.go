@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // Builder builds the keys. It is not save for concourent use. There is one
@@ -22,7 +23,7 @@ type Builder struct {
 	mu sync.Mutex
 
 	bodies []body
-	keys   []datastore.Key
+	keys   []dskey.Key
 }
 
 // FromKeys creates a keysbuilder from a list of keys.
@@ -32,9 +33,9 @@ func FromKeys(rawKeys ...string) (*Builder, error) {
 		return b, nil
 	}
 
-	keys := make([]datastore.Key, len(rawKeys))
+	keys := make([]dskey.Key, len(rawKeys))
 	for i, k := range rawKeys {
-		key, err := datastore.KeyFromString(k)
+		key, err := dskey.FromString(k)
 		if err != nil {
 			// TODO LAST ERROR
 			return nil, fmt.Errorf("invalid key: %s", k)
@@ -87,14 +88,14 @@ func (b *Builder) Update(ctx context.Context, getter datastore.Getter) (err erro
 	}
 
 	// Start with all keys from all the bodies.
-	process := make(map[datastore.Key]fieldDescription)
+	process := make(map[dskey.Key]fieldDescription)
 	for _, body := range b.bodies {
 		body.keys(process)
 	}
 
 	b.keys = b.keys[:0]
-	var needed []datastore.Key
-	processed := make(map[datastore.Key]fieldDescription)
+	var needed []dskey.Key
+	processed := make(map[dskey.Key]fieldDescription)
 	for {
 		// Get all keys and descriptions
 		for key, description := range process {
@@ -151,7 +152,7 @@ func (b *Builder) Update(ctx context.Context, getter datastore.Getter) (err erro
 // Keys returns the keys.
 //
 // Make sure to call Update() or Keys() will return an empty list.
-func (b *Builder) Keys() []datastore.Key {
+func (b *Builder) Keys() []dskey.Key {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -162,8 +163,8 @@ func (b *Builder) Keys() []datastore.Key {
 // together.
 //
 // buildGenericKey("motion/5", "title") -> "motion/5/title".
-func buildGenericKey(collectionID string, field string) datastore.Key {
-	key, err := datastore.KeyFromString(collectionID + "/" + field)
+func buildGenericKey(collectionID string, field string) dskey.Key {
+	key, err := dskey.FromString(collectionID + "/" + field)
 	_ = err // TODO: Can this happen?
 
 	return key

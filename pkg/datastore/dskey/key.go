@@ -1,4 +1,4 @@
-package datastore
+package dskey
 
 import (
 	"fmt"
@@ -14,8 +14,8 @@ type Key struct {
 	Field      string
 }
 
-// KeyFromString parses a string to a Key.
-func KeyFromString(in string) (Key, error) {
+// FromString parses a string to a Key.
+func FromString(in string) (Key, error) {
 	if !keyValid(in) {
 		return Key{}, invalidKeyError{in}
 	}
@@ -23,6 +23,17 @@ func KeyFromString(in string) (Key, error) {
 	parts := strings.Split(in, "/")
 	id, _ := strconv.Atoi(parts[1])
 	return Key{parts[0], id, parts[2]}, nil
+}
+
+// MustKey is like FromString but panics, if the key is invalid.
+//
+// Should only be used in tests.
+func MustKey(in string) Key {
+	k, err := FromString(in)
+	if err != nil {
+		panic(err)
+	}
+	return k
 }
 
 func (k Key) String() string {

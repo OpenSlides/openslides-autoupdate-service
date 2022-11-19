@@ -1,4 +1,4 @@
-package datastore_test
+package datastore
 
 import (
 	"context"
@@ -9,7 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
 func TestVoteCountSourceGet(t *testing.T) {
@@ -24,11 +25,18 @@ func TestVoteCountSourceGet(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := datastore.NewVoteCountSource(ts.URL)
+	host, port, schema := parseURL(ts.URL)
+	env := environment.ForTests(map[string]string{
+		"VOTE_HOST":     host,
+		"VOTE_PORT":     port,
+		"VOTE_PROTOCOL": schema,
+	})
+
+	source := newVoteCountSource(env)
 	eventer := func() (<-chan time.Time, func() bool) { return make(chan time.Time), func() bool { return true } }
 	go source.Connect(ctx, eventer, func(error) {})
 
-	key1 := datastore.MustKey("poll/1/vote_count")
+	key1 := dskey.MustKey("poll/1/vote_count")
 
 	t.Run("no data from vote-service", func(t *testing.T) {
 		got, err := source.Get(ctx, key1)
@@ -106,11 +114,18 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := datastore.NewVoteCountSource(ts.URL)
+	host, port, schema := parseURL(ts.URL)
+	env := environment.ForTests(map[string]string{
+		"VOTE_HOST":     host,
+		"VOTE_PORT":     port,
+		"VOTE_PROTOCOL": schema,
+	})
+
+	source := newVoteCountSource(env)
 	eventer := func() (<-chan time.Time, func() bool) { return make(chan time.Time), func() bool { return true } }
 	go source.Connect(ctx, eventer, func(error) {})
 
-	key1 := datastore.MustKey("poll/1/vote_count")
+	key1 := dskey.MustKey("poll/1/vote_count")
 
 	t.Run("no data from vote-service", func(t *testing.T) {
 		ctxTimeout, cancel := context.WithTimeout(ctx, time.Millisecond)
@@ -130,7 +145,7 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 			t.Fatalf("Update: %v", err)
 		}
 
-		expect := map[datastore.Key][]byte{key1: []byte("42")}
+		expect := map[dskey.Key][]byte{key1: []byte("42")}
 		if !reflect.DeepEqual(got, expect) {
 			t.Errorf("Update() returned %v, expected %v", got, expect)
 		}
@@ -144,7 +159,7 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 			t.Fatalf("Update: %v", err)
 		}
 
-		expect := map[datastore.Key][]byte{key1: []byte("43")}
+		expect := map[dskey.Key][]byte{key1: []byte("43")}
 		if !reflect.DeepEqual(got, expect) {
 			t.Errorf("Update() returned %v, expected %v", got, expect)
 		}
@@ -158,7 +173,7 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 			t.Fatalf("Update: %v", err)
 		}
 
-		expect := map[datastore.Key][]byte{key1: nil}
+		expect := map[dskey.Key][]byte{key1: nil}
 		if !reflect.DeepEqual(got, expect) {
 			t.Errorf("Update() returned %v, expected %v", got, expect)
 		}
@@ -185,7 +200,14 @@ func TestReconnect(t *testing.T) {
 		return event, func() bool { return false }
 	}
 
-	source := datastore.NewVoteCountSource(ts.URL)
+	host, port, schema := parseURL(ts.URL)
+	env := environment.ForTests(map[string]string{
+		"VOTE_HOST":     host,
+		"VOTE_PORT":     port,
+		"VOTE_PROTOCOL": schema,
+	})
+
+	source := newVoteCountSource(env)
 	go source.Connect(ctx, eventer, func(error) {})
 
 	sender <- struct{}{} // Close connection so there is a reconnect
@@ -215,13 +237,20 @@ func TestReconnectWhenDeletedBetween(t *testing.T) {
 		return event, func() bool { return false }
 	}
 
-	source := datastore.NewVoteCountSource(ts.URL)
+	host, port, schema := parseURL(ts.URL)
+	env := environment.ForTests(map[string]string{
+		"VOTE_HOST":     host,
+		"VOTE_PORT":     port,
+		"VOTE_PROTOCOL": schema,
+	})
+
+	source := newVoteCountSource(env)
 	go source.Connect(ctx, eventer, func(error) {})
 	msg <- `{"1":23,"2":42}`
 	msg <- `{"1":23}`
 	time.Sleep(time.Millisecond)
 
-	key := datastore.MustKey("poll/2/vote_count")
+	key := dskey.MustKey("poll/2/vote_count")
 	data, err := source.Get(ctx, key)
 	if err != nil {
 		t.Errorf("Get: %v", err)
@@ -244,9 +273,16 @@ func TestGetWithoutConnect(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := datastore.NewVoteCountSource(ts.URL)
+	host, port, schema := parseURL(ts.URL)
+	env := environment.ForTests(map[string]string{
+		"VOTE_HOST":     host,
+		"VOTE_PORT":     port,
+		"VOTE_PROTOCOL": schema,
+	})
 
-	key := datastore.MustKey("poll/1/vote_count")
+	source := newVoteCountSource(env)
+
+	key := dskey.MustKey("poll/1/vote_count")
 	data, err := source.Get(ctx, key)
 	if err != nil {
 		t.Errorf("Get: %v", err)
