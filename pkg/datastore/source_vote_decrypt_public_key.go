@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
 const votePubKeyPath = "/internal/vote/public_main_key"
@@ -19,7 +20,14 @@ type VoteDecryptPubKey struct {
 }
 
 // NewVoteDecryptPubKeySource initializes the object.
-func NewVoteDecryptPubKeySource(url string) *VoteDecryptPubKey {
+func NewVoteDecryptPubKeySource(lookup environment.Environmenter) *VoteDecryptPubKey {
+	url := fmt.Sprintf(
+		"%s://%s:%s",
+		envVoteProtocol.Value(lookup),
+		envVoteHost.Value(lookup),
+		envVotePort.Value(lookup),
+	)
+
 	return &VoteDecryptPubKey{
 		voteServiceURL: url,
 		client:         &http.Client{},
