@@ -13,6 +13,7 @@ import (
 )
 
 const dataSet = `---
+user/1/id: 1
 a/1:
 	a: a1
 	title: a1

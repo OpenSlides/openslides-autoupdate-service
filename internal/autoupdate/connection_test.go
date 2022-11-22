@@ -82,9 +82,9 @@ func TestConnectionEmptyData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds, bg := dsmock.NewMockDatastore(map[dskey.Key][]byte{
-		doesExistKey: []byte(`"Hello World"`),
-	})
+	ds, bg := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+		user/1/name: Hello World
+	`))
 	go bg(shutdownCtx, oserror.Handle)
 
 	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
@@ -235,9 +235,9 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds, bg := dsmock.NewMockDatastore(map[dskey.Key][]byte{
-		userNameKey: []byte(`"Hello World"`),
-	})
+	ds, bg := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	user/1/name: Hello World
+	`))
 	go bg(shutdownCtx, oserror.Handle)
 
 	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
@@ -273,9 +273,9 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 }
 
 func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
-	ds, _ := dsmock.NewMockDatastore(map[dskey.Key][]byte{
-		userNameKey: []byte(`"Hello World"`),
-	})
+	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	user/1/name: Hello World
+	`))
 
 	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictNotAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
@@ -350,6 +350,7 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 		organization/1/organization_tag_ids: [1,2]
 		organization_tag/1/id: 1
 		organization_tag/2/id: 2
+		user/1/name: Hello World
 	`))
 	go bg(shutdownCtx, oserror.Handle)
 
@@ -421,6 +422,7 @@ func TestKeyRequestedAgain(t *testing.T) {
 		organization/1/organization_tag_ids: [1,2]
 		organization_tag/1/id: 1
 		organization_tag/2/id: 2
+		user/1/name: Hello World
 	`))
 	go bg(shutdownCtx, oserror.Handle)
 

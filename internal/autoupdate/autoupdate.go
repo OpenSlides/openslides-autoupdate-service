@@ -130,7 +130,7 @@ type DataProvider func() (func(ctx context.Context) (map[dskey.Key][]byte, error
 func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (DataProvider, error) {
 	skipWorkpool, err := a.skipWorkpool(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("check if workpool should be used: %w", err)
 	}
 
 	c := &connection{
