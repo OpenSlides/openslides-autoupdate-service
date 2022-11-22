@@ -67,7 +67,7 @@ func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autou
 
 // Connecter returns an connect object.
 type Connecter interface {
-	Connect(userID int, kb autoupdate.KeysBuilder) autoupdate.DataProvider
+	Connect(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (autoupdate.DataProvider, error)
 	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[dskey.Key][]byte, error)
 }
 
@@ -223,7 +223,10 @@ func HandleHistoryInformation(mux *http.ServeMux, auth Authenticater, hi History
 }
 
 func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool) error {
-	next := connecter.Connect(uid, kb)
+	next, err := connecter.Connect(ctx, uid, kb)
+	if err != nil {
+		return fmt.Errorf("getting connection: %w", err)
+	}
 
 	for f, ok := next(); ok; f, ok = next() {
 		// This blocks, until there is new data. It also unblocks, when the
