@@ -172,7 +172,7 @@ func FuzzFromJSON(f *testing.F) {
 			t.Fatalf("building keysbuilder:\n%s\n%v", query, err)
 		}
 
-		if err := kb.Update(context.Background(), ds); err != nil {
+		if _, err := kb.Update(context.Background(), ds); err != nil {
 			var typedErr interface {
 				Type() string
 			}

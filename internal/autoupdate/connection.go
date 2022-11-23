@@ -107,18 +107,12 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 	recorder := dsrecorder.New(c.autoupdate.datastore)
 	restricter := c.autoupdate.restricter(recorder, c.uid)
 
-	oldKeys := c.kb.Keys()
-	if err := c.kb.Update(ctx, restricter); err != nil {
+	keys, err := c.kb.Update(ctx, restricter)
+	if err != nil {
 		return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
 	}
 
-	newKeys := c.kb.Keys()
-	removedKeys := notInSlice(oldKeys, newKeys)
-	for _, key := range removedKeys {
-		c.filter.delete(key)
-	}
-
-	data, err := restricter.Get(ctx, newKeys...)
+	data, err := restricter.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("get restricted data: %w", err)
 	}
