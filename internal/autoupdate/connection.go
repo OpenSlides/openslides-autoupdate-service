@@ -11,12 +11,13 @@ import (
 // connection holds the state of a client. It has to be created by colling
 // Connect() on a autoupdate.Service instance.
 type connection struct {
-	autoupdate *Autoupdate
-	uid        int
-	kb         KeysBuilder
-	tid        uint64
-	filter     filter
-	hotkeys    map[dskey.Key]struct{}
+	autoupdate   *Autoupdate
+	uid          int
+	kb           KeysBuilder
+	tid          uint64
+	filter       filter
+	skipWorkpool bool
+	hotkeys      map[dskey.Key]struct{}
 }
 
 // Next returns a function to fetch the next data.
@@ -95,11 +96,13 @@ func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, error)
 
 // updatedData returns all values from the datastore.getter.
 func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, error) {
-	done, err := c.autoupdate.pool.Wait(ctx)
-	if err != nil {
-		return nil, err
+	if !c.skipWorkpool {
+		done, err := c.autoupdate.pool.Wait(ctx)
+		if err != nil {
+			return nil, err
+		}
+		defer done()
 	}
-	defer done()
 
 	recorder := dsrecorder.New(c.autoupdate.datastore)
 	restricter := c.autoupdate.restricter(recorder, c.uid)

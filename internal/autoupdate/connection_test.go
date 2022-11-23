@@ -82,16 +82,20 @@ func TestConnectionEmptyData(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds, bg := dsmock.NewMockDatastore(map[dskey.Key][]byte{
-		doesExistKey: []byte(`"Hello World"`),
-	})
+	ds, bg := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+		user/1/name: Hello World
+	`))
 	go bg(shutdownCtx, oserror.Handle)
 
 	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
 	kb, _ := keysbuilder.FromKeys(doesExistKey.String(), doesNotExistKey.String())
 
 	t.Run("First response", func(t *testing.T) {
-		next, _ := s.Connect(1, kb)()
+		conn, err := s.Connect(shutdownCtx, 1, kb)
+		if err != nil {
+			t.Fatalf("creating conection: %v", err)
+		}
+		next, _ := conn()
 
 		data, err := next(context.Background())
 		if err != nil {
@@ -139,7 +143,11 @@ func TestConnectionEmptyData(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			next, _ := s.Connect(1, kb)()
+			conn, err := s.Connect(shutdownCtx, 1, kb)
+			if err != nil {
+				t.Fatalf("creating conection: %v", err)
+			}
+			next, _ := conn()
 
 			if _, err := next(context.Background()); err != nil {
 				t.Errorf("next(): %v", err)
@@ -148,7 +156,6 @@ func TestConnectionEmptyData(t *testing.T) {
 			ds.Send(tt.update)
 
 			var data map[dskey.Key][]byte
-			var err error
 			isBlocking := blocking(func() {
 				data, err = next(context.Background())
 			})
@@ -190,7 +197,12 @@ func TestConnectionEmptyData(t *testing.T) {
 	}
 
 	t.Run("exit->not exist-> not exist", func(t *testing.T) {
-		next, _ := s.Connect(1, kb)()
+		conn, err := s.Connect(shutdownCtx, 1, kb)
+		if err != nil {
+			t.Fatalf("creating conection: %v", err)
+		}
+		next, _ := conn()
+
 		if _, err := next(context.Background()); err != nil {
 			t.Errorf("next() returned an error: %v", err)
 		}
@@ -205,7 +217,6 @@ func TestConnectionEmptyData(t *testing.T) {
 		// Second time not exist
 		ds.Send(map[dskey.Key][]byte{doesExistKey: nil})
 
-		var err error
 		isBlocking := blocking(func() {
 			_, err = next(context.Background())
 		})
@@ -224,14 +235,20 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds, bg := dsmock.NewMockDatastore(map[dskey.Key][]byte{
-		userNameKey: []byte(`"Hello World"`),
-	})
+	ds, bg := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	user/1/name: Hello World
+	`))
 	go bg(shutdownCtx, oserror.Handle)
 
 	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
-	next, _ := s.Connect(1, kb)()
+
+	conn, err := s.Connect(shutdownCtx, 1, kb)
+	if err != nil {
+		t.Fatalf("creating conection: %v", err)
+	}
+	next, _ := conn()
+
 	if _, err := next(context.Background()); err != nil {
 		t.Errorf("next(): %v", err)
 	}
@@ -256,14 +273,18 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 }
 
 func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
-	ds, _ := dsmock.NewMockDatastore(map[dskey.Key][]byte{
-		userNameKey: []byte(`"Hello World"`),
-	})
+	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	user/1/name: Hello World
+	`))
 
 	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictNotAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 
-	next, _ := s.Connect(1, kb)()
+	conn, err := s.Connect(context.Background(), 1, kb)
+	if err != nil {
+		t.Fatalf("creating conection: %v", err)
+	}
+	next, _ := conn()
 
 	t.Run("first call", func(t *testing.T) {
 		var data map[dskey.Key][]byte
@@ -329,6 +350,7 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 		organization/1/organization_tag_ids: [1,2]
 		organization_tag/1/id: 1
 		organization_tag/2/id: 2
+		user/1/name: Hello World
 	`))
 	go bg(shutdownCtx, oserror.Handle)
 
@@ -353,7 +375,11 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 		t.Fatalf("Can not build request: %v", err)
 	}
 
-	next, _ := s.Connect(1, kb)()
+	conn, err := s.Connect(shutdownCtx, 1, kb)
+	if err != nil {
+		t.Fatalf("creating conection: %v", err)
+	}
+	next, _ := conn()
 
 	if _, err := next(shutdownCtx); err != nil {
 		t.Fatalf("Getting first data: %v", err)
@@ -396,6 +422,7 @@ func TestKeyRequestedAgain(t *testing.T) {
 		organization/1/organization_tag_ids: [1,2]
 		organization_tag/1/id: 1
 		organization_tag/2/id: 2
+		user/1/name: Hello World
 	`))
 	go bg(shutdownCtx, oserror.Handle)
 
@@ -420,7 +447,11 @@ func TestKeyRequestedAgain(t *testing.T) {
 		t.Fatalf("Can not build request: %v", err)
 	}
 
-	next, _ := s.Connect(1, kb)()
+	conn, err := s.Connect(shutdownCtx, 1, kb)
+	if err != nil {
+		t.Fatalf("creating conection: %v", err)
+	}
+	next, _ := conn()
 
 	// Receive the initial data
 	if _, err := next(shutdownCtx); err != nil {

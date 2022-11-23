@@ -127,14 +127,20 @@ type DataProvider func() (func(ctx context.Context) (map[dskey.Key][]byte, error
 // returns a Connection object, that can be used to receive the data.
 //
 // There is no need to "close" the returned DataProvider.
-func (a *Autoupdate) Connect(userID int, kb KeysBuilder) DataProvider {
-	c := &connection{
-		autoupdate: a,
-		uid:        userID,
-		kb:         kb,
+func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (DataProvider, error) {
+	skipWorkpool, err := a.skipWorkpool(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("check if workpool should be used: %w", err)
 	}
 
-	return c.Next
+	c := &connection{
+		autoupdate:   a,
+		uid:          userID,
+		kb:           kb,
+		skipWorkpool: skipWorkpool,
+	}
+
+	return c.Next, nil
 }
 
 // SingleData returns the data for the given keysbuilder without autoupdates.
@@ -300,6 +306,30 @@ func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []stri
 	}
 
 	return result, nil
+}
+
+// skipWorkpool desides, if a connection is allowed to skip the workpool.
+//
+// The current implementation returns true, if the user is a meeting admin in
+// one meeting.
+func (a *Autoupdate) skipWorkpool(ctx context.Context, userID int) (bool, error) {
+	ds := dsfetch.New(a.datastore)
+
+	meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
+
+	for _, mid := range meetingIDs {
+		gids := ds.User_GroupIDs(userID, mid).ErrorLater(ctx)
+		for _, gid := range gids {
+			if _, ok := ds.Group_AdminGroupForMeetingID(gid).ErrorLater(ctx); ok {
+				return true, nil
+			}
+		}
+	}
+	if err := ds.Err(); err != nil {
+		return false, fmt.Errorf("check if user %d is a meeting admin: %w", userID, err)
+	}
+
+	return false, nil
 }
 
 type permissionDeniedError struct {
