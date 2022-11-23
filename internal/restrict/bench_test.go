@@ -28,13 +28,14 @@ func BenchmarkAgendaItems(b *testing.B) {
 	if err != nil {
 		b.Fatalf("loading request: %v", err)
 	}
-	if err := kb.Update(context.Background(), getter); err != nil {
+	keys, err := kb.Update(context.Background(), getter)
+	if err != nil {
 		b.Fatalf("updateing keysbuilder: %v", err)
 	}
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		if _, err := getter.Get(context.Background(), kb.Keys()...); err != nil {
+		if _, err := getter.Get(context.Background(), keys...); err != nil {
 			b.Fatalf("getting keys: %v", err)
 		}
 	}
@@ -53,13 +54,15 @@ func BenchmarkRelationFields(b *testing.B) {
 	if err != nil {
 		b.Fatalf("loading request: %v", err)
 	}
-	if err := kb.Update(context.Background(), getter); err != nil {
+
+	keys, err := kb.Update(context.Background(), getter)
+	if err != nil {
 		b.Fatalf("updateing keysbuilder: %v", err)
 	}
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		if _, err := getter.Get(context.Background(), kb.Keys()...); err != nil {
+		if _, err := getter.Get(context.Background(), keys...); err != nil {
 			b.Fatalf("getting keys: %v", err)
 		}
 	}

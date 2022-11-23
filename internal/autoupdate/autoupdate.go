@@ -64,8 +64,7 @@ type Datastore interface {
 
 // KeysBuilder holds the keys that are requested by a user.
 type KeysBuilder interface {
-	Update(ctx context.Context, ds datastore.Getter) error
-	Keys() []dskey.Key
+	Update(ctx context.Context, ds datastore.Getter) ([]dskey.Key, error)
 }
 
 // RestrictMiddleware is a function that can restrict data.
@@ -154,11 +153,12 @@ func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder,
 		restricter = restrict.NewHistory(a.datastore, getter, userID)
 	}
 
-	if err := kb.Update(ctx, restricter); err != nil {
+	keys, err := kb.Update(ctx, restricter)
+	if err != nil {
 		return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
 	}
 
-	data, err := restricter.Get(ctx, kb.Keys()...)
+	data, err := restricter.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("get restricted data: %w", err)
 	}
