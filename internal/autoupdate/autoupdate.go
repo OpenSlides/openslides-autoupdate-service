@@ -313,6 +313,10 @@ func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []stri
 // The current implementation returns true, if the user is a meeting admin in
 // one meeting.
 func (a *Autoupdate) skipWorkpool(ctx context.Context, userID int) (bool, error) {
+	if userID == 0 {
+		return false, nil	
+	}
+	
 	ds := dsfetch.New(a.datastore)
 
 	meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
