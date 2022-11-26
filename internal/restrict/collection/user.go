@@ -269,9 +269,12 @@ func (User) RequiredObjects(ds *dsfetch.Fetch) []UserRequiredObject {
 }
 
 func (User) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
-	return eachCondition(userIDs, func(userID int) (bool, error) {
-		return mperms.UserID() == userID, nil
-	})
+	for _, userID := range userIDs {
+		if userID == mperms.UserID() {
+			return []int{userID}, nil
+		}
+	}
+	return nil, nil
 }
 
 func (User) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
