@@ -26,6 +26,12 @@ func (f *filter) filter(data map[dskey.Key][]byte) {
 		f.history = make(map[dskey.Key]uint64)
 	}
 
+	for k := range f.history {
+		if _, ok := data[k]; !ok {
+			delete(f.history, k)
+		}
+	}
+
 	for key, value := range data {
 		if len(value) == 0 {
 			// Value does not exist or user has no permission to see it.
@@ -49,11 +55,4 @@ func (f *filter) filter(data map[dskey.Key][]byte) {
 // empty returns true, if the filter was not called before.
 func (f *filter) empty() bool {
 	return f.history == nil
-}
-
-// delete removes the key k from the filter.
-//
-// The next time the filter is called with the key, it will not be filtered.
-func (f *filter) delete(k dskey.Key) {
-	delete(f.history, k)
 }
