@@ -287,21 +287,28 @@ func (User) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPe
 		return userIDs, nil
 	}
 
-	// TODO: group by many meeting.
+	// meetingManager is a cache in which meeting the request user is manager.
+	meetingManager := set.New[int]()
 	return eachCondition(userIDs, func(userID int) (bool, error) {
-		meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
+		meetingIDs, err := ds.User_GroupIDsTmpl(userID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("get meeting ids: %w", err)
+		}
+
 		for _, meetingID := range meetingIDs {
+			if meetingManager.Has(meetingID) {
+				return true, nil
+			}
+
 			perms, err := mperms.Meeting(ctx, meetingID)
 			if err != nil {
 				return false, fmt.Errorf("checking permissions of meeting %d: %w", meetingID, err)
 			}
 
 			if perms.Has(perm.UserCanManage) {
+				meetingManager.Add(meetingID)
 				return true, nil
 			}
-		}
-		if err := ds.Err(); err != nil {
-			return false, fmt.Errorf("checking manage in any meeting: %w", err)
 		}
 
 		return false, nil
