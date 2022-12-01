@@ -2151,6 +2151,12 @@ func (r *Fetch) Meeting_MotionsAmendmentsTextMode(meetingID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Meeting_MotionsBlockSlideColumns(meetingID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "motions_block_slide_columns"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_block_slide_columns"}] = v
+	return v
+}
+
 func (r *Fetch) Meeting_MotionsDefaultAmendmentWorkflowID(meetingID int) *ValueInt {
 	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "motions_default_amendment_workflow_id", required: true}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_default_amendment_workflow_id"}] = v
