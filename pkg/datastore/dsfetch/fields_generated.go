@@ -2151,6 +2151,12 @@ func (r *Fetch) Meeting_MotionsAmendmentsTextMode(meetingID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Meeting_MotionsBlockSlideColumns(meetingID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "motions_block_slide_columns"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_block_slide_columns"}] = v
+	return v
+}
+
 func (r *Fetch) Meeting_MotionsDefaultAmendmentWorkflowID(meetingID int) *ValueInt {
 	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "motions_default_amendment_workflow_id", required: true}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_default_amendment_workflow_id"}] = v
@@ -3315,6 +3321,12 @@ func (r *Fetch) Motion_ReferencedInMotionRecommendationExtensionIDs(motionID int
 	return v
 }
 
+func (r *Fetch) Motion_ReferencedInMotionStateExtensionIDs(motionID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "motion", id: motionID, field: "referenced_in_motion_state_extension_ids"}
+	r.requested[dskey.Key{Collection: "motion", ID: motionID, Field: "referenced_in_motion_state_extension_ids"}] = v
+	return v
+}
+
 func (r *Fetch) Motion_SequentialNumber(motionID int) *ValueInt {
 	v := &ValueInt{fetch: r, collection: "motion", id: motionID, field: "sequential_number", required: true}
 	r.requested[dskey.Key{Collection: "motion", ID: motionID, Field: "sequential_number"}] = v
@@ -3348,6 +3360,12 @@ func (r *Fetch) Motion_StartLineNumber(motionID int) *ValueInt {
 func (r *Fetch) Motion_StateExtension(motionID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "motion", id: motionID, field: "state_extension"}
 	r.requested[dskey.Key{Collection: "motion", ID: motionID, Field: "state_extension"}] = v
+	return v
+}
+
+func (r *Fetch) Motion_StateExtensionReferenceIDs(motionID int) *ValueStringSlice {
+	v := &ValueStringSlice{fetch: r, collection: "motion", id: motionID, field: "state_extension_reference_ids"}
+	r.requested[dskey.Key{Collection: "motion", ID: motionID, Field: "state_extension_reference_ids"}] = v
 	return v
 }
 
