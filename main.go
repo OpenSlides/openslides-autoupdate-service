@@ -138,6 +138,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 		datastore.WithVoteCount(),
 		datastore.WithHistory(),
 		datastore.WithProjector(),
+		datastore.WithVoteDecryptPubKeySource(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("init datastore: %w", err)

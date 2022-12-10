@@ -58,3 +58,12 @@ func WithProjector() Option {
 		return nil, nil
 	}
 }
+
+// WithVoteDecryptPubKeySource adds the field organization/vote_decrypt_public_main_key
+func WithVoteDecryptPubKeySource() Option {
+	return func(ds *Datastore, lookup environment.Environmenter) (func(context.Context, func(error)), error) {
+		source := NewVoteDecryptPubKeySource(lookup)
+		ds.keySource["organization/vote_decrypt_public_main_key"] = source
+		return nil, nil
+	}
+}
