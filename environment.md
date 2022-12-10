@@ -17,11 +17,11 @@ The Service uses the following environment variables:
 * `DATASTORE_TIMEOUT`: Time until a request to the datastore times out. The default is `3s`.
 * `DATASTORE_MAX_PARALLEL_KEYS`: Max keys that are send in one request to the datastore. The default is `1000`.
 * `DATASTORE_DATABASE_USER`: Postgres User. The default is `openslides`.
-* `OPENSLIDES_DEVELOPMENT`: If set, the service uses the default secrets. The default is `false`.
-* `SECRETS_PATH`: Path where the secrets are stored. The default is `/run/secrets`.
 * `DATASTORE_DATABASE_HOST`: Postgres Host. The default is `localhost`.
 * `DATASTORE_DATABASE_PORT`: Postgres Post. The default is `5432`.
 * `DATASTORE_DATABASE_NAME`: Postgres Database. The default is `openslides`.
+* `OPENSLIDES_DEVELOPMENT`: If set, the service uses the default secrets. The default is `false`.
+* `SECRETS_PATH`: Path where the secrets are stored. The default is `/run/secrets`.
 * `AUTH_PROTOCOL`: Protocol of the auth service. The default is `http`.
 * `AUTH_HOST`: Host of the auth service. The default is `localhost`.
 * `AUTH_PORT`: Port of the auth service. The default is `9004`.

@@ -11,12 +11,13 @@ import (
 // connection holds the state of a client. It has to be created by colling
 // Connect() on a autoupdate.Service instance.
 type connection struct {
-	autoupdate *Autoupdate
-	uid        int
-	kb         KeysBuilder
-	tid        uint64
-	filter     filter
-	hotkeys    map[dskey.Key]struct{}
+	autoupdate   *Autoupdate
+	uid          int
+	kb           KeysBuilder
+	tid          uint64
+	filter       filter
+	skipWorkpool bool
+	hotkeys      map[dskey.Key]struct{}
 }
 
 // Next returns a function to fetch the next data.
@@ -95,27 +96,23 @@ func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, error)
 
 // updatedData returns all values from the datastore.getter.
 func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, error) {
-	done, err := c.autoupdate.pool.Wait(ctx)
-	if err != nil {
-		return nil, err
+	if !c.skipWorkpool {
+		done, err := c.autoupdate.pool.Wait(ctx)
+		if err != nil {
+			return nil, err
+		}
+		defer done()
 	}
-	defer done()
 
 	recorder := dsrecorder.New(c.autoupdate.datastore)
 	restricter := c.autoupdate.restricter(recorder, c.uid)
 
-	oldKeys := c.kb.Keys()
-	if err := c.kb.Update(ctx, restricter); err != nil {
+	keys, err := c.kb.Update(ctx, restricter)
+	if err != nil {
 		return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
 	}
 
-	newKeys := c.kb.Keys()
-	removedKeys := notInSlice(oldKeys, newKeys)
-	for _, key := range removedKeys {
-		c.filter.delete(key)
-	}
-
-	data, err := restricter.Get(ctx, newKeys...)
+	data, err := restricter.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("get restricted data: %w", err)
 	}

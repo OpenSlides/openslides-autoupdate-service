@@ -14,14 +14,17 @@ import (
 )
 
 func getConnection() (func(context.Context) (map[dskey.Key][]byte, error), *dsmock.MockDatastore, func(context.Context, func(error))) {
-	datastore, dsBackground := dsmock.NewMockDatastore(map[dskey.Key][]byte{
-		userNameKey: []byte(`"Hello World"`),
-	})
+	datastore, dsBackground := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	user/1/name: Hello World
+	`))
 
 	lookup := environment.ForTests{}
 	s, _, _ := autoupdate.New(lookup, datastore, RestrictAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
-	next := s.Connect(1, kb)
+	next, err := s.Connect(context.Background(), 1, kb)
+	if err != nil {
+		panic(err)
+	}
 
 	f, _ := next()
 

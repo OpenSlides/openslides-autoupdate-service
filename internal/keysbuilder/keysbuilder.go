@@ -23,7 +23,6 @@ type Builder struct {
 	mu sync.Mutex
 
 	bodies []body
-	keys   []dskey.Key
 }
 
 // FromKeys creates a keysbuilder from a list of keys.
@@ -72,19 +71,12 @@ func FromBuilders(builders ...*Builder) *Builder {
 // tree.
 //
 // It is not allowed to call builder.Keys() after Update returned an error.
-func (b *Builder) Update(ctx context.Context, getter datastore.Getter) (err error) {
+func (b *Builder) Update(ctx context.Context, getter datastore.Getter) ([]dskey.Key, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	defer func() {
-		// Reset keys if an error happens
-		if err != nil {
-			b.keys = b.keys[:0]
-		}
-	}()
-
 	if len(b.bodies) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Start with all keys from all the bodies.
@@ -93,13 +85,14 @@ func (b *Builder) Update(ctx context.Context, getter datastore.Getter) (err erro
 		body.keys(process)
 	}
 
-	b.keys = b.keys[:0]
+	var keys []dskey.Key
+
 	var needed []dskey.Key
 	processed := make(map[dskey.Key]fieldDescription)
 	for {
 		// Get all keys and descriptions
 		for key, description := range process {
-			b.keys = append(b.keys, key)
+			keys = append(keys, key)
 			if description == nil {
 				continue
 			}
@@ -115,7 +108,7 @@ func (b *Builder) Update(ctx context.Context, getter datastore.Getter) (err erro
 		// Get values for all special (not none) fields.
 		data, err := getter.Get(ctx, needed...)
 		if err != nil {
-			return fmt.Errorf("load needed keys: %w", err)
+			return nil, fmt.Errorf("load needed keys: %w", err)
 		}
 
 		// Clear process and needed without freeing the memory.
@@ -135,9 +128,9 @@ func (b *Builder) Update(ctx context.Context, getter datastore.Getter) (err erro
 				var invalidErr *json.UnmarshalTypeError
 				if errors.As(err, &invalidErr) {
 					// value has wrong type.
-					return ValueError{key: key, gotType: invalidErr.Value, expectType: invalidErr.Type, err: err}
+					return nil, ValueError{key: key, gotType: invalidErr.Value, expectType: invalidErr.Type, err: err}
 				}
-				return err
+				return nil, err
 			}
 		}
 
@@ -146,17 +139,7 @@ func (b *Builder) Update(ctx context.Context, getter datastore.Getter) (err erro
 			delete(processed, k)
 		}
 	}
-	return nil
-}
-
-// Keys returns the keys.
-//
-// Make sure to call Update() or Keys() will return an empty list.
-func (b *Builder) Keys() []dskey.Key {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	return append(b.keys[:0:0], b.keys...)
+	return keys, nil
 }
 
 // buildGenericKey returns a valid key when the collection and id are already
