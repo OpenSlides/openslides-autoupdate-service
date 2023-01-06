@@ -171,7 +171,7 @@ func HasOrganizationManagementLevel(ctx context.Context, ds *dsfetch.Fetch, user
 		return false, fmt.Errorf("getting oml of user %d: %w", userID, err)
 	}
 
-	switch OrganizationManagementLevel(oml) {
+	switch OrganizationManagementLevel(OrganizationManagementFromString(oml)) {
 	case OMLSuperadmin:
 		return true, nil
 

@@ -21,22 +21,60 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
-// Middleware can be used as a datastore.Getter that restrict the data for a
-// user.
-func Middleware(getter datastore.Getter, uid int) datastore.Getter {
-	return restricter{
+// attributes is are flags that each field has. A user is allowed to see a
+// field, if he has one of the attribute-fields.
+type attributes struct {
+	// globalPermission is either a perm.OrganizationManagement value or 255 for "not even superadmin"
+	globalPermission byte
+
+	// groupIDs are groups, that can see the field. Groups are meeting specific.
+	groupIDs []int
+
+	// userIDs are list from users that can see the field but do not have the
+	// globalPermission or are not in the groups.
+	userIDs []int
+}
+
+// Restricter holds attributes for each restriction mode.
+type Restricter struct {
+	fieldAttributes map[dskey.Key]attributes
+}
+
+// New initializes the restricter.
+func New() *Restricter {
+	return &Restricter{
+		// TODO: should the map use pointers to attributes, a attribute can be shared?
+		fieldAttributes: make(map[dskey.Key]attributes),
+	}
+}
+
+// InsertFields adds new fields.
+func (r *Restricter) InsertFields(ds datastore.Getter, values map[dskey.Key][]byte) error {
+	// TODO
+	return nil
+}
+
+// UpdateFields updates the attribute fields.
+func (r *Restricter) UpdateFields(ds datastore.Getter, values map[dskey.Key][]byte) error {
+	// TODO
+	return nil
+}
+
+// Getter returns a datastore getter that returns restricted data.
+func (r *Restricter) Getter(getter datastore.Getter, uid int) datastore.Getter {
+	return userRestricter{
 		getter: getter,
 		uid:    uid,
 	}
 }
 
-type restricter struct {
+type userRestricter struct {
 	getter datastore.Getter
 	uid    int
 }
 
 // Get returns restricted data.
-func (r restricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+func (r userRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	data, err := r.getter.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("getting data: %w", err)

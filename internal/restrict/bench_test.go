@@ -20,7 +20,7 @@ func BenchmarkAgendaItems(b *testing.B) {
 		b.Fatalf("init db: %v", err)
 	}
 
-	getter := restrict.Middleware(db, 4)
+	getter := restrict.New().Getter(db, 4)
 
 	request := `[{"collection":"meeting","ids":[2],"fields":{"id":null,"agenda_item_ids":{"type":"relation-list","collection":"agenda_item","fields":{"item_number":null,"comment":null,"closed":null,"type":null,"is_hidden":null,"is_internal":null,"duration":null,"weight":null,"level":null,"parent_id":null,"child_ids":null,"meeting_id":null,"tag_ids":null,"content_object_id":null,"id":null}},"speaker_ids":{"type":"relation-list","collection":"speaker","fields":{"begin_time":null,"end_time":null,"point_of_order":null,"speech_state":null,"weight":null,"note":null,"user_id":null,"id":null}},"list_of_speakers_ids":{"type":"relation-list","collection":"list_of_speakers","fields":{"closed":null,"content_object_id":null,"speaker_ids":null,"id":null}}}}]`
 
@@ -47,7 +47,7 @@ func BenchmarkRelationFields(b *testing.B) {
 		b.Fatalf("init db: %v", err)
 	}
 
-	getter := restrict.Middleware(db, 4)
+	getter := restrict.New().Getter(db, 4)
 	request := `[{"collection":"meeting","ids":[1],"fields":{"id":null,"motion_ids":{"type":"relation-list","collection":"motion","fields":{"sequential_number":null,"title":null,"number":null,"created":null,"forwarded":null,"sort_weight":null,"start_line_number":null,"category_weight":null,"lead_motion_id":null,"amendment_ids":null,"submitter_ids":null,"supporter_ids":null,"reason":null,"recommendation_id":null,"tag_ids":null,"personal_note_ids":null,"block_id":null,"category_id":null,"comment_ids":null,"modified_final_version":null,"state_extension":null,"recommendation_extension":null,"list_of_speakers_id":null,"agenda_item_id":null,"amendment_paragraph_$":{"type":"template"},"origin_id":null,"all_origin_ids":null,"derived_motion_ids":null,"poll_ids":null,"sort_parent_id":null,"state_id":null,"workflow_id":null,"text":null,"change_recommendation_ids":null,"attachment_ids":null,"id":null}}}}]`
 
 	kb, err := keysbuilder.ManyFromJSON(strings.NewReader(request))

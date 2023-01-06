@@ -52,33 +52,41 @@ func blockingTime(wait time.Duration, f func()) bool {
 	}
 }
 
-// RestrictAllowed is a restricter that allows everything
-func RestrictAllowed(getter datastore.Getter, uid int) datastore.Getter {
-	return mockRestricter{getter, true}
-}
-
-// RestrictNotAllowed is a restricter that removes everythin
-func RestrictNotAllowed(getter datastore.Getter, uid int) datastore.Getter {
-	return mockRestricter{getter, false}
-}
+var RestrictAllowed = mockRestricter{true}
+var RestrictNotAllowed = mockRestricter{false}
 
 type mockRestricter struct {
-	getter datastore.Getter
-	allow  bool
+	allow bool
 }
 
-func (r mockRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
-	data, err := r.getter.Get(ctx, keys...)
-	if err != nil {
-		return nil, fmt.Errorf("getting data: %w", err)
-	}
+func (r mockRestricter) Getter(ds datastore.Getter, uid int) datastore.Getter {
+	return getterfunc(func(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+		data, err := ds.Get(ctx, keys...)
+		if err != nil {
+			return nil, fmt.Errorf("getting data: %w", err)
+		}
 
-	if r.allow {
+		if r.allow {
+			return data, nil
+		}
+
+		for k := range data {
+			data[k] = nil
+		}
 		return data, nil
-	}
+	})
+}
 
-	for k := range data {
-		data[k] = nil
-	}
-	return data, nil
+func (r mockRestricter) InsertFields(datastore.Getter, map[dskey.Key][]byte) error {
+	return nil
+}
+
+func (r mockRestricter) UpdateFields(datastore.Getter, map[dskey.Key][]byte) error {
+	return nil
+}
+
+type getterfunc func(context.Context, ...dskey.Key) (map[dskey.Key][]byte, error)
+
+func (g getterfunc) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+	return g(ctx, keys...)
 }

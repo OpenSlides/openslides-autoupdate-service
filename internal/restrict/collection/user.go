@@ -411,7 +411,7 @@ func (u User) modeH(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 		return nil, fmt.Errorf("getting own managament: %w", err)
 	}
 
-	ownLevel := perm.OrganizationManagementLevel(ownOrgaManagementLevel)
+	ownLevel := perm.OrganizationManagementFromString(ownOrgaManagementLevel)
 
 	fromD, err := u.modeD(ctx, ds, mperms, userIDs...)
 	if err != nil {
@@ -425,7 +425,7 @@ func (u User) modeH(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 			return nil, fmt.Errorf("getting orga managament level for user %d: %w", userID, err)
 		}
 
-		otherLevel := perm.OrganizationManagementLevel(requestedOrgaManagementLevel)
+		otherLevel := perm.OrganizationManagementFromString(requestedOrgaManagementLevel)
 
 		if higherThenOrgaManagement(ownLevel, otherLevel) {
 			allowed = append(allowed, userID)

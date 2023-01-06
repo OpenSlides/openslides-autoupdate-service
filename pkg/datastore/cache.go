@@ -10,7 +10,7 @@ import (
 )
 
 // cacheSetFunc is a function to update cache keys.
-type cacheSetFunc func(keys []dskey.Key, set func(map[dskey.Key][]byte)) error
+type cacheSetFunc func(keys []dskey.Key, set func(map[dskey.Key][]byte) error) error
 
 // cache stores the values to the datastore.
 //
@@ -91,7 +91,7 @@ func (c *cache) fetchMissing(ctx context.Context, keys []dskey.Key, set cacheSet
 	// when the context is done. Other calls could also request it.
 	errChan := make(chan error, 1)
 	go func() {
-		err := set(missingKeys, func(data map[dskey.Key][]byte) {
+		err := set(missingKeys, func(data map[dskey.Key][]byte) error {
 			for key, value := range data {
 				if string(value) == "null" {
 					data[key] = nil
@@ -99,6 +99,7 @@ func (c *cache) fetchMissing(ctx context.Context, keys []dskey.Key, set cacheSet
 			}
 
 			c.data.SetIfPending(data)
+			return nil
 		})
 
 		if err != nil {

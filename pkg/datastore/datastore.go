@@ -59,7 +59,9 @@ type Datastore struct {
 	defaultSource Source
 	keySource     map[string]Source
 
-	changeListeners  []func(map[dskey.Key][]byte) error
+	updateListeners []func(map[dskey.Key][]byte) error
+	insertListeners []func(map[dskey.Key][]byte) error
+
 	calculatedFields map[string]func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error)
 	calculatedKeys   map[dskey.Key]string
 
@@ -119,14 +121,32 @@ func New(lookup environment.Environmenter, mb Updater, options ...Option) (*Data
 // If a key does not exist, the value nil is returned for that key.
 func (d *Datastore) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	atomic.AddUint64(&d.metricGetHitCount, 1)
-	values, err := d.cache.GetOrSet(ctx, keys, func(keys []dskey.Key, set func(map[dskey.Key][]byte)) error {
-		return d.loadKeys(keys, set)
+	values, err := d.cache.GetOrSet(ctx, keys, func(keys []dskey.Key, set func(map[dskey.Key][]byte) error) error {
+		return d.loadKeys(keys, d.insertValue(set))
 	})
 	if err != nil {
 		return nil, fmt.Errorf("getOrSet`: %w", err)
 	}
 
 	return values, nil
+}
+
+// insertValue is a wrapper around the 'set'-function from the cache.
+//
+// It is called every time a value is fetched for the first time.
+//
+// TODO: This ins only needed because of calculated fields. If calculated fields are removed, then
+// the set function in d.loadKeys can be replaced by a return value.
+func (d *Datastore) insertValue(f func(map[dskey.Key][]byte) error) func(map[dskey.Key][]byte) error {
+	return func(values map[dskey.Key][]byte) error {
+		for _, listener := range d.insertListeners {
+			if err := listener(values); err != nil {
+				return fmt.Errorf("insertlistener: %w", err)
+			}
+		}
+
+		return f(values)
+	}
 }
 
 // GetPosition is like Get() but returns the data at a specific position.
@@ -140,7 +160,13 @@ func (d *Datastore) GetPosition(ctx context.Context, position int, keys ...dskey
 // RegisterChangeListener registers a function that is called whenever an
 // datastore update happens.
 func (d *Datastore) RegisterChangeListener(f func(map[dskey.Key][]byte) error) {
-	d.changeListeners = append(d.changeListeners, f)
+	d.updateListeners = append(d.updateListeners, f)
+}
+
+// RegisterInsertListener registers a function that is called whenever an
+// value is fetched for the first time.
+func (d *Datastore) RegisterInsertListener(f func(map[dskey.Key][]byte) error) {
+	d.insertListeners = append(d.insertListeners, f)
 }
 
 // RegisterCalculatedField creates a virtual field that is not in the datastore
@@ -226,7 +252,7 @@ func (d *Datastore) listenOnUpdates(ctx context.Context, errHandler func(error))
 			data[key] = bs
 		}
 
-		for _, f := range d.changeListeners {
+		for _, f := range d.updateListeners {
 			if err := f(data); err != nil {
 				errHandler(err)
 			}
@@ -256,7 +282,7 @@ func (d *Datastore) splitCalculatedKeys(keys []dskey.Key) (map[dskey.Key]string,
 	return calculated, normal
 }
 
-func (d *Datastore) loadKeys(keys []dskey.Key, set func(map[dskey.Key][]byte)) error {
+func (d *Datastore) loadKeys(keys []dskey.Key, set func(map[dskey.Key][]byte) error) error {
 	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
 	for source, keys := range normalKeys {
 		data, err := source.Get(context.Background(), keys...)

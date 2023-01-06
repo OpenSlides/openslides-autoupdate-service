@@ -53,6 +53,7 @@ var (
 type Datastore interface {
 	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
 	GetPosition(ctx context.Context, position int, keys ...dskey.Key) (map[dskey.Key][]byte, error)
+	RegisterInsertListener(f func(map[dskey.Key][]byte) error)
 	RegisterChangeListener(f func(map[dskey.Key][]byte) error)
 	ResetCache()
 	RegisterCalculatedField(
@@ -67,15 +68,19 @@ type KeysBuilder interface {
 	Update(ctx context.Context, ds datastore.Getter) ([]dskey.Key, error)
 }
 
-// RestrictMiddleware is a function that can restrict data.
-type RestrictMiddleware func(getter datastore.Getter, uid int) datastore.Getter
+// Restricter filters data for a user.
+type Restricter interface {
+	Getter(datastore.Getter, int) datastore.Getter
+	InsertFields(datastore.Getter, map[dskey.Key][]byte) error
+	UpdateFields(datastore.Getter, map[dskey.Key][]byte) error
+}
 
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
 // with autoupdate.New().
 type Autoupdate struct {
 	datastore  Datastore
 	topic      *topic.Topic[dskey.Key]
-	restricter RestrictMiddleware
+	restricter Restricter
 	pool       *workPool
 }
 
@@ -83,7 +88,7 @@ type Autoupdate struct {
 //
 // You should call `go a.PruneOldData()` and `go a.ResetCache()` after creating
 // the service.
-func New(lookup environment.Environmenter, ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context.Context, func(error)), error) {
+func New(lookup environment.Environmenter, ds Datastore, restricter Restricter) (*Autoupdate, func(context.Context, func(error)), error) {
 	workers, err := strconv.Atoi(envConcurentWorker.Value(lookup))
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid value for %s: %w", envConcurentWorker.Key, err)
@@ -102,6 +107,10 @@ func New(lookup environment.Environmenter, ds Datastore, restricter RestrictMidd
 
 	// Update the topic when an data update is received.
 	a.datastore.RegisterChangeListener(func(data map[dskey.Key][]byte) error {
+		if err := a.restricter.UpdateFields(ds, data); err != nil {
+			return fmt.Errorf("update restricter: %w", err)
+		}
+
 		keys := make([]dskey.Key, 0, len(data))
 		for k := range data {
 			keys = append(keys, k)
@@ -109,6 +118,10 @@ func New(lookup environment.Environmenter, ds Datastore, restricter RestrictMidd
 
 		a.topic.Publish(keys...)
 		return nil
+	})
+
+	a.datastore.RegisterInsertListener(func(data map[dskey.Key][]byte) error {
+		return a.restricter.InsertFields(ds, data)
 	})
 
 	background := func(ctx context.Context, errorHandler func(error)) {
@@ -146,7 +159,7 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (D
 //
 // The attribute position can be used to get data from the history.
 func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder, position int) (map[dskey.Key][]byte, error) {
-	var restricter datastore.Getter = a.restricter(a.datastore, userID)
+	var restricter datastore.Getter = a.restricter.Getter(a.datastore, userID)
 
 	if position != 0 {
 		getter := datastore.NewGetPosition(a.datastore, position)
@@ -286,7 +299,7 @@ func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []stri
 		}
 	}
 
-	values, err := a.restricter(a.datastore, userID).Get(ctx, keys...)
+	values, err := a.restricter.Getter(a.datastore, userID).Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("getting data: %w", err)
 	}

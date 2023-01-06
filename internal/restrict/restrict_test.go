@@ -76,7 +76,7 @@ func TestRestrict(t *testing.T) {
 	unknown_collection/1/field: 404
 	`))
 
-	restricter := restrict.Middleware(ds, 1)
+	restricter := restrict.New().Getter(ds, 1)
 
 	keys := []dskey.Key{
 		dskey.MustKey("agenda_item/1/item_number"),
@@ -142,7 +142,7 @@ func TestRestrictSuperAdmin(t *testing.T) {
 	personal_note/2/user_id: 2
 	`))
 
-	restricter := restrict.Middleware(ds, 1)
+	restricter := restrict.New().Getter(ds, 1)
 
 	keys := []dskey.Key{
 		dskey.MustKey("personal_note/1/id"),
@@ -181,7 +181,7 @@ func TestCorruptedDatastore(t *testing.T) {
 			- projector.can_see
 	`))
 
-	restricter := restrict.Middleware(ds, 1)
+	restricter := restrict.New().Getter(ds, 1)
 
 	var buf bytes.Buffer
 	log.SetOutput(&buf)

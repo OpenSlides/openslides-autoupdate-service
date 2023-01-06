@@ -149,7 +149,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	backgroundTasks = append(backgroundTasks, authBackground)
 
 	// Autoupdate Service.
-	auService, auBackground, err := autoupdate.New(lookup, datastoreService, restrict.Middleware)
+	auService, auBackground, err := autoupdate.New(lookup, datastoreService, restrict.New())
 	if err != nil {
 		return nil, fmt.Errorf("init autoupdate: %w", err)
 	}
