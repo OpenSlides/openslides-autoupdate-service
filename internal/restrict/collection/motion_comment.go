@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -44,75 +43,76 @@ func (m MotionComment) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int)
 func (m MotionComment) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return m.see
+		// TODO: Implement me
+		return Allways(m.name, mode)
 	}
 	return nil
 }
 
-func (m MotionComment) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionCommentIDs ...int) ([]int, error) {
-	return eachRelationField(ctx, ds.MotionComment_SectionID, motionCommentIDs, func(commentSectionID int, ids []int) ([]int, error) {
-		commentSectionMeetingID, err := ds.MotionCommentSection_MeetingID(commentSectionID).Value(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("get meeting id from comment section %d: %w", commentSectionID, err)
-		}
+// func (m MotionComment) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionCommentIDs ...int) error {
+// 	return eachRelationField(ctx, ds.MotionComment_SectionID, motionCommentIDs, func(commentSectionID int, ids []int) error {
+// 		commentSectionMeetingID, err := ds.MotionCommentSection_MeetingID(commentSectionID).Value(ctx)
+// 		if err != nil {
+// 			return fmt.Errorf("get meeting id from comment section %d: %w", commentSectionID, err)
+// 		}
 
-		perms, err := mperms.Meeting(ctx, commentSectionMeetingID)
-		if err != nil {
-			return nil, fmt.Errorf("getting permissions: %w", err)
-		}
+// 		perms, err := mperms.Meeting(ctx, commentSectionMeetingID)
+// 		if err != nil {
+// 			return fmt.Errorf("getting permissions: %w", err)
+// 		}
 
-		seeSectionAs, err := MotionCommentSection{}.seeAs(ctx, ds, perms, commentSectionID)
-		if err != nil {
-			return nil, fmt.Errorf("checking motion comment section %d can see: %w", commentSectionID, err)
-		}
+// 		seeSectionAs, err := MotionCommentSection{}.seeAs(ctx, ds, perms, commentSectionID)
+// 		if err != nil {
+// 			return  fmt.Errorf("checking motion comment section %d can see: %w", commentSectionID, err)
+// 		}
 
-		if seeSectionAs == 0 {
-			return nil, nil
-		}
+// 		if seeSectionAs == 0 {
+// 			return  nil
+// 		}
 
-		allowed, err := eachCondition(ids, func(motionCommentID int) (bool, error) {
-			motionID, err := ds.MotionComment_MotionID(motionCommentID).Value(ctx)
-			if err != nil {
-				return false, fmt.Errorf("getting motion id from comment %d: %w", motionCommentID, err)
-			}
+// 		allowed, err := eachCondition(ids, func(motionCommentID int) (bool, error) {
+// 			motionID, err := ds.MotionComment_MotionID(motionCommentID).Value(ctx)
+// 			if err != nil {
+// 				return false, fmt.Errorf("getting motion id from comment %d: %w", motionCommentID, err)
+// 			}
 
-			// TODO: Do this outside of section
-			seeMotion, err := Motion{}.see(ctx, ds, mperms, motionID)
-			if err != nil {
-				return false, fmt.Errorf("checking motion %d can see: %w", motionID, err)
-			}
+// 			// TODO: Do this outside of section
+// 			seeMotion, err := Motion{}.see(ctx, ds, mperms, motionID)
+// 			if err != nil {
+// 				return false, fmt.Errorf("checking motion %d can see: %w", motionID, err)
+// 			}
 
-			if len(seeMotion) == 0 {
-				return false, nil
-			}
+// 			if len(seeMotion) == 0 {
+// 				return false, nil
+// 			}
 
-			if seeSectionAs == 1 {
-				return true, nil
-			}
+// 			if seeSectionAs == 1 {
+// 				return true, nil
+// 			}
 
-			submitterIDs, err := ds.Motion_SubmitterIDs(motionID).Value(ctx)
-			if err != nil {
-				return false, fmt.Errorf("getting motion submitter ids for motion %d: %w", motionID, err)
-			}
+// 			submitterIDs, err := ds.Motion_SubmitterIDs(motionID).Value(ctx)
+// 			if err != nil {
+// 				return false, fmt.Errorf("getting motion submitter ids for motion %d: %w", motionID, err)
+// 			}
 
-			for _, submitterID := range submitterIDs {
-				userID, err := ds.MotionSubmitter_UserID(submitterID).Value(ctx)
-				if err != nil {
-					return false, fmt.Errorf("getting user id for submitter %d: %w", submitterID, err)
-				}
+// 			for _, submitterID := range submitterIDs {
+// 				userID, err := ds.MotionSubmitter_UserID(submitterID).Value(ctx)
+// 				if err != nil {
+// 					return false, fmt.Errorf("getting user id for submitter %d: %w", submitterID, err)
+// 				}
 
-				if userID == mperms.UserID() {
-					return true, nil
-				}
-			}
+// 				if userID == mperms.UserID() {
+// 					return true, nil
+// 				}
+// 			}
 
-			return false, nil
-		})
+// 			return false, nil
+// 		})
 
-		if err != nil {
-			return nil, fmt.Errorf("checking motion can see: %w", err)
-		}
+// 		if err != nil {
+// 			return nil, fmt.Errorf("checking motion can see: %w", err)
+// 		}
 
-		return allowed, nil
-	})
-}
+// 		return allowed, nil
+// 	})
+// }

@@ -44,34 +44,37 @@ func (m MotionBlock) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionBlock) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionBlockIDs ...int) ([]int, error) {
-	return eachMeeting(ctx, ds, m, motionBlockIDs, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+func (m MotionBlock) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionBlockIDs ...int) error {
+	return eachMeeting(ctx, ds, m, motionBlockIDs, func(meetingID int, ids []int) error {
+		groupMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {
-			return nil, fmt.Errorf("getting permissions: %w", err)
+			return fmt.Errorf("groupMap: %w", err)
 		}
 
-		if perms.Has(perm.MotionCanManage) {
-			return ids, nil
+		attrInternal := Attributes{
+			GlobalPermission: byte(perm.OMLSuperadmin),
+			GroupIDs:         groupMap[perm.MotionCanManage],
 		}
 
-		if !perms.Has(perm.MotionCanSee) {
-			return nil, nil
+		attrPublic := Attributes{
+			GlobalPermission: byte(perm.OMLSuperadmin),
+			GroupIDs:         groupMap[perm.MotionCanSee],
 		}
 
-		allowed, err := eachCondition(ids, func(motionBlockID int) (bool, error) {
+		for _, motionBlockID := range motionBlockIDs {
 			internal, err := ds.MotionBlock_Internal(motionBlockID).Value(ctx)
 			if err != nil {
-				return false, fmt.Errorf("getting internal: %w", err)
+				return fmt.Errorf("getting internal state of motion block %d: %w", motionBlockID, err)
 			}
 
-			return !internal, nil
-		})
+			attr := &attrPublic
+			if internal {
+				attr = &attrInternal
+			}
 
-		if err != nil {
-			return nil, fmt.Errorf("checking internal state: %w", err)
+			attrMap.Add(m.name, motionBlockID, "A", attr)
 		}
 
-		return allowed, nil
+		return nil
 	})
 }

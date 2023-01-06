@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // PersonalNote handels restriction for the personal_node collection.
@@ -43,16 +44,17 @@ func (p PersonalNote) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p PersonalNote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, personalNoteIDs ...int) ([]int, error) {
-	return eachRelationField(ctx, ds.PersonalNote_UserID, personalNoteIDs, func(userID int, ids []int) ([]int, error) {
-		if mperms.UserID() == userID {
-			return ids, nil
+func (p PersonalNote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, personalNoteIDs ...int) error {
+	for _, id := range personalNoteIDs {
+		userID, err := ds.PersonalNote_UserID(id).Value(ctx)
+		if err != nil {
+			return fmt.Errorf("get user id: %w", err)
 		}
-		return nil, nil
-	})
-}
 
-// SuperAdmin restricts the super admin.
-func (p PersonalNote) SuperAdmin(mode string) FieldRestricter {
-	return p.Modes(mode)
+		attrMap.Add(p.name, id, "A", &Attributes{
+			GlobalPermission: 255,
+			UserIDs:          set.New(userID),
+		})
+	}
+	return nil
 }

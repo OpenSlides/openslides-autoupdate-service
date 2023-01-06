@@ -10,6 +10,7 @@ type {{.TypeName}} struct {
 	isNull   bool
 
 	lazies []*{{.GoType}}
+	laziesExists []*bool
 
 	fetch *Fetch
 }
@@ -49,6 +50,15 @@ type {{.TypeName}} struct {
 func (v *{{.TypeName}}) Lazy(value *{{.GoType}}) {
 	v.lazies = append(v.lazies, value)
 }
+
+
+{{if .MaybeType}}
+	// LazyExists is like Lazy but for the question, if the valu is set.
+	func (v *{{.TypeName}}) LazyExists(value *bool) {
+		v.laziesExists = append(v.laziesExists, value)
+	}
+{{end}}
+
 
 {{if not .MaybeType}}
 	// ErrorLater is like Value but does not return an error.
@@ -129,6 +139,10 @@ func (v *{{.TypeName}}) execute(p []byte) error {
 
 	for i := 0; i < len(v.lazies); i++ {
 		*v.lazies[i] = v.value
+	}
+
+	for i:= 0; i< len(v.laziesExists);i++ {
+		*v.laziesExists[i]=v.isNull
 	}
 
 	v.executed = true

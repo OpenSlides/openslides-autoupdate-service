@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -44,104 +43,107 @@ func (v Vote) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bo
 
 // Modes returns the restrictions modes for the meeting collection.
 func (v Vote) Modes(mode string) FieldRestricter {
-	switch mode {
-	case "A":
-		return v.see
-	case "B":
-		return v.modeB
-	}
-	return nil
+	// TODO: Implement me
+	return Allways(v.name, mode)
+
+	// switch mode {
+	// case "A":
+	// 	return v.see
+	// case "B":
+	// 	return v.modeB
+	// }
+	// return nil
 }
 
-// TODO: Group by poll or option
-func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, voteIDs ...int) ([]int, error) {
-	return eachCondition(voteIDs, func(voteID int) (bool, error) {
-		optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("fetching option_id: %w", err)
-		}
+// // TODO: Group by poll or option
+// func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, voteIDs ...int) ([]int, error) {
+// 	return eachCondition(voteIDs, func(voteID int) (bool, error) {
+// 		optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
+// 		if err != nil {
+// 			return false, fmt.Errorf("fetching option_id: %w", err)
+// 		}
 
-		pollID, err := pollID(ctx, ds, optionID)
-		if err != nil {
-			return false, fmt.Errorf("getting poll id: %w", err)
-		}
+// 		pollID, err := pollID(ctx, ds, optionID)
+// 		if err != nil {
+// 			return false, fmt.Errorf("getting poll id: %w", err)
+// 		}
 
-		state, err := ds.Poll_State(pollID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("getting poll id and state: %w", err)
-		}
+// 		state, err := ds.Poll_State(pollID).Value(ctx)
+// 		if err != nil {
+// 			return false, fmt.Errorf("getting poll id and state: %w", err)
+// 		}
 
-		if state == "published" {
-			return true, nil
-		}
+// 		if state == "published" {
+// 			return true, nil
+// 		}
 
-		manage, err := Poll{}.manage(ctx, ds, mperms, pollID)
-		if err != nil {
-			return false, fmt.Errorf("checking manage poll %d: %w", pollID, err)
-		}
+// 		manage, err := Poll{}.manage(ctx, ds, mperms, pollID)
+// 		if err != nil {
+// 			return false, fmt.Errorf("checking manage poll %d: %w", pollID, err)
+// 		}
 
-		if len(manage) == 1 {
-			return true, nil
-		}
+// 		if len(manage) == 1 {
+// 			return true, nil
+// 		}
 
-		voteUser, exist, err := ds.Vote_UserID(voteID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("getting vote user: %w", err)
-		}
+// 		voteUser, exist, err := ds.Vote_UserID(voteID).Value(ctx)
+// 		if err != nil {
+// 			return false, fmt.Errorf("getting vote user: %w", err)
+// 		}
 
-		if exist && voteUser == mperms.UserID() {
-			return true, nil
-		}
+// 		if exist && voteUser == mperms.UserID() {
+// 			return true, nil
+// 		}
 
-		delegatedUser, exist, err := ds.Vote_DelegatedUserID(voteID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("getting delegated user: %w", err)
-		}
+// 		delegatedUser, exist, err := ds.Vote_DelegatedUserID(voteID).Value(ctx)
+// 		if err != nil {
+// 			return false, fmt.Errorf("getting delegated user: %w", err)
+// 		}
 
-		if exist && delegatedUser == mperms.UserID() {
-			return true, nil
-		}
+// 		if exist && delegatedUser == mperms.UserID() {
+// 			return true, nil
+// 		}
 
-		return false, nil
-	})
-}
+// 		return false, nil
+// 	})
+// }
 
-// TODO: Group by poll or option
-func (v Vote) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, voteIDs ...int) ([]int, error) {
-	return eachCondition(voteIDs, func(voteID int) (bool, error) {
-		optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("fetching option_id: %w", err)
-		}
+// // TODO: Group by poll or option
+// func (v Vote) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, voteIDs ...int) ([]int, error) {
+// 	return eachCondition(voteIDs, func(voteID int) (bool, error) {
+// 		optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
+// 		if err != nil {
+// 			return false, fmt.Errorf("fetching option_id: %w", err)
+// 		}
 
-		pollID, err := pollID(ctx, ds, optionID)
-		if err != nil {
-			return false, fmt.Errorf("getting poll id: %w", err)
-		}
-		state, err := ds.Poll_State(pollID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("getting poll id and state: %w", err)
-		}
+// 		pollID, err := pollID(ctx, ds, optionID)
+// 		if err != nil {
+// 			return false, fmt.Errorf("getting poll id: %w", err)
+// 		}
+// 		state, err := ds.Poll_State(pollID).Value(ctx)
+// 		if err != nil {
+// 			return false, fmt.Errorf("getting poll id and state: %w", err)
+// 		}
 
-		switch state {
-		case "published":
-			see, err := v.see(ctx, ds, mperms, voteID)
-			if err != nil {
-				return false, fmt.Errorf("checking see vote: %w", err)
-			}
+// 		switch state {
+// 		case "published":
+// 			see, err := v.see(ctx, ds, mperms, voteID)
+// 			if err != nil {
+// 				return false, fmt.Errorf("checking see vote: %w", err)
+// 			}
 
-			return len(see) == 1, nil
+// 			return len(see) == 1, nil
 
-		case "finished":
-			manage, err := Poll{}.manage(ctx, ds, mperms, pollID)
-			if err != nil {
-				return false, fmt.Errorf("checking manage poll %d: %w", pollID, err)
-			}
+// 		case "finished":
+// 			manage, err := Poll{}.manage(ctx, ds, mperms, pollID)
+// 			if err != nil {
+// 				return false, fmt.Errorf("checking manage poll %d: %w", pollID, err)
+// 			}
 
-			return len(manage) == 1, nil
+// 			return len(manage) == 1, nil
 
-		default:
-			return false, nil
-		}
-	})
-}
+// 		default:
+// 			return false, nil
+// 		}
+// 	})
+// }

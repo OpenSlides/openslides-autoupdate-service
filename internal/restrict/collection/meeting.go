@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // Meeting handels restrictions of the collection meeting.
@@ -43,7 +44,7 @@ func (m Meeting) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int,
 func (m Meeting) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return Allways
+		return Allways(m.name, "A")
 	case "B":
 		return m.see
 	case "C":
@@ -54,100 +55,95 @@ func (m Meeting) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, meetingIDs ...int) ([]int, error) {
-	oml, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageOrganization)
-	if err != nil {
-		return nil, fmt.Errorf("checking organization management level: %w", err)
-	}
-
-	if oml {
-		return meetingIDs, nil
-	}
-
-	return eachCondition(meetingIDs, func(meetingID int) (bool, error) {
-		enableAnonymous, err := ds.Meeting_EnableAnonymous(meetingID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("checking enabled anonymous: %w", err)
+func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, meetingIDs ...int) error {
+	for _, meetingID := range meetingIDs {
+		var meeting struct {
+			enableAnonymous bool
+			committeeID     int
+			isTemplate      bool
+			userIDs         []int
 		}
-		if enableAnonymous {
-			return true, nil
+		ds.Meeting_EnableAnonymous(meetingID).Lazy(&meeting.enableAnonymous)
+		ds.Meeting_CommitteeID(meetingID).Lazy(&meeting.committeeID)
+		ds.Meeting_TemplateForOrganizationID(meetingID).LazyExists(&meeting.isTemplate)
+		ds.Meeting_UserIDs(meetingID).Lazy(&meeting.userIDs)
+
+		if err := ds.Execute(ctx); err != nil {
+			return fmt.Errorf("getting meeting %d: %w", meetingID, err)
 		}
 
-		if mperms.UserID() == 0 {
-			return false, nil
+		if meeting.enableAnonymous {
+			attrMap.Add(m.name, meetingID, "B", &allwaysAttr)
+			continue
 		}
 
-		userIDs, err := ds.Meeting_UserIDs(meetingID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("getting user ids of meeting: %w", err)
-		}
-		for _, id := range userIDs {
-			if mperms.UserID() == id {
-				return true, nil
+		var committeeUsers []int
+		if meeting.isTemplate {
+			allCommitteeIDs, err := ds.Organization_CommitteeIDs(1).Value(ctx)
+			if err != nil {
+				return fmt.Errorf("getting all committee ids: %w", err)
 			}
+
+			usersIDsList := make([][]int, len(allCommitteeIDs))
+			for i, committeeID := range allCommitteeIDs {
+				ds.Committee_UserManagementLevel(committeeID, "can_manage").Lazy(&usersIDsList[i])
+
+			}
+
+			if err := ds.Execute(ctx); err != nil {
+				return fmt.Errorf("getting all committee managers: %w", err)
+			}
+
+			for i := 0; i < len(usersIDsList); i++ {
+				committeeUsers = append(committeeUsers, usersIDsList[i]...)
+			}
+
+		} else {
+			users, err := ds.Committee_UserManagementLevel(meeting.committeeID, "can_manage").Value(ctx)
+			if err != nil {
+				return fmt.Errorf("getting committee users: %w", err)
+			}
+			committeeUsers = users
 		}
 
-		committeeID, err := ds.Meeting_CommitteeID(meetingID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("getting committee id of meeting: %w", err)
-		}
+		allUserIDs := append(committeeUsers, meeting.userIDs...)
 
-		isCommitteeManager, err := perm.HasCommitteeManagementLevel(ctx, ds, mperms.UserID(), committeeID)
-		if err != nil {
-			return false, fmt.Errorf("getting committee management status: %w", err)
-		}
-
-		if isCommitteeManager {
-			return true, nil
-		}
-
-		_, isTemplateMeeting, err := ds.Meeting_TemplateForOrganizationID(meetingID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("getting template meeting: %w", err)
-		}
-
-		cmlMeetings, err := perm.ManagementLevelCommittees(ctx, ds, mperms.UserID())
-		if err != nil {
-			return false, fmt.Errorf("getting meetings with cml can manage: %w", err)
-		}
-
-		if isTemplateMeeting && len(cmlMeetings) > 0 {
-			return true, nil
-		}
-
-		return false, nil
-	})
+		attrMap.Add(m.name, meetingID, "B", &Attributes{
+			GlobalPermission: byte(perm.OMLCanManageOrganization),
+			UserIDs:          set.New(allUserIDs...),
+		})
+	}
+	return nil
 }
 
-func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, meetingIDs ...int) ([]int, error) {
-	allowed, err := eachCondition(meetingIDs, func(meetingID int) (bool, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, meetingIDs ...int) error {
+	for _, meetingID := range meetingIDs {
+		permMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {
-			return false, fmt.Errorf("getting permissions: %w", err)
+			return fmt.Errorf("getting perm map for meeting %d: %w", meetingID, err)
 		}
 
-		return perms.Has(perm.MeetingCanSeeFrontpage), nil
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("checking can front page permission: %w", err)
+		attrMap.Add(m.name, meetingID, "C", &Attributes{
+			GlobalPermission: byte(perm.OMLSuperadmin),
+			GroupIDs:         permMap[perm.MeetingCanSeeFrontpage],
+		})
 	}
 
-	return allowed, nil
+	return nil
 }
 
-func (m Meeting) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, meetingIDs ...int) ([]int, error) {
-	allowed, err := eachCondition(meetingIDs, func(meetingID int) (bool, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+func (m Meeting) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, meetingIDs ...int) error {
+	for _, meetingID := range meetingIDs {
+		permMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {
-			return false, fmt.Errorf("getting permissions: %w", err)
+			return fmt.Errorf("getting perm map for meeting %d: %w", meetingID, err)
 		}
 
-		return perms.Has(perm.MeetingCanSeeLivestream), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("checking can see lievestream permission: %w", err)
+		attrMap.Add(m.name, meetingID, "C", &Attributes{
+			GlobalPermission: byte(perm.OMLSuperadmin),
+			GroupIDs:         permMap[perm.MeetingCanSeeLivestream],
+		})
 	}
 
-	return allowed, nil
+	return nil
 }

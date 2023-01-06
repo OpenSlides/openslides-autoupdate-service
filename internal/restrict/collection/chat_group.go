@@ -68,7 +68,7 @@ func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 
 			attrMap.Add(c.name, chatGroupID, "A", &Attributes{
 				GlobalPermission: byte(perm.OMLSuperadmin),
-				GroupIDs:         set.New[int](append(manageGroups, allGroups...)...),
+				GroupIDs:         set.New(append(manageGroups, allGroups...)...),
 			})
 		}
 

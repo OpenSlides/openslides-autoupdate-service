@@ -41,48 +41,51 @@ func (los ListOfSpeakers) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, losIDs ...int) ([]int, error) {
-	return eachMeeting(ctx, ds, los, losIDs, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, losIDs ...int) error {
+	return eachMeeting(ctx, ds, los, losIDs, func(meetingID int, ids []int) error {
+		groupMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {
-			return nil, fmt.Errorf("getting perms for meetind %d: %w", meetingID, err)
+			return fmt.Errorf("getting perms for meetind %d: %w", meetingID, err)
 		}
 
-		if canSee := perms.Has(perm.ListOfSpeakersCanSee); !canSee {
-			return nil, nil
-		}
+		groups := groupMap[perm.ListOfSpeakersCanSee]
 
-		return eachContentObjectCollection(ctx, ds.ListOfSpeakers_ContentObjectID, ids, func(collection string, id int, ids []int) ([]int, error) {
+		//TODO: make sure to be called after each restriction mode.
+
+		return eachContentObjectCollection(ctx, ds.ListOfSpeakers_ContentObjectID, ids, func(collection string, id int, ids []int) error {
 			// TODO: This should return not one contentobject, but all content objects with the same collection at once. So the first argument should be objectIDs
-			var restricter FieldRestricter
+			var andAttr *Attributes
 			switch collection {
 			case "motion":
-				restricter = Motion{}.see
+				// TODO: make the "see" mode generic.
+				andAttr = attrMap.Get(collection, id, "C")
 
 			case "motion_block":
-				restricter = MotionBlock{}.see
+				andAttr = attrMap.Get(collection, id, "A")
 
 			case "assignment":
-				restricter = Assignment{}.see
+				andAttr = attrMap.Get(collection, id, "A")
 
 			case "topic":
-				restricter = Topic{}.see
+				andAttr = attrMap.Get(collection, id, "A")
+
 			case "mediafile":
-				restricter = Mediafile{}.see
+				andAttr = attrMap.Get(collection, id, "A")
+
 			default:
 				// TODO LAST ERROR
-				return nil, fmt.Errorf("unknown content_object collection %q", collection)
+				return fmt.Errorf("unknown content_object collection %q", collection)
 			}
 
-			canSee, err := restricter(ctx, ds, mperms, id)
-			if err != nil {
-				return nil, fmt.Errorf("checking can see of %s: %w", collection, err)
+			for _, losID := range ids {
+				attrMap.Add(los.name, losID, "A", &Attributes{
+					GlobalPermission: byte(perm.OMLSuperadmin),
+					GroupIDs:         groups,
+					GroupAnd:         andAttr,
+				})
 			}
 
-			if len(canSee) == 1 {
-				return ids, nil
-			}
-			return nil, nil
+			return nil
 		})
 	})
 

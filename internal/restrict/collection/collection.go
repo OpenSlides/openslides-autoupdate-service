@@ -41,6 +41,10 @@ type Attributes struct {
 	// UserIDs are list from users that can see the field but do not have the
 	// globalPermission or are not in the groups.
 	UserIDs set.Set[int]
+
+	// GroupAnd is another attribute. If the user can see the Attribute because
+	// of the Group, he also needs the GroupAnd attribute.
+	GroupAnd *Attributes
 }
 
 // AttributeMap holds attributes for each restriction mod
@@ -309,39 +313,34 @@ func eachStringField(ctx context.Context, toField func(int) *dsfetch.ValueString
 // TODO: currently, this calls the function with the same collectionObject
 // (motion/5, motion/5), but it should bundle it by collection (motion/1,
 // motion/2).
-// TODO: Can probably be removed
-func eachContentObjectCollection(ctx context.Context, toField func(int) *dsfetch.ValueString, ids []int, f func(collection string, id int, ids []int) ([]int, error)) ([]int, error) {
+func eachContentObjectCollection(ctx context.Context, toField func(int) *dsfetch.ValueString, ids []int, f func(collection string, id int, ids []int) error) error {
 	filteredIDs := make(map[string][]int)
 	for _, id := range ids {
 		contentObjectID, err := toField(id).Value(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("getting id for element %d: %w", id, err)
+			return fmt.Errorf("getting id for element %d: %w", id, err)
 		}
 
 		filteredIDs[contentObjectID] = append(filteredIDs[contentObjectID], id)
 	}
 
-	allAllowed := make([]int, 0, len(ids))
 	for contentObjectID, ids := range filteredIDs {
 		collection, objectID, found := strings.Cut(contentObjectID, "/")
 		if !found {
-			return nil, fmt.Errorf("content object_id has to have exacly one /, got %q", contentObjectID)
+			return fmt.Errorf("content object_id has to have exacly one /, got %q", contentObjectID)
 		}
 
 		id, err := strconv.Atoi(objectID)
 		if err != nil {
-			return nil, fmt.Errorf("second part of content_object_id has to be int, got %q", objectID)
+			return fmt.Errorf("second part of content_object_id has to be int, got %q", objectID)
 		}
 
-		allowed, err := f(collection, id, ids)
-		if err != nil {
-			return nil, fmt.Errorf("restricting for element %s: %w", contentObjectID, err)
+		if err := f(collection, id, ids); err != nil {
+			return fmt.Errorf("restricting for element %s: %w", contentObjectID, err)
 		}
-
-		allAllowed = append(allAllowed, allowed...)
 	}
 
-	return allAllowed, nil
+	return nil
 }
 
 // TODO: Can probably be removed

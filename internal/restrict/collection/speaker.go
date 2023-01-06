@@ -41,16 +41,12 @@ func (s Speaker) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (s Speaker) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, speakerIDs ...int) ([]int, error) {
-	return eachRelationField(ctx, ds.Speaker_ListOfSpeakersID, speakerIDs, func(losID int, ids []int) ([]int, error) {
-		see, err := ListOfSpeakers{}.see(ctx, ds, mperms, losID)
-		if err != nil {
-			return nil, fmt.Errorf("checking see of los %d: %w", losID, err)
+func (s Speaker) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, speakerIDs ...int) error {
+	return eachRelationField(ctx, ds.Speaker_ListOfSpeakersID, speakerIDs, func(losID int, ids []int) error {
+		// TODO: This only works if los is calculated before speaker
+		for _, id := range ids {
+			attrMap.Add(s.name, id, "A", attrMap.Get("list_of_speakers", losID, "A"))
 		}
-
-		if len(see) == 1 {
-			return ids, nil
-		}
-		return nil, nil
+		return nil
 	})
 }

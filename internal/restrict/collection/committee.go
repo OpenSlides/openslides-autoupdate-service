@@ -23,53 +23,53 @@ type Committee struct {
 }
 
 // Name returns the collection name.
-func (a Committee) Name() string {
-	return a.name
+func (c Committee) Name() string {
+	return c.name
 }
 
 // MeetingID returns the meetingID for the object.
-func (a Committee) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
+func (c Committee) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	return 0, false, nil
 }
 
 // Modes returns a map from all known modes to there restricter.
-func (a Committee) Modes(mode string) FieldRestricter {
+func (c Committee) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return a.see
+		return c.see
 	case "B":
-		return a.modeB
+		return c.modeB
 	}
 	return nil
 }
 
-func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, committeeIDs ...int) error {
+func (c Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, committeeIDs ...int) error {
 	for _, committeeID := range committeeIDs {
 		userIDs, err := ds.Committee_UserIDs(committeeID).Value(ctx)
 		if err != nil {
 			return fmt.Errorf("getting committee users: %w", err)
 		}
 
-		attrMap[committeeID] = &Attributes{
+		attrMap.Add(c.name, committeeID, "A", &Attributes{
 			GlobalPermission: byte(perm.OMLCanManageUsers),
 			UserIDs:          set.New(userIDs...),
-		}
+		})
 	}
 
 	return nil
 }
 
-func (a Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, committeeIDs ...int) error {
+func (c Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, committeeIDs ...int) error {
 	for _, committeeID := range committeeIDs {
 		committeeManager, err := ds.Committee_UserManagementLevel(committeeID, "can_manage").Value(ctx)
 		if err != nil {
 			return fmt.Errorf("getting committee managers: %w", err)
 		}
 
-		attrMap[committeeID] = &Attributes{
+		attrMap.Add(c.name, committeeID, "B", &Attributes{
 			GlobalPermission: byte(perm.OMLCanManageOrganization),
 			UserIDs:          set.New(committeeManager...),
-		}
+		})
 	}
 
 	return nil

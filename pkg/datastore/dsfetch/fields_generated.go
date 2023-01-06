@@ -21,7 +21,8 @@ type ValueBool struct {
 	executed bool
 	isNull   bool
 
-	lazies []*bool
+	lazies       []*bool
+	laziesExists []*bool
 
 	fetch *Fetch
 }
@@ -83,6 +84,10 @@ func (v *ValueBool) execute(p []byte) error {
 		*v.lazies[i] = v.value
 	}
 
+	for i := 0; i < len(v.laziesExists); i++ {
+		*v.laziesExists[i] = v.isNull
+	}
+
 	v.executed = true
 	return nil
 }
@@ -98,7 +103,8 @@ type ValueFloat struct {
 	executed bool
 	isNull   bool
 
-	lazies []*float32
+	lazies       []*float32
+	laziesExists []*bool
 
 	fetch *Fetch
 }
@@ -160,6 +166,10 @@ func (v *ValueFloat) execute(p []byte) error {
 		*v.lazies[i] = v.value
 	}
 
+	for i := 0; i < len(v.laziesExists); i++ {
+		*v.laziesExists[i] = v.isNull
+	}
+
 	v.executed = true
 	return nil
 }
@@ -175,7 +185,8 @@ type ValueIDSlice struct {
 	executed bool
 	isNull   bool
 
-	lazies []*[]int
+	lazies       []*[]int
+	laziesExists []*bool
 
 	fetch *Fetch
 }
@@ -246,6 +257,10 @@ func (v *ValueIDSlice) execute(p []byte) error {
 		*v.lazies[i] = v.value
 	}
 
+	for i := 0; i < len(v.laziesExists); i++ {
+		*v.laziesExists[i] = v.isNull
+	}
+
 	v.executed = true
 	return nil
 }
@@ -261,7 +276,8 @@ type ValueInt struct {
 	executed bool
 	isNull   bool
 
-	lazies []*int
+	lazies       []*int
+	laziesExists []*bool
 
 	fetch *Fetch
 }
@@ -323,6 +339,10 @@ func (v *ValueInt) execute(p []byte) error {
 		*v.lazies[i] = v.value
 	}
 
+	for i := 0; i < len(v.laziesExists); i++ {
+		*v.laziesExists[i] = v.isNull
+	}
+
 	v.executed = true
 	return nil
 }
@@ -338,7 +358,8 @@ type ValueIntSlice struct {
 	executed bool
 	isNull   bool
 
-	lazies []*[]int
+	lazies       []*[]int
+	laziesExists []*bool
 
 	fetch *Fetch
 }
@@ -400,6 +421,10 @@ func (v *ValueIntSlice) execute(p []byte) error {
 		*v.lazies[i] = v.value
 	}
 
+	for i := 0; i < len(v.laziesExists); i++ {
+		*v.laziesExists[i] = v.isNull
+	}
+
 	v.executed = true
 	return nil
 }
@@ -415,7 +440,8 @@ type ValueJSON struct {
 	executed bool
 	isNull   bool
 
-	lazies []*json.RawMessage
+	lazies       []*json.RawMessage
+	laziesExists []*bool
 
 	fetch *Fetch
 }
@@ -477,6 +503,10 @@ func (v *ValueJSON) execute(p []byte) error {
 		*v.lazies[i] = v.value
 	}
 
+	for i := 0; i < len(v.laziesExists); i++ {
+		*v.laziesExists[i] = v.isNull
+	}
+
 	v.executed = true
 	return nil
 }
@@ -492,7 +522,8 @@ type ValueMaybeInt struct {
 	executed bool
 	isNull   bool
 
-	lazies []*int
+	lazies       []*int
+	laziesExists []*bool
 
 	fetch *Fetch
 }
@@ -515,6 +546,11 @@ func (v *ValueMaybeInt) Value(ctx context.Context) (int, bool, error) {
 // Make sure to call request.Execute() before using the value.
 func (v *ValueMaybeInt) Lazy(value *int) {
 	v.lazies = append(v.lazies, value)
+}
+
+// LazyExists is like Lazy but for the question, if the valu is set.
+func (v *ValueMaybeInt) LazyExists(value *bool) {
+	v.laziesExists = append(v.laziesExists, value)
 }
 
 // ErrorLater is like Value but does not return an error.
@@ -554,6 +590,10 @@ func (v *ValueMaybeInt) execute(p []byte) error {
 		*v.lazies[i] = v.value
 	}
 
+	for i := 0; i < len(v.laziesExists); i++ {
+		*v.laziesExists[i] = v.isNull
+	}
+
 	v.executed = true
 	return nil
 }
@@ -569,7 +609,8 @@ type ValueMaybeString struct {
 	executed bool
 	isNull   bool
 
-	lazies []*string
+	lazies       []*string
+	laziesExists []*bool
 
 	fetch *Fetch
 }
@@ -592,6 +633,11 @@ func (v *ValueMaybeString) Value(ctx context.Context) (string, bool, error) {
 // Make sure to call request.Execute() before using the value.
 func (v *ValueMaybeString) Lazy(value *string) {
 	v.lazies = append(v.lazies, value)
+}
+
+// LazyExists is like Lazy but for the question, if the valu is set.
+func (v *ValueMaybeString) LazyExists(value *bool) {
+	v.laziesExists = append(v.laziesExists, value)
 }
 
 // ErrorLater is like Value but does not return an error.
@@ -631,6 +677,10 @@ func (v *ValueMaybeString) execute(p []byte) error {
 		*v.lazies[i] = v.value
 	}
 
+	for i := 0; i < len(v.laziesExists); i++ {
+		*v.laziesExists[i] = v.isNull
+	}
+
 	v.executed = true
 	return nil
 }
@@ -646,7 +696,8 @@ type ValueString struct {
 	executed bool
 	isNull   bool
 
-	lazies []*string
+	lazies       []*string
+	laziesExists []*bool
 
 	fetch *Fetch
 }
@@ -708,6 +759,10 @@ func (v *ValueString) execute(p []byte) error {
 		*v.lazies[i] = v.value
 	}
 
+	for i := 0; i < len(v.laziesExists); i++ {
+		*v.laziesExists[i] = v.isNull
+	}
+
 	v.executed = true
 	return nil
 }
@@ -723,7 +778,8 @@ type ValueStringSlice struct {
 	executed bool
 	isNull   bool
 
-	lazies []*[]string
+	lazies       []*[]string
+	laziesExists []*bool
 
 	fetch *Fetch
 }
@@ -783,6 +839,10 @@ func (v *ValueStringSlice) execute(p []byte) error {
 
 	for i := 0; i < len(v.lazies); i++ {
 		*v.lazies[i] = v.value
+	}
+
+	for i := 0; i < len(v.laziesExists); i++ {
+		*v.laziesExists[i] = v.isNull
 	}
 
 	v.executed = true

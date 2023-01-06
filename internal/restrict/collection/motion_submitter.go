@@ -6,7 +6,6 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // MotionSubmitter handels restrictions of the collection motion_submitter.
@@ -42,38 +41,12 @@ func (m MotionSubmitter) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionSubmitterIDs ...int) ([]int, error) {
-	submitterToMotion := make(map[int]int, len(motionSubmitterIDs))
-	motionIDs := set.New[int]()
-	for _, submitterID := range motionSubmitterIDs {
-		motionID := ds.MotionSubmitter_MotionID(submitterID).ErrorLater(ctx)
-		submitterToMotion[submitterID] = motionID
-		motionIDs.Add(motionID)
-	}
-	if err := ds.Err(); err != nil {
-		return nil, fmt.Errorf("getting motionIDs: %w", err)
-	}
-
-	allowedMotionIDs, err := Motion{}.see(ctx, ds, mperms, motionIDs.List()...)
-	if err != nil {
-		return nil, fmt.Errorf("checking motion.see: %w", err)
-	}
-
-	if len(allowedMotionIDs) == motionIDs.Len() {
-		return motionSubmitterIDs, nil
-	}
-
-	if len(allowedMotionIDs) == 0 {
-		return nil, nil
-	}
-
-	allowedMotionSet := set.New(allowedMotionIDs...)
-	allowed := make([]int, 0, len(motionSubmitterIDs))
-	for _, submitterID := range motionSubmitterIDs {
-		if allowedMotionSet.Has(submitterToMotion[submitterID]) {
-			allowed = append(allowed, submitterID)
+func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionSubmitterIDs ...int) error {
+	return eachRelationField(ctx, ds.MotionSubmitter_MotionID, motionSubmitterIDs, func(motionID int, ids []int) error {
+		// TODO: This only works if motion is calculated before motion_submitter
+		for _, id := range ids {
+			attrMap.Add(m.name, id, "A", attrMap.Get("motion", motionID, "C"))
 		}
-	}
-
-	return allowed, nil
+		return nil
+	})
 }

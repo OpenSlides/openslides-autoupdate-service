@@ -44,9 +44,8 @@ func (g Group) Modes(mode string) FieldRestricter {
 func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, groupIDs ...int) error {
 	return eachMeeting(ctx, ds, g, groupIDs, func(meetingID int, ids []int) error {
 		for _, id := range groupIDs {
-			// TODO: Fixme, need to get the attr for meeting/$meetingID
 			// TODO: Make sure meeting is calculated before group.
-			attrMap[id] = attrMap[meetingID]
+			attrMap.Add(g.name, id, "A", attrMap.Get("meeting", meetingID, "A"))
 		}
 
 		return nil

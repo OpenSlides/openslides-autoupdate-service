@@ -44,33 +44,37 @@ func (m MotionChangeRecommendation) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionChangeRecommendation) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionChangeRecommendationIDs ...int) ([]int, error) {
-	return eachMeeting(ctx, ds, m, motionChangeRecommendationIDs, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+func (m MotionChangeRecommendation) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionChangeRecommendationIDs ...int) error {
+	return eachMeeting(ctx, ds, m, motionChangeRecommendationIDs, func(meetingID int, ids []int) error {
+		groupMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {
-			return nil, fmt.Errorf("getting permissions: %w", err)
+			return fmt.Errorf("groupMap: %w", err)
 		}
 
-		if perms.Has(perm.MotionCanManage) {
-			return ids, nil
+		attrInternal := Attributes{
+			GlobalPermission: byte(perm.OMLSuperadmin),
+			GroupIDs:         groupMap[perm.MotionCanManage],
 		}
 
-		if !perms.Has(perm.MotionCanSee) {
-			return nil, nil
+		attrPublic := Attributes{
+			GlobalPermission: byte(perm.OMLSuperadmin),
+			GroupIDs:         groupMap[perm.MotionCanSee],
 		}
 
-		allowed, err := eachCondition(ids, func(motionChangeRecommendationID int) (bool, error) {
+		for _, motionChangeRecommendationID := range motionChangeRecommendationIDs {
 			internal, err := ds.MotionChangeRecommendation_Internal(motionChangeRecommendationID).Value(ctx)
 			if err != nil {
-				return false, fmt.Errorf("getting internal: %w", err)
+				return fmt.Errorf("getting internal state of motion change recommendation %d: %w", motionChangeRecommendationID, err)
 			}
 
-			return !internal, nil
-		})
+			attr := &attrPublic
+			if internal {
+				attr = &attrInternal
+			}
 
-		if err != nil {
-			return nil, fmt.Errorf("checking internal state: %w", err)
+			attrMap.Add(m.name, motionChangeRecommendationID, "A", attr)
 		}
-		return allowed, nil
+
+		return nil
 	})
 }

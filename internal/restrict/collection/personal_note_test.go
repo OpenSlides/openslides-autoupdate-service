@@ -28,17 +28,3 @@ func TestPersonalNoteModeA(t *testing.T) {
 		withRequestUser(2),
 	)
 }
-
-func TestPersonalNoteSuperAdminModeA(t *testing.T) {
-	var p collection.PersonalNote
-	ds := `personal_note/1/user_id: 1`
-
-	testCase(
-		"Other note",
-		t,
-		p.SuperAdmin("A"),
-		false,
-		ds,
-		withRequestUser(2),
-	)
-}
