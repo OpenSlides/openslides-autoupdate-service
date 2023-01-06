@@ -6,15 +6,15 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // ChatGroup handels restrictions for the collection chat_group.
 //
 // A user can see a chat group if any of:
 //
-//	The user has the permission chat.can_manage in the respective meeting (dedicated by the key meeting_id).
-//	The user is assigned to groups in common with chat_group/read_group_ids.
-//	The user is assigned to groups in common with chat_group/write_group_ids.
+//	The user has the permission chat.can_manage.
+//	The user is assigned to groups in common with chat_group/read_group_ids or chat_group/write_group_ids.
 //
 // Mode A: The user can see the chat_group.
 type ChatGroup struct{}
@@ -37,42 +37,34 @@ func (c ChatGroup) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, chatGroupIDs ...int) ([]int, error) {
-	return eachMeeting(ctx, ds, c, chatGroupIDs, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, chatGroupIDs ...int) error {
+	return eachMeeting(ctx, ds, c, chatGroupIDs, func(meetingID int, ids []int) error {
+		groupMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {
-			return nil, fmt.Errorf("getting permissions: %w", err)
+			return fmt.Errorf("getting permissions: %w", err)
 		}
 
-		if perms.Has(perm.ChatCanManage) {
-			return ids, nil
-		}
+		manageGroups := groupMap[perm.ChatCanManage].List()
 
-		allowed, err := eachCondition(ids, func(chatGroupID int) (bool, error) {
+		for _, chatGroupID := range ids {
 			readGroups, err := ds.ChatGroup_ReadGroupIDs(chatGroupID).Value(ctx)
 			if err != nil {
-				return false, fmt.Errorf("getting chat read group ids: %w", err)
+				return fmt.Errorf("getting chat read group ids: %w", err)
 			}
 
 			writeGroups, err := ds.ChatGroup_WriteGroupIDs(chatGroupID).Value(ctx)
 			if err != nil {
-				return false, fmt.Errorf("getting chat read group ids: %w", err)
+				return fmt.Errorf("getting chat read group ids: %w", err)
 			}
 
 			allGroups := append(readGroups, writeGroups...)
 
-			for _, gid := range allGroups {
-				if perms.InGroup(gid) {
-					return true, nil
-				}
+			attrMap[chatGroupID] = &Attributes{
+				GlobalPermission: byte(perm.OMLSuperadmin),
+				GroupIDs:         set.New[int](append(manageGroups, allGroups...)...),
 			}
-			return false, nil
-		})
-
-		if err != nil {
-			return nil, fmt.Errorf("checking if user is in read or write group: %w", err)
 		}
 
-		return allowed, nil
+		return nil
 	})
 }

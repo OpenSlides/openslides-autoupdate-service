@@ -39,7 +39,7 @@ func (o Option) Modes(mode string) FieldRestricter {
 }
 
 // TODO: Group by poll
-func (o Option) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, optionIDs ...int) ([]int, error) {
+func (o Option) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, optionIDs ...int) ([]int, error) {
 	return eachCondition(optionIDs, func(optionID int) (bool, error) {
 		pollID, err := pollID(ctx, ds, optionID)
 		if err != nil {
@@ -56,7 +56,7 @@ func (o Option) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 }
 
 // TODO: Group by poll
-func (o Option) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, optionIDs ...int) ([]int, error) {
+func (o Option) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, optionIDs ...int) ([]int, error) {
 	return eachCondition(optionIDs, func(optionID int) (bool, error) {
 		pollID, err := pollID(ctx, ds, optionID)
 		if err != nil {

@@ -35,7 +35,7 @@ func (m MotionSubmitter) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionSubmitterIDs ...int) ([]int, error) {
+func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, motionSubmitterIDs ...int) ([]int, error) {
 	submitterToMotion := make(map[int]int, len(motionSubmitterIDs))
 	motionIDs := set.New[int]()
 	for _, submitterID := range motionSubmitterIDs {

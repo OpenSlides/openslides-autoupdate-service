@@ -34,6 +34,6 @@ func (p ProjectorCountdown) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p ProjectorCountdown) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, projectorCountdownIDs ...int) ([]int, error) {
+func (p ProjectorCountdown) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, projectorCountdownIDs ...int) ([]int, error) {
 	return meetingPerm(ctx, ds, p, projectorCountdownIDs, mperms, perm.ProjectorCanSee)
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // Committee handels permission for committees.
@@ -35,59 +36,34 @@ func (a Committee) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, committeeIDs ...int) ([]int, error) {
-	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
-	if err != nil {
-		return nil, fmt.Errorf("checking oml perm: %w", err)
-	}
-
-	if hasOMLPerm {
-		return committeeIDs, nil
-	}
-
-	allowed, err := eachCondition(committeeIDs, func(committeeID int) (bool, error) {
+func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, committeeIDs ...int) error {
+	for _, committeeID := range committeeIDs {
 		userIDs, err := ds.Committee_UserIDs(committeeID).Value(ctx)
 		if err != nil {
-			return false, fmt.Errorf("getting committee users: %w", err)
+			return fmt.Errorf("getting committee users: %w", err)
 		}
 
-		for _, uid := range userIDs {
-			if uid == mperms.UserID() {
-				return true, nil
-			}
+		attrMap[committeeID] = &Attributes{
+			GlobalPermission: byte(perm.OMLCanManageUsers),
+			UserIDs:          set.New(userIDs...),
 		}
-		return false, nil
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("checking if user is in committee: %w", err)
 	}
 
-	return allowed, nil
+	return nil
 }
 
-func (a Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, committeeIDs ...int) ([]int, error) {
-	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageOrganization)
-	if err != nil {
-		return nil, fmt.Errorf("checking oml: %w", err)
-	}
-
-	if hasOMLPerm {
-		return committeeIDs, nil
-	}
-
-	allowed, err := eachCondition(committeeIDs, func(committeeID int) (bool, error) {
-		cmlCanManage, err := perm.HasCommitteeManagementLevel(ctx, ds, mperms.UserID(), committeeID)
+func (a Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, committeeIDs ...int) error {
+	for _, committeeID := range committeeIDs {
+		committeeManager, err := ds.Committee_UserManagementLevel(committeeID, "can_manage").Value(ctx)
 		if err != nil {
-			return false, fmt.Errorf("checking committee management level: %w", err)
+			return fmt.Errorf("getting committee managers: %w", err)
 		}
 
-		return cmlCanManage, nil
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("checking has committee managemement level: %w", err)
+		attrMap[committeeID] = &Attributes{
+			GlobalPermission: byte(perm.OMLCanManageOrganization),
+			UserIDs:          set.New(committeeManager...),
+		}
 	}
 
-	return allowed, nil
+	return nil
 }

@@ -47,7 +47,7 @@ func (m Meeting) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, meetingIDs ...int) ([]int, error) {
+func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, meetingIDs ...int) ([]int, error) {
 	oml, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageOrganization)
 	if err != nil {
 		return nil, fmt.Errorf("checking organization management level: %w", err)
@@ -112,7 +112,7 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meetin
 	})
 }
 
-func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, meetingIDs ...int) ([]int, error) {
+func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, meetingIDs ...int) ([]int, error) {
 	allowed, err := eachCondition(meetingIDs, func(meetingID int) (bool, error) {
 		perms, err := mperms.Meeting(ctx, meetingID)
 		if err != nil {
@@ -129,7 +129,7 @@ func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 	return allowed, nil
 }
 
-func (m Meeting) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, meetingIDs ...int) ([]int, error) {
+func (m Meeting) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, meetingIDs ...int) ([]int, error) {
 	allowed, err := eachCondition(meetingIDs, func(meetingID int) (bool, error) {
 		perms, err := mperms.Meeting(ctx, meetingID)
 		if err != nil {

@@ -37,7 +37,7 @@ func (o Organization) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (Organization) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
+func (Organization) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, userIDs ...int) ([]int, error) {
 	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
 	if err != nil {
 		return nil, fmt.Errorf("check organization management level: %w", err)

@@ -7,8 +7,8 @@ type Set[T comparable] struct {
 }
 
 // New initializes a new set.
-func New[T comparable](init ...T) *Set[T] {
-	s := &Set[T]{m: make(map[T]struct{})}
+func New[T comparable](init ...T) Set[T] {
+	s := Set[T]{m: make(map[T]struct{})}
 	s.Add(init...)
 	return s
 }
@@ -31,6 +31,10 @@ func (s Set[T]) Merge(other Set[T]) {
 func (s Set[T]) Has(e T) bool {
 	_, ok := s.m[e]
 	return ok
+}
+
+func (s Set[T]) IsNotInitialized() bool {
+	return s.m == nil
 }
 
 // List returns all elements of the set.

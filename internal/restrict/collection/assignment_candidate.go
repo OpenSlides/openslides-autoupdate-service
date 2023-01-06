@@ -34,17 +34,12 @@ func (a AssignmentCandidate) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a AssignmentCandidate) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, assignmentCandidateIDs ...int) ([]int, error) {
-	return eachRelationField(ctx, ds.AssignmentCandidate_AssignmentID, assignmentCandidateIDs, func(assignmentID int, ids []int) ([]int, error) {
-		canSeeAssignment, err := Assignment{}.see(ctx, ds, mperms, assignmentID)
-		if err != nil {
-			return nil, fmt.Errorf("can see assignment: %w", err)
+func (a AssignmentCandidate) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, assignmentCandidateIDs ...int) error {
+	return eachRelationField(ctx, ds.AssignmentCandidate_AssignmentID, assignmentCandidateIDs, func(assignmentID int, ids []int) error {
+		// TODO: This only works if assignment is calculated before assignment_candidate
+		for _, id := range ids {
+			attrMap[id] = attrMap[assignmentID]
 		}
-
-		if len(canSeeAssignment) == 1 {
-			return ids, nil
-		}
-
-		return nil, nil
+		return nil
 	})
 }

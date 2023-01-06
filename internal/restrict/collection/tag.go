@@ -34,7 +34,7 @@ func (t Tag) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (t Tag) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, tagIDs ...int) ([]int, error) {
+func (t Tag) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, tagIDs ...int) ([]int, error) {
 	return eachMeeting(ctx, ds, t, tagIDs, func(meetingID int, ids []int) ([]int, error) {
 		canSee, err := Meeting{}.see(ctx, ds, mperms, meetingID)
 		if err != nil {

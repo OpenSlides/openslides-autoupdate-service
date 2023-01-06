@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // MeetingPermission is a cache for different Permission objects for each
@@ -11,36 +12,27 @@ import (
 //
 // Can be used if fields from different meetings are checked.
 type MeetingPermission struct {
-	perms map[int]*Permission
-	ds    *dsfetch.Fetch
-	uid   int
+	forMeetingID map[int]map[TPermission]set.Set[int]
 }
 
 // NewMeetingPermission initializes a new MeetingPermission.
-func NewMeetingPermission(ds *dsfetch.Fetch, uid int) *MeetingPermission {
-	p := MeetingPermission{
-		perms: make(map[int]*Permission),
-		ds:    ds,
-		uid:   uid,
+func NewMeetingPermission(ds *dsfetch.Fetch, uid int) MeetingPermission {
+	return MeetingPermission{
+		forMeetingID: make(map[int]map[TPermission]set.Set[int]),
 	}
-	return &p
 }
 
 // Meeting returns the permission object for the meeting.
-func (p MeetingPermission) Meeting(ctx context.Context, meetingID int) (*Permission, error) {
-	perms, ok := p.perms[meetingID]
+func (p MeetingPermission) Meeting(ctx context.Context, ds *dsfetch.Fetch, meetingID int) (map[TPermission]set.Set[int], error) {
+	perms, ok := p.forMeetingID[meetingID]
 	if ok {
 		return perms, nil
 	}
 
-	perms, err := New(ctx, p.ds, p.uid, meetingID)
+	perms, err := GroupByPerm(ctx, ds, meetingID)
 	if err != nil {
 		return nil, err
 	}
-	return perms, nil
-}
 
-// UserID returns the user id the object was initialized with.
-func (p MeetingPermission) UserID() int {
-	return p.uid
+	return perms, nil
 }

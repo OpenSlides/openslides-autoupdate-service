@@ -8,6 +8,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // CM is the name of a collection and a mode.
@@ -20,25 +21,62 @@ func (cm CM) String() string {
 	return cm.Collection + "/" + cm.Mode
 }
 
-// FieldRestricter is a function to restrict fields of a collection.
-type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, id ...int) ([]int, error)
+// Attributes is are flags that each field has. A user is allowed to see a
+// field, if he has one of the attribute-fields.
+type Attributes struct {
+	// GlobalPermission is like the orga permission:
+	//
+	// 0: All user can see this
+	// 1: Only superadmin can see this
+	// 2: Global managers can see this
+	// 3: Global user managers can see this
+	// 254: Logged in users can see this
+	// 255: Nobody can see this (not even the superadmin)
+	GlobalPermission byte
 
-type singleFieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, id int) (bool, error)
+	// GroupIDs are groups, that can see the field. Groups are meeting specific.
+	GroupIDs set.Set[int]
+
+	// UserIDs are list from users that can see the field but do not have the
+	// globalPermission or are not in the groups.
+	UserIDs set.Set[int]
+}
+
+// FieldRestricter is a function to restrict fields of a collection.
+type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, ids ...int) error
+
+var allwaysAttr = Attributes{
+	GlobalPermission: 0,
+}
+
+var loggedInAttr = Attributes{
+	GlobalPermission: 254,
+}
+
+var neverAttr = Attributes{
+	GlobalPermission: 0,
+}
 
 // Allways is a restricter func that just returns true.
-func Allways(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
-	return elementIDs, nil
-}
-
-func loggedIn(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
-	if mperms.UserID() != 0 {
-		return elementIDs, nil
+func Allways(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, elementIDs ...int) error {
+	for _, id := range elementIDs {
+		attrMap[id] = &allwaysAttr
 	}
-	return nil, nil
+	return nil
 }
 
-func never(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
-	return nil, nil
+func loggedIn(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, elementIDs ...int) error {
+	for _, id := range elementIDs {
+		attrMap[id] = &loggedInAttr
+	}
+	return nil
+}
+
+func never(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, elementIDs ...int) error {
+	for _, id := range elementIDs {
+		attrMap[id] = &neverAttr
+	}
+	return nil
 }
 
 // Restricter returns a fieldRestricter for a restriction_mode.
@@ -147,77 +185,73 @@ func (u Unknown) MeetingID(context.Context, *dsfetch.Fetch, int) (int, bool, err
 	return 0, false, nil
 }
 
-func eachMeeting(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int, f func(meetingID int, ids []int) ([]int, error)) ([]int, error) {
+func eachMeeting(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int, f func(meetingID int, ids []int) error) error {
 	meetingToIDs := make(map[int][]int)
 	for _, id := range ids {
 		meetingID, hasMeeting, err := r.MeetingID(ctx, ds, id)
 		if err != nil {
-			return nil, fmt.Errorf("getting meeting id of element %d: %w", id, err)
+			return fmt.Errorf("getting meeting id of element %d: %w", id, err)
 		}
-		if !hasMeeting {
-			return nil, fmt.Errorf("calling eachMeeting for object, that has no meeting")
+		if !hasMeeting || meetingID == 0 {
+			return fmt.Errorf("element with id %d has no meeting", id)
 		}
-		if meetingID == 0 {
-			// TODO Last Error
-			return nil, fmt.Errorf("element with id %d has no meeting", id)
-		}
+
 		meetingToIDs[meetingID] = append(meetingToIDs[meetingID], id)
 	}
 
-	var allAllowed []int
 	for meetingID, ids := range meetingToIDs {
-		allowed, err := f(meetingID, ids)
-		if err != nil {
-			return nil, fmt.Errorf("restricting for meeting %d: %w", meetingID, err)
+		if err := f(meetingID, ids); err != nil {
+			return fmt.Errorf("restricting for meeting %d: %w", meetingID, err)
 		}
-
-		allAllowed = append(allAllowed, allowed...)
 	}
 
-	return allAllowed, nil
+	return nil
 }
 
-func meetingPerm(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int, mperms *perm.MeetingPermission, permission perm.TPermission) ([]int, error) {
-	return eachMeeting(ctx, ds, r, ids, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+func meetingPerm(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int, mperms *perm.MeetingPermission, permission perm.TPermission, attrMap map[int]*Attributes) error {
+	return eachMeeting(ctx, ds, r, ids, func(meetingID int, ids []int) error {
+		groupMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {
-			return nil, fmt.Errorf("getting permission: %w", err)
+			return fmt.Errorf("get groups with permission %s: %w", permission, err)
 		}
 
-		if perms.Has(permission) {
-			return ids, nil
+		attr := Attributes{
+			GlobalPermission: byte(perm.OMLSuperadmin),
+			GroupIDs:         groupMap[permission],
 		}
-		return nil, nil
+
+		for _, id := range ids {
+			attrMap[id] = &attr
+		}
+		return nil
 	})
 }
 
-func eachRelationField(ctx context.Context, toField func(int) *dsfetch.ValueInt, ids []int, f func(id int, ids []int) ([]int, error)) ([]int, error) {
+func eachRelationField(ctx context.Context, toField func(int) *dsfetch.ValueInt, ids []int, f func(id int, ids []int) error) error {
 	filteredIDs := make(map[int][]int)
 	for _, id := range ids {
 		fieldID, err := toField(id).Value(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("getting id for element %d: %w", id, err)
+			return fmt.Errorf("getting id for element %d: %w", id, err)
 		}
 		if fieldID == 0 {
 			// TODO Last Error
-			return nil, fmt.Errorf("element with id %d has no relation", id)
+			return fmt.Errorf("element with id %d has no relation", id)
 		}
 		filteredIDs[fieldID] = append(filteredIDs[fieldID], id)
 	}
 
-	allAllowed := make([]int, 0, len(ids))
 	for fieldID, ids := range filteredIDs {
-		allowed, err := f(fieldID, ids)
+		err := f(fieldID, ids)
 		if err != nil {
-			return nil, fmt.Errorf("restricting for element %d: %w", fieldID, err)
+			return fmt.Errorf("restricting for element %d: %w", fieldID, err)
 		}
-
-		allAllowed = append(allAllowed, allowed...)
 	}
 
-	return allAllowed, nil
+	return nil
 }
 
+// TODO: Can probably be removed
 func eachStringField(ctx context.Context, toField func(int) *dsfetch.ValueString, ids []int, f func(value string, ids []int) ([]int, error)) ([]int, error) {
 	filteredIDs := make(map[string][]int)
 	for _, id := range ids {
@@ -244,6 +278,7 @@ func eachStringField(ctx context.Context, toField func(int) *dsfetch.ValueString
 // TODO: currently, this calls the function with the same collectionObject
 // (motion/5, motion/5), but it should bundle it by collection (motion/1,
 // motion/2).
+// TODO: Can probably be removed
 func eachContentObjectCollection(ctx context.Context, toField func(int) *dsfetch.ValueString, ids []int, f func(collection string, id int, ids []int) ([]int, error)) ([]int, error) {
 	filteredIDs := make(map[string][]int)
 	for _, id := range ids {
@@ -278,6 +313,7 @@ func eachContentObjectCollection(ctx context.Context, toField func(int) *dsfetch
 	return allAllowed, nil
 }
 
+// TODO: Can probably be removed
 func eachCondition(ids []int, f func(id int) (bool, error)) ([]int, error) {
 	allowed := make([]int, 0, len(ids))
 	for _, id := range ids {

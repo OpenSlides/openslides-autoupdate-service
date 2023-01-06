@@ -44,46 +44,54 @@ func (a AgendaItem) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, agendaIDs ...int) ([]int, error) {
-	return eachMeeting(ctx, ds, a, agendaIDs, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, agendaIDs ...int) error {
+	return eachMeeting(ctx, ds, a, agendaIDs, func(meetingID int, ids []int) error {
+		groupMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {
-			return nil, fmt.Errorf("getting permissions: %w", err)
+			return fmt.Errorf("get meeting permissions: %w", err)
 		}
 
-		if perms.Has(perm.AgendaItemCanManage) {
-			return ids, nil
+		attrCanManage := Attributes{
+			GlobalPermission: byte(perm.OMLSuperadmin),
+			GroupIDs:         groupMap[perm.AgendaItemCanManage],
 		}
 
-		allowed, err := eachCondition(ids, func(agendaID int) (bool, error) {
+		attrCanSeeInternal := Attributes{
+			GlobalPermission: byte(perm.OMLSuperadmin),
+			GroupIDs:         groupMap[perm.AgendaItemCanSeeInternal],
+		}
+
+		attrCanSee := Attributes{
+			GlobalPermission: byte(perm.OMLSuperadmin),
+			GroupIDs:         groupMap[perm.AgendaItemCanSee],
+		}
+
+		for _, agendaID := range ids {
 			isHidden := ds.AgendaItem_IsHidden(agendaID).ErrorLater(ctx)
 			isInternal := ds.AgendaItem_IsInternal(agendaID).ErrorLater(ctx)
 			if err := ds.Err(); err != nil {
-				return false, fmt.Errorf("fetching isHidden and isInternal: %w", err)
+				return fmt.Errorf("fetching isHidden and isInternal: %w", err)
 			}
 
-			if perms.Has(perm.AgendaItemCanSeeInternal) && !isHidden {
-				return true, nil
+			switch {
+			case isHidden:
+				attrMap[agendaID] = &attrCanManage
+			case isInternal:
+				attrMap[agendaID] = &attrCanSeeInternal
+			default:
+				attrMap[agendaID] = &attrCanSee
 			}
 
-			if perms.Has(perm.AgendaItemCanSee) && (!isHidden && !isInternal) {
-				return true, nil
-			}
-
-			return false, nil
-		})
-
-		if err != nil {
-			return nil, fmt.Errorf("checking agende is hidden and is internal with perm can_see_internal and can_see: %w", err)
 		}
-		return allowed, nil
+
+		return nil
 	})
 }
 
-func (a AgendaItem) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, agendaIDs ...int) ([]int, error) {
-	return meetingPerm(ctx, ds, a, agendaIDs, mperms, perm.AgendaItemCanSeeInternal)
+func (a AgendaItem) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, agendaIDs ...int) error {
+	return meetingPerm(ctx, ds, a, agendaIDs, mperms, perm.AgendaItemCanSeeInternal, attrMap)
 }
 
-func (a AgendaItem) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, agendaIDs ...int) ([]int, error) {
-	return meetingPerm(ctx, ds, a, agendaIDs, mperms, perm.AgendaItemCanManage)
+func (a AgendaItem) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, agendaIDs ...int) error {
+	return meetingPerm(ctx, ds, a, agendaIDs, mperms, perm.AgendaItemCanManage, attrMap)
 }

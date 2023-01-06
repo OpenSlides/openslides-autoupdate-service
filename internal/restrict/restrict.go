@@ -21,30 +21,16 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
-// attributes is are flags that each field has. A user is allowed to see a
-// field, if he has one of the attribute-fields.
-type attributes struct {
-	// globalPermission is either a perm.OrganizationManagement value or 255 for "not even superadmin"
-	globalPermission byte
-
-	// groupIDs are groups, that can see the field. Groups are meeting specific.
-	groupIDs []int
-
-	// userIDs are list from users that can see the field but do not have the
-	// globalPermission or are not in the groups.
-	userIDs []int
-}
-
 // Restricter holds attributes for each restriction mode.
 type Restricter struct {
-	fieldAttributes map[dskey.Key]attributes
+	fieldAttributes map[dskey.Key]collection.Attributes
 }
 
 // New initializes the restricter.
 func New() *Restricter {
 	return &Restricter{
 		// TODO: should the map use pointers to attributes, a attribute can be shared?
-		fieldAttributes: make(map[dskey.Key]attributes),
+		fieldAttributes: make(map[dskey.Key]collection.Attributes),
 	}
 }
 

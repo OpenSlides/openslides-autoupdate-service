@@ -34,7 +34,7 @@ func (s Speaker) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (s Speaker) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, speakerIDs ...int) ([]int, error) {
+func (s Speaker) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, speakerIDs ...int) ([]int, error) {
 	return eachRelationField(ctx, ds.Speaker_ListOfSpeakersID, speakerIDs, func(losID int, ids []int) ([]int, error) {
 		see, err := ListOfSpeakers{}.see(ctx, ds, mperms, losID)
 		if err != nil {

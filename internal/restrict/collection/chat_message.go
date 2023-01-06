@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // ChatMessage handels restrictions for the collection chat_message.
@@ -36,46 +37,40 @@ func (c ChatMessage) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, chatMessageIDs ...int) ([]int, error) {
-	return eachRelationField(ctx, ds.ChatMessage_ChatGroupID, chatMessageIDs, func(chatGroupID int, ids []int) ([]int, error) {
+func (ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, chatMessageIDs ...int) error {
+	return eachRelationField(ctx, ds.ChatMessage_ChatGroupID, chatMessageIDs, func(chatGroupID int, ids []int) error {
 		meetingID, _, err := ChatGroup{}.MeetingID(ctx, ds, chatGroupID)
 		if err != nil {
-			return nil, fmt.Errorf("getting meeting id: %w", err)
+			return fmt.Errorf("getting meeting id: %w", err)
 		}
 
-		perms, err := mperms.Meeting(ctx, meetingID)
+		groupMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {
-			return nil, fmt.Errorf("getting permissions: %w", err)
+			return fmt.Errorf("getting permissions: %w", err)
 		}
 
-		if perms.Has(perm.ChatCanManage) {
-			return ids, nil
-		}
+		allowedGroups := groupMap[perm.ChatCanManage]
 
 		readGroups, err := ds.ChatGroup_ReadGroupIDs(chatGroupID).Value(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("getting chat read group ids: %w", err)
+			return fmt.Errorf("getting chat read group ids: %w", err)
 		}
 
-		for _, gid := range readGroups {
-			if perms.InGroup(gid) {
-				return ids, nil
-			}
-		}
+		allowedGroups.Add(readGroups...)
 
-		allowed, err := eachCondition(ids, func(chatMessageID int) (bool, error) {
+		for _, chatMessageID := range ids {
 			author, err := ds.ChatMessage_UserID(chatMessageID).Value(ctx)
 			if err != nil {
-				return false, fmt.Errorf("reading author of chat message: %w", err)
+				return fmt.Errorf("reading author of chat message: %w", err)
 			}
 
-			return author == mperms.UserID(), nil
-		})
-
-		if err != nil {
-			return nil, fmt.Errorf("checking auther of chat message: %w", err)
+			attrMap[chatMessageID] = &Attributes{
+				GlobalPermission: byte(perm.OMLSuperadmin),
+				GroupIDs:         allowedGroups,
+				UserIDs:          set.New(author),
+			}
 		}
 
-		return allowed, nil
+		return nil
 	})
 }
