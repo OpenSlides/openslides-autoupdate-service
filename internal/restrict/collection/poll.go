@@ -36,7 +36,14 @@ import (
 //	the user has the permissions `user.can_see` and `list_of_speakers.can_manage`.
 //
 // Mode D: Same as Mode B, but for `finished`: Accessible if the user can manage the poll or the user has list_of_speakers.can_manage.
-type Poll struct{}
+type Poll struct {
+	name string
+}
+
+// Name returns the collection name.
+func (p Poll) Name() string {
+	return p.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (p Poll) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -63,7 +70,7 @@ func (p Poll) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p Poll) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, pollIDs ...int) ([]int, error) {
+func (p Poll) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, pollIDs ...int) ([]int, error) {
 	return eachContentObjectCollection(ctx, ds.Poll_ContentObjectID, pollIDs, func(objectCollection string, objectID int, ids []int) ([]int, error) {
 		var collection interface {
 			see(context.Context, *dsfetch.Fetch, *perm.MeetingPermission, ...int) ([]int, error)
@@ -97,7 +104,7 @@ func (p Poll) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPe
 	})
 }
 
-func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, pollIDs ...int) ([]int, error) {
+func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, pollIDs ...int) ([]int, error) {
 	return eachContentObjectCollection(ctx, ds.Poll_ContentObjectID, pollIDs, func(objectCollection string, objectID int, ids []int) ([]int, error) {
 		switch objectCollection {
 		case "motion":
@@ -156,7 +163,7 @@ func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meetin
 	})
 }
 
-func (p Poll) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, pollIDs ...int) ([]int, error) {
+func (p Poll) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, pollIDs ...int) ([]int, error) {
 	return eachStringField(ctx, ds.Poll_State, pollIDs, func(state string, ids []int) ([]int, error) {
 		switch state {
 		case "published":
@@ -179,7 +186,7 @@ func (p Poll) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 	})
 }
 
-func (p Poll) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, pollIDs ...int) ([]int, error) {
+func (p Poll) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, pollIDs ...int) ([]int, error) {
 	return eachStringField(ctx, ds.Poll_State, pollIDs, func(state string, ids []int) ([]int, error) {
 		if state != "started" {
 			return nil, nil
@@ -200,7 +207,7 @@ func (p Poll) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 	})
 }
 
-func (p Poll) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, pollIDs ...int) ([]int, error) {
+func (p Poll) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, pollIDs ...int) ([]int, error) {
 	return eachStringField(ctx, ds.Poll_State, pollIDs, func(state string, pollIDs []int) ([]int, error) {
 		switch state {
 		case "published":

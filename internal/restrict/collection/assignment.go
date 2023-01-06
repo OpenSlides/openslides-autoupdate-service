@@ -13,7 +13,14 @@ import (
 // The user can see an assignment, if the user has assignment.can_see
 //
 // Mode A: User can see the assignment.
-type Assignment struct{}
+type Assignment struct {
+	name string
+}
+
+// Name returns the collection name.
+func (a Assignment) Name() string {
+	return a.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (a Assignment) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -33,6 +40,6 @@ func (a Assignment) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a Assignment) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, assignmentIDs ...int) error {
-	return meetingPerm(ctx, ds, a, assignmentIDs, mperms, perm.AssignmentCanSee, attrMap)
+func (a Assignment) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, assignmentIDs ...int) error {
+	return meetingPerm(ctx, ds, a, "A", assignmentIDs, mperms, perm.AssignmentCanSee, attrMap)
 }

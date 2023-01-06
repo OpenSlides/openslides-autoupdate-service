@@ -14,7 +14,14 @@ import (
 // in the meeting and can see the content_object.
 //
 // Mode A: The user can see the list of speakers.
-type ListOfSpeakers struct{}
+type ListOfSpeakers struct {
+	name string
+}
+
+// Name returns the collection name.
+func (los ListOfSpeakers) Name() string {
+	return los.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (los ListOfSpeakers) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -34,7 +41,7 @@ func (los ListOfSpeakers) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, losIDs ...int) ([]int, error) {
+func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, losIDs ...int) ([]int, error) {
 	return eachMeeting(ctx, ds, los, losIDs, func(meetingID int, ids []int) ([]int, error) {
 		perms, err := mperms.Meeting(ctx, meetingID)
 		if err != nil {

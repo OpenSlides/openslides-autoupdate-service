@@ -20,7 +20,14 @@ import (
 //	The user has motion.can_manage.
 //
 // The user can see the motion comment section.
-type MotionCommentSection struct{}
+type MotionCommentSection struct {
+	name string
+}
+
+// Name returns the collection name.
+func (m MotionCommentSection) Name() string {
+	return m.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (m MotionCommentSection) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -41,7 +48,7 @@ func (m MotionCommentSection) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionCommentSection) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, motionCommentSectionIDs ...int) ([]int, error) {
+func (m MotionCommentSection) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionCommentSectionIDs ...int) ([]int, error) {
 	return eachMeeting(ctx, ds, m, motionCommentSectionIDs, func(meetingID int, ids []int) ([]int, error) {
 		perms, err := mperms.Meeting(ctx, meetingID)
 		if err != nil {

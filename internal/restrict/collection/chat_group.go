@@ -17,7 +17,14 @@ import (
 //	The user is assigned to groups in common with chat_group/read_group_ids or chat_group/write_group_ids.
 //
 // Mode A: The user can see the chat_group.
-type ChatGroup struct{}
+type ChatGroup struct {
+	name string
+}
+
+// Name returns the collection name.
+func (c ChatGroup) Name() string {
+	return c.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (c ChatGroup) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -37,7 +44,7 @@ func (c ChatGroup) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, chatGroupIDs ...int) error {
+func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, chatGroupIDs ...int) error {
 	return eachMeeting(ctx, ds, c, chatGroupIDs, func(meetingID int, ids []int) error {
 		groupMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {
@@ -59,10 +66,10 @@ func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 
 			allGroups := append(readGroups, writeGroups...)
 
-			attrMap[chatGroupID] = &Attributes{
+			attrMap.Add(c.name, chatGroupID, "A", &Attributes{
 				GlobalPermission: byte(perm.OMLSuperadmin),
 				GroupIDs:         set.New[int](append(manageGroups, allGroups...)...),
-			}
+			})
 		}
 
 		return nil

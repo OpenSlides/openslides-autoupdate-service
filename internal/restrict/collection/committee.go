@@ -18,7 +18,14 @@ import (
 //
 // Mode B: The user must have the OML `can_manage_organization` or higher or the
 // CML `can_manage` in the committee.
-type Committee struct{}
+type Committee struct {
+	name string
+}
+
+// Name returns the collection name.
+func (a Committee) Name() string {
+	return a.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (a Committee) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -36,7 +43,7 @@ func (a Committee) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, committeeIDs ...int) error {
+func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, committeeIDs ...int) error {
 	for _, committeeID := range committeeIDs {
 		userIDs, err := ds.Committee_UserIDs(committeeID).Value(ctx)
 		if err != nil {
@@ -52,7 +59,7 @@ func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 	return nil
 }
 
-func (a Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, committeeIDs ...int) error {
+func (a Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, committeeIDs ...int) error {
 	for _, committeeID := range committeeIDs {
 		committeeManager, err := ds.Committee_UserManagementLevel(committeeID, "can_manage").Value(ctx)
 		if err != nil {

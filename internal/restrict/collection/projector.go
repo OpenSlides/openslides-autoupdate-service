@@ -13,7 +13,14 @@ import (
 // The user can see a projector, if the user has projector.can_see.
 //
 // Mode A: The user can see the projector.
-type Projector struct{}
+type Projector struct {
+	name string
+}
+
+// Name returns the collection name.
+func (p Projector) Name() string {
+	return p.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (p Projector) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -34,6 +41,6 @@ func (p Projector) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p Projector) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, projectorIDs ...int) ([]int, error) {
+func (p Projector) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, projectorIDs ...int) ([]int, error) {
 	return meetingPerm(ctx, ds, p, projectorIDs, mperms, perm.ProjectorCanSee)
 }

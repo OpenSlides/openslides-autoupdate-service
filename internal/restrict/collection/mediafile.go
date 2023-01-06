@@ -25,7 +25,14 @@ import (
 //	    The user has groups in common with meeting/inherited_access_group_ids.
 //
 // Mode A: The user can see the mediafile.
-type Mediafile struct{}
+type Mediafile struct {
+	name string
+}
+
+// Name returns the collection name.
+func (m Mediafile) Name() string {
+	return m.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (m Mediafile) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -62,7 +69,7 @@ func (m Mediafile) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, mediafileIDs ...int) ([]int, error) {
+func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, mediafileIDs ...int) ([]int, error) {
 	return eachContentObjectCollection(ctx, ds.Mediafile_OwnerID, mediafileIDs, func(collection string, ownerID int, ids []int) ([]int, error) {
 		if collection == "organization" {
 			if mperms.UserID() != 0 {

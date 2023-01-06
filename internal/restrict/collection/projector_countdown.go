@@ -13,7 +13,14 @@ import (
 // The user can see a projector countdown, if the user has projector.can_see.
 //
 // Group A: The user can see the projector countdown.
-type ProjectorCountdown struct{}
+type ProjectorCountdown struct {
+	name string
+}
+
+// Name returns the collection name.
+func (p ProjectorCountdown) Name() string {
+	return p.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (p ProjectorCountdown) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -34,6 +41,6 @@ func (p ProjectorCountdown) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p ProjectorCountdown) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, projectorCountdownIDs ...int) ([]int, error) {
+func (p ProjectorCountdown) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, projectorCountdownIDs ...int) ([]int, error) {
 	return meetingPerm(ctx, ds, p, projectorCountdownIDs, mperms, perm.ProjectorCanSee)
 }

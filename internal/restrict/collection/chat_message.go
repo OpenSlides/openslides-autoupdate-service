@@ -16,7 +16,14 @@ import (
 // chat_group_id) or they have written the chat_message (dedicated by the key user_id).
 //
 // Mode A: A user can see a chat_message.
-type ChatMessage struct{}
+type ChatMessage struct {
+	name string
+}
+
+// Name returns the collection name.
+func (c ChatMessage) Name() string {
+	return c.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (c ChatMessage) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -37,7 +44,7 @@ func (c ChatMessage) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, chatMessageIDs ...int) error {
+func (c ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, chatMessageIDs ...int) error {
 	return eachRelationField(ctx, ds.ChatMessage_ChatGroupID, chatMessageIDs, func(chatGroupID int, ids []int) error {
 		meetingID, _, err := ChatGroup{}.MeetingID(ctx, ds, chatGroupID)
 		if err != nil {
@@ -64,11 +71,11 @@ func (ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 				return fmt.Errorf("reading author of chat message: %w", err)
 			}
 
-			attrMap[chatMessageID] = &Attributes{
+			attrMap.Add(c.name, chatMessageID, "A", &Attributes{
 				GlobalPermission: byte(perm.OMLSuperadmin),
 				GroupIDs:         allowedGroups,
 				UserIDs:          set.New(author),
-			}
+			})
 		}
 
 		return nil

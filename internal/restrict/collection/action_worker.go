@@ -7,7 +7,14 @@ import (
 )
 
 // ActionWorker handles permission for action_worker.
-type ActionWorker struct{}
+type ActionWorker struct {
+	name string
+}
+
+// Name returns the collection name.
+func (a ActionWorker) Name() string {
+	return a.name
+}
 
 // MeetingID returns no meeting.
 func (a ActionWorker) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -18,7 +25,7 @@ func (a ActionWorker) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) 
 func (a ActionWorker) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return Allways
+		return Allways(a.name, mode)
 	}
 	return nil
 }

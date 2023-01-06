@@ -8,6 +8,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
@@ -42,8 +43,23 @@ type Attributes struct {
 	UserIDs set.Set[int]
 }
 
+// AttributeMap holds attributes for each restriction mod
+type AttributeMap struct {
+	data map[dskey.Key]*Attributes
+}
+
+// Add adds a value to the map.
+func (am *AttributeMap) Add(collection string, id int, restrictionMod string, value *Attributes) {
+	am.data[dskey.Key{Collection: collection, ID: id, Field: restrictionMod}] = value
+}
+
+// Get returns an attribute pointer to a restriction mod field. Do not modify it.
+func (am *AttributeMap) Get(collection string, id int, restrictionMode string) *Attributes {
+	return am.data[dskey.Key{Collection: collection, ID: id, Field: restrictionMode}]
+}
+
 // FieldRestricter is a function to restrict fields of a collection.
-type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, ids ...int) error
+type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, ids ...int) error
 
 var allwaysAttr = Attributes{
 	GlobalPermission: 0,
@@ -58,25 +74,31 @@ var neverAttr = Attributes{
 }
 
 // Allways is a restricter func that just returns true.
-func Allways(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, elementIDs ...int) error {
-	for _, id := range elementIDs {
-		attrMap[id] = &allwaysAttr
+func Allways(collection string, mode string) FieldRestricter {
+	return func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, elementIDs ...int) error {
+		for _, id := range elementIDs {
+			attrMap.Add(collection, id, mode, &allwaysAttr)
+		}
+		return nil
 	}
-	return nil
 }
 
-func loggedIn(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, elementIDs ...int) error {
-	for _, id := range elementIDs {
-		attrMap[id] = &loggedInAttr
+func loggedIn(collection string, mode string) FieldRestricter {
+	return func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, elementIDs ...int) error {
+		for _, id := range elementIDs {
+			attrMap.Add(collection, id, mode, &loggedInAttr)
+		}
+		return nil
 	}
-	return nil
 }
 
-func never(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, elementIDs ...int) error {
-	for _, id := range elementIDs {
-		attrMap[id] = &neverAttr
+func never(collection string, mode string) FieldRestricter {
+	return func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, elementIDs ...int) error {
+		for _, id := range elementIDs {
+			attrMap.Add(collection, id, mode, &neverAttr)
+		}
+		return nil
 	}
-	return nil
 }
 
 // Restricter returns a fieldRestricter for a restriction_mode.
@@ -89,95 +111,104 @@ type Restricter interface {
 	// MeetingID returns the meeting id for an object. Returns hasMeeting=false,
 	// if the object does not belong to a meeting.
 	MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (meetingID int, hasMeeting bool, err error)
+
+	Name() string
 }
 
 // Collection returns the restricter for a collection
 func Collection(collection string) Restricter {
 	switch collection {
 	case "action_worker":
-		return ActionWorker{}
+		return ActionWorker{name: collection}
 	case "agenda_item":
-		return AgendaItem{}
+		return AgendaItem{name: collection}
 	case "assignment":
-		return Assignment{}
+		return Assignment{name: collection}
 	case "assignment_candidate":
-		return AssignmentCandidate{}
+		return AssignmentCandidate{name: collection}
 	case "list_of_speakers":
-		return ListOfSpeakers{}
+		return ListOfSpeakers{name: collection}
 	case "chat_group":
-		return ChatGroup{}
+		return ChatGroup{name: collection}
 	case "chat_message":
-		return ChatMessage{}
+		return ChatMessage{name: collection}
 	case "committee":
-		return Committee{}
+		return Committee{name: collection}
 	case "group":
-		return Group{}
+		return Group{name: collection}
 	case "mediafile":
-		return Mediafile{}
+		return Mediafile{name: collection}
 	case "meeting":
-		return Meeting{}
+		return Meeting{name: collection}
 	case "motion":
-		return Motion{}
+		return Motion{name: collection}
 	case "motion_block":
-		return MotionBlock{}
+		return MotionBlock{name: collection}
 	case "motion_category":
-		return MotionCategory{}
+		return MotionCategory{name: collection}
 	case "motion_change_recommendation":
-		return MotionChangeRecommendation{}
+		return MotionChangeRecommendation{name: collection}
 	case "motion_state":
-		return MotionState{}
+		return MotionState{name: collection}
 	case "motion_statute_paragraph":
-		return MotionStatuteParagraph{}
+		return MotionStatuteParagraph{name: collection}
 	case "motion_comment":
-		return MotionComment{}
+		return MotionComment{name: collection}
 	case "motion_comment_section":
-		return MotionCommentSection{}
+		return MotionCommentSection{name: collection}
 	case "motion_submitter":
-		return MotionSubmitter{}
+		return MotionSubmitter{name: collection}
 	case "motion_workflow":
-		return MotionWorkflow{}
+		return MotionWorkflow{name: collection}
 	case "option":
-		return Option{}
+		return Option{name: collection}
 	case "organization":
-		return Organization{}
+		return Organization{name: collection}
 	case "organization_tag":
-		return OrganizationTag{}
+		return OrganizationTag{name: collection}
 	case "personal_note":
-		return PersonalNote{}
+		return PersonalNote{name: collection}
 	case "poll":
-		return Poll{}
+		return Poll{name: collection}
 	case "projection":
-		return Projection{}
+		return Projection{name: collection}
 	case "projector":
-		return Projector{}
+		return Projector{name: collection}
 	case "projector_countdown":
-		return ProjectorCountdown{}
+		return ProjectorCountdown{name: collection}
 	case "projector_message":
-		return ProjectorMessage{}
+		return ProjectorMessage{name: collection}
 	case "speaker":
-		return Speaker{}
+		return Speaker{name: collection}
 	case "tag":
-		return Tag{}
+		return Tag{name: collection}
 	case "theme":
-		return Theme{}
+		return Theme{name: collection}
 	case "topic":
-		return Topic{}
+		return Topic{name: collection}
 	case "user":
-		return User{}
+		return User{name: collection}
 	case "vote":
-		return Vote{}
+		return Vote{name: collection}
 
 	default:
-		return Unknown{}
+		return Unknown{name: collection}
 	}
 }
 
 // Unknown is a collection that does not exist in the models.yml
-type Unknown struct{}
+type Unknown struct {
+	name string
+}
+
+// Name returns the collection name.
+func (u Unknown) Name() string {
+	return u.name
+}
 
 // Modes on an unknown field can not be seen.
 func (u Unknown) Modes(string) FieldRestricter {
-	return never
+	return never(u.name, "any")
 }
 
 // MeetingID is not a thing on a unknown meeting
@@ -208,7 +239,7 @@ func eachMeeting(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int
 	return nil
 }
 
-func meetingPerm(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int, mperms *perm.MeetingPermission, permission perm.TPermission, attrMap map[int]*Attributes) error {
+func meetingPerm(ctx context.Context, ds *dsfetch.Fetch, r Restricter, mode string, ids []int, mperms *perm.MeetingPermission, permission perm.TPermission, attrMap AttributeMap) error {
 	return eachMeeting(ctx, ds, r, ids, func(meetingID int, ids []int) error {
 		groupMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {
@@ -221,7 +252,7 @@ func meetingPerm(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int
 		}
 
 		for _, id := range ids {
-			attrMap[id] = &attr
+			attrMap.Add(r.Name(), id, mode, &attr)
 		}
 		return nil
 	})

@@ -13,7 +13,14 @@ import (
 // The user can see a motion workflow if the user has motion.can_see.
 //
 // Mode A: The user can see the motion workflow.
-type MotionWorkflow struct{}
+type MotionWorkflow struct {
+	name string
+}
+
+// Name returns the collection name.
+func (m MotionWorkflow) Name() string {
+	return m.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (m MotionWorkflow) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -34,6 +41,6 @@ func (m MotionWorkflow) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionWorkflow) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, motionWorkflowIDs ...int) ([]int, error) {
+func (m MotionWorkflow) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionWorkflowIDs ...int) ([]int, error) {
 	return meetingPerm(ctx, ds, m, motionWorkflowIDs, mperms, perm.MotionCanSee)
 }

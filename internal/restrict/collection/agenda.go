@@ -20,7 +20,14 @@ import (
 // Mode B: The user has agenda_item.can_see_internal.
 //
 // Mode C: The user has agenda_item.can_manage.
-type AgendaItem struct{}
+type AgendaItem struct {
+	name string
+}
+
+// Name returns the collection name.
+func (a AgendaItem) Name() string {
+	return a.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (a AgendaItem) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -44,7 +51,7 @@ func (a AgendaItem) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, agendaIDs ...int) error {
+func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, agendaIDs ...int) error {
 	return eachMeeting(ctx, ds, a, agendaIDs, func(meetingID int, ids []int) error {
 		groupMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {
@@ -73,14 +80,16 @@ func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Mee
 				return fmt.Errorf("fetching isHidden and isInternal: %w", err)
 			}
 
+			var attr Attributes
 			switch {
 			case isHidden:
-				attrMap[agendaID] = &attrCanManage
+				attr = attrCanManage
 			case isInternal:
-				attrMap[agendaID] = &attrCanSeeInternal
+				attr = attrCanSeeInternal
 			default:
-				attrMap[agendaID] = &attrCanSee
+				attr = attrCanSee
 			}
+			attrMap.Add(a.name, agendaID, "A", &attr)
 
 		}
 
@@ -88,10 +97,10 @@ func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Mee
 	})
 }
 
-func (a AgendaItem) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, agendaIDs ...int) error {
-	return meetingPerm(ctx, ds, a, agendaIDs, mperms, perm.AgendaItemCanSeeInternal, attrMap)
+func (a AgendaItem) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, agendaIDs ...int) error {
+	return meetingPerm(ctx, ds, a, "B", agendaIDs, mperms, perm.AgendaItemCanSeeInternal, attrMap)
 }
 
-func (a AgendaItem) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, agendaIDs ...int) error {
-	return meetingPerm(ctx, ds, a, agendaIDs, mperms, perm.AgendaItemCanManage, attrMap)
+func (a AgendaItem) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, agendaIDs ...int) error {
+	return meetingPerm(ctx, ds, a, "C", agendaIDs, mperms, perm.AgendaItemCanManage, attrMap)
 }

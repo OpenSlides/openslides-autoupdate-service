@@ -13,7 +13,14 @@ import (
 // The user can see a motion state if the user has motion.can_see.
 //
 // Mode A: The user can see the motion state.
-type MotionState struct{}
+type MotionState struct {
+	name string
+}
+
+// Name returns the collection name.
+func (m MotionState) Name() string {
+	return m.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (m MotionState) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -34,6 +41,6 @@ func (m MotionState) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionState) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, motionStateIDs ...int) ([]int, error) {
+func (m MotionState) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionStateIDs ...int) ([]int, error) {
 	return meetingPerm(ctx, ds, m, motionStateIDs, mperms, perm.MotionCanSee)
 }

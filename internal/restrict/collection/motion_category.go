@@ -13,7 +13,14 @@ import (
 // The user can see a motion category if the user has motion.can_see.
 //
 // Mode A: The user can see the motion category.
-type MotionCategory struct{}
+type MotionCategory struct {
+	name string
+}
+
+// Name returns the collection name.
+func (m MotionCategory) Name() string {
+	return m.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (m MotionCategory) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -34,6 +41,6 @@ func (m MotionCategory) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionCategory) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, motionCategoryIDs ...int) ([]int, error) {
+func (m MotionCategory) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionCategoryIDs ...int) ([]int, error) {
 	return meetingPerm(ctx, ds, m, motionCategoryIDs, mperms, perm.MotionCanSee)
 }

@@ -13,7 +13,14 @@ import (
 // The user can see a group, if the user can see the group's meeting.
 //
 // Mode A: The user can see the group.
-type Group struct{}
+type Group struct {
+	name string
+}
+
+// Name returns the collection name.
+func (g Group) Name() string {
+	return g.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (g Group) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -34,16 +41,14 @@ func (g Group) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, groupIDs ...int) ([]int, error) {
-	return eachMeeting(ctx, ds, g, groupIDs, func(meetingID int, ids []int) ([]int, error) {
-		canSee, err := Meeting{}.see(ctx, ds, mperms, meetingID)
-		if err != nil {
-			return nil, fmt.Errorf("can see meeting %d: %w", meetingID, err)
+func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, groupIDs ...int) error {
+	return eachMeeting(ctx, ds, g, groupIDs, func(meetingID int, ids []int) error {
+		for _, id := range groupIDs {
+			// TODO: Fixme, need to get the attr for meeting/$meetingID
+			// TODO: Make sure meeting is calculated before group.
+			attrMap[id] = attrMap[meetingID]
 		}
 
-		if len(canSee) == 1 {
-			return ids, nil
-		}
-		return nil, nil
+		return nil
 	})
 }

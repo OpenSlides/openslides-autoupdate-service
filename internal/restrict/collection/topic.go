@@ -13,7 +13,14 @@ import (
 // The user can see a topic, if the user has agenda_item.can_see.
 //
 // Mode A: The user can see the topic.
-type Topic struct{}
+type Topic struct {
+	name string
+}
+
+// Name returns the collection name.
+func (t Topic) Name() string {
+	return t.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (t Topic) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -34,6 +41,6 @@ func (t Topic) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (t Topic) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, topicIDs ...int) ([]int, error) {
+func (t Topic) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, topicIDs ...int) ([]int, error) {
 	return meetingPerm(ctx, ds, t, topicIDs, mperms, perm.AgendaItemCanSee)
 }

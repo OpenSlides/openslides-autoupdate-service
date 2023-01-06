@@ -9,7 +9,14 @@ import (
 // Theme handels the restrictions for the theme collection.
 //
 // Every user can see a theme.
-type Theme struct{}
+type Theme struct {
+	name string
+}
+
+// Name returns the collection name.
+func (t Theme) Name() string {
+	return t.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (t Theme) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {

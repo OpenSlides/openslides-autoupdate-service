@@ -15,7 +15,14 @@ import (
 // The superadmin can not see personal_notes from other users.
 //
 // Mode A: The user can see the personal note.
-type PersonalNote struct{}
+type PersonalNote struct {
+	name string
+}
+
+// Name returns the collection name.
+func (p PersonalNote) Name() string {
+	return p.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (p PersonalNote) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -36,7 +43,7 @@ func (p PersonalNote) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p PersonalNote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, personalNoteIDs ...int) ([]int, error) {
+func (p PersonalNote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, personalNoteIDs ...int) ([]int, error) {
 	return eachRelationField(ctx, ds.PersonalNote_UserID, personalNoteIDs, func(userID int, ids []int) ([]int, error) {
 		if mperms.UserID() == userID {
 			return ids, nil

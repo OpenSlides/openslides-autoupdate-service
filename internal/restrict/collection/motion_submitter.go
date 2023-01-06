@@ -14,7 +14,14 @@ import (
 // The user can see a motion submitter if the user can see the linked motion.
 //
 // Mode A: The user can see the motion submitter.
-type MotionSubmitter struct{}
+type MotionSubmitter struct {
+	name string
+}
+
+// Name returns the collection name.
+func (m MotionSubmitter) Name() string {
+	return m.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (m MotionSubmitter) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -35,7 +42,7 @@ func (m MotionSubmitter) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, motionSubmitterIDs ...int) ([]int, error) {
+func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionSubmitterIDs ...int) ([]int, error) {
 	submitterToMotion := make(map[int]int, len(motionSubmitterIDs))
 	motionIDs := set.New[int]()
 	for _, submitterID := range motionSubmitterIDs {

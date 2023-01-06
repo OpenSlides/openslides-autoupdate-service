@@ -25,7 +25,14 @@ import (
 // Mode C: The user has meeting.can_see_frontpage.
 //
 // Mode D: The user has meeting.can_see_livestream.
-type Meeting struct{}
+type Meeting struct {
+	name string
+}
+
+// Name returns the collection name.
+func (m Meeting) Name() string {
+	return m.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (m Meeting) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -47,7 +54,7 @@ func (m Meeting) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, meetingIDs ...int) ([]int, error) {
+func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, meetingIDs ...int) ([]int, error) {
 	oml, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageOrganization)
 	if err != nil {
 		return nil, fmt.Errorf("checking organization management level: %w", err)
@@ -112,7 +119,7 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meetin
 	})
 }
 
-func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, meetingIDs ...int) ([]int, error) {
+func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, meetingIDs ...int) ([]int, error) {
 	allowed, err := eachCondition(meetingIDs, func(meetingID int) (bool, error) {
 		perms, err := mperms.Meeting(ctx, meetingID)
 		if err != nil {
@@ -129,7 +136,7 @@ func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 	return allowed, nil
 }
 
-func (m Meeting) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, meetingIDs ...int) ([]int, error) {
+func (m Meeting) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, meetingIDs ...int) ([]int, error) {
 	allowed, err := eachCondition(meetingIDs, func(meetingID int) (bool, error) {
 		perms, err := mperms.Meeting(ctx, meetingID)
 		if err != nil {

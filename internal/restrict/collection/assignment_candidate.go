@@ -13,7 +13,14 @@ import (
 // The user can see an assignment candidate, if the user can see the linked assignment.
 //
 // Mode A: The user can see the assignment candidate.
-type AssignmentCandidate struct{}
+type AssignmentCandidate struct {
+	name string
+}
+
+// Name returns the collection name.
+func (a AssignmentCandidate) Name() string {
+	return a.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (a AssignmentCandidate) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -34,11 +41,11 @@ func (a AssignmentCandidate) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a AssignmentCandidate) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, assignmentCandidateIDs ...int) error {
+func (a AssignmentCandidate) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, assignmentCandidateIDs ...int) error {
 	return eachRelationField(ctx, ds.AssignmentCandidate_AssignmentID, assignmentCandidateIDs, func(assignmentID int, ids []int) error {
 		// TODO: This only works if assignment is calculated before assignment_candidate
 		for _, id := range ids {
-			attrMap[id] = attrMap[assignmentID]
+			attrMap.Add(a.name, id, "A", attrMap.Get("assignment", assignmentID, "A"))
 		}
 		return nil
 	})

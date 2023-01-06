@@ -15,7 +15,14 @@ import (
 // Mode A: The user can see the option.
 //
 // Mode B: The user can see the poll and (manage the linked poll or poll/state is published).
-type Option struct{}
+type Option struct {
+	name string
+}
+
+// Name returns the collection name.
+func (o Option) Name() string {
+	return o.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (o Option) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -39,7 +46,7 @@ func (o Option) Modes(mode string) FieldRestricter {
 }
 
 // TODO: Group by poll
-func (o Option) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, optionIDs ...int) ([]int, error) {
+func (o Option) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, optionIDs ...int) ([]int, error) {
 	return eachCondition(optionIDs, func(optionID int) (bool, error) {
 		pollID, err := pollID(ctx, ds, optionID)
 		if err != nil {
@@ -56,7 +63,7 @@ func (o Option) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 }
 
 // TODO: Group by poll
-func (o Option) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, optionIDs ...int) ([]int, error) {
+func (o Option) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, optionIDs ...int) ([]int, error) {
 	return eachCondition(optionIDs, func(optionID int) (bool, error) {
 		pollID, err := pollID(ctx, ds, optionID)
 		if err != nil {

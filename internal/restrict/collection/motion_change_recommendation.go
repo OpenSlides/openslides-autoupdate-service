@@ -16,7 +16,14 @@ import (
 //	The user has motion.can_see and the motion change recommendation has internal set to false.
 //
 // Mode A: The user can see the motion change recommendation.
-type MotionChangeRecommendation struct{}
+type MotionChangeRecommendation struct {
+	name string
+}
+
+// Name returns the collection name.
+func (m MotionChangeRecommendation) Name() string {
+	return m.name
+}
 
 // MeetingID returns the meetingID for the object.
 func (m MotionChangeRecommendation) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -37,7 +44,7 @@ func (m MotionChangeRecommendation) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionChangeRecommendation) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap map[int]*Attributes, motionChangeRecommendationIDs ...int) ([]int, error) {
+func (m MotionChangeRecommendation) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionChangeRecommendationIDs ...int) ([]int, error) {
 	return eachMeeting(ctx, ds, m, motionChangeRecommendationIDs, func(meetingID int, ids []int) ([]int, error) {
 		perms, err := mperms.Meeting(ctx, meetingID)
 		if err != nil {
