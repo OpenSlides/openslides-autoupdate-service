@@ -60,7 +60,7 @@ type mockRestricter struct {
 }
 
 func (r mockRestricter) Getter(ds datastore.Getter, uid int) datastore.Getter {
-	return getterfunc(func(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+	return datastore.GetterFunc(func(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 		data, err := ds.Get(ctx, keys...)
 		if err != nil {
 			return nil, fmt.Errorf("getting data: %w", err)
@@ -83,10 +83,4 @@ func (r mockRestricter) InsertFields(datastore.Getter, map[dskey.Key][]byte) err
 
 func (r mockRestricter) UpdateFields(datastore.Getter, map[dskey.Key][]byte) error {
 	return nil
-}
-
-type getterfunc func(context.Context, ...dskey.Key) (map[dskey.Key][]byte, error)
-
-func (g getterfunc) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
-	return g(ctx, keys...)
 }

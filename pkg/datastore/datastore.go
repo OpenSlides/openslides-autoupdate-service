@@ -32,6 +32,14 @@ type Getter interface {
 	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
 }
 
+// GetterFunc transforms a function to a Getter.
+type GetterFunc func(context.Context, ...dskey.Key) (map[dskey.Key][]byte, error)
+
+// Get calls the function
+func (f GetterFunc) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+	return f(ctx, keys...)
+}
+
 // Updater returns keys that have changes. Blocks until there is
 // changed data.
 type Updater interface {
