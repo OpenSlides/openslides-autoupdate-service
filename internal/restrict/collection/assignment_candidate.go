@@ -41,7 +41,7 @@ func (a AssignmentCandidate) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a AssignmentCandidate) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, assignmentCandidateIDs ...int) error {
+func (a AssignmentCandidate) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, assignmentCandidateIDs ...int) error {
 	return eachRelationField(ctx, ds.AssignmentCandidate_AssignmentID, assignmentCandidateIDs, func(assignmentID int, ids []int) error {
 		// TODO: This only works if assignment is calculated before assignment_candidate
 		for _, id := range ids {

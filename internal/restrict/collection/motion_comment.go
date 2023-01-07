@@ -49,7 +49,7 @@ func (m MotionComment) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-// func (m MotionComment) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionCommentIDs ...int) error {
+// func (m MotionComment) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, motionCommentIDs ...int) error {
 // 	return eachRelationField(ctx, ds.MotionComment_SectionID, motionCommentIDs, func(commentSectionID int, ids []int) error {
 // 		commentSectionMeetingID, err := ds.MotionCommentSection_MeetingID(commentSectionID).Value(ctx)
 // 		if err != nil {

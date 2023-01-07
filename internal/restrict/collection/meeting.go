@@ -55,7 +55,7 @@ func (m Meeting) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, meetingIDs ...int) error {
+func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, meetingIDs ...int) error {
 	for _, meetingID := range meetingIDs {
 		var meeting struct {
 			enableAnonymous bool
@@ -116,7 +116,7 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meetin
 	return nil
 }
 
-func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, meetingIDs ...int) error {
+func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, meetingIDs ...int) error {
 	for _, meetingID := range meetingIDs {
 		permMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {
@@ -132,7 +132,7 @@ func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 	return nil
 }
 
-func (m Meeting) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, meetingIDs ...int) error {
+func (m Meeting) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, meetingIDs ...int) error {
 	for _, meetingID := range meetingIDs {
 		permMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {

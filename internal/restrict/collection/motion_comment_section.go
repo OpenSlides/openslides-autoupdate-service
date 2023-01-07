@@ -48,7 +48,7 @@ func (m MotionCommentSection) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionCommentSection) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionCommentSectionIDs ...int) error {
+func (m MotionCommentSection) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, motionCommentSectionIDs ...int) error {
 	for _, id := range motionCommentSectionIDs {
 		// TODO: Implement me
 		attrMap.Add(m.name, id, "A", &allwaysAttr)

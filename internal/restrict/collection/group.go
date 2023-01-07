@@ -41,7 +41,7 @@ func (g Group) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, groupIDs ...int) error {
+func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, groupIDs ...int) error {
 	return eachMeeting(ctx, ds, g, groupIDs, func(meetingID int, ids []int) error {
 		for _, id := range groupIDs {
 			// TODO: Make sure meeting is calculated before group.

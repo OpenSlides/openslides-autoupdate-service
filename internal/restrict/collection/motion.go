@@ -55,7 +55,7 @@ func (m Motion) Modes(mode string) FieldRestricter {
 	// return nil
 }
 
-// func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionIDs ...int) ([]int, error) {
+// func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, motionIDs ...int) ([]int, error) {
 // 	return eachMeeting(ctx, ds, m, motionIDs, func(meetingID int, ids []int) ([]int, error) {
 // 		perms, err := mperms.Meeting(ctx, meetingID)
 // 		if err != nil {
@@ -108,7 +108,7 @@ func (m Motion) Modes(mode string) FieldRestricter {
 // 	})
 // }
 
-// func isSubmitter(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionID int) (bool, error) {
+// func isSubmitter(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, motionID int) (bool, error) {
 // 	for _, submitterID := range ds.Motion_SubmitterIDs(motionID).ErrorLater(ctx) {
 // 		if ds.MotionSubmitter_UserID(submitterID).ErrorLater(ctx) == mperms.UserID() {
 // 			return true, nil
@@ -120,7 +120,7 @@ func (m Motion) Modes(mode string) FieldRestricter {
 // 	return false, nil
 // }
 
-// func (m Motion) modeA(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionIDs ...int) ([]int, error) {
+// func (m Motion) modeA(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, motionIDs ...int) ([]int, error) {
 // 	allowed, err := m.see(ctx, ds, mperms, motionIDs...)
 // 	if err != nil {
 // 		return nil, fmt.Errorf("see motion: %w", err)

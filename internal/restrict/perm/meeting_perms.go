@@ -16,7 +16,7 @@ type MeetingPermission struct {
 }
 
 // NewMeetingPermission initializes a new MeetingPermission.
-func NewMeetingPermission(ds *dsfetch.Fetch, uid int) MeetingPermission {
+func NewMeetingPermission() MeetingPermission {
 	return MeetingPermission{
 		forMeetingID: make(map[int]map[TPermission]set.Set[int]),
 	}

@@ -69,7 +69,7 @@ func (m Mediafile) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, mediafileIDs ...int) error {
+func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, mediafileIDs ...int) error {
 	for _, id := range mediafileIDs {
 		// TODO: Implement me
 		attrMap.Add(m.name, id, "A", &allwaysAttr)

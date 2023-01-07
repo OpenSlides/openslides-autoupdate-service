@@ -44,7 +44,7 @@ func (m MotionBlock) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionBlock) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionBlockIDs ...int) error {
+func (m MotionBlock) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, motionBlockIDs ...int) error {
 	return eachMeeting(ctx, ds, m, motionBlockIDs, func(meetingID int, ids []int) error {
 		groupMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {

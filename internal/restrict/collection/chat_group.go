@@ -44,7 +44,7 @@ func (c ChatGroup) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, chatGroupIDs ...int) error {
+func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, chatGroupIDs ...int) error {
 	return eachMeeting(ctx, ds, c, chatGroupIDs, func(meetingID int, ids []int) error {
 		groupMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {

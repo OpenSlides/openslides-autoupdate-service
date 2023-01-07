@@ -41,7 +41,7 @@ func (m MotionSubmitter) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionSubmitterIDs ...int) error {
+func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, motionSubmitterIDs ...int) error {
 	return eachRelationField(ctx, ds.MotionSubmitter_MotionID, motionSubmitterIDs, func(motionID int, ids []int) error {
 		// TODO: This only works if motion is calculated before motion_submitter
 		for _, id := range ids {

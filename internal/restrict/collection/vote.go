@@ -56,7 +56,7 @@ func (v Vote) Modes(mode string) FieldRestricter {
 }
 
 // // TODO: Group by poll or option
-// func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, voteIDs ...int) ([]int, error) {
+// func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, voteIDs ...int) ([]int, error) {
 // 	return eachCondition(voteIDs, func(voteID int) (bool, error) {
 // 		optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
 // 		if err != nil {
@@ -109,7 +109,7 @@ func (v Vote) Modes(mode string) FieldRestricter {
 // }
 
 // // TODO: Group by poll or option
-// func (v Vote) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, voteIDs ...int) ([]int, error) {
+// func (v Vote) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, voteIDs ...int) ([]int, error) {
 // 	return eachCondition(voteIDs, func(voteID int) (bool, error) {
 // 		optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
 // 		if err != nil {

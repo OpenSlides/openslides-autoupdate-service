@@ -41,6 +41,6 @@ func (m MotionCategory) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionCategory) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, motionCategoryIDs ...int) error {
+func (m MotionCategory) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, motionCategoryIDs ...int) error {
 	return meetingPerm(ctx, ds, m, "A", motionCategoryIDs, mperms, perm.MotionCanSee, attrMap)
 }

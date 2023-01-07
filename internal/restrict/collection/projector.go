@@ -41,6 +41,6 @@ func (p Projector) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p Projector) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, projectorIDs ...int) error {
+func (p Projector) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, projectorIDs ...int) error {
 	return meetingPerm(ctx, ds, p, "A", projectorIDs, mperms, perm.ProjectorCanSee, attrMap)
 }

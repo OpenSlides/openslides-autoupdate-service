@@ -40,6 +40,6 @@ func (a Assignment) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a Assignment) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, assignmentIDs ...int) error {
+func (a Assignment) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, assignmentIDs ...int) error {
 	return meetingPerm(ctx, ds, a, "A", assignmentIDs, mperms, perm.AssignmentCanSee, attrMap)
 }

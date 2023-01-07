@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
@@ -23,27 +24,114 @@ import (
 
 // Restricter holds attributes for each restriction mode.
 type Restricter struct {
-	fieldAttributes map[dskey.Key]collection.Attributes
+	mu           sync.RWMutex
+	attributeMap collection.AttributeMap
 }
 
 // New initializes the restricter.
 func New() *Restricter {
 	return &Restricter{
-		// TODO: should the map use pointers to attributes, a attribute can be shared?
-		fieldAttributes: make(map[dskey.Key]collection.Attributes),
+		attributeMap: collection.NewAttributeMap(),
 	}
 }
 
 // InsertFields adds new fields.
-func (r *Restricter) InsertFields(ds datastore.Getter, values map[dskey.Key][]byte) error {
-	// TODO
+func (r *Restricter) InsertFields(ctx context.Context, ds datastore.Getter, values map[dskey.Key][]byte) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	restrictModeIDs, err := groupKeysByCollectionMode(values)
+	if err != nil {
+		return fmt.Errorf("group keys: %w", err)
+	}
+
+	if err := r.prepare(ctx, ds, restrictModeIDs); err != nil {
+		return fmt.Errorf("prepare: %w", err)
+	}
+
 	return nil
 }
 
 // UpdateFields updates the attribute fields.
-func (r *Restricter) UpdateFields(ds datastore.Getter, values map[dskey.Key][]byte) error {
-	// TODO
+func (r *Restricter) UpdateFields(ctx context.Context, ds datastore.Getter, values map[dskey.Key][]byte) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// TODO: Handle deletion.
+	restrictModeIDs := r.attributeMap.RestrictModeIDs()
+
+	if err := r.prepare(ctx, ds, restrictModeIDs); err != nil {
+		return fmt.Errorf("prepare: %w", err)
+	}
+
 	return nil
+}
+
+func (r *Restricter) prepare(ctx context.Context, ds datastore.Getter, restrictModeIDs map[collection.CM]set.Set[int]) error {
+	orderedCMs := sortRestrictModeIDs(restrictModeIDs)
+	mperms := perm.NewMeetingPermission()
+	fetcher := dsfetch.New(ds)
+
+	for _, cm := range orderedCMs {
+		ids := restrictModeIDs[cm]
+
+		modeFunc, err := restrictModefunc(cm.Collection, cm.Mode)
+		if err != nil {
+			return fmt.Errorf("getting modeFunc for %s: %w", cm, err)
+		}
+
+		if err := modeFunc(ctx, fetcher, mperms, r.attributeMap, ids.List()...); err != nil {
+			return fmt.Errorf("restrict mode %s", cm)
+		}
+	}
+
+	return nil
+}
+
+func sortRestrictModeIDs(data map[collection.CM]set.Set[int]) []collection.CM {
+	keys := make([]collection.CM, 0, len(data))
+	for k := range data {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(a, b int) bool {
+		var aid, bid int
+		if id, ok := collectionOrder[keys[a].String()]; ok {
+			aid = id
+		} else if id, ok := collectionOrder[keys[a].Collection]; ok {
+			aid = id
+		}
+
+		if id, ok := collectionOrder[keys[b].String()]; ok {
+			bid = id
+		} else if id, ok := collectionOrder[keys[b].Collection]; ok {
+			bid = id
+		}
+
+		return aid < bid
+	})
+
+	return keys
+}
+
+// groupKeysByCollection groups all the keys in data by there collection.
+func groupKeysByCollectionMode(values map[dskey.Key][]byte) (map[collection.CM]set.Set[int], error) {
+	restrictModeIDs := make(map[collection.CM]set.Set[int], len(values)) // TODO: the len is proably smaller then values
+
+	for key := range values {
+		restrictionMode, err := restrictModeName(key.Collection, key.Field)
+		if err != nil {
+			return nil, fmt.Errorf("getting restriction Mode for %s: %w", key, err)
+		}
+
+		cm := collection.CM{Collection: key.Collection, Mode: restrictionMode}
+		if restrictModeIDs[cm].IsNotInitialized() {
+			restrictModeIDs[cm] = set.New[int]()
+		}
+		restrictModeIDs[cm].Add(key.ID)
+	}
+
+	return restrictModeIDs, nil
 }
 
 // Getter returns a datastore getter that returns restricted data.
@@ -108,7 +196,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[ds
 	}
 
 	// Get all required collections with there ids.
-	restrictModeIDs := make(map[collection.CM]*set.Set[int])
+	restrictModeIDs := make(map[collection.CM]set.Set[int])
 	for key := range data {
 		if data[key] == nil {
 			continue
@@ -228,14 +316,14 @@ func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, d
 }
 
 // groupKeysByCollection groups all the keys in data by there collection.
-func groupKeysByCollection(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]*set.Set[int]) error {
+func groupKeysByCollection(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]set.Set[int]) error {
 	restrictionMode, err := restrictModeName(key.Collection, key.Field)
 	if err != nil {
 		return fmt.Errorf("getting restriction Mode for %s: %w", key, err)
 	}
 
 	cm := collection.CM{Collection: key.Collection, Mode: restrictionMode}
-	if restrictModeIDs[cm] == nil {
+	if restrictModeIDs[cm].IsNotInitialized() {
 		restrictModeIDs[cm] = set.New[int]()
 	}
 	restrictModeIDs[cm].Add(key.ID)
@@ -247,7 +335,19 @@ func groupKeysByCollection(key dskey.Key, value []byte, restrictModeIDs map[coll
 	return nil
 }
 
-func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]*set.Set[int]) error {
+// restrictModeName returns the restriction mode for a collection and field.
+//
+// This is a string like "A" or "B" or any other name of a restriction mode.
+func restrictModeName(collection, field string) (string, error) {
+	fieldMode, ok := restrictionModes[templateKeyPrefix(collection+"/"+field)]
+	if !ok {
+		// TODO LAST ERROR
+		return "", fmt.Errorf("fqfield %q is unknown, maybe run go generate ./... to fetch all fields from the models.yml", collection+"/"+field)
+	}
+	return fieldMode, nil
+}
+
+func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]set.Set[int]) error {
 	keyPrefix := templateKeyPrefix(key.CollectionField())
 
 	cm, id, ok, err := isRelation(keyPrefix, value)
@@ -256,7 +356,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 	}
 
 	if ok {
-		if restrictModeIDs[cm] == nil {
+		if restrictModeIDs[cm].IsNotInitialized() {
 			restrictModeIDs[cm] = set.New[int]()
 		}
 		restrictModeIDs[cm].Add(id)
@@ -269,7 +369,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 	}
 
 	if ok {
-		if restrictModeIDs[cm] == nil {
+		if restrictModeIDs[cm].IsNotInitialized() {
 			restrictModeIDs[cm] = set.New[int]()
 		}
 		restrictModeIDs[cm].Add(ids...)
@@ -282,7 +382,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 	}
 
 	if ok {
-		if restrictModeIDs[cm] == nil {
+		if restrictModeIDs[cm].IsNotInitialized() {
 			restrictModeIDs[cm] = set.New[int]()
 		}
 		restrictModeIDs[cm].Add(id)
@@ -296,7 +396,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 
 	if ok {
 		for _, cmID := range mcm {
-			if restrictModeIDs[cmID.cm] == nil {
+			if restrictModeIDs[cmID.cm].IsNotInitialized() {
 				restrictModeIDs[cmID.cm] = set.New[int]()
 			}
 			restrictModeIDs[cmID.cm].Add(cmID.id)
@@ -496,18 +596,6 @@ func genericKeyToCollectionMode(genericID string, toCollectionFieldMap map[strin
 	return collection.CM{Collection: coll, Mode: fieldMode}, id, nil
 }
 
-// restrictModeName returns the restriction mode for a collection and field.
-//
-// This is a string like "A" or "B" or any other name of a restriction mode.
-func restrictModeName(collection, field string) (string, error) {
-	fieldMode, ok := restrictionModes[templateKeyPrefix(collection+"/"+field)]
-	if !ok {
-		// TODO LAST ERROR
-		return "", fmt.Errorf("fqfield %q is unknown, maybe run go generate ./... to fetch all fields from the models.yml", collection+"/"+field)
-	}
-	return fieldMode, nil
-}
-
 // templateKeyPrefix returns the index of the field list list. For template fields this is
 // the key without the replacement.
 func templateKeyPrefix(collectionField string) string {
@@ -535,32 +623,6 @@ func restrictModefunc(collectionName, fieldMode string) (collection.FieldRestric
 	}
 
 	return modefunc, nil
-}
-
-func sortRestrictModeIDs(data map[collection.CM]*set.Set[int]) []collection.CM {
-	keys := make([]collection.CM, 0, len(data))
-	for k := range data {
-		keys = append(keys, k)
-	}
-
-	sort.Slice(keys, func(a, b int) bool {
-		var aid, bid int
-		if id, ok := collectionOrder[keys[a].String()]; ok {
-			aid = id
-		} else if id, ok := collectionOrder[keys[a].Collection]; ok {
-			aid = id
-		}
-
-		if id, ok := collectionOrder[keys[b].String()]; ok {
-			bid = id
-		} else if id, ok := collectionOrder[keys[b].Collection]; ok {
-			bid = id
-		}
-
-		return aid < bid
-	})
-
-	return keys
 }
 
 var collectionOrder = map[string]int{

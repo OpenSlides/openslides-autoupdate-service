@@ -43,7 +43,7 @@ func (c Committee) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (c Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, committeeIDs ...int) error {
+func (c Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, committeeIDs ...int) error {
 	for _, committeeID := range committeeIDs {
 		userIDs, err := ds.Committee_UserIDs(committeeID).Value(ctx)
 		if err != nil {
@@ -59,7 +59,7 @@ func (c Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 	return nil
 }
 
-func (c Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, committeeIDs ...int) error {
+func (c Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, committeeIDs ...int) error {
 	for _, committeeID := range committeeIDs {
 		committeeManager, err := ds.Committee_UserManagementLevel(committeeID, "can_manage").Value(ctx)
 		if err != nil {

@@ -96,7 +96,7 @@ func (u User) SuperAdmin(mode string) FieldRestricter {
 }
 
 // // TODO: this is not good.
-// func (u User) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, userIDs ...int) ([]int, error) {
+// func (u User) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, userIDs ...int) ([]int, error) {
 // 	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
 // 	if err != nil {
 // 		return nil, fmt.Errorf("check organization management level: %w", err)
@@ -283,13 +283,13 @@ type UserRequiredObject struct {
 // 	}
 // }
 
-// func (User) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, userIDs ...int) ([]int, error) {
+// func (User) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, userIDs ...int) ([]int, error) {
 // 	return eachCondition(userIDs, func(userID int) (bool, error) {
 // 		return mperms.UserID() == userID, nil
 // 	})
 // }
 
-// func (User) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, userIDs ...int) ([]int, error) {
+// func (User) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, userIDs ...int) ([]int, error) {
 // 	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
 // 	if err != nil {
 // 		return nil, fmt.Errorf("cheching oml: %w", err)
@@ -320,7 +320,7 @@ type UserRequiredObject struct {
 // 	})
 // }
 
-// func (User) modeE(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, userIDs ...int) ([]int, error) {
+// func (User) modeE(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, userIDs ...int) ([]int, error) {
 // 	if mperms.UserID() == 0 {
 // 		return nil, nil
 // 	}
@@ -376,7 +376,7 @@ type UserRequiredObject struct {
 // 	})
 // }
 
-// func (User) modeF(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, userIDs ...int) ([]int, error) {
+// func (User) modeF(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, userIDs ...int) ([]int, error) {
 // 	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
 // 	if err != nil {
 // 		return nil, fmt.Errorf("check organization management level: %w", err)
@@ -413,7 +413,7 @@ type UserRequiredObject struct {
 // 	return toNum(request) >= toNum(requested)
 // }
 
-// func (u User) modeH(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, userIDs ...int) ([]int, error) {
+// func (u User) modeH(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, userIDs ...int) ([]int, error) {
 // 	ownOrgaManagementLevel, err := ds.User_OrganizationManagementLevel(mperms.UserID()).Value(ctx)
 // 	if err != nil {
 // 		return nil, fmt.Errorf("getting own managament: %w", err)

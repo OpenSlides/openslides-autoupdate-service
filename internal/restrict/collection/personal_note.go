@@ -44,7 +44,7 @@ func (p PersonalNote) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p PersonalNote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, personalNoteIDs ...int) error {
+func (p PersonalNote) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, personalNoteIDs ...int) error {
 	for _, id := range personalNoteIDs {
 		userID, err := ds.PersonalNote_UserID(id).Value(ctx)
 		if err != nil {

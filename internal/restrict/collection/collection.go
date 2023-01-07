@@ -69,8 +69,21 @@ func (am *AttributeMap) Get(collection string, id int, restrictionMode string) *
 	return am.data[dskey.Key{Collection: collection, ID: id, Field: restrictionMode}]
 }
 
+// RestrictModeIDs returns a map from collection/mode to a set of ids.
+func (am *AttributeMap) RestrictModeIDs() map[CM]set.Set[int] {
+	result := make(map[CM]set.Set[int])
+	for key := range am.data {
+		cm := CM{Collection: key.Collection, Mode: key.Field}
+		if result[cm].IsNotInitialized() {
+			result[cm] = set.New[int]()
+		}
+		result[cm].Add(key.ID)
+	}
+	return result
+}
+
 // FieldRestricter is a function to restrict fields of a collection.
-type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, ids ...int) error
+type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, ids ...int) error
 
 var allwaysAttr = Attributes{
 	GlobalPermission: 0,
@@ -86,7 +99,7 @@ var neverAttr = Attributes{
 
 // Allways is a restricter func that just returns true.
 func Allways(collection string, mode string) FieldRestricter {
-	return func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, elementIDs ...int) error {
+	return func(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, elementIDs ...int) error {
 		for _, id := range elementIDs {
 			attrMap.Add(collection, id, mode, &allwaysAttr)
 		}
@@ -95,7 +108,7 @@ func Allways(collection string, mode string) FieldRestricter {
 }
 
 func loggedIn(collection string, mode string) FieldRestricter {
-	return func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, elementIDs ...int) error {
+	return func(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, elementIDs ...int) error {
 		for _, id := range elementIDs {
 			attrMap.Add(collection, id, mode, &loggedInAttr)
 		}
@@ -104,7 +117,7 @@ func loggedIn(collection string, mode string) FieldRestricter {
 }
 
 func never(collection string, mode string) FieldRestricter {
-	return func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, elementIDs ...int) error {
+	return func(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, elementIDs ...int) error {
 		for _, id := range elementIDs {
 			attrMap.Add(collection, id, mode, &neverAttr)
 		}
@@ -250,7 +263,7 @@ func eachMeeting(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int
 	return nil
 }
 
-func meetingPerm(ctx context.Context, ds *dsfetch.Fetch, r Restricter, mode string, ids []int, mperms *perm.MeetingPermission, permission perm.TPermission, attrMap AttributeMap) error {
+func meetingPerm(ctx context.Context, ds *dsfetch.Fetch, r Restricter, mode string, ids []int, mperms perm.MeetingPermission, permission perm.TPermission, attrMap AttributeMap) error {
 	return eachMeeting(ctx, ds, r, ids, func(meetingID int, ids []int) error {
 		groupMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {

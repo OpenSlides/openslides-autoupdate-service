@@ -41,7 +41,7 @@ func (t Tag) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (t Tag) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, tagIDs ...int) error {
+func (t Tag) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, tagIDs ...int) error {
 	return eachMeeting(ctx, ds, t, tagIDs, func(meetingID int, ids []int) error {
 		// TODO: This only works if meeting is calculated before tag
 		for _, id := range ids {

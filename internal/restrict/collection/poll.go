@@ -70,7 +70,7 @@ func (p Poll) Modes(mode string) FieldRestricter {
 	// return nil
 }
 
-// func (p Poll) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, pollIDs ...int) ([]int, error) {
+// func (p Poll) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, pollIDs ...int) ([]int, error) {
 // 	return eachContentObjectCollection(ctx, ds.Poll_ContentObjectID, pollIDs, func(objectCollection string, objectID int, ids []int) ([]int, error) {
 // 		var collection interface {
 // 			see(context.Context, *dsfetch.Fetch, *perm.MeetingPermission, ...int) ([]int, error)
@@ -104,7 +104,7 @@ func (p Poll) Modes(mode string) FieldRestricter {
 // 	})
 // }
 
-// func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, pollIDs ...int) ([]int, error) {
+// func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, pollIDs ...int) ([]int, error) {
 // 	return eachContentObjectCollection(ctx, ds.Poll_ContentObjectID, pollIDs, func(objectCollection string, objectID int, ids []int) ([]int, error) {
 // 		switch objectCollection {
 // 		case "motion":
@@ -163,7 +163,7 @@ func (p Poll) Modes(mode string) FieldRestricter {
 // 	})
 // }
 
-// func (p Poll) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, pollIDs ...int) ([]int, error) {
+// func (p Poll) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, pollIDs ...int) ([]int, error) {
 // 	return eachStringField(ctx, ds.Poll_State, pollIDs, func(state string, ids []int) ([]int, error) {
 // 		switch state {
 // 		case "published":
@@ -186,7 +186,7 @@ func (p Poll) Modes(mode string) FieldRestricter {
 // 	})
 // }
 
-// func (p Poll) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, pollIDs ...int) ([]int, error) {
+// func (p Poll) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, pollIDs ...int) ([]int, error) {
 // 	return eachStringField(ctx, ds.Poll_State, pollIDs, func(state string, ids []int) ([]int, error) {
 // 		if state != "started" {
 // 			return nil, nil
@@ -207,7 +207,7 @@ func (p Poll) Modes(mode string) FieldRestricter {
 // 	})
 // }
 
-// func (p Poll) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, pollIDs ...int) ([]int, error) {
+// func (p Poll) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, pollIDs ...int) ([]int, error) {
 // 	return eachStringField(ctx, ds.Poll_State, pollIDs, func(state string, pollIDs []int) ([]int, error) {
 // 		switch state {
 // 		case "published":

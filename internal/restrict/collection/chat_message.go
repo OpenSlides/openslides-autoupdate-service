@@ -44,7 +44,7 @@ func (c ChatMessage) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (c ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, chatMessageIDs ...int) error {
+func (c ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, chatMessageIDs ...int) error {
 	return eachRelationField(ctx, ds.ChatMessage_ChatGroupID, chatMessageIDs, func(chatGroupID int, ids []int) error {
 		meetingID, _, err := ChatGroup{}.MeetingID(ctx, ds, chatGroupID)
 		if err != nil {

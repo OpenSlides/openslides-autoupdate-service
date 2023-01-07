@@ -43,7 +43,7 @@ func (o Organization) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (o Organization) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, organizationIDs ...int) error {
+func (o Organization) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, organizationIDs ...int) error {
 	attr := Attributes{
 		GlobalPermission: byte(perm.OMLCanManageUsers),
 	}

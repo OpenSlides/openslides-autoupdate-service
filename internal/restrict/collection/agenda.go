@@ -51,7 +51,7 @@ func (a AgendaItem) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, agendaIDs ...int) error {
+func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, agendaIDs ...int) error {
 	return eachMeeting(ctx, ds, a, agendaIDs, func(meetingID int, ids []int) error {
 		groupMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {
@@ -97,10 +97,10 @@ func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Mee
 	})
 }
 
-func (a AgendaItem) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, agendaIDs ...int) error {
+func (a AgendaItem) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, agendaIDs ...int) error {
 	return meetingPerm(ctx, ds, a, "B", agendaIDs, mperms, perm.AgendaItemCanSeeInternal, attrMap)
 }
 
-func (a AgendaItem) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, attrMap AttributeMap, agendaIDs ...int) error {
+func (a AgendaItem) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, agendaIDs ...int) error {
 	return meetingPerm(ctx, ds, a, "C", agendaIDs, mperms, perm.AgendaItemCanManage, attrMap)
 }
