@@ -52,6 +52,13 @@ type AttributeMap struct {
 	data map[dskey.Key]*Attributes
 }
 
+// NewAttributeMap initializes an AttributeMap
+func NewAttributeMap() AttributeMap {
+	return AttributeMap{
+		data: make(map[dskey.Key]*Attributes),
+	}
+}
+
 // Add adds a value to the map.
 func (am *AttributeMap) Add(collection string, id int, restrictionMod string, value *Attributes) {
 	am.data[dskey.Key{Collection: collection, ID: id, Field: restrictionMod}] = value

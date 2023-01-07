@@ -80,7 +80,9 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 		ds := dsfetch.New(dsmock.Stub(tt.data))
 		perms := perm.NewMeetingPermission(ds, tt.requestUserID)
 
-		allowedIDs, err := f(context.Background(), ds, perms, tt.elementIDs...)
+		attrMap := collection.NewAttributeMap()
+
+		err := f(context.Background(), ds, &perms, attrMap, tt.elementIDs...)
 		if err != nil {
 			t.Fatalf("restriction mode returned unexpected error: %v", err)
 		}

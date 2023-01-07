@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
@@ -35,7 +34,6 @@ func (h History) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]by
 	}
 
 	currentDS := dsfetch.New(h.currentGetter)
-	mperms := perm.NewMeetingPermission(currentDS, h.userID)
 	oldDS := dsfetch.New(h.oldGetter)
 
 	orgaManager, err := perm.HasOrganizationManagementLevel(ctx, currentDS, h.userID, perm.OMLCanManageOrganization)
@@ -50,7 +48,7 @@ func (h History) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]by
 
 	adminInMeeting := make(map[int]struct{}, len(requestUserMeetingIDs))
 	for _, meetingID := range requestUserMeetingIDs {
-		p, err := mperms.Meeting(ctx, meetingID)
+		p, err := perm.New(ctx, currentDS, h.userID, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
 		}
@@ -92,55 +90,57 @@ func (h History) canSeeKey(
 	adminInMeeting map[int]struct{},
 	key dskey.Key,
 ) (bool, error) {
-	if key.Collection == "user" && key.Field == "password" {
-		return false, nil
-	}
-
-	if key.Collection == "personal_note" {
-		personalNoteUser, err := oldDS.PersonalNote_UserID(key.ID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("getting personal note user: %w", err)
-		}
-
-		return personalNoteUser == h.userID, nil
-	}
-
-	if isOrgaManager {
-		return true, nil
-	}
-
-	if key.Collection == "theme" || key.Collection == "organization" || key.Collection == "organization_tag" || key.Collection == "mediafile" {
-		return true, nil
-	}
-
-	if key.Collection == "committee" {
-		return false, nil
-	}
-
-	meetingID, hasMeeting, err := collection.Collection(key.Collection).MeetingID(ctx, oldDS, key.ID)
-	if err != nil {
-		return false, fmt.Errorf("getting meeting id: %w", err)
-	}
-
-	if hasMeeting {
-		_, isAdmin := adminInMeeting[meetingID]
-		return isAdmin, nil
-	}
-
-	if key.Collection == "user" {
-		for _, r := range (collection.User{}).RequiredObjects(oldDS) {
-			meetingIDs, err := r.TmplFunc(key.ID).Value(ctx)
-			if err != nil {
-				return false, fmt.Errorf("getting meeting ids for %s: %w", r.Name, err)
-			}
-
-			for _, meetingID := range meetingIDs {
-				if _, ok := adminInMeeting[meetingID]; ok {
-					return true, nil
-				}
-			}
-		}
-	}
-
+	// TODO: Fix me
 	return false, nil
+	// if key.Collection == "user" && key.Field == "password" {
+	// 	return false, nil
+	// }
+
+	// if key.Collection == "personal_note" {
+	// 	personalNoteUser, err := oldDS.PersonalNote_UserID(key.ID).Value(ctx)
+	// 	if err != nil {
+	// 		return false, fmt.Errorf("getting personal note user: %w", err)
+	// 	}
+
+	// 	return personalNoteUser == h.userID, nil
+	// }
+
+	// if isOrgaManager {
+	// 	return true, nil
+	// }
+
+	// if key.Collection == "theme" || key.Collection == "organization" || key.Collection == "organization_tag" || key.Collection == "mediafile" {
+	// 	return true, nil
+	// }
+
+	// if key.Collection == "committee" {
+	// 	return false, nil
+	// }
+
+	// meetingID, hasMeeting, err := collection.Collection(key.Collection).MeetingID(ctx, oldDS, key.ID)
+	// if err != nil {
+	// 	return false, fmt.Errorf("getting meeting id: %w", err)
+	// }
+
+	// if hasMeeting {
+	// 	_, isAdmin := adminInMeeting[meetingID]
+	// 	return isAdmin, nil
+	// }
+
+	// if key.Collection == "user" {
+	// 	for _, r := range (collection.User{}).RequiredObjects(oldDS) {
+	// 		meetingIDs, err := r.TmplFunc(key.ID).Value(ctx)
+	// 		if err != nil {
+	// 			return false, fmt.Errorf("getting meeting ids for %s: %w", r.Name, err)
+	// 		}
+
+	// 		for _, meetingID := range meetingIDs {
+	// 			if _, ok := adminInMeeting[meetingID]; ok {
+	// 				return true, nil
+	// 			}
+	// 		}
+	// 	}
+	// }
+
+	// return false, nil
 }
