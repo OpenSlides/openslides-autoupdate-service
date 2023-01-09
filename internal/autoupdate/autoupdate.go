@@ -71,8 +71,8 @@ type KeysBuilder interface {
 // Restricter filters data for a user.
 type Restricter interface {
 	Getter(datastore.Getter, int) datastore.Getter
-	InsertFields(datastore.Getter, map[dskey.Key][]byte) error
-	UpdateFields(datastore.Getter, map[dskey.Key][]byte) error
+	InsertFields(context.Context, datastore.Getter, map[dskey.Key][]byte) error
+	UpdateFields(context.Context, datastore.Getter, map[dskey.Key][]byte) error
 }
 
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
@@ -107,7 +107,7 @@ func New(lookup environment.Environmenter, ds Datastore, restricter Restricter) 
 
 	// Update the topic when an data update is received.
 	a.datastore.RegisterChangeListener(func(data map[dskey.Key][]byte) error {
-		if err := a.restricter.UpdateFields(ds, data); err != nil {
+		if err := a.restricter.UpdateFields(context.Background(), ds, data); err != nil {
 			return fmt.Errorf("update restricter: %w", err)
 		}
 
@@ -121,7 +121,7 @@ func New(lookup environment.Environmenter, ds Datastore, restricter Restricter) 
 	})
 
 	a.datastore.RegisterInsertListener(func(data map[dskey.Key][]byte) error {
-		return a.restricter.InsertFields(ds, data)
+		return a.restricter.InsertFields(context.Background(), ds, data)
 	})
 
 	background := func(ctx context.Context, errorHandler func(error)) {

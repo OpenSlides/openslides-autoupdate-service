@@ -53,6 +53,7 @@ func (r *Restricter) UpdateFields(ctx context.Context, ds datastore.Getter, valu
 	defer r.mu.Unlock()
 
 	// TODO: Handle deletion.
+	// TODO: Only update on hot keys
 	restrictModeIDs := r.attributeMap.RestrictModeIDs()
 
 	if err := r.prepare(ctx, ds, restrictModeIDs); err != nil {
@@ -768,7 +769,7 @@ var collectionOrder = map[string]int{
 // 	return collection.CM{Collection: coll, Mode: fieldMode}, id, nil
 // }
 
-// // FieldsForCollection returns the list of fieldnames for an collection.
-// func FieldsForCollection(collection string) []string {
-// 	return collectionFields[collection]
-// }
+// FieldsForCollection returns the list of fieldnames for an collection.
+func FieldsForCollection(collection string) []string {
+	return collectionFields[collection]
+}

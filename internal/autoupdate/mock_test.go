@@ -77,10 +77,10 @@ func (r mockRestricter) Getter(ds datastore.Getter, uid int) datastore.Getter {
 	})
 }
 
-func (r mockRestricter) InsertFields(datastore.Getter, map[dskey.Key][]byte) error {
+func (r mockRestricter) InsertFields(context.Context, datastore.Getter, map[dskey.Key][]byte) error {
 	return nil
 }
 
-func (r mockRestricter) UpdateFields(datastore.Getter, map[dskey.Key][]byte) error {
+func (r mockRestricter) UpdateFields(context.Context, datastore.Getter, map[dskey.Key][]byte) error {
 	return nil
 }
