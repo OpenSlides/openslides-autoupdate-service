@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // Group handels restrictions of the collection group.
@@ -45,7 +46,9 @@ func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPe
 	return eachMeeting(ctx, ds, g, groupIDs, func(meetingID int, ids []int) error {
 		for _, id := range groupIDs {
 			// TODO: Make sure meeting is calculated before group.
-			attrMap.Add(g.name, id, "A", attrMap.Get(ctx, ds, "meeting", meetingID, "A"))
+			if err := attrMap.SameAs(ctx, &dsfetch.Fetch{}, mperms, dskey.Key{Collection: g.name, ID: id, Field: "A"}, dskey.Key{Collection: "meeting", ID: meetingID, Field: "A"}); err != nil {
+				return fmt.Errorf("meeting %d: %w", id, err)
+			}
 		}
 
 		return nil

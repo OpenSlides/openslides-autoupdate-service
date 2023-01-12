@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
@@ -71,7 +72,7 @@ func (c ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Mee
 				return fmt.Errorf("reading author of chat message: %w", err)
 			}
 
-			attrMap.Add(c.name, chatMessageID, "A", &Attributes{
+			attrMap.Add(dskey.Key{Collection: c.name, ID: chatMessageID, Field: "A"}, &Attributes{
 				GlobalPermission: byte(perm.OMLSuperadmin),
 				GroupIDs:         allowedGroups,
 				UserIDs:          set.New(author),

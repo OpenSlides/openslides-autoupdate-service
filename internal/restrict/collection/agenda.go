@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // AgendaItem handels permission for the agenda.
@@ -89,7 +90,7 @@ func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meet
 			default:
 				attr = attrCanSee
 			}
-			attrMap.Add(a.name, agendaID, "A", &attr)
+			attrMap.Add(dskey.Key{Collection: a.name, ID: agendaID, Field: "A"}, &attr)
 
 		}
 

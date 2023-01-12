@@ -53,13 +53,12 @@ var (
 type Datastore interface {
 	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
 	GetPosition(ctx context.Context, position int, keys ...dskey.Key) (map[dskey.Key][]byte, error)
-	RegisterInsertListener(f func(map[dskey.Key][]byte) error)
-	RegisterChangeListener(f func(map[dskey.Key][]byte) error)
 	ResetCache()
 	RegisterCalculatedField(
 		field string,
 		f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error),
 	)
+	Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error))
 	HistoryInformation(ctx context.Context, fqid string, w io.Writer) error
 }
 
@@ -71,8 +70,6 @@ type KeysBuilder interface {
 // Restricter filters data for a user.
 type Restricter interface {
 	Getter(datastore.Getter, int) datastore.Getter
-	InsertFields(context.Context, datastore.Getter, map[dskey.Key][]byte) error
-	UpdateFields(context.Context, datastore.Getter, map[dskey.Key][]byte) error
 }
 
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
@@ -105,26 +102,22 @@ func New(lookup environment.Environmenter, ds Datastore, restricter Restricter) 
 		pool:       newWorkPool(workers),
 	}
 
-	// Update the topic when an data update is received.
-	a.datastore.RegisterChangeListener(func(data map[dskey.Key][]byte) error {
-		if err := a.restricter.UpdateFields(context.Background(), ds, data); err != nil {
-			return fmt.Errorf("update restricter: %w", err)
-		}
-
-		keys := make([]dskey.Key, 0, len(data))
-		for k := range data {
-			keys = append(keys, k)
-		}
-
-		a.topic.Publish(keys...)
-		return nil
-	})
-
-	a.datastore.RegisterInsertListener(func(data map[dskey.Key][]byte) error {
-		return a.restricter.InsertFields(context.Background(), ds, data)
-	})
-
 	background := func(ctx context.Context, errorHandler func(error)) {
+		// Update the topic when an data update is received.
+		go a.datastore.Update(ctx, func(data map[dskey.Key][]byte, err error) {
+			// if err := a.restricter.UpdateFields(context.Background(), ds, data); err != nil {
+			// 	return fmt.Errorf("update restricter: %w", err)
+			// }
+
+			keys := make([]dskey.Key, 0, len(data))
+			for k := range data {
+				keys = append(keys, k)
+			}
+
+			a.topic.Publish(keys...)
+			return
+		})
+
 		go a.pruneOldData(ctx)
 		go a.resetCache(ctx)
 	}

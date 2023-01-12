@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // MotionChangeRecommendation handels restrictions of the collection motion_change_recommendation.
@@ -72,7 +73,7 @@ func (m MotionChangeRecommendation) see(ctx context.Context, ds *dsfetch.Fetch, 
 				attr = &attrInternal
 			}
 
-			attrMap.Add(m.name, motionChangeRecommendationID, "A", attr)
+			attrMap.Add(dskey.Key{Collection: m.name, ID: motionChangeRecommendationID, Field: "A"}, attr)
 		}
 
 		return nil

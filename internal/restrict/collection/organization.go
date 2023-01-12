@@ -5,6 +5,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // Organization handels restrictions of the collection organization.
@@ -48,7 +49,7 @@ func (o Organization) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms perm.
 		GlobalPermission: byte(perm.OMLCanManageUsers),
 	}
 	for _, id := range organizationIDs {
-		attrMap.Add(o.name, id, "C", &attr)
+		attrMap.Add(dskey.Key{Collection: o.name, ID: id, Field: "C"}, &attr)
 	}
 
 	return nil

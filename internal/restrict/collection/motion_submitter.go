@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // MotionSubmitter handels restrictions of the collection motion_submitter.
@@ -45,7 +46,9 @@ func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm
 	return eachRelationField(ctx, ds.MotionSubmitter_MotionID, motionSubmitterIDs, func(motionID int, ids []int) error {
 		// TODO: This only works if motion is calculated before motion_submitter
 		for _, id := range ids {
-			attrMap.Add(m.name, id, "A", attrMap.Get(ctx, ds, "motion", motionID, "C"))
+			if err := attrMap.SameAs(ctx, ds, mperms, dskey.Key{Collection: m.name, ID: id, Field: "A"}, dskey.Key{Collection: "motion", ID: motionID, Field: "C"}); err != nil {
+				return fmt.Errorf("same as: %w", err)
+			}
 		}
 		return nil
 	})

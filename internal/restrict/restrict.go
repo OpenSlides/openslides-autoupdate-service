@@ -13,55 +13,63 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // Restricter holds attributes for each restriction mode.
 type Restricter struct {
-	attributeMap *collection.AttributeMap
+	sub          flow.Flow
+	attributeMap *AttributeMap
 }
 
 // New initializes the restricter.
 func New() *Restricter {
 	return &Restricter{
-		attributeMap: collection.NewAttributeMap(),
+		attributeMap: NewAttributeMap(),
 	}
 }
 
-// InsertFields adds new fields.
-func (r *Restricter) InsertFields(ctx context.Context, ds datastore.Getter, values map[dskey.Key][]byte) error {
-	// for k := range values {
-	// 	fmt.Printf("add %s\n", k)
-	// }
+// Background calls the Update function of the sub flow.
+//
+// It updates the internal state each time there are updates.
+func (r *Restricter) Background(ctx context.Context, errFn func(error)) {
+	r.sub.Update(ctx, func(data map[dskey.Key][]byte, err error) {
+		// TODO: Handle deletion.
+		// TODO: Only update on hot keys
+		restrictModeIDs := r.attributeMap.RestrictModeIDs()
 
-	// restrictModeIDs, err := groupKeysByCollectionMode(values)
-	// if err != nil {
-	// 	return fmt.Errorf("group keys: %w", err)
-	// }
+		if _, err := r.prepare(ctx, r.sub, restrictModeIDs); err != nil {
+			errFn(fmt.Errorf("prepare: %w", err))
+			return
+		}
+	})
 
-	// fmt.Printf("restictModeIDs: %v\n", restrictModeIDs)
-
-	// if err := r.prepare(ctx, ds, restrictModeIDs); err != nil {
-	// 	return fmt.Errorf("prepare: %w", err)
-	// }
-
-	return nil
 }
 
-// UpdateFields updates the attribute fields.
-func (r *Restricter) UpdateFields(ctx context.Context, ds datastore.Getter, values map[dskey.Key][]byte) error {
-	// TODO: Handle deletion.
-	// TODO: Only update on hot keys
-	restrictModeIDs := r.attributeMap.RestrictModeIDs()
-
-	if err := r.prepare(ctx, ds, restrictModeIDs); err != nil {
-		return fmt.Errorf("prepare: %w", err)
+func (r *Restricter) insertFields(ctx context.Context, keys ...dskey.Key) (perm.MeetingPermission, error) {
+	// TODO: Do not restrict the same modes twice
+	for _, k := range keys {
+		fmt.Printf("add %s\n", k)
 	}
 
-	return nil
+	restrictModeIDs, err := groupKeysByCollectionMode(keys)
+	if err != nil {
+		return perm.MeetingPermission{}, fmt.Errorf("group keys: %w", err)
+	}
+
+	fmt.Printf("restictModeIDs: %v\n", restrictModeIDs)
+
+	mperms, err := r.prepare(ctx, r.sub, restrictModeIDs)
+
+	if err != nil {
+		return perm.MeetingPermission{}, fmt.Errorf("prepare: %w", err)
+	}
+
+	return mperms, nil
 }
 
-func (r *Restricter) prepare(ctx context.Context, ds datastore.Getter, restrictModeIDs map[collection.CM]set.Set[int]) error {
+func (r *Restricter) prepare(ctx context.Context, ds datastore.Getter, restrictModeIDs map[collection.CM]set.Set[int]) (perm.MeetingPermission, error) {
 	orderedCMs := sortRestrictModeIDs(restrictModeIDs)
 	mperms := perm.NewMeetingPermission()
 	fetcher := dsfetch.New(ds)
@@ -71,15 +79,15 @@ func (r *Restricter) prepare(ctx context.Context, ds datastore.Getter, restrictM
 
 		modeFunc, err := restrictModefunc(cm.Collection, cm.Mode)
 		if err != nil {
-			return fmt.Errorf("getting modeFunc for %s: %w", cm, err)
+			return mperms, fmt.Errorf("getting modeFunc for %s: %w", cm, err)
 		}
 
 		if err := modeFunc(ctx, fetcher, mperms, r.attributeMap, ids.List()...); err != nil {
-			return fmt.Errorf("restrict mode %s", cm)
+			return mperms, fmt.Errorf("restrict mode %s", cm)
 		}
 	}
 
-	return nil
+	return mperms, nil
 }
 
 func sortRestrictModeIDs(data map[collection.CM]set.Set[int]) []collection.CM {
@@ -109,10 +117,10 @@ func sortRestrictModeIDs(data map[collection.CM]set.Set[int]) []collection.CM {
 }
 
 // groupKeysByCollection groups all the keys in data by there collection.
-func groupKeysByCollectionMode(values map[dskey.Key][]byte) (map[collection.CM]set.Set[int], error) {
-	restrictModeIDs := make(map[collection.CM]set.Set[int], len(values)) // TODO: the len is proably smaller then values
+func groupKeysByCollectionMode(keys []dskey.Key) (map[collection.CM]set.Set[int], error) {
+	restrictModeIDs := make(map[collection.CM]set.Set[int])
 
-	for key := range values {
+	for _, key := range keys {
 		restrictionMode, err := restrictModeName(key.Collection, key.Field)
 		if err != nil {
 			return nil, fmt.Errorf("getting restriction Mode for %s: %w", key, err)
@@ -131,6 +139,11 @@ func groupKeysByCollectionMode(values map[dskey.Key][]byte) (map[collection.CM]s
 // Getter returns a datastore getter that returns restricted data.
 func (r *Restricter) Getter(getter datastore.Getter, uid int) datastore.Getter {
 	return datastore.GetterFunc(func(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+		mperms, err := r.insertFields(ctx, keys...)
+		if err != nil {
+			return nil, fmt.Errorf("inserting fields: %w", err)
+		}
+
 		data, err := getter.Get(ctx, keys...)
 		if err != nil {
 			return nil, fmt.Errorf("fetching unrestricted data: %w", err)
@@ -156,7 +169,11 @@ func (r *Restricter) Getter(getter datastore.Getter, uid int) datastore.Getter {
 				return nil, fmt.Errorf("getting restriction Mode for %s: %w", key, err)
 			}
 
-			requiredAttr := r.attributeMap.Get(key.Collection, key.ID, restrictionMode)
+			requiredAttr, err := r.attributeMap.Get(ctx, fetcher, mperms, dskey.Key{Collection: key.Collection, ID: key.ID, Field: restrictionMode})
+			if err != nil {
+				return nil, fmt.Errorf("attributemap: %w", err)
+			}
+
 			if requiredAttr == nil {
 				fmt.Printf("did not found attr for %s (%s)\n", key, restrictionMode)
 				continue

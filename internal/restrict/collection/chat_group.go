@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
@@ -66,7 +67,7 @@ func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meeti
 
 			allGroups := append(readGroups, writeGroups...)
 
-			attrMap.Add(c.name, chatGroupID, "A", &Attributes{
+			attrMap.Add(dskey.Key{Collection: c.name, ID: chatGroupID, Field: "A"}, &Attributes{
 				GlobalPermission: byte(perm.OMLSuperadmin),
 				GroupIDs:         set.New(append(manageGroups, allGroups...)...),
 			})

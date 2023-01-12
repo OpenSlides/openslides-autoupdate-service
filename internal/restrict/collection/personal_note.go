@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
@@ -51,7 +52,7 @@ func (p PersonalNote) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Me
 			return fmt.Errorf("get user id: %w", err)
 		}
 
-		attrMap.Add(p.name, id, "A", &Attributes{
+		attrMap.Add(dskey.Key{Collection: p.name, ID: id, Field: "A"}, &Attributes{
 			GlobalPermission: 255,
 			UserIDs:          set.New(userID),
 		})

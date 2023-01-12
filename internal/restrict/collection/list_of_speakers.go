@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // ListOfSpeakers handels the restriction for the list_of_speakers collection.
@@ -54,35 +55,41 @@ func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, mperms per
 
 		return eachContentObjectCollection(ctx, ds.ListOfSpeakers_ContentObjectID, ids, func(collection string, id int, ids []int) error {
 			// TODO: This should return not one contentobject, but all content objects with the same collection at once. So the first argument should be objectIDs
-			var andAttr *Attributes
+			var seeMode string
 			switch collection {
 			case "motion":
-				// TODO: make the "see" mode generic.
-				andAttr = attrMap.Get(ctx, ds, collection, id, "C")
+				seeMode = "C"
 
 			case "motion_block":
-				andAttr = attrMap.Get(ctx, ds, collection, id, "A")
+				seeMode = "A"
 
 			case "assignment":
-				andAttr = attrMap.Get(ctx, ds, collection, id, "A")
+				seeMode = "A"
 
 			case "topic":
-				andAttr = attrMap.Get(ctx, ds, collection, id, "A")
+				seeMode = "A"
 
 			case "mediafile":
-				andAttr = attrMap.Get(ctx, ds, collection, id, "A")
+				seeMode = "A"
 
 			default:
 				// TODO LAST ERROR
 				return fmt.Errorf("unknown content_object collection %q", collection)
 			}
 
+			andAttr, err := attrMap.Get(ctx, ds, mperms, dskey.Key{Collection: collection, ID: id, Field: seeMode})
+			if err != nil {
+				return fmt.Errorf("andAttr: %w", err)
+			}
+
+			attr := &Attributes{
+				GlobalPermission: byte(perm.OMLSuperadmin),
+				GroupIDs:         groups,
+				GroupAnd:         andAttr,
+			}
+
 			for _, losID := range ids {
-				attrMap.Add(los.name, losID, "A", &Attributes{
-					GlobalPermission: byte(perm.OMLSuperadmin),
-					GroupIDs:         groups,
-					GroupAnd:         andAttr,
-				})
+				attrMap.Add(dskey.Key{Collection: los.name, ID: losID, Field: "A"}, attr)
 			}
 
 			return nil

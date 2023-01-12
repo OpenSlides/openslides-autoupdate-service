@@ -8,6 +8,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
@@ -48,8 +49,9 @@ type Attributes struct {
 
 // AttributeMap is like restrict.AttributeMap
 type AttributeMap interface {
-	Add(collection string, id int, restrictionMod string, value *Attributes)
-	Get(ctx context.Context, fetch *dsfetch.Fetch, mperms perm.MeetingPermission, collection string, id int, restrictionMode string) (*Attributes, error)
+	Add(modeKey dskey.Key, value *Attributes)
+	Get(ctx context.Context, fetch *dsfetch.Fetch, mperms perm.MeetingPermission, modeKEy dskey.Key) (*Attributes, error)
+	SameAs(ctx context.Context, fetch *dsfetch.Fetch, mperms perm.MeetingPermission, toModeKey, fromModeKey dskey.Key) error
 }
 
 // FieldRestricter is a function to restrict fields of a collection.
@@ -71,7 +73,7 @@ var neverAttr = Attributes{
 func Allways(collection string, mode string) FieldRestricter {
 	return func(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, elementIDs ...int) error {
 		for _, id := range elementIDs {
-			attrMap.Add(collection, id, mode, &allwaysAttr)
+			attrMap.Add(dskey.Key{Collection: collection, ID: id, Field: mode}, &allwaysAttr)
 		}
 		return nil
 	}
@@ -80,7 +82,7 @@ func Allways(collection string, mode string) FieldRestricter {
 func loggedIn(collection string, mode string) FieldRestricter {
 	return func(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, elementIDs ...int) error {
 		for _, id := range elementIDs {
-			attrMap.Add(collection, id, mode, &loggedInAttr)
+			attrMap.Add(dskey.Key{Collection: collection, ID: id, Field: mode}, &loggedInAttr)
 		}
 		return nil
 	}
@@ -89,7 +91,7 @@ func loggedIn(collection string, mode string) FieldRestricter {
 func never(collection string, mode string) FieldRestricter {
 	return func(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, elementIDs ...int) error {
 		for _, id := range elementIDs {
-			attrMap.Add(collection, id, mode, &neverAttr)
+			attrMap.Add(dskey.Key{Collection: collection, ID: id, Field: mode}, &neverAttr)
 		}
 		return nil
 	}
@@ -246,7 +248,7 @@ func meetingPerm(ctx context.Context, ds *dsfetch.Fetch, r Restricter, mode stri
 		}
 
 		for _, id := range ids {
-			attrMap.Add(r.Name(), id, mode, &attr)
+			attrMap.Add(dskey.Key{Collection: r.Name(), ID: id, Field: mode}, &attr)
 		}
 		return nil
 	})

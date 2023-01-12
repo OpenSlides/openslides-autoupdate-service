@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // Tag handels the restrictions for the tag collection.
@@ -45,7 +46,7 @@ func (t Tag) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPerm
 	return eachMeeting(ctx, ds, t, tagIDs, func(meetingID int, ids []int) error {
 		// TODO: This only works if meeting is calculated before tag
 		for _, id := range ids {
-			attrMap.Add(t.name, id, "A", attrMap.Get(ctx, ds, "meeting", meetingID, "B"))
+			attrMap.SameAs(ctx, ds, mperms, dskey.Key{Collection: t.name, ID: id, Field: "A"}, dskey.Key{Collection: "meeting", ID: meetingID, Field: "B"})
 		}
 		return nil
 	})

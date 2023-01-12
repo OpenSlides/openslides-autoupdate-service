@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
@@ -76,7 +77,7 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meeting
 		fmt.Println("B: After execute")
 
 		if meeting.enableAnonymous {
-			attrMap.Add(m.name, meetingID, "B", &allwaysAttr)
+			attrMap.Add(dskey.Key{Collection: m.name, ID: meetingID, Field: "B"}, &allwaysAttr)
 			continue
 		}
 
@@ -111,7 +112,7 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meeting
 
 		allUserIDs := append(committeeUsers, meeting.userIDs...)
 
-		attrMap.Add(m.name, meetingID, "B", &Attributes{
+		attrMap.Add(dskey.Key{Collection: m.name, ID: meetingID, Field: "B"}, &Attributes{
 			GlobalPermission: byte(perm.OMLCanManageOrganization),
 			UserIDs:          set.New(allUserIDs...),
 		})
@@ -128,7 +129,7 @@ func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meeti
 		}
 		fmt.Printf("got permMap: %v\n", permMap)
 
-		attrMap.Add(m.name, meetingID, "C", &Attributes{
+		attrMap.Add(dskey.Key{Collection: m.name, ID: meetingID, Field: "C"}, &Attributes{
 			GlobalPermission: byte(perm.OMLSuperadmin),
 			GroupIDs:         permMap[perm.MeetingCanSeeFrontpage],
 		})
@@ -144,7 +145,7 @@ func (m Meeting) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meeti
 			return fmt.Errorf("getting perm map for meeting %d: %w", meetingID, err)
 		}
 
-		attrMap.Add(m.name, meetingID, "C", &Attributes{
+		attrMap.Add(dskey.Key{Collection: m.name, ID: meetingID, Field: "C"}, &Attributes{
 			GlobalPermission: byte(perm.OMLSuperadmin),
 			GroupIDs:         permMap[perm.MeetingCanSeeLivestream],
 		})

@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
@@ -50,7 +51,7 @@ func (c Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meeti
 			return fmt.Errorf("getting committee users: %w", err)
 		}
 
-		attrMap.Add(c.name, committeeID, "A", &Attributes{
+		attrMap.Add(dskey.Key{Collection: c.name, ID: committeeID, Field: "A"}, &Attributes{
 			GlobalPermission: byte(perm.OMLCanManageUsers),
 			UserIDs:          set.New(userIDs...),
 		})
@@ -66,7 +67,7 @@ func (c Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Mee
 			return fmt.Errorf("getting committee managers: %w", err)
 		}
 
-		attrMap.Add(c.name, committeeID, "B", &Attributes{
+		attrMap.Add(dskey.Key{Collection: c.name, ID: committeeID, Field: "B"}, &Attributes{
 			GlobalPermission: byte(perm.OMLCanManageOrganization),
 			UserIDs:          set.New(committeeManager...),
 		})

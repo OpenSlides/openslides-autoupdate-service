@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // AssignmentCandidate handels the permissions for assignment_candiate collections.
@@ -45,7 +46,9 @@ func (a AssignmentCandidate) see(ctx context.Context, ds *dsfetch.Fetch, mperms 
 	return eachRelationField(ctx, ds.AssignmentCandidate_AssignmentID, assignmentCandidateIDs, func(assignmentID int, ids []int) error {
 		// TODO: This only works if assignment is calculated before assignment_candidate
 		for _, id := range ids {
-			attrMap.Add(a.name, id, "A", attrMap.Get(ctx, ds, "assignment", assignmentID, "A"))
+			if err := attrMap.SameAs(ctx, ds, mperms, dskey.Key{Collection: a.name, ID: id, Field: "A"}, dskey.Key{Collection: "assignment", ID: assignmentID, Field: "A"}); err != nil {
+				return fmt.Errorf("setting id %d: %w", id, err)
+			}
 		}
 		return nil
 	})

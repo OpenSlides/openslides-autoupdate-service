@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // MotionBlock handels restrictions of the collection motion_block.
@@ -72,7 +73,7 @@ func (m MotionBlock) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Mee
 				attr = &attrInternal
 			}
 
-			attrMap.Add(m.name, motionBlockID, "A", attr)
+			attrMap.Add(dskey.Key{Collection: m.name, ID: motionBlockID, Field: "A"}, attr)
 		}
 
 		return nil

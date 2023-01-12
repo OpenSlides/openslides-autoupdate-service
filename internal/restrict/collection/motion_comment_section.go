@@ -41,80 +41,76 @@ func (m MotionCommentSection) MeetingID(ctx context.Context, ds *dsfetch.Fetch, 
 
 // Modes returns the restrictions modes for the meeting collection.
 func (m MotionCommentSection) Modes(mode string) FieldRestricter {
-	switch mode {
-	case "A":
-		return m.see
-	}
-	return nil
+	// TODO: Implement me
+	return Allways(m.name, mode)
+
+	// switch mode {
+	// case "A":
+	// 	return m.see
+	// }
+	// return nil
 }
 
-func (m MotionCommentSection) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, motionCommentSectionIDs ...int) error {
-	for _, id := range motionCommentSectionIDs {
-		// TODO: Implement me
-		attrMap.Add(m.name, id, "A", &allwaysAttr)
-	}
+//func (m MotionCommentSection) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, motionCommentSectionIDs ...int) error {
+// return eachMeeting(ctx, ds, m, motionCommentSectionIDs, func(meetingID int, ids []int) error {
+// 	groupMap, err := mperms.Meeting(ctx, ds, meetingID)
+// 	if err != nil {
+// 		return fmt.Errorf("groupMap: %w", err)
+// 	}
 
-	return nil
+// 	for _, motionCommentSectionID := range motionCommentSectionIDs {
+// 		var readGroupIDs []int
+// 		var writeGroupIDs []int
+// 		var submitterCanWrite bool
+// 		ds.MotionCommentSection_ReadGroupIDs(motionCommentSectionID).Lazy(&readGroupIDs)
+// 		ds.MotionCommentSection_WriteGroupIDs(motionCommentSectionID).Lazy(&writeGroupIDs)
+// 		ds.MotionCommentSection_SubmitterCanWrite(motionCommentSectionID).Lazy(&submitterCanWrite)
+// 		if err := ds.Execute(ctx); err != nil {
+// 			return fmt.Errorf("getting motion commect section data for id %d: %w", motionCommentSectionID, err)
+// 		}
 
-	// return eachMeeting(ctx, ds, m, motionCommentSectionIDs, func(meetingID int, ids []int) error {
-	// 	groupMap, err := mperms.Meeting(ctx, ds, meetingID)
-	// 	if err != nil {
-	// 		return fmt.Errorf("groupMap: %w", err)
-	// 	}
+// 		if
+// 	}
 
-	// 	for _, motionCommentSectionID := range motionCommentSectionIDs {
-	// 		var readGroupIDs []int
-	// 		var writeGroupIDs []int
-	// 		var submitterCanWrite bool
-	// 		ds.MotionCommentSection_ReadGroupIDs(motionCommentSectionID).Lazy(&readGroupIDs)
-	// 		ds.MotionCommentSection_WriteGroupIDs(motionCommentSectionID).Lazy(&writeGroupIDs)
-	// 		ds.MotionCommentSection_SubmitterCanWrite(motionCommentSectionID).Lazy(&submitterCanWrite)
-	// 		if err := ds.Execute(ctx); err != nil {
-	// 			return fmt.Errorf("getting motion commect section data for id %d: %w", motionCommentSectionID, err)
-	// 		}
+// 	attrInternal := Attributes{
+// 		GlobalPermission: byte(perm.OMLSuperadmin),
+// 		GroupIDs:         groupMap[perm.MotionCanManage],
+// 	}
 
-	// 		if
-	// 	}
+// 	attrPublic := Attributes{
+// 		GlobalPermission: byte(perm.OMLSuperadmin),
+// 		GroupIDs:         groupMap[perm.MotionCanSee],
+// 	}
 
-	// 	attrInternal := Attributes{
-	// 		GlobalPermission: byte(perm.OMLSuperadmin),
-	// 		GroupIDs:         groupMap[perm.MotionCanManage],
-	// 	}
+// 	perms, err := mperms.Meeting(ctx, meetingID)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("getting permissions: %w", err)
+// 	}
 
-	// 	attrPublic := Attributes{
-	// 		GlobalPermission: byte(perm.OMLSuperadmin),
-	// 		GroupIDs:         groupMap[perm.MotionCanSee],
-	// 	}
+// 	if perms.Has(perm.MotionCanManage) {
+// 		return ids, nil
+// 	}
 
-	// 	perms, err := mperms.Meeting(ctx, meetingID)
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("getting permissions: %w", err)
-	// 	}
+// 	if !perms.Has(perm.MotionCanSee) {
+// 		return nil, nil
+// 	}
 
-	// 	if perms.Has(perm.MotionCanManage) {
-	// 		return ids, nil
-	// 	}
+// 	allowed, err := eachCondition(ids, func(motionCommentSectionID int) (bool, error) {
+// 		seeAs, err := m.seeAs(ctx, ds, perms, motionCommentSectionID)
+// 		if err != nil {
+// 			return false, err
+// 		}
 
-	// 	if !perms.Has(perm.MotionCanSee) {
-	// 		return nil, nil
-	// 	}
+// 		return seeAs > 0, nil
+// 	})
 
-	// 	allowed, err := eachCondition(ids, func(motionCommentSectionID int) (bool, error) {
-	// 		seeAs, err := m.seeAs(ctx, ds, perms, motionCommentSectionID)
-	// 		if err != nil {
-	// 			return false, err
-	// 		}
+// 	if err != nil {
+// 		return nil, fmt.Errorf("checking if user is in read group: %w", err)
+// 	}
 
-	// 		return seeAs > 0, nil
-	// 	})
-
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("checking if user is in read group: %w", err)
-	// 	}
-
-	// 	return allowed, nil
-	// })
-}
+// 	return allowed, nil
+// })
+//}
 
 // SeeAs checks if the request user can see a comment section. Returns 1 the
 // user can be seen the object because of a read or write group. Returns 2 if

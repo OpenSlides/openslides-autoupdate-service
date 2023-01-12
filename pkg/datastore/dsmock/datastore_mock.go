@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
@@ -158,6 +159,17 @@ func (d *MockDatastore) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.K
 	return d.Datastore.Get(ctx, keys...)
 }
 
+// Update implements the flow.Updater interface.
+func (d *MockDatastore) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+	for {
+		values, err := d.source.Update(ctx)
+		if oserror.ContextDone(err) {
+			return
+		}
+		updateFn(values, err)
+	}
+}
+
 // InjectError lets the next calls to Get() return the injected error.
 func (d *MockDatastore) InjectError(err error) {
 	d.err = err
@@ -202,9 +214,4 @@ func (d *MockDatastore) KeysRequested(keys ...dskey.Key) bool {
 // block until data is processed. For example with RegisterChanceListener.
 func (d *MockDatastore) Send(data map[dskey.Key][]byte) {
 	d.source.Send(data)
-}
-
-// Update implements the datastore.Updater interface.
-func (d *MockDatastore) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
-	return d.source.Update(ctx)
 }

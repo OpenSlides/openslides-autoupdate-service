@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // Speaker handels restrictions of the collection speaker.
@@ -45,7 +46,9 @@ func (s Speaker) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meeting
 	return eachRelationField(ctx, ds.Speaker_ListOfSpeakersID, speakerIDs, func(losID int, ids []int) error {
 		// TODO: This only works if los is calculated before speaker
 		for _, id := range ids {
-			attrMap.Add(s.name, id, "A", attrMap.Get(ctx, ds, "list_of_speakers", losID, "A"))
+			if err := attrMap.SameAs(ctx, ds, mperms, dskey.Key{Collection: s.name, ID: id, Field: "A"}, dskey.Key{Collection: "list_of_speakers", ID: losID, Field: "A"}); err != nil {
+				return fmt.Errorf("los %d: %w", id, err)
+			}
 		}
 		return nil
 	})
