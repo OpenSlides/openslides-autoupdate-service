@@ -45,7 +45,7 @@ func (s Speaker) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meeting
 	return eachRelationField(ctx, ds.Speaker_ListOfSpeakersID, speakerIDs, func(losID int, ids []int) error {
 		// TODO: This only works if los is calculated before speaker
 		for _, id := range ids {
-			attrMap.Add(s.name, id, "A", attrMap.Get("list_of_speakers", losID, "A"))
+			attrMap.Add(s.name, id, "A", attrMap.Get(ctx, ds, "list_of_speakers", losID, "A"))
 		}
 		return nil
 	})

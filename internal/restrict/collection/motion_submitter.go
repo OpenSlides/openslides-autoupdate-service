@@ -45,7 +45,7 @@ func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm
 	return eachRelationField(ctx, ds.MotionSubmitter_MotionID, motionSubmitterIDs, func(motionID int, ids []int) error {
 		// TODO: This only works if motion is calculated before motion_submitter
 		for _, id := range ids {
-			attrMap.Add(m.name, id, "A", attrMap.Get("motion", motionID, "C"))
+			attrMap.Add(m.name, id, "A", attrMap.Get(ctx, ds, "motion", motionID, "C"))
 		}
 		return nil
 	})

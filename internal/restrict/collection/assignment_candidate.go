@@ -45,7 +45,7 @@ func (a AssignmentCandidate) see(ctx context.Context, ds *dsfetch.Fetch, mperms 
 	return eachRelationField(ctx, ds.AssignmentCandidate_AssignmentID, assignmentCandidateIDs, func(assignmentID int, ids []int) error {
 		// TODO: This only works if assignment is calculated before assignment_candidate
 		for _, id := range ids {
-			attrMap.Add(a.name, id, "A", attrMap.Get("assignment", assignmentID, "A"))
+			attrMap.Add(a.name, id, "A", attrMap.Get(ctx, ds, "assignment", assignmentID, "A"))
 		}
 		return nil
 	})

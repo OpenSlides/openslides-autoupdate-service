@@ -45,7 +45,7 @@ func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPe
 	return eachMeeting(ctx, ds, g, groupIDs, func(meetingID int, ids []int) error {
 		for _, id := range groupIDs {
 			// TODO: Make sure meeting is calculated before group.
-			attrMap.Add(g.name, id, "A", attrMap.Get("meeting", meetingID, "A"))
+			attrMap.Add(g.name, id, "A", attrMap.Get(ctx, ds, "meeting", meetingID, "A"))
 		}
 
 		return nil

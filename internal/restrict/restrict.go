@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
@@ -19,8 +18,7 @@ import (
 
 // Restricter holds attributes for each restriction mode.
 type Restricter struct {
-	mu           sync.RWMutex
-	attributeMap collection.AttributeMap
+	attributeMap *collection.AttributeMap
 }
 
 // New initializes the restricter.
@@ -32,26 +30,26 @@ func New() *Restricter {
 
 // InsertFields adds new fields.
 func (r *Restricter) InsertFields(ctx context.Context, ds datastore.Getter, values map[dskey.Key][]byte) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	// for k := range values {
+	// 	fmt.Printf("add %s\n", k)
+	// }
 
-	restrictModeIDs, err := groupKeysByCollectionMode(values)
-	if err != nil {
-		return fmt.Errorf("group keys: %w", err)
-	}
+	// restrictModeIDs, err := groupKeysByCollectionMode(values)
+	// if err != nil {
+	// 	return fmt.Errorf("group keys: %w", err)
+	// }
 
-	if err := r.prepare(ctx, ds, restrictModeIDs); err != nil {
-		return fmt.Errorf("prepare: %w", err)
-	}
+	// fmt.Printf("restictModeIDs: %v\n", restrictModeIDs)
+
+	// if err := r.prepare(ctx, ds, restrictModeIDs); err != nil {
+	// 	return fmt.Errorf("prepare: %w", err)
+	// }
 
 	return nil
 }
 
 // UpdateFields updates the attribute fields.
 func (r *Restricter) UpdateFields(ctx context.Context, ds datastore.Getter, values map[dskey.Key][]byte) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	// TODO: Handle deletion.
 	// TODO: Only update on hot keys
 	restrictModeIDs := r.attributeMap.RestrictModeIDs()
@@ -133,9 +131,6 @@ func groupKeysByCollectionMode(values map[dskey.Key][]byte) (map[collection.CM]s
 // Getter returns a datastore getter that returns restricted data.
 func (r *Restricter) Getter(getter datastore.Getter, uid int) datastore.Getter {
 	return datastore.GetterFunc(func(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
-		r.mu.RLock()
-		defer r.mu.RUnlock()
-
 		data, err := getter.Get(ctx, keys...)
 		if err != nil {
 			return nil, fmt.Errorf("fetching unrestricted data: %w", err)
@@ -162,6 +157,10 @@ func (r *Restricter) Getter(getter datastore.Getter, uid int) datastore.Getter {
 			}
 
 			requiredAttr := r.attributeMap.Get(key.Collection, key.ID, restrictionMode)
+			if requiredAttr == nil {
+				fmt.Printf("did not found attr for %s (%s)\n", key, restrictionMode)
+				continue
+			}
 
 			if !allowedByAttr(requiredAttr, uid, orgaLevel, groupIDs) {
 				data[key] = nil

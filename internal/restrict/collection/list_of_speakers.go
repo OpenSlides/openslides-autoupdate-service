@@ -58,19 +58,19 @@ func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, mperms per
 			switch collection {
 			case "motion":
 				// TODO: make the "see" mode generic.
-				andAttr = attrMap.Get(collection, id, "C")
+				andAttr = attrMap.Get(ctx, ds, collection, id, "C")
 
 			case "motion_block":
-				andAttr = attrMap.Get(collection, id, "A")
+				andAttr = attrMap.Get(ctx, ds, collection, id, "A")
 
 			case "assignment":
-				andAttr = attrMap.Get(collection, id, "A")
+				andAttr = attrMap.Get(ctx, ds, collection, id, "A")
 
 			case "topic":
-				andAttr = attrMap.Get(collection, id, "A")
+				andAttr = attrMap.Get(ctx, ds, collection, id, "A")
 
 			case "mediafile":
-				andAttr = attrMap.Get(collection, id, "A")
+				andAttr = attrMap.Get(ctx, ds, collection, id, "A")
 
 			default:
 				// TODO LAST ERROR

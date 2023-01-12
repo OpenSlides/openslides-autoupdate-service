@@ -8,7 +8,6 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
@@ -47,39 +46,10 @@ type Attributes struct {
 	GroupAnd *Attributes
 }
 
-// AttributeMap holds attributes for each restriction mod
-type AttributeMap struct {
-	data map[dskey.Key]*Attributes
-}
-
-// NewAttributeMap initializes an AttributeMap
-func NewAttributeMap() AttributeMap {
-	return AttributeMap{
-		data: make(map[dskey.Key]*Attributes),
-	}
-}
-
-// Add adds a value to the map.
-func (am *AttributeMap) Add(collection string, id int, restrictionMod string, value *Attributes) {
-	am.data[dskey.Key{Collection: collection, ID: id, Field: restrictionMod}] = value
-}
-
-// Get returns an attribute pointer to a restriction mod field. Do not modify it.
-func (am *AttributeMap) Get(collection string, id int, restrictionMode string) *Attributes {
-	return am.data[dskey.Key{Collection: collection, ID: id, Field: restrictionMode}]
-}
-
-// RestrictModeIDs returns a map from collection/mode to a set of ids.
-func (am *AttributeMap) RestrictModeIDs() map[CM]set.Set[int] {
-	result := make(map[CM]set.Set[int])
-	for key := range am.data {
-		cm := CM{Collection: key.Collection, Mode: key.Field}
-		if result[cm].IsNotInitialized() {
-			result[cm] = set.New[int]()
-		}
-		result[cm].Add(key.ID)
-	}
-	return result
+// AttributeMap is like restrict.AttributeMap
+type AttributeMap interface {
+	Add(collection string, id int, restrictionMod string, value *Attributes)
+	Get(ctx context.Context, fetch *dsfetch.Fetch, mperms perm.MeetingPermission, collection string, id int, restrictionMode string) (*Attributes, error)
 }
 
 // FieldRestricter is a function to restrict fields of a collection.
