@@ -2,6 +2,7 @@ package perm
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
@@ -31,7 +32,7 @@ func (p MeetingPermission) Meeting(ctx context.Context, ds *dsfetch.Fetch, meeti
 
 	perms, err := GroupByPerm(ctx, ds, meetingID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("group by perm: %w", err)
 	}
 
 	return perms, nil

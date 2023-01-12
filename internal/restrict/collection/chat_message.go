@@ -58,6 +58,9 @@ func (c ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Mee
 		}
 
 		allowedGroups := groupMap[perm.ChatCanManage]
+		if allowedGroups.IsNotInitialized() {
+			allowedGroups = set.New[int]()
+		}
 
 		readGroups, err := ds.ChatGroup_ReadGroupIDs(chatGroupID).Value(ctx)
 		if err != nil {

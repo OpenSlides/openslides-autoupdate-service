@@ -48,9 +48,10 @@ func TestCommitteeModeB(t *testing.T) {
 		c.Modes("B"),
 		false,
 		`---
-		committee/5/id: 5
+		committee/5/user_$can_manage_management_level: []
 		user/1/organization_management_level: can_manage_users
 		`,
+		withElementID(5),
 	)
 
 	testCase(
@@ -59,26 +60,25 @@ func TestCommitteeModeB(t *testing.T) {
 		c.Modes("B"),
 		true,
 		`---
-		committee/5/id: 5
+		committee/5/user_$can_manage_management_level: []
 		user/1/organization_management_level: can_manage_organization
-		`,
-	)
-
-	testCase(
-		"In committee",
-		t,
-		c.Modes("B"),
-		true,
-		`---
-		committee/5/id: 5
-		user/1:
-			committee_$can_manage_management_level: [5]
 		`,
 		withElementID(5),
 	)
 
 	testCase(
 		"CML can manage",
+		t,
+		c.Modes("B"),
+		true,
+		`---
+		committee/5/user_$can_manage_management_level: [1]
+		`,
+		withElementID(5),
+	)
+
+	testCase(
+		"In committee",
 		t,
 		c.Modes("B"),
 		false,

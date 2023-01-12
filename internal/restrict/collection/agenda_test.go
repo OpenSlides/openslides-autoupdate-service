@@ -18,6 +18,7 @@ func TestAgendaModeA(t *testing.T) {
 		`---
 		agenda_item/1/meeting_id: 30
 		`,
+		withPerms(30),
 	)
 
 	testCase(
@@ -135,6 +136,7 @@ func TestAgendaModeB(t *testing.T) {
 		a.Modes("B"),
 		false,
 		ds,
+		withPerms(30),
 	)
 }
 
@@ -177,5 +179,6 @@ func TestAgendaModeC(t *testing.T) {
 		a.Modes("C"),
 		false,
 		ds,
+		withPerms(30),
 	)
 }

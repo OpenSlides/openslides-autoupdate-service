@@ -22,6 +22,7 @@ func TestChatMessageModeA(t *testing.T) {
 		chat_group/5/meeting_id: 30
 		meeting/10/id: 10
 		`,
+		withPerms(30),
 	)
 
 	testCase(
@@ -30,7 +31,10 @@ func TestChatMessageModeA(t *testing.T) {
 		c.Modes("A"),
 		true,
 		`---
-		chat_message/1/chat_group_id: 5
+		chat_message/1:
+			chat_group_id: 5
+			user_id: 404
+
 		chat_group/5:
 			meeting_id: 30
 		
@@ -45,13 +49,18 @@ func TestChatMessageModeA(t *testing.T) {
 		c.Modes("A"),
 		true,
 		`---
-		chat_message/1/chat_group_id: 5
+		chat_message/1:
+			chat_group_id: 5
+			user_id: 404
+
 		chat_group/5:
 			meeting_id: 30
 			read_group_ids: [4]
 		
 		meeting/30/id: 30
-		user/1/group_$30_ids: [4]
+		user/1:
+			group_$_ids: ["30"]
+			group_$30_ids: [4]
 		group/4/id: 4
 		`,
 	)
@@ -71,5 +80,6 @@ func TestChatMessageModeA(t *testing.T) {
 		
 		meeting/10/id: 10		
 		`,
+		withPerms(30),
 	)
 }

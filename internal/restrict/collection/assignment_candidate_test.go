@@ -31,5 +31,6 @@ func TestAssignmentCandidateModeA(t *testing.T) {
 		a.Modes("A"),
 		false,
 		ds,
+		withPerms(30),
 	)
 }

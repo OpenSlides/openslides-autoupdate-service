@@ -16,8 +16,8 @@ func TestGroupModeA(t *testing.T) {
 		false,
 		`---
 		group/1/meeting_id: 30
-		meeting/30/id: 30
 		meeting/30/committee_id: 404
+		organization/1/committee_ids: []
 		`,
 	)
 
@@ -28,7 +28,9 @@ func TestGroupModeA(t *testing.T) {
 		true,
 		`---
 		group/1/meeting_id: 30
-		meeting/30/enable_anonymous: true
+		meeting/30:
+			enable_anonymous: true
+			committee_id: 50
 		`,
 	)
 
@@ -39,7 +41,11 @@ func TestGroupModeA(t *testing.T) {
 		true,
 		`---
 		group/1/meeting_id: 30
-		meeting/30/user_ids: [1]
+		meeting/30:
+			user_ids: [1]
+			committee_id: 50
+		
+		organization/1/committee_ids: []
 		`,
 	)
 }

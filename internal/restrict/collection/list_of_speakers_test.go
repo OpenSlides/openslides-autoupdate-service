@@ -22,6 +22,7 @@ func TestListOfSpeakersModeA(t *testing.T) {
 
 		topic/5/meeting_id: 30
 		`,
+		withPerms(30),
 	)
 
 	testCase(

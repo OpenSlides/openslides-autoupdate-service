@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 type testData struct {
@@ -40,10 +40,7 @@ func testCase(name string, t *testing.T, f collection.FieldRestricter, expect bo
 	}
 
 	if td.requestUserID != 0 {
-		userIDKey, err := dskey.FromString(fmt.Sprintf("user/%d/id", td.requestUserID))
-		if err != nil {
-			t.Fatalf("invalid key %v", fmt.Sprintf("user/%d/id", td.requestUserID))
-		}
+		userIDKey := dskey.MustKey(fmt.Sprintf("user/%d/id", td.requestUserID))
 
 		td.data[userIDKey] = []byte(strconv.Itoa(td.requestUserID))
 	}
@@ -77,28 +74,45 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 
 	t.Run(tt.name, func(t *testing.T) {
 		t.Helper()
-		ds := dsfetch.New(dsmock.Stub(tt.data))
-		perms := perm.NewMeetingPermission(ds, tt.requestUserID)
+		ctx := context.Background()
 
-		attrMap := collection.NewAttributeMap()
+		fetcher := dsfetch.New(dsmock.Stub(tt.data))
+		mperms := perm.NewMeetingPermission()
 
-		err := f(context.Background(), ds, &perms, attrMap, tt.elementIDs...)
+		attrMap := restrict.NewAttributeMap()
+
+		err := f(context.Background(), fetcher, mperms, attrMap, tt.elementIDs...)
 		if err != nil {
 			t.Fatalf("restriction mode returned unexpected error: %v", err)
 		}
 
-		if tt.expect == nil {
-			// test for one value
-			got := len(allowedIDs) == 1
-
-			if got != tt.expectOne {
-				t.Errorf("restriction mode returned %t, expected %t", got, tt.expectOne)
-			}
-			return
+		globalPerm, groupIDs, err := restrict.UserPermissions(ctx, fetcher, tt.requestUserID)
+		if err != nil {
+			t.Fatalf("getting user permissions: %v", err)
 		}
+		for cm, ids := range attrMap.RestrictModeIDs() {
+			for _, id := range ids.List() {
+				attr, err := attrMap.Get(ctx, fetcher, mperms, dskey.Key{Collection: cm.Collection, ID: id, Field: cm.Mode})
+				if err != nil {
+					t.Fatalf("attrMap: %v", err)
+				}
 
-		if !set.Equal(set.New(allowedIDs...), set.New(tt.expect...)) {
-			t.Errorf("restriction mode returned %v, expected %v", allowedIDs, tt.expect)
+				expect := tt.expectOne
+				if tt.expect != nil {
+					// This happens in a multi test
+					expect = false
+					for _, e := range tt.expect {
+						if e == id {
+							expect = true
+							break
+						}
+					}
+				}
+
+				if got := restrict.AllowedByAttr(attr, tt.requestUserID, globalPerm, groupIDs); got != expect {
+					t.Errorf("restriction mode returned %t, expedted %t", got, expect)
+				}
+			}
 		}
 	})
 }
@@ -111,22 +125,22 @@ type testCaseOption func(*testData)
 // Make sure to call withRequestUser before withPerms.
 func withPerms(meetingID int, perms ...perm.TPermission) testCaseOption {
 	return func(td *testData) {
-		permString := "["
-		for _, p := range perms {
-			permString += fmt.Sprintf("%q,", p)
-		}
-		permString = permString[:len(permString)-1] + "]"
+		permList, _ := json.Marshal(perms)
 		groupID := 1000 + 337
 
-		groupsKey := dskey.MustKey(fmt.Sprintf("user/1/group_$%d_ids", meetingID))
+		groupsTmplKey := dskey.MustKey(fmt.Sprintf("user/%d/group_$_ids", td.requestUserID))
+		groupsKey := dskey.MustKey(fmt.Sprintf("user/%d/group_$%d_ids", td.requestUserID, meetingID))
 		groupIDKey := dskey.MustKey(fmt.Sprintf("group/%d/id", groupID))
 		groupPermissionKey := dskey.MustKey(fmt.Sprintf("group/%d/permissions", groupID))
 		meetingIDKey := dskey.MustKey(fmt.Sprintf("meeting/%d/id", meetingID))
+		meetingGroupIDs := dskey.MustKey(fmt.Sprintf("meeting/%d/group_ids", meetingID))
 
+		td.data[groupsTmplKey] = jsonAppend(td.data[groupsTmplKey], strconv.Itoa(meetingID))
 		td.data[groupsKey] = jsonAppend(td.data[groupsKey], groupID)
 		td.data[groupIDKey] = []byte(strconv.Itoa(groupID))
-		td.data[groupPermissionKey] = []byte(permString)
+		td.data[groupPermissionKey] = permList
 		td.data[meetingIDKey] = []byte(strconv.Itoa(meetingID))
+		td.data[meetingGroupIDs] = jsonAppend(td.data[meetingGroupIDs], groupID)
 	}
 }
 
@@ -142,8 +156,8 @@ func withElementID(id int) testCaseOption {
 	}
 }
 
-func jsonAppend(value []byte, element ...int) []byte {
-	var list []int
+func jsonAppend[T any](value []byte, element ...T) []byte {
+	var list []T
 	if value != nil {
 		if err := json.Unmarshal([]byte(value), &list); err != nil {
 			panic(err)

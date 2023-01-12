@@ -19,6 +19,7 @@ func TestAssignmentModeB(t *testing.T) {
 		assignment/1:
 			meeting_id: 30
 		`,
+		withPerms(30),
 	)
 
 	testCase(

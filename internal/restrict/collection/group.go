@@ -46,7 +46,7 @@ func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPe
 	return eachMeeting(ctx, ds, g, groupIDs, func(meetingID int, ids []int) error {
 		for _, id := range groupIDs {
 			// TODO: Make sure meeting is calculated before group.
-			if err := attrMap.SameAs(ctx, &dsfetch.Fetch{}, mperms, dskey.Key{Collection: g.name, ID: id, Field: "A"}, dskey.Key{Collection: "meeting", ID: meetingID, Field: "A"}); err != nil {
+			if err := attrMap.SameAs(ctx, ds, mperms, dskey.Key{Collection: g.name, ID: id, Field: "A"}, dskey.Key{Collection: "meeting", ID: meetingID, Field: "B"}); err != nil {
 				return fmt.Errorf("meeting %d: %w", id, err)
 			}
 		}

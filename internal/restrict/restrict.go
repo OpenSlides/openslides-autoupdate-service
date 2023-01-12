@@ -155,17 +155,7 @@ func (r *Restricter) Getter(uid int) datastore.Getter {
 
 		fetcher := dsfetch.New(r.sub)
 
-		globalPermStr, err := fetcher.User_OrganizationManagementLevel(uid).Value(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("getting orga level from user: %w", err)
-		}
-
-		groupIDs, err := userGroups(ctx, fetcher, uid)
-		if err != nil {
-			return nil, fmt.Errorf("getting group ids: %w", err)
-		}
-
-		orgaLevel := perm.OrganizationManagementFromString(globalPermStr)
+		orgaLevel, groupIDs, err := UserPermissions(ctx, fetcher, uid)
 
 		for key := range data {
 			restrictionMode, err := restrictModeName(key.Collection, key.Field)
@@ -189,7 +179,7 @@ func (r *Restricter) Getter(uid int) datastore.Getter {
 				continue
 			}
 
-			if !allowedByAttr(requiredAttr, uid, orgaLevel, groupIDs) {
+			if !AllowedByAttr(requiredAttr, uid, orgaLevel, groupIDs) {
 				data[key] = nil
 				continue
 			}
@@ -227,7 +217,29 @@ func userGroups(ctx context.Context, fetcher *dsfetch.Fetch, uid int) ([]int, er
 	return result, nil
 }
 
-func allowedByAttr(requiredAttr *collection.Attributes, uid int, orgaLevel perm.OrganizationManagementLevel, groupIDs []int) bool {
+// UserPermissions returns the global permission and all group ids of an user.
+//
+// TODO: Unexport this. This is only needed in the tests of the collection package.
+func UserPermissions(ctx context.Context, fetcher *dsfetch.Fetch, uid int) (perm.OrganizationManagementLevel, []int, error) {
+	globalPermStr, err := fetcher.User_OrganizationManagementLevel(uid).Value(ctx)
+	if err != nil {
+		return '0', nil, fmt.Errorf("getting orga level from user: %w", err)
+	}
+
+	groupIDs, err := userGroups(ctx, fetcher, uid)
+	if err != nil {
+		return '0', nil, fmt.Errorf("getting group ids: %w", err)
+	}
+
+	orgaLevel := perm.OrganizationManagementFromString(globalPermStr)
+
+	return orgaLevel, groupIDs, nil
+}
+
+// AllowedByAttr tells if the user is allowed to see the attribute.
+//
+// TODO: Unexport this. This is only needed in the tests of the collection package.
+func AllowedByAttr(requiredAttr *collection.Attributes, uid int, orgaLevel perm.OrganizationManagementLevel, groupIDs []int) bool {
 	if requiredAttr.GlobalPermission == 255 {
 		return false
 	}
@@ -238,7 +250,7 @@ func allowedByAttr(requiredAttr *collection.Attributes, uid int, orgaLevel perm.
 
 	if allowedByGroup(requiredAttr.GroupIDs, groupIDs) {
 		if nextAttr := requiredAttr.GroupAnd; nextAttr != nil {
-			return allowedByAttr(nextAttr, uid, orgaLevel, groupIDs)
+			return AllowedByAttr(nextAttr, uid, orgaLevel, groupIDs)
 		}
 		return true
 	}
