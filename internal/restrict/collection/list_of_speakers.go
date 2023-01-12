@@ -15,13 +15,11 @@ import (
 // in the meeting and can see the content_object.
 //
 // Mode A: The user can see the list of speakers.
-type ListOfSpeakers struct {
-	name string
-}
+type ListOfSpeakers struct{}
 
 // Name returns the collection name.
 func (los ListOfSpeakers) Name() string {
-	return los.name
+	return "list_of_speakers"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -89,7 +87,7 @@ func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, mperms per
 			}
 
 			for _, losID := range ids {
-				attrMap.Add(dskey.Key{Collection: los.name, ID: losID, Field: "A"}, attr)
+				attrMap.Add(dskey.Key{Collection: los.Name(), ID: losID, Field: "A"}, attr)
 			}
 
 			return nil

@@ -9,13 +9,11 @@ import (
 // Theme handels the restrictions for the theme collection.
 //
 // Every user can see a theme.
-type Theme struct {
-	name string
-}
+type Theme struct{}
 
 // Name returns the collection name.
 func (t Theme) Name() string {
-	return t.name
+	return "theme"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -27,7 +25,7 @@ func (t Theme) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, b
 func (t Theme) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return Allways(t.name, mode)
+		return Allways(t.Name(), mode)
 	}
 	return nil
 }

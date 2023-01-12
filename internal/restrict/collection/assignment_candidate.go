@@ -14,13 +14,11 @@ import (
 // The user can see an assignment candidate, if the user can see the linked assignment.
 //
 // Mode A: The user can see the assignment candidate.
-type AssignmentCandidate struct {
-	name string
-}
+type AssignmentCandidate struct{}
 
 // Name returns the collection name.
 func (a AssignmentCandidate) Name() string {
-	return a.name
+	return "assignment_candidate"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -46,7 +44,7 @@ func (a AssignmentCandidate) see(ctx context.Context, ds *dsfetch.Fetch, mperms 
 	return eachRelationField(ctx, ds.AssignmentCandidate_AssignmentID, assignmentCandidateIDs, func(assignmentID int, ids []int) error {
 		// TODO: This only works if assignment is calculated before assignment_candidate
 		for _, id := range ids {
-			if err := attrMap.SameAs(ctx, ds, mperms, dskey.Key{Collection: a.name, ID: id, Field: "A"}, dskey.Key{Collection: "assignment", ID: assignmentID, Field: "A"}); err != nil {
+			if err := attrMap.SameAs(ctx, ds, mperms, dskey.Key{Collection: a.Name(), ID: id, Field: "A"}, dskey.Key{Collection: "assignment", ID: assignmentID, Field: "A"}); err != nil {
 				return fmt.Errorf("setting id %d: %w", id, err)
 			}
 		}

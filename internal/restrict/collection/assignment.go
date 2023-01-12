@@ -13,13 +13,11 @@ import (
 // The user can see an assignment, if the user has assignment.can_see
 //
 // Mode A: User can see the assignment.
-type Assignment struct {
-	name string
-}
+type Assignment struct{}
 
 // Name returns the collection name.
 func (a Assignment) Name() string {
-	return a.name
+	return "assignment"
 }
 
 // MeetingID returns the meetingID for the object.

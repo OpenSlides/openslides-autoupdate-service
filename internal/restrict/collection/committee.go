@@ -19,13 +19,11 @@ import (
 //
 // Mode B: The user must have the OML `can_manage_organization` or higher or the
 // CML `can_manage` in the committee.
-type Committee struct {
-	name string
-}
+type Committee struct{}
 
 // Name returns the collection name.
 func (c Committee) Name() string {
-	return c.name
+	return "committee"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -51,7 +49,7 @@ func (c Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meeti
 			return fmt.Errorf("getting committee users: %w", err)
 		}
 
-		attrMap.Add(dskey.Key{Collection: c.name, ID: committeeID, Field: "A"}, &Attributes{
+		attrMap.Add(dskey.Key{Collection: c.Name(), ID: committeeID, Field: "A"}, &Attributes{
 			GlobalPermission: byte(perm.OMLCanManageUsers),
 			UserIDs:          set.New(userIDs...),
 		})
@@ -67,7 +65,7 @@ func (c Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Mee
 			return fmt.Errorf("getting committee managers: %w", err)
 		}
 
-		attrMap.Add(dskey.Key{Collection: c.name, ID: committeeID, Field: "B"}, &Attributes{
+		attrMap.Add(dskey.Key{Collection: c.Name(), ID: committeeID, Field: "B"}, &Attributes{
 			GlobalPermission: byte(perm.OMLCanManageOrganization),
 			UserIDs:          set.New(committeeManager...),
 		})

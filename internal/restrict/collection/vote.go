@@ -22,13 +22,11 @@ import (
 //	published: Accessible if the user can see the vote.
 //	finished: Accessible if the user can manage the associated poll.
 //	others: Not accessible for anyone.
-type Vote struct {
-	name string
-}
+type Vote struct{}
 
 // Name returns the collection name.
 func (v Vote) Name() string {
-	return v.name
+	return "vote"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -44,7 +42,7 @@ func (v Vote) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bo
 // Modes returns the restrictions modes for the meeting collection.
 func (v Vote) Modes(mode string) FieldRestricter {
 	// TODO: Implement me
-	return Allways(v.name, mode)
+	return Allways(v.Name(), mode)
 
 	// switch mode {
 	// case "A":

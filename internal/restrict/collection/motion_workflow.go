@@ -13,13 +13,11 @@ import (
 // The user can see a motion workflow if the user has motion.can_see.
 //
 // Mode A: The user can see the motion workflow.
-type MotionWorkflow struct {
-	name string
-}
+type MotionWorkflow struct{}
 
 // Name returns the collection name.
 func (m MotionWorkflow) Name() string {
-	return m.name
+	return "motion_workflow"
 }
 
 // MeetingID returns the meetingID for the object.

@@ -21,13 +21,11 @@ import (
 // Mode C: The user can see the motion.
 //
 // Mode D: Never published to any user.
-type Motion struct {
-	name string
-}
+type Motion struct{}
 
 // Name returns the collection name.
 func (m Motion) Name() string {
-	return m.name
+	return "motion"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -43,7 +41,7 @@ func (m Motion) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, 
 // Modes returns the restrictions modes for the meeting collection.
 func (m Motion) Modes(mode string) FieldRestricter {
 	// TODO: Implement me
-	return Allways(m.name, mode)
+	return Allways(m.Name(), mode)
 	// switch mode {
 	// case "A":
 	// 	return m.modeA

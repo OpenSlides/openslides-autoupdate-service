@@ -17,13 +17,11 @@ import (
 //	The user has motion.can_see and the motion change recommendation has internal set to false.
 //
 // Mode A: The user can see the motion change recommendation.
-type MotionChangeRecommendation struct {
-	name string
-}
+type MotionChangeRecommendation struct{}
 
 // Name returns the collection name.
 func (m MotionChangeRecommendation) Name() string {
-	return m.name
+	return "motion_change_recommendation"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -73,7 +71,7 @@ func (m MotionChangeRecommendation) see(ctx context.Context, ds *dsfetch.Fetch, 
 				attr = &attrInternal
 			}
 
-			attrMap.Add(dskey.Key{Collection: m.name, ID: motionChangeRecommendationID, Field: "A"}, attr)
+			attrMap.Add(dskey.Key{Collection: m.Name(), ID: motionChangeRecommendationID, Field: "A"}, attr)
 		}
 
 		return nil

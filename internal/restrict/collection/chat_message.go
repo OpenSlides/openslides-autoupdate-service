@@ -17,13 +17,11 @@ import (
 // chat_group_id) or they have written the chat_message (dedicated by the key user_id).
 //
 // Mode A: A user can see a chat_message.
-type ChatMessage struct {
-	name string
-}
+type ChatMessage struct{}
 
 // Name returns the collection name.
 func (c ChatMessage) Name() string {
-	return c.name
+	return "chat_message"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -75,7 +73,7 @@ func (c ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Mee
 				return fmt.Errorf("reading author of chat message: %w", err)
 			}
 
-			attrMap.Add(dskey.Key{Collection: c.name, ID: chatMessageID, Field: "A"}, &Attributes{
+			attrMap.Add(dskey.Key{Collection: c.Name(), ID: chatMessageID, Field: "A"}, &Attributes{
 				GlobalPermission: byte(perm.OMLSuperadmin),
 				GroupIDs:         allowedGroups,
 				UserIDs:          set.New(author),

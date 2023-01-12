@@ -13,13 +13,11 @@ import (
 // The user can see a topic, if the user has agenda_item.can_see.
 //
 // Mode A: The user can see the topic.
-type Topic struct {
-	name string
-}
+type Topic struct{}
 
 // Name returns the collection name.
 func (t Topic) Name() string {
-	return t.name
+	return "topic"
 }
 
 // MeetingID returns the meetingID for the object.

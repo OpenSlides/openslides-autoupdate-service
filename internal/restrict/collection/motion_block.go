@@ -17,13 +17,11 @@ import (
 //	The user has motion.can_see and the motion block has internal set to false.
 //
 // Mode A: The user can see the motion block.
-type MotionBlock struct {
-	name string
-}
+type MotionBlock struct{}
 
 // Name returns the collection name.
 func (m MotionBlock) Name() string {
-	return m.name
+	return "motion_block"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -73,7 +71,7 @@ func (m MotionBlock) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Mee
 				attr = &attrInternal
 			}
 
-			attrMap.Add(dskey.Key{Collection: m.name, ID: motionBlockID, Field: "A"}, attr)
+			attrMap.Add(dskey.Key{Collection: m.Name(), ID: motionBlockID, Field: "A"}, attr)
 		}
 
 		return nil

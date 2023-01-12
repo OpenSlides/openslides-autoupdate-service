@@ -27,13 +27,11 @@ import (
 // Mode C: The user has meeting.can_see_frontpage.
 //
 // Mode D: The user has meeting.can_see_livestream.
-type Meeting struct {
-	name string
-}
+type Meeting struct{}
 
 // Name returns the collection name.
 func (m Meeting) Name() string {
-	return m.name
+	return "meeting"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -45,7 +43,7 @@ func (m Meeting) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int,
 func (m Meeting) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return Allways(m.name, "A")
+		return Allways(m.Name(), "A")
 	case "B":
 		return m.see
 	case "C":
@@ -74,7 +72,7 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meeting
 		}
 
 		if meeting.enableAnonymous {
-			attrMap.Add(dskey.Key{Collection: m.name, ID: meetingID, Field: "B"}, &allwaysAttr)
+			attrMap.Add(dskey.Key{Collection: m.Name(), ID: meetingID, Field: "B"}, &allwaysAttr)
 			continue
 		}
 
@@ -109,7 +107,7 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meeting
 
 		allUserIDs := append(committeeUsers, meeting.userIDs...)
 
-		attrMap.Add(dskey.Key{Collection: m.name, ID: meetingID, Field: "B"}, &Attributes{
+		attrMap.Add(dskey.Key{Collection: m.Name(), ID: meetingID, Field: "B"}, &Attributes{
 			GlobalPermission: byte(perm.OMLCanManageOrganization),
 			UserIDs:          set.New(allUserIDs...),
 		})
@@ -124,7 +122,7 @@ func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meeti
 			return fmt.Errorf("getting perm map for meeting %d: %w", meetingID, err)
 		}
 
-		attrMap.Add(dskey.Key{Collection: m.name, ID: meetingID, Field: "C"}, &Attributes{
+		attrMap.Add(dskey.Key{Collection: m.Name(), ID: meetingID, Field: "C"}, &Attributes{
 			GlobalPermission: byte(perm.OMLSuperadmin),
 			GroupIDs:         permMap[perm.MeetingCanSeeFrontpage],
 		})
@@ -140,7 +138,7 @@ func (m Meeting) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meeti
 			return fmt.Errorf("getting perm map for meeting %d: %w", meetingID, err)
 		}
 
-		attrMap.Add(dskey.Key{Collection: m.name, ID: meetingID, Field: "C"}, &Attributes{
+		attrMap.Add(dskey.Key{Collection: m.Name(), ID: meetingID, Field: "C"}, &Attributes{
 			GlobalPermission: byte(perm.OMLSuperadmin),
 			GroupIDs:         permMap[perm.MeetingCanSeeLivestream],
 		})

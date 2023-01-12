@@ -11,13 +11,11 @@ import (
 // A logged in user can always see an organization tag.
 //
 // Mode A: The user can see the organization tag.
-type OrganizationTag struct {
-	name string
-}
+type OrganizationTag struct{}
 
 // Name returns the collection name.
 func (o OrganizationTag) Name() string {
-	return o.name
+	return "organization_tag"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -29,7 +27,7 @@ func (o OrganizationTag) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id in
 func (o OrganizationTag) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return loggedIn(o.name, mode)
+		return loggedIn(o.Name(), mode)
 	}
 	return nil
 }

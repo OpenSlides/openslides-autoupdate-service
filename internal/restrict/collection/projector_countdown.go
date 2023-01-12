@@ -13,13 +13,11 @@ import (
 // The user can see a projector countdown, if the user has projector.can_see.
 //
 // Group A: The user can see the projector countdown.
-type ProjectorCountdown struct {
-	name string
-}
+type ProjectorCountdown struct{}
 
 // Name returns the collection name.
 func (p ProjectorCountdown) Name() string {
-	return p.name
+	return "projector_countdown"
 }
 
 // MeetingID returns the meetingID for the object.

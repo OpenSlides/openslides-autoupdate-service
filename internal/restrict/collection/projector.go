@@ -13,13 +13,11 @@ import (
 // The user can see a projector, if the user has projector.can_see.
 //
 // Mode A: The user can see the projector.
-type Projector struct {
-	name string
-}
+type Projector struct{}
 
 // Name returns the collection name.
 func (p Projector) Name() string {
-	return p.name
+	return "projector"
 }
 
 // MeetingID returns the meetingID for the object.

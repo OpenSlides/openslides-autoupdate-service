@@ -34,13 +34,11 @@ import (
 //	the user has the permissions `user.can_see` and `list_of_speakers.can_manage`.
 //
 // Mode D: Same as Mode B, but for `finished`: Accessible if the user can manage the poll or the user has list_of_speakers.can_manage.
-type Poll struct {
-	name string
-}
+type Poll struct{}
 
 // Name returns the collection name.
 func (p Poll) Name() string {
-	return p.name
+	return "poll"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -56,7 +54,7 @@ func (p Poll) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bo
 // Modes returns the restrictions modes for the meeting collection.
 func (p Poll) Modes(mode string) FieldRestricter {
 	// TODO: Implement me
-	return Allways(p.name, mode)
+	return Allways(p.Name(), mode)
 	// switch mode {
 	// case "A":
 	// 	return p.see

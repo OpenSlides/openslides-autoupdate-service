@@ -14,13 +14,11 @@ import (
 // Mode A: The user can see the option.
 //
 // Mode B: The user can see the poll and (manage the linked poll or poll/state is published).
-type Option struct {
-	name string
-}
+type Option struct{}
 
 // Name returns the collection name.
 func (o Option) Name() string {
-	return o.name
+	return "option"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -36,7 +34,7 @@ func (o Option) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, 
 // Modes returns the restrictions modes for the meeting collection.
 func (o Option) Modes(mode string) FieldRestricter {
 	// TODO: Implement me
-	return Allways(o.name, mode)
+	return Allways(o.Name(), mode)
 
 	// switch mode {
 	// case "A":

@@ -14,13 +14,11 @@ import (
 // The user can see a motion submitter if the user can see the linked motion.
 //
 // Mode A: The user can see the motion submitter.
-type MotionSubmitter struct {
-	name string
-}
+type MotionSubmitter struct{}
 
 // Name returns the collection name.
 func (m MotionSubmitter) Name() string {
-	return m.name
+	return "motion_submitter"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -46,7 +44,7 @@ func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm
 	return eachRelationField(ctx, ds.MotionSubmitter_MotionID, motionSubmitterIDs, func(motionID int, ids []int) error {
 		// TODO: This only works if motion is calculated before motion_submitter
 		for _, id := range ids {
-			if err := attrMap.SameAs(ctx, ds, mperms, dskey.Key{Collection: m.name, ID: id, Field: "A"}, dskey.Key{Collection: "motion", ID: motionID, Field: "C"}); err != nil {
+			if err := attrMap.SameAs(ctx, ds, mperms, dskey.Key{Collection: m.Name(), ID: id, Field: "A"}, dskey.Key{Collection: "motion", ID: motionID, Field: "C"}); err != nil {
 				return fmt.Errorf("same as: %w", err)
 			}
 		}

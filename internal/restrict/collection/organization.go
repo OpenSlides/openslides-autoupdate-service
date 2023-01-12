@@ -17,13 +17,11 @@ import (
 // Mode B: The user must be logged in (no anonymous).
 //
 // Mode C: The user has the OML can_manage_users or higher.
-type Organization struct {
-	name string
-}
+type Organization struct{}
 
 // Name returns the collection name.
 func (o Organization) Name() string {
-	return o.name
+	return "organization"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -35,9 +33,9 @@ func (o Organization) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) 
 func (o Organization) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return Allways(o.name, mode)
+		return Allways(o.Name(), mode)
 	case "B":
-		return loggedIn(o.name, mode)
+		return loggedIn(o.Name(), mode)
 	case "C":
 		return o.modeC
 	}
@@ -49,7 +47,7 @@ func (o Organization) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms perm.
 		GlobalPermission: byte(perm.OMLCanManageUsers),
 	}
 	for _, id := range organizationIDs {
-		attrMap.Add(dskey.Key{Collection: o.name, ID: id, Field: "C"}, &attr)
+		attrMap.Add(dskey.Key{Collection: o.Name(), ID: id, Field: "C"}, &attr)
 	}
 
 	return nil

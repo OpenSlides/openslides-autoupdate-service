@@ -17,13 +17,11 @@ import (
 // The superadmin can not see personal_notes from other users.
 //
 // Mode A: The user can see the personal note.
-type PersonalNote struct {
-	name string
-}
+type PersonalNote struct{}
 
 // Name returns the collection name.
 func (p PersonalNote) Name() string {
-	return p.name
+	return "personal_note"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -52,7 +50,7 @@ func (p PersonalNote) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Me
 			return fmt.Errorf("get user id: %w", err)
 		}
 
-		attrMap.Add(dskey.Key{Collection: p.name, ID: id, Field: "A"}, &Attributes{
+		attrMap.Add(dskey.Key{Collection: p.Name(), ID: id, Field: "A"}, &Attributes{
 			GlobalPermission: 255,
 			UserIDs:          set.New(userID),
 		})

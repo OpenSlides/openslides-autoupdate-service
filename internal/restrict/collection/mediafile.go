@@ -24,13 +24,11 @@ import (
 //	    The user has groups in common with meeting/inherited_access_group_ids.
 //
 // Mode A: The user can see the mediafile.
-type Mediafile struct {
-	name string
-}
+type Mediafile struct{}
 
 // Name returns the collection name.
 func (m Mediafile) Name() string {
-	return m.name
+	return "mediafile"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -62,7 +60,7 @@ func (m Mediafile) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (in
 // Modes returns the field modes for the collection mediafile.
 func (m Mediafile) Modes(mode string) FieldRestricter {
 	// TODO: Implement me
-	return Allways(m.name, mode)
+	return Allways(m.Name(), mode)
 
 	// switch mode {
 	// case "A":

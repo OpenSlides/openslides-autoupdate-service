@@ -49,13 +49,11 @@ import (
 //
 // Mode H: Like D but the fields are not visible, if the request has a lower
 // organization management level then the requested user.
-type User struct {
-	name string
-}
+type User struct{}
 
 // Name returns the collection name.
 func (u User) Name() string {
-	return u.name
+	return "user"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -66,7 +64,7 @@ func (User) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool
 // Modes returns the field restriction for each mode.
 func (u User) Modes(mode string) FieldRestricter {
 	// TODO: Implement me
-	return Allways(u.name, mode)
+	return Allways(u.Name(), mode)
 
 	// switch mode {
 	// case "A":
@@ -90,9 +88,9 @@ func (u User) Modes(mode string) FieldRestricter {
 // SuperAdmin restricts the super admin.
 func (u User) SuperAdmin(mode string) FieldRestricter {
 	if mode == "G" {
-		return never(u.name, mode)
+		return never(u.Name(), mode)
 	}
-	return Allways(u.name, mode)
+	return Allways(u.Name(), mode)
 }
 
 // // TODO: this is not good.

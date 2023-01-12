@@ -13,13 +13,11 @@ import (
 // The user can see a motion state if the user has motion.can_see.
 //
 // Mode A: The user can see the motion state.
-type MotionState struct {
-	name string
-}
+type MotionState struct{}
 
 // Name returns the collection name.
 func (m MotionState) Name() string {
-	return m.name
+	return "motion_state"
 }
 
 // MeetingID returns the meetingID for the object.

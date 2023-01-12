@@ -14,13 +14,11 @@ import (
 // The user can see a tag, if the user can see the tag's meeting.
 //
 // Mode A: The user can see the tag.
-type Tag struct {
-	name string
-}
+type Tag struct{}
 
 // Name returns the collection name.
 func (t Tag) Name() string {
-	return t.name
+	return "tag"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -46,7 +44,7 @@ func (t Tag) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPerm
 	return eachMeeting(ctx, ds, t, tagIDs, func(meetingID int, ids []int) error {
 		// TODO: This only works if meeting is calculated before tag
 		for _, id := range ids {
-			attrMap.SameAs(ctx, ds, mperms, dskey.Key{Collection: t.name, ID: id, Field: "A"}, dskey.Key{Collection: "meeting", ID: meetingID, Field: "B"})
+			attrMap.SameAs(ctx, ds, mperms, dskey.Key{Collection: t.Name(), ID: id, Field: "A"}, dskey.Key{Collection: "meeting", ID: meetingID, Field: "B"})
 		}
 		return nil
 	})

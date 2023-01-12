@@ -14,13 +14,11 @@ import (
 // The user can see a speaker if the user can see the linked list of speakers.
 //
 // Mode A: The user can see the speaker.
-type Speaker struct {
-	name string
-}
+type Speaker struct{}
 
 // Name returns the collection name.
 func (s Speaker) Name() string {
-	return s.name
+	return "speaker"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -46,7 +44,7 @@ func (s Speaker) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meeting
 	return eachRelationField(ctx, ds.Speaker_ListOfSpeakersID, speakerIDs, func(losID int, ids []int) error {
 		// TODO: This only works if los is calculated before speaker
 		for _, id := range ids {
-			if err := attrMap.SameAs(ctx, ds, mperms, dskey.Key{Collection: s.name, ID: id, Field: "A"}, dskey.Key{Collection: "list_of_speakers", ID: losID, Field: "A"}); err != nil {
+			if err := attrMap.SameAs(ctx, ds, mperms, dskey.Key{Collection: s.Name(), ID: id, Field: "A"}, dskey.Key{Collection: "list_of_speakers", ID: losID, Field: "A"}); err != nil {
 				return fmt.Errorf("los %d: %w", id, err)
 			}
 		}

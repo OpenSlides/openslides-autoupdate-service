@@ -14,13 +14,11 @@ import (
 // The user can see a group, if the user can see the group's meeting.
 //
 // Mode A: The user can see the group.
-type Group struct {
-	name string
-}
+type Group struct{}
 
 // Name returns the collection name.
 func (g Group) Name() string {
-	return g.name
+	return "group"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -46,7 +44,7 @@ func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPe
 	return eachMeeting(ctx, ds, g, groupIDs, func(meetingID int, ids []int) error {
 		for _, id := range groupIDs {
 			// TODO: Make sure meeting is calculated before group.
-			if err := attrMap.SameAs(ctx, ds, mperms, dskey.Key{Collection: g.name, ID: id, Field: "A"}, dskey.Key{Collection: "meeting", ID: meetingID, Field: "B"}); err != nil {
+			if err := attrMap.SameAs(ctx, ds, mperms, dskey.Key{Collection: g.Name(), ID: id, Field: "A"}, dskey.Key{Collection: "meeting", ID: meetingID, Field: "B"}); err != nil {
 				return fmt.Errorf("meeting %d: %w", id, err)
 			}
 		}

@@ -13,13 +13,11 @@ import (
 // The user can see a motion category if the user has motion.can_see.
 //
 // Mode A: The user can see the motion category.
-type MotionCategory struct {
-	name string
-}
+type MotionCategory struct{}
 
 // Name returns the collection name.
 func (m MotionCategory) Name() string {
-	return m.name
+	return "motion_category"
 }
 
 // MeetingID returns the meetingID for the object.

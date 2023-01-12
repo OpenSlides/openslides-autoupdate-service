@@ -18,13 +18,11 @@ import (
 //	The user is assigned to groups in common with chat_group/read_group_ids or chat_group/write_group_ids.
 //
 // Mode A: The user can see the chat_group.
-type ChatGroup struct {
-	name string
-}
+type ChatGroup struct{}
 
 // Name returns the collection name.
 func (c ChatGroup) Name() string {
-	return c.name
+	return "chat_group"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -67,7 +65,7 @@ func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meeti
 
 			allGroups := append(readGroups, writeGroups...)
 
-			attrMap.Add(dskey.Key{Collection: c.name, ID: chatGroupID, Field: "A"}, &Attributes{
+			attrMap.Add(dskey.Key{Collection: c.Name(), ID: chatGroupID, Field: "A"}, &Attributes{
 				GlobalPermission: byte(perm.OMLSuperadmin),
 				GroupIDs:         set.New(append(manageGroups, allGroups...)...),
 			})

@@ -20,13 +20,11 @@ import (
 //	Or the user has motion.can_manage.
 //
 // Mode A: The user can see the motion comment.
-type MotionComment struct {
-	name string
-}
+type MotionComment struct{}
 
 // Name returns the collection name.
 func (m MotionComment) Name() string {
-	return m.name
+	return "motion_comment"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -44,7 +42,7 @@ func (m MotionComment) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
 		// TODO: Implement me
-		return Allways(m.name, mode)
+		return Allways(m.Name(), mode)
 	}
 	return nil
 }

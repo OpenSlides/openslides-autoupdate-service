@@ -111,85 +111,53 @@ type Restricter interface {
 	Name() string
 }
 
+var collections = []Restricter{
+	ActionWorker{},
+	AgendaItem{},
+	Assignment{},
+	AssignmentCandidate{},
+	ListOfSpeakers{},
+	ChatGroup{},
+	ChatMessage{},
+	Committee{},
+	Group{},
+	Mediafile{},
+	Meeting{},
+	Motion{},
+	MotionBlock{},
+	MotionCategory{},
+	MotionChangeRecommendation{},
+	MotionState{},
+	MotionStatuteParagraph{},
+	MotionComment{},
+	MotionCommentSection{},
+	MotionSubmitter{},
+	MotionWorkflow{},
+	Option{},
+	Organization{},
+	OrganizationTag{},
+	PersonalNote{},
+	Poll{},
+	Projection{},
+	Projector{},
+	ProjectorCountdown{},
+	ProjectorMessage{},
+	Speaker{},
+	Tag{},
+	Theme{},
+	Topic{},
+	User{},
+	Vote{},
+}
+
 // Collection returns the restricter for a collection
 func Collection(collection string) Restricter {
-	switch collection {
-	case "action_worker":
-		return ActionWorker{name: collection}
-	case "agenda_item":
-		return AgendaItem{name: collection}
-	case "assignment":
-		return Assignment{name: collection}
-	case "assignment_candidate":
-		return AssignmentCandidate{name: collection}
-	case "list_of_speakers":
-		return ListOfSpeakers{name: collection}
-	case "chat_group":
-		return ChatGroup{name: collection}
-	case "chat_message":
-		return ChatMessage{name: collection}
-	case "committee":
-		return Committee{name: collection}
-	case "group":
-		return Group{name: collection}
-	case "mediafile":
-		return Mediafile{name: collection}
-	case "meeting":
-		return Meeting{name: collection}
-	case "motion":
-		return Motion{name: collection}
-	case "motion_block":
-		return MotionBlock{name: collection}
-	case "motion_category":
-		return MotionCategory{name: collection}
-	case "motion_change_recommendation":
-		return MotionChangeRecommendation{name: collection}
-	case "motion_state":
-		return MotionState{name: collection}
-	case "motion_statute_paragraph":
-		return MotionStatuteParagraph{name: collection}
-	case "motion_comment":
-		return MotionComment{name: collection}
-	case "motion_comment_section":
-		return MotionCommentSection{name: collection}
-	case "motion_submitter":
-		return MotionSubmitter{name: collection}
-	case "motion_workflow":
-		return MotionWorkflow{name: collection}
-	case "option":
-		return Option{name: collection}
-	case "organization":
-		return Organization{name: collection}
-	case "organization_tag":
-		return OrganizationTag{name: collection}
-	case "personal_note":
-		return PersonalNote{name: collection}
-	case "poll":
-		return Poll{name: collection}
-	case "projection":
-		return Projection{name: collection}
-	case "projector":
-		return Projector{name: collection}
-	case "projector_countdown":
-		return ProjectorCountdown{name: collection}
-	case "projector_message":
-		return ProjectorMessage{name: collection}
-	case "speaker":
-		return Speaker{name: collection}
-	case "tag":
-		return Tag{name: collection}
-	case "theme":
-		return Theme{name: collection}
-	case "topic":
-		return Topic{name: collection}
-	case "user":
-		return User{name: collection}
-	case "vote":
-		return Vote{name: collection}
-
-	default:
-		return Unknown{name: collection}
+	for _, c := range collections {
+		if c.Name() == collection {
+			return c
+		}
 	}
+	return Unknown{collection}
 }
 
 // Unknown is a collection that does not exist in the models.yml

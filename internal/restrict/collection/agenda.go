@@ -21,13 +21,11 @@ import (
 // Mode B: The user has agenda_item.can_see_internal.
 //
 // Mode C: The user has agenda_item.can_manage.
-type AgendaItem struct {
-	name string
-}
+type AgendaItem struct{}
 
 // Name returns the collection name.
 func (a AgendaItem) Name() string {
-	return a.name
+	return "agenda_item"
 }
 
 // MeetingID returns the meetingID for the object.
@@ -90,7 +88,7 @@ func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meet
 			default:
 				attr = attrCanSee
 			}
-			attrMap.Add(dskey.Key{Collection: a.name, ID: agendaID, Field: "A"}, &attr)
+			attrMap.Add(dskey.Key{Collection: a.Name(), ID: agendaID, Field: "A"}, &attr)
 
 		}
 

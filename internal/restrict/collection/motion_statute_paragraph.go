@@ -13,13 +13,11 @@ import (
 // The user can see a motion statute paragraph if the user has motion.can_see.
 //
 // Mode A: The user can see the motion statute paragraph.
-type MotionStatuteParagraph struct {
-	name string
-}
+type MotionStatuteParagraph struct{}
 
 // Name returns the collection name.
 func (m MotionStatuteParagraph) Name() string {
-	return m.name
+	return "motion_statute_paragraph"
 }
 
 // MeetingID returns the meetingID for the object.
