@@ -22,6 +22,7 @@ type testData struct {
 	expectOne     bool
 	requestUserID int
 	elementIDs    []int
+	testElement   dskey.Key
 }
 
 func testCase(name string, t *testing.T, f collection.FieldRestricter, expect bool, yaml string, op ...testCaseOption) {
@@ -90,6 +91,22 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 		if err != nil {
 			t.Fatalf("getting user permissions: %v", err)
 		}
+
+		var zeroKey dskey.Key
+		if tt.testElement != zeroKey {
+			attr, err := attrMap.Get(ctx, fetcher, mperms, tt.testElement)
+			if err != nil {
+				t.Fatalf("attrMap: %v", err)
+			}
+
+			expect := tt.expectOne
+
+			if got := restrict.AllowedByAttr(attr, tt.requestUserID, globalPerm, groupIDs); got != expect {
+				t.Errorf("restriction mode returned %t, expedted %t", got, expect)
+			}
+			return
+		}
+
 		for cm, ids := range attrMap.RestrictModeIDs() {
 			for _, id := range ids.List() {
 				attr, err := attrMap.Get(ctx, fetcher, mperms, dskey.Key{Collection: cm.Collection, ID: id, Field: cm.Mode})
@@ -153,6 +170,12 @@ func withRequestUser(userID int) testCaseOption {
 func withElementID(id int) testCaseOption {
 	return func(td *testData) {
 		td.elementIDs = []int{id}
+	}
+}
+
+func withTestElement(collection string, id int, mode string) testCaseOption {
+	return func(td *testData) {
+		td.testElement = dskey.Key{Collection: collection, ID: id, Field: mode}
 	}
 }
 

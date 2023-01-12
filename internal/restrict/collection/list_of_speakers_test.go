@@ -53,6 +53,7 @@ func TestListOfSpeakersModeA(t *testing.T) {
 		topic/5/meeting_id: 30
 		`,
 		withPerms(30, perm.AgendaItemCanSee),
+		withTestElement("list_of_speakers", 1, "A"),
 	)
 
 	testCase(
