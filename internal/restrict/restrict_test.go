@@ -76,7 +76,8 @@ func TestRestrict(t *testing.T) {
 	unknown_collection/1/field: 404
 	`))
 
-	restricter := restrict.New().Getter(ds, 1)
+	restricter, _ := restrict.New(ds)
+	restricted := restricter.Getter(1)
 
 	keys := []dskey.Key{
 		dskey.MustKey("agenda_item/1/item_number"),
@@ -92,7 +93,7 @@ func TestRestrict(t *testing.T) {
 		dskey.MustKey("meeting/22/admin_group_id"),
 	}
 
-	data, err := restricter.Get(context.Background(), keys...)
+	data, err := restricted.Get(context.Background(), keys...)
 	if err != nil {
 		t.Fatalf("Restrict returned: %v", err)
 	}
@@ -142,14 +143,15 @@ func TestRestrictSuperAdmin(t *testing.T) {
 	personal_note/2/user_id: 2
 	`))
 
-	restricter := restrict.New().Getter(ds, 1)
+	restricter, _ := restrict.New(ds)
+	restricted := restricter.Getter(1)
 
 	keys := []dskey.Key{
 		dskey.MustKey("personal_note/1/id"),
 		dskey.MustKey("personal_note/2/id"),
 	}
 
-	got, err := restricter.Get(context.Background(), keys...)
+	got, err := restricted.Get(context.Background(), keys...)
 	if err != nil {
 		t.Fatalf("Restrict returned: %v", err)
 	}
@@ -181,12 +183,13 @@ func TestCorruptedDatastore(t *testing.T) {
 			- projector.can_see
 	`))
 
-	restricter := restrict.New().Getter(ds, 1)
+	restricter, _ := restrict.New(ds)
+	restricted := restricter.Getter(1)
 
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
 
-	got, err := restricter.Get(context.Background(), dskey.MustKey("projector/13/current_projection_ids"))
+	got, err := restricted.Get(context.Background(), dskey.MustKey("projector/13/current_projection_ids"))
 	if err != nil {
 		t.Fatalf("Restrict returned: %v", err)
 	}

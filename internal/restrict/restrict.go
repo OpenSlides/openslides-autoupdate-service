@@ -4,7 +4,9 @@ package restrict
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 
@@ -24,10 +26,13 @@ type Restricter struct {
 }
 
 // New initializes the restricter.
-func New() *Restricter {
-	return &Restricter{
+func New(flow flow.Flow) (*Restricter, func(context.Context, func(error))) {
+	r := Restricter{
+		sub:          flow,
 		attributeMap: NewAttributeMap(),
 	}
+
+	return &r, r.Background
 }
 
 // Background calls the Update function of the sub flow.
@@ -49,16 +54,15 @@ func (r *Restricter) Background(ctx context.Context, errFn func(error)) {
 
 func (r *Restricter) insertFields(ctx context.Context, keys ...dskey.Key) (perm.MeetingPermission, error) {
 	// TODO: Do not restrict the same modes twice
-	for _, k := range keys {
-		fmt.Printf("add %s\n", k)
-	}
 
 	restrictModeIDs, err := groupKeysByCollectionMode(keys)
 	if err != nil {
-		return perm.MeetingPermission{}, fmt.Errorf("group keys: %w", err)
+		var errUnknownMode UnknownRestrictionModeError
+		if !errors.As(err, &errUnknownMode) {
+			return perm.MeetingPermission{}, fmt.Errorf("group keys: %w", err)
+		}
+		log.Printf("Warning, trying to access unknown restriction mode: %v", err)
 	}
-
-	fmt.Printf("restictModeIDs: %v\n", restrictModeIDs)
 
 	mperms, err := r.prepare(ctx, r.sub, restrictModeIDs)
 
@@ -137,19 +141,19 @@ func groupKeysByCollectionMode(keys []dskey.Key) (map[collection.CM]set.Set[int]
 }
 
 // Getter returns a datastore getter that returns restricted data.
-func (r *Restricter) Getter(getter datastore.Getter, uid int) datastore.Getter {
+func (r *Restricter) Getter(uid int) datastore.Getter {
 	return datastore.GetterFunc(func(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 		mperms, err := r.insertFields(ctx, keys...)
 		if err != nil {
 			return nil, fmt.Errorf("inserting fields: %w", err)
 		}
 
-		data, err := getter.Get(ctx, keys...)
+		data, err := r.sub.Get(ctx, keys...)
 		if err != nil {
 			return nil, fmt.Errorf("fetching unrestricted data: %w", err)
 		}
 
-		fetcher := dsfetch.New(getter)
+		fetcher := dsfetch.New(r.sub)
 
 		globalPermStr, err := fetcher.User_OrganizationManagementLevel(uid).Value(ctx)
 		if err != nil {
@@ -166,7 +170,13 @@ func (r *Restricter) Getter(getter datastore.Getter, uid int) datastore.Getter {
 		for key := range data {
 			restrictionMode, err := restrictModeName(key.Collection, key.Field)
 			if err != nil {
-				return nil, fmt.Errorf("getting restriction Mode for %s: %w", key, err)
+				var errUnknownMode UnknownRestrictionModeError
+				if !errors.As(err, &errUnknownMode) {
+					return nil, fmt.Errorf("getting restriction Mode for %s: %w", key, err)
+				}
+				log.Printf("Warning, trying to access unknown restriction mode: %v", err)
+				data[key] = nil
+				continue
 			}
 
 			requiredAttr, err := r.attributeMap.Get(ctx, fetcher, mperms, dskey.Key{Collection: key.Collection, ID: key.ID, Field: restrictionMode})
@@ -175,7 +185,7 @@ func (r *Restricter) Getter(getter datastore.Getter, uid int) datastore.Getter {
 			}
 
 			if requiredAttr == nil {
-				fmt.Printf("did not found attr for %s (%s)\n", key, restrictionMode)
+				fmt.Printf("TODO: did not found attr for %s (%s)\n", key, restrictionMode)
 				continue
 			}
 
@@ -287,9 +297,20 @@ func restrictModeName(collection, field string) (string, error) {
 	fieldMode, ok := restrictionModes[templateKeyPrefix(collection+"/"+field)]
 	if !ok {
 		// TODO LAST ERROR
-		return "", fmt.Errorf("fqfield %q is unknown, maybe run go generate ./... to fetch all fields from the models.yml", collection+"/"+field)
+		return "", UnknownRestrictionModeError{collection, field}
 	}
 	return fieldMode, nil
+}
+
+// UnknownRestrictionModeError is returns if a collection or restriction mode is
+// request, that is unknown.
+type UnknownRestrictionModeError struct {
+	Collection string
+	Field      string
+}
+
+func (err UnknownRestrictionModeError) Error() string {
+	return fmt.Sprintf("fqfield %q is unknown, maybe run go generate ./... to fetch all fields from the models.yml", err.Collection+"/"+err.Field)
 }
 
 // templateKeyPrefix returns the index of the field list list. For template fields this is

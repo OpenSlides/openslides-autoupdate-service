@@ -10,6 +10,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
@@ -19,7 +20,7 @@ func getConnection() (func(context.Context) (map[dskey.Key][]byte, error), *dsmo
 	`))
 
 	lookup := environment.ForTests{}
-	s, _, _ := autoupdate.New(lookup, datastore, RestrictAllowed)
+	s, _, _ := autoupdate.New(lookup, datastore, RestrictAllowed(datastore))
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 	next, err := s.Connect(context.Background(), 1, kb)
 	if err != nil {
@@ -52,16 +53,22 @@ func blockingTime(wait time.Duration, f func()) bool {
 	}
 }
 
-var RestrictAllowed = mockRestricter{true}
-var RestrictNotAllowed = mockRestricter{false}
-
-type mockRestricter struct {
-	allow bool
+func RestrictAllowed(getter flow.Getter) mockRestricter {
+	return mockRestricter{getter, true}
 }
 
-func (r mockRestricter) Getter(ds datastore.Getter, uid int) datastore.Getter {
+func RestrictNotAllowed(getter flow.Getter) mockRestricter {
+	return mockRestricter{getter, false}
+}
+
+type mockRestricter struct {
+	getter flow.Getter
+	allow  bool
+}
+
+func (r mockRestricter) Getter(uid int) datastore.Getter {
 	return datastore.GetterFunc(func(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
-		data, err := ds.Get(ctx, keys...)
+		data, err := r.getter.Get(ctx, keys...)
 		if err != nil {
 			return nil, fmt.Errorf("getting data: %w", err)
 		}

@@ -27,6 +27,13 @@ func (s Stub) Get(_ context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, e
 	return requested, nil
 }
 
+// Update blocks until the context is done.
+//
+// It is here to implement the flow.Updater interface.
+func (s Stub) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+	<-ctx.Done()
+}
+
 // StubWithUpdate is like Stub but the values can be changed via the Send
 // method.
 //

@@ -69,7 +69,7 @@ type KeysBuilder interface {
 
 // Restricter filters data for a user.
 type Restricter interface {
-	Getter(datastore.Getter, int) datastore.Getter
+	Getter(int) datastore.Getter
 }
 
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
@@ -152,7 +152,7 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (D
 //
 // The attribute position can be used to get data from the history.
 func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder, position int) (map[dskey.Key][]byte, error) {
-	var restricter datastore.Getter = a.restricter.Getter(a.datastore, userID)
+	var restricter datastore.Getter = a.restricter.Getter(userID)
 
 	if position != 0 {
 		getter := datastore.NewGetPosition(a.datastore, position)
@@ -292,7 +292,7 @@ func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []stri
 		}
 	}
 
-	values, err := a.restricter.Getter(a.datastore, userID).Get(ctx, keys...)
+	values, err := a.restricter.Getter(userID).Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("getting data: %w", err)
 	}

@@ -87,7 +87,7 @@ func TestConnectionEmptyData(t *testing.T) {
 	`))
 	go bg(shutdownCtx, oserror.Handle)
 
-	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed(ds))
 	kb, _ := keysbuilder.FromKeys(doesExistKey.String(), doesNotExistKey.String())
 
 	t.Run("First response", func(t *testing.T) {
@@ -240,7 +240,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	`))
 	go bg(shutdownCtx, oserror.Handle)
 
-	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed(ds))
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 
 	conn, err := s.Connect(shutdownCtx, 1, kb)
@@ -277,7 +277,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 	user/1/name: Hello World
 	`))
 
-	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictNotAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictNotAllowed(ds))
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 
 	conn, err := s.Connect(context.Background(), 1, kb)
@@ -354,7 +354,7 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 	`))
 	go bg(shutdownCtx, oserror.Handle)
 
-	s, _, _ := autoupdate.New(environment.ForTests{}, datastore, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, datastore, RestrictAllowed(datastore))
 	kb, err := keysbuilder.FromJSON(strings.NewReader(`{
 		"collection":"organization",
 		"ids":[
@@ -426,7 +426,7 @@ func TestKeyRequestedAgain(t *testing.T) {
 	`))
 	go bg(shutdownCtx, oserror.Handle)
 
-	s, _, _ := autoupdate.New(environment.ForTests{}, datastore, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, datastore, RestrictAllowed(datastore))
 	kb, err := keysbuilder.FromJSON(strings.NewReader(`{
 		"collection":"organization",
 		"ids":[

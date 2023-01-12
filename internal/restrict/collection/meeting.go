@@ -58,7 +58,6 @@ func (m Meeting) Modes(mode string) FieldRestricter {
 
 func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, meetingIDs ...int) error {
 	for _, meetingID := range meetingIDs {
-		fmt.Println("start B")
 		var meeting struct {
 			enableAnonymous bool
 			committeeID     int
@@ -70,11 +69,9 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meeting
 		ds.Meeting_TemplateForOrganizationID(meetingID).LazyExists(&meeting.isTemplate)
 		ds.Meeting_UserIDs(meetingID).Lazy(&meeting.userIDs)
 
-		fmt.Println("B: Before execute")
 		if err := ds.Execute(ctx); err != nil {
 			return fmt.Errorf("getting meeting %d: %w", meetingID, err)
 		}
-		fmt.Println("B: After execute")
 
 		if meeting.enableAnonymous {
 			attrMap.Add(dskey.Key{Collection: m.name, ID: meetingID, Field: "B"}, &allwaysAttr)
@@ -121,13 +118,11 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms perm.Meeting
 }
 
 func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms perm.MeetingPermission, attrMap AttributeMap, meetingIDs ...int) error {
-	fmt.Printf("start meeting/C with %v\n", meetingIDs)
 	for _, meetingID := range meetingIDs {
 		permMap, err := mperms.Meeting(ctx, ds, meetingID)
 		if err != nil {
 			return fmt.Errorf("getting perm map for meeting %d: %w", meetingID, err)
 		}
-		fmt.Printf("got permMap: %v\n", permMap)
 
 		attrMap.Add(dskey.Key{Collection: m.name, ID: meetingID, Field: "C"}, &Attributes{
 			GlobalPermission: byte(perm.OMLSuperadmin),
