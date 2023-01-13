@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"sync"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -140,19 +139,4 @@ func (b *Builder) Update(ctx context.Context, getter datastore.Getter) ([]dskey.
 		}
 	}
 	return keys, nil
-}
-
-// buildGenericKey returns a valid key when the collection and id are already
-// together.
-//
-// buildGenericKey("motion/5", "title") -> "motion/5/title".
-func buildGenericKey(collectionID string, field string) dskey.Key {
-	key, err := dskey.FromString(collectionID + "/" + field)
-	_ = err // TODO: Can this happen?
-
-	return key
-}
-
-func buildCollectionID(collection string, id int) string {
-	return collection + "/" + strconv.Itoa(id)
 }

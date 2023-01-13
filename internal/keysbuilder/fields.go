@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
@@ -94,8 +95,7 @@ func (b *body) UnmarshalJSON(data []byte) error {
 
 func (b *body) keys(data map[dskey.Key]fieldDescription) {
 	for _, id := range b.ids {
-		cid := buildCollectionID(b.collection, id)
-		b.fieldsMap.keys(cid, data)
+		b.fieldsMap.keys(b.collection, id, data)
 	}
 }
 
@@ -145,8 +145,7 @@ func (r *relationField) keys(key dskey.Key, value json.RawMessage, data map[dske
 		return fmt.Errorf("decoding value for key %s: %w", key, err)
 	}
 
-	cid := buildCollectionID(r.collection, id)
-	r.fieldsMap.keys(cid, data)
+	r.fieldsMap.keys(r.collection, id, data)
 	return nil
 }
 
@@ -174,9 +173,8 @@ func (r *relationListField) keys(key dskey.Key, value json.RawMessage, data map[
 	}
 
 	for _, id := range ids {
-		cid := buildCollectionID(r.collection, id)
 		for field, description := range r.fields {
-			data[buildGenericKey(cid, field)] = description
+			data[dskey.Key{Collection: r.collection, ID: id, Field: field}] = description
 		}
 	}
 	return nil
@@ -218,7 +216,17 @@ func (g *genericRelationField) keys(key dskey.Key, value json.RawMessage, data m
 		return fmt.Errorf("decoding value for key %s: %w", key, err)
 	}
 
-	g.fieldsMap.keys(cid, data)
+	collection, rawID, found := strings.Cut(cid, "/")
+	if !found {
+		return fmt.Errorf("invalid collection id: %s", cid)
+	}
+
+	id, err := strconv.Atoi(rawID)
+	if err != nil {
+		return fmt.Errorf("invalid collection id: %s", cid)
+	}
+
+	g.fieldsMap.keys(collection, id, data)
 	return nil
 }
 
@@ -245,7 +253,17 @@ func (g *genericRelationListField) keys(key dskey.Key, value json.RawMessage, da
 	}
 
 	for _, cid := range cids {
-		g.fieldsMap.keys(cid, data)
+		collection, rawID, found := strings.Cut(cid, "/")
+		if !found {
+			return fmt.Errorf("invalid collection id: %s", cid)
+		}
+
+		id, err := strconv.Atoi(rawID)
+		if err != nil {
+			return fmt.Errorf("invalid collection id: %s", cid)
+		}
+
+		g.fieldsMap.keys(collection, id, data)
 	}
 	return nil
 }
@@ -384,8 +402,8 @@ func (f *fieldsMap) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *fieldsMap) keys(cid string, data map[dskey.Key]fieldDescription) {
+func (f *fieldsMap) keys(collection string, id int, data map[dskey.Key]fieldDescription) {
 	for field, description := range f.fields {
-		data[buildGenericKey(cid, field)] = description
+		data[dskey.Key{Collection: collection, ID: id, Field: field}] = description
 	}
 }
