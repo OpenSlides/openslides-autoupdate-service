@@ -57,7 +57,6 @@ func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, committeeIDs ...i
 		}
 
 		for _, uid := range userIDs {
-
 			if uid == requestUser {
 				return true, nil
 			}

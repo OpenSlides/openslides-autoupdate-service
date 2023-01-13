@@ -100,7 +100,6 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[ds
 	}
 
 	// Call restrict Mode function for each collection.
-	//mperms := perm.NewMeetingPermission(ds, uid)
 	times := make(map[string]timeCount, len(restrictModeIDs))
 	orderedCMs := sortRestrictModeIDs(restrictModeIDs)
 	allowedMods := make(map[collection.CM]*set.Set[int])
