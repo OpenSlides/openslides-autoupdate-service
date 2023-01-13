@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // User handels the restrictions for the user collection.
@@ -103,31 +104,62 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 		return userIDs, nil
 	}
 
+	// Precalculated list of userIDs, that the user can see.
+	allowedUserIDs := set.New[int]()
+	if requestUser != 0 {
+		allowedUserIDs.Add(requestUser)
+
+		// Get all userIDs of committees, where the request user is manager.
+		commiteeIDs, err := perm.ManagementLevelCommittees(ctx, ds, requestUser)
+		if err != nil {
+			return nil, fmt.Errorf("getting committee ids: %w", err)
+		}
+
+		for _, committeeID := range commiteeIDs {
+			userIDs, err := ds.Committee_UserIDs(committeeID).Value(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("fetching users from committee %d: %w", committeeID, err)
+			}
+			allowedUserIDs.Add(userIDs...)
+		}
+
+		// Getting users where the request users delegated his vote to.
+		meetingWithDelegationTo, err := ds.User_VoteDelegatedToIDTmpl(requestUser).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting meeting ids with vote delegations: %w", err)
+		}
+
+		for _, meetingID := range meetingWithDelegationTo {
+			delegated, err := ds.User_VoteDelegatedToID(requestUser, meetingID).Value(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("getting 'vote delegated to' in meeting %d: %w", meetingID, err)
+			}
+			allowedUserIDs.Add(delegated)
+		}
+
+		// Getting users, that delegated his vote to the request user.
+		meetingWithDelegationFrom, err := ds.User_VoteDelegationsFromIDsTmpl(requestUser).Value(ctx)
+		for _, meetingID := range meetingWithDelegationFrom {
+			delegations, err := ds.User_VoteDelegationsFromIDs(requestUser, meetingID).Value(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("getting 'vote delegations from' in meeting %d: %w", meetingID, err)
+			}
+			allowedUserIDs.Add(delegations...)
+		}
+	}
+
 	return eachCondition(userIDs, func(userID int) (bool, error) {
-		if requestUser == userID {
+		if allowedUserIDs.Has(userID) {
 			return true, nil
 		}
 
-		if requestUser != 0 {
-			commiteeIDs, err := perm.ManagementLevelCommittees(ctx, ds, requestUser)
-			if err != nil {
-				return false, fmt.Errorf("getting committee ids: %w", err)
-			}
-
-			for _, committeeID := range commiteeIDs {
-				userIDs := ds.Committee_UserIDs(committeeID).ErrorLater(ctx)
-				for _, uid := range userIDs {
-					if userID == uid {
-						return true, nil
-					}
-				}
-			}
-			if err := ds.Err(); err != nil {
-				return false, fmt.Errorf("checking committee management level: %w", err)
-			}
+		// Check if the user is in a meeting, where the request user can
+		// user.can_see.
+		meetingIDs, err := ds.User_GroupIDsTmpl(userID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("fetch meeting ids from requested user %d: %w", userID, err)
 		}
 
-		meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
 		for _, meetingID := range meetingIDs {
 			perms, err := perm.FromContext(ctx, meetingID)
 			if err != nil {
@@ -136,44 +168,6 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 
 			if perms.Has(perm.UserCanSee) {
 				return true, nil
-			}
-
-			cid, err := ds.Meeting_CommitteeID(meetingID).Value(ctx)
-			if err != nil {
-				return false, fmt.Errorf("getting committee id of meeting %d: %w", meetingID, err)
-			}
-
-			committeeManager, err := perm.HasCommitteeManagementLevel(ctx, ds, requestUser, cid)
-			if err != nil {
-				return false, fmt.Errorf("getting committee management level: %w", err)
-			}
-
-			if committeeManager {
-				return true, nil
-			}
-		}
-
-		if requestUser != 0 {
-			for _, meetingID := range ds.User_VoteDelegatedToIDTmpl(requestUser).ErrorLater(ctx) {
-				delegated := ds.User_VoteDelegatedToID(requestUser, meetingID).ErrorLater(ctx)
-				if delegated == userID {
-					return true, nil
-				}
-			}
-			if err := ds.Err(); err != nil {
-				return false, fmt.Errorf("checking vote deleted to: %w", err)
-			}
-
-			for _, meetingID := range ds.User_VoteDelegationsFromIDsTmpl(requestUser).ErrorLater(ctx) {
-				delegations := ds.User_VoteDelegationsFromIDs(requestUser, meetingID).ErrorLater(ctx)
-				for _, uid := range delegations {
-					if uid == userID {
-						return true, nil
-					}
-				}
-			}
-			if err := ds.Err(); err != nil {
-				return false, fmt.Errorf("checking vote delegations form: %w", err)
 			}
 		}
 
@@ -286,9 +280,12 @@ func (User) modeB(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	return eachCondition(userIDs, func(userID int) (bool, error) {
-		return requestUser == userID, nil
-	})
+	for _, userID := range userIDs {
+		if userID == requestUser {
+			return []int{userID}, nil
+		}
+	}
+	return nil, nil
 }
 
 func (User) modeD(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int, error) {
@@ -306,9 +303,14 @@ func (User) modeD(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 		return userIDs, nil
 	}
 
-	// TODO: group by many meeting.
+	// meetingManager is a cache in which meeting the request user is manager.
+	meetingManager := set.New[int]()
 	return eachCondition(userIDs, func(userID int) (bool, error) {
-		meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
+		meetingIDs, err := ds.User_GroupIDsTmpl(userID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("get meeting ids: %w", err)
+		}
+
 		for _, meetingID := range meetingIDs {
 			perms, err := perm.FromContext(ctx, meetingID)
 			if err != nil {
@@ -316,11 +318,9 @@ func (User) modeD(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 			}
 
 			if perms.Has(perm.UserCanManage) {
+				meetingManager.Add(meetingID)
 				return true, nil
 			}
-		}
-		if err := ds.Err(); err != nil {
-			return false, fmt.Errorf("checking manage in any meeting: %w", err)
 		}
 
 		return false, nil

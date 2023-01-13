@@ -115,11 +115,12 @@ func TestUserModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		user/2/group_$_ids: ["5"]
-		meeting/5/committee_id: 7
 		user/1:
 			committee_$can_manage_management_level: [7]
-		committee/7/id: 7
+		committee/7/user_ids: [2]
+
+		user/2/group_$_ids: ["5"]
+		meeting/5/committee_id: 7
 		`,
 		withRequestUser(1),
 		withElementID(2),
