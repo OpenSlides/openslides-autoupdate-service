@@ -43,7 +43,7 @@ func TestListOfSpeakersModeA(t *testing.T) {
 		"see content_object",
 		t,
 		f,
-		false,
+		true,
 		`---
 		list_of_speakers/1:
 			meeting_id: 30
