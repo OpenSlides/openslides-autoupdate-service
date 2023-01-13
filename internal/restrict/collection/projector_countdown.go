@@ -15,6 +15,11 @@ import (
 // Group A: The user can see the projector countdown.
 type ProjectorCountdown struct{}
 
+// Name returns the collection name.
+func (p ProjectorCountdown) Name() string {
+	return "projector_countdown"
+}
+
 // MeetingID returns the meetingID for the object.
 func (p ProjectorCountdown) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.ProjectorCountdown_MeetingID(id).Value(ctx)

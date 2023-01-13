@@ -17,6 +17,11 @@ import (
 // Mode A: A user can see a chat_message.
 type ChatMessage struct{}
 
+// Name returns the collection name.
+func (c ChatMessage) Name() string {
+	return "chat_message"
+}
+
 // MeetingID returns the meetingID for the object.
 func (c ChatMessage) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	chatGroupID, err := ds.ChatMessage_ChatGroupID(id).Value(ctx)

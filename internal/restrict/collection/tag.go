@@ -14,6 +14,11 @@ import (
 // Mode A: The user can see the tag.
 type Tag struct{}
 
+// Name returns the collection name.
+func (t Tag) Name() string {
+	return "tag"
+}
+
 // MeetingID returns the meetingID for the object.
 func (t Tag) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.Tag_MeetingID(id).Value(ctx)

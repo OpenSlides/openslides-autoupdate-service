@@ -54,6 +54,11 @@ import (
 // organization management level then the requested user.
 type User struct{}
 
+// Name returns the collection name.
+func (u User) Name() string {
+	return "user"
+}
+
 // MeetingID returns the meetingID for the object.
 func (User) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	return 0, false, nil

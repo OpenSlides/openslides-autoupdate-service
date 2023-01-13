@@ -19,6 +19,11 @@ import (
 // Mode A: The user can see the chat_group.
 type ChatGroup struct{}
 
+// Name ChatGroup the collection name.
+func (c ChatGroup) Name() string {
+	return "chat_group"
+}
+
 // MeetingID returns the meetingID for the object.
 func (c ChatGroup) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	mid, err := ds.ChatGroup_MeetingID(id).Value(ctx)

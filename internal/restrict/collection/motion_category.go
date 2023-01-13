@@ -15,6 +15,11 @@ import (
 // Mode A: The user can see the motion category.
 type MotionCategory struct{}
 
+// Name returns the collection name.
+func (m MotionCategory) Name() string {
+	return "motion_category"
+}
+
 // MeetingID returns the meetingID for the object.
 func (m MotionCategory) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.MotionCategory_MeetingID(id).Value(ctx)

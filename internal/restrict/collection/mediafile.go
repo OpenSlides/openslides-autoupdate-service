@@ -27,6 +27,11 @@ import (
 // Mode A: The user can see the mediafile.
 type Mediafile struct{}
 
+// Name returns the collection name.
+func (m Mediafile) Name() string {
+	return "mediafile"
+}
+
 // MeetingID returns the meetingID for the object.
 func (m Mediafile) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	genericOwnerID, err := ds.Mediafile_OwnerID(id).Value(ctx)

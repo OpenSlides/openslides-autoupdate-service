@@ -26,6 +26,11 @@ import (
 // Mode D: Never published to any user.
 type Motion struct{}
 
+// Name returns the collection name.
+func (m Motion) Name() string {
+	return "motion"
+}
+
 // MeetingID returns the meetingID for the object.
 func (m Motion) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.Motion_MeetingID(id).Value(ctx)

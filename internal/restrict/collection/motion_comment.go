@@ -23,6 +23,11 @@ import (
 // Mode A: The user can see the motion comment.
 type MotionComment struct{}
 
+// Name returns the collection name.
+func (m MotionComment) Name() string {
+	return "motion_comment"
+}
+
 // MeetingID returns the meetingID for the object.
 func (m MotionComment) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	motionID, err := ds.MotionComment_MotionID(id).Value(ctx)

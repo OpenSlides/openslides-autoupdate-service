@@ -22,6 +22,11 @@ import (
 // Mode C: The user has agenda_item.can_manage.
 type AgendaItem struct{}
 
+// Name returns the collection name.
+func (a AgendaItem) Name() string {
+	return "agenda_item"
+}
+
 // MeetingID returns the meetingID for the object.
 func (a AgendaItem) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	mid, err := ds.AgendaItem_MeetingID(id).Value(ctx)

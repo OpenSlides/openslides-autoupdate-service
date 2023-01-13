@@ -15,6 +15,11 @@ import (
 // Mode A: The user can see the projection.
 type Projection struct{}
 
+// Name returns the collection name.
+func (p Projection) Name() string {
+	return "projection"
+}
+
 // MeetingID returns the meetingID for the object.
 func (p Projection) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.Projection_MeetingID(id).Value(ctx)

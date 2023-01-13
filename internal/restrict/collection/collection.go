@@ -8,6 +8,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // CM is the name of a collection and a mode.
@@ -56,91 +57,108 @@ type Restricter interface {
 	// MeetingID returns the meeting id for an object. Returns hasMeeting=false,
 	// if the object does not belong to a meeting.
 	MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (meetingID int, hasMeeting bool, err error)
+
+	Name() string
+}
+
+// type contextKeyType string
+
+// var contextKey contextKeyType = "context_key"
+
+// func ContextWithCollectionCache(ctx context.Context) context.Context {
+// 	return context.WithValue(ctx, contextKey, make(map[dskey.Key]bool))
+// }
+
+// func CollectionCacheFromCache(ctx context.Context, key dskey.Key, allowed bool) map[dskey.Key]bool {
+// 	v := ctx.Value(contextKey)
+// 	if v == nil {
+// 		return nil
+// 	}
+
+// 	cache, ok := v.(map[dskey.Key]bool)
+// 	if !ok {
+// 		return nil
+// 	}
+
+// 	return cache
+// }
+
+// func cacheWrapper(ctx context.Context, collection string, mode string, testIDs, allowedIDs []int, err error) ([]int, error) {
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	allowedSet := set.New(allowedIDs...)
+// 	for _, id := range testIDs {
+// 		allowedSet.Has(id)
+// 	}
+// }
+
+type restrictCache struct {
+	cache map[dskey.Key]bool
+}
+
+func newRestrictCache() *restrictCache {
+	return &restrictCache{
+		cache: make(map[dskey.Key]bool),
+	}
+}
+
+func (r *restrictCache) middleware(fn FieldRestricter) FieldRestricter
+
+var collections = []Restricter{
+	ActionWorker{},
+	AgendaItem{},
+	Assignment{},
+	AssignmentCandidate{},
+	ListOfSpeakers{},
+	ChatGroup{},
+	ChatMessage{},
+	Committee{},
+	Group{},
+	Mediafile{},
+	Meeting{},
+	Motion{},
+	MotionBlock{},
+	MotionCategory{},
+	MotionChangeRecommendation{},
+	MotionState{},
+	MotionStatuteParagraph{},
+	MotionComment{},
+	MotionCommentSection{},
+	MotionSubmitter{},
+	MotionWorkflow{},
+	Option{},
+	Organization{},
+	OrganizationTag{},
+	PersonalNote{},
+	Poll{},
+	Projection{},
+	Projector{},
+	ProjectorCountdown{},
+	ProjectorMessage{},
+	Speaker{},
+	Tag{},
+	Theme{},
+	Topic{},
+	User{},
+	Vote{},
 }
 
 // Collection returns the restricter for a collection
 func Collection(collection string) Restricter {
-	switch collection {
-	case "action_worker":
-		return ActionWorker{}
-	case "agenda_item":
-		return AgendaItem{}
-	case "assignment":
-		return Assignment{}
-	case "assignment_candidate":
-		return AssignmentCandidate{}
-	case "list_of_speakers":
-		return ListOfSpeakers{}
-	case "chat_group":
-		return ChatGroup{}
-	case "chat_message":
-		return ChatMessage{}
-	case "committee":
-		return Committee{}
-	case "group":
-		return Group{}
-	case "mediafile":
-		return Mediafile{}
-	case "meeting":
-		return Meeting{}
-	case "motion":
-		return Motion{}
-	case "motion_block":
-		return MotionBlock{}
-	case "motion_category":
-		return MotionCategory{}
-	case "motion_change_recommendation":
-		return MotionChangeRecommendation{}
-	case "motion_state":
-		return MotionState{}
-	case "motion_statute_paragraph":
-		return MotionStatuteParagraph{}
-	case "motion_comment":
-		return MotionComment{}
-	case "motion_comment_section":
-		return MotionCommentSection{}
-	case "motion_submitter":
-		return MotionSubmitter{}
-	case "motion_workflow":
-		return MotionWorkflow{}
-	case "option":
-		return Option{}
-	case "organization":
-		return Organization{}
-	case "organization_tag":
-		return OrganizationTag{}
-	case "personal_note":
-		return PersonalNote{}
-	case "poll":
-		return Poll{}
-	case "projection":
-		return Projection{}
-	case "projector":
-		return Projector{}
-	case "projector_countdown":
-		return ProjectorCountdown{}
-	case "projector_message":
-		return ProjectorMessage{}
-	case "speaker":
-		return Speaker{}
-	case "tag":
-		return Tag{}
-	case "theme":
-		return Theme{}
-	case "topic":
-		return Topic{}
-	case "user":
-		return User{}
-	case "vote":
-		return Vote{}
-
-	default:
-		return Unknown{}
+	for _, c := range collections {
+		if c.Name() == collection {
+			return c
+		}
 	}
+	return Unknown{collection}
 }
 
 // Unknown is a collection that does not exist in the models.yml
-type Unknown struct{}
+type Unknown struct {
+	name string
+}
 
 // Modes on an unknown field can not be seen.
 func (u Unknown) Modes(string) FieldRestricter {
@@ -150,6 +168,11 @@ func (u Unknown) Modes(string) FieldRestricter {
 // MeetingID is not a thing on a unknown meeting
 func (u Unknown) MeetingID(context.Context, *dsfetch.Fetch, int) (int, bool, error) {
 	return 0, false, nil
+}
+
+// Name returns the collection name.
+func (u Unknown) Name() string {
+	return u.name
 }
 
 func eachMeeting(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int, f func(meetingID int, ids []int) ([]int, error)) ([]int, error) {

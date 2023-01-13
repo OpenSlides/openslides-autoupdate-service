@@ -15,6 +15,11 @@ import (
 // Mode A: The user can see the projector message.
 type ProjectorMessage struct{}
 
+// Name returns the collection name.
+func (p ProjectorMessage) Name() string {
+	return "projector_message"
+}
+
 // MeetingID returns the meetingID for the object.
 func (p ProjectorMessage) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.ProjectorMessage_MeetingID(id).Value(ctx)

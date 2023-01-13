@@ -16,6 +16,11 @@ import (
 // Mode A: The user can see the list of speakers.
 type ListOfSpeakers struct{}
 
+// Name returns the collection name.
+func (los ListOfSpeakers) Name() string {
+	return "list_of_speakers"
+}
+
 // MeetingID returns the meetingID for the object.
 func (los ListOfSpeakers) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	mid, err := ds.ListOfSpeakers_MeetingID(id).Value(ctx)

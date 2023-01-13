@@ -15,6 +15,11 @@ import (
 // Mode A: The user can see the motion state.
 type MotionState struct{}
 
+// Name returns the collection name.
+func (m MotionState) Name() string {
+	return "motion_state"
+}
+
 // MeetingID returns the meetingID for the object.
 func (m MotionState) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.MotionState_MeetingID(id).Value(ctx)

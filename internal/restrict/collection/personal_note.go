@@ -17,6 +17,11 @@ import (
 // Mode A: The user can see the personal note.
 type PersonalNote struct{}
 
+// Name returns the collection name.
+func (p PersonalNote) Name() string {
+	return "personal_note"
+}
+
 // MeetingID returns the meetingID for the object.
 func (p PersonalNote) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.PersonalNote_MeetingID(id).Value(ctx)

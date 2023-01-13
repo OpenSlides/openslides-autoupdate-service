@@ -25,6 +25,11 @@ import (
 //	others: Not accessible for anyone.
 type Vote struct{}
 
+// Name returns the collection name.
+func (v Vote) Name() string {
+	return "vote"
+}
+
 // MeetingID returns the meetingID for the object.
 func (v Vote) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.Vote_MeetingID(id).Value(ctx)

@@ -13,6 +13,11 @@ import (
 // Mode A: The user can see the organization tag.
 type OrganizationTag struct{}
 
+// Name returns the collection name.
+func (o OrganizationTag) Name() string {
+	return "organization_tag"
+}
+
 // MeetingID returns the meetingID for the object.
 func (o OrganizationTag) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	return 0, false, nil

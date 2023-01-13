@@ -19,23 +19,28 @@ import (
 // CML `can_manage` in the committee.
 type Committee struct{}
 
+// Name returns the collection name.
+func (c Committee) Name() string {
+	return "committee"
+}
+
 // MeetingID returns the meetingID for the object.
-func (a Committee) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
+func (c Committee) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	return 0, false, nil
 }
 
 // Modes returns a map from all known modes to there restricter.
-func (a Committee) Modes(mode string) FieldRestricter {
+func (c Committee) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return a.see
+		return c.see
 	case "B":
-		return a.modeB
+		return c.modeB
 	}
 	return nil
 }
 
-func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, committeeIDs ...int) ([]int, error) {
+func (c Committee) see(ctx context.Context, ds *dsfetch.Fetch, committeeIDs ...int) ([]int, error) {
 	requestUser, err := perm.RequestUserFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting request user: %w", err)
@@ -71,7 +76,7 @@ func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, committeeIDs ...i
 	return allowed, nil
 }
 
-func (a Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, committeeIDs ...int) ([]int, error) {
+func (c Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, committeeIDs ...int) ([]int, error) {
 	requestUser, err := perm.RequestUserFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting request user: %w", err)

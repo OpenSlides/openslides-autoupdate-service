@@ -14,6 +14,11 @@ import (
 // Mode A: The user can see the speaker.
 type Speaker struct{}
 
+// Name returns the collection name.
+func (s Speaker) Name() string {
+	return "speaker"
+}
+
 // MeetingID returns the meetingID for the object.
 func (s Speaker) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.Speaker_MeetingID(id).Value(ctx)

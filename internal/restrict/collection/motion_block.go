@@ -18,6 +18,11 @@ import (
 // Mode A: The user can see the motion block.
 type MotionBlock struct{}
 
+// Name returns the collection name.
+func (m MotionBlock) Name() string {
+	return "motion_block"
+}
+
 // MeetingID returns the meetingID for the object.
 func (m MotionBlock) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.MotionBlock_MeetingID(id).Value(ctx)

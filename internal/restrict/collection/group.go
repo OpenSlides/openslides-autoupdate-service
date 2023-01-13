@@ -14,6 +14,11 @@ import (
 // Mode A: The user can see the group.
 type Group struct{}
 
+// Name returns the collection name.
+func (g Group) Name() string {
+	return "group"
+}
+
 // MeetingID returns the meetingID for the object.
 func (g Group) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.Group_MeetingID(id).Value(ctx)

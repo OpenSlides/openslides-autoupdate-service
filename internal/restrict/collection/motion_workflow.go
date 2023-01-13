@@ -15,6 +15,11 @@ import (
 // Mode A: The user can see the motion workflow.
 type MotionWorkflow struct{}
 
+// Name returns the collection name.
+func (m MotionWorkflow) Name() string {
+	return "motion_workflow"
+}
+
 // MeetingID returns the meetingID for the object.
 func (m MotionWorkflow) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.MotionWorkflow_MeetingID(id).Value(ctx)

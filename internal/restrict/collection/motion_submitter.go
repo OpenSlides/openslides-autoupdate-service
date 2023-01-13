@@ -15,6 +15,11 @@ import (
 // Mode A: The user can see the motion submitter.
 type MotionSubmitter struct{}
 
+// Name returns the collection name.
+func (m MotionSubmitter) Name() string {
+	return "motion_submitter"
+}
+
 // MeetingID returns the meetingID for the object.
 func (m MotionSubmitter) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	motionID, err := ds.MotionSubmitter_MotionID(id).Value(ctx)

@@ -18,6 +18,11 @@ import (
 // Mode A: The user can see the motion change recommendation.
 type MotionChangeRecommendation struct{}
 
+// Name returns the collection name.
+func (m MotionChangeRecommendation) Name() string {
+	return "motion_change_recommendation"
+}
+
 // MeetingID returns the meetingID for the object.
 func (m MotionChangeRecommendation) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.MotionChangeRecommendation_MeetingID(id).Value(ctx)

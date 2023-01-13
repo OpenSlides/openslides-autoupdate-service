@@ -27,6 +27,11 @@ import (
 // Mode D: The user has meeting.can_see_livestream.
 type Meeting struct{}
 
+// Name returns the collection name.
+func (m Meeting) Name() string {
+	return "meeting"
+}
+
 // MeetingID returns the meetingID for the object.
 func (m Meeting) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	return id, true, nil

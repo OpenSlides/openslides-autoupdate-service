@@ -19,6 +19,11 @@ import (
 // Mode C: The user has the OML can_manage_users or higher.
 type Organization struct{}
 
+// Name returns the collection name.
+func (o Organization) Name() string {
+	return "organization"
+}
+
 // MeetingID returns the meetingID for the object.
 func (o Organization) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	return 0, false, nil

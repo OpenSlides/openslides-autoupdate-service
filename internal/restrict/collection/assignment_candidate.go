@@ -14,6 +14,11 @@ import (
 // Mode A: The user can see the assignment candidate.
 type AssignmentCandidate struct{}
 
+// Name returns the collection name.
+func (a AssignmentCandidate) Name() string {
+	return "assignment_candidate"
+}
+
 // MeetingID returns the meetingID for the object.
 func (a AssignmentCandidate) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	assignmentID, err := ds.AssignmentCandidate_AssignmentID(id).Value(ctx)

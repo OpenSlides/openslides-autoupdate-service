@@ -38,6 +38,11 @@ import (
 // Mode D: Same as Mode B, but for `finished`: Accessible if the user can manage the poll or the user has list_of_speakers.can_manage.
 type Poll struct{}
 
+// Name returns the collection name.
+func (p Poll) Name() string {
+	return "poll"
+}
+
 // MeetingID returns the meetingID for the object.
 func (p Poll) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.Poll_MeetingID(id).Value(ctx)
