@@ -62,17 +62,22 @@ func (m Mediafile) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, mediafileIDs ...int) ([]int, error) {
+func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
 	return eachContentObjectCollection(ctx, ds.Mediafile_OwnerID, mediafileIDs, func(collection string, ownerID int, ids []int) ([]int, error) {
 		if collection == "organization" {
-			if mperms.UserID() != 0 {
+			if requestUser != 0 {
 				return ids, nil
 			}
 			return nil, nil
 		}
 
 		return eachCondition(ids, func(mediafileID int) (bool, error) {
-			perms, err := mperms.Meeting(ctx, ownerID)
+			perms, err := perm.FromContext(ctx, ownerID)
 			if err != nil {
 				return false, fmt.Errorf("getting perms for meeting %d: %w", ownerID, err)
 			}
@@ -81,7 +86,7 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 				return true, nil
 			}
 
-			canSeeMeeting, err := Meeting{}.see(ctx, ds, mperms, ownerID)
+			canSeeMeeting, err := Meeting{}.see(ctx, ds, ownerID)
 			if err != nil {
 				return false, fmt.Errorf("can see meeting %d: %w", ownerID, err)
 			}

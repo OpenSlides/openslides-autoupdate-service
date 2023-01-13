@@ -36,14 +36,19 @@ func (c ChatMessage) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, chatMessageIDs ...int) ([]int, error) {
+func (ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, chatMessageIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
 	return eachRelationField(ctx, ds.ChatMessage_ChatGroupID, chatMessageIDs, func(chatGroupID int, ids []int) ([]int, error) {
 		meetingID, _, err := ChatGroup{}.MeetingID(ctx, ds, chatGroupID)
 		if err != nil {
 			return nil, fmt.Errorf("getting meeting id: %w", err)
 		}
 
-		perms, err := mperms.Meeting(ctx, meetingID)
+		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting permissions: %w", err)
 		}
@@ -69,7 +74,7 @@ func (ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 				return false, fmt.Errorf("reading author of chat message: %w", err)
 			}
 
-			return author == mperms.UserID(), nil
+			return author == requestUser, nil
 		})
 
 		if err != nil {

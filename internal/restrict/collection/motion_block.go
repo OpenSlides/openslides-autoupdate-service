@@ -37,9 +37,9 @@ func (m MotionBlock) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionBlock) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionBlockIDs ...int) ([]int, error) {
+func (m MotionBlock) see(ctx context.Context, ds *dsfetch.Fetch, motionBlockIDs ...int) ([]int, error) {
 	return eachMeeting(ctx, ds, m, motionBlockIDs, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting permissions: %w", err)
 		}

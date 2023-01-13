@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -34,9 +33,9 @@ func (g Group) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, groupIDs ...int) ([]int, error) {
+func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, groupIDs ...int) ([]int, error) {
 	return eachMeeting(ctx, ds, g, groupIDs, func(meetingID int, ids []int) ([]int, error) {
-		canSee, err := Meeting{}.see(ctx, ds, mperms, meetingID)
+		canSee, err := Meeting{}.see(ctx, ds, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("can see meeting %d: %w", meetingID, err)
 		}

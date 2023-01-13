@@ -21,23 +21,28 @@ func (cm CM) String() string {
 }
 
 // FieldRestricter is a function to restrict fields of a collection.
-type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, id ...int) ([]int, error)
+type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, id ...int) ([]int, error)
 
-type singleFieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, id int) (bool, error)
+type singleFieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, id int) (bool, error)
 
 // Allways is a restricter func that just returns true.
-func Allways(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
+func Allways(ctx context.Context, ds *dsfetch.Fetch, elementIDs ...int) ([]int, error) {
 	return elementIDs, nil
 }
 
-func loggedIn(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
-	if mperms.UserID() != 0 {
+func loggedIn(ctx context.Context, ds *dsfetch.Fetch, elementIDs ...int) ([]int, error) {
+	uid, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	if uid != 0 {
 		return elementIDs, nil
 	}
 	return nil, nil
 }
 
-func never(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
+func never(ctx context.Context, ds *dsfetch.Fetch, elementIDs ...int) ([]int, error) {
 	return nil, nil
 }
 
@@ -177,9 +182,9 @@ func eachMeeting(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int
 	return allAllowed, nil
 }
 
-func meetingPerm(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int, mperms *perm.MeetingPermission, permission perm.TPermission) ([]int, error) {
+func meetingPerm(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int, permission perm.TPermission) ([]int, error) {
 	return eachMeeting(ctx, ds, r, ids, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting permission: %w", err)
 		}

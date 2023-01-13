@@ -37,9 +37,9 @@ func (c ChatGroup) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, chatGroupIDs ...int) ([]int, error) {
+func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, chatGroupIDs ...int) ([]int, error) {
 	return eachMeeting(ctx, ds, c, chatGroupIDs, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting permissions: %w", err)
 		}

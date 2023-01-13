@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -39,14 +38,14 @@ func (o Option) Modes(mode string) FieldRestricter {
 }
 
 // TODO: Group by poll
-func (o Option) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, optionIDs ...int) ([]int, error) {
+func (o Option) see(ctx context.Context, ds *dsfetch.Fetch, optionIDs ...int) ([]int, error) {
 	return eachCondition(optionIDs, func(optionID int) (bool, error) {
 		pollID, err := pollID(ctx, ds, optionID)
 		if err != nil {
 			return false, fmt.Errorf("getting poll id: %w", err)
 		}
 
-		see, err := Poll{}.see(ctx, ds, mperms, pollID)
+		see, err := Poll{}.see(ctx, ds, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
 		}
@@ -56,14 +55,14 @@ func (o Option) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 }
 
 // TODO: Group by poll
-func (o Option) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, optionIDs ...int) ([]int, error) {
+func (o Option) modeB(ctx context.Context, ds *dsfetch.Fetch, optionIDs ...int) ([]int, error) {
 	return eachCondition(optionIDs, func(optionID int) (bool, error) {
 		pollID, err := pollID(ctx, ds, optionID)
 		if err != nil {
 			return false, fmt.Errorf("getting poll id: %w", err)
 		}
 
-		see, err := Poll{}.see(ctx, ds, mperms, pollID)
+		see, err := Poll{}.see(ctx, ds, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
 		}
@@ -72,7 +71,7 @@ func (o Option) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeti
 			return false, nil
 		}
 
-		canManage, err := Poll{}.manage(ctx, ds, mperms, pollID)
+		canManage, err := Poll{}.manage(ctx, ds, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
 		}

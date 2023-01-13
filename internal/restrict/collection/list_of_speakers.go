@@ -34,9 +34,9 @@ func (los ListOfSpeakers) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, losIDs ...int) ([]int, error) {
+func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, losIDs ...int) ([]int, error) {
 	return eachMeeting(ctx, ds, los, losIDs, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting perms for meetind %d: %w", meetingID, err)
 		}
@@ -67,7 +67,7 @@ func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, mperms *pe
 				return nil, fmt.Errorf("unknown content_object collection %q", collection)
 			}
 
-			canSee, err := restricter(ctx, ds, mperms, id)
+			canSee, err := restricter(ctx, ds, id)
 			if err != nil {
 				return nil, fmt.Errorf("checking can see of %s: %w", collection, err)
 			}

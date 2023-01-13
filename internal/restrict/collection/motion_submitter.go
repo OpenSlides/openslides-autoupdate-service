@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
@@ -35,7 +34,7 @@ func (m MotionSubmitter) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionSubmitterIDs ...int) ([]int, error) {
+func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, motionSubmitterIDs ...int) ([]int, error) {
 	submitterToMotion := make(map[int]int, len(motionSubmitterIDs))
 	motionIDs := set.New[int]()
 	for _, submitterID := range motionSubmitterIDs {
@@ -47,7 +46,7 @@ func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, mperms *per
 		return nil, fmt.Errorf("getting motionIDs: %w", err)
 	}
 
-	allowedMotionIDs, err := Motion{}.see(ctx, ds, mperms, motionIDs.List()...)
+	allowedMotionIDs, err := Motion{}.see(ctx, ds, motionIDs.List()...)
 	if err != nil {
 		return nil, fmt.Errorf("checking motion.see: %w", err)
 	}

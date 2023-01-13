@@ -34,6 +34,6 @@ func (p ProjectorMessage) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p ProjectorMessage) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, projectorMessageIDs ...int) ([]int, error) {
-	return meetingPerm(ctx, ds, p, projectorMessageIDs, mperms, perm.ProjectorCanSee)
+func (p ProjectorMessage) see(ctx context.Context, ds *dsfetch.Fetch, projectorMessageIDs ...int) ([]int, error) {
+	return meetingPerm(ctx, ds, p, projectorMessageIDs, perm.ProjectorCanSee)
 }

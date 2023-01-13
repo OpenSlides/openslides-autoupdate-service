@@ -36,9 +36,14 @@ func (p PersonalNote) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p PersonalNote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, personalNoteIDs ...int) ([]int, error) {
+func (p PersonalNote) see(ctx context.Context, ds *dsfetch.Fetch, personalNoteIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
 	return eachRelationField(ctx, ds.PersonalNote_UserID, personalNoteIDs, func(userID int, ids []int) ([]int, error) {
-		if mperms.UserID() == userID {
+		if requestUser == userID {
 			return ids, nil
 		}
 		return nil, nil

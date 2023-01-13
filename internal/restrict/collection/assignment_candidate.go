@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -34,9 +33,9 @@ func (a AssignmentCandidate) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a AssignmentCandidate) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, assignmentCandidateIDs ...int) ([]int, error) {
+func (a AssignmentCandidate) see(ctx context.Context, ds *dsfetch.Fetch, assignmentCandidateIDs ...int) ([]int, error) {
 	return eachRelationField(ctx, ds.AssignmentCandidate_AssignmentID, assignmentCandidateIDs, func(assignmentID int, ids []int) ([]int, error) {
-		canSeeAssignment, err := Assignment{}.see(ctx, ds, mperms, assignmentID)
+		canSeeAssignment, err := Assignment{}.see(ctx, ds, assignmentID)
 		if err != nil {
 			return nil, fmt.Errorf("can see assignment: %w", err)
 		}

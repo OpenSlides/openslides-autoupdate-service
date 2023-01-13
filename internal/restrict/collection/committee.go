@@ -35,8 +35,13 @@ func (a Committee) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, committeeIDs ...int) ([]int, error) {
-	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
+func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, committeeIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageUsers)
 	if err != nil {
 		return nil, fmt.Errorf("checking oml perm: %w", err)
 	}
@@ -52,7 +57,8 @@ func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 		}
 
 		for _, uid := range userIDs {
-			if uid == mperms.UserID() {
+
+			if uid == requestUser {
 				return true, nil
 			}
 		}
@@ -66,8 +72,13 @@ func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 	return allowed, nil
 }
 
-func (a Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, committeeIDs ...int) ([]int, error) {
-	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageOrganization)
+func (a Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, committeeIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
 	if err != nil {
 		return nil, fmt.Errorf("checking oml: %w", err)
 	}
@@ -77,7 +88,7 @@ func (a Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Me
 	}
 
 	allowed, err := eachCondition(committeeIDs, func(committeeID int) (bool, error) {
-		cmlCanManage, err := perm.HasCommitteeManagementLevel(ctx, ds, mperms.UserID(), committeeID)
+		cmlCanManage, err := perm.HasCommitteeManagementLevel(ctx, ds, requestUser, committeeID)
 		if err != nil {
 			return false, fmt.Errorf("checking committee management level: %w", err)
 		}

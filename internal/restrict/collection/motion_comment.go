@@ -42,14 +42,19 @@ func (m MotionComment) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionComment) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionCommentIDs ...int) ([]int, error) {
+func (m MotionComment) see(ctx context.Context, ds *dsfetch.Fetch, motionCommentIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
 	return eachRelationField(ctx, ds.MotionComment_SectionID, motionCommentIDs, func(commentSectionID int, ids []int) ([]int, error) {
 		commentSectionMeetingID, err := ds.MotionCommentSection_MeetingID(commentSectionID).Value(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("get meeting id from comment section %d: %w", commentSectionID, err)
 		}
 
-		perms, err := mperms.Meeting(ctx, commentSectionMeetingID)
+		perms, err := perm.FromContext(ctx, commentSectionMeetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting permissions: %w", err)
 		}
@@ -70,7 +75,7 @@ func (m MotionComment) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.
 			}
 
 			// TODO: Do this outside of section
-			seeMotion, err := Motion{}.see(ctx, ds, mperms, motionID)
+			seeMotion, err := Motion{}.see(ctx, ds, motionID)
 			if err != nil {
 				return false, fmt.Errorf("checking motion %d can see: %w", motionID, err)
 			}
@@ -94,7 +99,7 @@ func (m MotionComment) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.
 					return false, fmt.Errorf("getting user id for submitter %d: %w", submitterID, err)
 				}
 
-				if userID == mperms.UserID() {
+				if userID == requestUser {
 					return true, nil
 				}
 			}

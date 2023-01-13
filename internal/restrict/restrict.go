@@ -100,7 +100,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[ds
 	}
 
 	// Call restrict Mode function for each collection.
-	mperms := perm.NewMeetingPermission(ds, uid)
+	//mperms := perm.NewMeetingPermission(ds, uid)
 	times := make(map[string]timeCount, len(restrictModeIDs))
 	orderedCMs := sortRestrictModeIDs(restrictModeIDs)
 	allowedMods := make(map[collection.CM]*set.Set[int])
@@ -114,7 +114,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[ds
 			return nil, fmt.Errorf("getting restiction mode for %s/%s: %w", cm.Collection, cm.Mode, err)
 		}
 
-		allowedIDs, err := modeFunc(ctx, ds, mperms, ids.List()...)
+		allowedIDs, err := modeFunc(ctx, ds, ids.List()...)
 		if err != nil {
 			var errDoesNotExist dsfetch.DoesNotExistError
 			if !errors.As(err, &errDoesNotExist) {
@@ -159,7 +159,6 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[ds
 
 func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, data map[dskey.Key][]byte) error {
 	ds := dsfetch.New(getter)
-	mperms := perm.NewMeetingPermission(ds, uid)
 
 	for key := range data {
 		if data[key] == nil {
@@ -191,7 +190,7 @@ func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, d
 			continue
 		}
 
-		allowed, err := modefunc(ctx, ds, mperms, key.ID)
+		allowed, err := modefunc(ctx, ds, key.ID)
 		if err != nil {
 			return fmt.Errorf("calling mode func: %w", err)
 		}

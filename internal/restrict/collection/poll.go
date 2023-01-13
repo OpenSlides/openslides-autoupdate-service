@@ -63,10 +63,10 @@ func (p Poll) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p Poll) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, pollIDs ...int) ([]int, error) {
+func (p Poll) see(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]int, error) {
 	return eachContentObjectCollection(ctx, ds.Poll_ContentObjectID, pollIDs, func(objectCollection string, objectID int, ids []int) ([]int, error) {
 		var collection interface {
-			see(context.Context, *dsfetch.Fetch, *perm.MeetingPermission, ...int) ([]int, error)
+			see(context.Context, *dsfetch.Fetch, ...int) ([]int, error)
 		}
 
 		switch objectCollection {
@@ -84,7 +84,7 @@ func (p Poll) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPe
 			return nil, fmt.Errorf("unsupported collection: %s", objectCollection)
 		}
 
-		see, err := collection.see(ctx, ds, mperms, objectID)
+		see, err := collection.see(ctx, ds, objectID)
 		if err != nil {
 			return nil, fmt.Errorf("checking see of content object %d: %w", objectID, err)
 		}
@@ -97,7 +97,7 @@ func (p Poll) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPe
 	})
 }
 
-func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, pollIDs ...int) ([]int, error) {
+func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]int, error) {
 	return eachContentObjectCollection(ctx, ds.Poll_ContentObjectID, pollIDs, func(objectCollection string, objectID int, ids []int) ([]int, error) {
 		switch objectCollection {
 		case "motion":
@@ -106,7 +106,7 @@ func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meetin
 				return nil, fmt.Errorf("getting meeting id of motion %d: %w", objectID, err)
 			}
 
-			perms, err := mperms.Meeting(ctx, meetingID)
+			perms, err := perm.FromContext(ctx, meetingID)
 			if err != nil {
 				return nil, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
 			}
@@ -123,7 +123,7 @@ func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meetin
 				return nil, fmt.Errorf("getting meeting id of assignment %d: %w", objectID, err)
 			}
 
-			perms, err := mperms.Meeting(ctx, meetingID)
+			perms, err := perm.FromContext(ctx, meetingID)
 			if err != nil {
 				return nil, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
 			}
@@ -139,7 +139,7 @@ func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meetin
 				return nil, fmt.Errorf("getting meeting id of topic %d: %w", objectID, err)
 			}
 
-			perms, err := mperms.Meeting(ctx, meetingID)
+			perms, err := perm.FromContext(ctx, meetingID)
 			if err != nil {
 				return nil, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
 			}
@@ -156,18 +156,18 @@ func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meetin
 	})
 }
 
-func (p Poll) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, pollIDs ...int) ([]int, error) {
+func (p Poll) modeB(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]int, error) {
 	return eachStringField(ctx, ds.Poll_State, pollIDs, func(state string, ids []int) ([]int, error) {
 		switch state {
 		case "published":
-			see, err := p.see(ctx, ds, mperms, ids...)
+			see, err := p.see(ctx, ds, ids...)
 			if err != nil {
 				return nil, fmt.Errorf("checking see: %w", err)
 			}
 			return see, nil
 
 		case "finished":
-			manage, err := p.manage(ctx, ds, mperms, ids...)
+			manage, err := p.manage(ctx, ds, ids...)
 			if err != nil {
 				return nil, fmt.Errorf("checking manage: %w", err)
 			}
@@ -179,14 +179,14 @@ func (p Poll) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 	})
 }
 
-func (p Poll) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, pollIDs ...int) ([]int, error) {
+func (p Poll) modeC(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]int, error) {
 	return eachStringField(ctx, ds.Poll_State, pollIDs, func(state string, ids []int) ([]int, error) {
 		if state != "started" {
 			return nil, nil
 		}
 
 		return eachMeeting(ctx, ds, p, ids, func(meetingID int, ids []int) ([]int, error) {
-			perms, err := mperms.Meeting(ctx, meetingID)
+			perms, err := perm.FromContext(ctx, meetingID)
 			if err != nil {
 				return nil, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
 			}
@@ -195,23 +195,23 @@ func (p Poll) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 				return ids, nil
 			}
 
-			return p.manage(ctx, ds, mperms, ids...)
+			return p.manage(ctx, ds, ids...)
 		})
 	})
 }
 
-func (p Poll) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, pollIDs ...int) ([]int, error) {
+func (p Poll) modeD(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]int, error) {
 	return eachStringField(ctx, ds.Poll_State, pollIDs, func(state string, pollIDs []int) ([]int, error) {
 		switch state {
 		case "published":
-			see, err := p.see(ctx, ds, mperms, pollIDs...)
+			see, err := p.see(ctx, ds, pollIDs...)
 			if err != nil {
 				return nil, fmt.Errorf("checking see: %w", err)
 			}
 			return see, nil
 
 		case "finished":
-			allowed, err := p.manage(ctx, ds, mperms, pollIDs...)
+			allowed, err := p.manage(ctx, ds, pollIDs...)
 			if err != nil {
 				return nil, fmt.Errorf("checking manage: %w", err)
 			}
@@ -223,7 +223,7 @@ func (p Poll) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 			notAllowed := set.New(pollIDs...)
 			notAllowed.Remove(allowed...)
 
-			allowed2, err := meetingPerm(ctx, ds, p, notAllowed.List(), mperms, perm.ListOfSpeakersCanManage)
+			allowed2, err := meetingPerm(ctx, ds, p, notAllowed.List(), perm.ListOfSpeakersCanManage)
 			if err != nil {
 				return nil, fmt.Errorf("checking list of speaker permission: %w", err)
 			}
