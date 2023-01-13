@@ -149,12 +149,13 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	backgroundTasks = append(backgroundTasks, authBackground)
 
 	// Restricter
-	restricter, restrictBackground := restrict.New(datastoreService)
-	// TODO: This is a bug. This will listen to ds.update but the autoupdate.service does the same
-	backgroundTasks = append(backgroundTasks, restrictBackground)
+	restricter := restrict.New(datastoreService)
+
+	// TODO: Move the history logic out of the datastoreService
+	history := datastoreService
 
 	// Autoupdate Service.
-	auService, auBackground, err := autoupdate.New(lookup, datastoreService, restricter)
+	auService, auBackground, err := autoupdate.New(lookup, restricter, history)
 	if err != nil {
 		return nil, fmt.Errorf("init autoupdate: %w", err)
 	}

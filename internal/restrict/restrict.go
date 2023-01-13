@@ -26,30 +26,34 @@ type Restricter struct {
 }
 
 // New initializes the restricter.
-func New(flow flow.Flow) (*Restricter, func(context.Context, func(error))) {
-	r := Restricter{
+func New(flow flow.Flow) *Restricter {
+	return &Restricter{
 		sub:          flow,
 		attributeMap: NewAttributeMap(),
 	}
 
-	return &r, r.Background
 }
 
-// Background calls the Update function of the sub flow.
+// Update is a middleware bettwen the sub flow and the caller.
 //
-// It updates the internal state each time there are updates.
-func (r *Restricter) Background(ctx context.Context, errFn func(error)) {
+// It precalculates the attributes for each key before calling the updateFn from
+// the caller.
+func (r *Restricter) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
 	r.sub.Update(ctx, func(data map[dskey.Key][]byte, err error) {
+		if err != nil {
+			updateFn(data, err)
+			return
+		}
+
 		// TODO: Handle deletion.
 		// TODO: Only update on hot keys
 		restrictModeIDs := r.attributeMap.RestrictModeIDs()
 
-		if _, err := r.prepare(ctx, r.sub, restrictModeIDs); err != nil {
-			errFn(fmt.Errorf("prepare: %w", err))
-			return
-		}
-	})
+		_, err = r.prepare(ctx, r.sub, restrictModeIDs)
+		// TODO: Add all *keys* that have a changed attribute.
+		updateFn(data, err)
 
+	})
 }
 
 func (r *Restricter) insertFields(ctx context.Context, keys ...dskey.Key) (perm.MeetingPermission, error) {
@@ -140,8 +144,15 @@ func groupKeysByCollectionMode(keys []dskey.Key) (map[collection.CM]set.Set[int]
 	return restrictModeIDs, nil
 }
 
-// Getter returns a datastore getter that returns restricted data.
-func (r *Restricter) Getter(uid int) datastore.Getter {
+// FullData returns a Getter that returns the fulldata.
+func (r *Restricter) FullData() datastore.Getter {
+	return datastore.GetterFunc(func(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+		return r.sub.Get(ctx, keys...)
+	})
+}
+
+// ForUser returns a datastore getter that returns restricted data.
+func (r *Restricter) ForUser(uid int) datastore.Getter {
 	return datastore.GetterFunc(func(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 		mperms, err := r.insertFields(ctx, keys...)
 		if err != nil {

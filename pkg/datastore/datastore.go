@@ -140,6 +140,9 @@ func (d *Datastore) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][
 
 // Update implements the flow.Updater interface. It calles the given function when there are updates.
 func (d *Datastore) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+	// With this implementation it is safe to call Update from multiple places.
+	// The current impelementation needs this. autoupdate and restricter calls
+	// update.
 	d.RegisterChangeListener(func(values map[dskey.Key][]byte) error {
 		updateFn(values, nil)
 		return nil

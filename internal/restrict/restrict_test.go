@@ -77,7 +77,7 @@ func TestRestrict(t *testing.T) {
 	`))
 
 	restricter, _ := restrict.New(ds)
-	restricted := restricter.Getter(1)
+	restricted := restricter.ForUser(1)
 
 	keys := []dskey.Key{
 		dskey.MustKey("agenda_item/1/item_number"),
@@ -144,7 +144,7 @@ func TestRestrictSuperAdmin(t *testing.T) {
 	`))
 
 	restricter, _ := restrict.New(ds)
-	restricted := restricter.Getter(1)
+	restricted := restricter.ForUser(1)
 
 	keys := []dskey.Key{
 		dskey.MustKey("personal_note/1/id"),
@@ -184,7 +184,7 @@ func TestCorruptedDatastore(t *testing.T) {
 	`))
 
 	restricter, _ := restrict.New(ds)
-	restricted := restricter.Getter(1)
+	restricted := restricter.ForUser(1)
 
 	var buf bytes.Buffer
 	log.SetOutput(&buf)

@@ -11,7 +11,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"strconv"
 	"strings"
 	"syscall"
 
@@ -36,7 +35,7 @@ func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autou
 	mux := http.NewServeMux()
 	HandleHealth(mux)
 	HandleAutoupdate(mux, auth, autoupdate, requestCount)
-	HandleHistoryInformation(mux, auth, autoupdate)
+	//HandleHistoryInformation(mux, auth, autoupdate)
 	HandleRestrictFQIDs(mux, autoupdate)
 
 	srv := &http.Server{
@@ -68,7 +67,7 @@ func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autou
 // Connecter returns an connect object.
 type Connecter interface {
 	Connect(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (autoupdate.DataProvider, error)
-	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[dskey.Key][]byte, error)
+	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (map[dskey.Key][]byte, error)
 }
 
 // HandleAutoupdate builds the requested keys from the body of a request. The
@@ -109,16 +108,17 @@ func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecte
 
 		builder := keysbuilder.FromBuilders(queryBuilder, bodyBuilder)
 
-		rawPosition := r.URL.Query().Get("position")
-		position := 0
-		if rawPosition != "" {
-			p, err := strconv.Atoi(rawPosition)
-			if err != nil {
-				handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("position has to be a number, not %s", rawPosition)})
-				return
-			}
-			position = p
-		}
+		// TODO Aktive History again.
+		// rawPosition := r.URL.Query().Get("position")
+		// position := 0
+		// if rawPosition != "" {
+		// 	p, err := strconv.Atoi(rawPosition)
+		// 	if err != nil {
+		// 		handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("position has to be a number, not %s", rawPosition)})
+		// 		return
+		// 	}
+		// 	position = p
+		// }
 
 		if r.URL.Query().Has("profile_restrict") {
 			ctx = oserror.ContextWithTag(ctx, "profile_restrict")
@@ -129,8 +129,9 @@ func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecte
 			compress = true
 		}
 
-		if r.URL.Query().Has("single") || position != 0 {
-			data, err := connecter.SingleData(ctx, uid, builder, position)
+		//if r.URL.Query().Has("single") || position != 0 {
+		if r.URL.Query().Has("single") {
+			data, err := connecter.SingleData(ctx, uid, builder)
 			if err != nil {
 				handleErrorWithStatus(w, fmt.Errorf("getting single data: %w", err))
 				return
