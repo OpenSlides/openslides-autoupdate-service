@@ -72,10 +72,6 @@ func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, error)
 			}
 			c.tid = tid
 
-			// HotKeys:
-			// * Ein Key den der Nutzer sehen will und sehen darf
-			// * Ein key den der Nutzer sehen will und nicht darf???
-			// * TODO
 			foundKey := false
 			for _, key := range changedKeys {
 				if _, ok := c.hotkeys[key]; ok {
@@ -112,7 +108,6 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 	}
 
 	recorder := dsrecorder.New(c.autoupdate.restricter.FullData())
-	// TODO: This is broken. The restricter uses its own getter and not the recorder
 	restricter := c.autoupdate.restricter.ForUser(c.uid)
 
 	keys, err := c.kb.Update(ctx, restricter)

@@ -143,14 +143,7 @@ func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecte
 			return
 		}
 
-		var wr io.Writer = w
-		if r.URL.Query().Has("skip_first") {
-			// TODO: This will not compress the first data. For the performance
-			// tool this does not matter.
-			wr = newSkipFirst(w)
-		}
-
-		if err := sendMessages(ctx, wr, uid, builder, connecter, compress); err != nil {
+		if err := sendMessages(ctx, w, uid, builder, connecter, compress); err != nil {
 			handleErrorWithoutStatus(w, err)
 			return
 		}
