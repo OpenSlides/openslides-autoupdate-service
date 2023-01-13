@@ -38,6 +38,7 @@ func BenchmarkAgendaItems(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
+		ctx := perm.ContextWithPermissionCache(context.Background(), db, 4)
 		if _, err := getter.Get(ctx, keys...); err != nil {
 			b.Fatalf("getting keys: %v", err)
 		}
@@ -66,6 +67,7 @@ func BenchmarkRelationFields(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
+		ctx := perm.ContextWithPermissionCache(context.Background(), db, 4)
 		if _, err := getter.Get(ctx, keys...); err != nil {
 			b.Fatalf("getting keys: %v", err)
 		}
