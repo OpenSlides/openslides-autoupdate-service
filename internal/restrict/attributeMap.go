@@ -16,6 +16,8 @@ import (
 type AttributeMap struct {
 	mu   sync.RWMutex // TODO: This is a bad place for the lock.
 	data map[dskey.Key]*collection.Attributes
+
+	changeCache set.Set[dskey.Key]
 }
 
 // NewAttributeMap initializes an AttributeMap
@@ -25,10 +27,22 @@ func NewAttributeMap() *AttributeMap {
 	}
 }
 
+// StartCache starts to track each change.
+func (am *AttributeMap) StartChangeCache() {
+	am.mu.Lock()
+	defer am.mu.Unlock()
+
+	am.changeCache = set.New[dskey.Key]()
+}
+
 // Add adds a value to the map.
 func (am *AttributeMap) Add(modeKey dskey.Key, value *collection.Attributes) {
 	am.mu.Lock()
 	defer am.mu.Unlock()
+
+	if !am.changeCache.IsNotInitialized() {
+
+	}
 
 	am.data[modeKey] = value
 }
