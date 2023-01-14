@@ -40,7 +40,7 @@ func (g Group) Modes(mode string) FieldRestricter {
 
 func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, groupIDs ...int) ([]int, error) {
 	return eachMeeting(ctx, ds, g, groupIDs, func(meetingID int, ids []int) ([]int, error) {
-		canSee, err := Collection(ctx, Meeting{}.Name()).Modes("A")(ctx, ds, meetingID)
+		canSee, err := Collection(ctx, Meeting{}.Name()).Modes("B")(ctx, ds, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("can see meeting %d: %w", meetingID, err)
 		}

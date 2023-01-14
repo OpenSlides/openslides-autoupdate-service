@@ -74,6 +74,7 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 	}
 
 	return eachContentObjectCollection(ctx, ds.Mediafile_OwnerID, mediafileIDs, func(collection string, ownerID int, ids []int) ([]int, error) {
+		// ownerID can be a meetingID or the organizationID
 		if collection == "organization" {
 			if requestUser != 0 {
 				return ids, nil
@@ -81,21 +82,21 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 			return nil, nil
 		}
 
+		perms, err := perm.FromContext(ctx, ownerID)
+		if err != nil {
+			return nil, fmt.Errorf("getting perms for meeting %d: %w", ownerID, err)
+		}
+
+		if perms.IsAdmin() {
+			return ids, nil
+		}
+
+		canSeeMeeting, err := Collection(ctx, Meeting{}.Name()).Modes("B")(ctx, ds, ownerID)
+		if err != nil {
+			return nil, fmt.Errorf("can see meeting %d: %w", ownerID, err)
+		}
+
 		return eachCondition(ids, func(mediafileID int) (bool, error) {
-			perms, err := perm.FromContext(ctx, ownerID)
-			if err != nil {
-				return false, fmt.Errorf("getting perms for meeting %d: %w", ownerID, err)
-			}
-
-			if perms.IsAdmin() {
-				return true, nil
-			}
-
-			canSeeMeeting, err := Collection(ctx, Meeting{}.Name()).Modes("A")(ctx, ds, ownerID)
-			if err != nil {
-				return false, fmt.Errorf("can see meeting %d: %w", ownerID, err)
-			}
-
 			usedAsLogo := ds.Mediafile_UsedAsLogoInMeetingIDTmpl(mediafileID).ErrorLater(ctx)
 			usedAsFont := ds.Mediafile_UsedAsFontInMeetingIDTmpl(mediafileID).ErrorLater(ctx)
 			if err := ds.Err(); err != nil {
