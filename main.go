@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	gohttp "net/http"
+	_ "net/http/pprof"
 	"os"
 	"strings"
 
@@ -37,6 +38,10 @@ var cli struct {
 func main() {
 	ctx, cancel := environment.InterruptContext()
 	defer cancel()
+
+	go func() {
+		gohttp.ListenAndServe(":6060", nil)
+	}()
 
 	kongCTX := kong.Parse(&cli, kong.UsageOnError())
 	switch kongCTX.Command() {

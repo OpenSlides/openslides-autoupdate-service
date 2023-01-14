@@ -40,7 +40,7 @@ func (a AssignmentCandidate) Modes(mode string) FieldRestricter {
 
 func (a AssignmentCandidate) see(ctx context.Context, ds *dsfetch.Fetch, assignmentCandidateIDs ...int) ([]int, error) {
 	return eachRelationField(ctx, ds.AssignmentCandidate_AssignmentID, assignmentCandidateIDs, func(assignmentID int, ids []int) ([]int, error) {
-		canSeeAssignment, err := Assignment{}.see(ctx, ds, assignmentID)
+		canSeeAssignment, err := Collection(ctx, Assignment{}.Name()).Modes("A")(ctx, ds, assignmentID)
 		if err != nil {
 			return nil, fmt.Errorf("can see assignment: %w", err)
 		}

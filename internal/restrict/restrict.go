@@ -30,6 +30,13 @@ func Middleware(getter datastore.Getter, uid int) datastore.Getter {
 	}
 }
 
+// ContextWithCache adds some restrictor caches to the context.
+func ContextWithCache(ctx context.Context, getter datastore.Getter, uid int) context.Context {
+	ctx = collection.ContextWithRestrictCache(ctx)
+	ctx = perm.ContextWithPermissionCache(ctx, getter, uid)
+	return ctx
+}
+
 type restricter struct {
 	getter datastore.Getter
 	uid    int
@@ -108,7 +115,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[ds
 		idsCount := ids.Len()
 		start := time.Now()
 
-		modeFunc, err := restrictModefunc(cm.Collection, cm.Mode)
+		modeFunc, err := restrictModefunc(ctx, cm.Collection, cm.Mode)
 		if err != nil {
 			return nil, fmt.Errorf("getting restiction mode for %s/%s: %w", cm.Collection, cm.Mode, err)
 		}
@@ -164,7 +171,7 @@ func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, d
 			continue
 		}
 
-		restricter := collection.Collection(key.Collection)
+		restricter := collection.Collection(ctx, key.Collection)
 		if restricter == nil {
 			// Superadmins can see unknown collections.
 			continue
@@ -495,8 +502,8 @@ func templateKeyPrefix(collectionField string) string {
 }
 
 // restrictModefunc returns the field restricter function to use.
-func restrictModefunc(collectionName, fieldMode string) (collection.FieldRestricter, error) {
-	restricter := collection.Collection(collectionName)
+func restrictModefunc(ctx context.Context, collectionName, fieldMode string) (collection.FieldRestricter, error) {
+	restricter := collection.Collection(ctx, collectionName)
 	if _, ok := restricter.(collection.Unknown); ok {
 		// TODO LAST ERROR
 		return nil, fmt.Errorf("collection %q is not implemented, maybe run go generate ./... to fetch all fields from the models.yml", collectionName)

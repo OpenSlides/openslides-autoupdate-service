@@ -40,7 +40,7 @@ func (s Speaker) Modes(mode string) FieldRestricter {
 
 func (s Speaker) see(ctx context.Context, ds *dsfetch.Fetch, speakerIDs ...int) ([]int, error) {
 	return eachRelationField(ctx, ds.Speaker_ListOfSpeakersID, speakerIDs, func(losID int, ids []int) ([]int, error) {
-		see, err := ListOfSpeakers{}.see(ctx, ds, losID)
+		see, err := Collection(ctx, ListOfSpeakers{}.Name()).Modes("A")(ctx, ds, losID)
 		if err != nil {
 			return nil, fmt.Errorf("checking see of los %d: %w", losID, err)
 		}

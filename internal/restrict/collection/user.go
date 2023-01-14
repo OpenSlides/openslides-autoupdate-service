@@ -176,7 +176,7 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 			}
 		}
 
-		for _, r := range u.RequiredObjects(ds) {
+		for _, r := range u.RequiredObjects(ctx, ds) {
 			for _, meetingID := range r.TmplFunc(userID).ErrorLater(ctx) {
 				ids := r.ElemFunc(userID, meetingID).ErrorLater(ctx)
 
@@ -212,69 +212,69 @@ type UserRequiredObject struct {
 }
 
 // RequiredObjects returns all references to other objects from the user.
-func (User) RequiredObjects(ds *dsfetch.Fetch) []UserRequiredObject {
+func (User) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []UserRequiredObject {
 	return []UserRequiredObject{
 		{
 			"motion submitter",
 			ds.User_SubmittedMotionIDsTmpl,
 			ds.User_SubmittedMotionIDs,
-			MotionSubmitter{}.see,
+			Collection(ctx, "motion_submitter").Modes("A"),
 		},
 
 		{
 			"motion supporter",
 			ds.User_SupportedMotionIDsTmpl,
 			ds.User_SupportedMotionIDs,
-			Motion{}.see,
+			Collection(ctx, Motion{}.Name()).Modes("C"),
 		},
 
 		{
 			"option",
 			ds.User_OptionIDsTmpl,
 			ds.User_OptionIDs,
-			Option{}.see,
+			Collection(ctx, Option{}.Name()).Modes("A"),
 		},
 
 		{
 			"assignment candidate",
 			ds.User_AssignmentCandidateIDsTmpl,
 			ds.User_AssignmentCandidateIDs,
-			AssignmentCandidate{}.see,
+			Collection(ctx, AssignmentCandidate{}.Name()).Modes("A"),
 		},
 
 		{
 			"speaker",
 			ds.User_SpeakerIDsTmpl,
 			ds.User_SpeakerIDs,
-			Speaker{}.see,
+			Collection(ctx, Speaker{}.Name()).Modes("A"),
 		},
 
 		{
 			"poll voted",
 			ds.User_PollVotedIDsTmpl,
 			ds.User_PollVotedIDs,
-			Poll{}.see,
+			Collection(ctx, Poll{}.Name()).Modes("A"),
 		},
 
 		{
 			"vote user",
 			ds.User_VoteIDsTmpl,
 			ds.User_VoteIDs,
-			Vote{}.see,
+			Collection(ctx, Vote{}.Name()).Modes("A"),
 		},
 
 		{
 			"vote delegated user",
 			ds.User_VoteDelegatedVoteIDsTmpl,
 			ds.User_VoteDelegatedVoteIDs,
-			Vote{}.see,
+			Collection(ctx, Vote{}.Name()).Modes("A"),
 		},
 
 		{
 			"chat messages",
 			ds.User_ChatMessageIDsTmpl,
 			ds.User_ChatMessageIDs,
-			ChatMessage{}.see,
+			Collection(ctx, ChatMessage{}.Name()).Modes("A"),
 		},
 	}
 }

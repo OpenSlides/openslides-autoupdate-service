@@ -218,7 +218,7 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 
 	ds := dsfetch.New(a.datastore)
 
-	meetingID, hasMeeting, err := collection.Collection(coll).MeetingID(ctx, ds, id)
+	meetingID, hasMeeting, err := collection.Collection(ctx, coll).MeetingID(ctx, ds, id)
 	if err != nil {
 		var errNotExist dsfetch.DoesNotExistError
 		if errors.As(err, &errNotExist) {

@@ -80,7 +80,7 @@ func (m MotionComment) see(ctx context.Context, ds *dsfetch.Fetch, motionComment
 			}
 
 			// TODO: Do this outside of section
-			seeMotion, err := Motion{}.see(ctx, ds, motionID)
+			seeMotion, err := Collection(ctx, Motion{}.Name()).Modes("C")(ctx, ds, motionID)
 			if err != nil {
 				return false, fmt.Errorf("checking motion %d can see: %w", motionID, err)
 			}

@@ -61,50 +61,80 @@ type Restricter interface {
 	Name() string
 }
 
-// type contextKeyType string
-
-// var contextKey contextKeyType = "context_key"
-
-// func ContextWithCollectionCache(ctx context.Context) context.Context {
-// 	return context.WithValue(ctx, contextKey, make(map[dskey.Key]bool))
-// }
-
-// func CollectionCacheFromCache(ctx context.Context, key dskey.Key, allowed bool) map[dskey.Key]bool {
-// 	v := ctx.Value(contextKey)
-// 	if v == nil {
-// 		return nil
-// 	}
-
-// 	cache, ok := v.(map[dskey.Key]bool)
-// 	if !ok {
-// 		return nil
-// 	}
-
-// 	return cache
-// }
-
-// func cacheWrapper(ctx context.Context, collection string, mode string, testIDs, allowedIDs []int, err error) ([]int, error) {
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	allowedSet := set.New(allowedIDs...)
-// 	for _, id := range testIDs {
-// 		allowedSet.Has(id)
-// 	}
-// }
-
 type restrictCache struct {
 	cache map[dskey.Key]bool
+	sub   Restricter
 }
 
-func newRestrictCache() *restrictCache {
+type contextKeyType string
+
+var contextKey contextKeyType = "restrict cache"
+
+// ContextWithRestrictCache returns a context with restrict cache.
+func ContextWithRestrictCache(ctx context.Context) context.Context {
+	return context.WithValue(ctx, contextKey, make(map[dskey.Key]bool))
+}
+
+func withRestrictCache(ctx context.Context, sub Restricter) Restricter {
+	v := ctx.Value(contextKey)
+	if v == nil {
+		return sub
+	}
+
+	cache, ok := v.(map[dskey.Key]bool)
+	if !ok {
+		return sub
+	}
+
 	return &restrictCache{
-		cache: make(map[dskey.Key]bool),
+		cache: cache,
+		sub:   sub,
 	}
 }
 
-func (r *restrictCache) middleware(fn FieldRestricter) FieldRestricter
+func (r *restrictCache) Modes(mode string) FieldRestricter {
+	return func(ctx context.Context, ds *dsfetch.Fetch, ids ...int) ([]int, error) {
+		notFound := make([]int, 0, len(ids))
+		cachedAllowedIDs := make([]int, 0, len(ids))
+		for _, id := range ids {
+			key := dskey.Key{Collection: r.sub.Name(), ID: id, Field: mode}
+
+			allowed, found := r.cache[key]
+			if !found {
+				notFound = append(notFound, id)
+				continue
+			}
+
+			if allowed {
+				cachedAllowedIDs = append(cachedAllowedIDs, id)
+			}
+		}
+
+		if len(notFound) == 0 {
+			return cachedAllowedIDs, nil
+		}
+
+		newAllowedIDs, err := r.sub.Modes(mode)(ctx, ds, notFound...)
+		if err != nil {
+			return nil, fmt.Errorf("calling restricter: %w", err)
+		}
+		for _, id := range newAllowedIDs {
+			key := dskey.Key{Collection: r.sub.Name(), ID: id, Field: mode}
+			r.cache[key] = true
+			// TODO: add not allowed ids to cache
+		}
+
+		return append(cachedAllowedIDs, newAllowedIDs...), nil
+	}
+}
+
+func (r *restrictCache) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (meetingID int, hasMeeting bool, err error) {
+	return r.sub.MeetingID(ctx, ds, id)
+}
+
+func (r *restrictCache) Name() string {
+	return r.sub.Name()
+}
 
 var collections = []Restricter{
 	ActionWorker{},
@@ -146,10 +176,10 @@ var collections = []Restricter{
 }
 
 // Collection returns the restricter for a collection
-func Collection(collection string) Restricter {
+func Collection(ctx context.Context, collection string) Restricter {
 	for _, c := range collections {
 		if c.Name() == collection {
-			return c
+			return withRestrictCache(ctx, c)
 		}
 	}
 	return Unknown{collection}

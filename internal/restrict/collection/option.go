@@ -50,7 +50,7 @@ func (o Option) see(ctx context.Context, ds *dsfetch.Fetch, optionIDs ...int) ([
 			return false, fmt.Errorf("getting poll id: %w", err)
 		}
 
-		see, err := Poll{}.see(ctx, ds, pollID)
+		see, err := Collection(ctx, Poll{}.Name()).Modes("A")(ctx, ds, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
 		}
@@ -67,7 +67,7 @@ func (o Option) modeB(ctx context.Context, ds *dsfetch.Fetch, optionIDs ...int) 
 			return false, fmt.Errorf("getting poll id: %w", err)
 		}
 
-		see, err := Poll{}.see(ctx, ds, pollID)
+		see, err := Collection(ctx, Poll{}.Name()).Modes("A")(ctx, ds, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
 		}

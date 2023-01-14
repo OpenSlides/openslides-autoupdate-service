@@ -117,7 +117,7 @@ func (h History) canSeeKey(
 		return false, nil
 	}
 
-	meetingID, hasMeeting, err := collection.Collection(key.Collection).MeetingID(ctx, oldDS, key.ID)
+	meetingID, hasMeeting, err := collection.Collection(ctx, key.Collection).MeetingID(ctx, oldDS, key.ID)
 	if err != nil {
 		return false, fmt.Errorf("getting meeting id: %w", err)
 	}
@@ -128,7 +128,7 @@ func (h History) canSeeKey(
 	}
 
 	if key.Collection == "user" {
-		for _, r := range (collection.User{}).RequiredObjects(oldDS) {
+		for _, r := range (collection.User{}).RequiredObjects(ctx, oldDS) {
 			meetingIDs, err := r.TmplFunc(key.ID).Value(ctx)
 			if err != nil {
 				return false, fmt.Errorf("getting meeting ids for %s: %w", r.Name, err)

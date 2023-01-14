@@ -91,7 +91,7 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 				return true, nil
 			}
 
-			canSeeMeeting, err := Meeting{}.see(ctx, ds, ownerID)
+			canSeeMeeting, err := Collection(ctx, Meeting{}.Name()).Modes("A")(ctx, ds, ownerID)
 			if err != nil {
 				return false, fmt.Errorf("can see meeting %d: %w", ownerID, err)
 			}
