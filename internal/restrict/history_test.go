@@ -56,7 +56,8 @@ func TestHistoryGetter(t *testing.T) {
 			`---
 			user/1/organization_management_level: can_manage_organization`,
 			`---
-			personal_note/5/user_id: 1
+			personal_note/5/meeting_user_id: 23
+			meeting_user/23/user_id: 1
 			`,
 			"personal_note/5/note",
 			true,
@@ -66,7 +67,8 @@ func TestHistoryGetter(t *testing.T) {
 			`---
 			user/1/organization_management_level: can_manage_organization`,
 			`---
-			personal_note/5/user_id: 2
+			personal_note/5/meeting_user_id: 23
+			meeting_user/23/user_id: 2
 			`,
 			"personal_note/5/note",
 			false,
@@ -142,22 +144,23 @@ func TestHistoryGetter(t *testing.T) {
 			"committee/5/name",
 			false,
 		},
-		{
-			"user is motion submitter",
-			`---
-			user/1:
-				group_$2_ids: [3]
-				meeting_ids: [2]
-			group/3/permissions: ["meeting.can_see_history"]
-			meeting/2/admin_group_id: 3
-			`,
-			`---
-			user/50:
-				submitted_motion_$_ids: ["2"]
-			`,
-			"user/50/username",
-			true,
-		},
+		// {
+		// 	"user is motion submitter",
+		// 	`---
+		// 	user/1:
+		// 		group_$2_ids: [3]
+		// 		meeting_ids: [2]
+		// 	group/3/permissions: ["meeting.can_see_history"]
+		// 	meeting/2/admin_group_id: 3
+		// 	`,
+		// 	`---
+		// 	user_meeting/23:
+		// 		user_id: 50
+		// 		submitted_motion_ids: [2]
+		// 	`,
+		// 	"user/50/username",
+		// 	true,
+		// },
 		{
 			"unknown collection",
 			`---

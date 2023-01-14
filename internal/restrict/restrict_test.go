@@ -140,9 +140,19 @@ func TestRestrict(t *testing.T) {
 
 func TestRestrictSuperAdmin(t *testing.T) {
 	ds := dsmock.Stub(dsmock.YAMLData(`---
-	user/1/organization_management_level: superadmin
-	personal_note/1/user_id: 1
-	personal_note/2/user_id: 2
+	user/1:
+		organization_management_level: superadmin
+		meeting_user_ids: [10]
+	personal_note:
+		1:
+			meeting_user_id: 10
+		2:
+			meeting_user_id: 20
+	meeting_user:
+		10:
+			user_id: 1
+		20:
+			user_id: 200
 	`))
 
 	restricter := restrict.Middleware(ds, 1)

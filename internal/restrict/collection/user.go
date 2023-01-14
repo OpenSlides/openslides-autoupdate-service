@@ -128,41 +128,54 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 			allowedUserIDs.Add(userIDs...)
 		}
 
-		// Getting users where the request users delegated his vote to.
-		meetingWithDelegationTo, err := ds.User_VoteDelegatedToIDTmpl(requestUser).Value(ctx)
+		meetingUserIDs, err := ds.User_MeetingUserIDs(requestUser).Value(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("getting meeting ids with vote delegations: %w", err)
+			return nil, fmt.Errorf("getting meeting user: %w", err)
 		}
 
-		for _, meetingID := range meetingWithDelegationTo {
-			delegated, err := ds.User_VoteDelegatedToID(requestUser, meetingID).Value(ctx)
+		for _, meetingUserID := range meetingUserIDs {
+			// Getting users where the request users delegated his vote to.
+			delegatedToMeetingUserID, found, err := ds.MeetingUser_VoteDelegatedToID(meetingUserID).Value(ctx)
 			if err != nil {
-				return nil, fmt.Errorf("getting 'vote delegated to' in meeting %d: %w", meetingID, err)
+				return nil, fmt.Errorf("getting 'vote delegated to' for meeting_user %d: %w", meetingUserID, err)
 			}
-			allowedUserIDs.Add(delegated)
-		}
 
-		// Getting users, that delegated his vote to the request user.
-		meetingWithDelegationFrom, err := ds.User_VoteDelegationsFromIDsTmpl(requestUser).Value(ctx)
-		for _, meetingID := range meetingWithDelegationFrom {
-			delegations, err := ds.User_VoteDelegationsFromIDs(requestUser, meetingID).Value(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("getting 'vote delegations from' in meeting %d: %w", meetingID, err)
+			if found {
+				delegatedUser, err := ds.MeetingUser_UserID(delegatedToMeetingUserID).Value(ctx)
+				if err != nil {
+					return nil, fmt.Errorf("getting delegated user: %w", err)
+				}
+
+				allowedUserIDs.Add(delegatedUser)
 			}
-			allowedUserIDs.Add(delegations...)
+
+			// Getting users, that delegated his vote to the request user.
+			delegationsFromMeetingUserID, err := ds.MeetingUser_VoteDelegationsFromIDs(meetingUserID).Value(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("getting 'vote delegations from' for meeting_user %d: %w", meetingUserID, err)
+			}
+
+			for _, delegateMeetingUserID := range delegationsFromMeetingUserID {
+				delegationUserID, err := ds.MeetingUser_UserID(delegateMeetingUserID).Value(ctx)
+				if err != nil {
+					return nil, fmt.Errorf("getting delegation user id: %w", err)
+				}
+
+				allowedUserIDs.Add(delegationUserID)
+			}
 		}
 	}
 
-	return eachCondition(userIDs, func(userID int) (bool, error) {
-		if allowedUserIDs.Has(userID) {
+	return eachCondition(userIDs, func(requestUserID int) (bool, error) {
+		if allowedUserIDs.Has(requestUserID) {
 			return true, nil
 		}
 
 		// Check if the user is in a meeting, where the request user can
 		// user.can_see.
-		meetingIDs, err := ds.User_GroupIDsTmpl(userID).Value(ctx)
+		meetingIDs, err := ds.User_GroupIDsTmpl(requestUserID).Value(ctx)
 		if err != nil {
-			return false, fmt.Errorf("fetch meeting ids from requested user %d: %w", userID, err)
+			return false, fmt.Errorf("fetch meeting ids from requested user %d: %w", requestUserID, err)
 		}
 
 		for _, meetingID := range meetingIDs {
@@ -176,26 +189,26 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 			}
 		}
 
-		for _, r := range u.RequiredObjects(ctx, ds) {
-			for _, meetingID := range r.TmplFunc(userID).ErrorLater(ctx) {
-				ids := r.ElemFunc(userID, meetingID).ErrorLater(ctx)
+		meetingUserIDs, err := ds.User_MeetingUserIDs(requestUserID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("fetching meeting_user of %d: %w", requestUserID, err)
+		}
 
-				if len(ids) == 0 {
-					continue
+		for _, meetingUserID := range meetingUserIDs {
+			for _, r := range u.RequiredObjects(ctx, ds) {
+				ids, err := r.ElemFunc(meetingUserID).Value(ctx)
+				if err != nil {
+					return false, fmt.Errorf("getting ids for %s: %w", r.Name, err)
 				}
 
 				allowedIDs, err := r.SeeFunc(ctx, ds, ids...)
 				if err != nil {
-					return false, fmt.Errorf("checking required object %q: %w", r.Name, err)
+					return false, fmt.Errorf("checking required object %s: %w", r.Name, err)
 				}
-
 				if len(allowedIDs) > 0 {
 					return true, nil
 				}
 
-			}
-			if err := ds.Err(); err != nil {
-				return false, fmt.Errorf("getting object %q: %w", r.Name, err)
 			}
 		}
 
@@ -206,8 +219,7 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 // UserRequiredObject represents the reference from a user to other objects.
 type UserRequiredObject struct {
 	Name     string
-	TmplFunc func(int) *dsfetch.ValueIDSlice
-	ElemFunc func(int, int) *dsfetch.ValueIntSlice
+	ElemFunc func(int) *dsfetch.ValueIntSlice
 	SeeFunc  FieldRestricter
 }
 
@@ -216,64 +228,58 @@ func (User) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []UserRequir
 	return []UserRequiredObject{
 		{
 			"motion submitter",
-			ds.User_SubmittedMotionIDsTmpl,
-			ds.User_SubmittedMotionIDs,
-			Collection(ctx, "motion_submitter").Modes("A"),
+			ds.MeetingUser_SubmittedMotionIDs,
+			Collection(ctx, MotionSubmitter{}.Name()).Modes("A"),
 		},
 
 		{
 			"motion supporter",
-			ds.User_SupportedMotionIDsTmpl,
-			ds.User_SupportedMotionIDs,
+			ds.MeetingUser_SupportedMotionIDs,
 			Collection(ctx, Motion{}.Name()).Modes("C"),
 		},
 
-		{
-			"option",
-			ds.User_OptionIDsTmpl,
-			ds.User_OptionIDs,
-			Collection(ctx, Option{}.Name()).Modes("A"),
-		},
+		// TODO: Fix the models.yml
+		// {
+		// 	"option",
+		// 	ds.MeetingUser_OptionIDs,
+		// 	Collection(ctx, Option{}.Name()).Modes("A"),
+		// },
 
 		{
 			"assignment candidate",
-			ds.User_AssignmentCandidateIDsTmpl,
-			ds.User_AssignmentCandidateIDs,
+			ds.MeetingUser_AssignmentCandidateIDs,
 			Collection(ctx, AssignmentCandidate{}.Name()).Modes("A"),
 		},
 
 		{
 			"speaker",
-			ds.User_SpeakerIDsTmpl,
-			ds.User_SpeakerIDs,
+			ds.MeetingUser_SpeakerIDs,
 			Collection(ctx, Speaker{}.Name()).Modes("A"),
 		},
 
-		{
-			"poll voted",
-			ds.User_PollVotedIDsTmpl,
-			ds.User_PollVotedIDs,
-			Collection(ctx, Poll{}.Name()).Modes("A"),
-		},
+		// TODO: Fix the models.yml
+		// {
+		// 	"poll voted",
+		// 	ds.MeetingUser_PollVotedIDs,
+		// 	Collection(ctx, Poll{}.Name()).Modes("A"),
+		// },
 
-		{
-			"vote user",
-			ds.User_VoteIDsTmpl,
-			ds.User_VoteIDs,
-			Collection(ctx, Vote{}.Name()).Modes("A"),
-		},
+		// TODO: Fix the models.yml
+		// {
+		// 	"vote user",
+		// 	ds.MeetingUser_VoteIDs,
+		// 	Collection(ctx, Vote{}.Name()).Modes("A"),
+		// },
 
 		{
 			"vote delegated user",
-			ds.User_VoteDelegatedVoteIDsTmpl,
-			ds.User_VoteDelegatedVoteIDs,
+			ds.MeetingUser_VoteDelegatedVoteIDs,
 			Collection(ctx, Vote{}.Name()).Modes("A"),
 		},
 
 		{
 			"chat messages",
-			ds.User_ChatMessageIDsTmpl,
-			ds.User_ChatMessageIDs,
+			ds.MeetingUser_ChatMessageIDs,
 			Collection(ctx, ChatMessage{}.Name()).Modes("A"),
 		},
 	}

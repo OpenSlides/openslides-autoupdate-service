@@ -99,7 +99,7 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/3:
 			owner_id: meeting/7
-			used_as_logo_$_in_meeting_id: ["foo"]
+			used_as_logo_projector_main_in_meeting_id: 5
 		meeting/7/user_ids: [1]
 		`,
 		withElementID(3),

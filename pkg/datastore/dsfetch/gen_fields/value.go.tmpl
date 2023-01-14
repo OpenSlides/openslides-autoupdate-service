@@ -17,6 +17,11 @@ type {{.TypeName}} struct {
 {{if not .MaybeType}}
 	// Value returns the value.
 	func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, error) {
+		if err:=v.fetch.err; err != nil {
+			v.fetch.err = nil
+			return {{.Zero}}, v.fetch.err
+		}
+
 		if v.executed {
 			return v.value, nil
 		}
@@ -30,6 +35,11 @@ type {{.TypeName}} struct {
 {{else}}
 	// Value returns the value.
 	func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, bool, error) {
+		if err:=v.fetch.err; err != nil {
+			v.fetch.err = nil
+			return {{.Zero}}, false, v.fetch.err
+		}
+
 		if v.executed {
 			return v.value, !v.isNull, nil
 		}

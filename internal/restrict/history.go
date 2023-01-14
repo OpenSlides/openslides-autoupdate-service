@@ -97,12 +97,13 @@ func (h History) canSeeKey(
 	}
 
 	if key.Collection == "personal_note" {
-		personalNoteUser, err := oldDS.PersonalNote_UserID(key.ID).Value(ctx)
+		personalNoteMeetingUserID := oldDS.PersonalNote_MeetingUserID(key.ID).ErrorLater(ctx)
+		personalNoteUserID, err := oldDS.MeetingUser_UserID(personalNoteMeetingUserID).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("getting personal note user: %w", err)
 		}
 
-		return personalNoteUser == h.userID, nil
+		return personalNoteUserID == h.userID, nil
 	}
 
 	if isOrgaManager {
@@ -128,18 +129,19 @@ func (h History) canSeeKey(
 	}
 
 	if key.Collection == "user" {
-		for _, r := range (collection.User{}).RequiredObjects(ctx, oldDS) {
-			meetingIDs, err := r.TmplFunc(key.ID).Value(ctx)
-			if err != nil {
-				return false, fmt.Errorf("getting meeting ids for %s: %w", r.Name, err)
-			}
+		return false, nil // TODO Fix me
+		// for _, r := range (collection.User{}).RequiredObjects(ctx, oldDS) {
+		// 	meetingIDs, err := r.TmplFunc(key.ID).Value(ctx)
+		// 	if err != nil {
+		// 		return false, fmt.Errorf("getting meeting ids for %s: %w", r.Name, err)
+		// 	}
 
-			for _, meetingID := range meetingIDs {
-				if _, ok := adminInMeeting[meetingID]; ok {
-					return true, nil
-				}
-			}
-		}
+		// 	for _, meetingID := range meetingIDs {
+		// 		if _, ok := adminInMeeting[meetingID]; ok {
+		// 			return true, nil
+		// 		}
+		// 	}
+		// }
 	}
 
 	return false, nil

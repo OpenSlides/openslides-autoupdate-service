@@ -207,9 +207,9 @@ func ManagementLevelCommittees(ctx context.Context, ds *dsfetch.Fetch, userID in
 		return nil, nil
 	}
 
-	commiteeIDs, err := ds.User_CommitteeManagementLevel(userID, "can_manage").Value(ctx)
+	commiteeIDs, err := ds.User_CommitteeManagementIDs(userID).Value(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("fetching user/%d/committee_$can_manage_management_level: %w", userID, err)
+		return nil, fmt.Errorf("fetching user/%d/committee_management_ids: %w", userID, err)
 	}
 	return commiteeIDs, nil
 }

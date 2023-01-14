@@ -77,8 +77,12 @@ func (r *Fetch) Execute(ctx context.Context) error {
 }
 
 // Err returns an error from a previous call.
+//
+// Resets the error
 func (r *Fetch) Err() error {
-	return r.err
+	err := r.err
+	r.err = nil
+	return err
 }
 
 type executer interface {

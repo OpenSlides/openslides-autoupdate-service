@@ -51,7 +51,8 @@ func TestMotionModeC(t *testing.T) {
 		motion_state/3/restrictions:
 		- is_submitter
 
-		motion_submitter/4/user_id: 1
+		motion_submitter/4/meeting_user_id: 10
+		meeting_user/10/user_id: 1
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)
@@ -70,7 +71,8 @@ func TestMotionModeC(t *testing.T) {
 		motion_state/3/restrictions:
 		- is_submitter
 
-		motion_submitter/4/user_id: 2
+		motion_submitter/4/meeting_user_id: 20
+		meeting_user/20/user_id: 2
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)
@@ -139,7 +141,8 @@ func TestMotionModeC(t *testing.T) {
 		- motion.can_manage
 		- is_submitter
 
-		motion_submitter/4/user_id: 1
+		motion_submitter/4/meeting_user_id: 10
+		meeting_user/10/user_id: 1
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)
@@ -234,8 +237,10 @@ func TestMotionModeA(t *testing.T) {
 		motion_state/3/restrictions:
 		- is_submitter
 
-		motion_submitter/4/user_id: 2
-		motion_submitter/5/user_id: 1
+		motion_submitter/4/meeting_user_id: 20
+		motion_submitter/5/meeting_user_id: 10
+		meeting_user/20/user_id: 2
+		meeting_user/10/user_id: 1
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)
@@ -260,8 +265,9 @@ func TestMotionModeA(t *testing.T) {
 		motion_state/3/restrictions:
 		- is_submitter
 
-		motion_submitter/4/user_id: 2
-		motion_submitter/5/user_id: 2
+		motion_submitter/4/meeting_user_id: 20
+		motion_submitter/5/meeting_user_id: 20
+		meeting_user/20/user_id: 2
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)
@@ -286,8 +292,10 @@ func TestMotionModeA(t *testing.T) {
 		motion_state/3/restrictions:
 		- is_submitter
 
-		motion_submitter/4/user_id: 2
-		motion_submitter/5/user_id: 1
+		motion_submitter/4/meeting_user_id: 20
+		motion_submitter/5/meeting_user_id: 10
+		meeting_user/20/user_id: 2
+		meeting_user/10/user_id: 1
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)
@@ -312,8 +320,9 @@ func TestMotionModeA(t *testing.T) {
 		motion_state/3/restrictions:
 		- is_submitter
 
-		motion_submitter/4/user_id: 2
-		motion_submitter/5/user_id: 2
+		motion_submitter/4/meeting_user_id: 20
+		motion_submitter/5/meeting_user_id: 20
+		meeting_user/20/user_id: 2
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)

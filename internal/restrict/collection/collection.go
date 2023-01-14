@@ -155,6 +155,7 @@ var collectionMap = map[string]Restricter{
 	Group{}.Name():                      Group{},
 	Mediafile{}.Name():                  Mediafile{},
 	Meeting{}.Name():                    Meeting{},
+	MeetingUser{}.Name():                MeetingUser{},
 	Motion{}.Name():                     Motion{},
 	MotionBlock{}.Name():                MotionBlock{},
 	MotionCategory{}.Name():             MotionCategory{},

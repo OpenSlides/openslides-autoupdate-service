@@ -28,6 +28,11 @@ type ValueBool struct {
 
 // Value returns the value.
 func (v *ValueBool) Value(ctx context.Context) (bool, error) {
+	if err := v.fetch.err; err != nil {
+		v.fetch.err = nil
+		return false, v.fetch.err
+	}
+
 	if v.executed {
 		return v.value, nil
 	}
@@ -105,6 +110,11 @@ type ValueFloat struct {
 
 // Value returns the value.
 func (v *ValueFloat) Value(ctx context.Context) (float32, error) {
+	if err := v.fetch.err; err != nil {
+		v.fetch.err = nil
+		return 0, v.fetch.err
+	}
+
 	if v.executed {
 		return v.value, nil
 	}
@@ -182,6 +192,11 @@ type ValueIDSlice struct {
 
 // Value returns the value.
 func (v *ValueIDSlice) Value(ctx context.Context) ([]int, error) {
+	if err := v.fetch.err; err != nil {
+		v.fetch.err = nil
+		return nil, v.fetch.err
+	}
+
 	if v.executed {
 		return v.value, nil
 	}
@@ -268,6 +283,11 @@ type ValueInt struct {
 
 // Value returns the value.
 func (v *ValueInt) Value(ctx context.Context) (int, error) {
+	if err := v.fetch.err; err != nil {
+		v.fetch.err = nil
+		return 0, v.fetch.err
+	}
+
 	if v.executed {
 		return v.value, nil
 	}
@@ -345,6 +365,11 @@ type ValueIntSlice struct {
 
 // Value returns the value.
 func (v *ValueIntSlice) Value(ctx context.Context) ([]int, error) {
+	if err := v.fetch.err; err != nil {
+		v.fetch.err = nil
+		return nil, v.fetch.err
+	}
+
 	if v.executed {
 		return v.value, nil
 	}
@@ -422,6 +447,11 @@ type ValueJSON struct {
 
 // Value returns the value.
 func (v *ValueJSON) Value(ctx context.Context) (json.RawMessage, error) {
+	if err := v.fetch.err; err != nil {
+		v.fetch.err = nil
+		return nil, v.fetch.err
+	}
+
 	if v.executed {
 		return v.value, nil
 	}
@@ -499,6 +529,11 @@ type ValueMaybeInt struct {
 
 // Value returns the value.
 func (v *ValueMaybeInt) Value(ctx context.Context) (int, bool, error) {
+	if err := v.fetch.err; err != nil {
+		v.fetch.err = nil
+		return 0, false, v.fetch.err
+	}
+
 	if v.executed {
 		return v.value, !v.isNull, nil
 	}
@@ -576,6 +611,11 @@ type ValueMaybeString struct {
 
 // Value returns the value.
 func (v *ValueMaybeString) Value(ctx context.Context) (string, bool, error) {
+	if err := v.fetch.err; err != nil {
+		v.fetch.err = nil
+		return "", false, v.fetch.err
+	}
+
 	if v.executed {
 		return v.value, !v.isNull, nil
 	}
@@ -653,6 +693,11 @@ type ValueString struct {
 
 // Value returns the value.
 func (v *ValueString) Value(ctx context.Context) (string, error) {
+	if err := v.fetch.err; err != nil {
+		v.fetch.err = nil
+		return "", v.fetch.err
+	}
+
 	if v.executed {
 		return v.value, nil
 	}
@@ -730,6 +775,11 @@ type ValueStringSlice struct {
 
 // Value returns the value.
 func (v *ValueStringSlice) Value(ctx context.Context) ([]string, error) {
+	if err := v.fetch.err; err != nil {
+		v.fetch.err = nil
+		return nil, v.fetch.err
+	}
+
 	if v.executed {
 		return v.value, nil
 	}
@@ -939,9 +989,9 @@ func (r *Fetch) AssignmentCandidate_MeetingID(assignmentCandidateID int) *ValueI
 	return v
 }
 
-func (r *Fetch) AssignmentCandidate_UserID(assignmentCandidateID int) *ValueMaybeInt {
-	v := &ValueMaybeInt{fetch: r, collection: "assignmentCandidate", id: assignmentCandidateID, field: "user_id"}
-	r.requested[dskey.Key{Collection: "assignment_candidate", ID: assignmentCandidateID, Field: "user_id"}] = v
+func (r *Fetch) AssignmentCandidate_MeetingUserID(assignmentCandidateID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "assignmentCandidate", id: assignmentCandidateID, field: "meeting_user_id"}
+	r.requested[dskey.Key{Collection: "assignment_candidate", ID: assignmentCandidateID, Field: "meeting_user_id"}] = v
 	return v
 }
 
@@ -1119,9 +1169,9 @@ func (r *Fetch) ChatMessage_MeetingID(chatMessageID int) *ValueInt {
 	return v
 }
 
-func (r *Fetch) ChatMessage_UserID(chatMessageID int) *ValueInt {
-	v := &ValueInt{fetch: r, collection: "chatMessage", id: chatMessageID, field: "user_id", required: true}
-	r.requested[dskey.Key{Collection: "chat_message", ID: chatMessageID, Field: "user_id"}] = v
+func (r *Fetch) ChatMessage_MeetingUserID(chatMessageID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "chatMessage", id: chatMessageID, field: "meeting_user_id", required: true}
+	r.requested[dskey.Key{Collection: "chat_message", ID: chatMessageID, Field: "meeting_user_id"}] = v
 	return v
 }
 
@@ -1152,6 +1202,12 @@ func (r *Fetch) Committee_ForwardingUserID(committeeID int) *ValueMaybeInt {
 func (r *Fetch) Committee_ID(committeeID int) *ValueInt {
 	v := &ValueInt{fetch: r, collection: "committee", id: committeeID, field: "id"}
 	r.requested[dskey.Key{Collection: "committee", ID: committeeID, Field: "id"}] = v
+	return v
+}
+
+func (r *Fetch) Committee_ManagerIDs(committeeID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "committee", id: committeeID, field: "manager_ids"}
+	r.requested[dskey.Key{Collection: "committee", ID: committeeID, Field: "manager_ids"}] = v
 	return v
 }
 
@@ -1188,18 +1244,6 @@ func (r *Fetch) Committee_ReceiveForwardingsFromCommitteeIDs(committeeID int) *V
 func (r *Fetch) Committee_UserIDs(committeeID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r, collection: "committee", id: committeeID, field: "user_ids"}
 	r.requested[dskey.Key{Collection: "committee", ID: committeeID, Field: "user_ids"}] = v
-	return v
-}
-
-func (r *Fetch) Committee_UserManagementLevelTmpl(committeeID int) *ValueStringSlice {
-	v := &ValueStringSlice{fetch: r, collection: "committee", id: committeeID, field: "user_$_management_level"}
-	r.requested[dskey.Key{Collection: "committee", ID: committeeID, Field: "user_$_management_level"}] = v
-	return v
-}
-
-func (r *Fetch) Committee_UserManagementLevel(committeeID int, replacement string) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "committee", id: committeeID, field: "user_$_management_level"}
-	r.requested[dskey.Key{Collection: "committee", ID: committeeID, Field: fmt.Sprintf("user_$%s_management_level", replacement)}] = v
 	return v
 }
 
@@ -1461,27 +1505,207 @@ func (r *Fetch) Mediafile_Token(mediafileID int) *ValueString {
 	return v
 }
 
-func (r *Fetch) Mediafile_UsedAsFontInMeetingIDTmpl(mediafileID int) *ValueStringSlice {
-	v := &ValueStringSlice{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_font_$_in_meeting_id"}
-	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_font_$_in_meeting_id"}] = v
+func (r *Fetch) Mediafile_UsedAsFontBoldInMeetingID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_font_bold_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_font_bold_in_meeting_id"}] = v
 	return v
 }
 
-func (r *Fetch) Mediafile_UsedAsFontInMeetingID(mediafileID int, replacement string) *ValueInt {
-	v := &ValueInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_font_$_in_meeting_id"}
-	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: fmt.Sprintf("used_as_font_$%s_in_meeting_id", replacement)}] = v
+func (r *Fetch) Mediafile_UsedAsFontBoldItalicInMeetingID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_font_bold_italic_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_font_bold_italic_in_meeting_id"}] = v
 	return v
 }
 
-func (r *Fetch) Mediafile_UsedAsLogoInMeetingIDTmpl(mediafileID int) *ValueStringSlice {
-	v := &ValueStringSlice{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_logo_$_in_meeting_id"}
-	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_logo_$_in_meeting_id"}] = v
+func (r *Fetch) Mediafile_UsedAsFontChyronSpeakerNameInMeetingID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_font_chyron_speaker_name_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_font_chyron_speaker_name_in_meeting_id"}] = v
 	return v
 }
 
-func (r *Fetch) Mediafile_UsedAsLogoInMeetingID(mediafileID int, replacement string) *ValueInt {
-	v := &ValueInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_logo_$_in_meeting_id"}
-	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: fmt.Sprintf("used_as_logo_$%s_in_meeting_id", replacement)}] = v
+func (r *Fetch) Mediafile_UsedAsFontItalicInMeetingID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_font_italic_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_font_italic_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Mediafile_UsedAsFontMonospaceInMeetingID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_font_monospace_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_font_monospace_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Mediafile_UsedAsFontProjectorH1InMeetingID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_font_projector_h1_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_font_projector_h1_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Mediafile_UsedAsFontProjectorH2InMeetingID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_font_projector_h2_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_font_projector_h2_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Mediafile_UsedAsFontRegularInMeetingID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_font_regular_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_font_regular_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Mediafile_UsedAsLogoPdfBallotPaperInMeetingID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_logo_pdf_ballot_paper_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_logo_pdf_ballot_paper_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Mediafile_UsedAsLogoPdfFooterLInMeetingID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_logo_pdf_footer_l_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_logo_pdf_footer_l_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Mediafile_UsedAsLogoPdfFooterRInMeetingID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_logo_pdf_footer_r_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_logo_pdf_footer_r_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Mediafile_UsedAsLogoPdfHeaderLInMeetingID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_logo_pdf_header_l_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_logo_pdf_header_l_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Mediafile_UsedAsLogoPdfHeaderRInMeetingID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_logo_pdf_header_r_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_logo_pdf_header_r_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Mediafile_UsedAsLogoProjectorHeaderInMeetingID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_logo_projector_header_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_logo_projector_header_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Mediafile_UsedAsLogoProjectorMainInMeetingID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_logo_projector_main_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_logo_projector_main_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Mediafile_UsedAsLogoWebHeaderInMeetingID(mediafileID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "mediafile", id: mediafileID, field: "used_as_logo_web_header_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_logo_web_header_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_AboutMe(meetingUserID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "meetingUser", id: meetingUserID, field: "about_me"}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "about_me"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_AssignmentCandidateIDs(meetingUserID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "meetingUser", id: meetingUserID, field: "assignment_candidate_ids"}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "assignment_candidate_ids"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_ChatMessageIDs(meetingUserID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "meetingUser", id: meetingUserID, field: "chat_message_ids"}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "chat_message_ids"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_Comment(meetingUserID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "meetingUser", id: meetingUserID, field: "comment"}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "comment"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_ID(meetingUserID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meetingUser", id: meetingUserID, field: "id", required: true}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "id"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_MeetingID(meetingUserID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meetingUser", id: meetingUserID, field: "meeting_id", required: true}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_Number(meetingUserID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "meetingUser", id: meetingUserID, field: "number"}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "number"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_PersonalNoteIDs(meetingUserID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "meetingUser", id: meetingUserID, field: "personal_note_ids"}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "personal_note_ids"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_ProjectionIDs(meetingUserID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "meetingUser", id: meetingUserID, field: "projection_ids"}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "projection_ids"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_SpeakerIDs(meetingUserID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "meetingUser", id: meetingUserID, field: "speaker_ids"}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "speaker_ids"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_StructureLevel(meetingUserID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "meetingUser", id: meetingUserID, field: "structure_level"}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "structure_level"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_SubmittedMotionIDs(meetingUserID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "meetingUser", id: meetingUserID, field: "submitted_motion_ids"}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "submitted_motion_ids"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_SupportedMotionIDs(meetingUserID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "meetingUser", id: meetingUserID, field: "supported_motion_ids"}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "supported_motion_ids"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_UserID(meetingUserID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meetingUser", id: meetingUserID, field: "user_id", required: true}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "user_id"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_VoteDelegatedToID(meetingUserID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "meetingUser", id: meetingUserID, field: "vote_delegated_to_id"}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "vote_delegated_to_id"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_VoteDelegatedVoteIDs(meetingUserID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "meetingUser", id: meetingUserID, field: "vote_delegated_vote_ids"}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "vote_delegated_vote_ids"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_VoteDelegationsFromIDs(meetingUserID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "meetingUser", id: meetingUserID, field: "vote_delegations_from_ids"}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "vote_delegations_from_ids"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_VoteWeight(meetingUserID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "meetingUser", id: meetingUserID, field: "vote_weight"}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "vote_weight"}] = v
 	return v
 }
 
@@ -1761,15 +1985,93 @@ func (r *Fetch) Meeting_DefaultMeetingForCommitteeID(meetingID int) *ValueMaybeI
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorIDTmpl(meetingID int) *ValueStringSlice {
-	v := &ValueStringSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_$_id"}
-	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_$_id"}] = v
+func (r *Fetch) Meeting_DefaultProjectorAgendaAllItemsID(meetingID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_agenda_all_items_id", required: true}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_agenda_all_items_id"}] = v
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorID(meetingID int, replacement string) *ValueInt {
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_$_id"}
-	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: fmt.Sprintf("default_projector_$%s_id", replacement)}] = v
+func (r *Fetch) Meeting_DefaultProjectorAmendmentID(meetingID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_amendment_id", required: true}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_amendment_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_DefaultProjectorAssignmentID(meetingID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_assignment_id", required: true}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_assignment_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_DefaultProjectorAssignmentPollID(meetingID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_assignment_poll_id", required: true}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_assignment_poll_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_DefaultProjectorCurrentListOfSpeakersID(meetingID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_current_list_of_speakers_id", required: true}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_current_list_of_speakers_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_DefaultProjectorListOfSpeakersID(meetingID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_list_of_speakers_id", required: true}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_list_of_speakers_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_DefaultProjectorMediafileID(meetingID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_mediafile_id", required: true}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_mediafile_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_DefaultProjectorMotionBlockID(meetingID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_motion_block_id", required: true}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_motion_block_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_DefaultProjectorMotionID(meetingID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_motion_id", required: true}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_motion_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_DefaultProjectorMotionPollID(meetingID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_motion_poll_id", required: true}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_motion_poll_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_DefaultProjectorPollID(meetingID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_poll_id", required: true}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_poll_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_DefaultProjectorProjectorCountdownsID(meetingID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_projector_countdowns_id", required: true}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_projector_countdowns_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_DefaultProjectorProjectorMessageID(meetingID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_projector_message_id", required: true}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_projector_message_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_DefaultProjectorTopicsID(meetingID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_topics_id", required: true}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_topics_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_DefaultProjectorUserID(meetingID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_user_id", required: true}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_user_id"}] = v
 	return v
 }
 
@@ -1851,15 +2153,51 @@ func (r *Fetch) Meeting_ExportPdfPagesize(meetingID int) *ValueString {
 	return v
 }
 
-func (r *Fetch) Meeting_FontIDTmpl(meetingID int) *ValueStringSlice {
-	v := &ValueStringSlice{fetch: r, collection: "meeting", id: meetingID, field: "font_$_id"}
-	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_$_id"}] = v
+func (r *Fetch) Meeting_FontBoldID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "font_bold_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_bold_id"}] = v
 	return v
 }
 
-func (r *Fetch) Meeting_FontID(meetingID int, replacement string) *ValueInt {
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "font_$_id"}
-	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: fmt.Sprintf("font_$%s_id", replacement)}] = v
+func (r *Fetch) Meeting_FontBoldItalicID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "font_bold_italic_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_bold_italic_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_FontChyronSpeakerNameID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "font_chyron_speaker_name_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_chyron_speaker_name_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_FontItalicID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "font_italic_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_italic_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_FontMonospaceID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "font_monospace_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_monospace_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_FontProjectorH1ID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "font_projector_h1_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_projector_h1_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_FontProjectorH2ID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "font_projector_h2_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_projector_h2_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_FontRegularID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "font_regular_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_regular_id"}] = v
 	return v
 }
 
@@ -2001,21 +2339,63 @@ func (r *Fetch) Meeting_Location(meetingID int) *ValueString {
 	return v
 }
 
-func (r *Fetch) Meeting_LogoIDTmpl(meetingID int) *ValueStringSlice {
-	v := &ValueStringSlice{fetch: r, collection: "meeting", id: meetingID, field: "logo_$_id"}
-	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "logo_$_id"}] = v
+func (r *Fetch) Meeting_LogoPdfBallotPaperID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "logo_pdf_ballot_paper_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "logo_pdf_ballot_paper_id"}] = v
 	return v
 }
 
-func (r *Fetch) Meeting_LogoID(meetingID int, replacement string) *ValueInt {
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "logo_$_id"}
-	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: fmt.Sprintf("logo_$%s_id", replacement)}] = v
+func (r *Fetch) Meeting_LogoPdfFooterLID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "logo_pdf_footer_l_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "logo_pdf_footer_l_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_LogoPdfFooterRID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "logo_pdf_footer_r_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "logo_pdf_footer_r_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_LogoPdfHeaderLID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "logo_pdf_header_l_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "logo_pdf_header_l_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_LogoPdfHeaderRID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "logo_pdf_header_r_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "logo_pdf_header_r_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_LogoProjectorHeaderID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "logo_projector_header_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "logo_projector_header_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_LogoProjectorMainID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "logo_projector_main_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "logo_projector_main_id"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_LogoWebHeaderID(meetingID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "logo_web_header_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "logo_web_header_id"}] = v
 	return v
 }
 
 func (r *Fetch) Meeting_MediafileIDs(meetingID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "mediafile_ids"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "mediafile_ids"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_MeetingUserIDs(meetingID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "meeting_user_ids"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "meeting_user_ids"}] = v
 	return v
 }
 
@@ -2148,12 +2528,6 @@ func (r *Fetch) Meeting_MotionsAmendmentsPrefix(meetingID int) *ValueString {
 func (r *Fetch) Meeting_MotionsAmendmentsTextMode(meetingID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "motions_amendments_text_mode"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_amendments_text_mode"}] = v
-	return v
-}
-
-func (r *Fetch) Meeting_MotionsBlockSlideColumns(meetingID int) *ValueInt {
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "motions_block_slide_columns"}
-	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_block_slide_columns"}] = v
 	return v
 }
 
@@ -3045,15 +3419,15 @@ func (r *Fetch) MotionSubmitter_MeetingID(motionSubmitterID int) *ValueInt {
 	return v
 }
 
-func (r *Fetch) MotionSubmitter_MotionID(motionSubmitterID int) *ValueInt {
-	v := &ValueInt{fetch: r, collection: "motionSubmitter", id: motionSubmitterID, field: "motion_id", required: true}
-	r.requested[dskey.Key{Collection: "motion_submitter", ID: motionSubmitterID, Field: "motion_id"}] = v
+func (r *Fetch) MotionSubmitter_MeetingUserID(motionSubmitterID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "motionSubmitter", id: motionSubmitterID, field: "meeting_user_id", required: true}
+	r.requested[dskey.Key{Collection: "motion_submitter", ID: motionSubmitterID, Field: "meeting_user_id"}] = v
 	return v
 }
 
-func (r *Fetch) MotionSubmitter_UserID(motionSubmitterID int) *ValueInt {
-	v := &ValueInt{fetch: r, collection: "motionSubmitter", id: motionSubmitterID, field: "user_id", required: true}
-	r.requested[dskey.Key{Collection: "motion_submitter", ID: motionSubmitterID, Field: "user_id"}] = v
+func (r *Fetch) MotionSubmitter_MotionID(motionSubmitterID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "motionSubmitter", id: motionSubmitterID, field: "motion_id", required: true}
+	r.requested[dskey.Key{Collection: "motion_submitter", ID: motionSubmitterID, Field: "motion_id"}] = v
 	return v
 }
 
@@ -3141,15 +3515,9 @@ func (r *Fetch) Motion_AmendmentIDs(motionID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Fetch) Motion_AmendmentParagraphTmpl(motionID int) *ValueStringSlice {
-	v := &ValueStringSlice{fetch: r, collection: "motion", id: motionID, field: "amendment_paragraph_$"}
-	r.requested[dskey.Key{Collection: "motion", ID: motionID, Field: "amendment_paragraph_$"}] = v
-	return v
-}
-
-func (r *Fetch) Motion_AmendmentParagraph(motionID int, replacement string) *ValueString {
-	v := &ValueString{fetch: r, collection: "motion", id: motionID, field: "amendment_paragraph_$"}
-	r.requested[dskey.Key{Collection: "motion", ID: motionID, Field: fmt.Sprintf("amendment_paragraph_$%s", replacement)}] = v
+func (r *Fetch) Motion_AmendmentParagraph(motionID int) *ValueJSON {
+	v := &ValueJSON{fetch: r, collection: "motion", id: motionID, field: "amendment_paragraph"}
+	r.requested[dskey.Key{Collection: "motion", ID: motionID, Field: "amendment_paragraph"}] = v
 	return v
 }
 
@@ -3321,12 +3689,6 @@ func (r *Fetch) Motion_ReferencedInMotionRecommendationExtensionIDs(motionID int
 	return v
 }
 
-func (r *Fetch) Motion_ReferencedInMotionStateExtensionIDs(motionID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "motion", id: motionID, field: "referenced_in_motion_state_extension_ids"}
-	r.requested[dskey.Key{Collection: "motion", ID: motionID, Field: "referenced_in_motion_state_extension_ids"}] = v
-	return v
-}
-
 func (r *Fetch) Motion_SequentialNumber(motionID int) *ValueInt {
 	v := &ValueInt{fetch: r, collection: "motion", id: motionID, field: "sequential_number", required: true}
 	r.requested[dskey.Key{Collection: "motion", ID: motionID, Field: "sequential_number"}] = v
@@ -3360,12 +3722,6 @@ func (r *Fetch) Motion_StartLineNumber(motionID int) *ValueInt {
 func (r *Fetch) Motion_StateExtension(motionID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "motion", id: motionID, field: "state_extension"}
 	r.requested[dskey.Key{Collection: "motion", ID: motionID, Field: "state_extension"}] = v
-	return v
-}
-
-func (r *Fetch) Motion_StateExtensionReferenceIDs(motionID int) *ValueStringSlice {
-	v := &ValueStringSlice{fetch: r, collection: "motion", id: motionID, field: "state_extension_reference_ids"}
-	r.requested[dskey.Key{Collection: "motion", ID: motionID, Field: "state_extension_reference_ids"}] = v
 	return v
 }
 
@@ -3681,6 +4037,12 @@ func (r *Fetch) PersonalNote_MeetingID(personalNoteID int) *ValueInt {
 	return v
 }
 
+func (r *Fetch) PersonalNote_MeetingUserID(personalNoteID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "personalNote", id: personalNoteID, field: "meeting_user_id", required: true}
+	r.requested[dskey.Key{Collection: "personal_note", ID: personalNoteID, Field: "meeting_user_id"}] = v
+	return v
+}
+
 func (r *Fetch) PersonalNote_Note(personalNoteID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "personalNote", id: personalNoteID, field: "note"}
 	r.requested[dskey.Key{Collection: "personal_note", ID: personalNoteID, Field: "note"}] = v
@@ -3690,12 +4052,6 @@ func (r *Fetch) PersonalNote_Note(personalNoteID int) *ValueString {
 func (r *Fetch) PersonalNote_Star(personalNoteID int) *ValueBool {
 	v := &ValueBool{fetch: r, collection: "personalNote", id: personalNoteID, field: "star"}
 	r.requested[dskey.Key{Collection: "personal_note", ID: personalNoteID, Field: "star"}] = v
-	return v
-}
-
-func (r *Fetch) PersonalNote_UserID(personalNoteID int) *ValueInt {
-	v := &ValueInt{fetch: r, collection: "personalNote", id: personalNoteID, field: "user_id", required: true}
-	r.requested[dskey.Key{Collection: "personal_note", ID: personalNoteID, Field: "user_id"}] = v
 	return v
 }
 
@@ -4173,15 +4529,93 @@ func (r *Fetch) Projector_ShowTitle(projectorID int) *ValueBool {
 	return v
 }
 
-func (r *Fetch) Projector_UsedAsDefaultInMeetingIDTmpl(projectorID int) *ValueStringSlice {
-	v := &ValueStringSlice{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_$_in_meeting_id"}
-	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_$_in_meeting_id"}] = v
+func (r *Fetch) Projector_UsedAsDefaultAgendaAllItemsInMeetingID(projectorID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_agenda_all_items_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_agenda_all_items_in_meeting_id"}] = v
 	return v
 }
 
-func (r *Fetch) Projector_UsedAsDefaultInMeetingID(projectorID int, replacement string) *ValueInt {
-	v := &ValueInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_$_in_meeting_id"}
-	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: fmt.Sprintf("used_as_default_$%s_in_meeting_id", replacement)}] = v
+func (r *Fetch) Projector_UsedAsDefaultAmendmentInMeetingID(projectorID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_amendment_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_amendment_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Projector_UsedAsDefaultAssignmentInMeetingID(projectorID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_assignment_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_assignment_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Projector_UsedAsDefaultAssignmentPollInMeetingID(projectorID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_assignment_poll_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_assignment_poll_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Projector_UsedAsDefaultCurrentListOfSpeakersInMeetingID(projectorID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_current_list_of_speakers_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_current_list_of_speakers_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Projector_UsedAsDefaultListOfSpeakersInMeetingID(projectorID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_list_of_speakers_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_list_of_speakers_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Projector_UsedAsDefaultMediafileInMeetingID(projectorID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_mediafile_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_mediafile_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Projector_UsedAsDefaultMotionBlockInMeetingID(projectorID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_motion_block_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_motion_block_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Projector_UsedAsDefaultMotionInMeetingID(projectorID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_motion_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_motion_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Projector_UsedAsDefaultMotionPollInMeetingID(projectorID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_motion_poll_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_motion_poll_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Projector_UsedAsDefaultPollInMeetingID(projectorID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_poll_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_poll_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Projector_UsedAsDefaultProjectorCountdownsInMeetingID(projectorID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_countdowns_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_countdowns_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Projector_UsedAsDefaultProjectorMessageInMeetingID(projectorID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_message_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_message_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Projector_UsedAsDefaultTopicsInMeetingID(projectorID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_topics_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_topics_in_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Projector_UsedAsDefaultUserInMeetingID(projectorID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_user_in_meeting_id"}
+	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_user_in_meeting_id"}] = v
 	return v
 }
 
@@ -4227,6 +4661,12 @@ func (r *Fetch) Speaker_MeetingID(speakerID int) *ValueInt {
 	return v
 }
 
+func (r *Fetch) Speaker_MeetingUserID(speakerID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "speaker", id: speakerID, field: "meeting_user_id", required: true}
+	r.requested[dskey.Key{Collection: "speaker", ID: speakerID, Field: "meeting_user_id"}] = v
+	return v
+}
+
 func (r *Fetch) Speaker_Note(speakerID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "speaker", id: speakerID, field: "note"}
 	r.requested[dskey.Key{Collection: "speaker", ID: speakerID, Field: "note"}] = v
@@ -4242,12 +4682,6 @@ func (r *Fetch) Speaker_PointOfOrder(speakerID int) *ValueBool {
 func (r *Fetch) Speaker_SpeechState(speakerID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "speaker", id: speakerID, field: "speech_state"}
 	r.requested[dskey.Key{Collection: "speaker", ID: speakerID, Field: "speech_state"}] = v
-	return v
-}
-
-func (r *Fetch) Speaker_UserID(speakerID int) *ValueInt {
-	v := &ValueInt{fetch: r, collection: "speaker", id: speakerID, field: "user_id", required: true}
-	r.requested[dskey.Key{Collection: "speaker", ID: speakerID, Field: "user_id"}] = v
 	return v
 }
 
@@ -4623,57 +5057,9 @@ func (r *Fetch) Topic_Title(topicID int) *ValueString {
 	return v
 }
 
-func (r *Fetch) User_AboutMeTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "about_me_$"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "about_me_$"}] = v
-	return v
-}
-
-func (r *Fetch) User_AboutMe(userID int, meetingID int) *ValueString {
-	v := &ValueString{fetch: r, collection: "user", id: userID, field: "about_me_$"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("about_me_$%d", meetingID)}] = v
-	return v
-}
-
-func (r *Fetch) User_AssignmentCandidateIDsTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "assignment_candidate_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "assignment_candidate_$_ids"}] = v
-	return v
-}
-
-func (r *Fetch) User_AssignmentCandidateIDs(userID int, meetingID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "assignment_candidate_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("assignment_candidate_$%d_ids", meetingID)}] = v
-	return v
-}
-
 func (r *Fetch) User_CanChangeOwnPassword(userID int) *ValueBool {
 	v := &ValueBool{fetch: r, collection: "user", id: userID, field: "can_change_own_password"}
 	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "can_change_own_password"}] = v
-	return v
-}
-
-func (r *Fetch) User_ChatMessageIDsTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "chat_message_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "chat_message_$_ids"}] = v
-	return v
-}
-
-func (r *Fetch) User_ChatMessageIDs(userID int, meetingID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "chat_message_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("chat_message_$%d_ids", meetingID)}] = v
-	return v
-}
-
-func (r *Fetch) User_CommentTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "comment_$"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "comment_$"}] = v
-	return v
-}
-
-func (r *Fetch) User_Comment(userID int, meetingID int) *ValueString {
-	v := &ValueString{fetch: r, collection: "user", id: userID, field: "comment_$"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("comment_$%d", meetingID)}] = v
 	return v
 }
 
@@ -4683,15 +5069,9 @@ func (r *Fetch) User_CommitteeIDs(userID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Fetch) User_CommitteeManagementLevelTmpl(userID int) *ValueStringSlice {
-	v := &ValueStringSlice{fetch: r, collection: "user", id: userID, field: "committee_$_management_level"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "committee_$_management_level"}] = v
-	return v
-}
-
-func (r *Fetch) User_CommitteeManagementLevel(userID int, replacement string) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "committee_$_management_level"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("committee_$%s_management_level", replacement)}] = v
+func (r *Fetch) User_CommitteeManagementIDs(userID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "committee_management_ids"}
+	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "committee_management_ids"}] = v
 	return v
 }
 
@@ -4809,27 +5189,15 @@ func (r *Fetch) User_MeetingIDs(userID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Fetch) User_NumberTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "number_$"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "number_$"}] = v
+func (r *Fetch) User_MeetingUserIDs(userID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "meeting_user_ids"}
+	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "meeting_user_ids"}] = v
 	return v
 }
 
-func (r *Fetch) User_Number(userID int, meetingID int) *ValueString {
-	v := &ValueString{fetch: r, collection: "user", id: userID, field: "number_$"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("number_$%d", meetingID)}] = v
-	return v
-}
-
-func (r *Fetch) User_OptionIDsTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "option_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "option_$_ids"}] = v
-	return v
-}
-
-func (r *Fetch) User_OptionIDs(userID int, meetingID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "option_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("option_$%d_ids", meetingID)}] = v
+func (r *Fetch) User_OptionIDs(userID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "option_ids"}
+	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "option_ids"}] = v
 	return v
 }
 
@@ -4851,93 +5219,15 @@ func (r *Fetch) User_Password(userID int) *ValueString {
 	return v
 }
 
-func (r *Fetch) User_PersonalNoteIDsTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "personal_note_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "personal_note_$_ids"}] = v
-	return v
-}
-
-func (r *Fetch) User_PersonalNoteIDs(userID int, meetingID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "personal_note_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("personal_note_$%d_ids", meetingID)}] = v
-	return v
-}
-
-func (r *Fetch) User_PollVotedIDsTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "poll_voted_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "poll_voted_$_ids"}] = v
-	return v
-}
-
-func (r *Fetch) User_PollVotedIDs(userID int, meetingID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "poll_voted_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("poll_voted_$%d_ids", meetingID)}] = v
-	return v
-}
-
-func (r *Fetch) User_ProjectionIDsTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "projection_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "projection_$_ids"}] = v
-	return v
-}
-
-func (r *Fetch) User_ProjectionIDs(userID int, meetingID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "projection_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("projection_$%d_ids", meetingID)}] = v
+func (r *Fetch) User_PollVotedIDs(userID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "poll_voted_ids"}
+	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "poll_voted_ids"}] = v
 	return v
 }
 
 func (r *Fetch) User_Pronoun(userID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "user", id: userID, field: "pronoun"}
 	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "pronoun"}] = v
-	return v
-}
-
-func (r *Fetch) User_SpeakerIDsTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "speaker_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "speaker_$_ids"}] = v
-	return v
-}
-
-func (r *Fetch) User_SpeakerIDs(userID int, meetingID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "speaker_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("speaker_$%d_ids", meetingID)}] = v
-	return v
-}
-
-func (r *Fetch) User_StructureLevelTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "structure_level_$"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "structure_level_$"}] = v
-	return v
-}
-
-func (r *Fetch) User_StructureLevel(userID int, meetingID int) *ValueString {
-	v := &ValueString{fetch: r, collection: "user", id: userID, field: "structure_level_$"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("structure_level_$%d", meetingID)}] = v
-	return v
-}
-
-func (r *Fetch) User_SubmittedMotionIDsTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "submitted_motion_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "submitted_motion_$_ids"}] = v
-	return v
-}
-
-func (r *Fetch) User_SubmittedMotionIDs(userID int, meetingID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "submitted_motion_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("submitted_motion_$%d_ids", meetingID)}] = v
-	return v
-}
-
-func (r *Fetch) User_SupportedMotionIDsTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "supported_motion_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "supported_motion_$_ids"}] = v
-	return v
-}
-
-func (r *Fetch) User_SupportedMotionIDs(userID int, meetingID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "supported_motion_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("supported_motion_$%d_ids", meetingID)}] = v
 	return v
 }
 
@@ -4953,63 +5243,9 @@ func (r *Fetch) User_Username(userID int) *ValueString {
 	return v
 }
 
-func (r *Fetch) User_VoteDelegatedToIDTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "vote_delegated_$_to_id"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "vote_delegated_$_to_id"}] = v
-	return v
-}
-
-func (r *Fetch) User_VoteDelegatedToID(userID int, meetingID int) *ValueInt {
-	v := &ValueInt{fetch: r, collection: "user", id: userID, field: "vote_delegated_$_to_id"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("vote_delegated_$%d_to_id", meetingID)}] = v
-	return v
-}
-
-func (r *Fetch) User_VoteDelegatedVoteIDsTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "vote_delegated_vote_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "vote_delegated_vote_$_ids"}] = v
-	return v
-}
-
-func (r *Fetch) User_VoteDelegatedVoteIDs(userID int, meetingID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "vote_delegated_vote_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("vote_delegated_vote_$%d_ids", meetingID)}] = v
-	return v
-}
-
-func (r *Fetch) User_VoteDelegationsFromIDsTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "vote_delegations_$_from_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "vote_delegations_$_from_ids"}] = v
-	return v
-}
-
-func (r *Fetch) User_VoteDelegationsFromIDs(userID int, meetingID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "vote_delegations_$_from_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("vote_delegations_$%d_from_ids", meetingID)}] = v
-	return v
-}
-
-func (r *Fetch) User_VoteIDsTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "vote_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "vote_$_ids"}] = v
-	return v
-}
-
-func (r *Fetch) User_VoteIDs(userID int, meetingID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "vote_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("vote_$%d_ids", meetingID)}] = v
-	return v
-}
-
-func (r *Fetch) User_VoteWeightTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "vote_weight_$"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "vote_weight_$"}] = v
-	return v
-}
-
-func (r *Fetch) User_VoteWeight(userID int, meetingID int) *ValueString {
-	v := &ValueString{fetch: r, collection: "user", id: userID, field: "vote_weight_$"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("vote_weight_$%d", meetingID)}] = v
+func (r *Fetch) User_VoteIDs(userID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "vote_ids"}
+	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "vote_ids"}] = v
 	return v
 }
 
