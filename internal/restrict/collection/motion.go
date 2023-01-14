@@ -26,6 +26,11 @@ import (
 // Mode D: Never published to any user.
 type Motion struct{}
 
+// Name returns the collection name.
+func (m Motion) Name() string {
+	return "motion"
+}
+
 // MeetingID returns the meetingID for the object.
 func (m Motion) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.Motion_MeetingID(id).Value(ctx)
@@ -49,9 +54,14 @@ func (m Motion) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionIDs ...int) ([]int, error) {
+func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, motionIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
 	return eachMeeting(ctx, ds, m, motionIDs, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting permissions: %w", err)
 		}
@@ -83,7 +93,7 @@ func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 			}
 			if hasIsSubmitterRestriction {
 				allowed, err := eachCondition(ids, func(motionID int) (bool, error) {
-					submitter, err := isSubmitter(ctx, ds, mperms, motionID)
+					submitter, err := isSubmitter(ctx, ds, requestUser, motionID)
 					if err != nil {
 						return false, fmt.Errorf("checking for motion submitter of motion %d: %w", motionID, err)
 					}
@@ -102,9 +112,9 @@ func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 	})
 }
 
-func isSubmitter(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionID int) (bool, error) {
+func isSubmitter(ctx context.Context, ds *dsfetch.Fetch, uid int, motionID int) (bool, error) {
 	for _, submitterID := range ds.Motion_SubmitterIDs(motionID).ErrorLater(ctx) {
-		if ds.MotionSubmitter_UserID(submitterID).ErrorLater(ctx) == mperms.UserID() {
+		if ds.MotionSubmitter_UserID(submitterID).ErrorLater(ctx) == uid {
 			return true, nil
 		}
 	}
@@ -114,8 +124,8 @@ func isSubmitter(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPer
 	return false, nil
 }
 
-func (m Motion) modeA(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionIDs ...int) ([]int, error) {
-	allowed, err := m.see(ctx, ds, mperms, motionIDs...)
+func (m Motion) modeA(ctx context.Context, ds *dsfetch.Fetch, motionIDs ...int) ([]int, error) {
+	allowed, err := m.see(ctx, ds, motionIDs...)
 	if err != nil {
 		return nil, fmt.Errorf("see motion: %w", err)
 	}
@@ -144,7 +154,7 @@ func (m Motion) modeA(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeti
 		for referenceID := range motionIDs {
 			// Check each motion as it own. It is enough when one motion returns
 			// true. To call m.see with all motions at once would be slower.
-			see, err := m.see(ctx, ds, mperms, referenceID)
+			see, err := m.see(ctx, ds, referenceID)
 			if err != nil {
 				var errDoesNotExist dsfetch.DoesNotExistError
 				if errors.As(err, &errDoesNotExist) {

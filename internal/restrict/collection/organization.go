@@ -19,6 +19,11 @@ import (
 // Mode C: The user has the OML can_manage_users or higher.
 type Organization struct{}
 
+// Name returns the collection name.
+func (o Organization) Name() string {
+	return "organization"
+}
+
 // MeetingID returns the meetingID for the object.
 func (o Organization) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	return 0, false, nil
@@ -37,8 +42,13 @@ func (o Organization) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (Organization) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, userIDs ...int) ([]int, error) {
-	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
+func (Organization) modeC(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageUsers)
 	if err != nil {
 		return nil, fmt.Errorf("check organization management level: %w", err)
 	}

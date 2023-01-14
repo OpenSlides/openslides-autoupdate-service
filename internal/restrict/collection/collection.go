@@ -8,6 +8,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // CM is the name of a collection and a mode.
@@ -21,23 +22,28 @@ func (cm CM) String() string {
 }
 
 // FieldRestricter is a function to restrict fields of a collection.
-type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, id ...int) ([]int, error)
+type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, id ...int) ([]int, error)
 
-type singleFieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, id int) (bool, error)
+type singleFieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, id int) (bool, error)
 
 // Allways is a restricter func that just returns true.
-func Allways(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
+func Allways(ctx context.Context, ds *dsfetch.Fetch, elementIDs ...int) ([]int, error) {
 	return elementIDs, nil
 }
 
-func loggedIn(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
-	if mperms.UserID() != 0 {
+func loggedIn(ctx context.Context, ds *dsfetch.Fetch, elementIDs ...int) ([]int, error) {
+	uid, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	if uid != 0 {
 		return elementIDs, nil
 	}
 	return nil, nil
 }
 
-func never(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, elementIDs ...int) ([]int, error) {
+func never(ctx context.Context, ds *dsfetch.Fetch, elementIDs ...int) ([]int, error) {
 	return nil, nil
 }
 
@@ -51,91 +57,145 @@ type Restricter interface {
 	// MeetingID returns the meeting id for an object. Returns hasMeeting=false,
 	// if the object does not belong to a meeting.
 	MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (meetingID int, hasMeeting bool, err error)
+
+	Name() string
 }
 
-// Collection returns the restricter for a collection
-func Collection(collection string) Restricter {
-	switch collection {
-	case "action_worker":
-		return ActionWorker{}
-	case "agenda_item":
-		return AgendaItem{}
-	case "assignment":
-		return Assignment{}
-	case "assignment_candidate":
-		return AssignmentCandidate{}
-	case "list_of_speakers":
-		return ListOfSpeakers{}
-	case "chat_group":
-		return ChatGroup{}
-	case "chat_message":
-		return ChatMessage{}
-	case "committee":
-		return Committee{}
-	case "group":
-		return Group{}
-	case "mediafile":
-		return Mediafile{}
-	case "meeting":
-		return Meeting{}
-	case "motion":
-		return Motion{}
-	case "motion_block":
-		return MotionBlock{}
-	case "motion_category":
-		return MotionCategory{}
-	case "motion_change_recommendation":
-		return MotionChangeRecommendation{}
-	case "motion_state":
-		return MotionState{}
-	case "motion_statute_paragraph":
-		return MotionStatuteParagraph{}
-	case "motion_comment":
-		return MotionComment{}
-	case "motion_comment_section":
-		return MotionCommentSection{}
-	case "motion_submitter":
-		return MotionSubmitter{}
-	case "motion_workflow":
-		return MotionWorkflow{}
-	case "option":
-		return Option{}
-	case "organization":
-		return Organization{}
-	case "organization_tag":
-		return OrganizationTag{}
-	case "personal_note":
-		return PersonalNote{}
-	case "poll":
-		return Poll{}
-	case "projection":
-		return Projection{}
-	case "projector":
-		return Projector{}
-	case "projector_countdown":
-		return ProjectorCountdown{}
-	case "projector_message":
-		return ProjectorMessage{}
-	case "speaker":
-		return Speaker{}
-	case "tag":
-		return Tag{}
-	case "theme":
-		return Theme{}
-	case "topic":
-		return Topic{}
-	case "user":
-		return User{}
-	case "vote":
-		return Vote{}
+type restrictCache struct {
+	cache map[dskey.Key]bool
+	sub   Restricter
+}
 
-	default:
-		return Unknown{}
+type contextKeyType string
+
+var contextKey contextKeyType = "restrict cache"
+
+// ContextWithRestrictCache returns a context with restrict cache.
+func ContextWithRestrictCache(ctx context.Context) context.Context {
+	return context.WithValue(ctx, contextKey, make(map[dskey.Key]bool))
+}
+
+func withRestrictCache(ctx context.Context, sub Restricter) Restricter {
+	v := ctx.Value(contextKey)
+	if v == nil {
+		return sub
+	}
+
+	cache, ok := v.(map[dskey.Key]bool)
+	if !ok {
+		return sub
+	}
+
+	return &restrictCache{
+		cache: cache,
+		sub:   sub,
 	}
 }
 
+func (r *restrictCache) Modes(mode string) FieldRestricter {
+	return func(ctx context.Context, ds *dsfetch.Fetch, ids ...int) ([]int, error) {
+		notFound := make([]int, 0, len(ids))
+		cachedAllowedIDs := make([]int, 0, len(ids))
+		for _, id := range ids {
+			key := dskey.Key{Collection: r.sub.Name(), ID: id, Field: mode}
+
+			allowed, found := r.cache[key]
+			if !found {
+				notFound = append(notFound, id)
+				continue
+			}
+
+			if allowed {
+				cachedAllowedIDs = append(cachedAllowedIDs, id)
+			}
+		}
+
+		if len(notFound) == 0 {
+			return cachedAllowedIDs, nil
+		}
+
+		newAllowedIDs, err := r.sub.Modes(mode)(ctx, ds, notFound...)
+		if err != nil {
+			return nil, fmt.Errorf("calling restricter: %w", err)
+		}
+
+		// Add all not Found keys to the cache as not allowed.
+		for _, id := range notFound {
+			key := dskey.Key{Collection: r.sub.Name(), ID: id, Field: mode}
+			r.cache[key] = false
+		}
+
+		// Set all new allowed ids to the cache as true.
+		for _, id := range newAllowedIDs {
+			key := dskey.Key{Collection: r.sub.Name(), ID: id, Field: mode}
+			r.cache[key] = true
+		}
+
+		return append(cachedAllowedIDs, newAllowedIDs...), nil
+	}
+}
+
+func (r *restrictCache) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (meetingID int, hasMeeting bool, err error) {
+	return r.sub.MeetingID(ctx, ds, id)
+}
+
+func (r *restrictCache) Name() string {
+	return r.sub.Name()
+}
+
+var collectionMap = map[string]Restricter{
+	ActionWorker{}.Name():               ActionWorker{},
+	AgendaItem{}.Name():                 AgendaItem{},
+	Assignment{}.Name():                 Assignment{},
+	AssignmentCandidate{}.Name():        AssignmentCandidate{},
+	ListOfSpeakers{}.Name():             ListOfSpeakers{},
+	ChatGroup{}.Name():                  ChatGroup{},
+	ChatMessage{}.Name():                ChatMessage{},
+	Committee{}.Name():                  Committee{},
+	Group{}.Name():                      Group{},
+	Mediafile{}.Name():                  Mediafile{},
+	Meeting{}.Name():                    Meeting{},
+	Motion{}.Name():                     Motion{},
+	MotionBlock{}.Name():                MotionBlock{},
+	MotionCategory{}.Name():             MotionCategory{},
+	MotionChangeRecommendation{}.Name(): MotionChangeRecommendation{},
+	MotionState{}.Name():                MotionState{},
+	MotionStatuteParagraph{}.Name():     MotionStatuteParagraph{},
+	MotionComment{}.Name():              MotionComment{},
+	MotionCommentSection{}.Name():       MotionCommentSection{},
+	MotionSubmitter{}.Name():            MotionSubmitter{},
+	MotionWorkflow{}.Name():             MotionWorkflow{},
+	Option{}.Name():                     Option{},
+	Organization{}.Name():               Organization{},
+	OrganizationTag{}.Name():            OrganizationTag{},
+	PersonalNote{}.Name():               PersonalNote{},
+	Poll{}.Name():                       Poll{},
+	Projection{}.Name():                 Projection{},
+	Projector{}.Name():                  Projector{},
+	ProjectorCountdown{}.Name():         ProjectorCountdown{},
+	ProjectorMessage{}.Name():           ProjectorMessage{},
+	Speaker{}.Name():                    Speaker{},
+	Tag{}.Name():                        Tag{},
+	Theme{}.Name():                      Theme{},
+	Topic{}.Name():                      Topic{},
+	User{}.Name():                       User{},
+	Vote{}.Name():                       Vote{},
+}
+
+// Collection returns the restricter for a collection
+func Collection(ctx context.Context, collection string) Restricter {
+	r, ok := collectionMap[collection]
+	if !ok {
+		return Unknown{collection}
+	}
+
+	return withRestrictCache(ctx, r)
+}
+
 // Unknown is a collection that does not exist in the models.yml
-type Unknown struct{}
+type Unknown struct {
+	name string
+}
 
 // Modes on an unknown field can not be seen.
 func (u Unknown) Modes(string) FieldRestricter {
@@ -145,6 +205,11 @@ func (u Unknown) Modes(string) FieldRestricter {
 // MeetingID is not a thing on a unknown meeting
 func (u Unknown) MeetingID(context.Context, *dsfetch.Fetch, int) (int, bool, error) {
 	return 0, false, nil
+}
+
+// Name returns the collection name.
+func (u Unknown) Name() string {
+	return u.name
 }
 
 func eachMeeting(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int, f func(meetingID int, ids []int) ([]int, error)) ([]int, error) {
@@ -177,9 +242,9 @@ func eachMeeting(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int
 	return allAllowed, nil
 }
 
-func meetingPerm(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int, mperms *perm.MeetingPermission, permission perm.TPermission) ([]int, error) {
+func meetingPerm(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int, permission perm.TPermission) ([]int, error) {
 	return eachMeeting(ctx, ds, r, ids, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting permission: %w", err)
 		}

@@ -24,8 +24,8 @@ type connecterMock struct {
 	f autoupdate.DataProvider
 }
 
-func (c *connecterMock) Connect(userID int, kb autoupdate.KeysBuilder) autoupdate.DataProvider {
-	return c.f
+func (c *connecterMock) Connect(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (autoupdate.DataProvider, error) {
+	return c.f, nil
 }
 
 func (c *connecterMock) SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[dskey.Key][]byte, error) {

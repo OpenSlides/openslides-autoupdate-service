@@ -115,11 +115,12 @@ func TestUserModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		user/2/group_$_ids: ["5"]
-		meeting/5/committee_id: 7
 		user/1:
 			committee_$can_manage_management_level: [7]
-		committee/7/id: 7
+		committee/7/user_ids: [2]
+
+		user/2/group_$_ids: ["5"]
+		meeting/5/committee_id: 7
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -629,7 +630,7 @@ func TestUserModeG(t *testing.T) {
 	)
 }
 
-func TestPersonalNoteSuperAdminModeG(t *testing.T) {
+func TestUserSuperAdminModeG(t *testing.T) {
 	var u collection.User
 
 	testCase(
@@ -640,5 +641,118 @@ func TestPersonalNoteSuperAdminModeG(t *testing.T) {
 		``,
 		withRequestUser(1),
 		withElementID(2),
+	)
+}
+
+func TestUserModeH(t *testing.T) {
+	var u collection.User
+
+	testCase(
+		"request superadmin",
+		t,
+		u.Modes("H"),
+		false,
+		`---
+		user/2:
+			group_$_ids: ["5"]
+			organization_management_level: superadmin
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(5, perm.UserCanManage),
+	)
+
+	testCase(
+		"request superadmin as orga manager",
+		t,
+		u.Modes("H"),
+		false,
+		`---
+		user/1/organization_management_level: can_manage_organization
+		user/2:
+			group_$_ids: ["5"]
+			organization_management_level: superadmin
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(5, perm.UserCanManage),
+	)
+
+	testCase(
+		"request organization manager",
+		t,
+		u.Modes("H"),
+		false,
+		`---
+		user/2:
+			group_$_ids: ["5"]
+			organization_management_level: can_manage_organization
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(5, perm.UserCanManage),
+	)
+
+	testCase(
+		"request organization manager as can_manage_organization",
+		t,
+		u.Modes("H"),
+		true,
+		`---
+		user/1/organization_management_level: can_manage_organization
+		user/2:
+			group_$_ids: ["5"]
+			organization_management_level: can_manage_organization
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(5, perm.UserCanManage),
+	)
+
+	testCase(
+		"request organization user manager",
+		t,
+		u.Modes("H"),
+		false,
+		`---
+		user/2:
+			group_$_ids: ["5"]
+			organization_management_level: can_manage_users
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(5, perm.UserCanManage),
+	)
+
+	testCase(
+		"request organization user manager as orga manager",
+		t,
+		u.Modes("H"),
+		true,
+		`---
+		user/1/organization_management_level: can_manage_organization
+		user/2:
+			group_$_ids: ["5"]
+			organization_management_level: can_manage_users
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(5, perm.UserCanManage),
+	)
+
+	testCase(
+		"request organization user manager as user manager",
+		t,
+		u.Modes("H"),
+		true,
+		`---
+		user/1/organization_management_level: can_manage_users
+		user/2:
+			group_$_ids: ["5"]
+			organization_management_level: can_manage_users
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(5, perm.UserCanManage),
 	)
 }

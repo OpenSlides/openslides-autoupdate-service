@@ -46,14 +46,10 @@ func set(keys ...dskey.Key) map[dskey.Key]bool {
 	return out
 }
 
-func keys(ks ...string) []dskey.Key {
+func mustKeys(ks ...string) []dskey.Key {
 	keys := make([]dskey.Key, len(ks))
 	for i, k := range ks {
-		key, err := dskey.FromString(k)
-		if err != nil {
-			panic(err)
-		}
-
+		key := dskey.MustKey(k)
 		keys[i] = key
 	}
 	return keys

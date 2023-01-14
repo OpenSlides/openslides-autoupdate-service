@@ -15,6 +15,9 @@ type Key struct {
 }
 
 // FromString parses a string to a Key.
+//
+// This uses a regular expression to validate the key. This can be slow if
+// called many times. It is faster to manually validate the key.
 func FromString(in string) (Key, error) {
 	if !keyValid(in) {
 		return Key{}, invalidKeyError{in}

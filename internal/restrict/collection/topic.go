@@ -15,6 +15,11 @@ import (
 // Mode A: The user can see the topic.
 type Topic struct{}
 
+// Name returns the collection name.
+func (t Topic) Name() string {
+	return "topic"
+}
+
 // MeetingID returns the meetingID for the object.
 func (t Topic) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.Topic_MeetingID(id).Value(ctx)
@@ -34,6 +39,6 @@ func (t Topic) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (t Topic) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, topicIDs ...int) ([]int, error) {
-	return meetingPerm(ctx, ds, t, topicIDs, mperms, perm.AgendaItemCanSee)
+func (t Topic) see(ctx context.Context, ds *dsfetch.Fetch, topicIDs ...int) ([]int, error) {
+	return meetingPerm(ctx, ds, t, topicIDs, perm.AgendaItemCanSee)
 }

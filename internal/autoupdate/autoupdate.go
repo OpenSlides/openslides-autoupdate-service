@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/ostcar/topic"
 )
 
@@ -43,6 +45,10 @@ const (
 	datastoreCacheResetTime = 24 * time.Hour
 )
 
+var (
+	envConcurentWorker = environment.NewVariable("CONCURENT_WORKER", "0", "Amount of clients that calculate there values at the same time. Default to GOMAXPROCS.")
+)
+
 // Datastore is the source for the data.
 type Datastore interface {
 	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
@@ -58,8 +64,7 @@ type Datastore interface {
 
 // KeysBuilder holds the keys that are requested by a user.
 type KeysBuilder interface {
-	Update(ctx context.Context, ds datastore.Getter) error
-	Keys() []dskey.Key
+	Update(ctx context.Context, ds datastore.Getter) ([]dskey.Key, error)
 }
 
 // RestrictMiddleware is a function that can restrict data.
@@ -71,17 +76,28 @@ type Autoupdate struct {
 	datastore  Datastore
 	topic      *topic.Topic[dskey.Key]
 	restricter RestrictMiddleware
+	pool       *workPool
 }
 
 // New creates a new autoupdate service.
 //
 // You should call `go a.PruneOldData()` and `go a.ResetCache()` after creating
 // the service.
-func New(ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context.Context, func(error))) {
+func New(lookup environment.Environmenter, ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context.Context, func(error)), error) {
+	workers, err := strconv.Atoi(envConcurentWorker.Value(lookup))
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid value for %s: %w", envConcurentWorker.Key, err)
+	}
+
+	if workers == 0 {
+		workers = runtime.GOMAXPROCS(0)
+	}
+
 	a := &Autoupdate{
 		datastore:  ds,
 		topic:      topic.New[dskey.Key](),
 		restricter: restricter,
+		pool:       newWorkPool(workers),
 	}
 
 	// Update the topic when an data update is received.
@@ -100,7 +116,7 @@ func New(ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context
 		go a.resetCache(ctx)
 	}
 
-	return a, background
+	return a, background, nil
 }
 
 // DataProvider is a function that returns the next data for a user.
@@ -110,14 +126,20 @@ type DataProvider func() (func(ctx context.Context) (map[dskey.Key][]byte, error
 // returns a Connection object, that can be used to receive the data.
 //
 // There is no need to "close" the returned DataProvider.
-func (a *Autoupdate) Connect(userID int, kb KeysBuilder) DataProvider {
-	c := &connection{
-		autoupdate: a,
-		uid:        userID,
-		kb:         kb,
+func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (DataProvider, error) {
+	skipWorkpool, err := a.skipWorkpool(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("check if workpool should be used: %w", err)
 	}
 
-	return c.Next
+	c := &connection{
+		autoupdate:   a,
+		uid:          userID,
+		kb:           kb,
+		skipWorkpool: skipWorkpool,
+	}
+
+	return c.Next, nil
 }
 
 // SingleData returns the data for the given keysbuilder without autoupdates.
@@ -131,11 +153,12 @@ func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder,
 		restricter = restrict.NewHistory(a.datastore, getter, userID)
 	}
 
-	if err := kb.Update(ctx, restricter); err != nil {
+	keys, err := kb.Update(ctx, restricter)
+	if err != nil {
 		return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
 	}
 
-	data, err := restricter.Get(ctx, kb.Keys()...)
+	data, err := restricter.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("get restricted data: %w", err)
 	}
@@ -195,7 +218,7 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 
 	ds := dsfetch.New(a.datastore)
 
-	meetingID, hasMeeting, err := collection.Collection(coll).MeetingID(ctx, ds, id)
+	meetingID, hasMeeting, err := collection.Collection(ctx, coll).MeetingID(ctx, ds, id)
 	if err != nil {
 		var errNotExist dsfetch.DoesNotExistError
 		if errors.As(err, &errNotExist) {
@@ -243,9 +266,14 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []string) (map[string]map[string][]byte, error) {
 	var keys []dskey.Key
 	for _, fqid := range fqids {
-		collection, _, found := strings.Cut(fqid, "/")
+		collection, rawID, found := strings.Cut(fqid, "/")
 		if !found {
 			return nil, fmt.Errorf("invalid fqid %s, expected one /", fqid)
+		}
+
+		id, err := strconv.Atoi(rawID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid fqid %s, second part has to be an nummber", fqid)
 		}
 
 		fields := restrict.FieldsForCollection(collection)
@@ -254,11 +282,7 @@ func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []stri
 		}
 
 		for _, field := range fields {
-			key, err := dskey.FromString(fqid + "/" + field)
-			if err != nil {
-				return nil, fmt.Errorf("fqid  %s can not be added to field %s: %w", fqid, field, err)
-			}
-
+			key := dskey.Key{Collection: collection, ID: id, Field: field}
 			keys = append(keys, key)
 		}
 	}
@@ -283,6 +307,34 @@ func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []stri
 	}
 
 	return result, nil
+}
+
+// skipWorkpool desides, if a connection is allowed to skip the workpool.
+//
+// The current implementation returns true, if the user is a meeting admin in
+// one meeting.
+func (a *Autoupdate) skipWorkpool(ctx context.Context, userID int) (bool, error) {
+	if userID == 0 {
+		return false, nil
+	}
+
+	ds := dsfetch.New(a.datastore)
+
+	meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
+
+	for _, mid := range meetingIDs {
+		gids := ds.User_GroupIDs(userID, mid).ErrorLater(ctx)
+		for _, gid := range gids {
+			if _, ok := ds.Group_AdminGroupForMeetingID(gid).ErrorLater(ctx); ok {
+				return true, nil
+			}
+		}
+	}
+	if err := ds.Err(); err != nil {
+		return false, fmt.Errorf("check if user %d is a meeting admin: %w", userID, err)
+	}
+
+	return false, nil
 }
 
 type permissionDeniedError struct {

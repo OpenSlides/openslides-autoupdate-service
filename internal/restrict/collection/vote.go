@@ -25,6 +25,11 @@ import (
 //	others: Not accessible for anyone.
 type Vote struct{}
 
+// Name returns the collection name.
+func (v Vote) Name() string {
+	return "vote"
+}
+
 // MeetingID returns the meetingID for the object.
 func (v Vote) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.Vote_MeetingID(id).Value(ctx)
@@ -47,7 +52,12 @@ func (v Vote) Modes(mode string) FieldRestricter {
 }
 
 // TODO: Group by poll or option
-func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, voteIDs ...int) ([]int, error) {
+func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
 	return eachCondition(voteIDs, func(voteID int) (bool, error) {
 		optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
 		if err != nil {
@@ -68,7 +78,7 @@ func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPe
 			return true, nil
 		}
 
-		manage, err := Poll{}.manage(ctx, ds, mperms, pollID)
+		manage, err := Poll{}.manage(ctx, ds, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking manage poll %d: %w", pollID, err)
 		}
@@ -82,7 +92,7 @@ func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPe
 			return false, fmt.Errorf("getting vote user: %w", err)
 		}
 
-		if exist && voteUser == mperms.UserID() {
+		if exist && voteUser == requestUser {
 			return true, nil
 		}
 
@@ -91,7 +101,7 @@ func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPe
 			return false, fmt.Errorf("getting delegated user: %w", err)
 		}
 
-		if exist && delegatedUser == mperms.UserID() {
+		if exist && delegatedUser == requestUser {
 			return true, nil
 		}
 
@@ -100,7 +110,7 @@ func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPe
 }
 
 // TODO: Group by poll or option
-func (v Vote) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, voteIDs ...int) ([]int, error) {
+func (v Vote) modeB(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int, error) {
 	return eachCondition(voteIDs, func(voteID int) (bool, error) {
 		optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
 		if err != nil {
@@ -118,7 +128,7 @@ func (v Vote) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 
 		switch state {
 		case "published":
-			see, err := v.see(ctx, ds, mperms, voteID)
+			see, err := v.see(ctx, ds, voteID)
 			if err != nil {
 				return false, fmt.Errorf("checking see vote: %w", err)
 			}
@@ -126,7 +136,7 @@ func (v Vote) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 			return len(see) == 1, nil
 
 		case "finished":
-			manage, err := Poll{}.manage(ctx, ds, mperms, pollID)
+			manage, err := Poll{}.manage(ctx, ds, pollID)
 			if err != nil {
 				return false, fmt.Errorf("checking manage poll %d: %w", pollID, err)
 			}
