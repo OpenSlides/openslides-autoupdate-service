@@ -118,10 +118,17 @@ func (r *restrictCache) Modes(mode string) FieldRestricter {
 		if err != nil {
 			return nil, fmt.Errorf("calling restricter: %w", err)
 		}
+
+		// Add all not Found keys to the cache as not allowed.
+		for _, id := range notFound {
+			key := dskey.Key{Collection: r.sub.Name(), ID: id, Field: mode}
+			r.cache[key] = false
+		}
+
+		// Set all new allowed ids to the cache as true.
 		for _, id := range newAllowedIDs {
 			key := dskey.Key{Collection: r.sub.Name(), ID: id, Field: mode}
 			r.cache[key] = true
-			// TODO: add not allowed ids to cache
 		}
 
 		return append(cachedAllowedIDs, newAllowedIDs...), nil
@@ -136,53 +143,53 @@ func (r *restrictCache) Name() string {
 	return r.sub.Name()
 }
 
-var collections = []Restricter{
-	ActionWorker{},
-	AgendaItem{},
-	Assignment{},
-	AssignmentCandidate{},
-	ListOfSpeakers{},
-	ChatGroup{},
-	ChatMessage{},
-	Committee{},
-	Group{},
-	Mediafile{},
-	Meeting{},
-	Motion{},
-	MotionBlock{},
-	MotionCategory{},
-	MotionChangeRecommendation{},
-	MotionState{},
-	MotionStatuteParagraph{},
-	MotionComment{},
-	MotionCommentSection{},
-	MotionSubmitter{},
-	MotionWorkflow{},
-	Option{},
-	Organization{},
-	OrganizationTag{},
-	PersonalNote{},
-	Poll{},
-	Projection{},
-	Projector{},
-	ProjectorCountdown{},
-	ProjectorMessage{},
-	Speaker{},
-	Tag{},
-	Theme{},
-	Topic{},
-	User{},
-	Vote{},
+var collectionMap = map[string]Restricter{
+	ActionWorker{}.Name():               ActionWorker{},
+	AgendaItem{}.Name():                 AgendaItem{},
+	Assignment{}.Name():                 Assignment{},
+	AssignmentCandidate{}.Name():        AssignmentCandidate{},
+	ListOfSpeakers{}.Name():             ListOfSpeakers{},
+	ChatGroup{}.Name():                  ChatGroup{},
+	ChatMessage{}.Name():                ChatMessage{},
+	Committee{}.Name():                  Committee{},
+	Group{}.Name():                      Group{},
+	Mediafile{}.Name():                  Mediafile{},
+	Meeting{}.Name():                    Meeting{},
+	Motion{}.Name():                     Motion{},
+	MotionBlock{}.Name():                MotionBlock{},
+	MotionCategory{}.Name():             MotionCategory{},
+	MotionChangeRecommendation{}.Name(): MotionChangeRecommendation{},
+	MotionState{}.Name():                MotionState{},
+	MotionStatuteParagraph{}.Name():     MotionStatuteParagraph{},
+	MotionComment{}.Name():              MotionComment{},
+	MotionCommentSection{}.Name():       MotionCommentSection{},
+	MotionSubmitter{}.Name():            MotionSubmitter{},
+	MotionWorkflow{}.Name():             MotionWorkflow{},
+	Option{}.Name():                     Option{},
+	Organization{}.Name():               Organization{},
+	OrganizationTag{}.Name():            OrganizationTag{},
+	PersonalNote{}.Name():               PersonalNote{},
+	Poll{}.Name():                       Poll{},
+	Projection{}.Name():                 Projection{},
+	Projector{}.Name():                  Projector{},
+	ProjectorCountdown{}.Name():         ProjectorCountdown{},
+	ProjectorMessage{}.Name():           ProjectorMessage{},
+	Speaker{}.Name():                    Speaker{},
+	Tag{}.Name():                        Tag{},
+	Theme{}.Name():                      Theme{},
+	Topic{}.Name():                      Topic{},
+	User{}.Name():                       User{},
+	Vote{}.Name():                       Vote{},
 }
 
 // Collection returns the restricter for a collection
 func Collection(ctx context.Context, collection string) Restricter {
-	for _, c := range collections {
-		if c.Name() == collection {
-			return withRestrictCache(ctx, c)
-		}
+	r, ok := collectionMap[collection]
+	if !ok {
+		return Unknown{collection}
 	}
-	return Unknown{collection}
+
+	return withRestrictCache(ctx, r)
 }
 
 // Unknown is a collection that does not exist in the models.yml
