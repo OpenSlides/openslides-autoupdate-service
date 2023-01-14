@@ -15,6 +15,11 @@ import (
 // Mode A: The user can see the projection.
 type Projection struct{}
 
+// Name returns the collection name.
+func (p Projection) Name() string {
+	return "projection"
+}
+
 // MeetingID returns the meetingID for the object.
 func (p Projection) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.Projection_MeetingID(id).Value(ctx)
@@ -34,6 +39,6 @@ func (p Projection) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p Projection) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, projectionIDs ...int) ([]int, error) {
-	return meetingPerm(ctx, ds, p, projectionIDs, mperms, perm.ProjectorCanSee)
+func (p Projection) see(ctx context.Context, ds *dsfetch.Fetch, projectionIDs ...int) ([]int, error) {
+	return meetingPerm(ctx, ds, p, projectionIDs, perm.ProjectorCanSee)
 }

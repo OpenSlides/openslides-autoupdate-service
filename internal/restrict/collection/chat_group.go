@@ -19,6 +19,11 @@ import (
 // Mode A: The user can see the chat_group.
 type ChatGroup struct{}
 
+// Name ChatGroup the collection name.
+func (c ChatGroup) Name() string {
+	return "chat_group"
+}
+
 // MeetingID returns the meetingID for the object.
 func (c ChatGroup) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	mid, err := ds.ChatGroup_MeetingID(id).Value(ctx)
@@ -37,9 +42,9 @@ func (c ChatGroup) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, chatGroupIDs ...int) ([]int, error) {
+func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, chatGroupIDs ...int) ([]int, error) {
 	return eachMeeting(ctx, ds, c, chatGroupIDs, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting permissions: %w", err)
 		}

@@ -15,6 +15,11 @@ import (
 // Mode A: User can see the assignment.
 type Assignment struct{}
 
+// Name returns the collection name.
+func (a Assignment) Name() string {
+	return "assignment"
+}
+
 // MeetingID returns the meetingID for the object.
 func (a Assignment) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	mid, err := ds.Assignment_MeetingID(id).Value(ctx)
@@ -33,6 +38,6 @@ func (a Assignment) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a Assignment) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, assignmentIDs ...int) ([]int, error) {
-	return meetingPerm(ctx, ds, a, assignmentIDs, mperms, perm.AssignmentCanSee)
+func (a Assignment) see(ctx context.Context, ds *dsfetch.Fetch, assignmentIDs ...int) ([]int, error) {
+	return meetingPerm(ctx, ds, a, assignmentIDs, perm.AssignmentCanSee)
 }

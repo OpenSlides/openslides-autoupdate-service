@@ -1,6 +1,7 @@
 package restrict
 
 import (
+	"context"
 	"strings"
 	"testing"
 )
@@ -18,7 +19,7 @@ func TestRestrictModeForAll(t *testing.T) {
 			t.Fatalf("building field mode: %v", err)
 		}
 
-		if _, err := restrictModefunc(collection, fieldMode); err != nil {
+		if _, err := restrictModefunc(context.Background(), collection, fieldMode); err != nil {
 			t.Errorf("restrictMode(%s, %s) returned: %v", collection, field, err)
 		}
 	}
