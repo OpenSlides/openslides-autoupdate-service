@@ -28,7 +28,7 @@ func TestListOfSpeakersModeA(t *testing.T) {
 		"can see",
 		t,
 		f,
-		false,
+		true,
 		`---
 		list_of_speakers/1: 
 			meeting_id: 30

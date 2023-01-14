@@ -35,7 +35,7 @@ func (h History) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]by
 	}
 
 	currentDS := dsfetch.New(h.currentGetter)
-	mperms := perm.NewMeetingPermission(currentDS, h.userID)
+	ctx = perm.ContextWithPermissionCache(ctx, h.currentGetter, h.userID)
 	oldDS := dsfetch.New(h.oldGetter)
 
 	orgaManager, err := perm.HasOrganizationManagementLevel(ctx, currentDS, h.userID, perm.OMLCanManageOrganization)
@@ -50,7 +50,7 @@ func (h History) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]by
 
 	adminInMeeting := make(map[int]struct{}, len(requestUserMeetingIDs))
 	for _, meetingID := range requestUserMeetingIDs {
-		p, err := mperms.Meeting(ctx, meetingID)
+		p, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
 		}
@@ -117,7 +117,7 @@ func (h History) canSeeKey(
 		return false, nil
 	}
 
-	meetingID, hasMeeting, err := collection.Collection(key.Collection).MeetingID(ctx, oldDS, key.ID)
+	meetingID, hasMeeting, err := collection.Collection(ctx, key.Collection).MeetingID(ctx, oldDS, key.ID)
 	if err != nil {
 		return false, fmt.Errorf("getting meeting id: %w", err)
 	}
@@ -128,7 +128,7 @@ func (h History) canSeeKey(
 	}
 
 	if key.Collection == "user" {
-		for _, r := range (collection.User{}).RequiredObjects(oldDS) {
+		for _, r := range (collection.User{}).RequiredObjects(ctx, oldDS) {
 			meetingIDs, err := r.TmplFunc(key.ID).Value(ctx)
 			if err != nil {
 				return false, fmt.Errorf("getting meeting ids for %s: %w", r.Name, err)

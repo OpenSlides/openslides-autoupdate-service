@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	restrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
@@ -92,7 +93,9 @@ func TestRestrict(t *testing.T) {
 		dskey.MustKey("meeting/22/admin_group_id"),
 	}
 
-	data, err := restricter.Get(context.Background(), keys...)
+	ctx := perm.ContextWithPermissionCache(context.Background(), ds, 1)
+
+	data, err := restricter.Get(ctx, keys...)
 	if err != nil {
 		t.Fatalf("Restrict returned: %v", err)
 	}
@@ -149,7 +152,9 @@ func TestRestrictSuperAdmin(t *testing.T) {
 		dskey.MustKey("personal_note/2/id"),
 	}
 
-	got, err := restricter.Get(context.Background(), keys...)
+	ctx := perm.ContextWithPermissionCache(context.Background(), ds, 1)
+
+	got, err := restricter.Get(ctx, keys...)
 	if err != nil {
 		t.Fatalf("Restrict returned: %v", err)
 	}

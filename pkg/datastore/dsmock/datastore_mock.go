@@ -48,10 +48,7 @@ func YAMLData(input string) map[dskey.Key][]byte {
 				}
 
 				for fieldName, fieldValue := range field {
-					key, err := dskey.FromString(fmt.Sprintf("%s/%d/%s", dbKey, id, fieldName))
-					if err != nil {
-						panic(err)
-					}
+					key := dskey.MustKey(fmt.Sprintf("%s/%d/%s", dbKey, id, fieldName))
 					bs, err := json.Marshal(fieldValue)
 					if err != nil {
 						panic(fmt.Errorf("creating test db. Key %s: %w", key, err))
@@ -59,10 +56,7 @@ func YAMLData(input string) map[dskey.Key][]byte {
 					data[key] = bs
 				}
 
-				idKey, err := dskey.FromString(fmt.Sprintf("%s/%d/id", dbKey, id))
-				if err != nil {
-					panic(err)
-				}
+				idKey := dskey.MustKey(fmt.Sprintf("%s/%d/id", dbKey, id))
 				data[idKey] = []byte(strconv.Itoa(id))
 			}
 
@@ -73,10 +67,7 @@ func YAMLData(input string) map[dskey.Key][]byte {
 			}
 
 			for fieldName, fieldValue := range field {
-				fqfield, err := dskey.FromString(fmt.Sprintf("%s/%s/%s", parts[0], parts[1], fieldName))
-				if err != nil {
-					panic(err)
-				}
+				fqfield := dskey.MustKey(fmt.Sprintf("%s/%s/%s", parts[0], parts[1], fieldName))
 				bs, err := json.Marshal(fieldValue)
 				if err != nil {
 					panic(fmt.Errorf("creating test db. Key %s: %w", fqfield, err))
@@ -84,17 +75,11 @@ func YAMLData(input string) map[dskey.Key][]byte {
 				data[fqfield] = bs
 			}
 
-			idKey, err := dskey.FromString(fmt.Sprintf("%s/%s/id", parts[0], parts[1]))
-			if err != nil {
-				panic(err)
-			}
+			idKey := dskey.MustKey(fmt.Sprintf("%s/%s/id", parts[0], parts[1]))
 			data[idKey] = []byte(parts[1])
 
 		case 3:
-			key, err := dskey.FromString(dbKey)
-			if err != nil {
-				panic(err)
-			}
+			key := dskey.MustKey(dbKey)
 			bs, err := json.Marshal(dbValue)
 			if err != nil {
 				panic(fmt.Errorf("creating test db. Key %s: %w", dbKey, err))
@@ -102,10 +87,7 @@ func YAMLData(input string) map[dskey.Key][]byte {
 
 			data[key] = bs
 
-			idKey, err := dskey.FromString(fmt.Sprintf("%s/%s/id", parts[0], parts[1]))
-			if err != nil {
-				panic(err)
-			}
+			idKey := dskey.MustKey(fmt.Sprintf("%s/%s/id", parts[0], parts[1]))
 			data[idKey] = []byte(parts[1])
 		default:
 			panic(fmt.Errorf("invalid db key %s", dbKey))

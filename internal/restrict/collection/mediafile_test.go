@@ -26,7 +26,7 @@ func TestMediafileModeA(t *testing.T) {
 	)
 
 	testCase(
-		"No perms organization",
+		"No perms organization file",
 		t,
 		m.Modes("A"),
 		true,
@@ -66,11 +66,12 @@ func TestMediafileModeA(t *testing.T) {
 		m.Modes("A"),
 		false,
 		`---
-		mediafile/1:
+		mediafile/3:
 			owner_id: meeting/7
 		
 		meeting/7/user_ids: [1]
 		`,
+		withElementID(3),
 	)
 
 	testCase(
@@ -79,7 +80,7 @@ func TestMediafileModeA(t *testing.T) {
 		m.Modes("A"),
 		false,
 		`---
-		mediafile/1:
+		mediafile/3:
 			owner_id: meeting/7
 			used_as_logo_$_in_meeting_id: ["foo"]
 
@@ -87,6 +88,7 @@ func TestMediafileModeA(t *testing.T) {
 			id: 7
 			committee_id: 404
 		`,
+		withElementID(3),
 	)
 
 	testCase(
@@ -95,11 +97,12 @@ func TestMediafileModeA(t *testing.T) {
 		m.Modes("A"),
 		true,
 		`---
-		mediafile/1:
+		mediafile/3:
 			owner_id: meeting/7
 			used_as_logo_$_in_meeting_id: ["foo"]
 		meeting/7/user_ids: [1]
 		`,
+		withElementID(3),
 	)
 
 	testCase(

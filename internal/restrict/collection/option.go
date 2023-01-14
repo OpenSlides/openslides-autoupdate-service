@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -16,6 +15,11 @@ import (
 //
 // Mode B: The user can see the poll and (manage the linked poll or poll/state is published).
 type Option struct{}
+
+// Name returns the collection name.
+func (o Option) Name() string {
+	return "option"
+}
 
 // MeetingID returns the meetingID for the object.
 func (o Option) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -39,14 +43,14 @@ func (o Option) Modes(mode string) FieldRestricter {
 }
 
 // TODO: Group by poll
-func (o Option) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, optionIDs ...int) ([]int, error) {
+func (o Option) see(ctx context.Context, ds *dsfetch.Fetch, optionIDs ...int) ([]int, error) {
 	return eachCondition(optionIDs, func(optionID int) (bool, error) {
 		pollID, err := pollID(ctx, ds, optionID)
 		if err != nil {
 			return false, fmt.Errorf("getting poll id: %w", err)
 		}
 
-		see, err := Poll{}.see(ctx, ds, mperms, pollID)
+		see, err := Collection(ctx, Poll{}.Name()).Modes("A")(ctx, ds, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
 		}
@@ -56,14 +60,14 @@ func (o Option) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeting
 }
 
 // TODO: Group by poll
-func (o Option) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, optionIDs ...int) ([]int, error) {
+func (o Option) modeB(ctx context.Context, ds *dsfetch.Fetch, optionIDs ...int) ([]int, error) {
 	return eachCondition(optionIDs, func(optionID int) (bool, error) {
 		pollID, err := pollID(ctx, ds, optionID)
 		if err != nil {
 			return false, fmt.Errorf("getting poll id: %w", err)
 		}
 
-		see, err := Poll{}.see(ctx, ds, mperms, pollID)
+		see, err := Collection(ctx, Poll{}.Name()).Modes("A")(ctx, ds, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
 		}
@@ -72,7 +76,7 @@ func (o Option) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meeti
 			return false, nil
 		}
 
-		canManage, err := Poll{}.manage(ctx, ds, mperms, pollID)
+		canManage, err := Poll{}.manage(ctx, ds, pollID)
 		if err != nil {
 			return false, fmt.Errorf("checking see poll %d: %w", pollID, err)
 		}

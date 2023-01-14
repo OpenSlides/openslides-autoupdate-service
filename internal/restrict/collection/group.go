@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -14,6 +13,11 @@ import (
 //
 // Mode A: The user can see the group.
 type Group struct{}
+
+// Name returns the collection name.
+func (g Group) Name() string {
+	return "group"
+}
 
 // MeetingID returns the meetingID for the object.
 func (g Group) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -34,9 +38,9 @@ func (g Group) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, groupIDs ...int) ([]int, error) {
+func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, groupIDs ...int) ([]int, error) {
 	return eachMeeting(ctx, ds, g, groupIDs, func(meetingID int, ids []int) ([]int, error) {
-		canSee, err := Meeting{}.see(ctx, ds, mperms, meetingID)
+		canSee, err := Collection(ctx, Meeting{}.Name()).Modes("B")(ctx, ds, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("can see meeting %d: %w", meetingID, err)
 		}

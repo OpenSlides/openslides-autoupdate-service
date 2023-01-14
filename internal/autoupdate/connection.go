@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsrecorder"
 )
@@ -105,6 +106,7 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 	}
 
 	recorder := dsrecorder.New(c.autoupdate.datastore)
+	ctx = restrict.ContextWithCache(ctx, recorder, c.uid)
 	restricter := c.autoupdate.restricter(recorder, c.uid)
 
 	keys, err := c.kb.Update(ctx, restricter)

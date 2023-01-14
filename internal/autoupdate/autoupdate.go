@@ -218,7 +218,7 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 
 	ds := dsfetch.New(a.datastore)
 
-	meetingID, hasMeeting, err := collection.Collection(coll).MeetingID(ctx, ds, id)
+	meetingID, hasMeeting, err := collection.Collection(ctx, coll).MeetingID(ctx, ds, id)
 	if err != nil {
 		var errNotExist dsfetch.DoesNotExistError
 		if errors.As(err, &errNotExist) {
@@ -266,9 +266,14 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []string) (map[string]map[string][]byte, error) {
 	var keys []dskey.Key
 	for _, fqid := range fqids {
-		collection, _, found := strings.Cut(fqid, "/")
+		collection, rawID, found := strings.Cut(fqid, "/")
 		if !found {
 			return nil, fmt.Errorf("invalid fqid %s, expected one /", fqid)
+		}
+
+		id, err := strconv.Atoi(rawID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid fqid %s, second part has to be an nummber", fqid)
 		}
 
 		fields := restrict.FieldsForCollection(collection)
@@ -277,11 +282,7 @@ func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []stri
 		}
 
 		for _, field := range fields {
-			key, err := dskey.FromString(fqid + "/" + field)
-			if err != nil {
-				return nil, fmt.Errorf("fqid  %s can not be added to field %s: %w", fqid, field, err)
-			}
-
+			key := dskey.Key{Collection: collection, ID: id, Field: field}
 			keys = append(keys, key)
 		}
 	}

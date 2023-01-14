@@ -15,6 +15,11 @@ import (
 // Mode A: The user can see the motion statute paragraph.
 type MotionStatuteParagraph struct{}
 
+// Name returns the collection name.
+func (m MotionStatuteParagraph) Name() string {
+	return "motion_statute_paragraph"
+}
+
 // MeetingID returns the meetingID for the object.
 func (m MotionStatuteParagraph) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.MotionStatuteParagraph_MeetingID(id).Value(ctx)
@@ -34,6 +39,6 @@ func (m MotionStatuteParagraph) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionStatuteParagraph) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, MotionStatuteParagraphIDs ...int) ([]int, error) {
-	return meetingPerm(ctx, ds, m, MotionStatuteParagraphIDs, mperms, perm.MotionCanSee)
+func (m MotionStatuteParagraph) see(ctx context.Context, ds *dsfetch.Fetch, MotionStatuteParagraphIDs ...int) ([]int, error) {
+	return meetingPerm(ctx, ds, m, MotionStatuteParagraphIDs, perm.MotionCanSee)
 }
