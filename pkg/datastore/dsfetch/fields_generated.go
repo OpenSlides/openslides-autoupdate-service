@@ -1283,6 +1283,12 @@ func (r *Fetch) Group_MeetingID(groupID int) *ValueInt {
 	return v
 }
 
+func (r *Fetch) Group_MeetingUserIDs(groupID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "group", id: groupID, field: "meeting_user_ids"}
+	r.requested[dskey.Key{Collection: "group", ID: groupID, Field: "meeting_user_ids"}] = v
+	return v
+}
+
 func (r *Fetch) Group_Name(groupID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "group", id: groupID, field: "name", required: true}
 	r.requested[dskey.Key{Collection: "group", ID: groupID, Field: "name"}] = v
@@ -1328,12 +1334,6 @@ func (r *Fetch) Group_UsedAsMotionPollDefaultID(groupID int) *ValueMaybeInt {
 func (r *Fetch) Group_UsedAsPollDefaultID(groupID int) *ValueMaybeInt {
 	v := &ValueMaybeInt{fetch: r, collection: "group", id: groupID, field: "used_as_poll_default_id"}
 	r.requested[dskey.Key{Collection: "group", ID: groupID, Field: "used_as_poll_default_id"}] = v
-	return v
-}
-
-func (r *Fetch) Group_UserIDs(groupID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "group", id: groupID, field: "user_ids"}
-	r.requested[dskey.Key{Collection: "group", ID: groupID, Field: "user_ids"}] = v
 	return v
 }
 
@@ -1622,6 +1622,12 @@ func (r *Fetch) MeetingUser_ChatMessageIDs(meetingUserID int) *ValueIntSlice {
 func (r *Fetch) MeetingUser_Comment(meetingUserID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "meetingUser", id: meetingUserID, field: "comment"}
 	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "comment"}] = v
+	return v
+}
+
+func (r *Fetch) MeetingUser_GroupIDs(meetingUserID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "meetingUser", id: meetingUserID, field: "group_ids"}
+	r.requested[dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "group_ids"}] = v
 	return v
 }
 
@@ -5120,18 +5126,6 @@ func (r *Fetch) User_ForwardingCommitteeIDs(userID int) *ValueIntSlice {
 func (r *Fetch) User_Gender(userID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "user", id: userID, field: "gender"}
 	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "gender"}] = v
-	return v
-}
-
-func (r *Fetch) User_GroupIDsTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "group_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "group_$_ids"}] = v
-	return v
-}
-
-func (r *Fetch) User_GroupIDs(userID int, meetingID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "group_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("group_$%d_ids", meetingID)}] = v
 	return v
 }
 
