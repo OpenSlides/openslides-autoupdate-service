@@ -1,27 +1,6 @@
 
-{{if eq .TemplateAttr ""}}
-	func (r *Fetch) {{.GoName}}({{.Collection}}ID int) *{{.ValueType}} {
-		v := &{{.ValueType}}{fetch: r, collection: "{{.Collection}}", id: {{.Collection}}ID, field: "{{.FieldName}}" {{if .Required}},required:true{{end}} }
-		r.requested[dskey.Key{Collection: "{{.CollectionName}}", ID: {{.Collection}}ID, Field: "{{.FieldName}}" }] = v
-		return v
-	}
-{{else}}
-	{{if eq .TemplateAttrType "int"}}
-		func (r *Fetch) {{.GoName}}Tmpl({{.Collection}}ID int) *ValueIDSlice {
-			v := &ValueIDSlice{fetch: r, collection: "{{.Collection}}", id: {{.Collection}}ID, field: "{{.FieldName}}" {{if .Required}},required:true{{end}} }
-			r.requested[dskey.Key{Collection: "{{.CollectionName}}", ID: {{ .Collection }}ID, Field: "{{.FieldName}}" }] = v
-			return v
-		}
-	{{else}}
-		func (r *Fetch) {{.GoName}}Tmpl({{.Collection}}ID int) *ValueStringSlice {
-			v := &ValueStringSlice{fetch: r, collection: "{{.Collection}}", id: {{.Collection}}ID, field: "{{.FieldName}}" {{if .Required}},required:true{{end}} }
-			r.requested[dskey.Key{Collection: "{{.CollectionName}}", ID: {{ .Collection }}ID, Field: "{{.FieldName}}" }] = v
-			return v
-		}
-	{{end}}
-	func (r *Fetch) {{.GoName}}({{.Collection}}ID int, {{.TemplateAttr}} {{.TemplateAttrType}}) *{{.ValueType}} {
-			v := &{{.ValueType}}{fetch: r, collection: "{{.Collection}}", id: {{.Collection}}ID, field: "{{.FieldName}}" {{if .Required}},required:true{{end}} }
-			r.requested[dskey.Key{Collection: "{{.CollectionName}}", ID: {{ .Collection }}ID, Field: fmt.Sprintf("{{.TemplateFieldName}}", {{.TemplateAttr}}) }] = v
-			return v
-		}
-{{end}}
+func (r *Fetch) {{.GoName}}({{.Collection}}ID int) *{{.ValueType}} {
+	v := &{{.ValueType}}{fetch: r, collection: "{{.Collection}}", id: {{.Collection}}ID, field: "{{.FieldName}}" {{if .Required}},required:true{{end}} }
+	r.requested[dskey.Key{Collection: "{{.CollectionName}}", ID: {{.Collection}}ID, Field: "{{.FieldName}}" }] = v
+	return v
+}

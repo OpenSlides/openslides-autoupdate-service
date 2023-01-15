@@ -180,30 +180,6 @@ func TestKeys(t *testing.T) {
 			mustKeys("not_exist/1/group_ids"),
 		},
 		{
-			"Template field",
-			`{
-				"ids": [1],
-				"collection": "user",
-				"fields": {
-					"group_$_ids": {
-						"type": "template",
-						"values": {
-							"type": "relation-list",
-							"collection": "group",
-							"fields": {"name": null}
-						}
-					}
-				}
-			}`,
-			`---
-			user/1:
-				group_$_ids:  ["1","2"]
-				group_$1_ids: [1,2]
-				group_$2_ids: [1,2]
-			`,
-			mustKeys("user/1/group_$_ids", "user/1/group_$1_ids", "user/1/group_$2_ids", "group/1/name", "group/2/name"),
-		},
-		{
 			"Generic field",
 			`{
 				"ids": [1],

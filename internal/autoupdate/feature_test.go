@@ -54,15 +54,8 @@ c/2:
 	ga_ids: [2,3]
 d/1:
 	d: d1
-	b_$_ids: ["1","2","3"]
-	b_$1_ids: [1,2]
-	b_$2_ids: [1]
-	b_$3_ids: []
 d/2:
 	d: d2
-	b_$_ids: ["1","4"]
-	b_$1_ids: []
-	b_$4_ids: [2]
 ga/1:
 	ga: ga.1
 	content_object_ids: ["a/1"]
@@ -230,85 +223,6 @@ func TestFeatures(t *testing.T) {
 				"c/2/title":               "c2",
 				"c/2/a_id":                2,
 				"c/2/ga_ids":              [2,3]
-			}`,
-		},
-		{
-			"template fields",
-			`{
-				"collection": "d",
-				"ids": [1,2],
-				"fields": {
-					"d": null,
-					"b_$_ids": null
-				}
-			}`,
-			`{
-				"d/1/d":       "d1",
-				"d/1/b_$_ids": ["1","2","3"],
-				"d/2/d":       "d2",
-				"d/2/b_$_ids": ["1","4"]
-			}`,
-		},
-		{
-			"structured fields without references",
-			`{
-				"collection": "d",
-				"ids": [1,2],
-				"fields": {
-					"d": null,
-					"b_$_ids": {
-						"type": "template"
-					}
-				}
-			}`,
-			`{
-				"d/1/d":       "d1",
-				"d/1/b_$_ids": ["1","2","3"],
-				"d/1/b_$1_ids": [1,2],
-				"d/1/b_$2_ids": [1],
-				"d/1/b_$3_ids": [],
-				"d/2/d":       "d2",
-				"d/2/b_$_ids": ["1","4"],
-				"d/2/b_$1_ids": [],
-				"d/2/b_$4_ids": [2]
-			}`,
-		},
-		{
-			"structed references",
-			`{
-				"collection": "d",
-				"ids": [1,2],
-				"fields": {
-					"b_$_ids": {
-						"type": "template",
-						"values": {
-							"type": "relation-list",
-							"collection": "b",
-							"fields": {
-								"b": null
-							}
-						}
-					},
-					"b_$4_ids": {
-						"type": "relation-list",
-						"collection": "b",
-						"fields": {
-							"title": null
-						}
-					}
-				}
-			}`,
-			`{
-				"d/1/b_$_ids": ["1","2","3"],
-				"d/1/b_$1_ids": [1,2],
-				"d/1/b_$2_ids": [1],
-				"d/1/b_$3_ids": [],
-				"d/2/b_$_ids": ["1","4"],
-				"d/2/b_$1_ids": [],
-				"d/2/b_$4_ids": [2],
-				"b/1/b":       "b1",
-				"b/2/b":       "b2",
-				"b/2/title":   "b2"
 			}`,
 		},
 	} {

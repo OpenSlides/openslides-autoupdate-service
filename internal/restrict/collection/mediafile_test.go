@@ -89,7 +89,6 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/3:
 			owner_id: meeting/7
-			used_as_logo_$_in_meeting_id: ["foo"]
 
 		meeting/7:
 			id: 7
@@ -250,7 +249,6 @@ func TestMediafileModeA(t *testing.T) {
 		meeting/7:
 			id: 7
 			committee_id: 300
-		user/1/group_$7_ids: [4]
 		group/3/id: 3
 		group/4/id: 4
 		`,
@@ -271,7 +269,6 @@ func TestMediafileModeA(t *testing.T) {
 			id: 7
 			committee_id: 300
 
-		user/1/group_$7_ids: [3]
 		group/3/id: 3
 		`,
 	)

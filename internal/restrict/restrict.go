@@ -229,9 +229,9 @@ func groupKeysByCollection(key dskey.Key, value []byte, restrictModeIDs map[coll
 }
 
 func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]*set.Set[int]) error {
-	keyPrefix := templateKeyPrefix(key.CollectionField())
+	collectionField := key.CollectionField()
 
-	cm, id, ok, err := isRelation(keyPrefix, value)
+	cm, id, ok, err := isRelation(collectionField, value)
 	if err != nil {
 		return fmt.Errorf("checking for relation: %w", err)
 	}
@@ -244,7 +244,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 		return nil
 	}
 
-	cm, ids, ok, err := isRelationList(keyPrefix, value)
+	cm, ids, ok, err := isRelationList(collectionField, value)
 	if err != nil {
 		return fmt.Errorf("checking for relation-list: %w", err)
 	}
@@ -257,7 +257,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 		return nil
 	}
 
-	cm, id, ok, err = isGenericRelation(keyPrefix, value)
+	cm, id, ok, err = isGenericRelation(collectionField, value)
 	if err != nil {
 		return fmt.Errorf("checking for generic-relation: %w", err)
 	}
@@ -270,7 +270,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 		return nil
 	}
 
-	mcm, _, ok, err := isGenericRelationList(keyPrefix, value)
+	mcm, _, ok, err := isGenericRelationList(collectionField, value)
 	if err != nil {
 		return fmt.Errorf("checking for generic-relation-list: %w", err)
 	}
@@ -292,9 +292,9 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 // The first return value is the new value. The second is, if the value was
 // manipulated.q
 func manipulateRelations(key dskey.Key, value []byte, allowedRestrictions map[collection.CM]*set.Set[int]) ([]byte, bool, error) {
-	keyPrefix := templateKeyPrefix(key.CollectionField())
+	collectionField := key.CollectionField()
 
-	cm, id, ok, err := isRelation(keyPrefix, value)
+	cm, id, ok, err := isRelation(collectionField, value)
 	if err != nil {
 		return nil, false, fmt.Errorf("checking %s for relation: %w", key, err)
 	}
@@ -303,7 +303,7 @@ func manipulateRelations(key dskey.Key, value []byte, allowedRestrictions map[co
 		return nil, !allowedRestrictions[cm].Has(id), nil
 	}
 
-	cm, ids, ok, err := isRelationList(keyPrefix, value)
+	cm, ids, ok, err := isRelationList(collectionField, value)
 	if err != nil {
 		return nil, false, fmt.Errorf("checking %s for relation-list: %w", key, err)
 	}
@@ -326,7 +326,7 @@ func manipulateRelations(key dskey.Key, value []byte, allowedRestrictions map[co
 		return nil, false, nil
 	}
 
-	cm, id, ok, err = isGenericRelation(keyPrefix, value)
+	cm, id, ok, err = isGenericRelation(collectionField, value)
 	if err != nil {
 		return nil, false, fmt.Errorf("checking %s for generic-relation: %w", key, err)
 	}
@@ -335,7 +335,7 @@ func manipulateRelations(key dskey.Key, value []byte, allowedRestrictions map[co
 		return nil, !allowedRestrictions[cm].Has(id), nil
 	}
 
-	mcm, genericIDs, ok, err := isGenericRelationList(keyPrefix, value)
+	mcm, genericIDs, ok, err := isGenericRelationList(collectionField, value)
 	if err != nil {
 		return nil, false, fmt.Errorf("checking %s for generic-relation-list: %w", key, err)
 	}
@@ -362,15 +362,15 @@ func manipulateRelations(key dskey.Key, value []byte, allowedRestrictions map[co
 	return nil, false, nil
 }
 
-func isRelation(keyPrefix string, value []byte) (collection.CM, int, bool, error) {
-	toCollectionfield, ok := relationFields[keyPrefix]
+func isRelation(collectionField string, value []byte) (collection.CM, int, bool, error) {
+	toCollectionfield, ok := relationFields[collectionField]
 	if !ok {
 		return collection.CM{}, 0, false, nil
 	}
 
 	var id int
 	if err := json.Unmarshal(value, &id); err != nil {
-		return collection.CM{}, 0, false, fmt.Errorf("decoding %q (`%s`): %w", keyPrefix, value, err)
+		return collection.CM{}, 0, false, fmt.Errorf("decoding %q (`%s`): %w", collectionField, value, err)
 	}
 
 	coll, field, _ := strings.Cut(toCollectionfield, "/")
@@ -481,24 +481,12 @@ func genericKeyToCollectionMode(genericID string, toCollectionFieldMap map[strin
 //
 // This is a string like "A" or "B" or any other name of a restriction mode.
 func restrictModeName(collection, field string) (string, error) {
-	fieldMode, ok := restrictionModes[templateKeyPrefix(collection+"/"+field)]
+	fieldMode, ok := restrictionModes[collection+"/"+field]
 	if !ok {
 		// TODO LAST ERROR
 		return "", fmt.Errorf("fqfield %q is unknown, maybe run go generate ./... to fetch all fields from the models.yml", collection+"/"+field)
 	}
 	return fieldMode, nil
-}
-
-// templateKeyPrefix returns the index of the field list list. For template fields this is
-// the key without the replacement.
-func templateKeyPrefix(collectionField string) string {
-	i := strings.IndexByte(collectionField, '$')
-	if i < 0 || i == len(collectionField)-1 || collectionField[i+1] == '_' {
-		// Normal field or $ at the end or $_
-		return collectionField
-	}
-
-	return collectionField[:i+1]
 }
 
 // restrictModefunc returns the field restricter function to use.

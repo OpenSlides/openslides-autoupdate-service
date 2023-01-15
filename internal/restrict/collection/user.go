@@ -28,7 +28,7 @@ import (
 //	    There exists a poll where Y can see the poll/voted_ids and X is part of that list.
 //	    There exists a vote which Y can see and X is linked in user_id or delegated_user_id.
 //	    There exists a chat_message which Y can see and X has sent it (specified by chat_message/user_id).
-//	X is linked in one of the relations vote_delegated_$_to_id or vote_delegations_$_from_ids of Y.
+//	X is linked in one of the relations vote_delegated_to_id or vote_delegations_from_ids of Y.
 //
 // Mode A: Y can see X.
 //

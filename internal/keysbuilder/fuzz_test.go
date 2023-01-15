@@ -94,20 +94,6 @@ func FuzzFromJSON(f *testing.F) {
 		"ids": [1],
 		"collection": "user",
 		"fields": {
-			"group_$_ids": {
-				"type": "template",
-				"values": {
-					"type": "relation-list",
-					"collection": "group",
-					"fields": {"name": null}
-				}
-			}
-		}
-	}`)
-	f.Add(`{
-		"ids": [1],
-		"collection": "user",
-		"fields": {
 			"like": {
 				"type": "generic-relation",
 				"fields": {"name": null}
@@ -142,18 +128,15 @@ func FuzzFromJSON(f *testing.F) {
 	}`)
 
 	ds := dsmock.Stub(map[dskey.Key][]byte{
-		dskey.MustKey("user/1/note_id"):       []byte(`1`),
-		dskey.MustKey("user/1/group_ids"):     []byte(`[1,2]`),
-		dskey.MustKey("note/1/motion_id"):     []byte(`1`),
-		dskey.MustKey("group/1/perm_ids"):     []byte(`[1,2]`),
-		dskey.MustKey("group/2/perm_ids"):     []byte(`[1,2]`),
-		dskey.MustKey("user/1/group_$_ids"):   []byte(`["1","2"]`),
-		dskey.MustKey("user/1/group_$1_ids"):  []byte(`[1,2]`),
-		dskey.MustKey("user/1/group_$_2_ids"): []byte(`[1,2]`),
-		dskey.MustKey("user/1/like"):          []byte(`"topic/1"`),
-		dskey.MustKey("user/1/likes"):         []byte(`["topic/1","agenda/1"]`),
-		dskey.MustKey("topic/1/tag_ids"):      []byte(`[1,2]`),
-		dskey.MustKey("agenda/1/tag_ids"):     []byte(`[1,2]`),
+		dskey.MustKey("user/1/note_id"):   []byte(`1`),
+		dskey.MustKey("user/1/group_ids"): []byte(`[1,2]`),
+		dskey.MustKey("note/1/motion_id"): []byte(`1`),
+		dskey.MustKey("group/1/perm_ids"): []byte(`[1,2]`),
+		dskey.MustKey("group/2/perm_ids"): []byte(`[1,2]`),
+		dskey.MustKey("user/1/like"):      []byte(`"topic/1"`),
+		dskey.MustKey("user/1/likes"):     []byte(`["topic/1","agenda/1"]`),
+		dskey.MustKey("topic/1/tag_ids"):  []byte(`[1,2]`),
+		dskey.MustKey("agenda/1/tag_ids"): []byte(`[1,2]`),
 	})
 
 	f.Fuzz(func(t *testing.T, query string) {

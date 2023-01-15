@@ -65,7 +65,7 @@ func (k Key) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + k.String() + `"`), nil
 }
 
-var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*/[a-z][a-z0-9_]*\$?[a-z0-9_]*$`)
+var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*/[a-z][a-z0-9_]*$`)
 
 // keyValid checks if all of the given keys are valid. Invalid keys are
 // returned.

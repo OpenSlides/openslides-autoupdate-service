@@ -34,12 +34,11 @@ const (
 	ftRelationList        = "relation-list"
 	ftGenericRelation     = "generic-relation"
 	ftGenericRelationList = "generic-relation-list"
-	ftTemplate            = "template"
 )
 
 var (
 	reCollection = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])$`)
-	reField      = regexp.MustCompile(`^[a-z][a-z0-9_]*\$?[a-z0-9_]*$`)
+	reField      = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 )
 
 type fieldDescription interface {
@@ -268,62 +267,6 @@ func (g *genericRelationListField) keys(key dskey.Key, value json.RawMessage, da
 	return nil
 }
 
-// templateField requests a list of fields from a template.
-//
-//	{
-//		"ids": [1],
-//		"collection": "user",
-//		"fields": {
-//			"group_$_ids": {
-//				"type": "template",
-//				"values": {
-//					"type": "relation-list",
-//					"collection": "group",
-//					"fields": {"name": null}
-//				}
-//			}
-//		}
-//	}
-type templateField struct {
-	values fieldDescription
-}
-
-func (t *templateField) UnmarshalJSON(data []byte) error {
-	var field struct {
-		Values json.RawMessage `json:"values"`
-	}
-	if err := json.Unmarshal(data, &field); err != nil {
-		return fmt.Errorf("decode template field: %w", err)
-	}
-	if len(field.Values) == 0 {
-		return nil
-	}
-
-	values, err := unmarshalField(field.Values)
-	if err != nil {
-		if sub, ok := err.(InvalidError); ok {
-			return InvalidError{sub: &sub, msg: "Error in template sub", field: "template"}
-		}
-		return fmt.Errorf("decoding sub attribute of template field: %w", err)
-	}
-	t.values = values
-	return nil
-}
-
-func (t *templateField) keys(key dskey.Key, value json.RawMessage, data map[dskey.Key]fieldDescription) error {
-	var values []string
-	if err := json.Unmarshal(value, &values); err != nil {
-		return fmt.Errorf("decoding value for key %s: %w", key, err)
-	}
-
-	for _, value := range values {
-		newkey := key
-		newkey.Field = strings.Replace(key.Field, "$", "$"+value, 1)
-		data[newkey] = t.values
-	}
-	return nil
-}
-
 // unmarshalField uses the type-attribute in the json object get the field-type.
 // Afterwards, the json is parsed as this field-type and returned.
 func unmarshalField(data []byte) (fieldDescription, error) {
@@ -350,9 +293,6 @@ func unmarshalField(data []byte) (fieldDescription, error) {
 
 	case ftGenericRelationList:
 		r = new(genericRelationListField)
-
-	case ftTemplate:
-		r = new(templateField)
 
 	case "":
 		return nil, InvalidError{msg: "no type"}

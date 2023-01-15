@@ -31,7 +31,6 @@ func TestMotionCommentModeA(t *testing.T) {
 			read_group_ids: [2]
 			meeting_id: 30
 		
-		user/1/group_$30_ids: [2]
 		group/2/id: 2
 		meeting/30/id: 30
 		`,
@@ -58,7 +57,6 @@ func TestMotionCommentModeA(t *testing.T) {
 			read_group_ids: []
 			meeting_id: 30
 		
-		user/1/group_$30_ids: [2]
 		group/2/id: 2
 		`,
 		withPerms(30, perm.MotionCanSee),
@@ -90,7 +88,6 @@ func TestMotionCommentModeA(t *testing.T) {
 		motion_submitter/4/meeting_user_id: 20
 		meeting_user/20/user_id: 2
 		
-		user/1/group_$30_ids: [2]
 		group/2/id: 2
 		`,
 		withPerms(30, perm.MotionCanSee),
