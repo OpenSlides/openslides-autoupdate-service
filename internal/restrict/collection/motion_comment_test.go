@@ -117,7 +117,8 @@ func TestMotionCommentModeA(t *testing.T) {
 			meeting_id: 30
 			read_group_ids: [2]
 		
-		user/1/group_$30_ids: [2]
+		user/1/meeting_user_id: [10]
+		meeting_user/10/group_ids: [2]
 		group/2/id: 2
 		`,
 		withPerms(30, perm.MotionCanSee),
@@ -144,7 +145,8 @@ func TestMotionCommentModeA(t *testing.T) {
 			meeting_id: 30
 			write_group_ids: [2]
 		
-		user/1/group_$30_ids: [2]
+		user/1/meeting_user_id: [10]
+		meeting_user/10/group_ids: [2]
 		group/2/id: 2
 		`,
 		withPerms(30, perm.MotionCanSee),

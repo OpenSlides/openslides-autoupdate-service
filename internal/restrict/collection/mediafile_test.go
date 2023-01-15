@@ -55,8 +55,15 @@ func TestMediafileModeA(t *testing.T) {
 		true,
 		`---
 		mediafile/1/owner_id: meeting/7
-		meeting/7/admin_group_id: 8
-		user/1/group_$7_ids: [8]
+		meeting/7:
+			admin_group_id: 8
+			committee_id: 70
+		committee/70/id: 70
+
+
+		user/1/meeting_user_ids: [10]
+		meeting_user/10/group_ids: [8]
+		meeting_user/10/meeting_id: 7
 		`,
 	)
 
@@ -219,11 +226,12 @@ func TestMediafileModeA(t *testing.T) {
 			inherited_access_group_ids: [3]
 			is_public: false
 
-		meeting/7:
-			id: 7
-			committee_id: 300
-		user/1/group_$7_ids: [3]
+		meeting/7/committee_id: 300
 		group/3/id: 3
+		
+		user/1/meeting_user_ids: [10]
+		meeting_user/10/group_ids: [3]
+		meeting_user/10/meeting_id: 7
 		`,
 		withPerms(7, perm.MediafileCanSee),
 	)

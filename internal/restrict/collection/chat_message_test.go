@@ -52,8 +52,11 @@ func TestChatMessageModeA(t *testing.T) {
 			read_group_ids: [4]
 		
 		meeting/30/id: 30
-		user/1/group_$30_ids: [4]
 		group/4/id: 4
+
+		user/1/meeting_user_ids: [10]
+		meeting_user/10/group_ids: [4]
+		meeting_user/10/meeting_id: 30
 		`,
 	)
 

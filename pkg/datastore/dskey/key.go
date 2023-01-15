@@ -18,12 +18,13 @@ type Key struct {
 //
 // This uses a regular expression to validate the key. This can be slow if
 // called many times. It is faster to manually validate the key.
-func FromString(in string) (Key, error) {
-	if !keyValid(in) {
-		return Key{}, invalidKeyError{in}
+func FromString(format string, a ...any) (Key, error) {
+	keyStr := fmt.Sprintf(format, a...)
+	if !keyValid(keyStr) {
+		return Key{}, invalidKeyError{keyStr}
 	}
 
-	parts := strings.Split(in, "/")
+	parts := strings.Split(keyStr, "/")
 	id, _ := strconv.Atoi(parts[1])
 	return Key{parts[0], id, parts[2]}, nil
 }
@@ -31,8 +32,8 @@ func FromString(in string) (Key, error) {
 // MustKey is like FromString but panics, if the key is invalid.
 //
 // Should only be used in tests.
-func MustKey(in string) Key {
-	k, err := FromString(in)
+func MustKey(fmt string, a ...any) Key {
+	k, err := FromString(fmt, a...)
 	if err != nil {
 		panic(err)
 	}

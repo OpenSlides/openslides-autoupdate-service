@@ -89,7 +89,8 @@ func TestUserModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		user/2/group_$_ids: ["5"]
+		user/2/meeting_user_ids: [20]
+		meeting_user/20/meeting_id: 5
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -398,8 +399,7 @@ func TestUserModeA(t *testing.T) {
 			chat_message_ids: [4]
 			meeting_id: 30
 
-
-		user/1/group_$30_ids: [5]
+		meeting_user/10/group_ids: [5]
 		
 		meeting/30/id: 30
 		
@@ -473,7 +473,9 @@ func TestUserModeD(t *testing.T) {
 		u.Modes("D"),
 		true,
 		`---
-		user/2/group_$_ids: ["5"]
+		user/2/meeting_user_ids: [20]
+		meeting_user/20:
+			meeting_id: 5
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -575,7 +577,8 @@ func TestUserModeE(t *testing.T) {
 		u.Modes("E"),
 		true,
 		`---
-		user/2/group_$_ids: ["5"]
+		user/2/meeting_user_ids: [20]
+		meeting_user/20/meeting_id: 5
 		`,
 		withRequestUser(1),
 		withElementID(2),
