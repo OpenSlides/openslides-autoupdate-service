@@ -1,6 +1,10 @@
 
 func (r *Fetch) {{.GoName}}({{.Collection}}ID int) *{{.ValueType}} {
+	key := dskey.Key{Collection: "{{.CollectionName}}", ID: {{.Collection}}ID, Field: "{{.FieldName}}" }
+	if v, ok := r.requested[key]; ok {
+		return v.(*{{.ValueType}})
+	}
 	v := &{{.ValueType}}{fetch: r, collection: "{{.Collection}}", id: {{.Collection}}ID, field: "{{.FieldName}}" {{if .Required}},required:true{{end}} }
-	r.requested[dskey.Key{Collection: "{{.CollectionName}}", ID: {{.Collection}}ID, Field: "{{.FieldName}}" }] = v
+	r.requested[key] = v
 	return v
 }
