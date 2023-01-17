@@ -36,6 +36,11 @@ func New(getter Getter) *Fetch {
 
 // Execute loads all requested keys from the datastore.
 func (r *Fetch) Execute(ctx context.Context) error {
+	if err := r.err; err != nil {
+		r.err = nil
+		return err
+	}
+
 	defer func() {
 		// Clear all requested fields in the end. Even if errors happened.
 		r.requested = make(map[dskey.Key]executer)

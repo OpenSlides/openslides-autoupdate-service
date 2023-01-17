@@ -48,7 +48,7 @@ func YAMLData(input string) map[dskey.Key][]byte {
 				}
 
 				for fieldName, fieldValue := range field {
-					key := dskey.MustKey(fmt.Sprintf("%s/%d/%s", dbKey, id, fieldName))
+					key := dskey.MustKey("%s/%d/%s", dbKey, id, fieldName)
 					bs, err := json.Marshal(fieldValue)
 					if err != nil {
 						panic(fmt.Errorf("creating test db. Key %s: %w", key, err))
@@ -56,7 +56,7 @@ func YAMLData(input string) map[dskey.Key][]byte {
 					data[key] = bs
 				}
 
-				idKey := dskey.MustKey(fmt.Sprintf("%s/%d/id", dbKey, id))
+				idKey := dskey.MustKey("%s/%d/id", dbKey, id)
 				data[idKey] = []byte(strconv.Itoa(id))
 			}
 
@@ -67,7 +67,7 @@ func YAMLData(input string) map[dskey.Key][]byte {
 			}
 
 			for fieldName, fieldValue := range field {
-				fqfield := dskey.MustKey(fmt.Sprintf("%s/%s/%s", parts[0], parts[1], fieldName))
+				fqfield := dskey.MustKey("%s/%s/%s", parts[0], parts[1], fieldName)
 				bs, err := json.Marshal(fieldValue)
 				if err != nil {
 					panic(fmt.Errorf("creating test db. Key %s: %w", fqfield, err))
@@ -75,7 +75,7 @@ func YAMLData(input string) map[dskey.Key][]byte {
 				data[fqfield] = bs
 			}
 
-			idKey := dskey.MustKey(fmt.Sprintf("%s/%s/id", parts[0], parts[1]))
+			idKey := dskey.MustKey("%s/%s/id", parts[0], parts[1])
 			data[idKey] = []byte(parts[1])
 
 		case 3:
@@ -87,7 +87,7 @@ func YAMLData(input string) map[dskey.Key][]byte {
 
 			data[key] = bs
 
-			idKey := dskey.MustKey(fmt.Sprintf("%s/%s/id", parts[0], parts[1]))
+			idKey := dskey.MustKey("%s/%s/id", parts[0], parts[1])
 			data[idKey] = []byte(parts[1])
 		default:
 			panic(fmt.Errorf("invalid db key %s", dbKey))
