@@ -137,7 +137,6 @@ func TestRestrict(t *testing.T) {
 }
 
 func TestRestrictSuperAdmin(t *testing.T) {
-	t.Skipf("Does not work. See TODO in collection.collection")
 	ctx := context.Background()
 	ds := dsmock.Stub(dsmock.YAMLData(`---
 	user/1/organization_management_level: superadmin
