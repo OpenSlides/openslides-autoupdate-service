@@ -95,8 +95,12 @@ func TestHistoryGetter(t *testing.T) {
 			"meeting object history permission",
 			`---
 			user/1:
-				group_$2_ids: [3]
+				meeting_user_id: 10
 				meeting_ids: [2]
+			meeting_user/10:
+				user_id: 1
+				meeting_id: 2
+				group_ids: [3]
 			group/3/permissions: ["meeting.can_see_history"]
 			meeting/2/admin_group_id: 3
 
