@@ -23,15 +23,18 @@ import (
 
 // Middleware can be used as a datastore.Getter that restrict the data for a
 // user.
-func Middleware(getter datastore.Getter, uid int) datastore.Getter {
-	return restricter{
+//
+// It also initializes a ctx that has to be used in the future getter calls.
+func Middleware(ctx context.Context, getter datastore.Getter, uid int) (context.Context, datastore.Getter) {
+	ctx = contextWithCache(ctx, getter, uid)
+	return ctx, restricter{
 		getter: getter,
 		uid:    uid,
 	}
 }
 
-// ContextWithCache adds some restrictor caches to the context.
-func ContextWithCache(ctx context.Context, getter datastore.Getter, uid int) context.Context {
+// contextWithCache adds some restrictor caches to the context.
+func contextWithCache(ctx context.Context, getter datastore.Getter, uid int) context.Context {
 	ctx = collection.ContextWithRestrictCache(ctx)
 	ctx = perm.ContextWithPermissionCache(ctx, getter, uid)
 	return ctx
