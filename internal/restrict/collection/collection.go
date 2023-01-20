@@ -189,6 +189,7 @@ func Collection(ctx context.Context, collection string) Restricter {
 		return Unknown{collection}
 	}
 
+	// TODO: Fixme for superadmin. It needs the restrict superadmin method
 	return withRestrictCache(ctx, r)
 }
 
