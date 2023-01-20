@@ -114,7 +114,7 @@ func (r *restrictCache) Modes(mode string) FieldRestricter {
 			return cachedAllowedIDs, nil
 		}
 
-		newAllowedIDs, err := r.Modes(mode)(ctx, ds, notFound...)
+		newAllowedIDs, err := r.Restricter.Modes(mode)(ctx, ds, notFound...)
 		if err != nil {
 			return nil, fmt.Errorf("calling restricter: %w", err)
 		}
