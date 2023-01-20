@@ -146,6 +146,7 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (D
 //
 // The attribute position can be used to get data from the history.
 func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder, position int) (map[dskey.Key][]byte, error) {
+	ctx = restrict.ContextWithCache(ctx, recorder, c.uid)
 	var restricter datastore.Getter = a.restricter(a.datastore, userID)
 
 	if position != 0 {
