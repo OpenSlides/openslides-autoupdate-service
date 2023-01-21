@@ -58,7 +58,7 @@ type amendmentsType struct {
 	ID                      int                            `json:"id"`
 	Title                   string                         `json:"title"`
 	Number                  string                         `json:"number"`
-	AmendmentParagraphs     map[string]string              `json:"amendment_paragraphs"`
+	AmendmentParagraph      json.RawMessage                `json:"amendment_paragraph"`
 	ChangeRecommendations   []dbMotionChangeRecommendation `json:"change_recommendations"`
 	MergeAmendmentIntoFinal string                         `json:"merge_amendment_into_final"`
 	MergeAmendmentIntoDiff  string                         `json:"merge_amendment_into_diff"`
@@ -72,7 +72,6 @@ type dbMotionWork struct {
 	MeetingID                                    int      `json:"meeting_id"`
 	LeadMotionID                                 int      `json:"lead_motion_id"`
 	StatuteParagraphID                           int      `json:"statute_paragraph_id"`
-	AmendmentParagraph                           []string `json:"amendment_paragraph_$"`
 	ChangeRecommendationIDS                      []int    `json:"change_recommendation_ids"`
 	AmendmentIDS                                 []int    `json:"amendment_ids"`
 	SubmitterIDS                                 []int    `json:"submitter_ids"`
@@ -92,7 +91,7 @@ type dbMotion struct {
 	LineLength                       int                            `json:"line_length"`
 	Preamble                         string                         `json:"preamble"`
 	LineNumbering                    string                         `json:"line_numbering"`
-	AmendmentParagraphs              map[string]string              `json:"amendment_paragraphs,omitempty"`
+	AmendmentParagraph               json.RawMessage                `json:"amendment_paragraph,omitempty"`
 	LeadMotion                       *leadMotionType                `json:"lead_motion,omitempty"`
 	BaseStatute                      *dbMotionStatuteParagraph      `json:"base_statute,omitempty"`
 	ChangeRecommendations            []dbMotionChangeRecommendation `json:"change_recommendations"`
@@ -161,7 +160,7 @@ func Motion(store *projector.SlideStore) {
 			"meeting_id",
 			"lead_motion_id",
 			"statute_paragraph_id",
-			"amendment_paragraph_$",
+			"amendment_paragraph",
 			"change_recommendation_ids",
 			"amendment_ids",
 			"submitter_ids",
@@ -189,7 +188,6 @@ func Motion(store *projector.SlideStore) {
 		motion.RecommendationExtension = "" // will be (re-)filled conditionally
 
 		fillMotionFromMeeting(motion, meeting)
-		fillAmendmentParagraphs(ctx, fetch, motion)
 		err = fillSubmitters(ctx, fetch, motion)
 		if err != nil {
 			return nil, fmt.Errorf("fillSubmitters: %w", err)
@@ -283,16 +281,6 @@ func fillMotionFromMeeting(motion *dbMotion, meeting *dbMeeting) {
 	motion.LineLength = meeting.MotionsLineLength
 	motion.Preamble = meeting.MotionsPreamble
 	motion.LineNumbering = meeting.MotionsDefaultLineNumbering
-}
-
-func fillAmendmentParagraphs(ctx context.Context, fetch *datastore.Fetcher, motion *dbMotion) {
-	if len(motion.MotionWork.AmendmentParagraph) > 0 {
-		motion.AmendmentParagraphs = make(map[string]string, len(motion.MotionWork.AmendmentParagraph))
-		for _, nr := range motion.MotionWork.AmendmentParagraph {
-			text := datastore.String(ctx, fetch.FetchIfExist, "motion/%d/amendment_paragraph_$%s", motion.ID, nr)
-			motion.AmendmentParagraphs[nr] = text
-		}
-	}
 }
 
 func fillLeadMotion(ctx context.Context, fetch *datastore.Fetcher, motion *dbMotion) error {
@@ -459,7 +447,7 @@ func fillAmendments(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 		"title",
 		"number",
 		"meeting_id",
-		"amendment_paragraph_$",
+		"amendment_paragraph",
 		"state_id",
 		"recommendation_id",
 		"change_recommendation_ids",
@@ -471,8 +459,6 @@ func fillAmendments(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 			return fmt.Errorf("motionFromMap: %w", err)
 		}
 
-		fillAmendmentParagraphs(ctx, fetch, motionAmend)
-
 		if err := fillChangeRecommendations(ctx, fetch, motionAmend); err != nil {
 			return fmt.Errorf("fill change recommendations: %w", err)
 		}
@@ -481,7 +467,7 @@ func fillAmendments(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 		amendment.ID = id
 		amendment.Title = motionAmend.Title
 		amendment.Number = motionAmend.Number
-		amendment.AmendmentParagraphs = motionAmend.AmendmentParagraphs
+		amendment.AmendmentParagraph = motionAmend.AmendmentParagraph
 		amendment.ChangeRecommendations = motionAmend.ChangeRecommendations
 
 		maif := datastore.String(ctx, fetch.FetchIfExist, "motion_state/%d/merge_amendment_into_final", motionAmend.MotionWork.StateID)
