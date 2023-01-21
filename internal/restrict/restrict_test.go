@@ -27,9 +27,15 @@ func TestRestrict(t *testing.T) {
 			committee_id: 404
 
 	user/1:
-		group_$_ids: ["30","2"]
-		group_$30_ids: [10]
-		group_$2_ids: [2]
+		meeting_user_ids: [10,11]
+	
+	meeting_user:
+		10:
+			meeting_id: 30
+			group_ids: [10]
+		11:
+			meeting_id: 2
+			group_ids: [2]
 
 	group:
 		1:
@@ -84,9 +90,9 @@ func TestRestrict(t *testing.T) {
 		dskey.MustKey("agenda_item/1/tag_ids"),
 		dskey.MustKey("agenda_item/10/item_number"),
 		dskey.MustKey("tag/1/tagged_ids"),
-		dskey.MustKey("user/1/group_$_ids"),
-		dskey.MustKey("user/1/group_$30_ids"),
-		dskey.MustKey("user/1/group_$2_ids"),
+		dskey.MustKey("user/1/meeting_user_ids"),
+		dskey.MustKey("user_meeting/10/group_ids"),
+		dskey.MustKey("user_meeting/11/group_ids"),
 		dskey.MustKey("agenda_item/2/content_object_id"),
 		dskey.MustKey("agenda_item/2/parent_id"),
 		dskey.MustKey("motion/1/origin_id"),
@@ -122,17 +128,16 @@ func TestRestrict(t *testing.T) {
 		t.Errorf("agenda_item/1/tag_ids was restricted to %q, expedted %q", got, `[1]`)
 	}
 
-	// This should change in the future. meeting 2 is not visible
-	if got := string(data[dskey.MustKey("user/1/group_$_ids")]); got != `["30","2"]` {
-		t.Errorf("user/1/group_$_ids was restricted to %q, did not expect it", got)
+	if got := string(data[dskey.MustKey("user/1/meeting_user_ids")]); got != `[10]` {
+		t.Errorf("user/1/meeting_user_ids was restricted to %q, did not expect it", got)
 	}
 
-	if got := string(data[dskey.MustKey("user/1/group_$30_ids")]); got != `[10]` {
-		t.Errorf("user/1/group_$30_ids was restricted to %q, did not expect it", got)
+	if got := string(data[dskey.MustKey("meeting_user/10/group_ids")]); got != `[10]` {
+		t.Errorf("meeting_user/10/group_ids was restricted to %q, did not expect it", got)
 	}
 
-	if got := string(data[dskey.MustKey("user/1/group_$2_ids")]); got != `[]` {
-		t.Errorf("user/1/group_$2_ids is %q, expected a empty list", got)
+	if got := string(data[dskey.MustKey("meeting_user/11/group_ids")]); got != `[]` {
+		t.Errorf("meeting_user/11/group_ids is %q, expected a empty list", got)
 	}
 }
 
@@ -176,7 +181,7 @@ func TestRestrictSuperAdmin(t *testing.T) {
 }
 
 func TestCorruptedDatastore(t *testing.T) {
-	t.Skip() // The warning does not work with the current implementation
+	t.Skip() // TODO_ The warning does not work with the current implementation
 	ctx := context.Background()
 	ds := dsmock.Stub(dsmock.YAMLData(`---
 	projector/13:

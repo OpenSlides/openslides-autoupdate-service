@@ -95,7 +95,7 @@ func TestHistoryGetter(t *testing.T) {
 			"meeting object history permission",
 			`---
 			user/1:
-				meeting_user_id: 10
+				meeting_user_ids: [10]
 				meeting_ids: [2]
 			meeting_user/10:
 				user_id: 1
@@ -113,8 +113,11 @@ func TestHistoryGetter(t *testing.T) {
 			"meeting object wrong meeting",
 			`---
 			user/1:
-				group_$2_ids: [3]
 				meeting_ids: [2]
+				meeting_user_ids: [10]
+			meeting_user/10:
+				group_ids: [3]
+				meeting_id: 2
 			group/3/permissions: ["meeting.can_see_history"]
 			meeting/2/admin_group_id: 3
 			`,
@@ -126,8 +129,11 @@ func TestHistoryGetter(t *testing.T) {
 			"theme",
 			`---
 			user/1:
-				group_$2_ids: [3]
+				meeting_user_ids: [10]
 				meeting_ids: [2]
+			meeting_user/10:
+				group_ids: [3]
+				meeting_id: 2
 			group/3/permissions: ["meeting.can_see_history"]
 			meeting/2/admin_group_id: 3
 			`,
@@ -139,8 +145,11 @@ func TestHistoryGetter(t *testing.T) {
 			"committee",
 			`---
 			user/1:
-				group_$2_ids: [3]
+				meeting_user_ids: [10]
 				meeting_ids: [2]
+			meeting_user/10:
+				group_ids: [3]
+				meeting_id: 2
 			group/3/permissions: ["meeting.can_see_history"]
 			meeting/2/admin_group_id: 3
 			`,
@@ -152,8 +161,11 @@ func TestHistoryGetter(t *testing.T) {
 		// 	"user is motion submitter",
 		// 	`---
 		// 	user/1:
-		// 		group_$2_ids: [3]
+		// 		meeting_user_ids: [10]
 		// 		meeting_ids: [2]
+		// 	meeting_user/10:
+		// 		group_ids: [3]
+		// 		meeting_id: 2
 		// 	group/3/permissions: ["meeting.can_see_history"]
 		// 	meeting/2/admin_group_id: 3
 		// 	`,
@@ -169,8 +181,11 @@ func TestHistoryGetter(t *testing.T) {
 			"unknown collection",
 			`---
 			user/1:
-				group_$2_ids: [3]
+				meeting_user_ids: [10]
 				meeting_ids: [2]
+			meeting_user/10:
+				group_ids: [3]
+				meeting_id: 2
 			group/3/permissions: ["meeting.can_see_history"]
 			meeting/2/admin_group_id: 3
 			`,
