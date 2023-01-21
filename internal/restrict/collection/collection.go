@@ -63,7 +63,7 @@ type Restricter interface {
 
 type restrictCache struct {
 	cache map[dskey.Key]bool
-	sub   Restricter
+	Restricter
 }
 
 type contextKeyType string
@@ -87,8 +87,8 @@ func withRestrictCache(ctx context.Context, sub Restricter) Restricter {
 	}
 
 	return &restrictCache{
-		cache: cache,
-		sub:   sub,
+		cache:      cache,
+		Restricter: sub,
 	}
 }
 
@@ -97,7 +97,7 @@ func (r *restrictCache) Modes(mode string) FieldRestricter {
 		notFound := make([]int, 0, len(ids))
 		cachedAllowedIDs := make([]int, 0, len(ids))
 		for _, id := range ids {
-			key := dskey.Key{Collection: r.sub.Name(), ID: id, Field: mode}
+			key := dskey.Key{Collection: r.Name(), ID: id, Field: mode}
 
 			allowed, found := r.cache[key]
 			if !found {
@@ -114,20 +114,20 @@ func (r *restrictCache) Modes(mode string) FieldRestricter {
 			return cachedAllowedIDs, nil
 		}
 
-		newAllowedIDs, err := r.sub.Modes(mode)(ctx, ds, notFound...)
+		newAllowedIDs, err := r.Restricter.Modes(mode)(ctx, ds, notFound...)
 		if err != nil {
 			return nil, fmt.Errorf("calling restricter: %w", err)
 		}
 
 		// Add all not Found keys to the cache as not allowed.
 		for _, id := range notFound {
-			key := dskey.Key{Collection: r.sub.Name(), ID: id, Field: mode}
+			key := dskey.Key{Collection: r.Name(), ID: id, Field: mode}
 			r.cache[key] = false
 		}
 
 		// Set all new allowed ids to the cache as true.
 		for _, id := range newAllowedIDs {
-			key := dskey.Key{Collection: r.sub.Name(), ID: id, Field: mode}
+			key := dskey.Key{Collection: r.Name(), ID: id, Field: mode}
 			r.cache[key] = true
 		}
 
@@ -135,12 +135,16 @@ func (r *restrictCache) Modes(mode string) FieldRestricter {
 	}
 }
 
-func (r *restrictCache) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (meetingID int, hasMeeting bool, err error) {
-	return r.sub.MeetingID(ctx, ds, id)
-}
+func (r *restrictCache) SuperAdmin(mode string) FieldRestricter {
+	type superRestricter interface {
+		SuperAdmin(mode string) FieldRestricter
+	}
 
-func (r *restrictCache) Name() string {
-	return r.sub.Name()
+	if sr, ok := r.Restricter.(superRestricter); ok {
+		return sr.SuperAdmin(mode)
+	}
+
+	return nil
 }
 
 var collectionMap = map[string]Restricter{
@@ -190,6 +194,7 @@ func Collection(ctx context.Context, collection string) Restricter {
 		return Unknown{collection}
 	}
 
+	// TODO: Fixme for superadmin. It needs the restrict superadmin method
 	return withRestrictCache(ctx, r)
 }
 

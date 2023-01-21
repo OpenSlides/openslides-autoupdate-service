@@ -68,7 +68,7 @@ type KeysBuilder interface {
 }
 
 // RestrictMiddleware is a function that can restrict data.
-type RestrictMiddleware func(getter datastore.Getter, uid int) datastore.Getter
+type RestrictMiddleware func(ctx context.Context, getter datastore.Getter, uid int) (context.Context, datastore.Getter)
 
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
 // with autoupdate.New().
@@ -146,7 +146,9 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (D
 //
 // The attribute position can be used to get data from the history.
 func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder, position int) (map[dskey.Key][]byte, error) {
-	var restricter datastore.Getter = a.restricter(a.datastore, userID)
+	var restricter datastore.Getter
+
+	ctx, restricter = a.restricter(ctx, a.datastore, userID)
 
 	if position != 0 {
 		getter := datastore.NewGetPosition(a.datastore, position)
@@ -287,7 +289,9 @@ func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []stri
 		}
 	}
 
-	values, err := a.restricter(a.datastore, userID).Get(ctx, keys...)
+	ctx, restricter := a.restricter(ctx, a.datastore, userID)
+
+	values, err := restricter.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("getting data: %w", err)
 	}

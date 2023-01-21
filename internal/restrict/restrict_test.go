@@ -8,12 +8,12 @@ import (
 	"testing"
 
 	restrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
 
 func TestRestrict(t *testing.T) {
+	ctx := context.Background()
 	ds := dsmock.Stub(dsmock.YAMLData(`---
 	meeting:
 		30:
@@ -77,7 +77,7 @@ func TestRestrict(t *testing.T) {
 	unknown_collection/1/field: 404
 	`))
 
-	restricter := restrict.Middleware(ds, 1)
+	ctx, restricter := restrict.Middleware(ctx, ds, 1)
 
 	keys := []dskey.Key{
 		dskey.MustKey("agenda_item/1/item_number"),
@@ -92,8 +92,6 @@ func TestRestrict(t *testing.T) {
 		dskey.MustKey("motion/1/origin_id"),
 		dskey.MustKey("meeting/22/admin_group_id"),
 	}
-
-	ctx := perm.ContextWithPermissionCache(context.Background(), ds, 1)
 
 	data, err := restricter.Get(ctx, keys...)
 	if err != nil {
@@ -139,6 +137,7 @@ func TestRestrict(t *testing.T) {
 }
 
 func TestRestrictSuperAdmin(t *testing.T) {
+	ctx := context.Background()
 	ds := dsmock.Stub(dsmock.YAMLData(`---
 	user/1:
 		organization_management_level: superadmin
@@ -155,14 +154,12 @@ func TestRestrictSuperAdmin(t *testing.T) {
 			user_id: 200
 	`))
 
-	restricter := restrict.Middleware(ds, 1)
+	ctx, restricter := restrict.Middleware(ctx, ds, 1)
 
 	keys := []dskey.Key{
 		dskey.MustKey("personal_note/1/id"),
 		dskey.MustKey("personal_note/2/id"),
 	}
-
-	ctx := perm.ContextWithPermissionCache(context.Background(), ds, 1)
 
 	got, err := restricter.Get(ctx, keys...)
 	if err != nil {
@@ -180,6 +177,7 @@ func TestRestrictSuperAdmin(t *testing.T) {
 
 func TestCorruptedDatastore(t *testing.T) {
 	t.Skip() // The warning does not work with the current implementation
+	ctx := context.Background()
 	ds := dsmock.Stub(dsmock.YAMLData(`---
 	projector/13:
 		meeting_id: 30
@@ -196,7 +194,7 @@ func TestCorruptedDatastore(t *testing.T) {
 			- projector.can_see
 	`))
 
-	restricter := restrict.Middleware(ds, 1)
+	ctx, restricter := restrict.Middleware(ctx, ds, 1)
 
 	var buf bytes.Buffer
 	log.SetOutput(&buf)

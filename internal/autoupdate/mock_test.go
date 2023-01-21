@@ -53,13 +53,13 @@ func blockingTime(wait time.Duration, f func()) bool {
 }
 
 // RestrictAllowed is a restricter that allows everything
-func RestrictAllowed(getter datastore.Getter, uid int) datastore.Getter {
-	return mockRestricter{getter, true}
+func RestrictAllowed(ctx context.Context, getter datastore.Getter, uid int) (context.Context, datastore.Getter) {
+	return ctx, mockRestricter{getter, true}
 }
 
 // RestrictNotAllowed is a restricter that removes everythin
-func RestrictNotAllowed(getter datastore.Getter, uid int) datastore.Getter {
-	return mockRestricter{getter, false}
+func RestrictNotAllowed(ctx context.Context, getter datastore.Getter, uid int) (context.Context, datastore.Getter) {
+	return ctx, mockRestricter{getter, false}
 }
 
 type mockRestricter struct {
