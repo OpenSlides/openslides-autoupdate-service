@@ -5689,12 +5689,12 @@ func (r *Fetch) Motion_SubmitterIDs(motionID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Fetch) Motion_SupporterIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "supporter_ids"}
+func (r *Fetch) Motion_SupporterMeetingUserIDs(motionID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "motion", ID: motionID, Field: "supporter_meeting_user_ids"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
-	v := &ValueIntSlice{fetch: r, collection: "motion", id: motionID, field: "supporter_ids"}
+	v := &ValueIntSlice{fetch: r, collection: "motion", id: motionID, field: "supporter_meeting_user_ids"}
 	r.requested[key] = v
 	return v
 }
