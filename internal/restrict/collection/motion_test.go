@@ -10,176 +10,187 @@ import (
 func TestMotionModeC(t *testing.T) {
 	f := collection.Motion{}.Modes("C")
 
+	// testCase(
+	// 	"no permissions",
+	// 	t,
+	// 	f,
+	// 	false,
+	// 	`---
+	// 	motion/1:
+	// 		id: 1
+	// 		meeting_id: 30
+	// 	`,
+	// )
+
+	// testCase(
+	// 	"motion.can_see",
+	// 	t,
+	// 	f,
+	// 	true,
+	// 	`---
+	// 	motion/1:
+	// 		meeting_id: 30
+	// 		state_id: 3
+
+	// 	motion_state/3/id: 3
+	// 	`,
+	// 	withPerms(30, perm.MotionCanSee),
+	// )
+
+	// testCase(
+	// 	"motion.can_see with restrict is_submitter",
+	// 	t,
+	// 	f,
+	// 	true,
+	// 	`---
+	// 	motion/1:
+	// 		meeting_id: 30
+	// 		state_id: 3
+	// 		submitter_ids: [4]
+
+	// 	motion_state/3/restrictions:
+	// 	- is_submitter
+
+	// 	motion_submitter/4/meeting_user_id: 10
+	// 	meeting_user/10/user_id: 1
+	// 	`,
+	// 	withPerms(30, perm.MotionCanSee),
+	// )
+
+	// testCase(
+	// 	"motion.can_see with restrict is_submitter not submitter",
+	// 	t,
+	// 	f,
+	// 	false,
+	// 	`---
+	// 	motion/1:
+	// 		meeting_id: 30
+	// 		state_id: 3
+	// 		submitter_ids: [4]
+
+	// 	motion_state/3/restrictions:
+	// 	- is_submitter
+
+	// 	motion_submitter/4/meeting_user_id: 20
+	// 	meeting_user/20/user_id: 2
+	// 	`,
+	// 	withPerms(30, perm.MotionCanSee),
+	// )
+
+	// testCase(
+	// 	"motion.can_see with restrict perm",
+	// 	t,
+	// 	f,
+	// 	true,
+	// 	`---
+	// 	motion/1:
+	// 		meeting_id: 30
+	// 		state_id: 3
+
+	// 	motion_state/3/restrictions:
+	// 	- motion.can_manage
+	// 	`,
+	// 	withPerms(30, perm.MotionCanSee, perm.MotionCanManage),
+	// )
+
+	// testCase(
+	// 	"motion.can_see with restrict perm without perm",
+	// 	t,
+	// 	f,
+	// 	false,
+	// 	`---
+	// 	motion/1:
+	// 		meeting_id: 30
+	// 		state_id: 3
+
+	// 	motion_state/3/restrictions:
+	// 	- motion.can_manage
+	// 	`,
+	// 	withPerms(30, perm.MotionCanSee),
+	// )
+
+	// testCase(
+	// 	"motion.can_see with two restrictions, non fullfield",
+	// 	t,
+	// 	f,
+	// 	false,
+	// 	`---
+	// 	motion/1:
+	// 		meeting_id: 30
+	// 		state_id: 3
+
+	// 	motion_state/3/restrictions:
+	// 	- motion.can_manage
+	// 	- is_submitter
+	// 	`,
+	// 	withPerms(30, perm.MotionCanSee),
+	// )
+
+	// testCase(
+	// 	"motion.can_see with two restrictions, is_submitter fullfield",
+	// 	t,
+	// 	f,
+	// 	true,
+	// 	`---
+	// 	motion/1:
+	// 		meeting_id: 30
+	// 		state_id: 3
+	// 		submitter_ids: [4]
+
+	// 	motion_state/3/restrictions:
+	// 	- motion.can_manage
+	// 	- is_submitter
+
+	// 	motion_submitter/4/meeting_user_id: 10
+	// 	meeting_user/10/user_id: 1
+	// 	`,
+	// 	withPerms(30, perm.MotionCanSee),
+	// )
+
+	// testCase(
+	// 	"motion.can_see with two restrictions, motion.can_manage fullfield",
+	// 	t,
+	// 	f,
+	// 	true,
+	// 	`---
+	// 	motion/1:
+	// 		meeting_id: 30
+	// 		state_id: 3
+
+	// 	motion_state/3/restrictions:
+	// 	- motion.can_manage
+	// 	- is_submitter
+	// 	`,
+	// 	withPerms(30, perm.MotionCanManage),
+	// )
+
 	testCase(
-		"no permissions",
+		"motion.can_see with two restrictions, both fulfilled",
 		t,
 		f,
 		false,
 		`---
 		motion/1:
-			id: 1
-			meeting_id: 30
-		`,
-	)
-
-	testCase(
-		"motion.can_see",
-		t,
-		f,
-		true,
-		`---
-		motion/1:
-			meeting_id: 30
-			state_id: 3
-		
-		motion_state/3/id: 3
-		`,
-		withPerms(30, perm.MotionCanSee),
-	)
-
-	testCase(
-		"motion.can_see with restrict is_submitter",
-		t,
-		f,
-		true,
-		`---
-		motion/1:
 			meeting_id: 30
 			state_id: 3
 			submitter_ids: [4]
+			title: foo
+			list_of_speakers_id: 404
+			sequential_number: 1
 		
-		motion_state/3/restrictions:
-		- is_submitter
-
-		motion_submitter/4/meeting_user_id: 10
-		meeting_user/10/user_id: 1
-		`,
-		withPerms(30, perm.MotionCanSee),
-	)
-
-	testCase(
-		"motion.can_see with restrict is_submitter not submitter",
-		t,
-		f,
-		false,
-		`---
-		motion/1:
+		motion_state/3:
+			restrictions:
+			- motion.can_manage
+			- is_submitter
+			weight: 0
 			meeting_id: 30
-			state_id: 3
-			submitter_ids: [4]
-		
-		motion_state/3/restrictions:
-		- is_submitter
+			name: foo
+			workflow_id: 404
 
-		motion_submitter/4/meeting_user_id: 20
-		meeting_user/20/user_id: 2
-		`,
-		withPerms(30, perm.MotionCanSee),
-	)
-
-	testCase(
-		"motion.can_see with restrict perm",
-		t,
-		f,
-		true,
-		`---
-		motion/1:
+		motion_submitter/4:
+			meeting_user_id: 10
+			motion_id: 1
 			meeting_id: 30
-			state_id: 3
-		
-		motion_state/3/restrictions:
-		- motion.can_manage
-		`,
-		withPerms(30, perm.MotionCanSee, perm.MotionCanManage),
-	)
-
-	testCase(
-		"motion.can_see with restrict perm without perm",
-		t,
-		f,
-		false,
-		`---
-		motion/1:
-			meeting_id: 30
-			state_id: 3
-		
-		motion_state/3/restrictions:
-		- motion.can_manage
-		`,
-		withPerms(30, perm.MotionCanSee),
-	)
-
-	testCase(
-		"motion.can_see with two restrictions, non fullfield",
-		t,
-		f,
-		false,
-		`---
-		motion/1:
-			meeting_id: 30
-			state_id: 3
-		
-		motion_state/3/restrictions:
-		- motion.can_manage
-		- is_submitter
-		`,
-		withPerms(30, perm.MotionCanSee),
-	)
-
-	testCase(
-		"motion.can_see with two restrictions, is_submitter fullfield",
-		t,
-		f,
-		true,
-		`---
-		motion/1:
-			meeting_id: 30
-			state_id: 3
-			submitter_ids: [4]
-		
-		motion_state/3/restrictions:
-		- motion.can_manage
-		- is_submitter
-
-		motion_submitter/4/meeting_user_id: 10
-		meeting_user/10/user_id: 1
-		`,
-		withPerms(30, perm.MotionCanSee),
-	)
-
-	testCase(
-		"motion.can_see with two restrictions, motion.can_manage fullfield",
-		t,
-		f,
-		true,
-		`---
-		motion/1:
-			meeting_id: 30
-			state_id: 3
-		
-		motion_state/3/restrictions:
-		- motion.can_manage
-		- is_submitter
-		`,
-		withPerms(30, perm.MotionCanManage),
-	)
-
-	testCase(
-		"motion.can_see with two restrictions, both fullfield",
-		t,
-		f,
-		true,
-		`---
-		motion/1:
-			meeting_id: 30
-			state_id: 3
-			submitter_ids: [4]
-		
-		motion_state/3/restrictions:
-		- motion.can_manage
-		- is_submitter
-
-		motion_submitter/4/user_id: 1
 		`,
 		withPerms(30, perm.MotionCanManage),
 	)

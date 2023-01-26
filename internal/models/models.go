@@ -53,31 +53,32 @@ func URLPermission() string {
 	return repo + getVersion() + permissionPath
 }
 
-// Unmarshal parses the content of models.yml to a datastruct.q
-func Unmarshal(r io.Reader) (map[string]Model, error) {
-	var m map[string]Model
+// Unmarshal parses the content of models.yml to a datastruct.
+func Unmarshal(r io.Reader) (map[string]Collection, error) {
+	var m map[string]Collection
 	if err := yaml.NewDecoder(r).Decode(&m); err != nil {
 		return nil, fmt.Errorf("decoding models: %w", err)
 	}
 	return m, nil
 }
 
-// Model replresents one model from models.yml.
-type Model struct {
+// Collection replresents one collection from models.yml.
+type Collection struct {
 	Fields map[string]*Field
 }
 
 // UnmarshalYAML decodes a yaml model to models.Model.
-func (m *Model) UnmarshalYAML(node *yaml.Node) error {
+func (m *Collection) UnmarshalYAML(node *yaml.Node) error {
 	return node.Decode(&m.Fields)
 }
 
-// Field of a model.
+// Field of a collection.
 type Field struct {
 	Type            string
 	restrictionMode string
 	relation        Relation
 	Required        bool
+	Default         any
 }
 
 // Relation returns the relation object if the Field is a relation. In other
@@ -101,6 +102,7 @@ func (f *Field) UnmarshalYAML(value *yaml.Node) error {
 		Type            string `yaml:"type"`
 		RestrictionMode string `yaml:"restriction_mode"`
 		Required        bool   `yaml:"required"`
+		Default         any    `yaml:"default"`
 	}
 	if err := value.Decode(&typer); err != nil {
 		return fmt.Errorf("field object without type: %w", err)
@@ -109,6 +111,7 @@ func (f *Field) UnmarshalYAML(value *yaml.Node) error {
 	f.Type = typer.Type
 	f.restrictionMode = typer.RestrictionMode
 	f.Required = typer.Required
+	f.Default = typer.Default
 
 	var list bool
 	switch typer.Type {

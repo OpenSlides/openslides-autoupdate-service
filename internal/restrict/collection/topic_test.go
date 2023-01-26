@@ -40,8 +40,13 @@ func TestTopicModeA(t *testing.T) {
 		topic/1:
 			meeting_id: 30
 			agenda_item_id: 3
+			title: my topic
+			sequential_number: 1
+			list_of_speakers_id: 404
 
-		agenda_item_id/3/meeting_id: 30
+		agenda_item/3:
+			meeting_id: 30
+			content_object_id: topic/1
 		`,
 		withPerms(30, perm.AgendaItemCanSee),
 	)

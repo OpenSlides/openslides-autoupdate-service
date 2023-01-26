@@ -9,6 +9,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/sql"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
@@ -65,9 +66,11 @@ func testCaseMulti(name string, t *testing.T, f collection.FieldRestricter, ids,
 		o(&td)
 	}
 
-	userIDKey := dskey.MustKey(fmt.Sprintf("user/%d/id", td.requestUserID))
+	userIDKey := dskey.MustKey("user/%d/id", td.requestUserID)
 
 	td.data[userIDKey] = []byte(strconv.Itoa(td.requestUserID))
+	td.data[dskey.MustKey("user/%d/username", td.requestUserID)] = []byte(`"Request User"`)
+	td.data[dskey.MustKey("user/%d/organization_id", td.requestUserID)] = []byte(`1`)
 
 	td.test(t, f)
 }
@@ -78,6 +81,9 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 	t.Run(tt.name, func(t *testing.T) {
 		t.Helper()
 		getter := dsmock.Stub(tt.data)
+
+		fmt.Println(sql.Insert(tt.data))
+
 		ds := dsfetch.New(getter)
 		ctx := perm.ContextWithPermissionCache(context.Background(), getter, tt.requestUserID)
 
@@ -125,15 +131,20 @@ func withPerms(meetingID int, perms ...perm.TPermission) testCaseOption {
 
 		groupIDKey := dskey.MustKey("group/%d/id", groupID)
 		groupPermissionKey := dskey.MustKey("group/%d/permissions", groupID)
-		meetingIDKey := dskey.MustKey("meeting/%d/id", meetingID)
 
 		td.data[userMeetingUserIDsKey] = jsonAppend(td.data[userMeetingUserIDsKey], meetingUserID)
+		td.data[dskey.MustKey("user/%d/username", td.requestUserID)] = []byte(`"request user"`)
+		td.data[dskey.MustKey("user/%d/organization_id", td.requestUserID)] = []byte(`1`)
 		td.data[meetingUserGroupIDsKey] = jsonAppend(td.data[meetingUserGroupIDsKey], groupID)
 		td.data[meeetingUserMeetingIDKey] = []byte(strconv.Itoa(meetingID))
 		td.data[meetingUserIDKey] = []byte(strconv.Itoa(meetingUserID))
+		td.data[dskey.MustKey("meeting_user/%d/user_id", meetingUserID)] = []byte(strconv.Itoa(td.requestUserID))
+
 		td.data[groupIDKey] = []byte(strconv.Itoa(groupID))
+		td.data[dskey.MustKey("group/%d/meeting_id", groupID)] = []byte(strconv.Itoa(meetingID))
+		td.data[dskey.MustKey("group/%d/name", groupID)] = []byte("test group")
 		td.data[groupPermissionKey] = jsonPerms
-		td.data[meetingIDKey] = []byte(strconv.Itoa(meetingID))
+		//td.data[dskey.MustKey("meeting/%d/id", meetingID)] = []byte(strconv.Itoa(meetingID))
 	}
 }
 
