@@ -4875,18 +4875,6 @@ func (r *Fetch) User_PollVotedIDs(userID int, meetingID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Fetch) User_ProjectionIDsTmpl(userID int) *ValueIDSlice {
-	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "projection_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "projection_$_ids"}] = v
-	return v
-}
-
-func (r *Fetch) User_ProjectionIDs(userID int, meetingID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "projection_$_ids"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("projection_$%d_ids", meetingID)}] = v
-	return v
-}
-
 func (r *Fetch) User_Pronoun(userID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "user", id: userID, field: "pronoun"}
 	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "pronoun"}] = v
