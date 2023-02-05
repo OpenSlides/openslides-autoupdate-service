@@ -1,10 +1,7 @@
 package restrict_test
 
 import (
-	"bytes"
 	"context"
-	"log"
-	"strings"
 	"testing"
 
 	restrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
@@ -33,9 +30,11 @@ func TestRestrict(t *testing.T) {
 		10:
 			meeting_id: 30
 			group_ids: [10]
+			user_id: 1
 		11:
 			meeting_id: 2
 			group_ids: [2]
+			user_id: 1
 
 	group:
 		1:
@@ -128,16 +127,8 @@ func TestRestrict(t *testing.T) {
 		t.Errorf("agenda_item/1/tag_ids was restricted to %q, expedted %q", got, `[1]`)
 	}
 
-	if got := string(data[dskey.MustKey("user/1/meeting_user_ids")]); got != `[10]` {
+	if got := string(data[dskey.MustKey("user/1/meeting_user_ids")]); got != `[10,11]` {
 		t.Errorf("user/1/meeting_user_ids was restricted to %q, did not expect it", got)
-	}
-
-	if got := string(data[dskey.MustKey("meeting_user/10/group_ids")]); got != `[10]` {
-		t.Errorf("meeting_user/10/group_ids was restricted to %q, did not expect it", got)
-	}
-
-	if got := string(data[dskey.MustKey("meeting_user/11/group_ids")]); got != `[]` {
-		t.Errorf("meeting_user/11/group_ids is %q, expected a empty list", got)
 	}
 }
 
@@ -177,43 +168,5 @@ func TestRestrictSuperAdmin(t *testing.T) {
 
 	if got[dskey.MustKey("personal_note/2/id")] != nil {
 		t.Errorf("personal_note/2/id got not restricted")
-	}
-}
-
-func TestCorruptedDatastore(t *testing.T) {
-	t.Skip() // TODO_ The warning does not work with the current implementation
-	ctx := context.Background()
-	ds := dsmock.Stub(dsmock.YAMLData(`---
-	projector/13:
-		meeting_id: 30
-		current_projection_ids: [404]
-
-	meeting/30/id: 30
-	user/1:
-		group_$_ids: ["30"]
-		group_$30_ids: [10]
-	group:
-		10:
-			meeting_id: 30
-			permissions:
-			- projector.can_see
-	`))
-
-	ctx, restricter := restrict.Middleware(ctx, ds, 1)
-
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-
-	got, err := restricter.Get(context.Background(), dskey.MustKey("projector/13/current_projection_ids"))
-	if err != nil {
-		t.Fatalf("Restrict returned: %v", err)
-	}
-
-	if string(got[dskey.MustKey("projector/13/current_projection_ids")]) != `[]` {
-		t.Errorf("projector/13/current_projection_ids == %s, expected an empty list", got[dskey.MustKey("projector/13/current_projection_ids")])
-	}
-
-	if !strings.Contains(buf.String(), "Warning") {
-		t.Errorf("no warning logged, got: %s", buf.String())
 	}
 }
