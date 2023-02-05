@@ -183,9 +183,6 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 				return false, fmt.Errorf("getting meeting: %w", err)
 			}
 
-			// TODO: This can be better. perm.FromContext uses the userID and
-			// the meetingID to get the meeting_user/id. Maybe implement a
-			// function that expects a meeting_user_id directly.
 			perms, err := perm.FromContext(ctx, meetingID)
 			if err != nil {
 				return false, fmt.Errorf("checking permissions of meeting %d: %w", meetingID, err)
@@ -201,9 +198,20 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 			return false, fmt.Errorf("fetching meeting_user of %d: %w", otherUserID, err)
 		}
 
-		for _, meetingUserID := range meetingUserIDs {
+		for i, meetingUserID := range meetingUserIDs {
 			for _, r := range u.RequiredObjects(ctx, ds) {
-				ids, err := r.ElemFunc(meetingUserID).Value(ctx)
+				id := meetingUserID
+				if r.OnUser {
+					if i > 0 {
+						// Some requiredObjects have the realtion directly on
+						// the user object. They only have to be checked once in
+						// this loop
+						continue
+					}
+					id = otherUserID
+				}
+
+				ids, err := r.ElemFunc(id).Value(ctx)
 				if err != nil {
 					return false, fmt.Errorf("getting ids for %s: %w", r.Name, err)
 				}
@@ -228,6 +236,7 @@ type UserRequiredObject struct {
 	Name     string
 	ElemFunc func(int) *dsfetch.ValueIntSlice
 	SeeFunc  FieldRestricter
+	OnUser   bool // Tells, if the relation is via meeting_user_id or user_id
 }
 
 // RequiredObjects returns all references to other objects from the user.
@@ -237,57 +246,63 @@ func (User) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []UserRequir
 			"motion submitter",
 			ds.MeetingUser_SubmittedMotionIDs,
 			Collection(ctx, MotionSubmitter{}.Name()).Modes("A"),
+			false,
 		},
 
 		{
 			"motion supporter",
 			ds.MeetingUser_SupportedMotionIDs,
 			Collection(ctx, Motion{}.Name()).Modes("C"),
+			false,
 		},
 
-		// TODO: Fix the models.yml
-		// {
-		// 	"option",
-		// 	ds.MeetingUser_OptionIDs,
-		// 	Collection(ctx, Option{}.Name()).Modes("A"),
-		// },
+		{
+			"option",
+			ds.User_OptionIDs,
+			Collection(ctx, Option{}.Name()).Modes("A"),
+			true,
+		},
 
 		{
 			"assignment candidate",
 			ds.MeetingUser_AssignmentCandidateIDs,
 			Collection(ctx, AssignmentCandidate{}.Name()).Modes("A"),
+			false,
 		},
 
 		{
 			"speaker",
 			ds.MeetingUser_SpeakerIDs,
 			Collection(ctx, Speaker{}.Name()).Modes("A"),
+			false,
 		},
 
-		// TODO: Fix the models.yml
-		// {
-		// 	"poll voted",
-		// 	ds.MeetingUser_PollVotedIDs,
-		// 	Collection(ctx, Poll{}.Name()).Modes("A"),
-		// },
+		{
+			"poll voted",
+			ds.User_PollVotedIDs,
+			Collection(ctx, Poll{}.Name()).Modes("A"),
+			true,
+		},
 
-		// TODO: Fix the models.yml
-		// {
-		// 	"vote user",
-		// 	ds.MeetingUser_VoteIDs,
-		// 	Collection(ctx, Vote{}.Name()).Modes("A"),
-		// },
+		{
+			"vote user",
+			ds.User_VoteIDs,
+			Collection(ctx, Vote{}.Name()).Modes("A"),
+			true,
+		},
 
 		{
 			"vote delegated user",
 			ds.MeetingUser_VoteDelegatedVoteIDs,
 			Collection(ctx, Vote{}.Name()).Modes("A"),
+			false,
 		},
 
 		{
 			"chat messages",
 			ds.MeetingUser_ChatMessageIDs,
 			Collection(ctx, ChatMessage{}.Name()).Modes("A"),
+			false,
 		},
 	}
 }
@@ -366,7 +381,6 @@ func (User) modeE(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 		return userIDs, nil
 	}
 
-	// TODO: optimize
 	return eachCondition(userIDs, func(otherUserID int) (bool, error) {
 		if requestUserID == otherUserID {
 			return true, nil

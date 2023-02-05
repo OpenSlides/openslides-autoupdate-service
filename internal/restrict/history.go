@@ -129,7 +129,7 @@ func (h History) canSeeKey(
 	}
 
 	if key.Collection == "user" {
-		return false, nil // TODO Fix me
+		return false, nil // TODO Fix me (r.TmplFunc has changed)
 		// for _, r := range (collection.User{}).RequiredObjects(ctx, oldDS) {
 		// 	meetingIDs, err := r.TmplFunc(key.ID).Value(ctx)
 		// 	if err != nil {

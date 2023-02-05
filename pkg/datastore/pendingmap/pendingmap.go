@@ -253,8 +253,8 @@ func (pm *PendingMap) reading(cmd func() error) error {
 	return cmd()
 }
 
-// size returns the size of all values in the cache in bytes.
-func (pm *PendingMap) size() int {
+// Size returns the Size of all values in the cache in bytes.
+func (pm *PendingMap) Size() int {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
