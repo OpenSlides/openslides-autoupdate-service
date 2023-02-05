@@ -32,8 +32,6 @@ import (
 //
 // Mode A: Y can see X.
 //
-// Mode B: Y==X.
-//
 // Mode D: Y can see these fields if at least one condition is true:
 //
 //	Y has the OML can_manage_users or higher.
@@ -69,8 +67,6 @@ func (u User) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
 		return u.see
-	case "B":
-		return u.modeB
 	case "D":
 		return u.modeD
 	case "E":
@@ -305,20 +301,6 @@ func (User) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []UserRequir
 			false,
 		},
 	}
-}
-
-func (User) modeB(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int, error) {
-	requestUser, err := perm.RequestUserFromContext(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getting request user: %w", err)
-	}
-
-	for _, userID := range userIDs {
-		if userID == requestUser {
-			return []int{userID}, nil
-		}
-	}
-	return nil, nil
 }
 
 func (User) modeD(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int, error) {

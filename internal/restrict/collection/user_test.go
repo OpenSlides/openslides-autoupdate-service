@@ -417,30 +417,6 @@ func TestUserModeA(t *testing.T) {
 	)
 }
 
-func TestUserModeB(t *testing.T) {
-	var u collection.User
-
-	testCase(
-		"X == Y",
-		t,
-		u.Modes("B"),
-		true,
-		``,
-		withRequestUser(1),
-		withElementID(1),
-	)
-
-	testCase(
-		"X != Y",
-		t,
-		u.Modes("B"),
-		false,
-		``,
-		withRequestUser(1),
-		withElementID(2),
-	)
-}
-
 func TestUserModeD(t *testing.T) {
 	var u collection.User
 

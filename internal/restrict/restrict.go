@@ -572,6 +572,7 @@ var collectionOrder = map[string]int{
 	"list_of_speakers":             34,
 	"speaker":                      35,
 	"user":                         36,
+	"meeting_user":                 37,
 }
 
 // FieldsForCollection returns the list of fieldnames for an collection.
