@@ -2349,6 +2349,18 @@ func (r *Fetch) Meeting_PollBallotPaperSelection(meetingID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Meeting_PollCandidateIDs(meetingID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "poll_candidate_ids"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_candidate_ids"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_PollCandidateListIDs(meetingID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "poll_candidate_list_ids"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_candidate_list_ids"}] = v
+	return v
+}
+
 func (r *Fetch) Meeting_PollCountdownID(meetingID int) *ValueMaybeInt {
 	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "poll_countdown_id"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_countdown_id"}] = v
@@ -3699,6 +3711,60 @@ func (r *Fetch) PersonalNote_UserID(personalNoteID int) *ValueInt {
 	return v
 }
 
+func (r *Fetch) PollCandidateList_ID(pollCandidateListID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "pollCandidateList", id: pollCandidateListID, field: "id"}
+	r.requested[dskey.Key{Collection: "poll_candidate_list", ID: pollCandidateListID, Field: "id"}] = v
+	return v
+}
+
+func (r *Fetch) PollCandidateList_MeetingID(pollCandidateListID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "pollCandidateList", id: pollCandidateListID, field: "meeting_id", required: true}
+	r.requested[dskey.Key{Collection: "poll_candidate_list", ID: pollCandidateListID, Field: "meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) PollCandidateList_OptionID(pollCandidateListID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "pollCandidateList", id: pollCandidateListID, field: "option_id", required: true}
+	r.requested[dskey.Key{Collection: "poll_candidate_list", ID: pollCandidateListID, Field: "option_id"}] = v
+	return v
+}
+
+func (r *Fetch) PollCandidateList_PollCandidateIDs(pollCandidateListID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "pollCandidateList", id: pollCandidateListID, field: "poll_candidate_ids"}
+	r.requested[dskey.Key{Collection: "poll_candidate_list", ID: pollCandidateListID, Field: "poll_candidate_ids"}] = v
+	return v
+}
+
+func (r *Fetch) PollCandidate_ID(pollCandidateID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "pollCandidate", id: pollCandidateID, field: "id"}
+	r.requested[dskey.Key{Collection: "poll_candidate", ID: pollCandidateID, Field: "id"}] = v
+	return v
+}
+
+func (r *Fetch) PollCandidate_MeetingID(pollCandidateID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "pollCandidate", id: pollCandidateID, field: "meeting_id", required: true}
+	r.requested[dskey.Key{Collection: "poll_candidate", ID: pollCandidateID, Field: "meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) PollCandidate_PollCandidateListID(pollCandidateID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "pollCandidate", id: pollCandidateID, field: "poll_candidate_list_id", required: true}
+	r.requested[dskey.Key{Collection: "poll_candidate", ID: pollCandidateID, Field: "poll_candidate_list_id"}] = v
+	return v
+}
+
+func (r *Fetch) PollCandidate_UserID(pollCandidateID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "pollCandidate", id: pollCandidateID, field: "user_id", required: true}
+	r.requested[dskey.Key{Collection: "poll_candidate", ID: pollCandidateID, Field: "user_id"}] = v
+	return v
+}
+
+func (r *Fetch) PollCandidate_Weight(pollCandidateID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "pollCandidate", id: pollCandidateID, field: "weight", required: true}
+	r.requested[dskey.Key{Collection: "poll_candidate", ID: pollCandidateID, Field: "weight"}] = v
+	return v
+}
+
 func (r *Fetch) Poll_Backend(pollID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "poll", id: pollID, field: "backend", required: true}
 	r.requested[dskey.Key{Collection: "poll", ID: pollID, Field: "backend"}] = v
@@ -4860,6 +4926,12 @@ func (r *Fetch) User_PersonalNoteIDsTmpl(userID int) *ValueIDSlice {
 func (r *Fetch) User_PersonalNoteIDs(userID int, meetingID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "personal_note_$_ids"}
 	r.requested[dskey.Key{Collection: "user", ID: userID, Field: fmt.Sprintf("personal_note_$%d_ids", meetingID)}] = v
+	return v
+}
+
+func (r *Fetch) User_PollCandidateIDs(userID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "poll_candidate_ids"}
+	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "poll_candidate_ids"}] = v
 	return v
 }
 
