@@ -90,8 +90,8 @@ func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecte
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			// TODO EXTERNAL ERROR
-			handleErrorWithStatus(w, fmt.Errorf("reading body: %w", err))
+			w.WriteHeader(400)
+			fmt.Fprintln(w, "Invalid body")
 			return
 		}
 
