@@ -28,17 +28,26 @@ type SourcePostgres struct {
 	updater Updater
 }
 
+// encodePostgresConfig encodes a string to be used in the postgres key value style.
+//
+// See: https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+func encodePostgresConfig(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `'`, `\'`)
+	return s
+}
+
 // NewSourcePostgres initializes a SourcePostgres.
 //
 // TODO: This should be unexported, but there is an import cycle in the tests.
 func NewSourcePostgres(lookup environment.Environmenter, updater Updater) (*SourcePostgres, error) {
 	addr := fmt.Sprintf(
-		"user='%s' password='%s' host='%s' port='%s' dbname='%s'",
-		envPostgresUser.Value(lookup),
-		envPostgresPassword.Value(lookup),
-		envPostgresHost.Value(lookup),
-		envPostgresPort.Value(lookup),
-		envPostgresDatabase.Value(lookup),
+		`user='%s' password='%s' host='%s' port='%s' dbname='%s'`,
+		encodePostgresConfig(envPostgresUser.Value(lookup)),
+		encodePostgresConfig(envPostgresPassword.Value(lookup)),
+		encodePostgresConfig(envPostgresHost.Value(lookup)),
+		encodePostgresConfig(envPostgresPort.Value(lookup)),
+		encodePostgresConfig(envPostgresDatabase.Value(lookup)),
 	)
 
 	config, err := pgxpool.ParseConfig(addr)
