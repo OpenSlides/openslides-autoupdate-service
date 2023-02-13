@@ -18,6 +18,7 @@ import (
 )
 
 func TestSourcePostgresGetSomeData(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("Postgres Test")
 	}
@@ -113,6 +114,8 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 }
 
 func TestBigQuery(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("Postgres Test")
 	}
@@ -188,7 +191,7 @@ func newTestPostgres(ctx context.Context) (tp *testPostgres, err error) {
 	}
 
 	port := resource.GetPort("5432/tcp")
-	addr := fmt.Sprintf("postgres://postgres:openslides@localhost:%s/database", port)
+	addr := fmt.Sprintf(`user=postgres password='openslides' host=localhost port=%s dbname=database`, port)
 	config, err := pgx.ParseConfig(addr)
 	if err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)

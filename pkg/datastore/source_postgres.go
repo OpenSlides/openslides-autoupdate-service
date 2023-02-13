@@ -33,8 +33,9 @@ type SourcePostgres struct {
 // TODO: This should be unexported, but there is an import cycle in the tests.
 func NewSourcePostgres(lookup environment.Environmenter, updater Updater) (*SourcePostgres, error) {
 	addr := fmt.Sprintf(
-		"postgres://%s@%s:%s/%s",
+		"user='%s' password='%s' host='%s' port='%s' dbname='%s'",
 		envPostgresUser.Value(lookup),
+		envPostgresPassword.Value(lookup),
 		envPostgresHost.Value(lookup),
 		envPostgresPort.Value(lookup),
 		envPostgresDatabase.Value(lookup),
@@ -44,10 +45,6 @@ func NewSourcePostgres(lookup environment.Environmenter, updater Updater) (*Sour
 	if err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
-
-	// Set the password. It could contains letters that are not supported by
-	// ParseConfig.
-	config.ConnConfig.Password = envPostgresPassword.Value(lookup)
 
 	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
