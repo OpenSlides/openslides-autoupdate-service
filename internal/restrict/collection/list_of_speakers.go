@@ -51,5 +51,4 @@ func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, losIDs ...
 		}
 		return losIDs, nil
 	})
-
 }

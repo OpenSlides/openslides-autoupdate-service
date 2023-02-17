@@ -171,7 +171,6 @@ func (m Motion) modeA(ctx context.Context, ds *dsfetch.Fetch, motionIDs ...int) 
 		}
 		return false, nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("checkinging for referenced motions: %w", err)
 	}

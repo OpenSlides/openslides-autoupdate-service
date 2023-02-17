@@ -65,7 +65,6 @@ func (m MotionBlock) see(ctx context.Context, ds *dsfetch.Fetch, motionBlockIDs 
 
 			return !internal, nil
 		})
-
 		if err != nil {
 			return nil, fmt.Errorf("checking internal state: %w", err)
 		}

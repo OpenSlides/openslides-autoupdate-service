@@ -291,7 +291,6 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 		var err error
 		isBlocked := blocking(func() {
 			data, err = next(context.Background())
-
 		})
 		if err != nil {
 			t.Fatalf("next(): %v", err)
@@ -311,7 +310,6 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 		var err error
 		isBlocked := blocking(func() {
 			data, err = next(context.Background())
-
 		})
 		if err != nil {
 			t.Fatalf("next(): %v", err)
@@ -370,7 +368,6 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 		  }
 		}
 	  }`))
-
 	if err != nil {
 		t.Fatalf("Can not build request: %v", err)
 	}
@@ -442,7 +439,6 @@ func TestKeyRequestedAgain(t *testing.T) {
 		  }
 		}
 	  }`))
-
 	if err != nil {
 		t.Fatalf("Can not build request: %v", err)
 	}

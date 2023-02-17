@@ -77,7 +77,6 @@ func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, agendaIDs ...int
 
 			return false, nil
 		})
-
 		if err != nil {
 			return nil, fmt.Errorf("checking agende is hidden and is internal with perm can_see_internal and can_see: %w", err)
 		}

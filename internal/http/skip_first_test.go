@@ -101,5 +101,4 @@ func TestSkipFirst(t *testing.T) {
 			t.Errorf("Wrote %d bytes, expected %d", nCount, all)
 		}
 	})
-
 }

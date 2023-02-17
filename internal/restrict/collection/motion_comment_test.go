@@ -200,5 +200,4 @@ func TestMotionCommentModeA(t *testing.T) {
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)
-
 }

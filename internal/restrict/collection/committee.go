@@ -68,7 +68,6 @@ func (c Committee) see(ctx context.Context, ds *dsfetch.Fetch, committeeIDs ...i
 		}
 		return false, nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("checking if user is in committee: %w", err)
 	}
@@ -99,7 +98,6 @@ func (c Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, committeeIDs ..
 
 		return cmlCanManage, nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("checking has committee managemement level: %w", err)
 	}
