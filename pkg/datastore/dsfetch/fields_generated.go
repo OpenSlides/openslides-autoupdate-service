@@ -1761,15 +1761,15 @@ func (r *Fetch) Meeting_DefaultMeetingForCommitteeID(meetingID int) *ValueMaybeI
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorIDTmpl(meetingID int) *ValueStringSlice {
-	v := &ValueStringSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_$_id"}
-	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_$_id"}] = v
+func (r *Fetch) Meeting_DefaultProjectorIDsTmpl(meetingID int) *ValueStringSlice {
+	v := &ValueStringSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_$_ids"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_$_ids"}] = v
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorID(meetingID int, replacement string) *ValueInt {
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_$_id"}
-	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: fmt.Sprintf("default_projector_$%s_id", replacement)}] = v
+func (r *Fetch) Meeting_DefaultProjectorIDs(meetingID int, replacement string) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_$_ids"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: fmt.Sprintf("default_projector_$%s_ids", replacement)}] = v
 	return v
 }
 
