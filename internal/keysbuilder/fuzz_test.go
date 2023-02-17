@@ -182,5 +182,4 @@ func FuzzFromJSON(f *testing.F) {
 			t.Fatalf("Updating keybuilder: %v", err)
 		}
 	})
-
 }

@@ -13,7 +13,6 @@ import (
 )
 
 func TestMotionBlock(t *testing.T) {
-
 	s := new(projector.SlideStore)
 	slide.MotionBlock(s)
 	slide.Motion(s)

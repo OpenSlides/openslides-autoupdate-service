@@ -69,7 +69,6 @@ func (m MotionCommentSection) see(ctx context.Context, ds *dsfetch.Fetch, motion
 
 			return seeAs > 0, nil
 		})
-
 		if err != nil {
 			return nil, fmt.Errorf("checking if user is in read group: %w", err)
 		}

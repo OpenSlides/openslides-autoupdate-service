@@ -111,7 +111,6 @@ func (m MotionComment) see(ctx context.Context, ds *dsfetch.Fetch, motionComment
 
 			return false, nil
 		})
-
 		if err != nil {
 			return nil, fmt.Errorf("checking motion can see: %w", err)
 		}

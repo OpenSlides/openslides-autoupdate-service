@@ -100,7 +100,6 @@ func (c *cache) fetchMissing(ctx context.Context, keys []dskey.Key, set cacheSet
 
 			c.data.SetIfPending(data)
 		})
-
 		if err != nil {
 			c.data.UnMarkPending(missingKeys...)
 			errChan <- fmt.Errorf("fetching missing keys: %w", err)
@@ -150,5 +149,5 @@ func (c *cache) len() int {
 
 func (c *cache) size() int {
 	return -1 // TODO
-	//return c.data.size()
+	// return c.data.size()
 }

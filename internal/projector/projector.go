@@ -78,7 +78,6 @@ func Register(ds Datastore, slides *SlideStore) {
 		if err := fetch.Err(); err != nil {
 			var errDoesNotExist datastore.DoesNotExistError
 			if errors.As(err, &errDoesNotExist) {
-
 				return nil, nil
 			}
 			return nil, fmt.Errorf("fetching projection %d from datastore: %w", fqfield.ID, err)

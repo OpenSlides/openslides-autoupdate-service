@@ -290,7 +290,6 @@ func (d *Datastore) calculateField(field string, key dskey.Key, updated map[dske
 		calculated = []byte(fmt.Sprintf(`{"error": "%s"}`, msg))
 	}
 	return calculated
-
 }
 
 // keysToGetManyRequest a json envoding of the get_many request.

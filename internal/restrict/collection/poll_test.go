@@ -477,5 +477,4 @@ func TestPollModeD(t *testing.T) {
 		`,
 		withPerms(30, perm.ListOfSpeakersCanManage),
 	)
-
 }

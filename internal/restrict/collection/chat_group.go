@@ -73,7 +73,6 @@ func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, chatGroupIDs ...i
 			}
 			return false, nil
 		})
-
 		if err != nil {
 			return nil, fmt.Errorf("checking if user is in read or write group: %w", err)
 		}

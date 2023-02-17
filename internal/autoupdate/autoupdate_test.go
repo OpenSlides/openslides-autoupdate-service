@@ -49,7 +49,6 @@ func TestHistoryInformation(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	err := s.HistoryInformation(ctx, 1, "collection/1", buf)
-
 	if err != nil {
 		t.Fatalf("HistoryInformation: %v", err)
 	}
@@ -101,7 +100,6 @@ func TestHistoryInformationSuperAdminOnMeetingCollection(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	err := s.HistoryInformation(ctx, 1, "motion/5", buf)
-
 	if err != nil {
 		t.Fatalf("HistoryInformation: %v", err)
 	}
