@@ -34,7 +34,7 @@ func TestPollCandidateList(t *testing.T) {
 			"One Candidate",
 			map[string]string{
 				"poll_candidate_list/1/id":	"1",
-				"poll_candidate_list/1/poll_candidate_ids": `["1"]`,
+				"poll_candidate_list/1/poll_candidate_ids": `[1]`,
 			},
 			`{"collection":"poll_candidate_list","entries_amount":1,"content_object_id":"poll_candidate_list/1"}`,
 		},
@@ -42,7 +42,7 @@ func TestPollCandidateList(t *testing.T) {
 			"Two Candidates",
 			map[string]string{
 				"poll_candidate_list/1/id":	"1",
-				"poll_candidate_list/1/poll_candidate_ids": `["1", "3"]`,
+				"poll_candidate_list/1/poll_candidate_ids": `[1, 3]`,
 			},
 			`{"collection":"poll_candidate_list","entries_amount":2,"content_object_id":"poll_candidate_list/1"}`,
 		},
