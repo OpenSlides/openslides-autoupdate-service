@@ -48,7 +48,7 @@ func PollCandidateList(store *projector.SlideStore) {
 			return nil, fmt.Errorf("getting poll_candidate_list id: %w", err)
 		}
 
-		poll_candidate_list, err := NewPollCandidateList(ctx, fetch, id)
+		pollCandidateList, err := NewPollCandidateList(ctx, fetch, id)
 		if err != nil {
 			return nil, fmt.Errorf("loading poll_candidate_list: %w", err)
 		}
@@ -63,7 +63,7 @@ func PollCandidateList(store *projector.SlideStore) {
 		}{
 			"poll_candidate_list",
 			fqid,
-			len(poll_candidate_list.PollCandidateIDs),
+			len(pollCandidateList.PollCandidateIDs),
 		}
 		responseValue, err := json.Marshal(out)
 		if err != nil {
