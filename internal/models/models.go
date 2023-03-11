@@ -31,8 +31,7 @@ func getVersion() string {
 }
 
 const (
-	//repo            = "https://raw.githubusercontent.com/OpenSlides/openslides-backend/"
-	repo            = "https://raw.githubusercontent.com/reiterl/openslides-backend/"
+	repo            = "https://raw.githubusercontent.com/OpenSlides/openslides-backend/"
 	modelsPath      = "/global/meta/models.yml"
 	exampleDataPath = "/global/data/example-data.json"
 	permissionPath  = "/global/meta/permission.yml"

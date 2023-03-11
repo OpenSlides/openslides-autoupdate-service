@@ -5,4 +5,4 @@
 //
 // After chaning this value call `go generate ./...` to update the generated
 // files.
-rm_template_fields_group_ids
+feature/remove-template-fields
