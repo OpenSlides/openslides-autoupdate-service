@@ -36,4 +36,4 @@ jobs:
         body: "${{ github.event.client_payload.body }}"
         reviewers: ostcar
         assignees: ostcar
-        milestone: 4.1
+        milestone: "4.1"
