@@ -162,5 +162,4 @@ func jsonAppend(value []byte, element ...int) []byte {
 		panic(err)
 	}
 	return newValue
-
 }

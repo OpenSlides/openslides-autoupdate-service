@@ -131,7 +131,6 @@ func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int
 
 		return perms.Has(perm.MeetingCanSeeFrontpage), nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("checking can front page permission: %w", err)
 	}

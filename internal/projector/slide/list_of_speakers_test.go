@@ -251,8 +251,8 @@ func getDataForCurrentList() map[dskey.Key][]byte {
 		user/10/username: jonny123
 		agenda_item/1/item_number: ItemNr. MotionBlock1
 	`)
-
 }
+
 func TestCurrentListOfSpeakers(t *testing.T) {
 	closed := make(chan struct{})
 	defer close(closed)

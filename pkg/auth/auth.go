@@ -330,8 +330,10 @@ func (a *Auth) refreshToken(ctx context.Context, token, cookie string) (string, 
 
 type authString string
 
-const userIDType authString = "user_id"
-const authenticateCalled authString = "authenticate_called"
+const (
+	userIDType         authString = "user_id"
+	authenticateCalled authString = "authenticate_called"
+)
 
 type payload struct {
 	jwt.StandardClaims
