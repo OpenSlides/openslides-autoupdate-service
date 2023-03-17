@@ -231,7 +231,10 @@ func TestUserModeA(t *testing.T) {
 		poll/5:
 			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 30
+		topic/5:
+			meeting_id: 30
+			agenda_item_id: 7
+		agenda_item/7/meeting_id: 30
 		meeting/30/enable_anonymous: true
 		`,
 		withRequestUser(1),
@@ -295,7 +298,10 @@ func TestUserModeA(t *testing.T) {
 			meeting_id: 30
 			content_object_id: topic/5
 		
-		topic/5/meeting_id: 30
+		topic/5:	
+			meeting_id: 30
+			agenda_item_id: 7
+		agenda_item/7/meeting_id: 30
 		
 		meeting/30/id: 30
 		`,
