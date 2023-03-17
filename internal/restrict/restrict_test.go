@@ -73,6 +73,7 @@ func TestRestrict(t *testing.T) {
 	topic/1:
 		id: 1
 		meeting_id: 30
+		agenda_item_id: 1
 
 	unknown_collection/1/field: 404
 	`))
