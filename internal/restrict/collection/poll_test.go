@@ -22,6 +22,8 @@ func TestPollModeA(t *testing.T) {
 
 		topic/5:
 			meeting_id: 30
+			agenda_item_id: 7
+		agenda_item/7/meeting_id: 30
 
 		meeting/30:
 			id: 1
@@ -110,7 +112,7 @@ func TestPollModeA(t *testing.T) {
 			meeting_id: 30
 			agenda_item_id: 3
 
-		agenda_item_id/3/meeting_id: 30
+		agenda_item/3/meeting_id: 30
 		`,
 		withPerms(30, perm.AgendaItemCanSee),
 	)
@@ -129,7 +131,7 @@ func TestPollModeA(t *testing.T) {
 			meeting_id: 30
 			agenda_item_id: 3
 
-		agenda_item_id/3/meeting_id: 30
+		agenda_item/3/meeting_id: 30
 		`,
 	)
 }
