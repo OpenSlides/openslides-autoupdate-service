@@ -23,7 +23,10 @@ func TestPollCandidateModeA(t *testing.T) {
 			option_id: 5
 		poll_candidate/42:
 			poll_candidate_list_id: 23
-		topic/4/meeting_id: 30
+		topic/4:
+			meeting_id: 30
+			agenda_item_id: 7
+		agenda_item/7/meeting_id: 30
 		`,
 		withElementID(42),
 	)
@@ -41,7 +44,10 @@ func TestPollCandidateModeA(t *testing.T) {
 			option_id: 5
 		poll_candidate/42:
 			poll_candidate_list_id: 23
-		topic/4/meeting_id: 30
+		topic/4:
+			meeting_id: 30
+			agenda_item_id: 7
+		agenda_item/7/meeting_id: 30
 		`,
 		withElementID(42),
 		withPerms(30, perm.AgendaItemCanSee),

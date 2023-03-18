@@ -237,28 +237,6 @@ func TestUserModeA(t *testing.T) {
 		withPerms(30, perm.MotionCanSee),
 	)
 
-	// testCase(
-	// 	"linked in option",
-	// 	t,
-	// 	f,
-	// 	true,
-	// 	`---
-	// 	user/2:
-	// 		option_$_ids: ["1"]
-	// 		option_$1_ids: [4]
-
-	// 	option/4/poll_id: 5
-	// 	poll/5:
-	// 		meeting_id: 30
-	// 		content_object_id: topic/5
-	// 	topic/5/meeting_id: 30
-	// 	meeting/30/enable_anonymous: true
-	// 	`,
-	// 	withRequestUser(1),
-	// 	withElementID(2),
-	// 	withPerms(30, perm.AgendaItemCanSee),
-	// )
-
 	testCase(
 		"assignment candidate",
 		t,
@@ -309,52 +287,6 @@ func TestUserModeA(t *testing.T) {
 		withElementID(2),
 		withPerms(30, perm.ListOfSpeakersCanSee, perm.AgendaItemCanSee),
 	)
-
-	// testCase(
-	// 	"poll vote",
-	// 	t,
-	// 	f,
-	// 	true,
-	// 	`---
-	// 	user/2:
-	// 		poll_voted_$_ids: ["1"]
-	// 		poll_voted_$1_ids: [4]
-
-	// 	poll/4:
-	// 		state: finished
-	// 		meeting_id: 30
-	// 		content_object_id: topic/5
-
-	// 	topic/5/meeting_id: 30
-
-	// 	meeting/30/id: 30
-	// 	`,
-	// 	withRequestUser(1),
-	// 	withElementID(2),
-	// 	withPerms(30, perm.AgendaItemCanSee),
-	// )
-
-	// testCase(
-	// 	"vote user ids",
-	// 	t,
-	// 	f,
-	// 	true,
-	// 	`---
-	// 	user/2:
-	// 		vote_$_ids: ["1"]
-	// 		vote_$1_ids: [4]
-
-	// 	vote/4/option_id: 5
-	// 	option/5/poll_id: 6
-	// 	poll/6:
-	// 		state: published
-	// 		meeting_id: 30
-
-	// 	meeting/30/enable_anonymous: true
-	// 	`,
-	// 	withRequestUser(1),
-	// 	withElementID(2),
-	// )
 
 	testCase(
 		"vote delegated ids",

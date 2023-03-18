@@ -20,7 +20,10 @@ func TestOptionModeA(t *testing.T) {
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 30
+		topic/5:
+			meeting_id: 30
+			agenda_item_id: 7
+		agenda_item/7/meeting_id: 30
 		meeting/30:
 			enable_anonymous: false
 			committee_id: 300
@@ -37,7 +40,10 @@ func TestOptionModeA(t *testing.T) {
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 30
+		topic/5:
+			meeting_id: 30
+			agenda_item_id: 7
+		agenda_item/7/meeting_id: 30
 		`,
 		withPerms(30, perm.AgendaItemCanSee),
 	)
@@ -56,7 +62,10 @@ func TestOptionModeB(t *testing.T) {
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 30
+		topic/5:
+			meeting_id: 30
+			agenda_item_id: 7
+		agenda_item/7/meeting_id: 30
 		meeting/30/committee_id: 1
 		`,
 	)
@@ -71,7 +80,10 @@ func TestOptionModeB(t *testing.T) {
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 30
+		topic/5:
+			meeting_id: 30
+			agenda_item_id: 7
+		agenda_item/7/meeting_id: 30
 		meeting/30/user_ids: [1]
 		`,
 		withPerms(30, perm.AgendaItemCanSee),
@@ -87,7 +99,10 @@ func TestOptionModeB(t *testing.T) {
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 30
+		topic/5:
+			meeting_id: 30
+			agenda_item_id: 7
+		agenda_item/7/meeting_id: 30
 		meeting/30/user_ids: [1]
 		`,
 		withPerms(30, perm.PollCanManage, perm.AgendaItemCanSee),
@@ -103,7 +118,10 @@ func TestOptionModeB(t *testing.T) {
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 30
+		topic/5:
+			meeting_id: 30
+			agenda_item_id: 7
+		agenda_item/7/meeting_id: 30
 		meeting/30/user_ids: [1]
 		`,
 		withPerms(30, perm.PollCanManage),
@@ -120,7 +138,10 @@ func TestOptionModeB(t *testing.T) {
 			meeting_id: 30
 			content_object_id: topic/5
 			state: published
-		topic/5/meeting_id: 30
+		topic/5:
+			meeting_id: 30
+			agenda_item_id: 7
+		agenda_item/7/meeting_id: 30
 		meeting/30/user_ids: [1]
 		`,
 		withPerms(30, perm.AgendaItemCanSee),
@@ -137,7 +158,10 @@ func TestOptionModeB(t *testing.T) {
 			meeting_id: 30
 			content_object_id: topic/5
 			state: published
-		topic/5/meeting_id: 30
+		topic/5:	
+			meeting_id: 30
+			agenda_item_id: 7
+		agenda_item/7/meeting_id: 30
 		meeting/30/user_ids: [1]
 		`,
 	)

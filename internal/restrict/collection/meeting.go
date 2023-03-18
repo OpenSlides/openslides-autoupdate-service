@@ -13,7 +13,7 @@ import (
 // The user can see a meeting if one of the following is True:
 //
 //	`meeting/enable_anonymous`.
-//	The user is in meeting/user_ids.
+//	The user is in the meeting.
 //	The user has the CML can_manage of the meeting's committee.
 //	The user has the CML can_manage of any meeting and the meeting is a template meeting.
 //	The user has the OML can_manage_organization.
@@ -80,13 +80,37 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) 
 			return false, nil
 		}
 
-		userIDs, err := ds.Meeting_UserIDs(meetingID).Value(ctx)
+		groupIDs, err := ds.Meeting_GroupIDs(meetingID).Value(ctx)
 		if err != nil {
-			return false, fmt.Errorf("getting user ids of meeting: %w", err)
+			return false, fmt.Errorf("getting group_ids: %w", err)
 		}
-		for _, id := range userIDs {
-			if requestUser == id {
-				return true, nil
+
+		groupMeetingUserIDs := make([][]int, len(groupIDs))
+		for i, gID := range groupIDs {
+			ds.Group_MeetingUserIDs(gID).Lazy(&groupMeetingUserIDs[i])
+		}
+		if err := ds.Execute(ctx); err != nil {
+			return false, fmt.Errorf("fetching meeting_user ids: %w", err)
+		}
+
+		groupUserIDList := make([][]int, len(groupMeetingUserIDs))
+		for i, muIDs := range groupMeetingUserIDs {
+			groupUserID := make([]int, len(muIDs))
+			for j, muID := range muIDs {
+				ds.MeetingUser_UserID(muID).Lazy(&groupUserID[j])
+			}
+			groupUserIDList[i] = groupUserID
+
+		}
+		if err := ds.Execute(ctx); err != nil {
+			return false, fmt.Errorf("fetching user ids: %w", err)
+		}
+
+		for _, userIDs := range groupUserIDList {
+			for _, userID := range userIDs {
+				if requestUser == userID {
+					return true, nil
+				}
 			}
 		}
 
