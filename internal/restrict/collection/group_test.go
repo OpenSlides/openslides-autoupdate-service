@@ -38,8 +38,12 @@ func TestGroupModeA(t *testing.T) {
 		g.Modes("A"),
 		true,
 		`---
-		group/1/meeting_id: 30
-		meeting/30/user_ids: [1]
+		group/1:
+			meeting_id: 30
+			user_ids: [5]
+		meeting/30:
+			group_ids: [1]
 		`,
+		withRequestUser(5),
 	)
 }
