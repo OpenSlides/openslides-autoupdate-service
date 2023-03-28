@@ -1287,6 +1287,12 @@ func (r *Fetch) Group_UsedAsPollDefaultID(groupID int) *ValueMaybeInt {
 	return v
 }
 
+func (r *Fetch) Group_UsedAsTopicPollDefaultID(groupID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "group", id: groupID, field: "used_as_topic_poll_default_id"}
+	r.requested[dskey.Key{Collection: "group", ID: groupID, Field: "used_as_topic_poll_default_id"}] = v
+	return v
+}
+
 func (r *Fetch) Group_UserIDs(groupID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r, collection: "group", id: groupID, field: "user_ids"}
 	r.requested[dskey.Key{Collection: "group", ID: groupID, Field: "user_ids"}] = v
@@ -2490,6 +2496,12 @@ func (r *Fetch) Meeting_TemplateForOrganizationID(meetingID int) *ValueMaybeInt 
 func (r *Fetch) Meeting_TopicIDs(meetingID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "topic_ids"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "topic_ids"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_TopicPollDefaultGroupIDs(meetingID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "topic_poll_default_group_ids"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "topic_poll_default_group_ids"}] = v
 	return v
 }
 
