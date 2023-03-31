@@ -4359,6 +4359,12 @@ func (r *Fetch) Tag_TaggedIDs(tagID int) *ValueStringSlice {
 	return v
 }
 
+func (r *Fetch) Theme_Abstain(themeID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "theme", id: themeID, field: "abstain"}
+	r.requested[dskey.Key{Collection: "theme", ID: themeID, Field: "abstain"}] = v
+	return v
+}
+
 func (r *Fetch) Theme_Accent100(themeID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "theme", id: themeID, field: "accent_100"}
 	r.requested[dskey.Key{Collection: "theme", ID: themeID, Field: "accent_100"}] = v
@@ -4443,6 +4449,12 @@ func (r *Fetch) Theme_AccentA700(themeID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Theme_Headbar(themeID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "theme", id: themeID, field: "headbar"}
+	r.requested[dskey.Key{Collection: "theme", ID: themeID, Field: "headbar"}] = v
+	return v
+}
+
 func (r *Fetch) Theme_ID(themeID int) *ValueInt {
 	v := &ValueInt{fetch: r, collection: "theme", id: themeID, field: "id", required: true}
 	r.requested[dskey.Key{Collection: "theme", ID: themeID, Field: "id"}] = v
@@ -4452,6 +4464,12 @@ func (r *Fetch) Theme_ID(themeID int) *ValueInt {
 func (r *Fetch) Theme_Name(themeID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "theme", id: themeID, field: "name", required: true}
 	r.requested[dskey.Key{Collection: "theme", ID: themeID, Field: "name"}] = v
+	return v
+}
+
+func (r *Fetch) Theme_No(themeID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "theme", id: themeID, field: "no"}
+	r.requested[dskey.Key{Collection: "theme", ID: themeID, Field: "no"}] = v
 	return v
 }
 
@@ -4632,6 +4650,12 @@ func (r *Fetch) Theme_WarnA400(themeID int) *ValueString {
 func (r *Fetch) Theme_WarnA700(themeID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "theme", id: themeID, field: "warn_a700"}
 	r.requested[dskey.Key{Collection: "theme", ID: themeID, Field: "warn_a700"}] = v
+	return v
+}
+
+func (r *Fetch) Theme_Yes(themeID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "theme", id: themeID, field: "yes"}
+	r.requested[dskey.Key{Collection: "theme", ID: themeID, Field: "yes"}] = v
 	return v
 }
 
