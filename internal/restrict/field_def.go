@@ -950,6 +950,7 @@ var restrictionModes = map[string]string{
 	"tag/tagged_ids": "A",
 
 	// theme
+	"theme/abstain":                   "A",
 	"theme/accent_100":                "A",
 	"theme/accent_200":                "A",
 	"theme/accent_300":                "A",
@@ -964,8 +965,10 @@ var restrictionModes = map[string]string{
 	"theme/accent_a200":               "A",
 	"theme/accent_a400":               "A",
 	"theme/accent_a700":               "A",
+	"theme/headbar":                   "A",
 	"theme/id":                        "A",
 	"theme/name":                      "A",
+	"theme/no":                        "A",
 	"theme/organization_id":           "A",
 	"theme/primary_100":               "A",
 	"theme/primary_200":               "A",
@@ -996,6 +999,7 @@ var restrictionModes = map[string]string{
 	"theme/warn_a200":                 "A",
 	"theme/warn_a400":                 "A",
 	"theme/warn_a700":                 "A",
+	"theme/yes":                       "A",
 
 	// topic
 	"topic/agenda_item_id":      "A",
@@ -1118,7 +1122,7 @@ var collectionFields = map[string][]string{
 	"projector_message":            {"id", "meeting_id", "message", "projection_ids"},
 	"speaker":                      {"begin_time", "end_time", "id", "list_of_speakers_id", "meeting_id", "note", "point_of_order", "speech_state", "user_id", "weight"},
 	"tag":                          {"id", "meeting_id", "name", "tagged_ids"},
-	"theme":                        {"accent_100", "accent_200", "accent_300", "accent_400", "accent_50", "accent_500", "accent_600", "accent_700", "accent_800", "accent_900", "accent_a100", "accent_a200", "accent_a400", "accent_a700", "id", "name", "organization_id", "primary_100", "primary_200", "primary_300", "primary_400", "primary_50", "primary_500", "primary_600", "primary_700", "primary_800", "primary_900", "primary_a100", "primary_a200", "primary_a400", "primary_a700", "theme_for_organization_id", "warn_100", "warn_200", "warn_300", "warn_400", "warn_50", "warn_500", "warn_600", "warn_700", "warn_800", "warn_900", "warn_a100", "warn_a200", "warn_a400", "warn_a700"},
+	"theme":                        {"abstain", "accent_100", "accent_200", "accent_300", "accent_400", "accent_50", "accent_500", "accent_600", "accent_700", "accent_800", "accent_900", "accent_a100", "accent_a200", "accent_a400", "accent_a700", "headbar", "id", "name", "no", "organization_id", "primary_100", "primary_200", "primary_300", "primary_400", "primary_50", "primary_500", "primary_600", "primary_700", "primary_800", "primary_900", "primary_a100", "primary_a200", "primary_a400", "primary_a700", "theme_for_organization_id", "warn_100", "warn_200", "warn_300", "warn_400", "warn_50", "warn_500", "warn_600", "warn_700", "warn_800", "warn_900", "warn_a100", "warn_a200", "warn_a400", "warn_a700", "yes"},
 	"topic":                        {"agenda_item_id", "attachment_ids", "id", "list_of_speakers_id", "meeting_id", "poll_ids", "projection_ids", "sequential_number", "tag_ids", "text", "title"},
 	"user":                         {"about_me_$", "assignment_candidate_$", "assignment_candidate_$_ids", "chat_message_$", "chat_message_$_ids", "default_number", "default_structure_level", "default_vote_weight", "first_name", "gender", "group_$", "group_$_ids", "id", "is_demo_user", "is_physical_person", "is_present_in_meeting_ids", "last_login", "last_name", "number_$", "option_$", "option_$_ids", "poll_candidate_ids", "poll_voted_$", "poll_voted_$_ids", "pronoun", "speaker_$", "speaker_$_ids", "structure_level_$", "submitted_motion_$", "submitted_motion_$_ids", "supported_motion_$", "supported_motion_$_ids", "title", "username", "vote_$", "vote_$_ids", "vote_delegated_$", "vote_delegated_$_to_id", "vote_delegated_vote_$", "vote_delegated_vote_$_ids", "vote_delegations_$", "vote_delegations_$_from_ids", "vote_weight_$", "personal_note_$", "personal_note_$_ids", "can_change_own_password", "comment_$", "is_active", "last_email_send", "committee_$", "committee_$_management_level", "committee_ids", "email", "forwarding_committee_ids", "meeting_ids", "organization_management_level", "organization_id", "password", "default_password"},
 	"vote":                         {"delegated_user_id", "id", "meeting_id", "option_id", "user_id", "value", "weight", "user_token"},
