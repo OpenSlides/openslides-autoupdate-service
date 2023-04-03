@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set project
-        uses: actions/add-to-project@v0.4.1
+        uses: actions/add-to-project@v0.5.0
         with:
           project-url: https://github.com/orgs/OpenSlides/projects/2
           github-token: ${{ secrets.ISSUE_AND_PR_PAT }}
