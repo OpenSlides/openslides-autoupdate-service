@@ -7,12 +7,12 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/gomodule/redigo v1.8.9
 	github.com/jackc/pgx/v5 v5.3.1
-	github.com/klauspost/compress v1.16.3
+	github.com/klauspost/compress v1.16.4
 	github.com/ory/dockertest/v3 v3.9.1
 	github.com/ostcar/topic v0.4.1
 	github.com/stretchr/testify v1.8.2
 	golang.org/x/sync v0.1.0
-	golang.org/x/sys v0.6.0
+	golang.org/x/sys v0.7.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
