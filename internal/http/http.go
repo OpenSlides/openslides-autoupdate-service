@@ -245,7 +245,7 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 }
 
 type restrictFQIDser interface {
-	RestrictFQIDs(ctx context.Context, uid int, fqids []string, requestedFields map[string][]string) (map[string]map[string][]byte, error)
+	RestrictFQIDs(ctx context.Context, uid int, fqids []string, requestedFields map[string]map[string]struct{}) (map[string]map[string][]byte, error)
 }
 
 // HandleRestrictFQIDs returns restricted objects for a list of fqids.
@@ -268,7 +268,15 @@ func HandleRestrictFQIDs(mux *http.ServeMux, service restrictFQIDser) {
 				return
 			}
 
-			restricted, err := service.RestrictFQIDs(r.Context(), requestBody.UserID, requestBody.FQIDs, requestBody.Fields)
+			requestedFieldsMap := make(map[string]map[string]struct{}, len(requestBody.Fields))
+			for col, val := range requestBody.Fields {
+				requestedFieldsMap[col] = make(map[string]struct{}, len(val))
+				for _, field := range val {
+					requestedFieldsMap[col][field] = struct{}{}
+				}
+			}
+
+			restricted, err := service.RestrictFQIDs(r.Context(), requestBody.UserID, requestBody.FQIDs, requestedFieldsMap)
 			if err != nil {
 				handleErrorInternal(w, fmt.Errorf("restrictFQIDs: %w", err))
 				return

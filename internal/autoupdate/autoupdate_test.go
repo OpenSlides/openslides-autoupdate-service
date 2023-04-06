@@ -126,7 +126,7 @@ func TestRestrictFQIDs(t *testing.T) {
 	`))
 	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
 
-	got, err := s.RestrictFQIDs(ctx, 1, []string{"user/1"}, map[string][]string{"user": {"id", "username", "first_name"}})
+	got, err := s.RestrictFQIDs(ctx, 1, []string{"user/1"}, map[string]map[string]struct{}{"user": {"id": {}, "username": {}, "first_name": {}}})
 	if err != nil {
 		t.Fatalf("RestrictFQIDs: %v", err)
 	}
