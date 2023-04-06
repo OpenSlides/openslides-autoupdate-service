@@ -25,6 +25,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/ostcar/topic"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -263,7 +264,7 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 // list of fqids.
 //
 // The return format is a map from fqid to an object as map from field to value.
-func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []string) (map[string]map[string][]byte, error) {
+func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []string, requestedFields map[string][]string) (map[string]map[string][]byte, error) {
 	var keys []dskey.Key
 	for _, fqid := range fqids {
 		collection, rawID, found := strings.Cut(fqid, "/")
@@ -282,8 +283,10 @@ func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []stri
 		}
 
 		for _, field := range fields {
-			key := dskey.Key{Collection: collection, ID: id, Field: field}
-			keys = append(keys, key)
+			if val, ok := requestedFields[collection]; !ok || slices.Contains(val, field) {
+				key := dskey.Key{Collection: collection, ID: id, Field: field}
+				keys = append(keys, key)
+			}
 		}
 	}
 
