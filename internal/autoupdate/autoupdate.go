@@ -262,6 +262,8 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 
 // RestrictFQIDs returns the full collections, restricted for the user for a
 // list of fqids.
+// In requestedFields one can specify which fields per collection should be
+// returned if not specified all available fields will be included.
 //
 // The return format is a map from fqid to an object as map from field to value.
 func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []string, requestedFields map[string][]string) (map[string]map[string][]byte, error) {
