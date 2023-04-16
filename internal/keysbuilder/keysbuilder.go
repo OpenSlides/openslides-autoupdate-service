@@ -65,6 +65,14 @@ func FromBuilders(builders ...*Builder) *Builder {
 	return builder
 }
 
+func bodyFieldLen(bodies []body) int {
+	sum := 0
+	for _, body := range bodies {
+		sum += len(body.fieldsMap.fields)
+	}
+	return sum
+}
+
 // Update triggers a key update. It generates the list of keys, that can be
 // requested with the Keys() method. It travels the KeysRequests object like a
 // tree.
@@ -79,42 +87,41 @@ func (b *Builder) Update(ctx context.Context, getter datastore.Getter) ([]dskey.
 	}
 
 	// Start with all keys from all the bodies.
-	var process []keyDescription
+	queue := make([]keyDescription, 0, bodyFieldLen(b.bodies))
 	for _, body := range b.bodies {
-		process = body.appendKeys(process)
+		queue = body.appendKeys(queue)
 	}
 
 	var keys []dskey.Key
 
-	var needed []dskey.Key
-	var processed []keyDescription
-	for {
+	// neededX contains keys, where the value has to be fetched from the database.
+	var neededKeys []dskey.Key
+	var neededDescriptions []keyDescription
+	for len(queue) > 0 {
 		// Get all keys and descriptions.
-		for _, kd := range process {
+		for _, kd := range queue {
 			keys = append(keys, kd.key)
 			if kd.description == nil {
 				continue
 			}
 
-			needed = append(needed, kd.key)
-			processed = append(processed, keyDescription{key: kd.key, description: kd.description})
+			neededKeys = append(neededKeys, kd.key)
+			neededDescriptions = append(neededDescriptions, keyDescription{key: kd.key, description: kd.description})
 		}
+		queue = queue[:0]
 
-		if len(needed) == 0 {
-			break
+		if len(neededKeys) == 0 {
+			continue
 		}
 
 		// Get values for all special (not none) fields.
-		data, err := getter.Get(ctx, needed...)
+		data, err := getter.Get(ctx, neededKeys...)
 		if err != nil {
 			return nil, fmt.Errorf("load needed keys: %w", err)
 		}
+		neededKeys = neededKeys[:0]
 
-		// Clear process and needed without freeing the memory.
-		needed = needed[:0]
-		process = process[:0]
-
-		for _, kd := range processed {
+		for _, kd := range neededDescriptions {
 			// This are fields that do not exist or the user has not the
 			// permission to see them.
 			if data[kd.key] == nil {
@@ -122,7 +129,7 @@ func (b *Builder) Update(ctx context.Context, getter datastore.Getter) ([]dskey.
 			}
 
 			var err error
-			process, err = kd.description.appendKeys(kd.key, data[kd.key], process)
+			queue, err = kd.description.appendKeys(kd.key, data[kd.key], queue)
 			if err != nil {
 				var invalidErr *json.UnmarshalTypeError
 				if errors.As(err, &invalidErr) {
@@ -134,7 +141,7 @@ func (b *Builder) Update(ctx context.Context, getter datastore.Getter) ([]dskey.
 		}
 
 		// Clear processed.
-		processed = processed[:0]
+		neededDescriptions = neededDescriptions[:0]
 	}
 	return keys, nil
 }

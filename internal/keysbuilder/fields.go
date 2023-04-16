@@ -42,11 +42,18 @@ var (
 	reField      = regexp.MustCompile(`^[a-z][a-z0-9_]*\$?[a-z0-9_]*$`)
 )
 
+// keyDescription combines a key and a fieldDescription.
+//
+// This is used, when a list of key-description combinations are needed.
 type keyDescription struct {
 	key         dskey.Key
 	description fieldDescription
 }
 
+// fieldDescription is an interface that appends keys.
+//
+// The different field-types (relation, relation-list, etc.) implement this
+// interface and return all keys, they represent.
 type fieldDescription interface {
 	appendKeys(key dskey.Key, value json.RawMessage, data []keyDescription) ([]keyDescription, error)
 }
@@ -98,6 +105,10 @@ func (b *body) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// appendKeys appends all body-keys with there descriptions.
+//
+// It is simular to the fieldDescription interface. But it requires other
+// arguments.
 func (b *body) appendKeys(data []keyDescription) []keyDescription {
 	for _, id := range b.ids {
 		data = b.fieldsMap.appendKeys(b.collection, id, data)
@@ -409,6 +420,9 @@ func (f *fieldsMap) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// appendKeys appends its fields to data.
+//
+// It is like the fieldDescription interface. But it requires other arguments.
 func (f *fieldsMap) appendKeys(collection string, id int, data []keyDescription) []keyDescription {
 	for field, description := range f.fields {
 		key := dskey.Key{Collection: collection, ID: id, Field: field}
