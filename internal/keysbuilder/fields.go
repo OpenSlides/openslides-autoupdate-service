@@ -42,8 +42,13 @@ var (
 	reField      = regexp.MustCompile(`^[a-z][a-z0-9_]*\$?[a-z0-9_]*$`)
 )
 
+type keyDescription struct {
+	key         dskey.Key
+	description fieldDescription
+}
+
 type fieldDescription interface {
-	keys(key dskey.Key, value json.RawMessage, data map[dskey.Key]fieldDescription) error
+	appendKeys(key dskey.Key, value json.RawMessage, data []keyDescription) ([]keyDescription, error)
 }
 
 // body holds the information which keys are requested by the client.
@@ -93,10 +98,11 @@ func (b *body) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (b *body) keys(data map[dskey.Key]fieldDescription) {
+func (b *body) appendKeys(data []keyDescription) []keyDescription {
 	for _, id := range b.ids {
-		b.fieldsMap.keys(b.collection, id, data)
+		data = b.fieldsMap.appendKeys(b.collection, id, data)
 	}
+	return data
 }
 
 // relationField is a fieldtype that redirects to one other collection.
@@ -139,14 +145,14 @@ func (r *relationField) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (r *relationField) keys(key dskey.Key, value json.RawMessage, data map[dskey.Key]fieldDescription) error {
+func (r *relationField) appendKeys(key dskey.Key, value json.RawMessage, data []keyDescription) ([]keyDescription, error) {
 	var id int
 	if err := json.Unmarshal(value, &id); err != nil {
-		return fmt.Errorf("decoding value for key %s: %w", key, err)
+		return nil, fmt.Errorf("decoding value for key %s: %w", key, err)
 	}
 
-	r.fieldsMap.keys(r.collection, id, data)
-	return nil
+	data = r.fieldsMap.appendKeys(r.collection, id, data)
+	return data, nil
 }
 
 // relationListField is a fieldtype like relation, but redirects to a list of objects.
@@ -166,18 +172,19 @@ type relationListField struct {
 	relationField
 }
 
-func (r *relationListField) keys(key dskey.Key, value json.RawMessage, data map[dskey.Key]fieldDescription) error {
+func (r *relationListField) appendKeys(key dskey.Key, value json.RawMessage, data []keyDescription) ([]keyDescription, error) {
 	var ids []int
 	if err := json.Unmarshal(value, &ids); err != nil {
-		return fmt.Errorf("decoding value for key %s: %w", key, err)
+		return nil, fmt.Errorf("decoding value for key %s: %w", key, err)
 	}
 
 	for _, id := range ids {
 		for field, description := range r.fields {
-			data[dskey.Key{Collection: r.collection, ID: id, Field: field}] = description
+			key := dskey.Key{Collection: r.collection, ID: id, Field: field}
+			data = append(data, keyDescription{key: key, description: description})
 		}
 	}
-	return nil
+	return data, nil
 }
 
 // genericRelationField is like a relationField but the collection is given from the restricter.
@@ -210,24 +217,24 @@ func (g *genericRelationField) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (g *genericRelationField) keys(key dskey.Key, value json.RawMessage, data map[dskey.Key]fieldDescription) error {
-	var cid string
-	if err := json.Unmarshal(value, &cid); err != nil {
-		return fmt.Errorf("decoding value for key %s: %w", key, err)
+func (g *genericRelationField) appendKeys(key dskey.Key, value json.RawMessage, data []keyDescription) ([]keyDescription, error) {
+	var fqID string
+	if err := json.Unmarshal(value, &fqID); err != nil {
+		return nil, fmt.Errorf("decoding value for key %s: %w", key, err)
 	}
 
-	collection, rawID, found := strings.Cut(cid, "/")
+	collection, rawID, found := strings.Cut(fqID, "/")
 	if !found {
-		return fmt.Errorf("invalid collection id: %s", cid)
+		return nil, fmt.Errorf("invalid collection id: %s", fqID)
 	}
 
 	id, err := strconv.Atoi(rawID)
 	if err != nil {
-		return fmt.Errorf("invalid collection id: %s", cid)
+		return nil, fmt.Errorf("invalid collection id: %s", fqID)
 	}
 
-	g.fieldsMap.keys(collection, id, data)
-	return nil
+	data = g.fieldsMap.appendKeys(collection, id, data)
+	return data, nil
 }
 
 // genericRelationListField is like a genericRelationField but with a list of relations.
@@ -246,26 +253,26 @@ type genericRelationListField struct {
 	genericRelationField
 }
 
-func (g *genericRelationListField) keys(key dskey.Key, value json.RawMessage, data map[dskey.Key]fieldDescription) error {
-	var cids []string
-	if err := json.Unmarshal(value, &cids); err != nil {
-		return fmt.Errorf("decoding value for key %s: %w", key, err)
+func (g *genericRelationListField) appendKeys(key dskey.Key, value json.RawMessage, data []keyDescription) ([]keyDescription, error) {
+	var fqIDs []string
+	if err := json.Unmarshal(value, &fqIDs); err != nil {
+		return nil, fmt.Errorf("decoding value for key %s: %w", key, err)
 	}
 
-	for _, cid := range cids {
-		collection, rawID, found := strings.Cut(cid, "/")
+	for _, fqID := range fqIDs {
+		collection, rawID, found := strings.Cut(fqID, "/")
 		if !found {
-			return fmt.Errorf("invalid collection id: %s", cid)
+			return nil, fmt.Errorf("invalid collection id: %s", fqID)
 		}
 
 		id, err := strconv.Atoi(rawID)
 		if err != nil {
-			return fmt.Errorf("invalid collection id: %s", cid)
+			return nil, fmt.Errorf("invalid collection id: %s", fqID)
 		}
 
-		g.fieldsMap.keys(collection, id, data)
+		data = g.fieldsMap.appendKeys(collection, id, data)
 	}
-	return nil
+	return data, nil
 }
 
 // templateField requests a list of fields from a template.
@@ -310,18 +317,18 @@ func (t *templateField) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (t *templateField) keys(key dskey.Key, value json.RawMessage, data map[dskey.Key]fieldDescription) error {
+func (t *templateField) appendKeys(key dskey.Key, value json.RawMessage, data []keyDescription) ([]keyDescription, error) {
 	var values []string
 	if err := json.Unmarshal(value, &values); err != nil {
-		return fmt.Errorf("decoding value for key %s: %w", key, err)
+		return nil, fmt.Errorf("decoding value for key %s: %w", key, err)
 	}
 
 	for _, value := range values {
 		newkey := key
 		newkey.Field = strings.Replace(key.Field, "$", "$"+value, 1)
-		data[newkey] = t.values
+		data = append(data, keyDescription{key: newkey, description: t.values})
 	}
-	return nil
+	return data, nil
 }
 
 // unmarshalField uses the type-attribute in the json object get the field-type.
@@ -402,8 +409,10 @@ func (f *fieldsMap) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (f *fieldsMap) keys(collection string, id int, data map[dskey.Key]fieldDescription) {
+func (f *fieldsMap) appendKeys(collection string, id int, data []keyDescription) []keyDescription {
 	for field, description := range f.fields {
-		data[dskey.Key{Collection: collection, ID: id, Field: field}] = description
+		key := dskey.Key{Collection: collection, ID: id, Field: field}
+		data = append(data, keyDescription{key: key, description: description})
 	}
+	return data
 }
