@@ -4989,6 +4989,12 @@ func (r *Fetch) User_Pronoun(userID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) User_SamlID(userID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "user", id: userID, field: "saml_id"}
+	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "saml_id"}] = v
+	return v
+}
+
 func (r *Fetch) User_SpeakerIDsTmpl(userID int) *ValueIDSlice {
 	v := &ValueIDSlice{fetch: r, collection: "user", id: userID, field: "speaker_$_ids"}
 	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "speaker_$_ids"}] = v
