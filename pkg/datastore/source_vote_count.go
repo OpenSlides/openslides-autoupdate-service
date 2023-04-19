@@ -31,6 +31,7 @@ type voteCountSource struct {
 	mu        sync.Mutex
 	voteCount map[int]int
 	update    chan map[int]int
+	ready     chan struct{}
 }
 
 // newVoteCountSource initializes the object.
@@ -46,6 +47,8 @@ func newVoteCountSource(lookup environment.Environmenter) *voteCountSource {
 		voteServiceURL: url,
 		client:         &http.Client{},
 		update:         make(chan map[int]int, 1),
+		voteCount:      make(map[int]int),
+		ready:          make(chan struct{}),
 	}
 
 	return &source
@@ -88,7 +91,6 @@ func (s *voteCountSource) connect(ctx context.Context) error {
 	defer resp.Body.Close()
 
 	decoder := json.NewDecoder(resp.Body)
-	s.voteCount = make(map[int]int)
 	for {
 		var counts map[int]int
 		if err := decoder.Decode(&counts); err != nil {
@@ -111,6 +113,12 @@ func (s *voteCountSource) connect(ctx context.Context) error {
 		s.mu.Unlock()
 
 		select {
+		case <-s.ready:
+		default:
+			close(s.ready)
+		}
+
+		select {
 		case s.update <- counts:
 		default:
 		}
@@ -119,6 +127,8 @@ func (s *voteCountSource) connect(ctx context.Context) error {
 
 // Get is called when a key is not in the cache.
 func (s *voteCountSource) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+	<-s.ready
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

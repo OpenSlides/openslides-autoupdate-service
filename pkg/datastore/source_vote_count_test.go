@@ -16,6 +16,8 @@ import (
 func TestVoteCountSourceGet(t *testing.T) {
 	sender := make(chan string)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, `{}`)
+		w.(http.Flusher).Flush()
 		for msg := range sender {
 			fmt.Fprintln(w, msg)
 			w.(http.Flusher).Flush()
@@ -45,7 +47,7 @@ func TestVoteCountSourceGet(t *testing.T) {
 		}
 
 		if got[key1] != nil {
-			t.Errorf("Get() without any data returned %v, expected nil", got[key1])
+			t.Errorf("Get() without any data returned %s, expected nil", got[key1])
 		}
 	})
 
@@ -58,7 +60,7 @@ func TestVoteCountSourceGet(t *testing.T) {
 		}
 
 		if string(got[key1]) != "42" {
-			t.Errorf("Get() after first data returned `%v`, expected `42`", got[key1])
+			t.Errorf("Get() after first data returned `%s`, expected `42`", got[key1])
 		}
 	})
 
@@ -71,7 +73,7 @@ func TestVoteCountSourceGet(t *testing.T) {
 		}
 
 		if string(got[key1]) != "43" {
-			t.Errorf("Get() after first data returned `%v`, expected `42`", got[key1])
+			t.Errorf("Get() after first data returned `%s`, expected `43`", got[key1])
 		}
 	})
 
@@ -84,7 +86,7 @@ func TestVoteCountSourceGet(t *testing.T) {
 		}
 
 		if string(got[key1]) != "44" {
-			t.Errorf("Get() after first data returned `%v`, expected `42`", got[key1])
+			t.Errorf("Get() after first data returned `%s`, expected `44`", got[key1])
 		}
 	})
 
@@ -97,7 +99,7 @@ func TestVoteCountSourceGet(t *testing.T) {
 		}
 
 		if got[key1] != nil {
-			t.Errorf("Get() after receiving 0 returned %v, expected nil", got[key1])
+			t.Errorf("Get() after receiving 0 returned %s, expected nil", got[key1])
 		}
 	})
 }
