@@ -148,6 +148,5 @@ func (c *cache) len() int {
 }
 
 func (c *cache) size() int {
-	return -1 // TODO
-	// return c.data.size()
+	return c.data.Size()
 }
