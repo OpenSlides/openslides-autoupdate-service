@@ -240,7 +240,7 @@ func (User) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []UserRequir
 	return []UserRequiredObject{
 		{
 			"motion submitter",
-			ds.MeetingUser_SubmittedMotionIDs,
+			ds.MeetingUser_MotionSubmitterIDs,
 			Collection(ctx, MotionSubmitter{}.Name()).Modes("A"),
 			false,
 		},
@@ -289,7 +289,7 @@ func (User) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []UserRequir
 
 		{
 			"vote delegated user",
-			ds.MeetingUser_VoteDelegatedVoteIDs,
+			ds.MeetingUser_VoteDelegationsFromIDs,
 			Collection(ctx, Vote{}.Name()).Modes("A"),
 			false,
 		},

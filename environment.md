@@ -25,7 +25,7 @@ The Service uses the following environment variables:
 * `AUTH_PROTOCOL`: Protocol of the auth service. The default is `http`.
 * `AUTH_HOST`: Host of the auth service. The default is `localhost`.
 * `AUTH_PORT`: Port of the auth service. The default is `9004`.
-* `AUTH_Fake`: Use user id 1 for every request. Ignores all other auth environment variables. The default is `false`.
+* `AUTH_FAKE`: Use user id 1 for every request. Ignores all other auth environment variables. The default is `false`.
 * `CONCURENT_WORKER`: Amount of clients that calculate there values at the same time. Default to GOMAXPROCS. The default is `0`.
 * `METRIC_INTERVAL`: Time in how often the metrics are gathered. Zero disables the metrics. The default is `5m`.
 

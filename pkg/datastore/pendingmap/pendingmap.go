@@ -250,10 +250,11 @@ func (pm *PendingMap) Len() int {
 func (pm *PendingMap) reading(cmd func() error) error {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
+
 	return cmd()
 }
 
-// Size returns the Size of all values in the cache in bytes.
+// Size returns the size of all values in the cache in bytes.
 func (pm *PendingMap) Size() int {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()

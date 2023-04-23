@@ -194,7 +194,7 @@ func TestUserModeA(t *testing.T) {
 		meeting_user/10:
 			meeting_id: 30
 		meeting_user/20:
-			submitted_motion_ids: [4]
+			motion_submitter_ids: [4]
 			meeting_id: 30
 		
 		motion_submitter/4:
@@ -300,7 +300,7 @@ func TestUserModeA(t *testing.T) {
 		meeting_user/10:
 			meeting_id: 30
 		meeting_user/20:
-			vote_delegated_vote_ids: [4]
+			vote_delegations_from_ids: [4]
 			meeting_id: 30
 		
 		vote/4/option_id: 5
