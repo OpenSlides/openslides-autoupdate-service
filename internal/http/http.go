@@ -77,6 +77,7 @@ func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecte
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Cache-Control", "no-store, max-age=0")
+		w.Header().Set("Connection", "keep-alive")
 		ctx := r.Context()
 
 		defer r.Body.Close()
