@@ -31,6 +31,7 @@ type voteCountSource struct {
 	mu        sync.Mutex
 	voteCount map[int]int
 	update    chan map[int]int
+	ready     chan struct{}
 }
 
 // newVoteCountSource initializes the object.
@@ -46,6 +47,8 @@ func newVoteCountSource(lookup environment.Environmenter) *voteCountSource {
 		voteServiceURL: url,
 		client:         &http.Client{},
 		update:         make(chan map[int]int, 1),
+		voteCount:      make(map[int]int),
+		ready:          make(chan struct{}),
 	}
 
 	return &source
@@ -53,6 +56,10 @@ func newVoteCountSource(lookup environment.Environmenter) *voteCountSource {
 
 // Connect creates a connection to the vote service and makes sure, it stays
 // open.
+//
+// eventProvider is a function that returns a channel. If the connection fails,
+// this function fetches such a channel and waits for a signal before it tries
+// to open a new connection.
 func (s *voteCountSource) Connect(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool), errHandler func(error)) {
 	for ctx.Err() == nil {
 		if err := s.connect(ctx); err != nil {
@@ -88,7 +95,6 @@ func (s *voteCountSource) connect(ctx context.Context) error {
 	defer resp.Body.Close()
 
 	decoder := json.NewDecoder(resp.Body)
-	s.voteCount = make(map[int]int)
 	for {
 		var counts map[int]int
 		if err := decoder.Decode(&counts); err != nil {
@@ -99,7 +105,6 @@ func (s *voteCountSource) connect(ctx context.Context) error {
 		}
 
 		s.mu.Lock()
-
 		for k, v := range counts {
 			if v == 0 {
 				delete(s.voteCount, k)
@@ -107,8 +112,13 @@ func (s *voteCountSource) connect(ctx context.Context) error {
 			}
 			s.voteCount[k] = v
 		}
-
 		s.mu.Unlock()
+
+		select {
+		case <-s.ready:
+		default:
+			close(s.ready)
+		}
 
 		select {
 		case s.update <- counts:
@@ -119,6 +129,12 @@ func (s *voteCountSource) connect(ctx context.Context) error {
 
 // Get is called when a key is not in the cache.
 func (s *voteCountSource) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+	select {
+	case <-s.ready:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -137,7 +153,7 @@ func (s *voteCountSource) Get(ctx context.Context, keys ...dskey.Key) (map[dskey
 	return out, nil
 }
 
-// Update is called frequently and should block until there is new data.
+// Update has to be called frequently. It blocks, until there is new data.
 func (s *voteCountSource) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
 	var data map[int]int
 	select {

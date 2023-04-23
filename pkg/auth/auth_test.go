@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth/authtest"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -27,24 +28,13 @@ func parseURL(raw string) (host, port, protocol string) {
 func TestAuth(t *testing.T) {
 	const invalidSecret = "wrong-auth-dev-key"
 	const cookieName = "refreshId"
-	const authHeader = "Authentication"
 
-	validCookie, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sessionId": "123",
-	}).SignedString([]byte(auth.DebugCookieKey))
+	cookie, authHeader, validHeader, err := authtest.ValidTokens([]byte(auth.DebugCookieKey), []byte(auth.DebugTokenKey), 1)
 	if err != nil {
-		t.Fatalf("Can not sign cookie token: %v", err)
+		t.Fatalf("Create tokens: %v", err)
 	}
-	validCookie = cookieName + "=bearer%20" + validCookie
 
-	validHeader, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userId":    1,
-		"sessionId": "123",
-	}).SignedString([]byte(auth.DebugTokenKey))
-	if err != nil {
-		t.Fatalf("Can not sign token token: %v", err)
-	}
-	validHeader = "bearer " + validHeader
+	validCookie := cookie.String()
 
 	oldHeader, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId":    1,

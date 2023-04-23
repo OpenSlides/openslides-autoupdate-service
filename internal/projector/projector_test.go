@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
@@ -229,6 +230,55 @@ func TestProjectionTypeDoesNotExist(t *testing.T) {
 	if content.Error == "" {
 		t.Errorf("Field has not error")
 	}
+}
+
+func TestOnTwoProjections(t *testing.T) {
+	// Test that when reading two different projections at the same time in
+	// different goroutines, there is no race condition.
+	//
+	// This test is only usefull, when the race detector is enabled.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	key1 := dskey.MustKey("projection/1/content")
+	key2 := dskey.MustKey("projection/2/content")
+
+	ds, bg := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	projection:
+		1:
+			content_object_id: meeting/1
+			type: test_model
+
+		2:
+			content_object_id: meeting/1
+			type: test_model
+	`))
+	go bg(ctx, oserror.Handle)
+
+	projector.Register(ds, testSlides())
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+
+		_, err := ds.Get(ctx, key1)
+		if err != nil {
+			t.Errorf("Get returned unexpected error: %v", err)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+
+		_, err := ds.Get(ctx, key2)
+		if err != nil {
+			t.Errorf("Get returned unexpected error: %v", err)
+		}
+	}()
+
+	wg.Wait()
 }
 
 func testSlides() *projector.SlideStore {

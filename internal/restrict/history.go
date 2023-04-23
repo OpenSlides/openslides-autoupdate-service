@@ -129,19 +129,22 @@ func (h History) canSeeKey(
 	}
 
 	if key.Collection == "user" {
-		return false, nil // TODO Fix me
-		// for _, r := range (collection.User{}).RequiredObjects(ctx, oldDS) {
-		// 	meetingIDs, err := r.TmplFunc(key.ID).Value(ctx)
-		// 	if err != nil {
-		// 		return false, fmt.Errorf("getting meeting ids for %s: %w", r.Name, err)
-		// 	}
+		meetingUserIDs, err := oldDS.User_MeetingUserIDs(key.ID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting meeting user ids from user %d in old version: %w", key.ID, err)
+		}
 
-		// 	for _, meetingID := range meetingIDs {
-		// 		if _, ok := adminInMeeting[meetingID]; ok {
-		// 			return true, nil
-		// 		}
-		// 	}
-		// }
+		for _, muID := range meetingUserIDs {
+			meetingID, err := oldDS.MeetingUser_MeetingID(muID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting meeting id from meeting user %d in old version: %w", muID, err)
+			}
+
+			if _, ok := adminInMeeting[meetingID]; ok {
+				return true, nil
+			}
+		}
+		return false, nil
 	}
 
 	return false, nil

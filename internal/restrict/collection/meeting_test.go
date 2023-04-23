@@ -49,7 +49,14 @@ func TestMeetingModeB(t *testing.T) {
 		t,
 		m.Modes("B"),
 		true,
-		"meeting/30/user_ids: [1]",
+		`---
+		meeting/30:
+			group_ids: [7]
+			committee_id: 2
+		
+		group/7/meeting_user_ids: [10]
+		meeting_user/10/user_id: 1
+		`,
 		withElementID(30),
 	)
 

@@ -76,7 +76,9 @@ func TestMediafileModeA(t *testing.T) {
 		mediafile/3:
 			owner_id: meeting/7
 		
-		meeting/7/user_ids: [1]
+		meeting/7/group_ids: [2]
+		group/2/meeting_user_ids: [10]
+		meeting_user/10/user_id: 1
 		`,
 		withElementID(3),
 	)
@@ -106,7 +108,11 @@ func TestMediafileModeA(t *testing.T) {
 		mediafile/3:
 			owner_id: meeting/7
 			used_as_logo_projector_main_in_meeting_id: 5
-		meeting/7/user_ids: [1]
+		meeting/7:
+			group_ids: [2]
+			committee_id: 5
+		group/2/meeting_user_ids: [10]
+		meeting_user/10/user_id: 1
 		`,
 		withElementID(3),
 	)

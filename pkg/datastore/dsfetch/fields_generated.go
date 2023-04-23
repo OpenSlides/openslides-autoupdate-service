@@ -1669,6 +1669,16 @@ func (r *Fetch) Group_UsedAsPollDefaultID(groupID int) *ValueMaybeInt {
 	return v
 }
 
+func (r *Fetch) Group_UsedAsTopicPollDefaultID(groupID int) *ValueMaybeInt {
+	key := dskey.Key{Collection: "group", ID: groupID, Field: "used_as_topic_poll_default_id"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueMaybeInt)
+	}
+	v := &ValueMaybeInt{fetch: r, collection: "group", id: groupID, field: "used_as_topic_poll_default_id"}
+	r.requested[key] = v
+	return v
+}
+
 func (r *Fetch) Group_Weight(groupID int) *ValueInt {
 	key := dskey.Key{Collection: "group", ID: groupID, Field: "weight"}
 	if v, ok := r.requested[key]; ok {
@@ -2179,6 +2189,16 @@ func (r *Fetch) MeetingUser_MeetingID(meetingUserID int) *ValueInt {
 	return v
 }
 
+func (r *Fetch) MeetingUser_MotionSubmitterIDs(meetingUserID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "motion_submitter_ids"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueIntSlice)
+	}
+	v := &ValueIntSlice{fetch: r, collection: "meetingUser", id: meetingUserID, field: "motion_submitter_ids"}
+	r.requested[key] = v
+	return v
+}
+
 func (r *Fetch) MeetingUser_Number(meetingUserID int) *ValueString {
 	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "number"}
 	if v, ok := r.requested[key]; ok {
@@ -2199,16 +2219,6 @@ func (r *Fetch) MeetingUser_PersonalNoteIDs(meetingUserID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Fetch) MeetingUser_ProjectionIDs(meetingUserID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "projection_ids"}
-	if v, ok := r.requested[key]; ok {
-		return v.(*ValueIntSlice)
-	}
-	v := &ValueIntSlice{fetch: r, collection: "meetingUser", id: meetingUserID, field: "projection_ids"}
-	r.requested[key] = v
-	return v
-}
-
 func (r *Fetch) MeetingUser_SpeakerIDs(meetingUserID int) *ValueIntSlice {
 	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "speaker_ids"}
 	if v, ok := r.requested[key]; ok {
@@ -2225,16 +2235,6 @@ func (r *Fetch) MeetingUser_StructureLevel(meetingUserID int) *ValueString {
 		return v.(*ValueString)
 	}
 	v := &ValueString{fetch: r, collection: "meetingUser", id: meetingUserID, field: "structure_level"}
-	r.requested[key] = v
-	return v
-}
-
-func (r *Fetch) MeetingUser_SubmittedMotionIDs(meetingUserID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "submitted_motion_ids"}
-	if v, ok := r.requested[key]; ok {
-		return v.(*ValueIntSlice)
-	}
-	v := &ValueIntSlice{fetch: r, collection: "meetingUser", id: meetingUserID, field: "submitted_motion_ids"}
 	r.requested[key] = v
 	return v
 }
@@ -2265,16 +2265,6 @@ func (r *Fetch) MeetingUser_VoteDelegatedToID(meetingUserID int) *ValueMaybeInt 
 		return v.(*ValueMaybeInt)
 	}
 	v := &ValueMaybeInt{fetch: r, collection: "meetingUser", id: meetingUserID, field: "vote_delegated_to_id"}
-	r.requested[key] = v
-	return v
-}
-
-func (r *Fetch) MeetingUser_VoteDelegatedVoteIDs(meetingUserID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "vote_delegated_vote_ids"}
-	if v, ok := r.requested[key]; ok {
-		return v.(*ValueIntSlice)
-	}
-	v := &ValueIntSlice{fetch: r, collection: "meetingUser", id: meetingUserID, field: "vote_delegated_vote_ids"}
 	r.requested[key] = v
 	return v
 }
@@ -2759,152 +2749,142 @@ func (r *Fetch) Meeting_DefaultMeetingForCommitteeID(meetingID int) *ValueMaybeI
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorAgendaAllItemsID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_agenda_all_items_id"}
+func (r *Fetch) Meeting_DefaultProjectorAgendaAllItemsIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_agenda_all_items_ids"}
 	if v, ok := r.requested[key]; ok {
-		return v.(*ValueInt)
+		return v.(*ValueIntSlice)
 	}
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_agenda_all_items_id", required: true}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_agenda_all_items_ids", required: true}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorAmendmentID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_amendment_id"}
+func (r *Fetch) Meeting_DefaultProjectorAmendmentIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_amendment_ids"}
 	if v, ok := r.requested[key]; ok {
-		return v.(*ValueInt)
+		return v.(*ValueIntSlice)
 	}
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_amendment_id", required: true}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_amendment_ids", required: true}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorAssignmentID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_assignment_id"}
+func (r *Fetch) Meeting_DefaultProjectorAssignmentIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_assignment_ids"}
 	if v, ok := r.requested[key]; ok {
-		return v.(*ValueInt)
+		return v.(*ValueIntSlice)
 	}
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_assignment_id", required: true}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_assignment_ids", required: true}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorAssignmentPollID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_assignment_poll_id"}
+func (r *Fetch) Meeting_DefaultProjectorAssignmentPollIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_assignment_poll_ids"}
 	if v, ok := r.requested[key]; ok {
-		return v.(*ValueInt)
+		return v.(*ValueIntSlice)
 	}
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_assignment_poll_id", required: true}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_assignment_poll_ids", required: true}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorCurrentListOfSpeakersID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_current_list_of_speakers_id"}
+func (r *Fetch) Meeting_DefaultProjectorCurrentListOfSpeakersIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_current_list_of_speakers_ids"}
 	if v, ok := r.requested[key]; ok {
-		return v.(*ValueInt)
+		return v.(*ValueIntSlice)
 	}
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_current_list_of_speakers_id", required: true}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_current_list_of_speakers_ids", required: true}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorListOfSpeakersID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_list_of_speakers_id"}
+func (r *Fetch) Meeting_DefaultProjectorListOfSpeakersIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_list_of_speakers_ids"}
 	if v, ok := r.requested[key]; ok {
-		return v.(*ValueInt)
+		return v.(*ValueIntSlice)
 	}
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_list_of_speakers_id", required: true}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_list_of_speakers_ids", required: true}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorMediafileID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_mediafile_id"}
+func (r *Fetch) Meeting_DefaultProjectorMediafileIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_mediafile_ids"}
 	if v, ok := r.requested[key]; ok {
-		return v.(*ValueInt)
+		return v.(*ValueIntSlice)
 	}
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_mediafile_id", required: true}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_mediafile_ids", required: true}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorMotionBlockID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_motion_block_id"}
+func (r *Fetch) Meeting_DefaultProjectorMotionBlockIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_motion_block_ids"}
 	if v, ok := r.requested[key]; ok {
-		return v.(*ValueInt)
+		return v.(*ValueIntSlice)
 	}
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_motion_block_id", required: true}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_motion_block_ids", required: true}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorMotionID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_motion_id"}
+func (r *Fetch) Meeting_DefaultProjectorMotionIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_motion_ids"}
 	if v, ok := r.requested[key]; ok {
-		return v.(*ValueInt)
+		return v.(*ValueIntSlice)
 	}
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_motion_id", required: true}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_motion_ids", required: true}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorMotionPollID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_motion_poll_id"}
+func (r *Fetch) Meeting_DefaultProjectorMotionPollIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_motion_poll_ids"}
 	if v, ok := r.requested[key]; ok {
-		return v.(*ValueInt)
+		return v.(*ValueIntSlice)
 	}
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_motion_poll_id", required: true}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_motion_poll_ids", required: true}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorPollID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_poll_id"}
+func (r *Fetch) Meeting_DefaultProjectorPollIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_poll_ids"}
 	if v, ok := r.requested[key]; ok {
-		return v.(*ValueInt)
+		return v.(*ValueIntSlice)
 	}
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_poll_id", required: true}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_poll_ids", required: true}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorProjectorCountdownsID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_projector_countdowns_id"}
+func (r *Fetch) Meeting_DefaultProjectorProjectorCountdownsIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_projector_countdowns_ids"}
 	if v, ok := r.requested[key]; ok {
-		return v.(*ValueInt)
+		return v.(*ValueIntSlice)
 	}
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_projector_countdowns_id", required: true}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_projector_countdowns_ids", required: true}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorProjectorMessageID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_projector_message_id"}
+func (r *Fetch) Meeting_DefaultProjectorProjectorMessageIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_projector_message_ids"}
 	if v, ok := r.requested[key]; ok {
-		return v.(*ValueInt)
+		return v.(*ValueIntSlice)
 	}
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_projector_message_id", required: true}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_projector_message_ids", required: true}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorTopicsID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_topics_id"}
+func (r *Fetch) Meeting_DefaultProjectorTopicsIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_topics_ids"}
 	if v, ok := r.requested[key]; ok {
-		return v.(*ValueInt)
+		return v.(*ValueIntSlice)
 	}
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_topics_id", required: true}
-	r.requested[key] = v
-	return v
-}
-
-func (r *Fetch) Meeting_DefaultProjectorUserID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_user_id"}
-	if v, ok := r.requested[key]; ok {
-		return v.(*ValueInt)
-	}
-	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_user_id", required: true}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_topics_ids", required: true}
 	r.requested[key] = v
 	return v
 }
@@ -3669,6 +3649,16 @@ func (r *Fetch) Meeting_MotionsAmendmentsTextMode(meetingID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Meeting_MotionsBlockSlideColumns(meetingID int) *ValueInt {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_block_slide_columns"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueInt)
+	}
+	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "motions_block_slide_columns"}
+	r.requested[key] = v
+	return v
+}
+
 func (r *Fetch) Meeting_MotionsDefaultAmendmentWorkflowID(meetingID int) *ValueInt {
 	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_default_amendment_workflow_id"}
 	if v, ok := r.requested[key]; ok {
@@ -3989,6 +3979,26 @@ func (r *Fetch) Meeting_PollBallotPaperSelection(meetingID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Meeting_PollCandidateIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_candidate_ids"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueIntSlice)
+	}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "poll_candidate_ids"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) Meeting_PollCandidateListIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_candidate_list_ids"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueIntSlice)
+	}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "poll_candidate_list_ids"}
+	r.requested[key] = v
+	return v
+}
+
 func (r *Fetch) Meeting_PollCountdownID(meetingID int) *ValueMaybeInt {
 	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_countdown_id"}
 	if v, ok := r.requested[key]; ok {
@@ -4205,6 +4215,16 @@ func (r *Fetch) Meeting_TopicIDs(meetingID int) *ValueIntSlice {
 		return v.(*ValueIntSlice)
 	}
 	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "topic_ids"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) Meeting_TopicPollDefaultGroupIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "topic_poll_default_group_ids"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueIntSlice)
+	}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "topic_poll_default_group_ids"}
 	r.requested[key] = v
 	return v
 }
@@ -5599,6 +5619,16 @@ func (r *Fetch) Motion_ReferencedInMotionRecommendationExtensionIDs(motionID int
 	return v
 }
 
+func (r *Fetch) Motion_ReferencedInMotionStateExtensionIDs(motionID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "motion", ID: motionID, Field: "referenced_in_motion_state_extension_ids"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueIntSlice)
+	}
+	v := &ValueIntSlice{fetch: r, collection: "motion", id: motionID, field: "referenced_in_motion_state_extension_ids"}
+	r.requested[key] = v
+	return v
+}
+
 func (r *Fetch) Motion_SequentialNumber(motionID int) *ValueInt {
 	key := dskey.Key{Collection: "motion", ID: motionID, Field: "sequential_number"}
 	if v, ok := r.requested[key]; ok {
@@ -5655,6 +5685,16 @@ func (r *Fetch) Motion_StateExtension(motionID int) *ValueString {
 		return v.(*ValueString)
 	}
 	v := &ValueString{fetch: r, collection: "motion", id: motionID, field: "state_extension"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) Motion_StateExtensionReferenceIDs(motionID int) *ValueStringSlice {
+	key := dskey.Key{Collection: "motion", ID: motionID, Field: "state_extension_reference_ids"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueStringSlice)
+	}
+	v := &ValueStringSlice{fetch: r, collection: "motion", id: motionID, field: "state_extension_reference_ids"}
 	r.requested[key] = v
 	return v
 }
@@ -6205,6 +6245,96 @@ func (r *Fetch) PersonalNote_Star(personalNoteID int) *ValueBool {
 		return v.(*ValueBool)
 	}
 	v := &ValueBool{fetch: r, collection: "personalNote", id: personalNoteID, field: "star"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) PollCandidateList_ID(pollCandidateListID int) *ValueInt {
+	key := dskey.Key{Collection: "poll_candidate_list", ID: pollCandidateListID, Field: "id"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueInt)
+	}
+	v := &ValueInt{fetch: r, collection: "pollCandidateList", id: pollCandidateListID, field: "id"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) PollCandidateList_MeetingID(pollCandidateListID int) *ValueInt {
+	key := dskey.Key{Collection: "poll_candidate_list", ID: pollCandidateListID, Field: "meeting_id"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueInt)
+	}
+	v := &ValueInt{fetch: r, collection: "pollCandidateList", id: pollCandidateListID, field: "meeting_id", required: true}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) PollCandidateList_OptionID(pollCandidateListID int) *ValueInt {
+	key := dskey.Key{Collection: "poll_candidate_list", ID: pollCandidateListID, Field: "option_id"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueInt)
+	}
+	v := &ValueInt{fetch: r, collection: "pollCandidateList", id: pollCandidateListID, field: "option_id", required: true}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) PollCandidateList_PollCandidateIDs(pollCandidateListID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "poll_candidate_list", ID: pollCandidateListID, Field: "poll_candidate_ids"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueIntSlice)
+	}
+	v := &ValueIntSlice{fetch: r, collection: "pollCandidateList", id: pollCandidateListID, field: "poll_candidate_ids"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) PollCandidate_ID(pollCandidateID int) *ValueInt {
+	key := dskey.Key{Collection: "poll_candidate", ID: pollCandidateID, Field: "id"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueInt)
+	}
+	v := &ValueInt{fetch: r, collection: "pollCandidate", id: pollCandidateID, field: "id"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) PollCandidate_MeetingID(pollCandidateID int) *ValueInt {
+	key := dskey.Key{Collection: "poll_candidate", ID: pollCandidateID, Field: "meeting_id"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueInt)
+	}
+	v := &ValueInt{fetch: r, collection: "pollCandidate", id: pollCandidateID, field: "meeting_id", required: true}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) PollCandidate_PollCandidateListID(pollCandidateID int) *ValueInt {
+	key := dskey.Key{Collection: "poll_candidate", ID: pollCandidateID, Field: "poll_candidate_list_id"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueInt)
+	}
+	v := &ValueInt{fetch: r, collection: "pollCandidate", id: pollCandidateID, field: "poll_candidate_list_id", required: true}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) PollCandidate_UserID(pollCandidateID int) *ValueInt {
+	key := dskey.Key{Collection: "poll_candidate", ID: pollCandidateID, Field: "user_id"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueInt)
+	}
+	v := &ValueInt{fetch: r, collection: "pollCandidate", id: pollCandidateID, field: "user_id", required: true}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) PollCandidate_Weight(pollCandidateID int) *ValueInt {
+	key := dskey.Key{Collection: "poll_candidate", ID: pollCandidateID, Field: "weight"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueInt)
+	}
+	v := &ValueInt{fetch: r, collection: "pollCandidate", id: pollCandidateID, field: "weight", required: true}
 	r.requested[key] = v
 	return v
 }
@@ -6999,152 +7129,142 @@ func (r *Fetch) Projector_ShowTitle(projectorID int) *ValueBool {
 	return v
 }
 
-func (r *Fetch) Projector_UsedAsDefaultAgendaAllItemsInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_agenda_all_items_in_meeting_id"}
+func (r *Fetch) Projector_UsedAsDefaultProjectorForAgendaAllItemsInMeetingID(projectorID int) *ValueMaybeInt {
+	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_agenda_all_items_in_meeting_id"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
-	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_agenda_all_items_in_meeting_id"}
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_for_agenda_all_items_in_meeting_id"}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Projector_UsedAsDefaultAmendmentInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_amendment_in_meeting_id"}
+func (r *Fetch) Projector_UsedAsDefaultProjectorForAmendmentInMeetingID(projectorID int) *ValueMaybeInt {
+	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_amendment_in_meeting_id"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
-	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_amendment_in_meeting_id"}
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_for_amendment_in_meeting_id"}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Projector_UsedAsDefaultAssignmentInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_assignment_in_meeting_id"}
+func (r *Fetch) Projector_UsedAsDefaultProjectorForAssignmentInMeetingID(projectorID int) *ValueMaybeInt {
+	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_assignment_in_meeting_id"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
-	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_assignment_in_meeting_id"}
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_for_assignment_in_meeting_id"}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Projector_UsedAsDefaultAssignmentPollInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_assignment_poll_in_meeting_id"}
+func (r *Fetch) Projector_UsedAsDefaultProjectorForAssignmentPollInMeetingID(projectorID int) *ValueMaybeInt {
+	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_assignment_poll_in_meeting_id"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
-	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_assignment_poll_in_meeting_id"}
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_for_assignment_poll_in_meeting_id"}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Projector_UsedAsDefaultCurrentListOfSpeakersInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_current_list_of_speakers_in_meeting_id"}
+func (r *Fetch) Projector_UsedAsDefaultProjectorForCurrentListOfSpeakersInMeetingID(projectorID int) *ValueMaybeInt {
+	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_current_list_of_speakers_in_meeting_id"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
-	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_current_list_of_speakers_in_meeting_id"}
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_for_current_list_of_speakers_in_meeting_id"}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Projector_UsedAsDefaultListOfSpeakersInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_list_of_speakers_in_meeting_id"}
+func (r *Fetch) Projector_UsedAsDefaultProjectorForListOfSpeakersInMeetingID(projectorID int) *ValueMaybeInt {
+	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_list_of_speakers_in_meeting_id"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
-	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_list_of_speakers_in_meeting_id"}
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_for_list_of_speakers_in_meeting_id"}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Projector_UsedAsDefaultMediafileInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_mediafile_in_meeting_id"}
+func (r *Fetch) Projector_UsedAsDefaultProjectorForMediafileInMeetingID(projectorID int) *ValueMaybeInt {
+	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_mediafile_in_meeting_id"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
-	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_mediafile_in_meeting_id"}
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_for_mediafile_in_meeting_id"}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Projector_UsedAsDefaultMotionBlockInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_motion_block_in_meeting_id"}
+func (r *Fetch) Projector_UsedAsDefaultProjectorForMotionBlockInMeetingID(projectorID int) *ValueMaybeInt {
+	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_motion_block_in_meeting_id"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
-	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_motion_block_in_meeting_id"}
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_for_motion_block_in_meeting_id"}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Projector_UsedAsDefaultMotionInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_motion_in_meeting_id"}
+func (r *Fetch) Projector_UsedAsDefaultProjectorForMotionInMeetingID(projectorID int) *ValueMaybeInt {
+	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_motion_in_meeting_id"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
-	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_motion_in_meeting_id"}
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_for_motion_in_meeting_id"}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Projector_UsedAsDefaultMotionPollInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_motion_poll_in_meeting_id"}
+func (r *Fetch) Projector_UsedAsDefaultProjectorForMotionPollInMeetingID(projectorID int) *ValueMaybeInt {
+	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_motion_poll_in_meeting_id"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
-	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_motion_poll_in_meeting_id"}
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_for_motion_poll_in_meeting_id"}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Projector_UsedAsDefaultPollInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_poll_in_meeting_id"}
+func (r *Fetch) Projector_UsedAsDefaultProjectorForPollInMeetingID(projectorID int) *ValueMaybeInt {
+	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_poll_in_meeting_id"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
-	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_poll_in_meeting_id"}
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_for_poll_in_meeting_id"}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorCountdownsInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_countdowns_in_meeting_id"}
+func (r *Fetch) Projector_UsedAsDefaultProjectorForProjectorCountdownsInMeetingID(projectorID int) *ValueMaybeInt {
+	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_projector_countdowns_in_meeting_id"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
-	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_countdowns_in_meeting_id"}
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_for_projector_countdowns_in_meeting_id"}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorMessageInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_message_in_meeting_id"}
+func (r *Fetch) Projector_UsedAsDefaultProjectorForProjectorMessageInMeetingID(projectorID int) *ValueMaybeInt {
+	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_projector_message_in_meeting_id"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
-	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_message_in_meeting_id"}
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_for_projector_message_in_meeting_id"}
 	r.requested[key] = v
 	return v
 }
 
-func (r *Fetch) Projector_UsedAsDefaultTopicsInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_topics_in_meeting_id"}
+func (r *Fetch) Projector_UsedAsDefaultProjectorForTopicsInMeetingID(projectorID int) *ValueMaybeInt {
+	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_topics_in_meeting_id"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
-	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_topics_in_meeting_id"}
-	r.requested[key] = v
-	return v
-}
-
-func (r *Fetch) Projector_UsedAsDefaultUserInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_user_in_meeting_id"}
-	if v, ok := r.requested[key]; ok {
-		return v.(*ValueMaybeInt)
-	}
-	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_user_in_meeting_id"}
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_for_topics_in_meeting_id"}
 	r.requested[key] = v
 	return v
 }
@@ -7309,6 +7429,16 @@ func (r *Fetch) Tag_TaggedIDs(tagID int) *ValueStringSlice {
 	return v
 }
 
+func (r *Fetch) Theme_Abstain(themeID int) *ValueString {
+	key := dskey.Key{Collection: "theme", ID: themeID, Field: "abstain"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueString)
+	}
+	v := &ValueString{fetch: r, collection: "theme", id: themeID, field: "abstain"}
+	r.requested[key] = v
+	return v
+}
+
 func (r *Fetch) Theme_Accent100(themeID int) *ValueString {
 	key := dskey.Key{Collection: "theme", ID: themeID, Field: "accent_100"}
 	if v, ok := r.requested[key]; ok {
@@ -7449,6 +7579,16 @@ func (r *Fetch) Theme_AccentA700(themeID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Theme_Headbar(themeID int) *ValueString {
+	key := dskey.Key{Collection: "theme", ID: themeID, Field: "headbar"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueString)
+	}
+	v := &ValueString{fetch: r, collection: "theme", id: themeID, field: "headbar"}
+	r.requested[key] = v
+	return v
+}
+
 func (r *Fetch) Theme_ID(themeID int) *ValueInt {
 	key := dskey.Key{Collection: "theme", ID: themeID, Field: "id"}
 	if v, ok := r.requested[key]; ok {
@@ -7465,6 +7605,16 @@ func (r *Fetch) Theme_Name(themeID int) *ValueString {
 		return v.(*ValueString)
 	}
 	v := &ValueString{fetch: r, collection: "theme", id: themeID, field: "name", required: true}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) Theme_No(themeID int) *ValueString {
+	key := dskey.Key{Collection: "theme", ID: themeID, Field: "no"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueString)
+	}
+	v := &ValueString{fetch: r, collection: "theme", id: themeID, field: "no"}
 	r.requested[key] = v
 	return v
 }
@@ -7769,6 +7919,16 @@ func (r *Fetch) Theme_WarnA700(themeID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Theme_Yes(themeID int) *ValueString {
+	key := dskey.Key{Collection: "theme", ID: themeID, Field: "yes"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueString)
+	}
+	v := &ValueString{fetch: r, collection: "theme", id: themeID, field: "yes"}
+	r.requested[key] = v
+	return v
+}
+
 func (r *Fetch) Topic_AgendaItemID(topicID int) *ValueInt {
 	key := dskey.Key{Collection: "topic", ID: topicID, Field: "agenda_item_id"}
 	if v, ok := r.requested[key]; ok {
@@ -7949,6 +8109,16 @@ func (r *Fetch) User_DefaultVoteWeight(userID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) User_DelegatedVoteIDs(userID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "user", ID: userID, Field: "delegated_vote_ids"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueIntSlice)
+	}
+	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "delegated_vote_ids"}
+	r.requested[key] = v
+	return v
+}
+
 func (r *Fetch) User_Email(userID int) *ValueString {
 	key := dskey.Key{Collection: "user", ID: userID, Field: "email"}
 	if v, ok := r.requested[key]; ok {
@@ -8125,6 +8295,16 @@ func (r *Fetch) User_Password(userID int) *ValueString {
 		return v.(*ValueString)
 	}
 	v := &ValueString{fetch: r, collection: "user", id: userID, field: "password"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) User_PollCandidateIDs(userID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "user", ID: userID, Field: "poll_candidate_ids"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueIntSlice)
+	}
+	v := &ValueIntSlice{fetch: r, collection: "user", id: userID, field: "poll_candidate_ids"}
 	r.requested[key] = v
 	return v
 }

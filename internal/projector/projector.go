@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
@@ -24,7 +25,9 @@ type Datastore interface {
 
 // Register initializes a new projector.
 func Register(ds Datastore, slides *SlideStore) {
+	var hotKeysMu sync.RWMutex
 	hotKeys := map[dskey.Key]map[dskey.Key]struct{}{}
+
 	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield dskey.Key, changed map[dskey.Key][]byte) (bs []byte, err error) {
 		var p7on *Projection
 		start := time.Now()
@@ -42,12 +45,16 @@ func Register(ds Datastore, slides *SlideStore) {
 
 		if changed != nil {
 			var needUpdate bool
+
+			hotKeysMu.RLock()
 			for k := range changed {
 				if _, ok := hotKeys[fqfield][k]; ok {
 					needUpdate = true
 					break
 				}
 			}
+			hotKeysMu.RUnlock()
+
 			if !needUpdate {
 				old, err := ds.Get(ctx, fqfield)
 				if err != nil {
@@ -63,7 +70,9 @@ func Register(ds Datastore, slides *SlideStore) {
 		defer func() {
 			// At the end, save all requested keys to check later if one has
 			// changed.
+			hotKeysMu.Lock()
 			hotKeys[fqfield] = recorder.Keys()
+			hotKeysMu.Unlock()
 		}()
 
 		data := fetch.Object(
@@ -78,7 +87,6 @@ func Register(ds Datastore, slides *SlideStore) {
 		if err := fetch.Err(); err != nil {
 			var errDoesNotExist datastore.DoesNotExistError
 			if errors.As(err, &errDoesNotExist) {
-
 				return nil, nil
 			}
 			return nil, fmt.Errorf("fetching projection %d from datastore: %w", fqfield.ID, err)

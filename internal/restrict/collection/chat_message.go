@@ -82,7 +82,6 @@ func (ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, chatMessageIDs ..
 
 			return author == requestUser, nil
 		})
-
 		if err != nil {
 			return nil, fmt.Errorf("checking author of chat message: %w", err)
 		}

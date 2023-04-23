@@ -157,26 +157,30 @@ func TestHistoryGetter(t *testing.T) {
 			"committee/5/name",
 			false,
 		},
-		// {
-		// 	"user is motion submitter",
-		// 	`---
-		// 	user/1:
-		// 		meeting_user_ids: [10]
-		// 		meeting_ids: [2]
-		// 	meeting_user/10:
-		// 		group_ids: [3]
-		// 		meeting_id: 2
-		// 	group/3/permissions: ["meeting.can_see_history"]
-		// 	meeting/2/admin_group_id: 3
-		// 	`,
-		// 	`---
-		// 	user_meeting/23:
-		// 		user_id: 50
-		// 		submitted_motion_ids: [2]
-		// 	`,
-		// 	"user/50/username",
-		// 	true,
-		// },
+		{
+			"user in old meeting",
+			`---
+			user/1:
+				meeting_user_ids: [10]
+				meeting_ids: [2]
+			meeting_user/10:
+				group_ids: [3]
+				meeting_id: 2
+			group/3/permissions: ["meeting.can_see_history"]
+			meeting/2/admin_group_id: 3
+			`,
+			`---
+			meeting_user/500:
+				user_id: 50
+				meeting_id: 2
+
+			user/50:
+				username: hans
+				meeting_user_ids: [500]
+			`,
+			"user/50/username",
+			true,
+		},
 		{
 			"unknown collection",
 			`---

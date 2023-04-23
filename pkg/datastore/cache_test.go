@@ -19,7 +19,6 @@ func TestCacheGetOrSet(t *testing.T) {
 		set(map[dskey.Key][]byte{myKey: []byte("value")})
 		return nil
 	})
-
 	if err != nil {
 		t.Errorf("GetOrSet() returned the unexpected error: %v", err)
 	}
@@ -37,7 +36,6 @@ func TestCacheGetOrSetMissingKeys(t *testing.T) {
 		set(map[dskey.Key][]byte{myKey1: []byte("value")})
 		return nil
 	})
-
 	if err != nil {
 		t.Errorf("GetOrSet() returned the unexpected error: %v", err)
 	}
@@ -70,7 +68,6 @@ func TestCacheGetOrSetNoSecondCall(t *testing.T) {
 		set(map[dskey.Key][]byte{myKey: []byte("value")})
 		return nil
 	})
-
 	if err != nil {
 		t.Errorf("GetOrSet() returned the unexpected error %v", err)
 	}
@@ -252,7 +249,6 @@ func TestGetWhileUpdate(t *testing.T) {
 			t.Fatalf("GetOrSet returned invalid data got[%d] has myKey1: %s but myKey2: %s", i, g[myKey1], g[myKey2])
 		}
 	}
-
 }
 
 // TODO: Flaky test
@@ -371,7 +367,6 @@ func TestCacheConcurency(t *testing.T) {
 			if string(v[myKey]) != "value" {
 				t.Errorf("goroutine %d returned %q", i, v)
 			}
-
 		}(i)
 	}
 
@@ -385,7 +380,6 @@ func TestGetNull(t *testing.T) {
 		set(map[dskey.Key][]byte{myKey: []byte("null")})
 		return nil
 	})
-
 	if err != nil {
 		t.Errorf("GetOrSet() returned the unexpected error: %v", err)
 	}
@@ -409,7 +403,6 @@ func TestUpdateNull(t *testing.T) {
 		set(map[dskey.Key][]byte{myKey: []byte("value that should not be fetched")})
 		return nil
 	})
-
 	if err != nil {
 		t.Errorf("GetOrSet() returned the unexpected error: %v", err)
 	}
@@ -433,7 +426,6 @@ func TestUpdateManyNull(t *testing.T) {
 		set(map[dskey.Key][]byte{myKey: []byte("value that should not be fetched")})
 		return nil
 	})
-
 	if err != nil {
 		t.Errorf("GetOrSet() returned the unexpected error: %v", err)
 	}

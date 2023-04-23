@@ -194,7 +194,7 @@ func TestUserModeA(t *testing.T) {
 		meeting_user/10:
 			meeting_id: 30
 		meeting_user/20:
-			submitted_motion_ids: [4]
+			motion_submitter_ids: [4]
 			meeting_id: 30
 		
 		motion_submitter/4:
@@ -236,28 +236,6 @@ func TestUserModeA(t *testing.T) {
 		withElementID(2),
 		withPerms(30, perm.MotionCanSee),
 	)
-
-	// testCase(
-	// 	"linked in option",
-	// 	t,
-	// 	f,
-	// 	true,
-	// 	`---
-	// 	user/2:
-	// 		option_$_ids: ["1"]
-	// 		option_$1_ids: [4]
-
-	// 	option/4/poll_id: 5
-	// 	poll/5:
-	// 		meeting_id: 30
-	// 		content_object_id: topic/5
-	// 	topic/5/meeting_id: 30
-	// 	meeting/30/enable_anonymous: true
-	// 	`,
-	// 	withRequestUser(1),
-	// 	withElementID(2),
-	// 	withPerms(30, perm.AgendaItemCanSee),
-	// )
 
 	testCase(
 		"assignment candidate",
@@ -310,52 +288,6 @@ func TestUserModeA(t *testing.T) {
 		withPerms(30, perm.ListOfSpeakersCanSee, perm.AgendaItemCanSee),
 	)
 
-	// testCase(
-	// 	"poll vote",
-	// 	t,
-	// 	f,
-	// 	true,
-	// 	`---
-	// 	user/2:
-	// 		poll_voted_$_ids: ["1"]
-	// 		poll_voted_$1_ids: [4]
-
-	// 	poll/4:
-	// 		state: finished
-	// 		meeting_id: 30
-	// 		content_object_id: topic/5
-
-	// 	topic/5/meeting_id: 30
-
-	// 	meeting/30/id: 30
-	// 	`,
-	// 	withRequestUser(1),
-	// 	withElementID(2),
-	// 	withPerms(30, perm.AgendaItemCanSee),
-	// )
-
-	// testCase(
-	// 	"vote user ids",
-	// 	t,
-	// 	f,
-	// 	true,
-	// 	`---
-	// 	user/2:
-	// 		vote_$_ids: ["1"]
-	// 		vote_$1_ids: [4]
-
-	// 	vote/4/option_id: 5
-	// 	option/5/poll_id: 6
-	// 	poll/6:
-	// 		state: published
-	// 		meeting_id: 30
-
-	// 	meeting/30/enable_anonymous: true
-	// 	`,
-	// 	withRequestUser(1),
-	// 	withElementID(2),
-	// )
-
 	testCase(
 		"vote delegated ids",
 		t,
@@ -368,7 +300,7 @@ func TestUserModeA(t *testing.T) {
 		meeting_user/10:
 			meeting_id: 30
 		meeting_user/20:
-			vote_delegated_vote_ids: [4]
+			vote_delegations_from_ids: [4]
 			meeting_id: 30
 		
 		vote/4/option_id: 5
@@ -412,30 +344,6 @@ func TestUserModeA(t *testing.T) {
 
 		group/5/id: 5
 		`,
-		withRequestUser(1),
-		withElementID(2),
-	)
-}
-
-func TestUserModeB(t *testing.T) {
-	var u collection.User
-
-	testCase(
-		"X == Y",
-		t,
-		u.Modes("B"),
-		true,
-		``,
-		withRequestUser(1),
-		withElementID(1),
-	)
-
-	testCase(
-		"X != Y",
-		t,
-		u.Modes("B"),
-		false,
-		``,
 		withRequestUser(1),
 		withElementID(2),
 	)

@@ -45,9 +45,7 @@ const (
 	datastoreCacheResetTime = 24 * time.Hour
 )
 
-var (
-	envConcurentWorker = environment.NewVariable("CONCURENT_WORKER", "0", "Amount of clients that calculate there values at the same time. Default to GOMAXPROCS.")
-)
+var envConcurentWorker = environment.NewVariable("CONCURENT_WORKER", "0", "Amount of clients that calculate there values at the same time. Default to GOMAXPROCS.")
 
 // Datastore is the source for the data.
 type Datastore interface {

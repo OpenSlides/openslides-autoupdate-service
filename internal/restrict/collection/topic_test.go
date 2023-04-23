@@ -16,19 +16,11 @@ func TestTopicModeA(t *testing.T) {
 		f,
 		false,
 		`---
-		topic/1/meeting_id: 2
+		topic/1:
+			meeting_id: 2
+			agenda_item_id: 7
+		agenda_item/7/meeting_id: 30
 		`,
-	)
-
-	testCase(
-		"see perm",
-		t,
-		f,
-		true,
-		`---
-		topic/1/meeting_id: 2
-		`,
-		withPerms(2, perm.AgendaItemCanSee),
 	)
 
 	testCase(
@@ -47,8 +39,9 @@ func TestTopicModeA(t *testing.T) {
 		agenda_item/3:
 			meeting_id: 30
 			content_object_id: topic/1
+			internal: true
 		`,
-		withPerms(30, perm.AgendaItemCanSee),
+		withPerms(30, perm.AgendaItemCanSeeInternal),
 	)
 
 	testCase(
@@ -61,7 +54,10 @@ func TestTopicModeA(t *testing.T) {
 			meeting_id: 30
 			agenda_item_id: 3
 
-		agenda_item_id/3/meeting_id: 30
+		agenda_item/3:
+			is_internal: true
+			meeting_id: 30
 		`,
+		withPerms(30, perm.AgendaItemCanSee),
 	)
 }

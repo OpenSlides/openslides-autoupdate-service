@@ -175,6 +175,8 @@ var collectionMap = map[string]Restricter{
 	OrganizationTag{}.Name():            OrganizationTag{},
 	PersonalNote{}.Name():               PersonalNote{},
 	Poll{}.Name():                       Poll{},
+	PollCandidate{}.Name():              PollCandidate{},
+	PollCandidateList{}.Name():          PollCandidateList{},
 	Projection{}.Name():                 Projection{},
 	Projector{}.Name():                  Projector{},
 	ProjectorCountdown{}.Name():         ProjectorCountdown{},
@@ -194,7 +196,6 @@ func Collection(ctx context.Context, collection string) Restricter {
 		return Unknown{collection}
 	}
 
-	// TODO: Fixme for superadmin. It needs the restrict superadmin method
 	return withRestrictCache(ctx, r)
 }
 
