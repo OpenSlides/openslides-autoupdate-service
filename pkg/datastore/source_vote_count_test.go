@@ -16,6 +16,8 @@ import (
 func TestVoteCountSourceGet(t *testing.T) {
 	sender := make(chan string)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, `{}`)
+		w.(http.Flusher).Flush()
 		for msg := range sender {
 			fmt.Fprintln(w, msg)
 			w.(http.Flusher).Flush()
@@ -34,7 +36,10 @@ func TestVoteCountSourceGet(t *testing.T) {
 
 	source := newVoteCountSource(env)
 	eventer := func() (<-chan time.Time, func() bool) { return make(chan time.Time), func() bool { return true } }
-	go source.Connect(ctx, eventer, func(error) {})
+
+	waitForResponse(ctx, source, func() {
+		go source.Connect(ctx, eventer, func(error) {})
+	})
 
 	key1 := dskey.MustKey("poll/1/vote_count")
 
@@ -45,74 +50,85 @@ func TestVoteCountSourceGet(t *testing.T) {
 		}
 
 		if got[key1] != nil {
-			t.Errorf("Get() without any data returned %v, expected nil", got[key1])
+			t.Errorf("Get() without any data returned %s, expected nil", got[key1])
 		}
 	})
 
 	t.Run("first data from vote-service", func(t *testing.T) {
-		sender <- `{"1":42}`
-		time.Sleep(time.Millisecond)
+		waitForResponse(ctx, source, func() {
+			sender <- `{"1":42}`
+		})
+
 		got, err := source.Get(ctx, key1)
 		if err != nil {
 			t.Fatalf("Get: %v", err)
 		}
 
 		if string(got[key1]) != "42" {
-			t.Errorf("Get() after first data returned `%v`, expected `42`", got[key1])
+			t.Errorf("Get() after first data returned `%s`, expected `42`", got[key1])
 		}
 	})
 
 	t.Run("second data from vote-service", func(t *testing.T) {
-		sender <- `{"1":43}`
-		time.Sleep(time.Millisecond)
+		waitForResponse(ctx, source, func() {
+			sender <- `{"1":43}`
+		})
+
 		got, err := source.Get(ctx, key1)
 		if err != nil {
 			t.Fatalf("Get: %v", err)
 		}
 
 		if string(got[key1]) != "43" {
-			t.Errorf("Get() after first data returned `%v`, expected `42`", got[key1])
+			t.Errorf("Get() after first data returned `%s`, expected `43`", got[key1])
 		}
 	})
 
 	t.Run("again data from vote-service", func(t *testing.T) {
-		sender <- `{"1":44}`
-		time.Sleep(time.Millisecond)
+		waitForResponse(ctx, source, func() {
+			sender <- `{"1":44}`
+		})
+
 		got, err := source.Get(ctx, key1)
 		if err != nil {
 			t.Fatalf("Get: %v", err)
 		}
 
 		if string(got[key1]) != "44" {
-			t.Errorf("Get() after first data returned `%v`, expected `42`", got[key1])
+			t.Errorf("Get() after first data returned `%s`, expected `44`", got[key1])
 		}
 	})
 
 	t.Run("receive 0", func(t *testing.T) {
-		sender <- `{"1":0}`
-		time.Sleep(time.Millisecond)
+		waitForResponse(ctx, source, func() {
+			sender <- `{"1":0}`
+		})
+
 		got, err := source.Get(ctx, key1)
 		if err != nil {
 			t.Fatalf("Get: %v", err)
 		}
 
 		if got[key1] != nil {
-			t.Errorf("Get() after receiving 0 returned %v, expected nil", got[key1])
+			t.Errorf("Get() after receiving 0 returned %s, expected nil", got[key1])
 		}
 	})
 }
 
 func TestVoteCountSourceUpdate(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	sender := make(chan string)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, `{}`)
+		w.(http.Flusher).Flush()
+
 		for msg := range sender {
 			fmt.Fprintln(w, msg)
 			w.(http.Flusher).Flush()
 		}
 	}))
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	host, port, schema := parseURL(ts.URL)
 	env := environment.ForTests(map[string]string{
@@ -123,7 +139,10 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 
 	source := newVoteCountSource(env)
 	eventer := func() (<-chan time.Time, func() bool) { return make(chan time.Time), func() bool { return true } }
-	go source.Connect(ctx, eventer, func(error) {})
+
+	waitForResponse(ctx, source, func() {
+		go source.Connect(ctx, eventer, func(error) {})
+	})
 
 	key1 := dskey.MustKey("poll/1/vote_count")
 
@@ -138,9 +157,9 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 	})
 
 	t.Run("first data from vote-service", func(t *testing.T) {
-		sender <- `{"1":42}`
-		time.Sleep(time.Millisecond)
-		got, err := source.Update(ctx)
+		got, err := updateResult(ctx, source, func() {
+			sender <- `{"1":42}`
+		})
 		if err != nil {
 			t.Fatalf("Update: %v", err)
 		}
@@ -152,9 +171,9 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 	})
 
 	t.Run("second data from vote-service", func(t *testing.T) {
-		sender <- `{"1":43}`
-		time.Sleep(time.Millisecond)
-		got, err := source.Update(ctx)
+		got, err := updateResult(ctx, source, func() {
+			sender <- `{"1":43}`
+		})
 		if err != nil {
 			t.Fatalf("Update: %v", err)
 		}
@@ -166,9 +185,9 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 	})
 
 	t.Run("receive 0", func(t *testing.T) {
-		sender <- `{"1":0}`
-		time.Sleep(time.Millisecond)
-		got, err := source.Update(ctx)
+		got, err := updateResult(ctx, source, func() {
+			sender <- `{"1":0}`
+		})
 		if err != nil {
 			t.Fatalf("Update: %v", err)
 		}
@@ -220,18 +239,16 @@ func TestReconnect(t *testing.T) {
 
 func TestReconnectWhenDeletedBetween(t *testing.T) {
 	msg := make(chan string)
-	var counter int
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, <-msg)
-
-		w.(http.Flusher).Flush()
-		counter++
+		// This handler returns after the first data is send. This triggers a reconnect.
 	}))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	event := make(chan time.Time, 1)
+	// Use a closed channel as eventer so the connection is reestablished immediatly.
+	event := make(chan time.Time)
 	close(event)
 	eventer := func() (<-chan time.Time, func() bool) {
 		return event, func() bool { return false }
@@ -248,7 +265,8 @@ func TestReconnectWhenDeletedBetween(t *testing.T) {
 	go source.Connect(ctx, eventer, func(error) {})
 	msg <- `{"1":23,"2":42}`
 	msg <- `{"1":23}`
-	time.Sleep(time.Millisecond)
+
+	source.Update(ctx) // wait for the service to process the update.
 
 	key := dskey.MustKey("poll/2/vote_count")
 	data, err := source.Get(ctx, key)
@@ -256,12 +274,15 @@ func TestReconnectWhenDeletedBetween(t *testing.T) {
 		t.Errorf("Get: %v", err)
 	}
 
-	if data[key] != nil {
-		t.Errorf("Get for deleted key returned `%s`, expected nil", data[key])
+	if string(data[key]) != `42` {
+		t.Errorf("Get for deleted key returned `%s`, expected 42", data[key])
 	}
 }
 
 func TestGetWithoutConnect(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	sender := make(chan string)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		for msg := range sender {
@@ -269,9 +290,6 @@ func TestGetWithoutConnect(t *testing.T) {
 			w.(http.Flusher).Flush()
 		}
 	}))
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	host, port, schema := parseURL(ts.URL)
 	env := environment.ForTests(map[string]string{
@@ -283,12 +301,46 @@ func TestGetWithoutConnect(t *testing.T) {
 	source := newVoteCountSource(env)
 
 	key := dskey.MustKey("poll/1/vote_count")
-	data, err := source.Get(ctx, key)
-	if err != nil {
-		t.Errorf("Get: %v", err)
+
+	ctxTimeout, cancel := context.WithTimeout(ctx, time.Millisecond)
+	defer cancel()
+
+	_, err := source.Get(ctxTimeout, key)
+	if err != context.DeadlineExceeded {
+		t.Fatalf("Update: %v, expected context.DeadlineExceeded", err)
+	}
+}
+
+// waitForResponse calls the given function and waits until the data is
+// processed.
+func waitForResponse(ctx context.Context, source *voteCountSource, fn func()) {
+	received := make(chan struct{})
+	go func() {
+		source.Update(ctx) // wait for the service to process the update.
+		close(received)
+	}()
+
+	fn()
+
+	<-received
+}
+
+// updateResult returns the return values from source.Update after the given function is processed.
+func updateResult(ctx context.Context, source *voteCountSource, fn func()) (map[dskey.Key][]byte, error) {
+	type dataErr struct {
+		data map[dskey.Key][]byte
+		err  error
 	}
 
-	if data[key] != nil {
-		t.Errorf("Got %q, expected nil", data[key])
-	}
+	done := make(chan dataErr)
+	go func() {
+		v, err := source.Update(ctx)
+		done <- dataErr{v, err}
+	}()
+
+	fn()
+
+	got := <-done
+
+	return got.data, got.err
 }
