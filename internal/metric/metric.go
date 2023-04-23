@@ -99,6 +99,8 @@ func (c *CurrentCounter) Done() {
 
 // Metric writes the current counter.
 func (c *CurrentCounter) Metric(con Container) {
-	con.Add(c.name+"current", int(c.current))
-	con.Add(c.name+"total", int(c.total))
+	current := atomic.LoadInt64(&c.current)
+	total := atomic.LoadUint64(&c.total)
+	con.Add(c.name+"current", int(current))
+	con.Add(c.name+"total", int(total))
 }

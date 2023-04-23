@@ -567,6 +567,55 @@ func TestManyRequests(t *testing.T) {
 	}
 }
 
+func TestManyRequestsSameKeys(t *testing.T) {
+	ctx := context.Background()
+
+	jsonData := `
+	[
+		{
+			"ids": [1],
+			"collection": "user",
+			"fields": {
+				"note_id": {
+					"type": "relation",
+					"collection": "note",
+					"fields": {
+						"important": null
+					}
+				}
+			}
+		}, {
+			"ids": [1],
+			"collection": "user",
+			"fields": {
+				"note_id": null
+			}
+		}
+	]`
+
+	ds := dsmock.Stub(dsmock.YAMLData(`---
+	user/1/note_id: 1
+	`))
+
+	b, err := keysbuilder.ManyFromJSON(strings.NewReader(jsonData))
+	if err != nil {
+		t.Fatalf("FromJSON(): %v", err)
+	}
+
+	keys, err := b.Update(ctx, ds)
+	if err != nil {
+		t.Fatalf("Building keys: %v", err)
+	}
+
+	expect := mustKeys(
+		"user/1/note_id",
+		"note/1/important",
+	)
+	if diff := cmpSet(set(expect...), set(keys...)); diff != nil {
+		t.Errorf("Got %v, expected %v", diff, expect)
+	}
+}
+
 func TestError(t *testing.T) {
 	ds, _ := dsmock.NewMockDatastore(nil)
 	ds.InjectError(errors.New("Some Error"))
