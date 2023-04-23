@@ -301,13 +301,13 @@ func TestGetWithoutConnect(t *testing.T) {
 	source := newVoteCountSource(env)
 
 	key := dskey.MustKey("poll/1/vote_count")
-	data, err := source.Get(ctx, key)
-	if err != nil {
-		t.Errorf("Get: %v", err)
-	}
 
-	if data[key] != nil {
-		t.Errorf("Got %q, expected nil", data[key])
+	ctxTimeout, cancel := context.WithTimeout(ctx, time.Millisecond)
+	defer cancel()
+
+	_, err := source.Get(ctxTimeout, key)
+	if err != context.DeadlineExceeded {
+		t.Fatalf("Update: %v, expected context.DeadlineExceeded", err)
 	}
 }
 

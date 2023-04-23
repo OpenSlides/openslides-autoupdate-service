@@ -129,7 +129,11 @@ func (s *voteCountSource) connect(ctx context.Context) error {
 
 // Get is called when a key is not in the cache.
 func (s *voteCountSource) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
-	<-s.ready
+	select {
+	case <-s.ready:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
