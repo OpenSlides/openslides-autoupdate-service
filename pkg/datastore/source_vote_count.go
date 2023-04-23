@@ -56,6 +56,10 @@ func newVoteCountSource(lookup environment.Environmenter) *voteCountSource {
 
 // Connect creates a connection to the vote service and makes sure, it stays
 // open.
+//
+// eventProvider is a function that returns a channel. If the connection fails,
+// this function fetches such a channel and waits for a signal before it tries
+// to open a new connection.
 func (s *voteCountSource) Connect(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool), errHandler func(error)) {
 	for ctx.Err() == nil {
 		if err := s.connect(ctx); err != nil {
@@ -101,7 +105,6 @@ func (s *voteCountSource) connect(ctx context.Context) error {
 		}
 
 		s.mu.Lock()
-
 		for k, v := range counts {
 			if v == 0 {
 				delete(s.voteCount, k)
@@ -109,7 +112,6 @@ func (s *voteCountSource) connect(ctx context.Context) error {
 			}
 			s.voteCount[k] = v
 		}
-
 		s.mu.Unlock()
 
 		select {
@@ -147,7 +149,7 @@ func (s *voteCountSource) Get(ctx context.Context, keys ...dskey.Key) (map[dskey
 	return out, nil
 }
 
-// Update is called frequently and should block until there is new data.
+// Update has to be called frequently. It blocks, until there is new data.
 func (s *voteCountSource) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
 	var data map[int]int
 	select {
