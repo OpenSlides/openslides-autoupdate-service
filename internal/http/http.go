@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -29,13 +30,19 @@ const (
 )
 
 // Run starts the http server.
-func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autoupdate.Autoupdate) error {
-	requestCount := metric.NewCurrentCounter("connection")
-	metric.Register(requestCount.Metric)
+func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autoupdate.Autoupdate, savedCounter userConnectionCounter) error {
+	metricCounter := metric.NewCurrentCounter("connection")
+	metric.Register(metricCounter.Metric)
+
+	requestCounter := combinedCounter{
+		metricCounter: metricCounter,
+		redisCounter:  savedCounter,
+	}
 
 	mux := http.NewServeMux()
 	HandleHealth(mux)
-	HandleAutoupdate(mux, auth, autoupdate, requestCount)
+	HandleAutoupdate(mux, auth, autoupdate, &requestCounter)
+	HandleShowConnectionCount(mux, autoupdate, auth, &requestCounter)
 	HandleHistoryInformation(mux, auth, autoupdate)
 	HandleRestrictFQIDs(mux, autoupdate)
 
@@ -73,7 +80,7 @@ type Connecter interface {
 
 // HandleAutoupdate builds the requested keys from the body of a request. The
 // body has to be in the format specified in the keysbuilder package.
-func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, counter *metric.CurrentCounter) {
+func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, counter *combinedCounter) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Cache-Control", "no-store, max-age=0")
@@ -161,6 +168,7 @@ func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecte
 			authMiddleware(
 				countMiddleware(
 					handler,
+					auth,
 					counter,
 				),
 				auth,
@@ -193,6 +201,40 @@ func writeData(w io.Writer, data map[dskey.Key][]byte, compress bool) error {
 	}
 
 	return nil
+}
+
+// HandleShowConnectionCount adds a handler to show the result of the connection counter.
+func HandleShowConnectionCount(mux *http.ServeMux, autoupdate *autoupdate.Autoupdate, auth Authenticater, counter *combinedCounter) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		uid := auth.FromContext(ctx)
+
+		allowed, err := autoupdate.CanSeeConnectionCount(ctx, uid)
+		if err != nil {
+			log.Printf("Error checking count permission: %v", err)
+			http.Error(w, "Counting not possible", 500)
+			return
+		}
+
+		if !allowed {
+			http.Error(w, "Connection counting not allowed", 400)
+			return
+		}
+
+		val, err := counter.redisCounter.ConnectionShow(ctx)
+		if err != nil {
+			log.Printf("Error counting: %v", err)
+			http.Error(w, "Counting not possible", 500)
+			return
+		}
+
+		if err := json.NewEncoder(w).Encode(val); err != nil {
+			log.Printf("Error decoding counter: %v", err)
+			http.Error(w, "Decoding counts not possible", 500)
+		}
+	})
+
+	mux.Handle(prefixPublic+"/connection_count", authMiddleware(handler, auth))
 }
 
 // HistoryInformationer is an object, that can write the history information for
@@ -393,14 +435,17 @@ func validRequest(next http.Handler) http.Handler {
 	})
 }
 
-func countMiddleware(next http.Handler, counter *metric.CurrentCounter) http.Handler {
+func countMiddleware(next http.Handler, auth Authenticater, counter *combinedCounter) http.Handler {
 	if counter == nil {
 		return next
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		counter.Add()
-		defer counter.Done()
+		uid := auth.FromContext(r.Context())
+
+		// Ignore errors. They are not important for the statistic.
+		counter.Add(r.Context(), uid)
+		defer counter.Done(r.Context(), uid)
 
 		next.ServeHTTP(w, r)
 	})

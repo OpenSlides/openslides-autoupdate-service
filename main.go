@@ -176,7 +176,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 
 		// Start http server.
 		fmt.Printf("Listen on %s\n", listenAddr)
-		return http.Run(ctx, listenAddr, authService, auService)
+		return http.Run(ctx, listenAddr, authService, auService, messageBus)
 	}
 
 	return service, nil

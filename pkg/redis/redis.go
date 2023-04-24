@@ -142,3 +142,43 @@ func (r *Redis) Wait(ctx context.Context) error {
 		}
 	}
 }
+
+const connectionKey = "autoupdate_connection"
+
+// ConnectionAdd adds the connection counter for an user by 1.
+func (r *Redis) ConnectionAdd(ctx context.Context, uid int) error {
+	conn := r.pool.Get()
+	defer conn.Close()
+
+	if _, err := redis.DoContext(conn, ctx, "XREAD", "HINCRBY", connectionKey, uid, 1); err != nil {
+		return fmt.Errorf("count connection: %w", err)
+	}
+
+	return nil
+}
+
+// ConnectionDone decreases the connection counter for an user by 1.
+func (r *Redis) ConnectionDone(ctx context.Context, uid int) error {
+	conn := r.pool.Get()
+	defer conn.Close()
+
+	// TODO: Remove value, if it hits 0 or lower
+	if _, err := redis.DoContext(conn, ctx, "XREAD", "HINCRBY", connectionKey, uid, -1); err != nil {
+		return fmt.Errorf("count connection: %w", err)
+	}
+
+	return nil
+}
+
+// ConnectionShow returns the counter.
+func (r *Redis) ConnectionShow(ctx context.Context) (map[string]int, error) {
+	conn := r.pool.Get()
+	defer conn.Close()
+
+	val, err := redis.IntMap(redis.DoContext(conn, ctx, "HGETALL", connectionKey))
+	if err != nil {
+		return nil, fmt.Errorf("get hash from redis: %w", err)
+	}
+
+	return val, nil
+}
