@@ -150,7 +150,7 @@ func (r *Redis) ConnectionAdd(ctx context.Context, uid int) error {
 	conn := r.pool.Get()
 	defer conn.Close()
 
-	if _, err := redis.DoContext(conn, ctx, "XREAD", "HINCRBY", connectionKey, uid, 1); err != nil {
+	if _, err := redis.DoContext(conn, ctx, "HINCRBY", connectionKey, uid, 1); err != nil {
 		return fmt.Errorf("count connection: %w", err)
 	}
 
@@ -163,7 +163,7 @@ func (r *Redis) ConnectionDone(ctx context.Context, uid int) error {
 	defer conn.Close()
 
 	// TODO: Remove value, if it hits 0 or lower
-	if _, err := redis.DoContext(conn, ctx, "XREAD", "HINCRBY", connectionKey, uid, -1); err != nil {
+	if _, err := redis.DoContext(conn, ctx, "HINCRBY", connectionKey, uid, -1); err != nil {
 		return fmt.Errorf("count connection: %w", err)
 	}
 

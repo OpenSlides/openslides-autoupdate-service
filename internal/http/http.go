@@ -441,11 +441,18 @@ func countMiddleware(next http.Handler, auth Authenticater, counter *combinedCou
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		uid := auth.FromContext(r.Context())
+		ctx := r.Context()
+		uid := auth.FromContext(ctx)
 
-		// Ignore errors. They are not important for the statistic.
-		counter.Add(r.Context(), uid)
-		defer counter.Done(r.Context(), uid)
+		if err := counter.Add(ctx, uid); err != nil {
+			log.Printf("Error counting connection: %v", err)
+		} else {
+			defer func() {
+				if err := counter.Done(context.Background(), uid); err != nil {
+					log.Printf("Error counting connection: %v", err)
+				}
+			}()
+		}
 
 		next.ServeHTTP(w, r)
 	})

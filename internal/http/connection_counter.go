@@ -28,7 +28,7 @@ func (c combinedCounter) Add(ctx context.Context, uid int) error {
 }
 
 func (c combinedCounter) Done(ctx context.Context, uid int) error {
-	c.metricCounter.Add()
+	c.metricCounter.Done()
 	if err := c.redisCounter.ConnectionDone(ctx, uid); err != nil {
 		return fmt.Errorf("user connection counter: %w", err)
 	}
