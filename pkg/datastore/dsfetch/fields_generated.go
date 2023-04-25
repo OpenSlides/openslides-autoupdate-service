@@ -1923,6 +1923,12 @@ func (r *Fetch) Meeting_JitsiRoomPassword(meetingID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Meeting_Language(meetingID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "language"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "language"}] = v
+	return v
+}
+
 func (r *Fetch) Meeting_ListOfSpeakersAmountLastOnProjector(meetingID int) *ValueInt {
 	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "list_of_speakers_amount_last_on_projector"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_amount_last_on_projector"}] = v
@@ -3546,6 +3552,12 @@ func (r *Fetch) Organization_ArchivedMeetingIDs(organizationID int) *ValueIntSli
 func (r *Fetch) Organization_CommitteeIDs(organizationID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r, collection: "organization", id: organizationID, field: "committee_ids"}
 	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "committee_ids"}] = v
+	return v
+}
+
+func (r *Fetch) Organization_DefaultLanguage(organizationID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "organization", id: organizationID, field: "default_language", required: true}
+	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "default_language"}] = v
 	return v
 }
 
