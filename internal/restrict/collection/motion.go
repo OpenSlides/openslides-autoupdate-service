@@ -116,9 +116,11 @@ func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, motionIDs ...int) ([
 }
 
 // leadMotionIndex creates an index from a motionID to its lead motion id. It
-// also contains pairs for each fond lead motion id.
+// also contains pairs for each found lead motion id.
 //
 // So each value in the index can also be found in the keys.
+//
+// motions without a lead motion are added with value 0
 func leadMotionIndex(ctx context.Context, ds *dsfetch.Fetch, motionIDs []int) (map[int]int, error) {
 	index := make(map[int]int, len(motionIDs))
 
@@ -134,11 +136,16 @@ func leadMotionIndex(ctx context.Context, ds *dsfetch.Fetch, motionIDs []int) (m
 
 		var nextMotionIDs []int
 		for i := range leadMotionIDs {
+
 			if _, ok := index[motionIDs[i]]; ok {
 				continue
 			}
+
 			index[motionIDs[i]] = leadMotionIDs[i]
-			nextMotionIDs = append(nextMotionIDs, leadMotionIDs[i])
+
+			if leadMotionIDs[i] != 0 {
+				nextMotionIDs = append(nextMotionIDs, leadMotionIDs[i])
+			}
 		}
 		motionIDs = nextMotionIDs
 	}
@@ -149,17 +156,25 @@ func leadMotionIndex(ctx context.Context, ds *dsfetch.Fetch, motionIDs []int) (m
 // isAllowedByLead returns true if the lead motion and its lead motion and so on is allowed
 func isAllowedByLead(motionID int, allowedIDs set.Set[int], index map[int]int) bool {
 	leadMotion := index[motionID]
-	if leadMotion == 0 {
-		return true
-	}
+	for {
+		if leadMotion == 0 || leadMotion == motionID {
+			return true
+		}
 
-	if allowedIDs.Has(leadMotion) {
-		return isAllowedByLead(leadMotion, allowedIDs, index)
-	}
+		if !allowedIDs.Has(leadMotion) {
+			return false
+		}
 
-	return false
+		leadMotion = index[leadMotion]
+	}
 }
 
+// filterCanSeeLeadMotion calls the given function by adding the lead motions to
+// the motionIDs list.
+//
+// It only returns motions, where the user can also see the lead motion. This is
+// done recursive, so for a lead_motion that also has a lead motion, the user
+// must see all of them.
 func filterCanSeeLeadMotion(ctx context.Context, ds *dsfetch.Fetch, motionIDs []int, fn func([]int) ([]int, error)) ([]int, error) {
 	index, err := leadMotionIndex(ctx, ds, motionIDs)
 	if err != nil {
@@ -180,9 +195,12 @@ func filterCanSeeLeadMotion(ctx context.Context, ds *dsfetch.Fetch, motionIDs []
 
 	var filtered []int
 	for _, motionID := range motionIDs {
+		if !allowedSet.Has(motionID) {
+			continue
+		}
+
 		if isAllowedByLead(motionID, allowedSet, index) {
 			filtered = append(filtered, motionID)
-			continue
 		}
 	}
 
