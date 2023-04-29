@@ -12,3 +12,11 @@ func TestLen(t *testing.T) {
 		t.Errorf("set.Len() == %d, expected 5", got)
 	}
 }
+
+func TestAdd(t *testing.T) {
+	s := set.New(1, 2, 3)
+	s.Add(4)
+	if !s.Has(4) {
+		t.Errorf("set has not element after adding")
+	}
+}
