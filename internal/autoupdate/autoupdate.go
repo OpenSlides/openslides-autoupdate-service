@@ -363,7 +363,6 @@ func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (boo
 	}
 
 	if !hasOML {
-		// TODO Client Error
 		return false, nil
 	}
 
