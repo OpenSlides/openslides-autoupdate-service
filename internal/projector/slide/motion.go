@@ -169,10 +169,9 @@ func Motion(store *projector.SlideStore) {
 			"recommendation_id",
 			"recommendation_extension",
 			"recommendation_extension_reference_ids",
+			"text",
 		}
-		if meeting.MotionsEnableTextOnProjector {
-			fetchFields = append(fetchFields, "text")
-		}
+
 		if meeting.MotionsEnableReasonOnProjector {
 			fetchFields = append(fetchFields, "reason")
 		}
@@ -198,6 +197,11 @@ func Motion(store *projector.SlideStore) {
 		if err != nil {
 			return nil, fmt.Errorf("fillLeadMotion: %w", err)
 		}
+
+		if meeting.MotionsEnableTextOnProjector == false && motion.LeadMotion == nil {
+			motion.Text = ""
+		}
+
 		err = fillBaseStatute(ctx, fetch, motion)
 		if err != nil {
 			return nil, fmt.Errorf("fillBaseStatute: %w", err)
