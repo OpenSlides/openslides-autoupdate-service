@@ -267,7 +267,7 @@ func valueType(modelsType string, required bool) string {
 	case "number", "relation", "timestamp":
 		return "ValueInt"
 
-	case "string", "text", "HTMLStrict", "color", "HTMLPermissive", "generic-relation", "template", "decimal(6)":
+	case "string", "text", "HTMLStrict", "color", "HTMLPermissive", "generic-relation", "template", "decimal(6)", "short_string":
 		return "ValueString"
 
 	case "boolean":
