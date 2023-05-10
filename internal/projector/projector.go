@@ -99,7 +99,7 @@ func Register(ds Datastore, slides *SlideStore) {
 		}
 
 		if p7on.CurrentProjectorID == 0 {
-			return nil, nil
+			return []byte("null"), nil
 		}
 
 		if p7on.ContentObjectID == "" {
