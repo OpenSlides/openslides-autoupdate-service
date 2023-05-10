@@ -62,6 +62,7 @@ type Datastore struct {
 	changeListeners  []func(map[dskey.Key][]byte) error
 	calculatedFields map[string]func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error)
 	calculatedKeys   map[dskey.Key]string
+	calculatedKeysMu sync.RWMutex
 
 	history HistoryInformationer
 
@@ -217,6 +218,7 @@ func (d *Datastore) listenOnUpdates(ctx context.Context, errHandler func(error))
 		d.resetMu.Lock()
 		d.cache.SetIfExistMany(data)
 
+		d.calculatedKeysMu.RLock()
 		for key, field := range d.calculatedKeys {
 			bs := d.calculateField(field, key, data)
 
@@ -225,6 +227,7 @@ func (d *Datastore) listenOnUpdates(ctx context.Context, errHandler func(error))
 			d.cache.SetIfExist(key, bs)
 			data[key] = bs
 		}
+		d.calculatedKeysMu.RUnlock()
 
 		for _, f := range d.changeListeners {
 			if err := f(data); err != nil {
@@ -268,7 +271,9 @@ func (d *Datastore) loadKeys(keys []dskey.Key, set func(map[dskey.Key][]byte)) e
 
 	for key, field := range calculatedKeys {
 		calculated := d.calculateField(field, key, nil)
+		d.calculatedKeysMu.Lock()
 		d.calculatedKeys[key] = field
+		defer d.calculatedKeysMu.Unlock()
 		set(map[dskey.Key][]byte{key: calculated})
 	}
 	return nil
