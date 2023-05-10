@@ -273,7 +273,7 @@ func (d *Datastore) loadKeys(keys []dskey.Key, set func(map[dskey.Key][]byte)) e
 		calculated := d.calculateField(field, key, nil)
 		d.calculatedKeysMu.Lock()
 		d.calculatedKeys[key] = field
-		defer d.calculatedKeysMu.Unlock()
+		d.calculatedKeysMu.Unlock()
 		set(map[dskey.Key][]byte{key: calculated})
 	}
 	return nil
