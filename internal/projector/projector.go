@@ -83,6 +83,7 @@ func Register(ds Datastore, slides *SlideStore) {
 			"content_object_id",
 			"meeting_id",
 			"options",
+			"current_projector_id",
 		)
 		if err := fetch.Err(); err != nil {
 			var errDoesNotExist datastore.DoesNotExistError
@@ -95,6 +96,10 @@ func Register(ds Datastore, slides *SlideStore) {
 		p7on, err = p7onFromMap(data)
 		if err != nil {
 			return nil, fmt.Errorf("loading p7on: %w", err)
+		}
+
+		if p7on.CurrentProjectorID == 0 {
+			return nil, nil
 		}
 
 		if p7on.ContentObjectID == "" {
@@ -151,11 +156,12 @@ func addCollection(bs []byte, collection string) ([]byte, error) {
 
 // Projection holds the meta data to render a projection on a projecter.
 type Projection struct {
-	ID              int             `json:"id"`
-	Type            string          `json:"type"`
-	ContentObjectID string          `json:"content_object_id"`
-	MeetingID       int             `json:"meeting_id"`
-	Options         json.RawMessage `json:"options"`
+	ID                 int             `json:"id"`
+	Type               string          `json:"type"`
+	ContentObjectID    string          `json:"content_object_id"`
+	MeetingID          int             `json:"meeting_id"`
+	Options            json.RawMessage `json:"options"`
+	CurrentProjectorID int             `json:"current_projector_id"`
 }
 
 func p7onFromMap(in map[string]json.RawMessage) (*Projection, error) {
