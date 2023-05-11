@@ -2326,7 +2326,7 @@ func (r *Fetch) Meeting_MotionsSupportersMinAmount(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_Name(meetingID int) *ValueString {
-	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "name"}
+	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "name", required: true}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "name"}] = v
 	return v
 }
