@@ -94,7 +94,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[ds
 	}
 
 	// Get all required collections with there ids.
-	restrictModeIDs := make(map[collection.CM]*set.Set[int])
+	restrictModeIDs := make(map[collection.CM]set.Set[int])
 	for key := range data {
 		if data[key] == nil {
 			continue
@@ -112,7 +112,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[ds
 	// Call restrict Mode function for each collection.
 	times := make(map[string]timeCount, len(restrictModeIDs))
 	orderedCMs := sortRestrictModeIDs(restrictModeIDs)
-	allowedMods := make(map[collection.CM]*set.Set[int])
+	allowedMods := make(map[collection.CM]set.Set[int])
 	for _, cm := range orderedCMs {
 		ids := restrictModeIDs[cm]
 		idsCount := ids.Len()
@@ -212,14 +212,14 @@ func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, d
 }
 
 // groupKeysByCollection groups all the keys in data by there collection.
-func groupKeysByCollection(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]*set.Set[int]) error {
+func groupKeysByCollection(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]set.Set[int]) error {
 	restrictionMode, err := restrictModeName(key.Collection, key.Field)
 	if err != nil {
 		return fmt.Errorf("getting restriction Mode for %s: %w", key, err)
 	}
 
 	cm := collection.CM{Collection: key.Collection, Mode: restrictionMode}
-	if restrictModeIDs[cm] == nil {
+	if restrictModeIDs[cm].IsNotInitialized() {
 		restrictModeIDs[cm] = set.New[int]()
 	}
 	restrictModeIDs[cm].Add(key.ID)
@@ -231,7 +231,7 @@ func groupKeysByCollection(key dskey.Key, value []byte, restrictModeIDs map[coll
 	return nil
 }
 
-func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]*set.Set[int]) error {
+func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]set.Set[int]) error {
 	collectionField := key.CollectionField()
 
 	cm, id, ok, err := isRelation(collectionField, value)
@@ -240,7 +240,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 	}
 
 	if ok {
-		if restrictModeIDs[cm] == nil {
+		if restrictModeIDs[cm].IsNotInitialized() {
 			restrictModeIDs[cm] = set.New[int]()
 		}
 		restrictModeIDs[cm].Add(id)
@@ -253,7 +253,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 	}
 
 	if ok {
-		if restrictModeIDs[cm] == nil {
+		if restrictModeIDs[cm].IsNotInitialized() {
 			restrictModeIDs[cm] = set.New[int]()
 		}
 		restrictModeIDs[cm].Add(ids...)
@@ -266,7 +266,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 	}
 
 	if ok {
-		if restrictModeIDs[cm] == nil {
+		if restrictModeIDs[cm].IsNotInitialized() {
 			restrictModeIDs[cm] = set.New[int]()
 		}
 		restrictModeIDs[cm].Add(id)
@@ -280,7 +280,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 
 	if ok {
 		for _, cmID := range mcm {
-			if restrictModeIDs[cmID.cm] == nil {
+			if restrictModeIDs[cmID.cm].IsNotInitialized() {
 				restrictModeIDs[cmID.cm] = set.New[int]()
 			}
 			restrictModeIDs[cmID.cm].Add(cmID.id)
@@ -294,7 +294,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 //
 // The first return value is the new value. The second is, if the value was
 // manipulated.q
-func manipulateRelations(key dskey.Key, value []byte, allowedRestrictions map[collection.CM]*set.Set[int]) ([]byte, bool, error) {
+func manipulateRelations(key dskey.Key, value []byte, allowedRestrictions map[collection.CM]set.Set[int]) ([]byte, bool, error) {
 	collectionField := key.CollectionField()
 
 	cm, id, ok, err := isRelation(collectionField, value)
@@ -509,7 +509,7 @@ func restrictModefunc(ctx context.Context, collectionName, fieldMode string) (co
 	return modefunc, nil
 }
 
-func sortRestrictModeIDs(data map[collection.CM]*set.Set[int]) []collection.CM {
+func sortRestrictModeIDs(data map[collection.CM]set.Set[int]) []collection.CM {
 	keys := make([]collection.CM, 0, len(data))
 	for k := range data {
 		keys = append(keys, k)

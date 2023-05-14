@@ -122,10 +122,11 @@ func TestRestrictFQIDs(t *testing.T) {
 		user/1:
 			username: superadmin
 			first_name: kevin
+			last_name: foo
 	`))
 	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
 
-	got, err := s.RestrictFQIDs(ctx, 1, []string{"user/1"})
+	got, err := s.RestrictFQIDs(ctx, 1, []string{"user/1"}, map[string][]string{"user": {"id", "username", "first_name"}})
 	if err != nil {
 		t.Fatalf("RestrictFQIDs: %v", err)
 	}

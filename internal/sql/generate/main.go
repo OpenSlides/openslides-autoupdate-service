@@ -122,7 +122,7 @@ func modelsTypeToSQLType(fieldName string, field *models.Field) (string, string,
 	case "string", "color", "generic-relation", "decimal(6)":
 		sqlType = "VARCHAR(255)"
 
-	case "text", "HTMLStrict", "HTMLPermissive", "JSON":
+	case "text", "HTMLStrict", "HTMLPermissive", "JSON", "short_string":
 		sqlType = "TEXT"
 
 	case "boolean":

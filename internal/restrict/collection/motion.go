@@ -14,10 +14,11 @@ import (
 //
 // The user can see a motion if:
 //
-//	The user has motion.can_see in the meeting, and
-//	For one `restriction` in the motion's state `state/restriction` field:
-//	    If: `restriction` is `is_submitter`: The user needs to be a submitter of the motion
-//	    Else: (a permission string): The user needs the permission
+//		The user has motion.can_see in the meeting, and
+//		For one `restriction` in the motion's state `state/restriction` field:
+//		    If: `restriction` is `is_submitter`: The user needs to be a submitter of the motion
+//		    Else: (a permission string): The user needs the permission
+//	 And - for amendments (lead_motion_id != null) - the user can also see the lead motion.
 //
 // Mode A: The user can see the motion or can see a referenced motion in motion/all_origin_ids and motion/all_derived_motion_ids.
 //
@@ -60,56 +61,150 @@ func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, motionIDs ...int) ([
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	return eachMeeting(ctx, ds, m, motionIDs, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := perm.FromContext(ctx, meetingID)
-		if err != nil {
-			return nil, fmt.Errorf("getting permissions: %w", err)
-		}
-
-		if !perms.Has(perm.MotionCanSee) {
-			return nil, nil
-		}
-
-		return eachRelationField(ctx, ds.Motion_StateID, ids, func(stateID int, ids []int) ([]int, error) {
-			restrictions, err := ds.MotionState_Restrictions(stateID).Value(ctx)
+	return filterCanSeeLeadMotion(ctx, ds, motionIDs, func(motionIDs []int) ([]int, error) {
+		return eachMeeting(ctx, ds, m, motionIDs, func(meetingID int, ids []int) ([]int, error) {
+			perms, err := perm.FromContext(ctx, meetingID)
 			if err != nil {
-				return nil, fmt.Errorf("getting restrictions: %w", err)
+				return nil, fmt.Errorf("getting permissions: %w", err)
 			}
 
-			if len(restrictions) == 0 {
-				return ids, nil
+			if !perms.Has(perm.MotionCanSee) {
+				return nil, nil
 			}
 
-			hasIsSubmitterRestriction := false
-			for _, restriction := range restrictions {
-				if restriction == "is_submitter" {
-					hasIsSubmitterRestriction = true
-					continue
+			return eachRelationField(ctx, ds.Motion_StateID, ids, func(stateID int, ids []int) ([]int, error) {
+				restrictions, err := ds.MotionState_Restrictions(stateID).Value(ctx)
+				if err != nil {
+					return nil, fmt.Errorf("getting restrictions: %w", err)
 				}
 
-				if perms.Has(perm.TPermission(restriction)) {
+				if len(restrictions) == 0 {
 					return ids, nil
 				}
-			}
-			if hasIsSubmitterRestriction {
-				allowed, err := eachCondition(ids, func(motionID int) (bool, error) {
-					submitter, err := isSubmitter(ctx, ds, requestUser, motionID)
-					if err != nil {
-						return false, fmt.Errorf("checking for motion submitter of motion %d: %w", motionID, err)
+
+				hasIsSubmitterRestriction := false
+				for _, restriction := range restrictions {
+					if restriction == "is_submitter" {
+						hasIsSubmitterRestriction = true
+						continue
 					}
 
-					return submitter, nil
-				})
-				if err != nil {
-					return nil, fmt.Errorf("checking if user is submitter: %w", err)
+					if perms.Has(perm.TPermission(restriction)) {
+						return ids, nil
+					}
+				}
+				if hasIsSubmitterRestriction {
+					allowed, err := eachCondition(ids, func(motionID int) (bool, error) {
+						submitter, err := isSubmitter(ctx, ds, requestUser, motionID)
+						if err != nil {
+							return false, fmt.Errorf("checking for motion submitter of motion %d: %w", motionID, err)
+						}
+
+						return submitter, nil
+					})
+					if err != nil {
+						return nil, fmt.Errorf("checking if user is submitter: %w", err)
+					}
+
+					return allowed, nil
 				}
 
-				return allowed, nil
-			}
-
-			return nil, nil
+				return nil, nil
+			})
 		})
 	})
+}
+
+// leadMotionIndex creates an index from a motionID to its lead motion id. It
+// also contains pairs for each found lead motion id.
+//
+// So each value in the index can also be found in the keys.
+//
+// motions without a lead motion are added with value 0
+func leadMotionIndex(ctx context.Context, ds *dsfetch.Fetch, motionIDs []int) (map[int]int, error) {
+	index := make(map[int]int, len(motionIDs))
+
+	for len(motionIDs) > 0 {
+		leadMotionIDs := make([]int, len(motionIDs))
+		for i, motionID := range motionIDs {
+			ds.Motion_LeadMotionID(motionID).Lazy(&leadMotionIDs[i])
+		}
+
+		if err := ds.Execute(ctx); err != nil {
+			return nil, fmt.Errorf("fetching lead motion ids: %w", err)
+		}
+
+		var nextMotionIDs []int
+		for i := range leadMotionIDs {
+
+			if _, ok := index[motionIDs[i]]; ok {
+				continue
+			}
+
+			index[motionIDs[i]] = leadMotionIDs[i]
+
+			if leadMotionIDs[i] != 0 {
+				nextMotionIDs = append(nextMotionIDs, leadMotionIDs[i])
+			}
+		}
+		motionIDs = nextMotionIDs
+	}
+
+	return index, nil
+}
+
+// isAllowedByLead returns true if the lead motion and its lead motion and so on is allowed
+func isAllowedByLead(motionID int, allowedIDs set.Set[int], index map[int]int) bool {
+	leadMotion := index[motionID]
+	for {
+		if leadMotion == 0 || leadMotion == motionID {
+			return true
+		}
+
+		if !allowedIDs.Has(leadMotion) {
+			return false
+		}
+
+		leadMotion = index[leadMotion]
+	}
+}
+
+// filterCanSeeLeadMotion calls the given function by adding the lead motions to
+// the motionIDs list.
+//
+// It only returns motions, where the user can also see the lead motion. This is
+// done recursive, so for a lead_motion that also has a lead motion, the user
+// must see all of them.
+func filterCanSeeLeadMotion(ctx context.Context, ds *dsfetch.Fetch, motionIDs []int, fn func([]int) ([]int, error)) ([]int, error) {
+	index, err := leadMotionIndex(ctx, ds, motionIDs)
+	if err != nil {
+		return nil, fmt.Errorf("create lead motion index: %w", err)
+	}
+
+	allIDs := make([]int, 0, len(index))
+	for k := range index {
+		allIDs = append(allIDs, k)
+	}
+
+	allowedIDs, err := fn(allIDs)
+	if err != nil {
+		return nil, fmt.Errorf("checking motions with lead motions: %w", err)
+	}
+
+	allowedSet := set.New(allowedIDs...)
+
+	var filtered []int
+	for _, motionID := range motionIDs {
+		if !allowedSet.Has(motionID) {
+			continue
+		}
+
+		if isAllowedByLead(motionID, allowedSet, index) {
+			filtered = append(filtered, motionID)
+		}
+	}
+
+	return filtered, nil
 }
 
 func isSubmitter(ctx context.Context, ds *dsfetch.Fetch, uid int, motionID int) (bool, error) {
