@@ -205,7 +205,9 @@ func TestMotionModeC(t *testing.T) {
 		motion_state/20/restrictions:
 			- is_submitter
 
-		motion_submitter/4/user_id: 404
+		motion_submitter/4/meeting_user_id: 404
+
+		meeting_user/404/user_id: 404
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)
@@ -231,7 +233,9 @@ func TestMotionModeC(t *testing.T) {
 		motion_state/20/restrictions:
 			- is_submitter
 
-		motion_submitter/4/user_id: 1
+		motion_submitter/4/meeting_user_id: 10
+
+		meeting_user/10/user_id: 1
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)
