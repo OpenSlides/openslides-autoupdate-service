@@ -34,8 +34,9 @@ func TestProjectionDoesNotExist(t *testing.T) {
 
 func TestProjectionFromContentObject(t *testing.T) {
 	ds, _ := dsmock.NewMockDatastore(map[dskey.Key][]byte{
-		dskey.MustKey("projection/1/id"):                []byte("1"),
-		dskey.MustKey("projection/1/content_object_id"): []byte(`"test_model/1"`),
+		dskey.MustKey("projection/1/id"):                   []byte("1"),
+		dskey.MustKey("projection/1/content_object_id"):    []byte(`"test_model/1"`),
+		dskey.MustKey("projection/1/current_projector_id"): []byte(`1`),
 	})
 	projector.Register(ds, testSlides())
 
@@ -45,11 +46,30 @@ func TestProjectionFromContentObject(t *testing.T) {
 	assert.JSONEq(t, expect, string(fields[dskey.MustKey("projection/1/content")]))
 }
 
+func TestProjectionFromContentObjectIfNotOnProjector(t *testing.T) {
+	ds, _ := dsmock.NewMockDatastore(map[dskey.Key][]byte{
+		dskey.MustKey("projection/1/id"):                   []byte("1"),
+		dskey.MustKey("projection/1/content_object_id"):    []byte(`"test_model/1"`),
+		dskey.MustKey("projection/1/current_projector_id"): []byte(`null`),
+	})
+	projector.Register(ds, testSlides())
+
+	fields, err := ds.Get(context.Background(), dskey.MustKey("projection/1/content"))
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+
+	if got := fields[dskey.MustKey("projection/1/content")]; got != nil {
+		t.Errorf("got %s, expected nil", got)
+	}
+}
+
 func TestProjectionFromType(t *testing.T) {
 	ds, _ := dsmock.NewMockDatastore(map[dskey.Key][]byte{
-		dskey.MustKey("projection/1/id"):                []byte("1"),
-		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
-		dskey.MustKey("projection/1/type"):              []byte(`"test1"`),
+		dskey.MustKey("projection/1/id"):                   []byte("1"),
+		dskey.MustKey("projection/1/content_object_id"):    []byte(`"meeting/1"`),
+		dskey.MustKey("projection/1/type"):                 []byte(`"test1"`),
+		dskey.MustKey("projection/1/current_projector_id"): []byte(`1`),
 	})
 	projector.Register(ds, testSlides())
 
@@ -64,9 +84,10 @@ func TestProjectionUpdateProjection(t *testing.T) {
 	defer cancel()
 
 	ds, bg := dsmock.NewMockDatastore(map[dskey.Key][]byte{
-		dskey.MustKey("projection/1/id"):                []byte("1"),
-		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
-		dskey.MustKey("projection/1/type"):              []byte(`"test1"`),
+		dskey.MustKey("projection/1/id"):                   []byte("1"),
+		dskey.MustKey("projection/1/content_object_id"):    []byte(`"meeting/1"`),
+		dskey.MustKey("projection/1/type"):                 []byte(`"test1"`),
+		dskey.MustKey("projection/1/current_projector_id"): []byte(`1`),
 	})
 	go bg(shutdownCtx, oserror.Handle)
 
@@ -99,9 +120,10 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 	defer cancel()
 
 	ds, bg := dsmock.NewMockDatastore(map[dskey.Key][]byte{
-		dskey.MustKey("projection/1/id"):                []byte("1"),
-		dskey.MustKey("projection/1/type"):              []byte(`"projection"`),
-		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
+		dskey.MustKey("projection/1/id"):                   []byte("1"),
+		dskey.MustKey("projection/1/type"):                 []byte(`"projection"`),
+		dskey.MustKey("projection/1/content_object_id"):    []byte(`"meeting/1"`),
+		dskey.MustKey("projection/1/current_projector_id"): []byte(`1`),
 	})
 	go bg(shutdownCtx, oserror.Handle)
 
@@ -122,23 +144,24 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 
 	fields, err := ds.Get(context.Background(), dskey.MustKey("projection/1/content"))
 	require.NoError(t, err, "Get returned unexpected error")
-	expect := `{"collection":"projection","id": 1, "content_object_id": "meeting/1", "meeting_id":0, "type":"projection", "options": null}` + "\n"
+	expect := `{"collection":"projection","id": 1, "content_object_id": "meeting/1", "meeting_id":0, "type":"projection", "options": null,"current_projector_id":1}` + "\n"
 	assert.JSONEq(t, expect, string(fields[dskey.MustKey("projection/1/content")]))
 }
 
 func TestProjectionWithOptionsData(t *testing.T) {
 	ds, _ := dsmock.NewMockDatastore(map[dskey.Key][]byte{
-		dskey.MustKey("projection/1/id"):                []byte("1"),
-		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/6"`),
-		dskey.MustKey("projection/1/type"):              []byte(`"projection"`),
-		dskey.MustKey("projection/1/meeting_id"):        []byte(`1`),
-		dskey.MustKey("projection/1/options"):           []byte(`{"only_main_items": true}`),
+		dskey.MustKey("projection/1/id"):                   []byte("1"),
+		dskey.MustKey("projection/1/content_object_id"):    []byte(`"meeting/6"`),
+		dskey.MustKey("projection/1/type"):                 []byte(`"projection"`),
+		dskey.MustKey("projection/1/meeting_id"):           []byte(`1`),
+		dskey.MustKey("projection/1/options"):              []byte(`{"only_main_items": true}`),
+		dskey.MustKey("projection/1/current_projector_id"): []byte(`1`),
 	})
 	projector.Register(ds, testSlides())
 
 	fields, err := ds.Get(context.Background(), dskey.MustKey("projection/1/content"))
 	require.NoError(t, err, "Get returned unexpected error")
-	expect := `{"collection":"projection","id": 1, "content_object_id": "meeting/6", "type":"projection", "meeting_id": 1, "options": {"only_main_items": true}}` + "\n"
+	expect := `{"collection":"projection","id": 1,"current_projector_id":1, "content_object_id": "meeting/6", "type":"projection", "meeting_id": 1, "options": {"only_main_items": true}}` + "\n"
 	assert.JSONEq(t, expect, string(fields[dskey.MustKey("projection/1/content")]))
 }
 
@@ -147,9 +170,10 @@ func TestProjectionUpdateSlide(t *testing.T) {
 	defer cancel()
 
 	ds, bg := dsmock.NewMockDatastore(map[dskey.Key][]byte{
-		dskey.MustKey("projection/1/id"):                []byte("1"),
-		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/6"`),
-		dskey.MustKey("projection/1/type"):              []byte(`"test_model"`),
+		dskey.MustKey("projection/1/id"):                   []byte("1"),
+		dskey.MustKey("projection/1/content_object_id"):    []byte(`"meeting/6"`),
+		dskey.MustKey("projection/1/type"):                 []byte(`"test_model"`),
+		dskey.MustKey("projection/1/current_projector_id"): []byte(`1`),
 	})
 	go bg(shutdownCtx, oserror.Handle)
 
@@ -180,9 +204,10 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 	defer cancel()
 
 	ds, bg := dsmock.NewMockDatastore(map[dskey.Key][]byte{
-		dskey.MustKey("projection/1/id"):                []byte("1"),
-		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
-		dskey.MustKey("projection/1/type"):              []byte(`"test_model"`),
+		dskey.MustKey("projection/1/id"):                   []byte("1"),
+		dskey.MustKey("projection/1/content_object_id"):    []byte(`"meeting/1"`),
+		dskey.MustKey("projection/1/type"):                 []byte(`"test_model"`),
+		dskey.MustKey("projection/1/current_projector_id"): []byte(`1`),
 	})
 	go bg(shutdownCtx, oserror.Handle)
 
@@ -209,9 +234,10 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 
 func TestProjectionTypeDoesNotExist(t *testing.T) {
 	ds, _ := dsmock.NewMockDatastore(map[dskey.Key][]byte{
-		dskey.MustKey("projection/1/id"):                []byte("1"),
-		dskey.MustKey("projection/1/content_object_id"): []byte(`"meeting/1"`),
-		dskey.MustKey("projection/1/type"):              []byte(`"unexistingTestSlide"`),
+		dskey.MustKey("projection/1/id"):                   []byte("1"),
+		dskey.MustKey("projection/1/content_object_id"):    []byte(`"meeting/1"`),
+		dskey.MustKey("projection/1/type"):                 []byte(`"unexistingTestSlide"`),
+		dskey.MustKey("projection/1/current_projector_id"): []byte(`1`),
 	})
 	projector.Register(ds, testSlides())
 

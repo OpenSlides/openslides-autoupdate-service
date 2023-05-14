@@ -24,6 +24,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 	"github.com/ostcar/topic"
 )
 
@@ -261,9 +262,16 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 
 // RestrictFQIDs returns the full collections, restricted for the user for a
 // list of fqids.
+// In requestedFields one can specify which fields per collection should be
+// returned if not specified all available fields will be included.
 //
 // The return format is a map from fqid to an object as map from field to value.
-func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []string) (map[string]map[string][]byte, error) {
+func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []string, requestedFields map[string][]string) (map[string]map[string][]byte, error) {
+	requestedFieldsMap := make(map[string]set.Set[string], len(requestedFields))
+	for col, val := range requestedFields {
+		requestedFieldsMap[col] = set.New(val...)
+	}
+
 	var keys []dskey.Key
 	for _, fqid := range fqids {
 		collection, rawID, found := strings.Cut(fqid, "/")
@@ -282,8 +290,10 @@ func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []stri
 		}
 
 		for _, field := range fields {
-			key := dskey.Key{Collection: collection, ID: id, Field: field}
-			keys = append(keys, key)
+			if _, ok := requestedFields[collection]; !ok || requestedFieldsMap[collection].Has(field) {
+				key := dskey.Key{Collection: collection, ID: id, Field: field}
+				keys = append(keys, key)
+			}
 		}
 	}
 

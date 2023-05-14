@@ -7,10 +7,14 @@ type Set[T comparable] struct {
 }
 
 // New initializes a new set.
-func New[T comparable](init ...T) *Set[T] {
-	s := &Set[T]{m: make(map[T]struct{})}
+func New[T comparable](init ...T) Set[T] {
+	s := Set[T]{m: make(map[T]struct{})}
 	s.Add(init...)
 	return s
+}
+
+func (s Set[T]) IsNotInitialized() bool {
+	return s.m == nil
 }
 
 // Add adds elements to the set.
@@ -55,7 +59,7 @@ func (s Set[T]) Len() int {
 }
 
 // Equal returns true if both sets have the same values.
-func Equal[T comparable](s1, s2 *Set[T]) bool {
+func Equal[T comparable](s1, s2 Set[T]) bool {
 	if s1.Len() != s2.Len() {
 		return false
 	}

@@ -2509,16 +2509,6 @@ func (r *Fetch) Meeting_AssignmentPollBallotPaperSelection(meetingID int) *Value
 	return v
 }
 
-func (r *Fetch) Meeting_AssignmentPollDefault100PercentBase(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_poll_default_100_percent_base"}
-	if v, ok := r.requested[key]; ok {
-		return v.(*ValueString)
-	}
-	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "assignment_poll_default_100_percent_base"}
-	r.requested[key] = v
-	return v
-}
-
 func (r *Fetch) Meeting_AssignmentPollDefaultBackend(meetingID int) *ValueString {
 	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_poll_default_backend"}
 	if v, ok := r.requested[key]; ok {
@@ -2545,6 +2535,16 @@ func (r *Fetch) Meeting_AssignmentPollDefaultMethod(meetingID int) *ValueString 
 		return v.(*ValueString)
 	}
 	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "assignment_poll_default_method"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) Meeting_AssignmentPollDefaultOnehundredPercentBase(meetingID int) *ValueString {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_poll_default_onehundred_percent_base"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueString)
+	}
+	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "assignment_poll_default_onehundred_percent_base"}
 	r.requested[key] = v
 	return v
 }
@@ -3189,6 +3189,16 @@ func (r *Fetch) Meeting_JitsiRoomPassword(meetingID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Meeting_Language(meetingID int) *ValueString {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "language"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueString)
+	}
+	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "language"}
+	r.requested[key] = v
+	return v
+}
+
 func (r *Fetch) Meeting_ListOfSpeakersAmountLastOnProjector(meetingID int) *ValueInt {
 	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_amount_last_on_projector"}
 	if v, ok := r.requested[key]; ok {
@@ -3509,16 +3519,6 @@ func (r *Fetch) Meeting_MotionPollBallotPaperSelection(meetingID int) *ValueStri
 	return v
 }
 
-func (r *Fetch) Meeting_MotionPollDefault100PercentBase(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_poll_default_100_percent_base"}
-	if v, ok := r.requested[key]; ok {
-		return v.(*ValueString)
-	}
-	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "motion_poll_default_100_percent_base"}
-	r.requested[key] = v
-	return v
-}
-
 func (r *Fetch) Meeting_MotionPollDefaultBackend(meetingID int) *ValueString {
 	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_poll_default_backend"}
 	if v, ok := r.requested[key]; ok {
@@ -3535,6 +3535,16 @@ func (r *Fetch) Meeting_MotionPollDefaultGroupIDs(meetingID int) *ValueIntSlice 
 		return v.(*ValueIntSlice)
 	}
 	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "motion_poll_default_group_ids"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) Meeting_MotionPollDefaultOnehundredPercentBase(meetingID int) *ValueString {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_poll_default_onehundred_percent_base"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueString)
+	}
+	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "motion_poll_default_onehundred_percent_base"}
 	r.requested[key] = v
 	return v
 }
@@ -4019,16 +4029,6 @@ func (r *Fetch) Meeting_PollCoupleCountdown(meetingID int) *ValueBool {
 	return v
 }
 
-func (r *Fetch) Meeting_PollDefault100PercentBase(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_default_100_percent_base"}
-	if v, ok := r.requested[key]; ok {
-		return v.(*ValueString)
-	}
-	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "poll_default_100_percent_base"}
-	r.requested[key] = v
-	return v
-}
-
 func (r *Fetch) Meeting_PollDefaultBackend(meetingID int) *ValueString {
 	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_default_backend"}
 	if v, ok := r.requested[key]; ok {
@@ -4055,6 +4055,16 @@ func (r *Fetch) Meeting_PollDefaultMethod(meetingID int) *ValueString {
 		return v.(*ValueString)
 	}
 	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "poll_default_method"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) Meeting_PollDefaultOnehundredPercentBase(meetingID int) *ValueString {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_default_onehundred_percent_base"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueString)
+	}
+	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "poll_default_onehundred_percent_base"}
 	r.requested[key] = v
 	return v
 }
@@ -5955,6 +5965,16 @@ func (r *Fetch) Organization_CommitteeIDs(organizationID int) *ValueIntSlice {
 		return v.(*ValueIntSlice)
 	}
 	v := &ValueIntSlice{fetch: r, collection: "organization", id: organizationID, field: "committee_ids"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) Organization_DefaultLanguage(organizationID int) *ValueString {
+	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "default_language"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueString)
+	}
+	v := &ValueString{fetch: r, collection: "organization", id: organizationID, field: "default_language", required: true}
 	r.requested[key] = v
 	return v
 }
@@ -8209,12 +8229,12 @@ func (r *Fetch) User_IsPresentInMeetingIDs(userID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Fetch) User_LastEmailSend(userID int) *ValueInt {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "last_email_send"}
+func (r *Fetch) User_LastEmailSent(userID int) *ValueInt {
+	key := dskey.Key{Collection: "user", ID: userID, Field: "last_email_sent"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
-	v := &ValueInt{fetch: r, collection: "user", id: userID, field: "last_email_send"}
+	v := &ValueInt{fetch: r, collection: "user", id: userID, field: "last_email_sent"}
 	r.requested[key] = v
 	return v
 }
@@ -8325,6 +8345,16 @@ func (r *Fetch) User_Pronoun(userID int) *ValueString {
 		return v.(*ValueString)
 	}
 	v := &ValueString{fetch: r, collection: "user", id: userID, field: "pronoun"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) User_SamlID(userID int) *ValueString {
+	key := dskey.Key{Collection: "user", ID: userID, Field: "saml_id"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueString)
+	}
+	v := &ValueString{fetch: r, collection: "user", id: userID, field: "saml_id"}
 	r.requested[key] = v
 	return v
 }
