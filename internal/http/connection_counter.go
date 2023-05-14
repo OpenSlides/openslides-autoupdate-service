@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 )
@@ -34,4 +35,25 @@ func (c combinedCounter) Done(ctx context.Context, uid int) error {
 	}
 
 	return nil
+}
+
+func (c combinedCounter) Metric(con metric.Container) {
+	ctx := context.Background()
+
+	value, err := c.redisCounter.ConnectionShow(ctx)
+	if err != nil {
+		log.Printf("Warning: connection count metric: %v", err)
+		return
+	}
+
+	currentConnections := 0
+	for _, v := range value {
+		if v > 0 {
+			currentConnections++
+		}
+	}
+
+	c.metricCounter.Metric(con)
+	con.Add("overall_connected_users_current", currentConnections)
+	con.Add("overall_connected_users_total", len(value))
 }

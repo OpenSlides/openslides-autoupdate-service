@@ -171,6 +171,9 @@ func (r *Redis) ConnectionDone(ctx context.Context, uid int) error {
 }
 
 // ConnectionShow returns the counter.
+//
+// Returned is a map from user_id (as string) the the amount of connections of
+// this user.
 func (r *Redis) ConnectionShow(ctx context.Context) (map[string]int, error) {
 	conn := r.pool.Get()
 	defer conn.Close()

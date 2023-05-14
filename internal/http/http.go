@@ -31,13 +31,12 @@ const (
 
 // Run starts the http server.
 func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autoupdate.Autoupdate, savedCounter userConnectionCounter) error {
-	metricCounter := metric.NewCurrentCounter("connection")
-	metric.Register(metricCounter.Metric)
-
 	requestCounter := combinedCounter{
-		metricCounter: metricCounter,
+		metricCounter: metric.NewCurrentCounter("connection"),
 		redisCounter:  savedCounter,
 	}
+
+	metric.Register(requestCounter.Metric)
 
 	mux := http.NewServeMux()
 	HandleHealth(mux)
