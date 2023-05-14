@@ -362,11 +362,7 @@ func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (boo
 		return false, fmt.Errorf("getting organization management level: %w", err)
 	}
 
-	if !hasOML {
-		return false, nil
-	}
-
-	return true, nil
+	return hasOML, nil
 }
 
 type permissionDeniedError struct {

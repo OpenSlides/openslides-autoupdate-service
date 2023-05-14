@@ -31,7 +31,7 @@ const (
 
 // Run starts the http server.
 func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autoupdate.Autoupdate, savedCounter userConnectionCounter) error {
-	requestCounter := combinedCounter{
+	requestCounter := &combinedCounter{
 		metricCounter: metric.NewCurrentCounter("connection"),
 		redisCounter:  savedCounter,
 	}
@@ -40,8 +40,8 @@ func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autou
 
 	mux := http.NewServeMux()
 	HandleHealth(mux)
-	HandleAutoupdate(mux, auth, autoupdate, &requestCounter)
-	HandleShowConnectionCount(mux, autoupdate, auth, &requestCounter)
+	HandleAutoupdate(mux, auth, autoupdate, requestCounter)
+	HandleShowConnectionCount(mux, autoupdate, auth, requestCounter)
 	HandleHistoryInformation(mux, auth, autoupdate)
 	HandleRestrictFQIDs(mux, autoupdate)
 
