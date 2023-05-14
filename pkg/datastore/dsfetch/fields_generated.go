@@ -1623,12 +1623,6 @@ func (r *Fetch) Meeting_AssignmentPollBallotPaperSelection(meetingID int) *Value
 	return v
 }
 
-func (r *Fetch) Meeting_AssignmentPollDefault100PercentBase(meetingID int) *ValueString {
-	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "assignment_poll_default_100_percent_base"}
-	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_poll_default_100_percent_base"}] = v
-	return v
-}
-
 func (r *Fetch) Meeting_AssignmentPollDefaultBackend(meetingID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "assignment_poll_default_backend"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_poll_default_backend"}] = v
@@ -1644,6 +1638,12 @@ func (r *Fetch) Meeting_AssignmentPollDefaultGroupIDs(meetingID int) *ValueIntSl
 func (r *Fetch) Meeting_AssignmentPollDefaultMethod(meetingID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "assignment_poll_default_method"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_poll_default_method"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_AssignmentPollDefaultOnehundredPercentBase(meetingID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "assignment_poll_default_onehundred_percent_base"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_poll_default_onehundred_percent_base"}] = v
 	return v
 }
 
@@ -1923,6 +1923,12 @@ func (r *Fetch) Meeting_JitsiRoomPassword(meetingID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Meeting_Language(meetingID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "language"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "language"}] = v
+	return v
+}
+
 func (r *Fetch) Meeting_ListOfSpeakersAmountLastOnProjector(meetingID int) *ValueInt {
 	v := &ValueInt{fetch: r, collection: "meeting", id: meetingID, field: "list_of_speakers_amount_last_on_projector"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_amount_last_on_projector"}] = v
@@ -2073,12 +2079,6 @@ func (r *Fetch) Meeting_MotionPollBallotPaperSelection(meetingID int) *ValueStri
 	return v
 }
 
-func (r *Fetch) Meeting_MotionPollDefault100PercentBase(meetingID int) *ValueString {
-	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "motion_poll_default_100_percent_base"}
-	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_poll_default_100_percent_base"}] = v
-	return v
-}
-
 func (r *Fetch) Meeting_MotionPollDefaultBackend(meetingID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "motion_poll_default_backend"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_poll_default_backend"}] = v
@@ -2088,6 +2088,12 @@ func (r *Fetch) Meeting_MotionPollDefaultBackend(meetingID int) *ValueString {
 func (r *Fetch) Meeting_MotionPollDefaultGroupIDs(meetingID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "motion_poll_default_group_ids"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_poll_default_group_ids"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_MotionPollDefaultOnehundredPercentBase(meetingID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "motion_poll_default_onehundred_percent_base"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_poll_default_onehundred_percent_base"}] = v
 	return v
 }
 
@@ -2320,7 +2326,7 @@ func (r *Fetch) Meeting_MotionsSupportersMinAmount(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_Name(meetingID int) *ValueString {
-	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "name"}
+	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "name", required: true}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "name"}] = v
 	return v
 }
@@ -2379,12 +2385,6 @@ func (r *Fetch) Meeting_PollCoupleCountdown(meetingID int) *ValueBool {
 	return v
 }
 
-func (r *Fetch) Meeting_PollDefault100PercentBase(meetingID int) *ValueString {
-	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "poll_default_100_percent_base"}
-	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_default_100_percent_base"}] = v
-	return v
-}
-
 func (r *Fetch) Meeting_PollDefaultBackend(meetingID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "poll_default_backend"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_default_backend"}] = v
@@ -2400,6 +2400,12 @@ func (r *Fetch) Meeting_PollDefaultGroupIDs(meetingID int) *ValueIntSlice {
 func (r *Fetch) Meeting_PollDefaultMethod(meetingID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "poll_default_method"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_default_method"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_PollDefaultOnehundredPercentBase(meetingID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "poll_default_onehundred_percent_base"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_default_onehundred_percent_base"}] = v
 	return v
 }
 
@@ -3546,6 +3552,12 @@ func (r *Fetch) Organization_ArchivedMeetingIDs(organizationID int) *ValueIntSli
 func (r *Fetch) Organization_CommitteeIDs(organizationID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r, collection: "organization", id: organizationID, field: "committee_ids"}
 	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "committee_ids"}] = v
+	return v
+}
+
+func (r *Fetch) Organization_DefaultLanguage(organizationID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "organization", id: organizationID, field: "default_language", required: true}
+	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "default_language"}] = v
 	return v
 }
 
@@ -4887,9 +4899,9 @@ func (r *Fetch) User_IsPresentInMeetingIDs(userID int) *ValueIntSlice {
 	return v
 }
 
-func (r *Fetch) User_LastEmailSend(userID int) *ValueInt {
-	v := &ValueInt{fetch: r, collection: "user", id: userID, field: "last_email_send"}
-	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "last_email_send"}] = v
+func (r *Fetch) User_LastEmailSent(userID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "user", id: userID, field: "last_email_sent"}
+	r.requested[dskey.Key{Collection: "user", ID: userID, Field: "last_email_sent"}] = v
 	return v
 }
 

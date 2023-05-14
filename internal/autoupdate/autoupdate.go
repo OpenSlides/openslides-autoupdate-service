@@ -267,7 +267,7 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 //
 // The return format is a map from fqid to an object as map from field to value.
 func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []string, requestedFields map[string][]string) (map[string]map[string][]byte, error) {
-	requestedFieldsMap := make(map[string]*set.Set[string], len(requestedFields))
+	requestedFieldsMap := make(map[string]set.Set[string], len(requestedFields))
 	for col, val := range requestedFields {
 		requestedFieldsMap[col] = set.New(val...)
 	}
