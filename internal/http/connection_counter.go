@@ -62,10 +62,15 @@ func (c combinedCounter) Metric(con metric.Container) {
 		}
 	}
 
+	average := 0
+	if averageCount > 0 {
+		average = averageSum / averageCount
+	}
+
 	c.metricCounter.Metric(con)
 	prefix := "overall_connected_users_"
 	con.Add(prefix+"current", currentConnections)
 	con.Add(prefix+"total", len(value))
-	con.Add(prefix+"average", averageSum/averageCount)
+	con.Add(prefix+"average", average)
 	con.Add(prefix+"anonymous", value["0"])
 }
