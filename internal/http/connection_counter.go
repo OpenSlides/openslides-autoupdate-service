@@ -47,13 +47,25 @@ func (c combinedCounter) Metric(con metric.Container) {
 	}
 
 	currentConnections := 0
-	for _, v := range value {
-		if v > 0 {
-			currentConnections++
+	averageCount := 0
+	averageSum := 0
+	for k, v := range value {
+		if v <= 0 {
+			continue
+		}
+
+		currentConnections++
+
+		if k != "0" {
+			averageCount++
+			averageSum += v
 		}
 	}
 
 	c.metricCounter.Metric(con)
-	con.Add("overall_connected_users_current", currentConnections)
-	con.Add("overall_connected_users_total", len(value))
+	prefix := "overall_connected_users_"
+	con.Add(prefix+"current", currentConnections)
+	con.Add(prefix+"total", len(value))
+	con.Add(prefix+"average", averageSum/averageCount)
+	con.Add(prefix+"anonymous", value["0"])
 }
