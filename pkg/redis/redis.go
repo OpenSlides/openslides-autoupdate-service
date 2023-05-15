@@ -4,6 +4,7 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -37,6 +38,8 @@ type Redis struct {
 	pool             *redis.Pool
 	lastAutoupdateID string
 	lastLogoutID     string
+
+	knownStart int64
 }
 
 // New initializes a Redis instance.
@@ -143,12 +146,19 @@ func (r *Redis) Wait(ctx context.Context) error {
 	}
 }
 
-const connectionKey = "autoupdate_connection"
+const (
+	connectionKey      = "autoupdate_connection"
+	connectionStartKey = "autoupdate_connection_start"
+)
 
 // ConnectionAdd adds the connection counter for an user by 1.
 func (r *Redis) ConnectionAdd(ctx context.Context, uid int) error {
 	conn := r.pool.Get()
 	defer conn.Close()
+
+	if err := r.checkRedisStart(ctx, conn); err != nil {
+		return err
+	}
 
 	if _, err := redis.DoContext(conn, ctx, "HINCRBY", connectionKey, uid, 1); err != nil {
 		return fmt.Errorf("count connection: %w", err)
@@ -161,6 +171,10 @@ func (r *Redis) ConnectionAdd(ctx context.Context, uid int) error {
 func (r *Redis) ConnectionDone(ctx context.Context, uid int) error {
 	conn := r.pool.Get()
 	defer conn.Close()
+
+	if err := r.checkRedisStart(ctx, conn); err != nil {
+		return err
+	}
 
 	if _, err := redis.DoContext(conn, ctx, "HINCRBY", connectionKey, uid, -1); err != nil {
 		return fmt.Errorf("count connection: %w", err)
@@ -177,10 +191,49 @@ func (r *Redis) ConnectionShow(ctx context.Context) (map[string]int, error) {
 	conn := r.pool.Get()
 	defer conn.Close()
 
+	if err := r.checkRedisStart(ctx, conn); err != nil {
+		return nil, err
+	}
+
 	val, err := redis.IntMap(redis.DoContext(conn, ctx, "HGETALL", connectionKey))
 	if err != nil {
 		return nil, fmt.Errorf("get hash from redis: %w", err)
 	}
 
 	return val, nil
+}
+
+// ErrNeedsRestart is returned if redis was restart after the autoupdate service
+// was started.
+var ErrNeedsRestart = errors.New("Needs service restart")
+
+// checkRedisStart checks, that redis was started before this service.
+//
+// Autoupdate has to be restarted if:
+// * Redis has started after this service has started
+func (r *Redis) checkRedisStart(ctx context.Context, conn redis.Conn) error {
+	now := time.Now().Unix()
+
+	startTime, err := redis.Int64(redis.DoContext(conn, ctx, "SET", connectionStartKey, now, "NX", "GET"))
+	if err != nil {
+		return fmt.Errorf("count connection: %w", err)
+	}
+
+	if startTime == 0 {
+		// Redis SET with the GET option returns the value that was previous in
+		// the key. So when the key is set, 0 is returned.
+		startTime = now
+	}
+
+	if r.knownStart == 0 {
+		// First call. Just save the time.
+		r.knownStart = startTime
+		return nil
+	}
+
+	if startTime != r.knownStart {
+		return ErrNeedsRestart
+	}
+
+	return nil
 }

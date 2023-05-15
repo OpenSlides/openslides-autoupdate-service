@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
+
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
 )
 
 // Handle handles an error.
@@ -17,6 +20,11 @@ func Handle(err error) {
 
 	if errAdmin := ErrorForAdmin(err); errAdmin != nil {
 		err = errAdmin
+	}
+
+	if errors.Is(err, redis.ErrNeedsRestart) {
+		// TODO: Better shutdown.
+		os.Exit(1)
 	}
 
 	log.Printf("Error: %v", err)

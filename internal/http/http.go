@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -210,7 +209,7 @@ func HandleShowConnectionCount(mux *http.ServeMux, autoupdate *autoupdate.Autoup
 
 		allowed, err := autoupdate.CanSeeConnectionCount(ctx, uid)
 		if err != nil {
-			log.Printf("Error checking count permission: %v", err)
+			oserror.Handle(fmt.Errorf("Error checking count permission %w", err))
 			http.Error(w, "Counting not possible", 500)
 			return
 		}
@@ -222,13 +221,13 @@ func HandleShowConnectionCount(mux *http.ServeMux, autoupdate *autoupdate.Autoup
 
 		val, err := counter.redisCounter.ConnectionShow(ctx)
 		if err != nil {
-			log.Printf("Error counting: %v", err)
+			oserror.Handle(fmt.Errorf("Error counting connection: %w", err))
 			http.Error(w, "Counting not possible", 500)
 			return
 		}
 
 		if err := json.NewEncoder(w).Encode(val); err != nil {
-			log.Printf("Error decoding counter: %v", err)
+			oserror.Handle(fmt.Errorf("Error decoding counter %w", err))
 			http.Error(w, "Decoding counts not possible", 500)
 		}
 	})
@@ -444,11 +443,11 @@ func countMiddleware(next http.Handler, auth Authenticater, counter *combinedCou
 		uid := auth.FromContext(ctx)
 
 		if err := counter.Add(ctx, uid); err != nil {
-			log.Printf("Error counting connection: %v", err)
+			oserror.Handle(fmt.Errorf("Error counting connection: %w", err))
 		} else {
 			defer func() {
 				if err := counter.Done(context.Background(), uid); err != nil {
-					log.Printf("Error counting connection: %v", err)
+					oserror.Handle(fmt.Errorf("Error counting connection: %w", err))
 				}
 			}()
 		}

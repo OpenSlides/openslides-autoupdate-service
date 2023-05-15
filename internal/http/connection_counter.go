@@ -3,9 +3,9 @@ package http
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 )
 
 type userConnectionCounter interface {
@@ -44,7 +44,7 @@ func (c combinedCounter) Metric(con metric.Container) {
 
 	data, err := c.redisCounter.ConnectionShow(ctx)
 	if err != nil {
-		log.Printf("Warning: connection count metric: %v", err)
+		oserror.Handle(fmt.Errorf("Warning: connection count metric: %v", err))
 		return
 	}
 
