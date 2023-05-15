@@ -163,8 +163,6 @@ func Motion(store *projector.SlideStore) {
 			"number",
 			"meeting_id",
 			"lead_motion_id",
-			// "statute_paragraph_id",
-			// "amendment_paragraph_$",
 			"change_recommendation_ids",
 			"amendment_ids",
 			"submitter_ids",
