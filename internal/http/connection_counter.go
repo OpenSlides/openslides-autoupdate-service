@@ -44,7 +44,7 @@ func (c combinedCounter) Metric(con metric.Container) {
 
 	data, err := c.redisCounter.ConnectionShow(ctx)
 	if err != nil {
-		oserror.Handle(fmt.Errorf("Warning: connection count metric: %v", err))
+		oserror.Handle(fmt.Errorf("connection count metric: %w", err))
 		return
 	}
 
