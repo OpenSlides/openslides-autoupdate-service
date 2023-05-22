@@ -144,7 +144,7 @@ func Motion(store *projector.SlideStore) {
 			return nil, fmt.Errorf("getMeeting: %w", err)
 		}
 
-		if meeting.MotionsEnableTextOnProjector == false {
+		if !meeting.MotionsEnableTextOnProjector {
 			meeting.MotionsPreamble = ""
 		}
 
