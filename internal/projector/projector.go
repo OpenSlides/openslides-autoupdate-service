@@ -106,21 +106,21 @@ func Register(ds Datastore, slides *SlideStore) {
 
 		slideName, err := p7on.slideName()
 		if err != nil {
-			return nil, true, fmt.Errorf("getting slide name: %w", err)
+			return nil, false, fmt.Errorf("getting slide name: %w", err)
 		}
 
 		slider := slides.GetSlider(slideName)
 		if slider == nil {
-			return nil, true, fmt.Errorf("unknown slide %s", slideName)
+			return nil, false, fmt.Errorf("unknown slide %s", slideName)
 		}
 
 		bs, err = slider.Slide(ctx, fetch, p7on)
 		if err != nil {
-			return nil, true, fmt.Errorf("calculating slide %s for p7on %v: %w", slideName, p7on, err)
+			return nil, false, fmt.Errorf("calculating slide %s for p7on %v: %w", slideName, p7on, err)
 		}
 
 		if err := fetch.Err(); err != nil {
-			return nil, true, err
+			return nil, false, err
 		}
 
 		final, err := addCollection(bs, slideName)
