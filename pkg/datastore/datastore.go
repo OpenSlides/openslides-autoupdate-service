@@ -302,14 +302,10 @@ func (d *Datastore) calculateField(field string, key dskey.Key, updated map[dske
 			msg = fmt.Sprintf("calculating key %s timed out", key)
 		}
 
-		calculated = []byte(fmt.Sprintf(`{"error": "%s"}`, msg))
+		return []byte(fmt.Sprintf(`{"error": "%s"}`, msg)), true
 	}
 
-	if !changed {
-		return nil, false
-	}
-
-	return calculated, true
+	return calculated, changed
 }
 
 // keysToGetManyRequest a json envoding of the get_many request.
