@@ -56,7 +56,7 @@ type Datastore interface {
 	ResetCache()
 	RegisterCalculatedField(
 		field string,
-		f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error),
+		f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error),
 	)
 	HistoryInformation(ctx context.Context, fqid string, w io.Writer) error
 }
