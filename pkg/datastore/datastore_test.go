@@ -96,12 +96,12 @@ func TestCalculatedFields(t *testing.T) {
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error) {
 		if changed == nil {
-			return []byte("my value"), nil
+			return []byte("my value"), true, nil
 		}
 
-		return []byte(fmt.Sprintf("got %d changed keys", len(changed))), nil
+		return []byte(fmt.Sprintf("got %d changed keys", len(changed))), true, nil
 	})
 
 	t.Run("Fetch first time", func(t *testing.T) {
@@ -133,12 +133,12 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 	}
 	go bg(shutdownCtx, oserror.Handle)
 
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error) {
 		fields, err := ds.Get(context.Background(), myKey1)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return []byte(fmt.Sprintf(`"normal_field is %s"`, fields[myKey1])), nil
+		return []byte(fmt.Sprintf(`"normal_field is %s"`, fields[myKey1])), true, nil
 	})
 
 	done := make(chan struct{})
@@ -170,12 +170,12 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 	}
 	go bg(shutdownCtx, oserror.Handle)
 
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error) {
 		fields, err := ds.Get(context.Background(), myKey1)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return []byte(fmt.Sprintf(`"normal_field is %s"`, fields[myKey1])), nil
+		return []byte(fmt.Sprintf(`"normal_field is %s"`, fields[myKey1])), true, nil
 	})
 
 	// Call Get once to fill the cache
@@ -210,12 +210,12 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 	}
 	go bg(shutdownCtx, oserror.Handle)
 
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error) {
 		field, err := ds.Get(ctx, myKey1)
 		if err != nil {
-			return nil, fmt.Errorf("getting normal field: %w", err)
+			return nil, false, fmt.Errorf("getting normal field: %w", err)
 		}
-		return field[myKey1], nil
+		return field[myKey1], true, nil
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -233,12 +233,12 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error) {
 		fields, err := ds.Get(ctx, myKey1, myKey1)
 		if err != nil {
-			return nil, fmt.Errorf("getting normal field: %w", err)
+			return nil, false, fmt.Errorf("getting normal field: %w", err)
 		}
-		return append(fields[myKey1], fields[myKey1]...), nil
+		return append(fields[myKey1], fields[myKey1]...), true, nil
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -255,12 +255,12 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExist(t 
 		t.Fatalf("init ds: %v", err)
 	}
 
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error) {
 		field, err := ds.Get(ctx, myKey1)
 		if err != nil {
-			return nil, fmt.Errorf("getting normal field: %w", err)
+			return nil, false, fmt.Errorf("getting normal field: %w", err)
 		}
-		return field[myKey1], nil
+		return field[myKey1], true, nil
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -277,12 +277,12 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExistTwi
 		t.Fatalf("init ds: %v", err)
 	}
 
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error) {
 		fields, err := ds.Get(ctx, myKey1, myKey1)
 		if err != nil {
-			return nil, fmt.Errorf("getting normal field: %w", err)
+			return nil, false, fmt.Errorf("getting normal field: %w", err)
 		}
-		return append(fields[myKey1], fields[myKey1]...), nil
+		return append(fields[myKey1], fields[myKey1]...), true, nil
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -299,8 +299,8 @@ func TestCalculatedFieldsNoDBQuery(t *testing.T) {
 		t.Fatalf("init ds: %v", err)
 	}
 
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
-		return []byte("foobar"), nil
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error) {
+		return []byte("foobar"), true, nil
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -352,9 +352,9 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 	go bg(shutdownCtx, oserror.Handle)
 
 	var callCounter int
-	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error) {
+	ds.RegisterCalculatedField(myField1, func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error) {
 		callCounter++
-		return []byte("foobar" + strconv.Itoa(callCounter)), nil
+		return []byte("foobar" + strconv.Itoa(callCounter)), true, nil
 	})
 
 	// Load calculated field in cache.
