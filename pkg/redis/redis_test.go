@@ -19,7 +19,10 @@ func TestUpdate(t *testing.T) {
 	tr := newTestRedis(t)
 	defer tr.Close()
 
-	r := redis.New(environment.ForTests(tr.Env))
+	r, err := redis.New(environment.ForTests(tr.Env), nil)
+	if err != nil {
+		t.Fatalf("redis.New: %v", err)
+	}
 	r.Wait(ctx)
 
 	done := make(chan error)
@@ -64,7 +67,10 @@ func TestLogout(t *testing.T) {
 	tr := newTestRedis(t)
 	defer tr.Close()
 
-	r := redis.New(environment.ForTests(tr.Env))
+	r, err := redis.New(environment.ForTests(tr.Env), nil)
+	if err != nil {
+		t.Fatalf("redis.New: %v", err)
+	}
 	r.Wait(ctx)
 
 	done := make(chan error)
@@ -97,4 +103,104 @@ func TestLogout(t *testing.T) {
 	if !reflect.DeepEqual(got, expect) {
 		t.Errorf("LogoutEvent() returned %v, expected %v", got, expect)
 	}
+}
+
+func TestMetric(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	tr := newTestRedis(t)
+	defer tr.Close()
+
+	t.Run("Save value", func(t *testing.T) {
+		r, err := redis.New(environment.ForTests(tr.Env), nil)
+		if err != nil {
+			t.Fatalf("redis.New: %v", err)
+		}
+		r.Wait(ctx)
+
+		if err := r.SaveMetric(ctx, "test1", 5); err != nil {
+			t.Fatalf("save metric: %v", err)
+		}
+
+		v, err := r.Metric(ctx, "test1")
+		if err != nil {
+			t.Fatalf("metric: %v", err)
+		}
+
+		if v != 5 {
+			t.Errorf("got %d, expected 5", v)
+		}
+	})
+
+	t.Run("Save value on different instances", func(t *testing.T) {
+		r1, err := redis.New(environment.ForTests(tr.Env), nil)
+		if err != nil {
+			t.Fatalf("redis.New: %v", err)
+		}
+
+		r2, err := redis.New(environment.ForTests(tr.Env), nil)
+		if err != nil {
+			t.Fatalf("redis.New: %v", err)
+		}
+
+		if err := r1.SaveMetric(ctx, "test2", 2); err != nil {
+			t.Fatalf("save metric: %v", err)
+		}
+
+		if err := r2.SaveMetric(ctx, "test2", 3); err != nil {
+			t.Fatalf("save metric: %v", err)
+		}
+
+		v1, err := r1.Metric(ctx, "test2")
+		if err != nil {
+			t.Fatalf("metric: %v", err)
+		}
+
+		v2, err := r2.Metric(ctx, "test2")
+		if err != nil {
+			t.Fatalf("metric: %v", err)
+		}
+
+		if v1 != 5 {
+			t.Errorf("v1: got %d, expected 5", v1)
+		}
+
+		if v2 != 5 {
+			t.Errorf("v2: got %d, expected 5", v2)
+		}
+	})
+
+	t.Run("Ignore old instances", func(t *testing.T) {
+		oldNow := func() time.Time {
+			return time.Date(2023, time.January, 1, 5, 15, 0, 0, time.UTC)
+		}
+
+		oldInstance, err := redis.New(environment.ForTests(tr.Env), oldNow)
+		if err != nil {
+			t.Fatalf("redis.New: %v", err)
+		}
+
+		if err := oldInstance.SaveMetric(ctx, "test3", 2); err != nil {
+			t.Fatalf("save metric: %v", err)
+		}
+
+		r, err := redis.New(environment.ForTests(tr.Env), nil)
+		if err != nil {
+			t.Fatalf("redis.New: %v", err)
+		}
+
+		if err := r.SaveMetric(ctx, "test3", 3); err != nil {
+			t.Fatalf("save metric: %v", err)
+		}
+
+		v, err := r.Metric(ctx, "test3")
+		if err != nil {
+			t.Fatalf("metric: %v", err)
+		}
+
+		if v != 3 {
+			t.Errorf("got %d, expected 3", v)
+		}
+	})
 }

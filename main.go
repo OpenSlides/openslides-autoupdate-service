@@ -129,7 +129,10 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	listenAddr := ":" + envAutoupdatePort.Value(lookup)
 
 	// Redis as message bus for datastore and logout events.
-	messageBus := redis.New(lookup)
+	messageBus, err := redis.New(lookup, nil)
+	if err != nil {
+		return nil, fmt.Errorf("init redis: %w", err)
+	}
 
 	// Datastore Service.
 	datastoreService, dsBackground, err := datastore.New(

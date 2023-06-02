@@ -5,6 +5,7 @@ package redis
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"time"
 
@@ -30,6 +31,7 @@ const (
 var (
 	envMessageBusHost = environment.NewVariable("MESSAGE_BUS_HOST", "localhost", "Host of the redis server.")
 	envMessageBusPort = environment.NewVariable("MESSAGE_BUS_PORT", "6379", "Port of the redis server.")
+	envMetricTooOld   = environment.NewVariable("METRIC_TOO_OLD", "5m", "Ignore metric values that are older then this value.")
 )
 
 // Redis holds the state of the redis receiver.
@@ -37,10 +39,14 @@ type Redis struct {
 	pool             *redis.Pool
 	lastAutoupdateID string
 	lastLogoutID     string
+
+	instanceID  string
+	metricToOld time.Duration
+	now         func() time.Time
 }
 
 // New initializes a Redis instance.
-func New(lookup environment.Environmenter) *Redis {
+func New(lookup environment.Environmenter, now func() time.Time) (*Redis, error) {
 	addr := envMessageBusHost.Value(lookup) + ":" + envMessageBusPort.Value(lookup)
 
 	pool := &redis.Pool{
@@ -51,8 +57,57 @@ func New(lookup environment.Environmenter) *Redis {
 		Dial:        func() (redis.Conn, error) { return redis.Dial("tcp", addr) },
 	}
 
-	return &Redis{
-		pool: pool,
+	tooOld, err := environment.ParseDuration(envMetricTooOld.Value(lookup))
+	if err != nil {
+		return nil, fmt.Errorf("parsing METRIC_TOO_OLD: %w", err)
+	}
+
+	if now == nil {
+		now = time.Now
+	}
+
+	r := Redis{
+		pool:        pool,
+		instanceID:  buildInstanceID(now),
+		metricToOld: tooOld,
+		now:         now,
+	}
+
+	return &r, nil
+}
+
+func buildInstanceID(now func() time.Time) string {
+	t := now().UTC().Format("2006-01-02T15:04:05")
+
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const length = 8
+
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+
+	return fmt.Sprintf("%s-%s", t, b)
+}
+
+// Wait blocks until a connection can be established.
+func (r *Redis) Wait(ctx context.Context) error {
+	var lastErr error
+	for {
+		conn := r.pool.Get()
+		_, err := redis.DoContext(conn, ctx, "PING")
+		conn.Close()
+
+		if err == nil {
+			return nil
+		}
+		lastErr = err
+
+		select {
+		case <-time.After(200 * time.Millisecond):
+		case <-ctx.Done():
+			return lastErr
+		}
 	}
 }
 
@@ -122,23 +177,59 @@ func (r *Redis) LogoutEvent(ctx context.Context) ([]string, error) {
 	return sessionIDs, nil
 }
 
-// Wait blocks until a connection can be established.
-func (r *Redis) Wait(ctx context.Context) error {
-	var lastErr error
-	for {
-		conn := r.pool.Get()
-		_, err := redis.DoContext(conn, ctx, "PING")
-		conn.Close()
+const metricKeyPrefix = "metric"
 
-		if err == nil {
-			return nil
-		}
-		lastErr = err
+// SaveMetric saves a metric value for this instance.
+func (r *Redis) SaveMetric(ctx context.Context, name string, v int) error {
+	conn := r.pool.Get()
+	defer conn.Close()
 
-		select {
-		case <-time.After(200 * time.Millisecond):
-		case <-ctx.Done():
-			return lastErr
-		}
+	valueKey := fmt.Sprintf("%s-%s-values", metricKeyPrefix, name)
+	timeStampKey := fmt.Sprintf("%s-%s-timestamp", metricKeyPrefix, name)
+
+	if _, err := redis.DoContext(conn, ctx, "HSET", valueKey, r.instanceID, v); err != nil {
+		return fmt.Errorf("redis save value: %w", err)
 	}
+
+	now := r.now().UTC().Unix()
+
+	if _, err := redis.DoContext(conn, ctx, "HSET", timeStampKey, r.instanceID, now); err != nil {
+		return fmt.Errorf("redis save timestamp: %w", err)
+	}
+
+	return nil
+}
+
+// Metric returns a metric from redis.
+func (r *Redis) Metric(ctx context.Context, name string) (int, error) {
+	conn := r.pool.Get()
+	defer conn.Close()
+
+	valueKey := fmt.Sprintf("%s-%s-values", metricKeyPrefix, name)
+	timeStampKey := fmt.Sprintf("%s-%s-timestamp", metricKeyPrefix, name)
+
+	values, err := redis.IntMap(redis.DoContext(conn, ctx, "HGETALL", valueKey))
+	if err != nil {
+		return 0, fmt.Errorf("redis HALS: %w", err)
+	}
+
+	timeStamps, err := redis.IntMap(redis.DoContext(conn, ctx, "HGETALL", timeStampKey))
+	if err != nil {
+		return 0, fmt.Errorf("redis HALS: %w", err)
+	}
+
+	tooOld := r.now().UTC().Add(-r.metricToOld).Unix()
+
+	fmt.Println(values, timeStamps, tooOld)
+
+	v := 0
+	for k, timestamp := range timeStamps {
+		if timestamp < int(tooOld) {
+			continue
+		}
+
+		v += values[k]
+	}
+
+	return v, nil
 }
