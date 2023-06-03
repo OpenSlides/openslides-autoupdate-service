@@ -121,7 +121,7 @@ func TestMetric(t *testing.T) {
 	}
 
 	t.Run("Save value", func(t *testing.T) {
-		m := redis.NewMetric[int](r, "test1", intCombine, time.Second, nil)
+		m := redis.NewMetric(r, "test1", intCombine, time.Second, nil)
 
 		if err := m.Save(ctx, 3); err != nil {
 			t.Fatalf("save: %v", err)
@@ -138,8 +138,8 @@ func TestMetric(t *testing.T) {
 	})
 
 	t.Run("Save value on different instances", func(t *testing.T) {
-		m1 := redis.NewMetric[int](r, "test2", intCombine, time.Second, nil)
-		m2 := redis.NewMetric[int](r, "test2", intCombine, time.Second, nil)
+		m1 := redis.NewMetric(r, "test2", intCombine, time.Second, nil)
+		m2 := redis.NewMetric(r, "test2", intCombine, time.Second, nil)
 
 		if err := m1.Save(ctx, 2); err != nil {
 			t.Fatalf("m1 save: %v", err)
@@ -173,7 +173,7 @@ func TestMetric(t *testing.T) {
 			return time.Date(2023, time.January, 1, 5, 15, 0, 0, time.UTC)
 		}
 
-		oldInstance := redis.NewMetric[int](r, "test3", intCombine, time.Second, oldNow)
+		oldInstance := redis.NewMetric(r, "test3", intCombine, time.Second, oldNow)
 
 		if err := oldInstance.Save(ctx, 2); err != nil {
 			t.Fatalf("save old: %v", err)
@@ -200,8 +200,8 @@ func TestMetric(t *testing.T) {
 			return value + acc
 		}
 
-		m1 := redis.NewMetric[string](r, "test4", fn, time.Second, nil)
-		m2 := redis.NewMetric[string](r, "test4", fn, time.Second, nil)
+		m1 := redis.NewMetric(r, "test4", fn, time.Second, nil)
+		m2 := redis.NewMetric(r, "test4", fn, time.Second, nil)
 
 		if err := m1.Save(ctx, "A"); err != nil {
 			t.Fatalf("save m1: %v", err)
