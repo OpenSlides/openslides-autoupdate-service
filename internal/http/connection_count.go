@@ -132,6 +132,10 @@ func (mapIntConverter) Convert(v map[int]int) (string, error) {
 }
 
 func (mapIntConverter) Combine(rawValue string, acc map[int]int) (map[int]int, error) {
+	if rawValue == "" {
+		return acc, nil
+	}
+
 	var value map[int]int
 	if err := json.Unmarshal([]byte(rawValue), &value); err != nil {
 		return nil, err
