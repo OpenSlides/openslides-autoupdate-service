@@ -205,6 +205,12 @@ func writeData(w io.Writer, data map[dskey.Key][]byte, compress bool) error {
 // HandleShowConnectionCount adds a handler to show the result of the connection counter.
 func HandleShowConnectionCount(mux *http.ServeMux, autoupdate *autoupdate.Autoupdate, auth Authenticater, connectionCount *connectionCount) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if connectionCount == nil {
+			oserror.Handle(fmt.Errorf("Error connection count is not initializes"))
+			http.Error(w, "Counting not possible", 500)
+			return
+		}
+
 		ctx := r.Context()
 		uid := auth.FromContext(ctx)
 
