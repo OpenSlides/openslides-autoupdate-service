@@ -94,6 +94,18 @@ func (c *connectionCount) Metric(con metric.Container) {
 		oserror.Handle(fmt.Errorf("fetch connection count metric from redis: %w", err))
 	}
 
+	localCurrentConnections := 0
+	c.mu.Lock()
+	totalCurrentConnections := len(c.connections)
+	for _, v := range c.connections {
+		if v <= 0 {
+			continue
+		}
+
+		localCurrentConnections++
+	}
+	c.mu.Unlock()
+
 	currentConnections := 0
 	averageCount := 0
 	averageSum := 0
@@ -118,8 +130,10 @@ func (c *connectionCount) Metric(con metric.Container) {
 	prefix := "connected_users_"
 	con.Add(prefix+"current", currentConnections)
 	con.Add(prefix+"total", len(data))
-	con.Add(prefix+"average", average)
-	con.Add(prefix+"anonymous", data[0])
+	con.Add(prefix+"current_local", localCurrentConnections)
+	con.Add(prefix+"total_local", totalCurrentConnections)
+	con.Add(prefix+"average_connections", average)
+	con.Add(prefix+"anonymous_connections", data[0])
 }
 
 // mapIntConverter tells the redis Metric how to convert the map[int]int to a
