@@ -14,12 +14,14 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
 	"github.com/klauspost/compress/zstd"
 )
 
@@ -29,10 +31,10 @@ const (
 )
 
 // Run starts the http server.
-func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autoupdate.Autoupdate, redisMetric RedisMetric) error {
+func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autoupdate.Autoupdate, redisConnection *redis.Redis) error {
 	var connectionCount *connectionCount
-	if redisMetric != nil {
-		connectionCount := newConnectionCount(redisMetric)
+	if redisConnection != nil {
+		connectionCount := newConnectionCount(redisConnection, 15*time.Minute)
 		metric.Register(connectionCount.Metric)
 	}
 
@@ -427,19 +429,6 @@ func validRequest(next http.Handler) http.Handler {
 			handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("Only GET or POST requests are supported")})
 			return
 		}
-
-		next.ServeHTTP(w, r)
-	})
-}
-
-func countMetricMiddleware(next http.Handler, counter *metric.CurrentCounter) http.Handler {
-	if counter == nil {
-		return next
-	}
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		counter.Add()
-		defer counter.Done()
 
 		next.ServeHTTP(w, r)
 	})

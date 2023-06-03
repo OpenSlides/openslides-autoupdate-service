@@ -18,46 +18,26 @@ type RedisMetric interface {
 	Get(ctx context.Context) (map[int]int, error)
 }
 
-// InitConnectionCountMetric initializes a redis metric to use for the
-// connection count.
-func InitConnectionCountMetric(r *redis.Redis, tooOld time.Duration) RedisMetric {
-	// TODO: Save metric regularry.
-	return redis.NewMetric[map[int]int](r, "autoupdate_connection_count", mapIntConverter{}, tooOld, time.Now)
-}
-
-type mapIntConverter struct{}
-
-func (mapIntConverter) Convert(v map[int]int) (string, error) {
-	converted, err := json.Marshal(v)
-	return string(converted), err
-}
-
-func (mapIntConverter) Combine(rawValue string, acc map[int]int) (map[int]int, error) {
-	var value map[int]int
-	if err := json.Unmarshal([]byte(rawValue), &value); err != nil {
-		return nil, err
-	}
-
-	if acc == nil {
-		acc = make(map[int]int)
-	}
-
-	for k, v := range value {
-		acc[k] += v
-	}
-
-	return acc, nil
-}
-
+// connectionCount counts, how many connections a user has.
+//
+// It holds a local counter and saves it to redis after a connection is created
+// or closed.
+//
+// TODO: It also pings redis from time to time to show, that this instance is
+// still running.
 type connectionCount struct {
+	metric RedisMetric
+
 	mu          sync.Mutex
-	metric      RedisMetric
 	connections map[int]int
 }
 
-func newConnectionCount(metric RedisMetric) *connectionCount {
+func newConnectionCount(r *redis.Redis, tooOld time.Duration) *connectionCount {
+	// TODO: Save redisMetric regularry.
+	redisMetric := redis.NewMetric[map[int]int](r, "autoupdate_connection_count", mapIntConverter{}, tooOld, time.Now)
+
 	return &connectionCount{
-		metric:      metric,
+		metric:      redisMetric,
 		connections: make(map[int]int),
 	}
 }
@@ -73,6 +53,8 @@ func (c *connectionCount) Add(ctx context.Context, uid int) {
 }
 
 func (c *connectionCount) Done(uid int) {
+	// Done is callled when the connection is closed. The the context from the
+	// request can not be used.
 	ctx := context.Background()
 
 	c.mu.Lock()
@@ -87,12 +69,13 @@ func (c *connectionCount) Done(uid int) {
 func (c *connectionCount) Show(ctx context.Context) (map[int]int, error) {
 	data, err := c.metric.Get(ctx)
 	if err != nil {
-		oserror.Handle(fmt.Errorf("fetch connection count metric from redis: %w", err))
+		return nil, fmt.Errorf("getting counter from redis: %w", err)
 	}
 
 	return data, nil
 }
 
+// Metric is a function needed my the openslides metric system to fetch some values.
 func (c *connectionCount) Metric(con metric.Container) {
 	ctx := context.Background()
 
@@ -127,4 +110,30 @@ func (c *connectionCount) Metric(con metric.Container) {
 	con.Add(prefix+"total", len(data))
 	con.Add(prefix+"average", average)
 	con.Add(prefix+"anonymous", data[0])
+}
+
+// mapIntConverter tells the redis Metric how to convert the map[int]int to a
+// value that can be saved by redis.
+type mapIntConverter struct{}
+
+func (mapIntConverter) Convert(v map[int]int) (string, error) {
+	converted, err := json.Marshal(v)
+	return string(converted), err
+}
+
+func (mapIntConverter) Combine(rawValue string, acc map[int]int) (map[int]int, error) {
+	var value map[int]int
+	if err := json.Unmarshal([]byte(rawValue), &value); err != nil {
+		return nil, err
+	}
+
+	if acc == nil {
+		acc = make(map[int]int)
+	}
+
+	for k, v := range value {
+		acc[k] += v
+	}
+
+	return acc, nil
 }
