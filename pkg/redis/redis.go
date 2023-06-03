@@ -148,12 +148,19 @@ func (r *Redis) LogoutEvent(ctx context.Context) ([]string, error) {
 
 const metricKeyPrefix = "metric"
 
+// MetricValueConverter is a helper for the Metric to convert and combine a
+// generic value to a value, that can be saved by redis.
+type MetricValueConverter[T any] interface {
+	Convert(value T) (string, error)
+	Combine(value string, acc T) (T, error)
+}
+
 // Metric saves a metric value in redis.
 type Metric[T any] struct {
 	r *Redis
 
-	name    string
-	combine func(value string, acc T) T
+	name      string
+	converter MetricValueConverter[T]
 
 	instanceID string
 	tooOld     time.Duration
@@ -161,7 +168,7 @@ type Metric[T any] struct {
 }
 
 // NewMetric initializes a redis metric.
-func NewMetric[T any](r *Redis, name string, combine func(value string, acc T) T, tooOld time.Duration, now func() time.Time) Metric[T] {
+func NewMetric[T any](r *Redis, name string, converter MetricValueConverter[T], tooOld time.Duration, now func() time.Time) Metric[T] {
 	if now == nil {
 		now = time.Now
 	}
@@ -169,8 +176,8 @@ func NewMetric[T any](r *Redis, name string, combine func(value string, acc T) T
 	return Metric[T]{
 		r: r,
 
-		name:    name,
-		combine: combine,
+		name:      name,
+		converter: converter,
 
 		instanceID: buildInstanceID(now),
 		tooOld:     tooOld,
@@ -193,14 +200,19 @@ func buildInstanceID(now func() time.Time) string {
 }
 
 // Save saves a metric value for this instance.
-func (m *Metric[T]) Save(ctx context.Context, v T) error {
+func (m Metric[T]) Save(ctx context.Context, v T) error {
 	conn := m.r.pool.Get()
 	defer conn.Close()
 
 	valueKey := fmt.Sprintf("%s-%s-values", metricKeyPrefix, m.name)
 	timeStampKey := fmt.Sprintf("%s-%s-timestamp", metricKeyPrefix, m.name)
 
-	if _, err := redis.DoContext(conn, ctx, "HSET", valueKey, m.instanceID, v); err != nil {
+	converted, err := m.converter.Convert(v)
+	if err != nil {
+		return fmt.Errorf("convert value for redis: %w", err)
+	}
+
+	if _, err := redis.DoContext(conn, ctx, "HSET", valueKey, m.instanceID, converted); err != nil {
 		return fmt.Errorf("redis save value: %w", err)
 	}
 
@@ -214,7 +226,7 @@ func (m *Metric[T]) Save(ctx context.Context, v T) error {
 }
 
 // Get returns a metric from redis.
-func (m *Metric[T]) Get(ctx context.Context) (T, error) {
+func (m Metric[T]) Get(ctx context.Context) (T, error) {
 	var zero T
 	conn := m.r.pool.Get()
 	defer conn.Close()
@@ -240,7 +252,10 @@ func (m *Metric[T]) Get(ctx context.Context) (T, error) {
 			continue
 		}
 
-		v = m.combine(values[k], v)
+		v, err = m.converter.Combine(values[k], v)
+		if err != nil {
+			return zero, fmt.Errorf("combine: %w", err)
+		}
 	}
 
 	return v, nil
