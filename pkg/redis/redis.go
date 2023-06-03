@@ -31,7 +31,6 @@ const (
 var (
 	envMessageBusHost = environment.NewVariable("MESSAGE_BUS_HOST", "localhost", "Host of the redis server.")
 	envMessageBusPort = environment.NewVariable("MESSAGE_BUS_PORT", "6379", "Port of the redis server.")
-	envMetricTooOld   = environment.NewVariable("METRIC_TOO_OLD", "5m", "Ignore metric values that are older then this value.")
 )
 
 // Redis holds the state of the redis receiver.
@@ -39,14 +38,10 @@ type Redis struct {
 	pool             *redis.Pool
 	lastAutoupdateID string
 	lastLogoutID     string
-
-	instanceID  string
-	metricToOld time.Duration
-	now         func() time.Time
 }
 
 // New initializes a Redis instance.
-func New(lookup environment.Environmenter, now func() time.Time) (*Redis, error) {
+func New(lookup environment.Environmenter) *Redis {
 	addr := envMessageBusHost.Value(lookup) + ":" + envMessageBusPort.Value(lookup)
 
 	pool := &redis.Pool{
@@ -57,37 +52,11 @@ func New(lookup environment.Environmenter, now func() time.Time) (*Redis, error)
 		Dial:        func() (redis.Conn, error) { return redis.Dial("tcp", addr) },
 	}
 
-	tooOld, err := environment.ParseDuration(envMetricTooOld.Value(lookup))
-	if err != nil {
-		return nil, fmt.Errorf("parsing METRIC_TOO_OLD: %w", err)
-	}
-
-	if now == nil {
-		now = time.Now
-	}
-
 	r := Redis{
-		pool:        pool,
-		instanceID:  buildInstanceID(now),
-		metricToOld: tooOld,
-		now:         now,
+		pool: pool,
 	}
 
-	return &r, nil
-}
-
-func buildInstanceID(now func() time.Time) string {
-	t := now().UTC().Format("2006-01-02T15:04:05")
-
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	const length = 8
-
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
-	}
-
-	return fmt.Sprintf("%s-%s", t, b)
+	return &r
 }
 
 // Wait blocks until a connection can be established.
@@ -179,56 +148,99 @@ func (r *Redis) LogoutEvent(ctx context.Context) ([]string, error) {
 
 const metricKeyPrefix = "metric"
 
-// SaveMetric saves a metric value for this instance.
-func (r *Redis) SaveMetric(ctx context.Context, name string, v int) error {
-	conn := r.pool.Get()
+// Metric saves a metric value in redis.
+type Metric[T any] struct {
+	r *Redis
+
+	name    string
+	combine func(value string, acc T) T
+
+	instanceID string
+	tooOld     time.Duration
+	now        func() time.Time
+}
+
+// NewMetric initializes a redis metric.
+func NewMetric[T any](r *Redis, name string, combine func(value string, acc T) T, tooOld time.Duration, now func() time.Time) Metric[T] {
+	if now == nil {
+		now = time.Now
+	}
+
+	return Metric[T]{
+		r: r,
+
+		name:    name,
+		combine: combine,
+
+		instanceID: buildInstanceID(now),
+		tooOld:     tooOld,
+		now:        now,
+	}
+}
+
+func buildInstanceID(now func() time.Time) string {
+	t := now().UTC().Format("2006-01-02T15:04:05")
+
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const length = 8
+
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+
+	return fmt.Sprintf("%s-%s", t, b)
+}
+
+// Save saves a metric value for this instance.
+func (m *Metric[T]) Save(ctx context.Context, v T) error {
+	conn := m.r.pool.Get()
 	defer conn.Close()
 
-	valueKey := fmt.Sprintf("%s-%s-values", metricKeyPrefix, name)
-	timeStampKey := fmt.Sprintf("%s-%s-timestamp", metricKeyPrefix, name)
+	valueKey := fmt.Sprintf("%s-%s-values", metricKeyPrefix, m.name)
+	timeStampKey := fmt.Sprintf("%s-%s-timestamp", metricKeyPrefix, m.name)
 
-	if _, err := redis.DoContext(conn, ctx, "HSET", valueKey, r.instanceID, v); err != nil {
+	if _, err := redis.DoContext(conn, ctx, "HSET", valueKey, m.instanceID, v); err != nil {
 		return fmt.Errorf("redis save value: %w", err)
 	}
 
-	now := r.now().UTC().Unix()
+	now := m.now().UTC().Unix()
 
-	if _, err := redis.DoContext(conn, ctx, "HSET", timeStampKey, r.instanceID, now); err != nil {
+	if _, err := redis.DoContext(conn, ctx, "HSET", timeStampKey, m.instanceID, now); err != nil {
 		return fmt.Errorf("redis save timestamp: %w", err)
 	}
 
 	return nil
 }
 
-// Metric returns a metric from redis.
-func (r *Redis) Metric(ctx context.Context, name string) (int, error) {
-	conn := r.pool.Get()
+// Get returns a metric from redis.
+func (m *Metric[T]) Get(ctx context.Context) (T, error) {
+	var zero T
+	conn := m.r.pool.Get()
 	defer conn.Close()
 
-	valueKey := fmt.Sprintf("%s-%s-values", metricKeyPrefix, name)
-	timeStampKey := fmt.Sprintf("%s-%s-timestamp", metricKeyPrefix, name)
+	valueKey := fmt.Sprintf("%s-%s-values", metricKeyPrefix, m.name)
+	timeStampKey := fmt.Sprintf("%s-%s-timestamp", metricKeyPrefix, m.name)
 
-	values, err := redis.IntMap(redis.DoContext(conn, ctx, "HGETALL", valueKey))
+	values, err := redis.StringMap(redis.DoContext(conn, ctx, "HGETALL", valueKey))
 	if err != nil {
-		return 0, fmt.Errorf("redis HALS: %w", err)
+		return zero, fmt.Errorf("redis HALS: %w", err)
 	}
 
 	timeStamps, err := redis.IntMap(redis.DoContext(conn, ctx, "HGETALL", timeStampKey))
 	if err != nil {
-		return 0, fmt.Errorf("redis HALS: %w", err)
+		return zero, fmt.Errorf("redis HALS: %w", err)
 	}
 
-	tooOld := r.now().UTC().Add(-r.metricToOld).Unix()
+	tooOld := m.now().UTC().Add(-m.tooOld).Unix()
 
-	fmt.Println(values, timeStamps, tooOld)
-
-	v := 0
+	var v T
 	for k, timestamp := range timeStamps {
 		if timestamp < int(tooOld) {
 			continue
 		}
 
-		v += values[k]
+		v = m.combine(values[k], v)
 	}
 
 	return v, nil

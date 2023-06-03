@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -19,10 +20,7 @@ func TestUpdate(t *testing.T) {
 	tr := newTestRedis(t)
 	defer tr.Close()
 
-	r, err := redis.New(environment.ForTests(tr.Env), nil)
-	if err != nil {
-		t.Fatalf("redis.New: %v", err)
-	}
+	r := redis.New(environment.ForTests(tr.Env))
 	r.Wait(ctx)
 
 	done := make(chan error)
@@ -67,10 +65,7 @@ func TestLogout(t *testing.T) {
 	tr := newTestRedis(t)
 	defer tr.Close()
 
-	r, err := redis.New(environment.ForTests(tr.Env), nil)
-	if err != nil {
-		t.Fatalf("redis.New: %v", err)
-	}
+	r := redis.New(environment.ForTests(tr.Env))
 	r.Wait(ctx)
 
 	done := make(chan error)
@@ -112,54 +107,56 @@ func TestMetric(t *testing.T) {
 	tr := newTestRedis(t)
 	defer tr.Close()
 
+	r := redis.New(environment.ForTests(tr.Env))
+	r.Wait(ctx)
+
+	intCombine := func(value string, acc int) int {
+		v, err := strconv.Atoi(value)
+		if err != nil {
+			fmt.Printf("can not convert value %s: %v", value, err)
+			return acc
+		}
+
+		return acc + v
+	}
+
 	t.Run("Save value", func(t *testing.T) {
-		r, err := redis.New(environment.ForTests(tr.Env), nil)
+		m := redis.NewMetric[int](r, "test1", intCombine, time.Second, nil)
+
+		if err := m.Save(ctx, 3); err != nil {
+			t.Fatalf("save: %v", err)
+		}
+
+		v, err := m.Get(ctx)
 		if err != nil {
-			t.Fatalf("redis.New: %v", err)
-		}
-		r.Wait(ctx)
-
-		if err := r.SaveMetric(ctx, "test1", 5); err != nil {
-			t.Fatalf("save metric: %v", err)
+			t.Fatalf("get: %v", err)
 		}
 
-		v, err := r.Metric(ctx, "test1")
-		if err != nil {
-			t.Fatalf("metric: %v", err)
-		}
-
-		if v != 5 {
-			t.Errorf("got %d, expected 5", v)
+		if v != 3 {
+			t.Errorf("got %d, expected 3", v)
 		}
 	})
 
 	t.Run("Save value on different instances", func(t *testing.T) {
-		r1, err := redis.New(environment.ForTests(tr.Env), nil)
+		m1 := redis.NewMetric[int](r, "test2", intCombine, time.Second, nil)
+		m2 := redis.NewMetric[int](r, "test2", intCombine, time.Second, nil)
+
+		if err := m1.Save(ctx, 2); err != nil {
+			t.Fatalf("m1 save: %v", err)
+		}
+
+		if err := m2.Save(ctx, 3); err != nil {
+			t.Fatalf("m2 save: %v", err)
+		}
+
+		v1, err := m1.Get(ctx)
 		if err != nil {
-			t.Fatalf("redis.New: %v", err)
+			t.Fatalf("v1 get: %v", err)
 		}
 
-		r2, err := redis.New(environment.ForTests(tr.Env), nil)
+		v2, err := m2.Get(ctx)
 		if err != nil {
-			t.Fatalf("redis.New: %v", err)
-		}
-
-		if err := r1.SaveMetric(ctx, "test2", 2); err != nil {
-			t.Fatalf("save metric: %v", err)
-		}
-
-		if err := r2.SaveMetric(ctx, "test2", 3); err != nil {
-			t.Fatalf("save metric: %v", err)
-		}
-
-		v1, err := r1.Metric(ctx, "test2")
-		if err != nil {
-			t.Fatalf("metric: %v", err)
-		}
-
-		v2, err := r2.Metric(ctx, "test2")
-		if err != nil {
-			t.Fatalf("metric: %v", err)
+			t.Fatalf("v12 get: %v", err)
 		}
 
 		if v1 != 5 {
@@ -176,31 +173,51 @@ func TestMetric(t *testing.T) {
 			return time.Date(2023, time.January, 1, 5, 15, 0, 0, time.UTC)
 		}
 
-		oldInstance, err := redis.New(environment.ForTests(tr.Env), oldNow)
+		oldInstance := redis.NewMetric[int](r, "test3", intCombine, time.Second, oldNow)
+
+		if err := oldInstance.Save(ctx, 2); err != nil {
+			t.Fatalf("save old: %v", err)
+		}
+
+		r := redis.NewMetric[int](r, "test3", intCombine, time.Second, nil)
+
+		if err := r.Save(ctx, 3); err != nil {
+			t.Fatalf("save: %v", err)
+		}
+
+		v, err := r.Get(ctx)
 		if err != nil {
-			t.Fatalf("redis.New: %v", err)
-		}
-
-		if err := oldInstance.SaveMetric(ctx, "test3", 2); err != nil {
-			t.Fatalf("save metric: %v", err)
-		}
-
-		r, err := redis.New(environment.ForTests(tr.Env), nil)
-		if err != nil {
-			t.Fatalf("redis.New: %v", err)
-		}
-
-		if err := r.SaveMetric(ctx, "test3", 3); err != nil {
-			t.Fatalf("save metric: %v", err)
-		}
-
-		v, err := r.Metric(ctx, "test3")
-		if err != nil {
-			t.Fatalf("metric: %v", err)
+			t.Fatalf("get: %v", err)
 		}
 
 		if v != 3 {
 			t.Errorf("got %d, expected 3", v)
+		}
+	})
+
+	t.Run("Combine generic values", func(t *testing.T) {
+		fn := func(value string, acc string) string {
+			return value + acc
+		}
+
+		m1 := redis.NewMetric[string](r, "test4", fn, time.Second, nil)
+		m2 := redis.NewMetric[string](r, "test4", fn, time.Second, nil)
+
+		if err := m1.Save(ctx, "A"); err != nil {
+			t.Fatalf("save m1: %v", err)
+		}
+
+		if err := m2.Save(ctx, "B"); err != nil {
+			t.Fatalf("save m2: %v", err)
+		}
+
+		v, err := m1.Get(ctx)
+		if err != nil {
+			t.Fatalf("metric: %v", err)
+		}
+
+		if v != "AB" && v != "BA" {
+			t.Errorf("got %s, expected 'AB' or 'BA'", v)
 		}
 	})
 }
