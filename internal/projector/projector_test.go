@@ -233,6 +233,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 }
 
 func TestProjectionTypeDoesNotExist(t *testing.T) {
+	ctx := context.Background()
 	ds, _ := dsmock.NewMockDatastore(map[dskey.Key][]byte{
 		dskey.MustKey("projection/1/id"):                   []byte("1"),
 		dskey.MustKey("projection/1/content_object_id"):    []byte(`"meeting/1"`),
@@ -241,7 +242,9 @@ func TestProjectionTypeDoesNotExist(t *testing.T) {
 	})
 	projector.Register(ds, testSlides())
 
-	fields, err := ds.Get(context.Background(), dskey.MustKey("projection/1/content"))
+	key := dskey.MustKey("projection/1/content")
+
+	fields, err := ds.Get(ctx, key)
 	if err != nil {
 		t.Fatalf("Get returned unexpected error: %v", err)
 	}
@@ -249,8 +252,8 @@ func TestProjectionTypeDoesNotExist(t *testing.T) {
 	var content struct {
 		Error string `json:"error"`
 	}
-	if err := json.Unmarshal(fields[dskey.MustKey("projection/1/content")], &content); err != nil {
-		t.Fatalf("Can not unmarshal field projection/1/content `%s`: %v", fields[dskey.MustKey("projection/1/content")], err)
+	if err := json.Unmarshal(fields[key], &content); err != nil {
+		t.Fatalf("Can not unmarshal field projection/1/content `%s`: %v", fields[key], err)
 	}
 
 	if content.Error == "" {

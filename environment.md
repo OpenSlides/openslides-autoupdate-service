@@ -27,6 +27,7 @@ The Service uses the following environment variables:
 * `AUTH_PORT`: Port of the auth service. The default is `9004`.
 * `AUTH_FAKE`: Use user id 1 for every request. Ignores all other auth environment variables. The default is `false`.
 * `CONCURENT_WORKER`: Amount of clients that calculate there values at the same time. Default to GOMAXPROCS. The default is `0`.
+* `CACHE_RESET`: Time to reset the cache. The default is `24h`.
 * `METRIC_INTERVAL`: Time in how often the metrics are gathered. Zero disables the metrics. The default is `5m`.
 
 

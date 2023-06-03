@@ -60,7 +60,7 @@ type Datastore struct {
 	keySource     map[string]Source
 
 	changeListeners  []func(map[dskey.Key][]byte) error
-	calculatedFields map[string]func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error)
+	calculatedFields map[string]func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error)
 	calculatedKeys   map[dskey.Key]string
 	calculatedKeysMu sync.RWMutex
 
@@ -78,7 +78,7 @@ func New(lookup environment.Environmenter, mb Updater, options ...Option) (*Data
 
 		keySource: make(map[string]Source),
 
-		calculatedFields: make(map[string]func(context.Context, dskey.Key, map[dskey.Key][]byte) ([]byte, error)),
+		calculatedFields: make(map[string]func(context.Context, dskey.Key, map[dskey.Key][]byte) ([]byte, bool, error)),
 		calculatedKeys:   make(map[dskey.Key]string),
 	}
 
@@ -157,7 +157,7 @@ func (d *Datastore) RegisterChangeListener(f func(map[dskey.Key][]byte) error) {
 // depricated. Do not use this, instead add an option to register a field.
 func (d *Datastore) RegisterCalculatedField(
 	field string,
-	f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error),
+	f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error),
 ) {
 	d.calculatedFields[field] = f
 }
@@ -220,7 +220,10 @@ func (d *Datastore) listenOnUpdates(ctx context.Context, errHandler func(error))
 
 		d.calculatedKeysMu.RLock()
 		for key, field := range d.calculatedKeys {
-			bs := d.calculateField(field, key, data)
+			bs, changed := d.calculateField(field, key, data)
+			if !changed {
+				continue
+			}
 
 			// Update the cache and also update the data-map. The data-map is
 			// used later in this function to inform the changeListeners.
@@ -270,7 +273,9 @@ func (d *Datastore) loadKeys(keys []dskey.Key, set func(map[dskey.Key][]byte)) e
 	}
 
 	for key, field := range calculatedKeys {
-		calculated := d.calculateField(field, key, nil)
+		// Since calculatedField is called with no updated data, it not
+		// necessary to check the second return value.
+		calculated, _ := d.calculateField(field, key, nil)
 		d.calculatedKeysMu.Lock()
 		d.calculatedKeys[key] = field
 		d.calculatedKeysMu.Unlock()
@@ -279,11 +284,16 @@ func (d *Datastore) loadKeys(keys []dskey.Key, set func(map[dskey.Key][]byte)) e
 	return nil
 }
 
-func (d *Datastore) calculateField(field string, key dskey.Key, updated map[dskey.Key][]byte) []byte {
+// calculateField calculates a calculated field.
+//
+// Returns the new value and true, if the value was changed.
+//
+// Returns nil, false, if the value was not changed.
+func (d *Datastore) calculateField(field string, key dskey.Key, updated map[dskey.Key][]byte) ([]byte, bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	calculated, err := d.calculatedFields[field](ctx, key, updated)
+	calculated, changed, err := d.calculatedFields[field](ctx, key, updated)
 	if err != nil {
 		log.Printf("Error calculating key %s: %v", key, err)
 
@@ -292,9 +302,10 @@ func (d *Datastore) calculateField(field string, key dskey.Key, updated map[dske
 			msg = fmt.Sprintf("calculating key %s timed out", key)
 		}
 
-		calculated = []byte(fmt.Sprintf(`{"error": "%s"}`, msg))
+		return []byte(fmt.Sprintf(`{"error": "%s"}`, msg)), true
 	}
-	return calculated
+
+	return calculated, changed
 }
 
 // keysToGetManyRequest a json envoding of the get_many request.
