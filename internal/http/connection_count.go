@@ -84,6 +84,15 @@ func (c *connectionCount) Done(uid int) {
 	}
 }
 
+func (c *connectionCount) Show(ctx context.Context) (map[int]int, error) {
+	data, err := c.metric.Get(ctx)
+	if err != nil {
+		oserror.Handle(fmt.Errorf("fetch connection count metric from redis: %w", err))
+	}
+
+	return data, nil
+}
+
 func (c *connectionCount) Metric(con metric.Container) {
 	ctx := context.Background()
 
