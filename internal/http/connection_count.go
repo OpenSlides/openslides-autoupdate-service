@@ -54,8 +54,8 @@ func newConnectionCount(r *redis.Redis, tooOld time.Duration) *connectionCount {
 
 func (c *connectionCount) Add(ctx context.Context, uid int) {
 	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.connections[uid]++
-	c.mu.Unlock()
 
 	if err := c.metric.Save(ctx, c.connections); err != nil {
 		oserror.Handle(fmt.Errorf("save connection count in redis: %w", err))
@@ -68,8 +68,8 @@ func (c *connectionCount) Done(uid int) {
 	ctx := context.Background()
 
 	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.connections[uid]--
-	c.mu.Unlock()
 
 	if err := c.metric.Save(ctx, c.connections); err != nil {
 		oserror.Handle(fmt.Errorf("save connection count in redis: %w", err))
