@@ -23,7 +23,7 @@ type RedisMetric interface {
 // It holds a local counter and saves it to redis after a connection is created
 // or closed.
 //
-// TODO: It also pings redis from time to time to show, that this instance is
+// It also pings redis from time to time to show, that this instance is
 // still running.
 type connectionCount struct {
 	metric RedisMetric
@@ -33,8 +33,18 @@ type connectionCount struct {
 }
 
 func newConnectionCount(r *redis.Redis, tooOld time.Duration) *connectionCount {
-	// TODO: Save redisMetric regularry.
 	redisMetric := redis.NewMetric[map[int]int](r, "autoupdate_connection_count", mapIntConverter{}, tooOld, time.Now)
+
+	go func() {
+		ctx := context.Background()
+		for {
+			time.Sleep(tooOld / 2)
+			if err := redisMetric.KeepAlive(ctx); err != nil {
+				oserror.Handle(fmt.Errorf("Send keep alive to redis: %w", err))
+			}
+
+		}
+	}()
 
 	return &connectionCount{
 		metric:      redisMetric,
