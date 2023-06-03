@@ -31,10 +31,10 @@ const (
 )
 
 // Run starts the http server.
-func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autoupdate.Autoupdate, redisConnection *redis.Redis) error {
+func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autoupdate.Autoupdate, redisConnection *redis.Redis, tooOld time.Duration) error {
 	var connectionCount *connectionCount
 	if redisConnection != nil {
-		connectionCount := newConnectionCount(redisConnection, 15*time.Minute)
+		connectionCount := newConnectionCount(redisConnection, tooOld)
 		metric.Register(connectionCount.Metric)
 	}
 

@@ -26,6 +26,7 @@ import (
 var (
 	envAutoupdatePort = environment.NewVariable("AUTOUPDATE_PORT", "9012", "Port on which the service listen on.")
 	envMetricInterval = environment.NewVariable("METRIC_INTERVAL", "5m", "Time in how often the metrics are gathered. Zero disables the metrics.")
+	envMetricTooOld   = environment.NewVariable("METRIC_TOO_OLD", "15m", "Ignore metric values from other autoupdate instances, that have not updated for the given time.")
 )
 
 var cli struct {
@@ -162,6 +163,11 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 		return nil, fmt.Errorf("invalid value for `METRIC_INTERVAL`, expected duration got %s: %w", envMetricInterval.Value(lookup), err)
 	}
 
+	metricTooOld, err := environment.ParseDuration(envMetricTooOld.Value(lookup))
+	if err != nil {
+		return nil, fmt.Errorf("invalid value for `METRIC_TOO_OLD`, expected duration got %s: %w", envMetricInterval.Value(lookup), err)
+	}
+
 	if metricTime > 0 {
 		runMetirc := func(ctx context.Context, errorHandler func(error)) {
 			metric.Loop(ctx, metricTime, log.Default())
@@ -176,7 +182,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 
 		// Start http server.
 		fmt.Printf("Listen on %s\n", listenAddr)
-		return http.Run(ctx, listenAddr, authService, auService, messageBus)
+		return http.Run(ctx, listenAddr, authService, auService, messageBus, metricTooOld)
 	}
 
 	return service, nil
