@@ -8,6 +8,7 @@ import (
 	gohttp "net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/http"
@@ -169,6 +170,8 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 		backgroundTasks = append(backgroundTasks, runMetirc)
 	}
 
+	connectionCountMetric := http.InitConnectionCountMetric(messageBus, 15*time.Minute)
+
 	service := func(ctx context.Context) error {
 		for _, bg := range backgroundTasks {
 			go bg(ctx, oserror.Handle)
@@ -176,7 +179,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 
 		// Start http server.
 		fmt.Printf("Listen on %s\n", listenAddr)
-		return http.Run(ctx, listenAddr, authService, auService)
+		return http.Run(ctx, listenAddr, authService, auService, connectionCountMetric)
 	}
 
 	return service, nil

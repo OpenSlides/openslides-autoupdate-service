@@ -29,13 +29,10 @@ const (
 )
 
 // Run starts the http server.
-func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autoupdate.Autoupdate) error {
-	requestCount := metric.NewCurrentCounter("connection")
-	metric.Register(requestCount.Metric)
-
+func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autoupdate.Autoupdate, redisMetric RedisMetric) error {
 	mux := http.NewServeMux()
 	HandleHealth(mux)
-	HandleAutoupdate(mux, auth, autoupdate, requestCount)
+	HandleAutoupdate(mux, auth, autoupdate, redisMetric)
 	HandleHistoryInformation(mux, auth, autoupdate)
 	HandleRestrictFQIDs(mux, autoupdate)
 
@@ -73,7 +70,7 @@ type Connecter interface {
 
 // HandleAutoupdate builds the requested keys from the body of a request. The
 // body has to be in the format specified in the keysbuilder package.
-func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, counter *metric.CurrentCounter) {
+func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, redisMetric RedisMetric) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Cache-Control", "no-store, max-age=0")
@@ -155,13 +152,20 @@ func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecte
 		}
 	})
 
+	var connectionCount *connectionCount
+	if redisMetric != nil {
+		connectionCount := newConnectionCount(redisMetric)
+		metric.Register(connectionCount.Metric)
+	}
+
 	mux.Handle(
 		prefixPublic,
 		validRequest(
 			authMiddleware(
-				countMiddleware(
+				connectionCountMiddleware(
 					handler,
-					counter,
+					auth,
+					connectionCount,
 				),
 				auth,
 			),
@@ -393,7 +397,7 @@ func validRequest(next http.Handler) http.Handler {
 	})
 }
 
-func countMiddleware(next http.Handler, counter *metric.CurrentCounter) http.Handler {
+func countMetricMiddleware(next http.Handler, counter *metric.CurrentCounter) http.Handler {
 	if counter == nil {
 		return next
 	}
@@ -401,6 +405,24 @@ func countMiddleware(next http.Handler, counter *metric.CurrentCounter) http.Han
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		counter.Add()
 		defer counter.Done()
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func connectionCountMiddleware(next http.Handler, auth Authenticater, counter *connectionCount) http.Handler {
+	if counter == nil {
+		return next
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		uid := auth.FromContext(r.Context())
+
+		counter.Add(r.Context(), uid)
+
+		defer func() {
+			counter.Done(uid)
+		}()
 
 		next.ServeHTTP(w, r)
 	})
