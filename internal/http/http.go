@@ -34,7 +34,7 @@ const (
 func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autoupdate.Autoupdate, redisConnection *redis.Redis, tooOld time.Duration) error {
 	var connectionCount *connectionCount
 	if redisConnection != nil {
-		connectionCount := newConnectionCount(redisConnection, tooOld)
+		connectionCount = newConnectionCount(redisConnection, tooOld)
 		metric.Register(connectionCount.Metric)
 	}
 
@@ -206,7 +206,7 @@ func writeData(w io.Writer, data map[dskey.Key][]byte, compress bool) error {
 func HandleShowConnectionCount(mux *http.ServeMux, autoupdate *autoupdate.Autoupdate, auth Authenticater, connectionCount *connectionCount) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if connectionCount == nil {
-			oserror.Handle(fmt.Errorf("Error connection count is not initializes"))
+			oserror.Handle(fmt.Errorf("Error connection count is not initialized"))
 			http.Error(w, "Counting not possible", 500)
 			return
 		}
