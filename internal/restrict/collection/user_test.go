@@ -270,7 +270,9 @@ func TestUserModeA(t *testing.T) {
 			speaker_$_ids: ["1"]
 			speaker_$1_ids: [4]
 		
-		speaker/4/list_of_speakers_id: 5
+		speaker/4:
+			list_of_speakers_id: 5
+			meeting_id: 30
 
 		list_of_speakers/5:
 			meeting_id: 30
