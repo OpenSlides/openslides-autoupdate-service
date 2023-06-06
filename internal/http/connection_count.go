@@ -55,7 +55,7 @@ func newConnectionCount(r *redis.Redis, tooOld time.Duration) *connectionCount {
 func (c *connectionCount) incrementAndConvert(uid int, increment int) (string, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.connections[uid]--
+	c.connections[uid] += increment
 
 	converted, err := json.Marshal(c.connections)
 	if err != nil {
