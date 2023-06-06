@@ -69,6 +69,7 @@ func (c *connectionCount) Add(ctx context.Context, uid int) {
 	converted, err := c.incrementAndConvert(uid, 1)
 	if err != nil {
 		oserror.Handle(fmt.Errorf("convert for redis: %w", err))
+		return
 	}
 
 	if err := c.metric.Save(ctx, converted); err != nil {
@@ -84,6 +85,7 @@ func (c *connectionCount) Done(uid int) {
 	converted, err := c.incrementAndConvert(uid, -1)
 	if err != nil {
 		oserror.Handle(fmt.Errorf("convert for redis: %w", err))
+		return
 	}
 
 	if err := c.metric.Save(ctx, converted); err != nil {
