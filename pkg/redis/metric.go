@@ -11,10 +11,9 @@ import (
 
 const metricKeyPrefix = "metric"
 
-// MetricValueConverter is a helper for the Metric to convert and combine a
-// generic value to a value, that can be saved by redis.
-type MetricValueConverter[T any] interface {
-	Convert(value T) (string, error)
+// MetricValueCombiner is a helper for the Metric to combine multible metric
+// values into one.
+type MetricValueCombiner[T any] interface {
 	Combine(value string, acc T) (T, error)
 }
 
@@ -23,7 +22,7 @@ type Metric[T any] struct {
 	r *Redis
 
 	name      string
-	converter MetricValueConverter[T]
+	converter MetricValueCombiner[T]
 
 	instanceID string
 	tooOld     time.Duration
@@ -31,7 +30,7 @@ type Metric[T any] struct {
 }
 
 // NewMetric initializes a redis metric.
-func NewMetric[T any](r *Redis, name string, converter MetricValueConverter[T], tooOld time.Duration, now func() time.Time) Metric[T] {
+func NewMetric[T any](r *Redis, name string, converter MetricValueCombiner[T], tooOld time.Duration, now func() time.Time) Metric[T] {
 	if now == nil {
 		now = time.Now
 	}
@@ -63,19 +62,14 @@ func buildInstanceID(now func() time.Time) string {
 }
 
 // Save saves a metric value for this instance.
-func (m Metric[T]) Save(ctx context.Context, v T) error {
+func (m Metric[T]) Save(ctx context.Context, value string) error {
 	conn := m.r.pool.Get()
 	defer conn.Close()
 
 	valueKey := fmt.Sprintf("%s-%s-values", metricKeyPrefix, m.name)
 	timeStampKey := fmt.Sprintf("%s-%s-timestamp", metricKeyPrefix, m.name)
 
-	converted, err := m.converter.Convert(v)
-	if err != nil {
-		return fmt.Errorf("convert value for redis: %w", err)
-	}
-
-	if _, err := redis.DoContext(conn, ctx, "HSET", valueKey, m.instanceID, converted); err != nil {
+	if _, err := redis.DoContext(conn, ctx, "HSET", valueKey, m.instanceID, value); err != nil {
 		return fmt.Errorf("redis save value: %w", err)
 	}
 

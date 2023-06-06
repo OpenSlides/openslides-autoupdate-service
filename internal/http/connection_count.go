@@ -14,7 +14,7 @@ import (
 
 // RedisMetric is used for the connection counter.
 type RedisMetric interface {
-	Save(ctx context.Context, v map[int]int) error
+	Save(ctx context.Context, v string) error
 	Get(ctx context.Context) (map[int]int, error)
 }
 
@@ -33,7 +33,7 @@ type connectionCount struct {
 }
 
 func newConnectionCount(r *redis.Redis, tooOld time.Duration) *connectionCount {
-	redisMetric := redis.NewMetric[map[int]int](r, "autoupdate_connection_count", mapIntConverter{}, tooOld, time.Now)
+	redisMetric := redis.NewMetric[map[int]int](r, "autoupdate_connection_count", mapIntCombiner{}, tooOld, time.Now)
 
 	go func() {
 		ctx := context.Background()
@@ -52,12 +52,26 @@ func newConnectionCount(r *redis.Redis, tooOld time.Duration) *connectionCount {
 	}
 }
 
-func (c *connectionCount) Add(ctx context.Context, uid int) {
+func (c *connectionCount) incrementAndConvert(uid int, increment int) (string, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.connections[uid]++
+	c.connections[uid]--
 
-	if err := c.metric.Save(ctx, c.connections); err != nil {
+	converted, err := json.Marshal(c.connections)
+	if err != nil {
+		return "", fmt.Errorf("convert connection count to json: %w", err)
+	}
+
+	return string(converted), nil
+}
+
+func (c *connectionCount) Add(ctx context.Context, uid int) {
+	converted, err := c.incrementAndConvert(uid, 1)
+	if err != nil {
+		oserror.Handle(fmt.Errorf("convert for redis: %w", err))
+	}
+
+	if err := c.metric.Save(ctx, converted); err != nil {
 		oserror.Handle(fmt.Errorf("save connection count in redis: %w", err))
 	}
 }
@@ -67,11 +81,12 @@ func (c *connectionCount) Done(uid int) {
 	// request can not be used.
 	ctx := context.Background()
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.connections[uid]--
+	converted, err := c.incrementAndConvert(uid, -1)
+	if err != nil {
+		oserror.Handle(fmt.Errorf("convert for redis: %w", err))
+	}
 
-	if err := c.metric.Save(ctx, c.connections); err != nil {
+	if err := c.metric.Save(ctx, converted); err != nil {
 		oserror.Handle(fmt.Errorf("save connection count in redis: %w", err))
 	}
 }
@@ -144,16 +159,10 @@ func (c *connectionCount) Metric(con metric.Container) {
 	con.Add(prefix+"_local", localCurrentConnections)
 }
 
-// mapIntConverter tells the redis Metric how to convert the map[int]int to a
-// value that can be saved by redis.
-type mapIntConverter struct{}
+// mapIntCombiner tells the redis Metric, how to combine the metric values.
+type mapIntCombiner struct{}
 
-func (mapIntConverter) Convert(v map[int]int) (string, error) {
-	converted, err := json.Marshal(v)
-	return string(converted), err
-}
-
-func (mapIntConverter) Combine(rawValue string, acc map[int]int) (map[int]int, error) {
+func (mapIntCombiner) Combine(rawValue string, acc map[int]int) (map[int]int, error) {
 	if rawValue == "" {
 		return acc, nil
 	}

@@ -24,9 +24,9 @@ func TestMetric(t *testing.T) {
 	r.Wait(ctx)
 
 	t.Run("Save value", func(t *testing.T) {
-		m := redis.NewMetric[int](r, "test1", intConverter{}, time.Second, nil)
+		m := redis.NewMetric[int](r, "test1", intCombiner{}, time.Second, nil)
 
-		if err := m.Save(ctx, 3); err != nil {
+		if err := m.Save(ctx, strconv.Itoa(3)); err != nil {
 			t.Fatalf("save: %v", err)
 		}
 
@@ -41,14 +41,14 @@ func TestMetric(t *testing.T) {
 	})
 
 	t.Run("Save value on different instances", func(t *testing.T) {
-		m1 := redis.NewMetric[int](r, "test2", intConverter{}, time.Second, nil)
-		m2 := redis.NewMetric[int](r, "test2", intConverter{}, time.Second, nil)
+		m1 := redis.NewMetric[int](r, "test2", intCombiner{}, time.Second, nil)
+		m2 := redis.NewMetric[int](r, "test2", intCombiner{}, time.Second, nil)
 
-		if err := m1.Save(ctx, 2); err != nil {
+		if err := m1.Save(ctx, strconv.Itoa(2)); err != nil {
 			t.Fatalf("m1 save: %v", err)
 		}
 
-		if err := m2.Save(ctx, 3); err != nil {
+		if err := m2.Save(ctx, strconv.Itoa(3)); err != nil {
 			t.Fatalf("m2 save: %v", err)
 		}
 
@@ -76,15 +76,15 @@ func TestMetric(t *testing.T) {
 			return time.Date(2023, time.January, 1, 5, 15, 0, 0, time.UTC)
 		}
 
-		oldInstance := redis.NewMetric[int](r, "test3", intConverter{}, time.Second, oldNow)
+		oldInstance := redis.NewMetric[int](r, "test3", intCombiner{}, time.Second, oldNow)
 
-		if err := oldInstance.Save(ctx, 2); err != nil {
+		if err := oldInstance.Save(ctx, strconv.Itoa(2)); err != nil {
 			t.Fatalf("save old: %v", err)
 		}
 
-		r := redis.NewMetric[int](r, "test3", intConverter{}, time.Second, nil)
+		r := redis.NewMetric[int](r, "test3", intCombiner{}, time.Second, nil)
 
-		if err := r.Save(ctx, 3); err != nil {
+		if err := r.Save(ctx, strconv.Itoa(3)); err != nil {
 			t.Fatalf("save: %v", err)
 		}
 
@@ -99,14 +99,18 @@ func TestMetric(t *testing.T) {
 	})
 
 	t.Run("Combine json map", func(t *testing.T) {
-		m1 := redis.NewMetric[map[int]int](r, "test4", mapIntConverter{}, time.Second, nil)
-		m2 := redis.NewMetric[map[int]int](r, "test4", mapIntConverter{}, time.Second, nil)
+		m1 := redis.NewMetric[map[int]int](r, "test4", mapIntCombiner{}, time.Second, nil)
+		m2 := redis.NewMetric[map[int]int](r, "test4", mapIntCombiner{}, time.Second, nil)
 
-		if err := m1.Save(ctx, map[int]int{1: 2, 3: 4}); err != nil {
+		value, _ := json.Marshal(map[int]int{1: 2, 3: 4})
+
+		if err := m1.Save(ctx, string(value)); err != nil {
 			t.Fatalf("save m1: %v", err)
 		}
 
-		if err := m2.Save(ctx, map[int]int{1: 1, 2: 2}); err != nil {
+		value, _ = json.Marshal(map[int]int{1: 1, 2: 2})
+
+		if err := m2.Save(ctx, string(value)); err != nil {
 			t.Fatalf("save m2: %v", err)
 		}
 
@@ -122,13 +126,9 @@ func TestMetric(t *testing.T) {
 	})
 }
 
-type intConverter struct{}
+type intCombiner struct{}
 
-func (intConverter) Convert(v int) (string, error) {
-	return strconv.Itoa(v), nil
-}
-
-func (intConverter) Combine(value string, acc int) (int, error) {
+func (intCombiner) Combine(value string, acc int) (int, error) {
 	v, err := strconv.Atoi(value)
 	if err != nil {
 		return 0, fmt.Errorf("convert from string %s: %w", value, err)
@@ -137,14 +137,9 @@ func (intConverter) Combine(value string, acc int) (int, error) {
 	return acc + v, nil
 }
 
-type mapIntConverter struct{}
+type mapIntCombiner struct{}
 
-func (mapIntConverter) Convert(v map[int]int) (string, error) {
-	converted, err := json.Marshal(v)
-	return string(converted), err
-}
-
-func (mapIntConverter) Combine(rawValue string, acc map[int]int) (map[int]int, error) {
+func (mapIntCombiner) Combine(rawValue string, acc map[int]int) (map[int]int, error) {
 	var value map[int]int
 	if err := json.Unmarshal([]byte(rawValue), &value); err != nil {
 		return nil, err
