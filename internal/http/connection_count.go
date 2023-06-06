@@ -74,6 +74,7 @@ func (c *connectionCount) Add(ctx context.Context, uid int) {
 
 	if err := c.metric.Save(ctx, converted); err != nil {
 		oserror.Handle(fmt.Errorf("save connection count in redis: %w", err))
+		return
 	}
 }
 
@@ -90,6 +91,7 @@ func (c *connectionCount) Done(uid int) {
 
 	if err := c.metric.Save(ctx, converted); err != nil {
 		oserror.Handle(fmt.Errorf("save connection count in redis: %w", err))
+		return
 	}
 }
 
@@ -109,6 +111,7 @@ func (c *connectionCount) Metric(con metric.Container) {
 	data, err := c.metric.Get(ctx)
 	if err != nil {
 		oserror.Handle(fmt.Errorf("fetch connection count metric from redis: %w", err))
+		return
 	}
 
 	localCurrenedUsers := 0

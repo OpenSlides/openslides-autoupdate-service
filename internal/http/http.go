@@ -236,6 +236,7 @@ func HandleShowConnectionCount(mux *http.ServeMux, autoupdate *autoupdate.Autoup
 		if err := json.NewEncoder(w).Encode(val); err != nil {
 			oserror.Handle(fmt.Errorf("Error decoding counter %w", err))
 			http.Error(w, "Decoding counts not possible", 500)
+			return
 		}
 	})
 
@@ -446,9 +447,9 @@ func connectionCountMiddleware(next http.Handler, auth Authenticater, counter *c
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		uid := auth.FromContext(r.Context())
-
-		counter.Add(r.Context(), uid)
+		ctx := r.Context()
+		uid := auth.FromContext(ctx)
+		counter.Add(ctx, uid)
 
 		defer func() {
 			counter.Done(uid)
