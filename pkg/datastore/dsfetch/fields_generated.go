@@ -3639,6 +3639,42 @@ func (r *Fetch) Organization_ResetPasswordVerboseErrors(organizationID int) *Val
 	return v
 }
 
+func (r *Fetch) Organization_SamlAttrMapping(organizationID int) *ValueJSON {
+	v := &ValueJSON{fetch: r, collection: "organization", id: organizationID, field: "saml_attr_mapping"}
+	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "saml_attr_mapping"}] = v
+	return v
+}
+
+func (r *Fetch) Organization_SamlEnabled(organizationID int) *ValueBool {
+	v := &ValueBool{fetch: r, collection: "organization", id: organizationID, field: "saml_enabled"}
+	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "saml_enabled"}] = v
+	return v
+}
+
+func (r *Fetch) Organization_SamlLoginButtonText(organizationID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "organization", id: organizationID, field: "saml_login_button_text"}
+	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "saml_login_button_text"}] = v
+	return v
+}
+
+func (r *Fetch) Organization_SamlMetadataIDp(organizationID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "organization", id: organizationID, field: "saml_metadata_idp"}
+	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "saml_metadata_idp"}] = v
+	return v
+}
+
+func (r *Fetch) Organization_SamlMetadataSp(organizationID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "organization", id: organizationID, field: "saml_metadata_sp"}
+	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "saml_metadata_sp"}] = v
+	return v
+}
+
+func (r *Fetch) Organization_SamlPrivateKey(organizationID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "organization", id: organizationID, field: "saml_private_key"}
+	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "saml_private_key"}] = v
+	return v
+}
+
 func (r *Fetch) Organization_TemplateMeetingIDs(organizationID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r, collection: "organization", id: organizationID, field: "template_meeting_ids"}
 	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "template_meeting_ids"}] = v
@@ -4200,6 +4236,12 @@ func (r *Fetch) Projector_HistoryProjectionIDs(projectorID int) *ValueIntSlice {
 func (r *Fetch) Projector_ID(projectorID int) *ValueInt {
 	v := &ValueInt{fetch: r, collection: "projector", id: projectorID, field: "id"}
 	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "id"}] = v
+	return v
+}
+
+func (r *Fetch) Projector_IsInternal(projectorID int) *ValueBool {
+	v := &ValueBool{fetch: r, collection: "projector", id: projectorID, field: "is_internal"}
+	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "is_internal"}] = v
 	return v
 }
 
