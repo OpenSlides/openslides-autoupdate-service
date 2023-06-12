@@ -30,6 +30,7 @@ The Service uses the following environment variables:
 * `CACHE_RESET`: Time to reset the cache. The default is `24h`.
 * `METRIC_INTERVAL`: Time in how often the metrics are gathered. Zero disables the metrics. The default is `5m`.
 * `METRIC_TOO_OLD`: Ignore metric values from other autoupdate instances, that have not updated for the given time. The default is `15m`.
+* `DISABLE_CONNECTION_COUNT`: Do not count connections. The default is `0`.
 
 
 ## Secrets

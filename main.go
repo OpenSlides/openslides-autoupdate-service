@@ -7,6 +7,7 @@ import (
 	"log"
 	gohttp "net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
@@ -24,9 +25,10 @@ import (
 //go:generate  sh -c "go run main.go build-doc > environment.md"
 
 var (
-	envAutoupdatePort = environment.NewVariable("AUTOUPDATE_PORT", "9012", "Port on which the service listen on.")
-	envMetricInterval = environment.NewVariable("METRIC_INTERVAL", "5m", "Time in how often the metrics are gathered. Zero disables the metrics.")
-	envMetricTooOld   = environment.NewVariable("METRIC_TOO_OLD", "15m", "Ignore metric values from other autoupdate instances, that have not updated for the given time.")
+	envAutoupdatePort         = environment.NewVariable("AUTOUPDATE_PORT", "9012", "Port on which the service listen on.")
+	envMetricInterval         = environment.NewVariable("METRIC_INTERVAL", "5m", "Time in how often the metrics are gathered. Zero disables the metrics.")
+	envMetricTooOld           = environment.NewVariable("METRIC_TOO_OLD", "15m", "Ignore metric values from other autoupdate instances, that have not updated for the given time.")
+	envDisableConnectionCount = environment.NewVariable("DISABLE_CONNECTION_COUNT", "0", "Do not count connections.")
 )
 
 var cli struct {
@@ -175,6 +177,11 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 		backgroundTasks = append(backgroundTasks, runMetirc)
 	}
 
+	metricStorage := messageBus
+	if disable, _ := strconv.ParseBool(envDisableConnectionCount.Value(lookup)); disable {
+		metricStorage = nil
+	}
+
 	service := func(ctx context.Context) error {
 		for _, bg := range backgroundTasks {
 			go bg(ctx, oserror.Handle)
@@ -182,7 +189,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 
 		// Start http server.
 		fmt.Printf("Listen on %s\n", listenAddr)
-		return http.Run(ctx, listenAddr, authService, auService, messageBus, metricTooOld)
+		return http.Run(ctx, listenAddr, authService, auService, metricStorage, metricTooOld)
 	}
 
 	return service, nil
