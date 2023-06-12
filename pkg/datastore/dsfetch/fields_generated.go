@@ -4239,6 +4239,12 @@ func (r *Fetch) Projector_ID(projectorID int) *ValueInt {
 	return v
 }
 
+func (r *Fetch) Projector_IsInternal(projectorID int) *ValueBool {
+	v := &ValueBool{fetch: r, collection: "projector", id: projectorID, field: "is_internal"}
+	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "is_internal"}] = v
+	return v
+}
+
 func (r *Fetch) Projector_MeetingID(projectorID int) *ValueInt {
 	v := &ValueInt{fetch: r, collection: "projector", id: projectorID, field: "meeting_id", required: true}
 	r.requested[dskey.Key{Collection: "projector", ID: projectorID, Field: "meeting_id"}] = v
