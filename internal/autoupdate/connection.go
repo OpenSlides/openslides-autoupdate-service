@@ -105,7 +105,7 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 	}
 
 	recorder := dsrecorder.New(c.autoupdate.datastore)
-	restricter := c.autoupdate.restricter(recorder, c.uid)
+	ctx, restricter := c.autoupdate.restricter(ctx, recorder, c.uid)
 
 	keys, err := c.kb.Update(ctx, restricter)
 	if err != nil {

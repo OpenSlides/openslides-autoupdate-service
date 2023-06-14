@@ -180,6 +180,151 @@ func TestMotionModeC(t *testing.T) {
 		`,
 		withPerms(30, perm.MotionCanManage),
 	)
+
+	testCase(
+		"Can see motion but not the lead motion",
+		t,
+		f,
+		false,
+		`---
+		motion/1:
+			meeting_id: 30
+			lead_motion_id: 2
+			state_id: 10
+		
+		motion/2:
+			meeting_id: 30
+			state_id: 20
+			submitter_ids: [4]
+		
+		motion_state/10/id: 10
+
+		motion_state/20/restrictions:
+			- is_submitter
+
+		motion_submitter/4/user_id: 404
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"Can see motion and the lead motion",
+		t,
+		f,
+		true,
+		`---
+		motion/1:
+			meeting_id: 30
+			lead_motion_id: 2
+			state_id: 10
+		
+		motion/2:
+			meeting_id: 30
+			state_id: 20
+			submitter_ids: [4]
+		
+		motion_state/10/id: 10
+		
+		motion_state/20/restrictions:
+			- is_submitter
+
+		motion_submitter/4/user_id: 1
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"Motion is its own lead motion can see",
+		t,
+		f,
+		true,
+		`---
+		motion/1:
+			meeting_id: 30
+			lead_motion_id: 1
+			state_id: 10
+		
+		motion_state/10/id: 10
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"Motion is its own lead motion can not see",
+		t,
+		f,
+		false,
+		`---
+		motion/1:
+			meeting_id: 30
+			lead_motion_id: 1
+			state_id: 10
+		
+		motion_state/10/id: 10
+		`,
+	)
+
+	testCase(
+		"motions lead_id circle allowed",
+		t,
+		f,
+		true,
+		`---
+		motion/1:
+			meeting_id: 30
+			lead_motion_id: 2
+			state_id: 10
+
+		motion/2:
+			meeting_id: 30
+			lead_motion_id: 3
+			state_id: 10
+
+		motion/3:
+			meeting_id: 30
+			lead_motion_id: 1
+			state_id: 10
+		
+		motion_state/10/id: 10
+
+		motion_state/30/restrictions:
+			- is_submitter
+
+		motion_submitter/4/user_id: 1
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"motions lead_id circle now allowed",
+		t,
+		f,
+		false,
+		`---
+		motion/1:
+			meeting_id: 30
+			lead_motion_id: 2
+			state_id: 10
+
+		motion/2:
+			meeting_id: 30
+			lead_motion_id: 3
+			state_id: 10
+
+		motion/3:
+			meeting_id: 30
+			lead_motion_id: 1
+			state_id: 30
+		
+		motion_state/10/id: 10
+
+		motion_state/30/restrictions:
+			- is_submitter
+
+		motion_submitter/4/user_id: 404
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
 }
 
 func TestMotionModeA(t *testing.T) {

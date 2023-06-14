@@ -23,11 +23,21 @@ import (
 
 // Middleware can be used as a datastore.Getter that restrict the data for a
 // user.
-func Middleware(getter datastore.Getter, uid int) datastore.Getter {
-	return restricter{
+//
+// It also initializes a ctx that has to be used in the future getter calls.
+func Middleware(ctx context.Context, getter datastore.Getter, uid int) (context.Context, datastore.Getter) {
+	ctx = contextWithCache(ctx, getter, uid)
+	return ctx, restricter{
 		getter: getter,
 		uid:    uid,
 	}
+}
+
+// contextWithCache adds some restrictor caches to the context.
+func contextWithCache(ctx context.Context, getter datastore.Getter, uid int) context.Context {
+	ctx = collection.ContextWithRestrictCache(ctx)
+	ctx = perm.ContextWithPermissionCache(ctx, getter, uid)
+	return ctx
 }
 
 type restricter struct {
@@ -84,7 +94,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[ds
 	}
 
 	// Get all required collections with there ids.
-	restrictModeIDs := make(map[collection.CM]*set.Set[int])
+	restrictModeIDs := make(map[collection.CM]set.Set[int])
 	for key := range data {
 		if data[key] == nil {
 			continue
@@ -100,21 +110,20 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[ds
 	}
 
 	// Call restrict Mode function for each collection.
-	mperms := perm.NewMeetingPermission(ds, uid)
 	times := make(map[string]timeCount, len(restrictModeIDs))
 	orderedCMs := sortRestrictModeIDs(restrictModeIDs)
-	allowedMods := make(map[collection.CM]*set.Set[int])
+	allowedMods := make(map[collection.CM]set.Set[int])
 	for _, cm := range orderedCMs {
 		ids := restrictModeIDs[cm]
 		idsCount := ids.Len()
 		start := time.Now()
 
-		modeFunc, err := restrictModefunc(cm.Collection, cm.Mode)
+		modeFunc, err := restrictModefunc(ctx, cm.Collection, cm.Mode)
 		if err != nil {
 			return nil, fmt.Errorf("getting restiction mode for %s/%s: %w", cm.Collection, cm.Mode, err)
 		}
 
-		allowedIDs, err := modeFunc(ctx, ds, mperms, ids.List()...)
+		allowedIDs, err := modeFunc(ctx, ds, ids.List()...)
 		if err != nil {
 			var errDoesNotExist dsfetch.DoesNotExistError
 			if !errors.As(err, &errDoesNotExist) {
@@ -159,14 +168,13 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[ds
 
 func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, data map[dskey.Key][]byte) error {
 	ds := dsfetch.New(getter)
-	mperms := perm.NewMeetingPermission(ds, uid)
 
 	for key := range data {
 		if data[key] == nil {
 			continue
 		}
 
-		restricter := collection.Collection(key.Collection)
+		restricter := collection.Collection(ctx, key.Collection)
 		if restricter == nil {
 			// Superadmins can see unknown collections.
 			continue
@@ -191,7 +199,7 @@ func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, d
 			continue
 		}
 
-		allowed, err := modefunc(ctx, ds, mperms, key.ID)
+		allowed, err := modefunc(ctx, ds, key.ID)
 		if err != nil {
 			return fmt.Errorf("calling mode func: %w", err)
 		}
@@ -204,14 +212,14 @@ func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, d
 }
 
 // groupKeysByCollection groups all the keys in data by there collection.
-func groupKeysByCollection(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]*set.Set[int]) error {
+func groupKeysByCollection(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]set.Set[int]) error {
 	restrictionMode, err := restrictModeName(key.Collection, key.Field)
 	if err != nil {
 		return fmt.Errorf("getting restriction Mode for %s: %w", key, err)
 	}
 
 	cm := collection.CM{Collection: key.Collection, Mode: restrictionMode}
-	if restrictModeIDs[cm] == nil {
+	if restrictModeIDs[cm].IsNotInitialized() {
 		restrictModeIDs[cm] = set.New[int]()
 	}
 	restrictModeIDs[cm].Add(key.ID)
@@ -223,7 +231,7 @@ func groupKeysByCollection(key dskey.Key, value []byte, restrictModeIDs map[coll
 	return nil
 }
 
-func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]*set.Set[int]) error {
+func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]set.Set[int]) error {
 	keyPrefix := templateKeyPrefix(key.CollectionField())
 
 	cm, id, ok, err := isRelation(keyPrefix, value)
@@ -232,7 +240,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 	}
 
 	if ok {
-		if restrictModeIDs[cm] == nil {
+		if restrictModeIDs[cm].IsNotInitialized() {
 			restrictModeIDs[cm] = set.New[int]()
 		}
 		restrictModeIDs[cm].Add(id)
@@ -245,7 +253,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 	}
 
 	if ok {
-		if restrictModeIDs[cm] == nil {
+		if restrictModeIDs[cm].IsNotInitialized() {
 			restrictModeIDs[cm] = set.New[int]()
 		}
 		restrictModeIDs[cm].Add(ids...)
@@ -258,7 +266,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 	}
 
 	if ok {
-		if restrictModeIDs[cm] == nil {
+		if restrictModeIDs[cm].IsNotInitialized() {
 			restrictModeIDs[cm] = set.New[int]()
 		}
 		restrictModeIDs[cm].Add(id)
@@ -272,7 +280,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 
 	if ok {
 		for _, cmID := range mcm {
-			if restrictModeIDs[cmID.cm] == nil {
+			if restrictModeIDs[cmID.cm].IsNotInitialized() {
 				restrictModeIDs[cmID.cm] = set.New[int]()
 			}
 			restrictModeIDs[cmID.cm].Add(cmID.id)
@@ -286,7 +294,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 //
 // The first return value is the new value. The second is, if the value was
 // manipulated.q
-func manipulateRelations(key dskey.Key, value []byte, allowedRestrictions map[collection.CM]*set.Set[int]) ([]byte, bool, error) {
+func manipulateRelations(key dskey.Key, value []byte, allowedRestrictions map[collection.CM]set.Set[int]) ([]byte, bool, error) {
 	keyPrefix := templateKeyPrefix(key.CollectionField())
 
 	cm, id, ok, err := isRelation(keyPrefix, value)
@@ -497,8 +505,8 @@ func templateKeyPrefix(collectionField string) string {
 }
 
 // restrictModefunc returns the field restricter function to use.
-func restrictModefunc(collectionName, fieldMode string) (collection.FieldRestricter, error) {
-	restricter := collection.Collection(collectionName)
+func restrictModefunc(ctx context.Context, collectionName, fieldMode string) (collection.FieldRestricter, error) {
+	restricter := collection.Collection(ctx, collectionName)
 	if _, ok := restricter.(collection.Unknown); ok {
 		// TODO LAST ERROR
 		return nil, fmt.Errorf("collection %q is not implemented, maybe run go generate ./... to fetch all fields from the models.yml", collectionName)
@@ -513,7 +521,7 @@ func restrictModefunc(collectionName, fieldMode string) (collection.FieldRestric
 	return modefunc, nil
 }
 
-func sortRestrictModeIDs(data map[collection.CM]*set.Set[int]) []collection.CM {
+func sortRestrictModeIDs(data map[collection.CM]set.Set[int]) []collection.CM {
 	keys := make([]collection.CM, 0, len(data))
 	for k := range data {
 		keys = append(keys, k)
@@ -563,19 +571,21 @@ var collectionOrder = map[string]int{
 	"motion_workflow":              21,
 	"poll":                         22,
 	"option":                       23,
-	"vote":                         24,
-	"organization":                 25,
-	"organization_tag":             26,
-	"personal_note":                27,
-	"projection":                   28,
-	"projector":                    29,
-	"projector_countdown":          30,
-	"projector_message":            31,
-	"theme":                        32,
-	"topic":                        33,
-	"list_of_speakers":             34,
-	"speaker":                      35,
-	"user":                         36,
+	"poll_candidate_list":          24,
+	"poll_candidate":               25,
+	"vote":                         26,
+	"organization":                 27,
+	"organization_tag":             28,
+	"personal_note":                29,
+	"projection":                   30,
+	"projector":                    31,
+	"projector_countdown":          32,
+	"projector_message":            33,
+	"theme":                        34,
+	"topic":                        35,
+	"list_of_speakers":             36,
+	"speaker":                      37,
+	"user":                         38,
 }
 
 // FieldsForCollection returns the list of fieldnames for an collection.

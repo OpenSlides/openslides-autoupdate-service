@@ -1,4 +1,4 @@
-FROM golang:1.19.4-alpine as base
+FROM golang:1.20.5-alpine as base
 WORKDIR /root/
 
 RUN apk add git
@@ -12,7 +12,7 @@ COPY pkg pkg
 
 # Build service in seperate stage.
 FROM base as builder
-RUN CGO_ENABLED=0 go build
+RUN go build
 
 
 # Test build.

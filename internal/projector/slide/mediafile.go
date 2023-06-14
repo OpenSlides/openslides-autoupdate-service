@@ -31,7 +31,6 @@ func mediafileItemFromMap(in map[string]json.RawMessage) (*dbMediafile, error) {
 // Mediafile renders the mediafile slide.
 func Mediafile(store *projector.SlideStore) {
 	store.RegisterSliderFunc("mediafile", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
-
 		data := fetch.Object(ctx, p7on.ContentObjectID, "id", "mimetype")
 		if err := fetch.Err(); err != nil {
 			return nil, err

@@ -27,9 +27,9 @@ jobs:
 
     steps:
     - name: Set up Go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v4
       with:
-        go-version: 1.19
+        go-version: '1.20'
       id: go
 
     - name: Check out code
@@ -59,13 +59,5 @@ jobs:
       run: |
         make build-dev
         timeout --preserve-status --signal=SIGINT 5s docker run --network host --env OPENSLIDES_DEVELOPMENT=true openslides-autoupdate-dev
-      env:
-        DOCKER_BUILDKIT: 1
-
-    - name: Test With Golang
-      run: go test ./...
-
-    - name: Test With With Make
-      run: make run-tests
       env:
         DOCKER_BUILDKIT: 1

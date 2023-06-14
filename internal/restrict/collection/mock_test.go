@@ -77,10 +77,11 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 
 	t.Run(tt.name, func(t *testing.T) {
 		t.Helper()
-		ds := dsfetch.New(dsmock.Stub(tt.data))
-		perms := perm.NewMeetingPermission(ds, tt.requestUserID)
+		getter := dsmock.Stub(tt.data)
+		ds := dsfetch.New(getter)
+		ctx := perm.ContextWithPermissionCache(context.Background(), getter, tt.requestUserID)
 
-		allowedIDs, err := f(context.Background(), ds, perms, tt.elementIDs...)
+		allowedIDs, err := f(ctx, ds, tt.elementIDs...)
 		if err != nil {
 			t.Fatalf("restriction mode returned unexpected error: %v", err)
 		}
@@ -153,5 +154,4 @@ func jsonAppend(value []byte, element ...int) []byte {
 		panic(err)
 	}
 	return newValue
-
 }

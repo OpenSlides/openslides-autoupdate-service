@@ -90,8 +90,8 @@ func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecte
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			// TODO EXTERNAL ERROR
-			handleErrorWithStatus(w, fmt.Errorf("reading body: %w", err))
+			w.WriteHeader(400)
+			fmt.Fprintln(w, "Invalid body")
 			return
 		}
 
@@ -245,7 +245,7 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 }
 
 type restrictFQIDser interface {
-	RestrictFQIDs(ctx context.Context, uid int, fqids []string) (map[string]map[string][]byte, error)
+	RestrictFQIDs(ctx context.Context, uid int, fqids []string, requestedFields map[string][]string) (map[string]map[string][]byte, error)
 }
 
 // HandleRestrictFQIDs returns restricted objects for a list of fqids.
@@ -254,8 +254,9 @@ func HandleRestrictFQIDs(mux *http.ServeMux, service restrictFQIDser) {
 		prefixInternal+"/restrict_fqids",
 		func(w http.ResponseWriter, r *http.Request) {
 			var requestBody struct {
-				UserID int      `json:"user_id"`
-				FQIDs  []string `json:"fqids"`
+				UserID int                 `json:"user_id"`
+				FQIDs  []string            `json:"fqids"`
+				Fields map[string][]string `json:"fields"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 				handleErrorInternal(w, fmt.Errorf("decoding body"))
@@ -267,7 +268,7 @@ func HandleRestrictFQIDs(mux *http.ServeMux, service restrictFQIDser) {
 				return
 			}
 
-			restricted, err := service.RestrictFQIDs(r.Context(), requestBody.UserID, requestBody.FQIDs)
+			restricted, err := service.RestrictFQIDs(r.Context(), requestBody.UserID, requestBody.FQIDs, requestBody.Fields)
 			if err != nil {
 				handleErrorInternal(w, fmt.Errorf("restrictFQIDs: %w", err))
 				return

@@ -24,6 +24,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 	"github.com/ostcar/topic"
 )
 
@@ -32,21 +33,11 @@ const (
 	// client needs more time to process the data, it will get an error and has
 	// to reconnect. A higher value means, that more memory is used.
 	pruneTime = 10 * time.Minute
-
-	// cacheResetTime defines when the cache should be reseted.
-	//
-	// When the datastore runs for a long time, its cache grows bigger and more
-	// calculated keys have to be calculated. A reset means, that everything
-	// gets cleaned.
-	//
-	// A high value means more memory and cpu usage after some time. A lower
-	// value means more Requests to the Datastore Service and therefore a slower
-	// response time for the clients.
-	datastoreCacheResetTime = 24 * time.Hour
 )
 
 var (
 	envConcurentWorker = environment.NewVariable("CONCURENT_WORKER", "0", "Amount of clients that calculate there values at the same time. Default to GOMAXPROCS.")
+	envCacheReset      = environment.NewVariable("CACHE_RESET", "24h", "Time to reset the cache.")
 )
 
 // Datastore is the source for the data.
@@ -57,7 +48,7 @@ type Datastore interface {
 	ResetCache()
 	RegisterCalculatedField(
 		field string,
-		f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error),
+		f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error),
 	)
 	HistoryInformation(ctx context.Context, fqid string, w io.Writer) error
 }
@@ -68,7 +59,7 @@ type KeysBuilder interface {
 }
 
 // RestrictMiddleware is a function that can restrict data.
-type RestrictMiddleware func(getter datastore.Getter, uid int) datastore.Getter
+type RestrictMiddleware func(ctx context.Context, getter datastore.Getter, uid int) (context.Context, datastore.Getter)
 
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
 // with autoupdate.New().
@@ -77,6 +68,8 @@ type Autoupdate struct {
 	topic      *topic.Topic[dskey.Key]
 	restricter RestrictMiddleware
 	pool       *workPool
+
+	cacheReset time.Duration
 }
 
 // New creates a new autoupdate service.
@@ -93,11 +86,17 @@ func New(lookup environment.Environmenter, ds Datastore, restricter RestrictMidd
 		workers = runtime.GOMAXPROCS(0)
 	}
 
+	cacheResetTime, err := environment.ParseDuration(envCacheReset.Value(lookup))
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid value for `CACHE_RESET`, expected duration got %s: %w", envCacheReset.Value(lookup), err)
+	}
+
 	a := &Autoupdate{
 		datastore:  ds,
 		topic:      topic.New[dskey.Key](),
 		restricter: restricter,
 		pool:       newWorkPool(workers),
+		cacheReset: cacheResetTime,
 	}
 
 	// Update the topic when an data update is received.
@@ -146,7 +145,9 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (D
 //
 // The attribute position can be used to get data from the history.
 func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder, position int) (map[dskey.Key][]byte, error) {
-	var restricter datastore.Getter = a.restricter(a.datastore, userID)
+	var restricter datastore.Getter
+
+	ctx, restricter = a.restricter(ctx, a.datastore, userID)
 
 	if position != 0 {
 		getter := datastore.NewGetPosition(a.datastore, position)
@@ -191,7 +192,7 @@ func (a *Autoupdate) pruneOldData(ctx context.Context) {
 // resetCache runs in the background and cleans the cache from time to time.
 // Blocks until the service is closed.
 func (a *Autoupdate) resetCache(ctx context.Context) {
-	tick := time.NewTicker(datastoreCacheResetTime)
+	tick := time.NewTicker(a.cacheReset)
 	defer tick.Stop()
 
 	for {
@@ -218,7 +219,7 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 
 	ds := dsfetch.New(a.datastore)
 
-	meetingID, hasMeeting, err := collection.Collection(coll).MeetingID(ctx, ds, id)
+	meetingID, hasMeeting, err := collection.Collection(ctx, coll).MeetingID(ctx, ds, id)
 	if err != nil {
 		var errNotExist dsfetch.DoesNotExistError
 		if errors.As(err, &errNotExist) {
@@ -261,14 +262,26 @@ func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid strin
 
 // RestrictFQIDs returns the full collections, restricted for the user for a
 // list of fqids.
+// In requestedFields one can specify which fields per collection should be
+// returned if not specified all available fields will be included.
 //
 // The return format is a map from fqid to an object as map from field to value.
-func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []string) (map[string]map[string][]byte, error) {
+func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []string, requestedFields map[string][]string) (map[string]map[string][]byte, error) {
+	requestedFieldsMap := make(map[string]set.Set[string], len(requestedFields))
+	for col, val := range requestedFields {
+		requestedFieldsMap[col] = set.New(val...)
+	}
+
 	var keys []dskey.Key
 	for _, fqid := range fqids {
-		collection, _, found := strings.Cut(fqid, "/")
+		collection, rawID, found := strings.Cut(fqid, "/")
 		if !found {
 			return nil, fmt.Errorf("invalid fqid %s, expected one /", fqid)
+		}
+
+		id, err := strconv.Atoi(rawID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid fqid %s, second part has to be an nummber", fqid)
 		}
 
 		fields := restrict.FieldsForCollection(collection)
@@ -277,16 +290,16 @@ func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []stri
 		}
 
 		for _, field := range fields {
-			key, err := dskey.FromString(fqid + "/" + field)
-			if err != nil {
-				return nil, fmt.Errorf("fqid  %s can not be added to field %s: %w", fqid, field, err)
+			if _, ok := requestedFields[collection]; !ok || requestedFieldsMap[collection].Has(field) {
+				key := dskey.Key{Collection: collection, ID: id, Field: field}
+				keys = append(keys, key)
 			}
-
-			keys = append(keys, key)
 		}
 	}
 
-	values, err := a.restricter(a.datastore, userID).Get(ctx, keys...)
+	ctx, restricter := a.restricter(ctx, a.datastore, userID)
+
+	values, err := restricter.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("getting data: %w", err)
 	}

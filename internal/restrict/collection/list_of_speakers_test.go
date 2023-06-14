@@ -28,7 +28,7 @@ func TestListOfSpeakersModeA(t *testing.T) {
 		"can see",
 		t,
 		f,
-		false,
+		true,
 		`---
 		list_of_speakers/1: 
 			meeting_id: 30
@@ -67,5 +67,20 @@ func TestListOfSpeakersModeA(t *testing.T) {
 		topic/5/meeting_id: 30
 		`,
 		withPerms(30, perm.ListOfSpeakersCanSee, perm.AgendaItemCanSee),
+	)
+
+	testCase(
+		"can see",
+		t,
+		f,
+		true,
+		`---
+		list_of_speakers/1: 
+			meeting_id: 30
+			content_object_id: topic/5
+
+		topic/5/meeting_id: 30
+		`,
+		withPerms(30, perm.ListOfSpeakersCanBeSpeaker),
 	)
 }

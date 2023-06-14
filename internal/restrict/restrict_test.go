@@ -13,6 +13,7 @@ import (
 )
 
 func TestRestrict(t *testing.T) {
+	ctx := context.Background()
 	ds := dsmock.Stub(dsmock.YAMLData(`---
 	meeting:
 		30:
@@ -72,11 +73,12 @@ func TestRestrict(t *testing.T) {
 	topic/1:
 		id: 1
 		meeting_id: 30
+		agenda_item_id: 1
 
 	unknown_collection/1/field: 404
 	`))
 
-	restricter := restrict.Middleware(ds, 1)
+	ctx, restricter := restrict.Middleware(ctx, ds, 1)
 
 	keys := []dskey.Key{
 		dskey.MustKey("agenda_item/1/item_number"),
@@ -92,7 +94,7 @@ func TestRestrict(t *testing.T) {
 		dskey.MustKey("meeting/22/admin_group_id"),
 	}
 
-	data, err := restricter.Get(context.Background(), keys...)
+	data, err := restricter.Get(ctx, keys...)
 	if err != nil {
 		t.Fatalf("Restrict returned: %v", err)
 	}
@@ -136,20 +138,21 @@ func TestRestrict(t *testing.T) {
 }
 
 func TestRestrictSuperAdmin(t *testing.T) {
+	ctx := context.Background()
 	ds := dsmock.Stub(dsmock.YAMLData(`---
 	user/1/organization_management_level: superadmin
 	personal_note/1/user_id: 1
 	personal_note/2/user_id: 2
 	`))
 
-	restricter := restrict.Middleware(ds, 1)
+	ctx, restricter := restrict.Middleware(ctx, ds, 1)
 
 	keys := []dskey.Key{
 		dskey.MustKey("personal_note/1/id"),
 		dskey.MustKey("personal_note/2/id"),
 	}
 
-	got, err := restricter.Get(context.Background(), keys...)
+	got, err := restricter.Get(ctx, keys...)
 	if err != nil {
 		t.Fatalf("Restrict returned: %v", err)
 	}
@@ -165,6 +168,7 @@ func TestRestrictSuperAdmin(t *testing.T) {
 
 func TestCorruptedDatastore(t *testing.T) {
 	t.Skip() // The warning does not work with the current implementation
+	ctx := context.Background()
 	ds := dsmock.Stub(dsmock.YAMLData(`---
 	projector/13:
 		meeting_id: 30
@@ -181,7 +185,7 @@ func TestCorruptedDatastore(t *testing.T) {
 			- projector.can_see
 	`))
 
-	restricter := restrict.Middleware(ds, 1)
+	ctx, restricter := restrict.Middleware(ctx, ds, 1)
 
 	var buf bytes.Buffer
 	log.SetOutput(&buf)

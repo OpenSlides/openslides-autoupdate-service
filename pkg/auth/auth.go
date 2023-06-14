@@ -28,7 +28,7 @@ var (
 	envAuthHost     = environment.NewVariable("AUTH_HOST", "localhost", "Host of the auth service.")
 	envAuthPort     = environment.NewVariable("AUTH_PORT", "9004", "Port of the auth service.")
 	envAuthProtocol = environment.NewVariable("AUTH_PROTOCOL", "http", "Protocol of the auth service.")
-	envAuthFake     = environment.NewVariable("AUTH_Fake", "false", "Use user id 1 for every request. Ignores all other auth environment variables.")
+	envAuthFake     = environment.NewVariable("AUTH_FAKE", "false", "Use user id 1 for every request. Ignores all other auth environment variables.")
 
 	envAuthToken  = environment.NewSecretWithDefault("auth_token_key", DebugTokenKey, "Key to sign the JWT auth tocken.")
 	envAuthCookie = environment.NewSecretWithDefault("auth_cookie_key", DebugCookieKey, "Key to sign the JWT auth cookie.")
@@ -330,8 +330,10 @@ func (a *Auth) refreshToken(ctx context.Context, token, cookie string) (string, 
 
 type authString string
 
-const userIDType authString = "user_id"
-const authenticateCalled authString = "authenticate_called"
+const (
+	userIDType         authString = "user_id"
+	authenticateCalled authString = "authenticate_called"
+)
 
 type payload struct {
 	jwt.StandardClaims

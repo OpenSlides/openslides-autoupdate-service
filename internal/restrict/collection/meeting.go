@@ -13,7 +13,7 @@ import (
 // The user can see a meeting if one of the following is True:
 //
 //	`meeting/enable_anonymous`.
-//	The user is in meeting/user_ids.
+//	The user is in the meeting.
 //	The user has the CML can_manage of the meeting's committee.
 //	The user has the CML can_manage of any meeting and the meeting is a template meeting.
 //	The user has the OML can_manage_organization.
@@ -26,6 +26,11 @@ import (
 //
 // Mode D: The user has meeting.can_see_livestream.
 type Meeting struct{}
+
+// Name returns the collection name.
+func (m Meeting) Name() string {
+	return "meeting"
+}
 
 // MeetingID returns the meetingID for the object.
 func (m Meeting) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -47,8 +52,13 @@ func (m Meeting) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, meetingIDs ...int) ([]int, error) {
-	oml, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageOrganization)
+func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	oml, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
 	if err != nil {
 		return nil, fmt.Errorf("checking organization management level: %w", err)
 	}
@@ -66,17 +76,28 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meetin
 			return true, nil
 		}
 
-		if mperms.UserID() == 0 {
+		if requestUser == 0 {
 			return false, nil
 		}
 
-		userIDs, err := ds.Meeting_UserIDs(meetingID).Value(ctx)
+		groupIDs, err := ds.Meeting_GroupIDs(meetingID).Value(ctx)
 		if err != nil {
-			return false, fmt.Errorf("getting user ids of meeting: %w", err)
+			return false, fmt.Errorf("getting group_ids: %w", err)
 		}
-		for _, id := range userIDs {
-			if mperms.UserID() == id {
-				return true, nil
+
+		groupUserIDs := make([][]int, len(groupIDs))
+		for i, gID := range groupIDs {
+			ds.Group_UserIDs(gID).Lazy(&groupUserIDs[i])
+		}
+		if err := ds.Execute(ctx); err != nil {
+			return false, fmt.Errorf("fetching user ids: %w", err)
+		}
+
+		for _, userIDs := range groupUserIDs {
+			for _, userID := range userIDs {
+				if requestUser == userID {
+					return true, nil
+				}
 			}
 		}
 
@@ -85,7 +106,7 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meetin
 			return false, fmt.Errorf("getting committee id of meeting: %w", err)
 		}
 
-		isCommitteeManager, err := perm.HasCommitteeManagementLevel(ctx, ds, mperms.UserID(), committeeID)
+		isCommitteeManager, err := perm.HasCommitteeManagementLevel(ctx, ds, requestUser, committeeID)
 		if err != nil {
 			return false, fmt.Errorf("getting committee management status: %w", err)
 		}
@@ -99,7 +120,7 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meetin
 			return false, fmt.Errorf("getting template meeting: %w", err)
 		}
 
-		cmlMeetings, err := perm.ManagementLevelCommittees(ctx, ds, mperms.UserID())
+		cmlMeetings, err := perm.ManagementLevelCommittees(ctx, ds, requestUser)
 		if err != nil {
 			return false, fmt.Errorf("getting meetings with cml can manage: %w", err)
 		}
@@ -112,16 +133,15 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meetin
 	})
 }
 
-func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, meetingIDs ...int) ([]int, error) {
+func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) ([]int, error) {
 	allowed, err := eachCondition(meetingIDs, func(meetingID int) (bool, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
 			return false, fmt.Errorf("getting permissions: %w", err)
 		}
 
 		return perms.Has(perm.MeetingCanSeeFrontpage), nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("checking can front page permission: %w", err)
 	}
@@ -129,9 +149,9 @@ func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 	return allowed, nil
 }
 
-func (m Meeting) modeD(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, meetingIDs ...int) ([]int, error) {
+func (m Meeting) modeD(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) ([]int, error) {
 	allowed, err := eachCondition(meetingIDs, func(meetingID int) (bool, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
 			return false, fmt.Errorf("getting permissions: %w", err)
 		}

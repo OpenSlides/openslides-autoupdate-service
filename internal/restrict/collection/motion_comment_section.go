@@ -22,6 +22,11 @@ import (
 // The user can see the motion comment section.
 type MotionCommentSection struct{}
 
+// Name returns the collection name.
+func (m MotionCommentSection) Name() string {
+	return "motion_comment_section"
+}
+
 // MeetingID returns the meetingID for the object.
 func (m MotionCommentSection) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.MotionCommentSection_MeetingID(id).Value(ctx)
@@ -41,9 +46,9 @@ func (m MotionCommentSection) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionCommentSection) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, motionCommentSectionIDs ...int) ([]int, error) {
+func (m MotionCommentSection) see(ctx context.Context, ds *dsfetch.Fetch, motionCommentSectionIDs ...int) ([]int, error) {
 	return eachMeeting(ctx, ds, m, motionCommentSectionIDs, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := mperms.Meeting(ctx, meetingID)
+		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting permissions: %w", err)
 		}
@@ -64,7 +69,6 @@ func (m MotionCommentSection) see(ctx context.Context, ds *dsfetch.Fetch, mperms
 
 			return seeAs > 0, nil
 		})
-
 		if err != nil {
 			return nil, fmt.Errorf("checking if user is in read group: %w", err)
 		}

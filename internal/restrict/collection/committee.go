@@ -19,24 +19,34 @@ import (
 // CML `can_manage` in the committee.
 type Committee struct{}
 
+// Name returns the collection name.
+func (c Committee) Name() string {
+	return "committee"
+}
+
 // MeetingID returns the meetingID for the object.
-func (a Committee) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
+func (c Committee) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	return 0, false, nil
 }
 
 // Modes returns a map from all known modes to there restricter.
-func (a Committee) Modes(mode string) FieldRestricter {
+func (c Committee) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return a.see
+		return c.see
 	case "B":
-		return a.modeB
+		return c.modeB
 	}
 	return nil
 }
 
-func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, committeeIDs ...int) ([]int, error) {
-	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageUsers)
+func (c Committee) see(ctx context.Context, ds *dsfetch.Fetch, committeeIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageUsers)
 	if err != nil {
 		return nil, fmt.Errorf("checking oml perm: %w", err)
 	}
@@ -52,13 +62,12 @@ func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 		}
 
 		for _, uid := range userIDs {
-			if uid == mperms.UserID() {
+			if uid == requestUser {
 				return true, nil
 			}
 		}
 		return false, nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("checking if user is in committee: %w", err)
 	}
@@ -66,8 +75,13 @@ func (a Committee) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Meet
 	return allowed, nil
 }
 
-func (a Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, committeeIDs ...int) ([]int, error) {
-	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, mperms.UserID(), perm.OMLCanManageOrganization)
+func (c Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, committeeIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
 	if err != nil {
 		return nil, fmt.Errorf("checking oml: %w", err)
 	}
@@ -77,14 +91,13 @@ func (a Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.Me
 	}
 
 	allowed, err := eachCondition(committeeIDs, func(committeeID int) (bool, error) {
-		cmlCanManage, err := perm.HasCommitteeManagementLevel(ctx, ds, mperms.UserID(), committeeID)
+		cmlCanManage, err := perm.HasCommitteeManagementLevel(ctx, ds, requestUser, committeeID)
 		if err != nil {
 			return false, fmt.Errorf("checking committee management level: %w", err)
 		}
 
 		return cmlCanManage, nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("checking has committee managemement level: %w", err)
 	}

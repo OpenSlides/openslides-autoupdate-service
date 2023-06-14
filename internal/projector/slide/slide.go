@@ -20,5 +20,6 @@ func Slides() *projector.SlideStore {
 	ProjectorMessage(s)
 	Topic(s)
 	User(s)
+	PollCandidateList(s)
 	return s
 }

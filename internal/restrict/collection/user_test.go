@@ -115,11 +115,12 @@ func TestUserModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		user/2/group_$_ids: ["5"]
-		meeting/5/committee_id: 7
 		user/1:
 			committee_$can_manage_management_level: [7]
-		committee/7/id: 7
+		committee/7/user_ids: [2]
+
+		user/2/group_$_ids: ["5"]
+		meeting/5/committee_id: 7
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -230,7 +231,10 @@ func TestUserModeA(t *testing.T) {
 		poll/5:
 			meeting_id: 30
 			content_object_id: topic/5
-		topic/5/meeting_id: 30
+		topic/5:
+			meeting_id: 30
+			agenda_item_id: 7
+		agenda_item/7/meeting_id: 30
 		meeting/30/enable_anonymous: true
 		`,
 		withRequestUser(1),
@@ -266,7 +270,9 @@ func TestUserModeA(t *testing.T) {
 			speaker_$_ids: ["1"]
 			speaker_$1_ids: [4]
 		
-		speaker/4/list_of_speakers_id: 5
+		speaker/4:
+			list_of_speakers_id: 5
+			meeting_id: 30
 
 		list_of_speakers/5:
 			meeting_id: 30
@@ -294,7 +300,10 @@ func TestUserModeA(t *testing.T) {
 			meeting_id: 30
 			content_object_id: topic/5
 		
-		topic/5/meeting_id: 30
+		topic/5:	
+			meeting_id: 30
+			agenda_item_id: 7
+		agenda_item/7/meeting_id: 30
 		
 		meeting/30/id: 30
 		`,

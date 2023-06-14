@@ -23,7 +23,7 @@ printf "my_cookie_key" > secrets/auth_cookie_key
 It also needs a running postgres and redis instance. You can start one with:
 
 ```
-docker run  --network host -e POSTGRES_PASSWORD=password -e POSTGRES_USER=openslides -e POSTGRES_DB=openslides postgres:11
+docker run  --network host -e POSTGRES_PASSWORD=password -e POSTGRES_USER=openslides -e POSTGRES_DB=openslides postgres:13
 ```
 
 and

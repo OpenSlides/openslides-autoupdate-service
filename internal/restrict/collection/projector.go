@@ -12,8 +12,15 @@ import (
 //
 // The user can see a projector, if the user has projector.can_see.
 //
+// If the projector has internal=true, then the user needs projector.can_manage
+//
 // Mode A: The user can see the projector.
 type Projector struct{}
+
+// Name returns the collection name.
+func (p Projector) Name() string {
+	return "projector"
+}
 
 // MeetingID returns the meetingID for the object.
 func (p Projector) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
@@ -34,6 +41,37 @@ func (p Projector) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p Projector) see(ctx context.Context, ds *dsfetch.Fetch, mperms *perm.MeetingPermission, projectorIDs ...int) ([]int, error) {
-	return meetingPerm(ctx, ds, p, projectorIDs, mperms, perm.ProjectorCanSee)
+func (p Projector) see(ctx context.Context, ds *dsfetch.Fetch, projectorIDs ...int) ([]int, error) {
+	return eachMeeting(ctx, ds, p, projectorIDs, func(meetingID int, projectorIDs []int) ([]int, error) {
+		perms, err := perm.FromContext(ctx, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting permission: %w", err)
+		}
+
+		if perms.Has(perm.ProjectorCanManage) {
+			return projectorIDs, nil
+		}
+
+		if !perms.Has(perm.ProjectorCanSee) {
+			return nil, nil
+		}
+
+		internalProjectorIDs := make([]bool, len(projectorIDs))
+		for i, projectorID := range projectorIDs {
+			ds.Projector_IsInternal(projectorID).Lazy(&internalProjectorIDs[i])
+		}
+
+		if err := ds.Execute(ctx); err != nil {
+			return nil, fmt.Errorf("get internal state of projectors: %w", err)
+		}
+
+		var allowed []int
+		for i, projectorID := range projectorIDs {
+			if !internalProjectorIDs[i] {
+				allowed = append(allowed, projectorID)
+			}
+		}
+
+		return allowed, nil
+	})
 }
