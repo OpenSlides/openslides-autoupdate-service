@@ -1137,6 +1137,12 @@ func (r *Fetch) Committee_Description(committeeID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Committee_ExternalID(committeeID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "committee", id: committeeID, field: "external_id"}
+	r.requested[dskey.Key{Collection: "committee", ID: committeeID, Field: "external_id"}] = v
+	return v
+}
+
 func (r *Fetch) Committee_ForwardToCommitteeIDs(committeeID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r, collection: "committee", id: committeeID, field: "forward_to_committee_ids"}
 	r.requested[dskey.Key{Collection: "committee", ID: committeeID, Field: "forward_to_committee_ids"}] = v
@@ -1212,6 +1218,12 @@ func (r *Fetch) Group_AdminGroupForMeetingID(groupID int) *ValueMaybeInt {
 func (r *Fetch) Group_DefaultGroupForMeetingID(groupID int) *ValueMaybeInt {
 	v := &ValueMaybeInt{fetch: r, collection: "group", id: groupID, field: "default_group_for_meeting_id"}
 	r.requested[dskey.Key{Collection: "group", ID: groupID, Field: "default_group_for_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Group_ExternalID(groupID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "group", id: groupID, field: "external_id"}
+	r.requested[dskey.Key{Collection: "group", ID: groupID, Field: "external_id"}] = v
 	return v
 }
 
@@ -1854,6 +1866,12 @@ func (r *Fetch) Meeting_ExportPdfPagenumberAlignment(meetingID int) *ValueString
 func (r *Fetch) Meeting_ExportPdfPagesize(meetingID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "export_pdf_pagesize"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "export_pdf_pagesize"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_ExternalID(meetingID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "external_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "external_id"}] = v
 	return v
 }
 
