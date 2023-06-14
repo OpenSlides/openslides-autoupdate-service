@@ -275,7 +275,9 @@ func TestUserModeA(t *testing.T) {
 			speaker_ids: [4]
 			meeting_id: 30
 		
-		speaker/4/list_of_speakers_id: 5
+		speaker/4:
+			list_of_speakers_id: 5
+			meeting_id: 30
 
 		list_of_speakers/5:
 			meeting_id: 30

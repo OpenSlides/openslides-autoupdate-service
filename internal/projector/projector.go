@@ -20,7 +20,7 @@ const longCalculation = time.Second
 // Datastore gets values for keys and informs, if they change.
 type Datastore interface {
 	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
-	RegisterCalculatedField(field string, f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, error))
+	RegisterCalculatedField(field string, f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error))
 }
 
 // Register initializes a new projector.
@@ -28,7 +28,7 @@ func Register(ds Datastore, slides *SlideStore) {
 	var hotKeysMu sync.RWMutex
 	hotKeys := map[dskey.Key]map[dskey.Key]struct{}{}
 
-	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield dskey.Key, changed map[dskey.Key][]byte) (bs []byte, err error) {
+	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield dskey.Key, changed map[dskey.Key][]byte) (bs []byte, bsChanged bool, err error) {
 		var p7on *Projection
 		start := time.Now()
 		defer func() {
@@ -56,11 +56,7 @@ func Register(ds Datastore, slides *SlideStore) {
 			hotKeysMu.RUnlock()
 
 			if !needUpdate {
-				old, err := ds.Get(ctx, fqfield)
-				if err != nil {
-					return nil, fmt.Errorf("getting old value: %w", err)
-				}
-				return old[fqfield], nil
+				return nil, false, nil
 			}
 		}
 
@@ -88,50 +84,50 @@ func Register(ds Datastore, slides *SlideStore) {
 		if err := fetch.Err(); err != nil {
 			var errDoesNotExist datastore.DoesNotExistError
 			if errors.As(err, &errDoesNotExist) {
-				return nil, nil
+				return nil, true, nil
 			}
-			return nil, fmt.Errorf("fetching projection %d from datastore: %w", fqfield.ID, err)
+			return nil, false, fmt.Errorf("fetching projection %d from datastore: %w", fqfield.ID, err)
 		}
 
 		p7on, err = p7onFromMap(data)
 		if err != nil {
-			return nil, fmt.Errorf("loading p7on: %w", err)
+			return nil, false, fmt.Errorf("loading p7on: %w", err)
 		}
 
 		if p7on.CurrentProjectorID == 0 {
-			return nil, nil
+			return nil, true, nil
 		}
 
 		if p7on.ContentObjectID == "" {
 			// There are broken projections in the datastore. Ignore them.
 			log.Printf("Bug in Backend: The projection %d has an empty content_object_id", p7on.ID)
-			return nil, nil
+			return nil, true, nil
 		}
 
 		slideName, err := p7on.slideName()
 		if err != nil {
-			return nil, fmt.Errorf("getting slide name: %w", err)
+			return nil, false, fmt.Errorf("getting slide name: %w", err)
 		}
 
 		slider := slides.GetSlider(slideName)
 		if slider == nil {
-			return nil, fmt.Errorf("unknown slide %s", slideName)
+			return nil, false, fmt.Errorf("unknown slide %s", slideName)
 		}
 
 		bs, err = slider.Slide(ctx, fetch, p7on)
 		if err != nil {
-			return nil, fmt.Errorf("calculating slide %s for p7on %v: %w", slideName, p7on, err)
+			return nil, false, fmt.Errorf("calculating slide %s for p7on %v: %w", slideName, p7on, err)
 		}
 
 		if err := fetch.Err(); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		final, err := addCollection(bs, slideName)
 		if err != nil {
-			return nil, fmt.Errorf("adding name of collection %q to value %q: %w", slideName, bs, err)
+			return nil, false, fmt.Errorf("adding name of collection %q to value %q: %w", slideName, bs, err)
 		}
-		return final, nil
+		return final, true, nil
 	})
 }
 

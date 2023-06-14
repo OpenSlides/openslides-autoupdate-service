@@ -11,7 +11,7 @@ import (
 // ListOfSpeakers handels the restriction for the list_of_speakers collection.
 //
 // The user can see a list of speakers if the user has list_of_speakers.can_see
-// in the meeting.
+// or can_be_speaker.
 //
 // Mode A: The user can see the list of speakers.
 type ListOfSpeakers struct{}
@@ -46,7 +46,9 @@ func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, losIDs ...
 			return nil, fmt.Errorf("getting perms for meetind %d: %w", meetingID, err)
 		}
 
-		if canSee := perms.Has(perm.ListOfSpeakersCanSee); !canSee {
+		canSee := perms.Has(perm.ListOfSpeakersCanSee) || perms.Has(perm.ListOfSpeakersCanBeSpeaker)
+
+		if !canSee {
 			return nil, nil
 		}
 		return losIDs, nil
