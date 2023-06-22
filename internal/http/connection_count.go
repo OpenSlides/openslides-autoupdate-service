@@ -114,7 +114,7 @@ func (c *connectionCount) Metric(con metric.Container) {
 		return
 	}
 
-	localCurrenedUsers := 0
+	localCurrentUsers := 0
 	localCurrentConnections := 0
 	c.mu.Lock()
 	totalCurrentConnections := len(c.connections)
@@ -123,7 +123,7 @@ func (c *connectionCount) Metric(con metric.Container) {
 			continue
 		}
 
-		localCurrenedUsers++
+		localCurrentUsers++
 		localCurrentConnections += v
 	}
 	c.mu.Unlock()
@@ -154,7 +154,7 @@ func (c *connectionCount) Metric(con metric.Container) {
 	prefix := "connected_users"
 	con.Add(prefix+"_current", currentConnectedUsers)
 	con.Add(prefix+"_total", len(data))
-	con.Add(prefix+"_current_local", localCurrenedUsers)
+	con.Add(prefix+"_current_local", localCurrentUsers)
 	con.Add(prefix+"_total_local", totalCurrentConnections)
 	con.Add(prefix+"_average_connections", average)
 	con.Add(prefix+"_anonymous_connections", data[0])
