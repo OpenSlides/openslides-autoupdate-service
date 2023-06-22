@@ -57,7 +57,7 @@ func getMeeting(ctx context.Context, fetch *datastore.Fetcher, meetingID int, fe
 	return meeting, nil
 }
 
-// CurrentSpeakerChyron renders the current_speaker_chyron slide.
+// WiFiAccessData renders the wifi_access_data slide.
 func WiFiAccessData(store *projector.SlideStore) {
 	store.RegisterSliderFunc("wifi_access_data", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
 		meetingID, err := strconv.Atoi(strings.Split(p7on.ContentObjectID, "/")[1])

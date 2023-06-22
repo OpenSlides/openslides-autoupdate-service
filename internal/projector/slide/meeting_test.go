@@ -10,7 +10,6 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 	"github.com/stretchr/testify/assert"
-	// "github.com/stretchr/testify/require"
 )
 
 func TestMeeting(t *testing.T) {
