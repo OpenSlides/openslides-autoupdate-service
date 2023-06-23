@@ -26,9 +26,9 @@ type dbMeeting struct {
 	ListOfSpeakersAmountNextOnProjector       int    `json:"list_of_speakers_amount_next_on_projector"`
 	ListOfSpeakersAmountLastOnProjector       int    `json:"list_of_speakers_amount_last_on_projector"`
 	ListOfSpeakersShowAmountOfSpeakersOnSlide bool   `json:"list_of_speakers_show_amount_of_speakers_on_slide"`
-	UsersPdfWlanSsid                          string `json:"users_pdf_wlan_ssid"`
-	UsersPdfWlanPassword                      string `json:"users_pdf_wlan_password"`
-	UsersPdfWlanEncryption                    string `json:"users_pdf_wlan_encryption"`
+	UsersPdfWLANSSID                          string `json:"users_pdf_wlan_ssid"`
+	UsersPdfWLANPassword                      string `json:"users_pdf_wlan_password"`
+	UsersPdfWLANEncryption                    string `json:"users_pdf_wlan_encryption"`
 }
 
 func meetingFromMap(in map[string]json.RawMessage) (*dbMeeting, error) {
@@ -62,7 +62,7 @@ func WiFiAccessData(store *projector.SlideStore) {
 	store.RegisterSliderFunc("wifi_access_data", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
 		meetingID, err := strconv.Atoi(strings.Split(p7on.ContentObjectID, "/")[1])
 		if err != nil {
-			return nil, fmt.Errorf("error in Atoi with ContentObjectID: %w", err)
+			return nil, fmt.Errorf("convert string to int: %w", err)
 		}
 
 		meeting, err := getMeeting(ctx, fetch, meetingID, []string{
@@ -72,13 +72,13 @@ func WiFiAccessData(store *projector.SlideStore) {
 		})
 
 		out := struct {
-			UsersPdfWlanSsid       string `json:"users_pdf_wlan_ssid,omitempty"`
-			UsersPdfWlanPassword   string `json:"users_pdf_wlan_password,omitempty"`
-			UsersPdfWlanEncryption string `json:"users_pdf_wlan_encryption,omitempty"`
+			UsersPdfWLANSSID       string `json:"users_pdf_wlan_ssid,omitempty"`
+			UsersPdfWLANPassword   string `json:"users_pdf_wlan_password,omitempty"`
+			UsersPdfWLANEncryption string `json:"users_pdf_wlan_encryption,omitempty"`
 		}{
-			meeting.UsersPdfWlanSsid,
-			meeting.UsersPdfWlanPassword,
-			meeting.UsersPdfWlanEncryption,
+			meeting.UsersPdfWLANSSID,
+			meeting.UsersPdfWLANPassword,
+			meeting.UsersPdfWLANEncryption,
 		}
 
 		responseValue, err := json.Marshal(out)
