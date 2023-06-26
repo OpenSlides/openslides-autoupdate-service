@@ -789,6 +789,7 @@ var restrictionModes = map[string]string{
 	// organization
 	"organization/default_language":              "A",
 	"organization/description":                   "A",
+	"organization/genders":                       "A",
 	"organization/id":                            "A",
 	"organization/legal_notice":                  "A",
 	"organization/login_text":                    "A",
@@ -1123,7 +1124,7 @@ var collectionFields = map[string][]string{
 	"motion_submitter":             {"id", "meeting_id", "motion_id", "user_id", "weight"},
 	"motion_workflow":              {"default_amendment_workflow_meeting_id", "default_statute_amendment_workflow_meeting_id", "default_workflow_meeting_id", "first_state_id", "id", "meeting_id", "name", "sequential_number", "state_ids"},
 	"option":                       {"content_object_id", "id", "meeting_id", "poll_id", "text", "used_as_global_option_in_poll_id", "vote_ids", "weight", "abstain", "no", "yes"},
-	"organization":                 {"default_language", "description", "id", "legal_notice", "login_text", "mediafile_ids", "name", "privacy_policy", "saml_attr_mapping", "saml_enabled", "saml_login_button_text", "saml_metadata_idp", "saml_metadata_sp", "saml_private_key", "template_meeting_ids", "theme_id", "theme_ids", "url", "users_email_body", "users_email_replyto", "users_email_sender", "users_email_subject", "vote_decrypt_public_main_key", "active_meeting_ids", "archived_meeting_ids", "committee_ids", "enable_chat", "enable_electronic_voting", "limit_of_meetings", "limit_of_users", "organization_tag_ids", "reset_password_verbose_errors", "user_ids"},
+	"organization":                 {"default_language", "description", "genders", "id", "legal_notice", "login_text", "mediafile_ids", "name", "privacy_policy", "saml_attr_mapping", "saml_enabled", "saml_login_button_text", "saml_metadata_idp", "saml_metadata_sp", "saml_private_key", "template_meeting_ids", "theme_id", "theme_ids", "url", "users_email_body", "users_email_replyto", "users_email_sender", "users_email_subject", "vote_decrypt_public_main_key", "active_meeting_ids", "archived_meeting_ids", "committee_ids", "enable_chat", "enable_electronic_voting", "limit_of_meetings", "limit_of_users", "organization_tag_ids", "reset_password_verbose_errors", "user_ids"},
 	"organization_tag":             {"color", "id", "name", "organization_id", "tagged_ids"},
 	"personal_note":                {"content_object_id", "id", "meeting_id", "note", "star", "user_id"},
 	"poll":                         {"backend", "content_object_id", "crypt_key", "crypt_signature", "description", "entitled_group_ids", "entitled_users_at_stop", "global_abstain", "global_no", "global_option_id", "global_yes", "id", "is_pseudoanonymized", "max_votes_amount", "max_votes_per_option", "meeting_id", "min_votes_amount", "onehundred_percent_base", "option_ids", "pollmethod", "projection_ids", "sequential_number", "state", "title", "type", "voted_ids", "votes_raw", "votes_signature", "votesinvalid", "votesvalid", "vote_count", "votescast"},

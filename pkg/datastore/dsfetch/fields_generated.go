@@ -3597,6 +3597,12 @@ func (r *Fetch) Organization_EnableElectronicVoting(organizationID int) *ValueBo
 	return v
 }
 
+func (r *Fetch) Organization_Genders(organizationID int) *ValueStringSlice {
+	v := &ValueStringSlice{fetch: r, collection: "organization", id: organizationID, field: "genders"}
+	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "genders"}] = v
+	return v
+}
+
 func (r *Fetch) Organization_ID(organizationID int) *ValueInt {
 	v := &ValueInt{fetch: r, collection: "organization", id: organizationID, field: "id"}
 	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "id"}] = v
