@@ -2991,15 +2991,15 @@ func (r *Fetch) MotionState_Restrictions(motionStateID int) *ValueStringSlice {
 	return v
 }
 
-func (r *Fetch) MotionState_SetCreatedTimestamp(motionStateID int) *ValueBool {
-	v := &ValueBool{fetch: r, collection: "motionState", id: motionStateID, field: "set_created_timestamp"}
-	r.requested[dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "set_created_timestamp"}] = v
-	return v
-}
-
 func (r *Fetch) MotionState_SetNumber(motionStateID int) *ValueBool {
 	v := &ValueBool{fetch: r, collection: "motionState", id: motionStateID, field: "set_number"}
 	r.requested[dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "set_number"}] = v
+	return v
+}
+
+func (r *Fetch) MotionState_SetWorkflowTimestamp(motionStateID int) *ValueBool {
+	v := &ValueBool{fetch: r, collection: "motionState", id: motionStateID, field: "set_workflow_timestamp"}
+	r.requested[dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "set_workflow_timestamp"}] = v
 	return v
 }
 
@@ -3456,6 +3456,12 @@ func (r *Fetch) Motion_Text(motionID int) *ValueString {
 func (r *Fetch) Motion_Title(motionID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "motion", id: motionID, field: "title", required: true}
 	r.requested[dskey.Key{Collection: "motion", ID: motionID, Field: "title"}] = v
+	return v
+}
+
+func (r *Fetch) Motion_WorkflowTimestamp(motionID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "motion", id: motionID, field: "workflow_timestamp"}
+	r.requested[dskey.Key{Collection: "motion", ID: motionID, Field: "workflow_timestamp"}] = v
 	return v
 }
 
