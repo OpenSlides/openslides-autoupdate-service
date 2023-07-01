@@ -29,7 +29,7 @@ The Service uses the following environment variables:
 * `CONCURENT_WORKER`: Amount of clients that calculate there values at the same time. Default to GOMAXPROCS. The default is `0`.
 * `CACHE_RESET`: Time to reset the cache. The default is `24h`.
 * `METRIC_INTERVAL`: Time in how often the metrics are gathered. Zero disables the metrics. The default is `5m`.
-* `METRIC_TOO_OLD`: Ignore metric values from other autoupdate instances, that have not updated for the given time. The default is `15m`.
+* `METRIC_SAVE_INTERVAL`: Interval, how often the metric should be saved to redis. Redis will ignore entries, that are twice at old then the save interval. The default is `5m`.
 * `DISABLE_CONNECTION_COUNT`: Do not count connections. The default is `0`.
 
 

@@ -117,18 +117,3 @@ func (m Metric[T]) Get(ctx context.Context) (T, error) {
 
 	return v, nil
 }
-
-// KeepAlive updates time timestamp to show, that this instance is still active.
-func (m Metric[T]) KeepAlive(ctx context.Context) error {
-	conn := m.r.pool.Get()
-	defer conn.Close()
-
-	timeStampKey := fmt.Sprintf("%s-%s-timestamp", metricKeyPrefix, m.name)
-	now := m.now().UTC().Unix()
-
-	if _, err := redis.DoContext(conn, ctx, "HSET", timeStampKey, m.instanceID, now); err != nil {
-		return fmt.Errorf("redis save timestamp: %w", err)
-	}
-
-	return nil
-}

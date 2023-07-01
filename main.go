@@ -27,7 +27,7 @@ import (
 var (
 	envAutoupdatePort         = environment.NewVariable("AUTOUPDATE_PORT", "9012", "Port on which the service listen on.")
 	envMetricInterval         = environment.NewVariable("METRIC_INTERVAL", "5m", "Time in how often the metrics are gathered. Zero disables the metrics.")
-	envMetricTooOld           = environment.NewVariable("METRIC_TOO_OLD", "15m", "Ignore metric values from other autoupdate instances, that have not updated for the given time.")
+	envMetricSaveInterval     = environment.NewVariable("METRIC_SAVE_INTERVAL", "5m", "Interval, how often the metric should be saved to redis. Redis will ignore entries, that are twice at old then the save interval.")
 	envDisableConnectionCount = environment.NewVariable("DISABLE_CONNECTION_COUNT", "0", "Do not count connections.")
 )
 
@@ -165,7 +165,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 		return nil, fmt.Errorf("invalid value for `METRIC_INTERVAL`, expected duration got %s: %w", envMetricInterval.Value(lookup), err)
 	}
 
-	metricTooOld, err := environment.ParseDuration(envMetricTooOld.Value(lookup))
+	metricSaveInterval, err := environment.ParseDuration(envMetricSaveInterval.Value(lookup))
 	if err != nil {
 		return nil, fmt.Errorf("invalid value for `METRIC_TOO_OLD`, expected duration got %s: %w", envMetricInterval.Value(lookup), err)
 	}
@@ -189,7 +189,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 
 		// Start http server.
 		fmt.Printf("Listen on %s\n", listenAddr)
-		return http.Run(ctx, listenAddr, authService, auService, metricStorage, metricTooOld)
+		return http.Run(ctx, listenAddr, authService, auService, metricStorage, metricSaveInterval)
 	}
 
 	return service, nil

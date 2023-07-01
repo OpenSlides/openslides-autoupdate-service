@@ -31,10 +31,10 @@ const (
 )
 
 // Run starts the http server.
-func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autoupdate.Autoupdate, redisConnection *redis.Redis, tooOld time.Duration) error {
+func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autoupdate.Autoupdate, redisConnection *redis.Redis, saveIntercal time.Duration) error {
 	var connectionCount *connectionCount
 	if redisConnection != nil {
-		connectionCount = newConnectionCount(redisConnection, tooOld)
+		connectionCount = newConnectionCount(ctx, redisConnection, saveIntercal)
 		metric.Register(connectionCount.Metric)
 	}
 
@@ -449,7 +449,7 @@ func connectionCountMiddleware(next http.Handler, auth Authenticater, counter *c
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		uid := auth.FromContext(ctx)
-		counter.Add(ctx, uid)
+		counter.Add(uid)
 
 		defer func() {
 			counter.Done(uid)

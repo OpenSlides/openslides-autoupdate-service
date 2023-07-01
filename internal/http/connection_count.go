@@ -32,67 +32,61 @@ type connectionCount struct {
 	connections map[int]int
 }
 
-func newConnectionCount(r *redis.Redis, tooOld time.Duration) *connectionCount {
-	redisMetric := redis.NewMetric[map[int]int](r, "autoupdate_connection_count", mapIntCombiner{}, tooOld, time.Now)
+func newConnectionCount(ctx context.Context, r *redis.Redis, saveInterval time.Duration) *connectionCount {
+	redisMetric := redis.NewMetric[map[int]int](r, "autoupdate_connection_count", mapIntCombiner{}, saveInterval*2, time.Now)
 
-	go func() {
-		ctx := context.Background()
-		for {
-			time.Sleep(tooOld / 2)
-			if err := redisMetric.KeepAlive(ctx); err != nil {
-				oserror.Handle(fmt.Errorf("Send keep alive to redis: %w", err))
-			}
-
-		}
-	}()
-
-	return &connectionCount{
+	c := connectionCount{
 		metric:      redisMetric,
 		connections: make(map[int]int),
 	}
+
+	go func() {
+		tick := time.NewTicker(saveInterval)
+		defer tick.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-tick.C:
+				if err := c.save(ctx); err != nil {
+					oserror.Handle(fmt.Errorf("Error: save connection count: %w", err))
+				}
+			}
+		}
+	}()
+
+	return &c
 }
 
-func (c *connectionCount) incrementAndConvert(uid int, increment int) (string, error) {
+func (c *connectionCount) save(ctx context.Context) error {
 	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.connections[uid] += increment
-
 	converted, err := json.Marshal(c.connections)
 	if err != nil {
-		return "", fmt.Errorf("convert connection count to json: %w", err)
+		return fmt.Errorf("convert connection count to json: %w", err)
+	}
+	c.mu.Unlock()
+
+	if err := c.metric.Save(ctx, string(converted)); err != nil {
+		return fmt.Errorf("save connection count in redis: %w", err)
 	}
 
-	return string(converted), nil
+	return nil
 }
 
-func (c *connectionCount) Add(ctx context.Context, uid int) {
-	converted, err := c.incrementAndConvert(uid, 1)
-	if err != nil {
-		oserror.Handle(fmt.Errorf("convert for redis: %w", err))
-		return
-	}
+func (c *connectionCount) increment(uid int, increment int) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	if err := c.metric.Save(ctx, converted); err != nil {
-		oserror.Handle(fmt.Errorf("save connection count in redis: %w", err))
-		return
-	}
+	c.connections[uid] += increment
+}
+
+func (c *connectionCount) Add(uid int) {
+	c.increment(uid, 1)
 }
 
 func (c *connectionCount) Done(uid int) {
-	// Done is callled when the connection is closed. The the context from the
-	// request can not be used.
-	ctx := context.Background()
-
-	converted, err := c.incrementAndConvert(uid, -1)
-	if err != nil {
-		oserror.Handle(fmt.Errorf("convert for redis: %w", err))
-		return
-	}
-
-	if err := c.metric.Save(ctx, converted); err != nil {
-		oserror.Handle(fmt.Errorf("save connection count in redis: %w", err))
-		return
-	}
+	c.increment(uid, -1)
 }
 
 func (c *connectionCount) Show(ctx context.Context) (map[int]int, error) {

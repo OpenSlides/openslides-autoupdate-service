@@ -2991,15 +2991,15 @@ func (r *Fetch) MotionState_Restrictions(motionStateID int) *ValueStringSlice {
 	return v
 }
 
-func (r *Fetch) MotionState_SetCreatedTimestamp(motionStateID int) *ValueBool {
-	v := &ValueBool{fetch: r, collection: "motionState", id: motionStateID, field: "set_created_timestamp"}
-	r.requested[dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "set_created_timestamp"}] = v
-	return v
-}
-
 func (r *Fetch) MotionState_SetNumber(motionStateID int) *ValueBool {
 	v := &ValueBool{fetch: r, collection: "motionState", id: motionStateID, field: "set_number"}
 	r.requested[dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "set_number"}] = v
+	return v
+}
+
+func (r *Fetch) MotionState_SetWorkflowTimestamp(motionStateID int) *ValueBool {
+	v := &ValueBool{fetch: r, collection: "motionState", id: motionStateID, field: "set_workflow_timestamp"}
+	r.requested[dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "set_workflow_timestamp"}] = v
 	return v
 }
 
@@ -3459,6 +3459,12 @@ func (r *Fetch) Motion_Title(motionID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Motion_WorkflowTimestamp(motionID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "motion", id: motionID, field: "workflow_timestamp"}
+	r.requested[dskey.Key{Collection: "motion", ID: motionID, Field: "workflow_timestamp"}] = v
+	return v
+}
+
 func (r *Fetch) Option_Abstain(optionID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "option", id: optionID, field: "abstain"}
 	r.requested[dskey.Key{Collection: "option", ID: optionID, Field: "abstain"}] = v
@@ -3594,6 +3600,12 @@ func (r *Fetch) Organization_EnableChat(organizationID int) *ValueBool {
 func (r *Fetch) Organization_EnableElectronicVoting(organizationID int) *ValueBool {
 	v := &ValueBool{fetch: r, collection: "organization", id: organizationID, field: "enable_electronic_voting"}
 	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "enable_electronic_voting"}] = v
+	return v
+}
+
+func (r *Fetch) Organization_Genders(organizationID int) *ValueStringSlice {
+	v := &ValueStringSlice{fetch: r, collection: "organization", id: organizationID, field: "genders"}
+	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "genders"}] = v
 	return v
 }
 
