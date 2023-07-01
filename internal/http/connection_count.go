@@ -49,9 +49,10 @@ func newConnectionCount(ctx context.Context, r *redis.Redis, saveInterval time.D
 			case <-ctx.Done():
 				return
 			case <-tick.C:
-				if err := c.save(ctx); err != nil {
-					oserror.Handle(fmt.Errorf("Error: save connection count: %w", err))
-				}
+			}
+
+			if err := c.save(ctx); err != nil {
+				oserror.Handle(fmt.Errorf("Error: save connection count: %w", err))
 			}
 		}
 	}()
@@ -62,10 +63,10 @@ func newConnectionCount(ctx context.Context, r *redis.Redis, saveInterval time.D
 func (c *connectionCount) save(ctx context.Context) error {
 	c.mu.Lock()
 	converted, err := json.Marshal(c.connections)
+	c.mu.Unlock()
 	if err != nil {
 		return fmt.Errorf("convert connection count to json: %w", err)
 	}
-	c.mu.Unlock()
 
 	if err := c.metric.Save(ctx, string(converted)); err != nil {
 		return fmt.Errorf("save connection count in redis: %w", err)
@@ -76,9 +77,8 @@ func (c *connectionCount) save(ctx context.Context) error {
 
 func (c *connectionCount) increment(uid int, increment int) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	c.connections[uid] += increment
+	c.mu.Unlock()
 }
 
 func (c *connectionCount) Add(uid int) {

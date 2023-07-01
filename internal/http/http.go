@@ -235,7 +235,7 @@ func HandleShowConnectionCount(mux *http.ServeMux, autoupdate *autoupdate.Autoup
 
 		if err := json.NewEncoder(w).Encode(val); err != nil {
 			oserror.Handle(fmt.Errorf("Error decoding counter %w", err))
-			http.Error(w, "Decoding counts not possible", 500)
+			http.Error(w, "Counting not possible", 500)
 			return
 		}
 	})

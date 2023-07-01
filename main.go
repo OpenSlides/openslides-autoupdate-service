@@ -28,7 +28,7 @@ var (
 	envAutoupdatePort         = environment.NewVariable("AUTOUPDATE_PORT", "9012", "Port on which the service listen on.")
 	envMetricInterval         = environment.NewVariable("METRIC_INTERVAL", "5m", "Time in how often the metrics are gathered. Zero disables the metrics.")
 	envMetricSaveInterval     = environment.NewVariable("METRIC_SAVE_INTERVAL", "5m", "Interval, how often the metric should be saved to redis. Redis will ignore entries, that are twice at old then the save interval.")
-	envDisableConnectionCount = environment.NewVariable("DISABLE_CONNECTION_COUNT", "0", "Do not count connections.")
+	envDisableConnectionCount = environment.NewVariable("DISABLE_CONNECTION_COUNT", "false", "Do not count connections.")
 )
 
 var cli struct {
