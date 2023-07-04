@@ -1137,6 +1137,12 @@ func (r *Fetch) Committee_Description(committeeID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Committee_ExternalID(committeeID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "committee", id: committeeID, field: "external_id"}
+	r.requested[dskey.Key{Collection: "committee", ID: committeeID, Field: "external_id"}] = v
+	return v
+}
+
 func (r *Fetch) Committee_ForwardToCommitteeIDs(committeeID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r, collection: "committee", id: committeeID, field: "forward_to_committee_ids"}
 	r.requested[dskey.Key{Collection: "committee", ID: committeeID, Field: "forward_to_committee_ids"}] = v
@@ -1212,6 +1218,12 @@ func (r *Fetch) Group_AdminGroupForMeetingID(groupID int) *ValueMaybeInt {
 func (r *Fetch) Group_DefaultGroupForMeetingID(groupID int) *ValueMaybeInt {
 	v := &ValueMaybeInt{fetch: r, collection: "group", id: groupID, field: "default_group_for_meeting_id"}
 	r.requested[dskey.Key{Collection: "group", ID: groupID, Field: "default_group_for_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Group_ExternalID(groupID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "group", id: groupID, field: "external_id"}
+	r.requested[dskey.Key{Collection: "group", ID: groupID, Field: "external_id"}] = v
 	return v
 }
 
@@ -1854,6 +1866,12 @@ func (r *Fetch) Meeting_ExportPdfPagenumberAlignment(meetingID int) *ValueString
 func (r *Fetch) Meeting_ExportPdfPagesize(meetingID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "export_pdf_pagesize"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "export_pdf_pagesize"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_ExternalID(meetingID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "external_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "external_id"}] = v
 	return v
 }
 
@@ -2973,15 +2991,15 @@ func (r *Fetch) MotionState_Restrictions(motionStateID int) *ValueStringSlice {
 	return v
 }
 
-func (r *Fetch) MotionState_SetCreatedTimestamp(motionStateID int) *ValueBool {
-	v := &ValueBool{fetch: r, collection: "motionState", id: motionStateID, field: "set_created_timestamp"}
-	r.requested[dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "set_created_timestamp"}] = v
-	return v
-}
-
 func (r *Fetch) MotionState_SetNumber(motionStateID int) *ValueBool {
 	v := &ValueBool{fetch: r, collection: "motionState", id: motionStateID, field: "set_number"}
 	r.requested[dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "set_number"}] = v
+	return v
+}
+
+func (r *Fetch) MotionState_SetWorkflowTimestamp(motionStateID int) *ValueBool {
+	v := &ValueBool{fetch: r, collection: "motionState", id: motionStateID, field: "set_workflow_timestamp"}
+	r.requested[dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "set_workflow_timestamp"}] = v
 	return v
 }
 
@@ -3441,6 +3459,12 @@ func (r *Fetch) Motion_Title(motionID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Motion_WorkflowTimestamp(motionID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "motion", id: motionID, field: "workflow_timestamp"}
+	r.requested[dskey.Key{Collection: "motion", ID: motionID, Field: "workflow_timestamp"}] = v
+	return v
+}
+
 func (r *Fetch) Option_Abstain(optionID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "option", id: optionID, field: "abstain"}
 	r.requested[dskey.Key{Collection: "option", ID: optionID, Field: "abstain"}] = v
@@ -3576,6 +3600,12 @@ func (r *Fetch) Organization_EnableChat(organizationID int) *ValueBool {
 func (r *Fetch) Organization_EnableElectronicVoting(organizationID int) *ValueBool {
 	v := &ValueBool{fetch: r, collection: "organization", id: organizationID, field: "enable_electronic_voting"}
 	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "enable_electronic_voting"}] = v
+	return v
+}
+
+func (r *Fetch) Organization_Genders(organizationID int) *ValueStringSlice {
+	v := &ValueStringSlice{fetch: r, collection: "organization", id: organizationID, field: "genders"}
+	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "genders"}] = v
 	return v
 }
 
