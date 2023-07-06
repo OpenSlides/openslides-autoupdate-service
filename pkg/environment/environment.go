@@ -143,12 +143,11 @@ func ReadSecret(lookup Environmenter, pathVariable Variable) (string, error) {
 // default value then "openslides".
 func ReadSecretWithDefault(lookup Environmenter, pathVariable Variable, defaultValue string) (string, error) {
 	useDev, _ := strconv.ParseBool(EnvDevelopment.Value(lookup))
+	path := pathVariable.Value(lookup)
 
 	if useDev {
 		return defaultValue, nil
 	}
-
-	path := pathVariable.Value(lookup)
 
 	secret, err := os.ReadFile(path)
 	if err != nil {
@@ -211,6 +210,4 @@ const tmplDoc = `<!--- Code generated with go generate ./... DO NOT EDIT. --->
 The Service uses the following environment variables:
 {{range .Env}}
 * ${{.Key}}$: {{.Description}} The default is ${{.Default}}$.
-{{- end}}
-
 {{- end}}`

@@ -13,10 +13,10 @@ import (
 )
 
 var (
-	envPostgresHost         = environment.NewVariable("DATASTORE_DATABASE_HOST", "localhost", "Postgres Host.")
-	envPostgresPort         = environment.NewVariable("DATASTORE_DATABASE_PORT", "5432", "Postgres Post.")
-	envPostgresUser         = environment.NewVariable("DATASTORE_DATABASE_USER", "openslides", "Postgres User.")
-	envPostgresDatabase     = environment.NewVariable("DATASTORE_DATABASE_NAME", "openslides", "Postgres Database.")
+	envPostgresHost         = environment.NewVariable("DATABASE_HOST", "localhost", "Postgres Host.")
+	envPostgresPort         = environment.NewVariable("DATABASE_PORT", "5432", "Postgres Post.")
+	envPostgresUser         = environment.NewVariable("DATABASE_NAME", "openslides", "Postgres User.")
+	envPostgresDatabase     = environment.NewVariable("DATABASE_USER", "openslides", "Postgres Database.")
 	envPostgresPasswordFile = environment.NewVariable("DATABASE_PASSWORD_FILE", "/run/secrets/postgres_password", "Postgres Password.")
 )
 

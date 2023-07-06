@@ -203,10 +203,10 @@ func newTestPostgres(ctx context.Context) (tp *testPostgres, err error) {
 		pgxConfig:      config,
 
 		Env: map[string]string{
-			"DATASTORE_DATABASE_HOST": "localhost",
-			"DATASTORE_DATABASE_PORT": port,
-			"DATASTORE_DATABASE_NAME": "database",
-			"DATASTORE_DATABASE_USER": "postgres",
+			"DATABASE_HOST": "localhost",
+			"DATABASE_PORT": port,
+			"DATABASE_NAME": "database",
+			"DATABASE_USER": "postgres",
 		},
 	}
 
