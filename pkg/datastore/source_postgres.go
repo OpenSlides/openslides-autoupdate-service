@@ -13,11 +13,11 @@ import (
 )
 
 var (
-	envPostgresHost     = environment.NewVariable("DATASTORE_DATABASE_HOST", "localhost", "Postgres Host.")
-	envPostgresPort     = environment.NewVariable("DATASTORE_DATABASE_PORT", "5432", "Postgres Post.")
-	envPostgresUser     = environment.NewVariable("DATASTORE_DATABASE_USER", "openslides", "Postgres User.")
-	envPostgresDatabase = environment.NewVariable("DATASTORE_DATABASE_NAME", "openslides", "Postgres Database.")
-	envPostgresPassword = environment.NewSecret("postgres_password", "Postgres Password.")
+	envPostgresHost         = environment.NewVariable("DATASTORE_DATABASE_HOST", "localhost", "Postgres Host.")
+	envPostgresPort         = environment.NewVariable("DATASTORE_DATABASE_PORT", "5432", "Postgres Post.")
+	envPostgresUser         = environment.NewVariable("DATASTORE_DATABASE_USER", "openslides", "Postgres User.")
+	envPostgresDatabase     = environment.NewVariable("DATASTORE_DATABASE_NAME", "openslides", "Postgres Database.")
+	envPostgresPasswordFile = environment.NewVariable("DATABASE_PASSWORD_FILE", "/run/secrets/postgres_password", "Postgres Password.")
 )
 
 // SourcePostgres uses postgres to get the connections.
@@ -41,10 +41,15 @@ func encodePostgresConfig(s string) string {
 //
 // TODO: This should be unexported, but there is an import cycle in the tests.
 func NewSourcePostgres(lookup environment.Environmenter, updater Updater) (*SourcePostgres, error) {
+	password, err := environment.ReadSecret(lookup, envPostgresPasswordFile)
+	if err != nil {
+		return nil, fmt.Errorf("reading postgres password: %w", err)
+	}
+
 	addr := fmt.Sprintf(
 		`user='%s' password='%s' host='%s' port='%s' dbname='%s'`,
 		encodePostgresConfig(envPostgresUser.Value(lookup)),
-		encodePostgresConfig(envPostgresPassword.Value(lookup)),
+		encodePostgresConfig(password),
 		encodePostgresConfig(envPostgresHost.Value(lookup)),
 		encodePostgresConfig(envPostgresPort.Value(lookup)),
 		encodePostgresConfig(envPostgresDatabase.Value(lookup)),
