@@ -1419,6 +1419,16 @@ func (r *Fetch) Committee_Description(committeeID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Committee_ExternalID(committeeID int) *ValueString {
+	key := dskey.Key{Collection: "committee", ID: committeeID, Field: "external_id"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueString)
+	}
+	v := &ValueString{fetch: r, collection: "committee", id: committeeID, field: "external_id"}
+	r.requested[key] = v
+	return v
+}
+
 func (r *Fetch) Committee_ForwardToCommitteeIDs(committeeID int) *ValueIntSlice {
 	key := dskey.Key{Collection: "committee", ID: committeeID, Field: "forward_to_committee_ids"}
 	if v, ok := r.requested[key]; ok {
@@ -1535,6 +1545,16 @@ func (r *Fetch) Group_DefaultGroupForMeetingID(groupID int) *ValueMaybeInt {
 		return v.(*ValueMaybeInt)
 	}
 	v := &ValueMaybeInt{fetch: r, collection: "group", id: groupID, field: "default_group_for_meeting_id"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) Group_ExternalID(groupID int) *ValueString {
+	key := dskey.Key{Collection: "group", ID: groupID, Field: "external_id"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueString)
+	}
+	v := &ValueString{fetch: r, collection: "group", id: groupID, field: "external_id"}
 	r.requested[key] = v
 	return v
 }
@@ -2749,12 +2769,12 @@ func (r *Fetch) Meeting_DefaultMeetingForCommitteeID(meetingID int) *ValueMaybeI
 	return v
 }
 
-func (r *Fetch) Meeting_DefaultProjectorAgendaItemIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_agenda_item_ids"}
+func (r *Fetch) Meeting_DefaultProjectorAgendaItemListIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_agenda_item_list_ids"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
-	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_agenda_item_ids", required: true}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "default_projector_agenda_item_list_ids", required: true}
 	r.requested[key] = v
 	return v
 }
@@ -3015,6 +3035,16 @@ func (r *Fetch) Meeting_ExportPdfPagesize(meetingID int) *ValueString {
 		return v.(*ValueString)
 	}
 	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "export_pdf_pagesize"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) Meeting_ExternalID(meetingID int) *ValueString {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "external_id"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueString)
+	}
+	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "external_id"}
 	r.requested[key] = v
 	return v
 }
@@ -5009,22 +5039,22 @@ func (r *Fetch) MotionState_Restrictions(motionStateID int) *ValueStringSlice {
 	return v
 }
 
-func (r *Fetch) MotionState_SetCreatedTimestamp(motionStateID int) *ValueBool {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "set_created_timestamp"}
-	if v, ok := r.requested[key]; ok {
-		return v.(*ValueBool)
-	}
-	v := &ValueBool{fetch: r, collection: "motionState", id: motionStateID, field: "set_created_timestamp"}
-	r.requested[key] = v
-	return v
-}
-
 func (r *Fetch) MotionState_SetNumber(motionStateID int) *ValueBool {
 	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "set_number"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
 	v := &ValueBool{fetch: r, collection: "motionState", id: motionStateID, field: "set_number"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) MotionState_SetWorkflowTimestamp(motionStateID int) *ValueBool {
+	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "set_workflow_timestamp"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueBool)
+	}
+	v := &ValueBool{fetch: r, collection: "motionState", id: motionStateID, field: "set_workflow_timestamp"}
 	r.requested[key] = v
 	return v
 }
@@ -5779,6 +5809,16 @@ func (r *Fetch) Motion_Title(motionID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Motion_WorkflowTimestamp(motionID int) *ValueInt {
+	key := dskey.Key{Collection: "motion", ID: motionID, Field: "workflow_timestamp"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueInt)
+	}
+	v := &ValueInt{fetch: r, collection: "motion", id: motionID, field: "workflow_timestamp"}
+	r.requested[key] = v
+	return v
+}
+
 func (r *Fetch) Option_Abstain(optionID int) *ValueString {
 	key := dskey.Key{Collection: "option", ID: optionID, Field: "abstain"}
 	if v, ok := r.requested[key]; ok {
@@ -6005,6 +6045,16 @@ func (r *Fetch) Organization_EnableElectronicVoting(organizationID int) *ValueBo
 		return v.(*ValueBool)
 	}
 	v := &ValueBool{fetch: r, collection: "organization", id: organizationID, field: "enable_electronic_voting"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) Organization_Genders(organizationID int) *ValueStringSlice {
+	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "genders"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueStringSlice)
+	}
+	v := &ValueStringSlice{fetch: r, collection: "organization", id: organizationID, field: "genders"}
 	r.requested[key] = v
 	return v
 }
@@ -7219,12 +7269,12 @@ func (r *Fetch) Projector_ShowTitle(projectorID int) *ValueBool {
 	return v
 }
 
-func (r *Fetch) Projector_UsedAsDefaultProjectorForAgendaItemInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_agenda_item_in_meeting_id"}
+func (r *Fetch) Projector_UsedAsDefaultProjectorForAgendaItemListInMeetingID(projectorID int) *ValueMaybeInt {
+	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_agenda_item_list_in_meeting_id"}
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
-	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_for_agenda_item_in_meeting_id"}
+	v := &ValueMaybeInt{fetch: r, collection: "projector", id: projectorID, field: "used_as_default_projector_for_agenda_item_list_in_meeting_id"}
 	r.requested[key] = v
 	return v
 }

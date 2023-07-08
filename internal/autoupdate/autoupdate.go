@@ -352,6 +352,22 @@ func (a *Autoupdate) skipWorkpool(ctx context.Context, userID int) (bool, error)
 	return false, nil
 }
 
+// CanSeeConnectionCount returns, if the user can see the connection counter.
+func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (bool, error) {
+	if userID == 0 {
+		return false, nil
+	}
+
+	ds := dsfetch.New(a.datastore)
+
+	hasOML, err := perm.HasOrganizationManagementLevel(ctx, ds, userID, perm.OMLCanManageOrganization)
+	if err != nil {
+		return false, fmt.Errorf("getting organization management level: %w", err)
+	}
+
+	return hasOML, nil
+}
+
 type permissionDeniedError struct {
 	err error
 }
