@@ -36,7 +36,7 @@ func NewUser(ctx context.Context, fetch *datastore.Fetcher, id, meetingID int) (
 
 	data := fetch.Object(ctx, fmt.Sprintf("user/%d", id), fields...)
 	if err := fetch.Err(); err != nil {
-		return nil, fmt.Errorf("getting user object: %w", err)
+		return nil, fmt.Errorf("getting user object for id %d: %w", id, err)
 	}
 
 	bs, err := json.Marshal(data)

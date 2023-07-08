@@ -117,19 +117,29 @@ func TestMotion(t *testing.T) {
         4:
             recommendation_label: RecommendationLabel_state4
             show_recommendation_extension_field: true
+    
     motion_submitter:
         1:
             weight: 100
-            user_id: 13
+            meeting_user_id: 130
             motion_id: 1
         2:
             weight: 2
-            user_id: 11
+            meeting_user_id: 110
             motion_id: 1
         3:
             weight: 30
-            user_id: 12
+            meeting_user_id: 120
             motion_id: 1
+    
+    meeting_user:
+        130:
+            user_id: 13
+        110:
+            user_id: 11
+        120:
+            user_id: 12
+
     user:
         11:
             username: user11
