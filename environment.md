@@ -30,7 +30,7 @@ The Service uses the following environment variables:
 * `CACHE_RESET`: Time to reset the cache. The default is `24h`.
 * `METRIC_INTERVAL`: Time in how often the metrics are gathered. Zero disables the metrics. The default is `5m`.
 * `METRIC_SAVE_INTERVAL`: Interval, how often the metric should be saved to redis. Redis will ignore entries, that are twice at old then the save interval. The default is `5m`.
-* `DISABLE_CONNECTION_COUNT`: Do not count connections. The default is `0`.
+* `DISABLE_CONNECTION_COUNT`: Do not count connections. The default is `false`.
 
 
 ## Secrets
