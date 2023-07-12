@@ -1,8 +1,9 @@
-package datastore
+package history
 
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -73,6 +74,10 @@ func newSourceDatastore(lookup environment.Environmenter) (*sourceDatastore, err
 	}
 
 	return &source, nil
+}
+
+func (s *sourceDatastore) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+	return s.getPosition(ctx, 0, keys...)
 }
 
 // GetPosition gets keys from the datastore at a specifi position.
@@ -228,4 +233,37 @@ func (s *sourceDatastore) HistoryInformation(ctx context.Context, fqid string, w
 	}
 
 	return nil
+}
+
+// keysToGetManyRequest a json envoding of the get_many request.
+func keysToGetManyRequest(keys []dskey.Key, position int) ([]byte, error) {
+	request := struct {
+		Requests []dskey.Key `json:"requests"`
+		Position int         `json:"position,omitempty"`
+	}{keys, position}
+	return json.Marshal(request)
+}
+
+// parseGetManyResponse reads the response from the getMany request and
+// returns the content as key-values.
+func parseGetManyResponse(r io.Reader) (map[dskey.Key][]byte, error) {
+	var data map[string]map[string]map[string]json.RawMessage
+	if err := json.NewDecoder(r).Decode(&data); err != nil {
+		return nil, fmt.Errorf("decoding response: %w", err)
+	}
+
+	keyValue := make(map[dskey.Key][]byte)
+	for collection, idField := range data {
+		for idstr, fieldValue := range idField {
+			id, err := strconv.Atoi(idstr)
+			if err != nil {
+				// TODO LAST ERROR
+				return nil, fmt.Errorf("invalid key. Id is no number: %s", idstr)
+			}
+			for field, value := range fieldValue {
+				keyValue[dskey.Key{Collection: collection, ID: id, Field: field}] = value
+			}
+		}
+	}
+	return keyValue, nil
 }

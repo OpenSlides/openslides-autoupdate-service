@@ -1,4 +1,4 @@
-package datastore
+package history
 
 import (
 	"context"

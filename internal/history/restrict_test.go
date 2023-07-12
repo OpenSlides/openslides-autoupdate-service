@@ -1,10 +1,9 @@
-package restrict_test
+package history
 
 import (
 	"context"
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
@@ -201,11 +200,11 @@ func TestHistoryGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			currentDS := dsmock.Stub(dsmock.YAMLData(tt.current))
 			oldDS := dsmock.Stub(dsmock.YAMLData(tt.old))
-			history := restrict.NewHistory(currentDS, oldDS, 1)
+			restricter := newRestricter(currentDS, oldDS, 1)
 
 			key := dskey.MustKey(tt.testKey)
 
-			got, err := history.Get(ctx, key)
+			got, err := restricter.Get(ctx, key)
 			if err != nil {
 				t.Fatalf("Get returned: %v", err)
 			}

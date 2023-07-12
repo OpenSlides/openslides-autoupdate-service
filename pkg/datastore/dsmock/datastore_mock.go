@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"strconv"
 	"strings"
 
@@ -153,12 +152,6 @@ func (d *MockDatastore) Requests() [][]dskey.Key {
 // ResetRequests resets the list returned by Requests().
 func (d *MockDatastore) ResetRequests() {
 	d.counter.Reset()
-}
-
-// HistoryInformation writes a fake history.
-func (d *MockDatastore) HistoryInformation(ctx context.Context, fqid string, w io.Writer) error {
-	w.Write([]byte(`[{"position":42,"user_id": 5,"information": "motion was created","timestamp": 1234567}]`))
-	return nil
 }
 
 // KeysRequested returns true, if all given keys where requested.

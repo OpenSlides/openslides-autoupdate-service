@@ -8,17 +8,13 @@ package autoupdate
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
-	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
@@ -43,14 +39,12 @@ var (
 // Datastore is the source for the data.
 type Datastore interface {
 	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
-	GetPosition(ctx context.Context, position int, keys ...dskey.Key) (map[dskey.Key][]byte, error)
 	RegisterChangeListener(f func(map[dskey.Key][]byte) error)
 	ResetCache()
 	RegisterCalculatedField(
 		field string,
 		f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error),
 	)
-	HistoryInformation(ctx context.Context, fqid string, w io.Writer) error
 }
 
 // KeysBuilder holds the keys that are requested by a user.
@@ -142,17 +136,8 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (D
 }
 
 // SingleData returns the data for the given keysbuilder without autoupdates.
-//
-// The attribute position can be used to get data from the history.
-func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder, position int) (map[dskey.Key][]byte, error) {
-	var restricter datastore.Getter
-
-	ctx, restricter = a.restricter(ctx, a.datastore, userID)
-
-	if position != 0 {
-		getter := datastore.NewGetPosition(a.datastore, position)
-		restricter = restrict.NewHistory(a.datastore, getter, userID)
-	}
+func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder) (map[dskey.Key][]byte, error) {
+	ctx, restricter := a.restricter(ctx, a.datastore, userID)
 
 	keys, err := kb.Update(ctx, restricter)
 	if err != nil {
@@ -203,61 +188,6 @@ func (a *Autoupdate) resetCache(ctx context.Context) {
 			a.datastore.ResetCache()
 		}
 	}
-}
-
-var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*`)
-
-// HistoryInformation writes the history information for an fqid.
-func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid string, w io.Writer) error {
-	if !reValidKeys.MatchString(fqid) {
-		// TODO Client Error
-		return invalidInputError{fmt.Sprintf("fqid %s is invalid", fqid)}
-	}
-
-	coll, rawID, _ := strings.Cut(fqid, "/")
-	id, _ := strconv.Atoi(rawID)
-
-	ds := dsfetch.New(a.datastore)
-
-	meetingID, hasMeeting, err := collection.Collection(ctx, coll).MeetingID(ctx, ds, id)
-	if err != nil {
-		var errNotExist dsfetch.DoesNotExistError
-		if errors.As(err, &errNotExist) {
-			// TODO Client Error
-			return notExistError{dskey.Key(errNotExist)}
-		}
-		return fmt.Errorf("getting meeting id for collection %s id %d: %w", coll, id, err)
-	}
-
-	if !hasMeeting {
-		hasOML, err := perm.HasOrganizationManagementLevel(ctx, ds, uid, perm.OMLCanManageOrganization)
-		if err != nil {
-			return fmt.Errorf("getting organization management level: %w", err)
-		}
-
-		if !hasOML {
-			// TODO Client Error
-			return permissionDeniedError{fmt.Errorf("you are not allowed to use history information on %s", fqid)}
-		}
-	} else {
-		p, err := perm.New(ctx, ds, uid, meetingID)
-		if err != nil {
-			return fmt.Errorf("getting meeting permissions: %w", err)
-		}
-
-		if !p.Has(perm.MeetingCanSeeHistory) {
-			// TODO Client Error
-			return permissionDeniedError{fmt.Errorf("you are not allowed to use history information on %s", fqid)}
-		}
-	}
-
-	if err := a.datastore.HistoryInformation(ctx, fqid, w); err != nil {
-		return fmt.Errorf("getting history information: %w", err)
-	}
-
-	fmt.Fprintln(w)
-
-	return nil
 }
 
 // RestrictFQIDs returns the full collections, restricted for the user for a
@@ -366,40 +296,4 @@ func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (boo
 	}
 
 	return hasOML, nil
-}
-
-type permissionDeniedError struct {
-	err error
-}
-
-func (e permissionDeniedError) Error() string {
-	return fmt.Sprintf("permissoin denied: %v", e.err)
-}
-
-func (e permissionDeniedError) Type() string {
-	return "permission_denied"
-}
-
-type notExistError struct {
-	key dskey.Key
-}
-
-func (e notExistError) Error() string {
-	return fmt.Sprintf("%s does not exist", e.key)
-}
-
-func (e notExistError) Type() string {
-	return "not_exist"
-}
-
-type invalidInputError struct {
-	msg string
-}
-
-func (e invalidInputError) Error() string {
-	return e.msg
-}
-
-func (e invalidInputError) Type() string {
-	return "invalid_input"
 }
