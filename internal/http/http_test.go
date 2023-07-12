@@ -340,3 +340,7 @@ func (a fakeAuth) Authenticate(w http.ResponseWriter, r *http.Request) (context.
 func (a fakeAuth) FromContext(ctx context.Context) int {
 	return int(a)
 }
+
+func (a fakeAuth) AuthenticatedContext(ctx context.Context, _ int) context.Context {
+	return ctx
+}

@@ -587,8 +587,3 @@ var collectionOrder = map[string]int{
 	"speaker":                      37,
 	"user":                         38,
 }
-
-// FieldsForCollection returns the list of fieldnames for an collection.
-func FieldsForCollection(collection string) []string {
-	return collectionFields[collection]
-}

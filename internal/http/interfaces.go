@@ -9,6 +9,7 @@ import (
 type Authenticater interface {
 	Authenticate(http.ResponseWriter, *http.Request) (context.Context, error)
 	FromContext(context.Context) int
+	AuthenticatedContext(context.Context, int) context.Context
 }
 
 // ClientError is an expected error that are returned to the client.

@@ -133,7 +133,7 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 		}
 	}
 
-	ctx, cancelCtx := context.WithCancel(context.WithValue(ctx, userIDType, p.UserID))
+	ctx, cancelCtx := context.WithCancel(a.AuthenticatedContext(ctx, p.UserID))
 
 	go func() {
 		defer cancelCtx()
@@ -156,6 +156,13 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 	}()
 
 	return ctx, nil
+}
+
+// AuthenticatedContext returns a new context that contains an userID.
+//
+// Should only used for internal URLs. All other URLs should use auth.Authenticate.
+func (a *Auth) AuthenticatedContext(ctx context.Context, userID int) context.Context {
+	return context.WithValue(ctx, userIDType, userID)
 }
 
 // FromContext returnes the user id from a context returned by Authenticate().
