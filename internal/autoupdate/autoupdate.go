@@ -136,8 +136,6 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (D
 }
 
 // SingleData returns the data for the given keysbuilder without autoupdates.
-//
-// The attribute position can be used to get data from the history.
 func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder) (map[dskey.Key][]byte, error) {
 	ctx, restricter := a.restricter(ctx, a.datastore, userID)
 
