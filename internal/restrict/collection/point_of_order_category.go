@@ -40,11 +40,11 @@ func (p PointOfOrderCategory) Modes(mode string) FieldRestricter {
 
 func (p PointOfOrderCategory) see(ctx context.Context, ds *dsfetch.Fetch, pointOfOrderCategoryIDs ...int) ([]int, error) {
 	return eachMeeting(ctx, ds, p, pointOfOrderCategoryIDs, func(meetingID int, ids []int) ([]int, error) {
-		ids, err := Collection(ctx, Meeting{}.Name()).Modes("B")(ctx, ds, meetingID)
+		allowedIDs, err := Collection(ctx, Meeting{}.Name()).Modes("B")(ctx, ds, ids)
 		if err != nil {
 			return nil, fmt.Errorf("check can see of meeting %d: %w", meetingID, err)
 		}
 
-		return ids, err
+		return allowedIDs, err
 	})
 }
