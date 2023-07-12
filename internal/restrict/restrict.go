@@ -543,6 +543,7 @@ var collectionOrder = map[string]int{
 	"chat_message":                 5,
 	"committee":                    6,
 	"meeting":                      7,
+	"point_of_order_category":      8,
 	"group":                        8,
 	"mediafile":                    9,
 	"tag":                          10,
@@ -575,6 +576,7 @@ var collectionOrder = map[string]int{
 	"speaker":                      37,
 	"user":                         38,
 	"meeting_user":                 39,
+	"action_worker":                40,
 }
 
 // FieldsForCollection returns the list of fieldnames for an collection.

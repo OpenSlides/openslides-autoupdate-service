@@ -3279,6 +3279,16 @@ func (r *Fetch) Meeting_ListOfSpeakersCoupleCountdown(meetingID int) *ValueBool 
 	return v
 }
 
+func (r *Fetch) Meeting_ListOfSpeakersEnablePointOfOrderCategories(meetingID int) *ValueBool {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_enable_point_of_order_categories"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueBool)
+	}
+	v := &ValueBool{fetch: r, collection: "meeting", id: meetingID, field: "list_of_speakers_enable_point_of_order_categories"}
+	r.requested[key] = v
+	return v
+}
+
 func (r *Fetch) Meeting_ListOfSpeakersEnablePointOfOrderSpeakers(meetingID int) *ValueBool {
 	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_enable_point_of_order_speakers"}
 	if v, ok := r.requested[key]; ok {
@@ -3995,6 +4005,16 @@ func (r *Fetch) Meeting_PersonalNoteIDs(meetingID int) *ValueIntSlice {
 		return v.(*ValueIntSlice)
 	}
 	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "personal_note_ids"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) Meeting_PointOfOrderCategoryIDs(meetingID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "point_of_order_category_ids"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueIntSlice)
+	}
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "point_of_order_category_ids"}
 	r.requested[key] = v
 	return v
 }
@@ -6379,6 +6399,56 @@ func (r *Fetch) PersonalNote_Star(personalNoteID int) *ValueBool {
 	return v
 }
 
+func (r *Fetch) PointOfOrderCategory_ID(pointOfOrderCategoryID int) *ValueInt {
+	key := dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "id"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueInt)
+	}
+	v := &ValueInt{fetch: r, collection: "pointOfOrderCategory", id: pointOfOrderCategoryID, field: "id"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) PointOfOrderCategory_MeetingID(pointOfOrderCategoryID int) *ValueInt {
+	key := dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "meeting_id"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueInt)
+	}
+	v := &ValueInt{fetch: r, collection: "pointOfOrderCategory", id: pointOfOrderCategoryID, field: "meeting_id", required: true}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) PointOfOrderCategory_Rank(pointOfOrderCategoryID int) *ValueInt {
+	key := dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "rank"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueInt)
+	}
+	v := &ValueInt{fetch: r, collection: "pointOfOrderCategory", id: pointOfOrderCategoryID, field: "rank", required: true}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) PointOfOrderCategory_SpeakerIDs(pointOfOrderCategoryID int) *ValueIntSlice {
+	key := dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "speaker_ids"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueIntSlice)
+	}
+	v := &ValueIntSlice{fetch: r, collection: "pointOfOrderCategory", id: pointOfOrderCategoryID, field: "speaker_ids"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) PointOfOrderCategory_Text(pointOfOrderCategoryID int) *ValueString {
+	key := dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "text"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueString)
+	}
+	v := &ValueString{fetch: r, collection: "pointOfOrderCategory", id: pointOfOrderCategoryID, field: "text", required: true}
+	r.requested[key] = v
+	return v
+}
+
 func (r *Fetch) PollCandidateList_ID(pollCandidateListID int) *ValueInt {
 	key := dskey.Key{Collection: "poll_candidate_list", ID: pollCandidateListID, Field: "id"}
 	if v, ok := r.requested[key]; ok {
@@ -7505,6 +7575,16 @@ func (r *Fetch) Speaker_PointOfOrder(speakerID int) *ValueBool {
 		return v.(*ValueBool)
 	}
 	v := &ValueBool{fetch: r, collection: "speaker", id: speakerID, field: "point_of_order"}
+	r.requested[key] = v
+	return v
+}
+
+func (r *Fetch) Speaker_PointOfOrderCategoryID(speakerID int) *ValueMaybeInt {
+	key := dskey.Key{Collection: "speaker", ID: speakerID, Field: "point_of_order_category_id"}
+	if v, ok := r.requested[key]; ok {
+		return v.(*ValueMaybeInt)
+	}
+	v := &ValueMaybeInt{fetch: r, collection: "speaker", id: speakerID, field: "point_of_order_category_id"}
 	r.requested[key] = v
 	return v
 }
