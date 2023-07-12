@@ -14,6 +14,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
 var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*`)
@@ -27,7 +28,7 @@ type Datastore interface {
 
 // History get access to old data int the datastore
 type History struct {
-	datastore Datastore
+	source *sourceDatastore
 }
 
 // KeysBuilder holds the keys that are requested by a user.
@@ -36,10 +37,14 @@ type KeysBuilder interface {
 }
 
 // New initializes a new history.
-func New(datastore Datastore) *History {
-	return &History{
-		datastore: datastore,
+func New(lookup environment.Environmenter) (*History, error) {
+	source, err := newSourceDatastore(lookup)
+	if err != nil {
+		return nil, fmt.Errorf("initializing datastore: %w", err)
 	}
+	return &History{
+		source: source,
+	}, nil
 }
 
 // HistoryInformation returns the histrory information for an fqid.
@@ -52,7 +57,7 @@ func (h History) HistoryInformation(ctx context.Context, uid int, fqid string, w
 	coll, rawID, _ := strings.Cut(fqid, "/")
 	id, _ := strconv.Atoi(rawID)
 
-	ds := dsfetch.New(h.datastore)
+	ds := dsfetch.New(h.source)
 
 	meetingID, hasMeeting, err := collection.Collection(ctx, coll).MeetingID(ctx, ds, id)
 	if err != nil {
@@ -86,7 +91,7 @@ func (h History) HistoryInformation(ctx context.Context, uid int, fqid string, w
 		}
 	}
 
-	if err := h.datastore.HistoryInformation(ctx, fqid, w); err != nil {
+	if err := h.source.HistoryInformation(ctx, fqid, w); err != nil {
 		return fmt.Errorf("getting history information: %w", err)
 	}
 
@@ -97,8 +102,8 @@ func (h History) HistoryInformation(ctx context.Context, uid int, fqid string, w
 
 // Data returns old data from the datastore
 func (h History) Data(ctx context.Context, userID int, kb KeysBuilder, position int) (map[dskey.Key][]byte, error) {
-	getter := datastore.NewGetPosition(h.datastore, position)
-	restricter := newRestricter(h.datastore, getter, userID)
+	getter := newGetPosition(h.source, position)
+	restricter := newRestricter(h.source, getter, userID)
 
 	keys, err := kb.Update(ctx, restricter)
 	if err != nil {

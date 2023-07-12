@@ -6,11 +6,8 @@ package datastore
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -44,12 +41,6 @@ type Source interface {
 	Updater
 }
 
-// HistoryInformationer returns the history information.
-type HistoryInformationer interface {
-	HistoryInformation(ctx context.Context, fqid string, w io.Writer) error
-	GetPosition(ctx context.Context, position int, key ...dskey.Key) (map[dskey.Key][]byte, error)
-}
-
 // Datastore can be used to get values from the datastore-service.
 //
 // Has to be created with datastore.New().
@@ -63,8 +54,6 @@ type Datastore struct {
 	calculatedFields map[string]func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error)
 	calculatedKeys   map[dskey.Key]string
 	calculatedKeysMu sync.RWMutex
-
-	history HistoryInformationer
 
 	resetMu sync.Mutex
 
@@ -130,14 +119,6 @@ func (d *Datastore) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][
 	return values, nil
 }
 
-// GetPosition is like Get() but returns the data at a specific position.
-func (d *Datastore) GetPosition(ctx context.Context, position int, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
-	if d.history == nil {
-		return nil, fmt.Errorf("histroy not supported")
-	}
-	return d.history.GetPosition(ctx, position, keys...)
-}
-
 // RegisterChangeListener registers a function that is called whenever an
 // datastore update happens.
 func (d *Datastore) RegisterChangeListener(f func(map[dskey.Key][]byte) error) {
@@ -167,11 +148,6 @@ func (d *Datastore) ResetCache() {
 	d.resetMu.Lock()
 	d.cache = newCache()
 	d.resetMu.Unlock()
-}
-
-// HistoryInformation writes the history information for a fqid.
-func (d *Datastore) HistoryInformation(ctx context.Context, fqid string, w io.Writer) error {
-	return d.history.HistoryInformation(ctx, fqid, w)
 }
 
 // listenOnUpdates listens for updates and informs all listeners.
@@ -306,37 +282,4 @@ func (d *Datastore) calculateField(field string, key dskey.Key, updated map[dske
 	}
 
 	return calculated, changed
-}
-
-// keysToGetManyRequest a json envoding of the get_many request.
-func keysToGetManyRequest(keys []dskey.Key, position int) ([]byte, error) {
-	request := struct {
-		Requests []dskey.Key `json:"requests"`
-		Position int         `json:"position,omitempty"`
-	}{keys, position}
-	return json.Marshal(request)
-}
-
-// parseGetManyResponse reads the response from the getMany request and
-// returns the content as key-values.
-func parseGetManyResponse(r io.Reader) (map[dskey.Key][]byte, error) {
-	var data map[string]map[string]map[string]json.RawMessage
-	if err := json.NewDecoder(r).Decode(&data); err != nil {
-		return nil, fmt.Errorf("decoding response: %w", err)
-	}
-
-	keyValue := make(map[dskey.Key][]byte)
-	for collection, idField := range data {
-		for idstr, fieldValue := range idField {
-			id, err := strconv.Atoi(idstr)
-			if err != nil {
-				// TODO LAST ERROR
-				return nil, fmt.Errorf("invalid key. Id is no number: %s", idstr)
-			}
-			for field, value := range fieldValue {
-				keyValue[dskey.Key{Collection: collection, ID: id, Field: field}] = value
-			}
-		}
-	}
-	return keyValue, nil
 }

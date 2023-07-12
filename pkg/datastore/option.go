@@ -2,7 +2,6 @@ package datastore
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
@@ -27,19 +26,6 @@ func WithVoteCount() Option {
 			voteCountSource.Connect(ctx, eventer, errorHandler)
 		}
 		return background, nil
-	}
-}
-
-// WithHistory adds the posibility to fetch history data.
-func WithHistory() Option {
-	return func(ds *Datastore, lookup environment.Environmenter) (func(context.Context, func(error)), error) {
-		datastoreSource, err := newSourceDatastore(lookup)
-		if err != nil {
-			return nil, fmt.Errorf("init datastore: %w", err)
-		}
-		ds.history = datastoreSource
-
-		return nil, nil
 	}
 }
 

@@ -9,13 +9,11 @@ package autoupdate
 import (
 	"context"
 	"fmt"
-	"io"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/history"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -41,14 +39,12 @@ var (
 // Datastore is the source for the data.
 type Datastore interface {
 	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
-	GetPosition(ctx context.Context, position int, keys ...dskey.Key) (map[dskey.Key][]byte, error) // TODO: Remove me
 	RegisterChangeListener(f func(map[dskey.Key][]byte) error)
 	ResetCache()
 	RegisterCalculatedField(
 		field string,
 		f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error),
 	)
-	HistoryInformation(ctx context.Context, fqid string, w io.Writer) error
 }
 
 // KeysBuilder holds the keys that are requested by a user.
@@ -66,7 +62,6 @@ type Autoupdate struct {
 	topic      *topic.Topic[dskey.Key]
 	restricter RestrictMiddleware
 	pool       *workPool
-	history    history.History
 
 	cacheReset time.Duration
 }
@@ -96,7 +91,6 @@ func New(lookup environment.Environmenter, ds Datastore, restricter RestrictMidd
 		restricter: restricter,
 		pool:       newWorkPool(workers),
 		cacheReset: cacheResetTime,
-		history:    *history.New(ds),
 	}
 
 	// Update the topic when an data update is received.
@@ -144,11 +138,7 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (D
 // SingleData returns the data for the given keysbuilder without autoupdates.
 //
 // The attribute position can be used to get data from the history.
-func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder, position int) (map[dskey.Key][]byte, error) {
-	if position != 0 {
-		return a.history.Data(ctx, userID, kb, position)
-	}
-
+func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder) (map[dskey.Key][]byte, error) {
 	ctx, restricter := a.restricter(ctx, a.datastore, userID)
 
 	keys, err := kb.Update(ctx, restricter)
@@ -200,11 +190,6 @@ func (a *Autoupdate) resetCache(ctx context.Context) {
 			a.datastore.ResetCache()
 		}
 	}
-}
-
-// HistoryInformation writes the history information for an fqid.
-func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid string, w io.Writer) error {
-	return a.history.HistoryInformation(ctx, uid, fqid, w)
 }
 
 // RestrictFQIDs returns the full collections, restricted for the user for a
