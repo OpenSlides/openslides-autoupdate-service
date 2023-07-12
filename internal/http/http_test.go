@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/history"
 	ahttp "github.com/OpenSlides/openslides-autoupdate-service/internal/http"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
@@ -28,7 +29,7 @@ func (c *connecterMock) Connect(ctx context.Context, userID int, kb autoupdate.K
 	return c.f, nil
 }
 
-func (c *connecterMock) SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[dskey.Key][]byte, error) {
+func (c *connecterMock) SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (map[dskey.Key][]byte, error) {
 	next, _ := c.f()
 	return next(ctx)
 }
@@ -50,7 +51,7 @@ func TestKeysHandler(t *testing.T) {
 		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil)
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, historyMock{}, nil)
 
 	req := httptest.NewRequest("GET", "/system/autoupdate?k=user/1/name,user/2/name", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()
@@ -86,7 +87,7 @@ func TestComplexHandler(t *testing.T) {
 		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil)
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, historyMock{}, nil)
 
 	req := httptest.NewRequest(
 		"GET",
@@ -141,7 +142,7 @@ func TestErrors(t *testing.T) {
 		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil)
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, historyMock{}, nil)
 
 	for _, tt := range []struct {
 		name    string
@@ -339,4 +340,14 @@ func (a fakeAuth) Authenticate(w http.ResponseWriter, r *http.Request) (context.
 // FromContext returns the uid the object was initialiced with.
 func (a fakeAuth) FromContext(ctx context.Context) int {
 	return int(a)
+}
+
+type historyMock struct{}
+
+func (h historyMock) HistoryInformation(ctx context.Context, uid int, fqid string, w io.Writer) error {
+	return nil
+}
+
+func (h historyMock) Data(ctx context.Context, userID int, kb history.KeysBuilder, position int) (map[dskey.Key][]byte, error) {
+	return nil, nil
 }

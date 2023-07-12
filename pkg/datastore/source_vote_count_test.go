@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"reflect"
 	"testing"
 	"time"
@@ -343,4 +344,13 @@ func updateResult(ctx context.Context, source *voteCountSource, fn func()) (map[
 	got := <-done
 
 	return got.data, got.err
+}
+
+func parseURL(raw string) (host, port, protocol string) {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		panic(fmt.Sprintf("parsing url %s: %v", raw, err))
+	}
+
+	return parsed.Hostname(), parsed.Port(), parsed.Scheme
 }
