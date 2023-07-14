@@ -43,12 +43,12 @@ func TestDataStoreGet(t *testing.T) {
 }
 
 func TestDataStoreGetMultiValue(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
+	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"v1"`),
 		myKey2: []byte(`"v2"`),
 	}), dsmock.NewCounter)
 
-	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
+	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -61,17 +61,17 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 		t.Errorf("Get() returned %s, expected %s", got, expect)
 	}
 
-	if counter := source.Middlewares()[0].(*dsmock.Counter); counter.Value() != 1 {
+	if counter := flow.Middlewares()[0].(*dsmock.Counter); counter.Value() != 1 {
 		t.Errorf("Got %d requests to the datastore, expected 1: %v", counter.Value(), counter.Requests())
 	}
 }
 
 func TestDataStoreGetKeyTwice(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
+	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"v1"`),
 	}), dsmock.NewCounter)
 
-	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
+	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -84,15 +84,15 @@ func TestDataStoreGetKeyTwice(t *testing.T) {
 		t.Errorf("Get() returned %s, expected %s", got, expect)
 	}
 
-	if counter := source.Middlewares()[0].(*dsmock.Counter); counter.Value() != 1 {
+	if counter := flow.Middlewares()[0].(*dsmock.Counter); counter.Value() != 1 {
 		t.Errorf("Got %d requests to the datastore, expected 1: %v", counter.Value(), counter.Requests())
 	}
 }
 
 func TestCalculatedFields(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
+	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
 
-	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
+	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -123,11 +123,11 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
+	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"original value"`),
 	}))
 
-	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
+	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -148,7 +148,7 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 		return nil
 	})
 
-	source.Send(dsmock.YAMLData("collection/1/field: new value"))
+	flow.Send(dsmock.YAMLData("collection/1/field: new value"))
 	<-done
 
 	got, err := ds.Get(context.Background(), myCalculated)
@@ -160,11 +160,11 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
+	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"original value"`),
 	}))
 
-	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
+	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -188,7 +188,7 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 		return nil
 	})
 
-	source.Send(dsmock.YAMLData("collection/1/field: new value"))
+	flow.Send(dsmock.YAMLData("collection/1/field: new value"))
 	<-done
 
 	got, err := ds.Get(context.Background(), myCalculated)
@@ -200,11 +200,11 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
+	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"original value"`),
 	}))
 
-	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
+	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -225,11 +225,11 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 }
 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
+	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"original value"`),
 	}))
 
-	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
+	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -248,9 +248,9 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.
 }
 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExist(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
+	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
 
-	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
+	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -270,9 +270,9 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExist(t 
 }
 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExistTwice(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
+	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
 
-	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
+	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -292,9 +292,9 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExistTwi
 }
 
 func TestCalculatedFieldsNoDBQuery(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}), dsmock.NewCounter)
+	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}), dsmock.NewCounter)
 
-	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
+	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -308,7 +308,7 @@ func TestCalculatedFieldsNoDBQuery(t *testing.T) {
 	_, err = ds.Get(ctx, myCalculated)
 	require.NoError(t, err, "Get returned unexpected error")
 
-	if counter := source.Middlewares()[0].(*dsmock.Counter); counter.Value() != 0 {
+	if counter := flow.Middlewares()[0].(*dsmock.Counter); counter.Value() != 0 {
 		t.Errorf("Got %d requests to the datastore, expected 0: %v", counter.Value(), counter.Requests())
 	}
 }
@@ -317,9 +317,9 @@ func TestChangeListeners(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
+	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
 
-	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
+	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -334,7 +334,7 @@ func TestChangeListeners(t *testing.T) {
 		return nil
 	})
 
-	source.Send(dsmock.YAMLData("collection/1/field: my value"))
+	flow.Send(dsmock.YAMLData("collection/1/field: my value"))
 
 	<-received
 	assert.Equal(t, []byte(`"my value"`), receivedData[myKey1])
@@ -344,8 +344,8 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
-	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
+	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
+	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -369,7 +369,7 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 		return nil
 	})
 
-	source.Send(map[dskey.Key][]byte{myKey1: []byte(`"my value"`)})
+	flow.Send(map[dskey.Key][]byte{myKey1: []byte(`"my value"`)})
 
 	<-received
 	assert.Equal(t, map[dskey.Key][]byte{
@@ -379,9 +379,9 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 }
 
 func TestResetCache(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}), dsmock.NewCounter)
+	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}), dsmock.NewCounter)
 
-	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
+	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -393,7 +393,7 @@ func TestResetCache(t *testing.T) {
 	ds.Get(context.Background(), myKey1)
 
 	// After a reset, the key should be fetched from the server again.
-	if counter := source.Middlewares()[0].(*dsmock.Counter); counter.Value() != 2 {
+	if counter := flow.Middlewares()[0].(*dsmock.Counter); counter.Value() != 2 {
 		t.Errorf("Got %d requests to the datastore, expected 2: %v", counter.Value(), counter.Requests())
 	}
 }
@@ -402,9 +402,9 @@ func TestResetWhileUpdate(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
+	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
 
-	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
+	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -418,7 +418,7 @@ func TestResetWhileUpdate(t *testing.T) {
 		ds.ResetCache()
 		close(doneReset)
 	}()
-	source.Send(dsmock.YAMLData("some/1/key: value"))
+	flow.Send(dsmock.YAMLData("some/1/key: value"))
 
 	<-doneReset
 	// There is nothing to assert. This test is only for the race detector. Make
