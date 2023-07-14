@@ -35,17 +35,17 @@ func TestVoteCountSourceGet(t *testing.T) {
 		"VOTE_PROTOCOL": schema,
 	})
 
-	source := newFlowVoteCount(env)
+	flow := newFlowVoteCount(env)
 	eventer := func() (<-chan time.Time, func() bool) { return make(chan time.Time), func() bool { return true } }
 
-	waitForResponse(ctx, source, func() {
-		go source.Connect(ctx, eventer, func(error) {})
+	waitForResponse(ctx, flow, func() {
+		go flow.Connect(ctx, eventer, func(error) {})
 	})
 
 	key1 := dskey.MustKey("poll/1/vote_count")
 
 	t.Run("no data from vote-service", func(t *testing.T) {
-		got, err := source.Get(ctx, key1)
+		got, err := flow.Get(ctx, key1)
 		if err != nil {
 			t.Fatalf("Get: %v", err)
 		}
@@ -56,11 +56,11 @@ func TestVoteCountSourceGet(t *testing.T) {
 	})
 
 	t.Run("first data from vote-service", func(t *testing.T) {
-		waitForResponse(ctx, source, func() {
+		waitForResponse(ctx, flow, func() {
 			sender <- `{"1":42}`
 		})
 
-		got, err := source.Get(ctx, key1)
+		got, err := flow.Get(ctx, key1)
 		if err != nil {
 			t.Fatalf("Get: %v", err)
 		}
@@ -71,11 +71,11 @@ func TestVoteCountSourceGet(t *testing.T) {
 	})
 
 	t.Run("second data from vote-service", func(t *testing.T) {
-		waitForResponse(ctx, source, func() {
+		waitForResponse(ctx, flow, func() {
 			sender <- `{"1":43}`
 		})
 
-		got, err := source.Get(ctx, key1)
+		got, err := flow.Get(ctx, key1)
 		if err != nil {
 			t.Fatalf("Get: %v", err)
 		}
@@ -86,11 +86,11 @@ func TestVoteCountSourceGet(t *testing.T) {
 	})
 
 	t.Run("again data from vote-service", func(t *testing.T) {
-		waitForResponse(ctx, source, func() {
+		waitForResponse(ctx, flow, func() {
 			sender <- `{"1":44}`
 		})
 
-		got, err := source.Get(ctx, key1)
+		got, err := flow.Get(ctx, key1)
 		if err != nil {
 			t.Fatalf("Get: %v", err)
 		}
@@ -101,11 +101,11 @@ func TestVoteCountSourceGet(t *testing.T) {
 	})
 
 	t.Run("receive 0", func(t *testing.T) {
-		waitForResponse(ctx, source, func() {
+		waitForResponse(ctx, flow, func() {
 			sender <- `{"1":0}`
 		})
 
-		got, err := source.Get(ctx, key1)
+		got, err := flow.Get(ctx, key1)
 		if err != nil {
 			t.Fatalf("Get: %v", err)
 		}
@@ -319,16 +319,7 @@ func TestGetWithoutConnect(t *testing.T) {
 // waitForResponse calls the given function and waits until the data is
 // processed.
 func waitForResponse(ctx context.Context, flow *flowVoteCount, fn func()) {
-	myCtx, cancel := context.WithCancel(ctx)
-
-	received := make(chan struct{})
-	go flow.Update(myCtx, func(m map[dskey.Key][]byte, err error) {
-		cancel()
-	})
-
-	fn()
-
-	<-received
+	updateResult(ctx, flow, fn)
 }
 
 // updateResult returns the return values from flow.Update after the given function is processed.
@@ -341,11 +332,14 @@ func updateResult(ctx context.Context, flow *flowVoteCount, fn func()) (map[dske
 	myCtx, cancel := context.WithCancel(ctx)
 
 	got := dataErr{}
-	flow.Update(myCtx, func(v map[dskey.Key][]byte, err error) {
-		fn()
+	go flow.Update(myCtx, func(v map[dskey.Key][]byte, err error) {
 		got = dataErr{v, err}
 		cancel()
 	})
+
+	fn()
+
+	<-myCtx.Done()
 
 	return got.data, got.err
 }
