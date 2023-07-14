@@ -24,15 +24,14 @@ func TestUpdate(t *testing.T) {
 
 	done := make(chan error)
 	var got map[dskey.Key][]byte
-	go func() {
-		data, err := r.Update(ctx)
+	go r.Update(ctx, func(data map[dskey.Key][]byte, err error) {
 		if err != nil {
 			done <- fmt.Errorf("Update() returned an unexpected error %w", err)
 		}
 
 		got = data
 		done <- nil
-	}()
+	})
 
 	time.Sleep(20 * time.Millisecond)
 	conn, err := tr.conn(ctx)

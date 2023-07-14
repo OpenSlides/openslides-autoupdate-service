@@ -105,7 +105,7 @@ func YAMLData(input string) map[dskey.Key][]byte {
 // MockDatastore implements the autoupdate.Datastore interface.
 type MockDatastore struct {
 	*datastore.Datastore
-	source  *StubWithUpdate
+	flow    *StubWithUpdate
 	counter *Counter
 	err     error
 }
@@ -115,13 +115,13 @@ type MockDatastore struct {
 // It is a wrapper around the datastore.Datastore object.
 func NewMockDatastore(data map[dskey.Key][]byte) (*MockDatastore, func(context.Context, func(error))) {
 	source := NewStubWithUpdate(data, NewCounter)
-	rawDS, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	rawDS, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
 	if err != nil {
 		panic(err)
 	}
 
 	ds := &MockDatastore{
-		source:    source,
+		flow:      source,
 		Datastore: rawDS,
 	}
 
@@ -176,10 +176,10 @@ func (d *MockDatastore) KeysRequested(keys ...dskey.Key) bool {
 // This method is unblocking. If you want to fetch data afterwards, make sure to
 // block until data is processed. For example with RegisterChanceListener.
 func (d *MockDatastore) Send(data map[dskey.Key][]byte) {
-	d.source.Send(data)
+	d.flow.Send(data)
 }
 
 // Update implements the datastore.Updater interface.
-func (d *MockDatastore) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
-	return d.source.Update(ctx)
+func (d *MockDatastore) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+	d.flow.Update(ctx, updateFn)
 }

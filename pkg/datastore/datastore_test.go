@@ -24,11 +24,11 @@ var (
 )
 
 func TestDataStoreGet(t *testing.T) {
-	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
+	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"Hello World"`),
 	}))
 
-	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -48,7 +48,7 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 		myKey2: []byte(`"v2"`),
 	}), dsmock.NewCounter)
 
-	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -71,7 +71,7 @@ func TestDataStoreGetKeyTwice(t *testing.T) {
 		myKey1: []byte(`"v1"`),
 	}), dsmock.NewCounter)
 
-	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -92,7 +92,7 @@ func TestDataStoreGetKeyTwice(t *testing.T) {
 func TestCalculatedFields(t *testing.T) {
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
 
-	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -127,7 +127,7 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 		myKey1: []byte(`"original value"`),
 	}))
 
-	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -164,7 +164,7 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 		myKey1: []byte(`"original value"`),
 	}))
 
-	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -204,7 +204,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 		myKey1: []byte(`"original value"`),
 	}))
 
-	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -229,7 +229,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.
 		myKey1: []byte(`"original value"`),
 	}))
 
-	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -250,7 +250,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExist(t *testing.T) {
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
 
-	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -272,7 +272,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExist(t 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExistTwice(t *testing.T) {
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
 
-	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -294,7 +294,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExistTwi
 func TestCalculatedFieldsNoDBQuery(t *testing.T) {
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}), dsmock.NewCounter)
 
-	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -319,7 +319,7 @@ func TestChangeListeners(t *testing.T) {
 
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
 
-	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -345,7 +345,7 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 	defer cancel()
 
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
-	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -381,7 +381,7 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 func TestResetCache(t *testing.T) {
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}), dsmock.NewCounter)
 
-	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}
@@ -404,7 +404,7 @@ func TestResetWhileUpdate(t *testing.T) {
 
 	source := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
 
-	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultSource(source))
+	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(source))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
 	}

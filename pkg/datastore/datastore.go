@@ -15,6 +15,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
@@ -22,33 +23,14 @@ const (
 	messageBusReconnectPause = time.Second
 )
 
-// Getter can get values from keys.
-//
-// The Datastore object implements this interface.
-type Getter interface {
-	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
-}
-
-// Updater returns keys that have changes. Blocks until there is
-// changed data.
-type Updater interface {
-	Update(context.Context) (map[dskey.Key][]byte, error)
-}
-
-// Source gives the data for keys.
-type Source interface {
-	Getter
-	Updater
-}
-
 // Datastore can be used to get values from the datastore-service.
 //
 // Has to be created with datastore.New().
 type Datastore struct {
 	cache *cache
 
-	defaultSource Source
-	keySource     map[string]Source
+	flow            flow.Flow
+	additionalFlows map[string]flow.Flow
 
 	changeListeners  []func(map[dskey.Key][]byte) error
 	calculatedFields map[string]func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error)
@@ -61,11 +43,11 @@ type Datastore struct {
 }
 
 // New returns a new Datastore object.
-func New(lookup environment.Environmenter, mb Updater, options ...Option) (*Datastore, func(context.Context, func(error)), error) {
+func New(lookup environment.Environmenter, messageBus flow.Updater, options ...Option) (*Datastore, func(context.Context, func(error)), error) {
 	ds := Datastore{
 		cache: newCache(),
 
-		keySource: make(map[string]Source),
+		additionalFlows: make(map[string]flow.Flow),
 
 		calculatedFields: make(map[string]func(context.Context, dskey.Key, map[dskey.Key][]byte) ([]byte, bool, error)),
 		calculatedKeys:   make(map[dskey.Key]string),
@@ -83,12 +65,17 @@ func New(lookup environment.Environmenter, mb Updater, options ...Option) (*Data
 		}
 	}
 
-	if ds.defaultSource == nil {
-		sourcePostgres, err := NewSourcePostgres(lookup, mb)
+	if ds.flow == nil {
+		flowPostgres, err := NewFlowPostgres(lookup, messageBus)
 		if err != nil {
-			return nil, nil, fmt.Errorf("initilizing postgres source: %w", err)
+			return nil, nil, fmt.Errorf("initilizing postgres flow: %w", err)
 		}
-		ds.defaultSource = sourcePostgres
+
+		ds.flow = flowPostgres
+	}
+
+	if len(ds.additionalFlows) > 0 {
+		ds.flow = flow.Combine(ds.flow, ds.additionalFlows)
 	}
 
 	metric.Register(ds.metric)
@@ -156,42 +143,15 @@ func (d *Datastore) listenOnUpdates(ctx context.Context, errHandler func(error))
 		errHandler = func(error) {}
 	}
 
-	updatedValues := make(chan map[dskey.Key][]byte)
-	sources := make([]Source, 0, len(d.keySource)+1)
-	sources = append(sources, d.defaultSource)
-	for _, s := range d.keySource {
-		sources = append(sources, s)
-	}
+	d.flow.Update(ctx, func(data map[dskey.Key][]byte, err error) {
+		if err != nil {
+			errHandler(err)
+			return
+		}
 
-	var wg sync.WaitGroup
-	wg.Add(len(sources))
-	for _, source := range sources {
-		go func(source Source) {
-			defer wg.Done()
-			for {
-				data, err := source.Update(ctx)
-				if err != nil {
-					if oserror.ContextDone(err) {
-						return
-					}
-
-					errHandler(fmt.Errorf("update data: %w", err))
-					time.Sleep(messageBusReconnectPause)
-					continue
-				}
-				updatedValues <- data
-			}
-		}(source)
-	}
-
-	go func() {
-		wg.Wait()
-		close(updatedValues)
-	}()
-
-	for data := range updatedValues {
-		// The lock prefents a cache reset while data is updating.
 		d.resetMu.Lock()
+		defer d.resetMu.Unlock()
+
 		d.cache.SetIfExistMany(data)
 
 		d.calculatedKeysMu.RLock()
@@ -213,24 +173,19 @@ func (d *Datastore) listenOnUpdates(ctx context.Context, errHandler func(error))
 				errHandler(err)
 			}
 		}
-		d.resetMu.Unlock()
-	}
+	})
 }
 
 // splitCalculateddskey.Key splits a list of keys in calculated keys and "normal"
 // keys. The calculated keys are returned as map that point to the field name.
-func (d *Datastore) splitCalculatedKeys(keys []dskey.Key) (map[dskey.Key]string, map[Source][]dskey.Key) {
-	normal := make(map[Source][]dskey.Key)
+func (d *Datastore) splitCalculatedKeys(keys []dskey.Key) (map[dskey.Key]string, []dskey.Key) {
+	var normal []dskey.Key
 	calculated := make(map[dskey.Key]string)
 	for _, k := range keys {
 		field := k.Collection + "/" + k.Field
 		_, ok := d.calculatedFields[field]
 		if !ok {
-			source := d.defaultSource
-			if s := d.keySource[field]; s != nil {
-				source = s
-			}
-			normal[source] = append(normal[source], k)
+			normal = append(normal, k)
 			continue
 		}
 		calculated[k] = field
@@ -240,10 +195,11 @@ func (d *Datastore) splitCalculatedKeys(keys []dskey.Key) (map[dskey.Key]string,
 
 func (d *Datastore) loadKeys(keys []dskey.Key, set func(map[dskey.Key][]byte)) error {
 	calculatedKeys, normalKeys := d.splitCalculatedKeys(keys)
-	for source, keys := range normalKeys {
-		data, err := source.Get(context.Background(), keys...)
+
+	if len(normalKeys) > 0 {
+		data, err := d.flow.Get(context.Background(), normalKeys...)
 		if err != nil {
-			return fmt.Errorf("requesting keys from datastore: %w", err)
+			return fmt.Errorf("requesting keys: %w", err)
 		}
 		set(data)
 	}

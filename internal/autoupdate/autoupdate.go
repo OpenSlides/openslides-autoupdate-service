@@ -16,9 +16,9 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 	"github.com/ostcar/topic"
@@ -49,11 +49,11 @@ type Datastore interface {
 
 // KeysBuilder holds the keys that are requested by a user.
 type KeysBuilder interface {
-	Update(ctx context.Context, ds datastore.Getter) ([]dskey.Key, error)
+	Update(ctx context.Context, ds flow.Getter) ([]dskey.Key, error)
 }
 
 // RestrictMiddleware is a function that can restrict data.
-type RestrictMiddleware func(ctx context.Context, getter datastore.Getter, uid int) (context.Context, datastore.Getter)
+type RestrictMiddleware func(ctx context.Context, getter flow.Getter, uid int) (context.Context, flow.Getter)
 
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
 // with autoupdate.New().

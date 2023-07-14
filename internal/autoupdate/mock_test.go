@@ -7,9 +7,9 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
@@ -53,17 +53,17 @@ func blockingTime(wait time.Duration, f func()) bool {
 }
 
 // RestrictAllowed is a restricter that allows everything
-func RestrictAllowed(ctx context.Context, getter datastore.Getter, uid int) (context.Context, datastore.Getter) {
+func RestrictAllowed(ctx context.Context, getter flow.Getter, uid int) (context.Context, flow.Getter) {
 	return ctx, mockRestricter{getter, true}
 }
 
 // RestrictNotAllowed is a restricter that removes everythin
-func RestrictNotAllowed(ctx context.Context, getter datastore.Getter, uid int) (context.Context, datastore.Getter) {
+func RestrictNotAllowed(ctx context.Context, getter flow.Getter, uid int) (context.Context, flow.Getter) {
 	return ctx, mockRestricter{getter, false}
 }
 
 type mockRestricter struct {
-	getter datastore.Getter
+	getter flow.Getter
 	allow  bool
 }
 

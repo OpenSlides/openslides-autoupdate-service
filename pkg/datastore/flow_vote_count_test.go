@@ -35,7 +35,7 @@ func TestVoteCountSourceGet(t *testing.T) {
 		"VOTE_PROTOCOL": schema,
 	})
 
-	source := newVoteCountSource(env)
+	source := newFlowVoteCount(env)
 	eventer := func() (<-chan time.Time, func() bool) { return make(chan time.Time), func() bool { return true } }
 
 	waitForResponse(ctx, source, func() {
@@ -138,11 +138,11 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 		"VOTE_PROTOCOL": schema,
 	})
 
-	source := newVoteCountSource(env)
+	flow := newFlowVoteCount(env)
 	eventer := func() (<-chan time.Time, func() bool) { return make(chan time.Time), func() bool { return true } }
 
-	waitForResponse(ctx, source, func() {
-		go source.Connect(ctx, eventer, func(error) {})
+	waitForResponse(ctx, flow, func() {
+		go flow.Connect(ctx, eventer, func(error) {})
 	})
 
 	key1 := dskey.MustKey("poll/1/vote_count")
@@ -151,14 +151,13 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 		ctxTimeout, cancel := context.WithTimeout(ctx, time.Millisecond)
 		defer cancel()
 
-		_, err := source.Update(ctxTimeout)
-		if err != context.DeadlineExceeded {
-			t.Fatalf("Update: %v, expected context.DeadlineExceeded", err)
-		}
+		flow.Update(ctxTimeout, func(map[dskey.Key][]byte, error) {
+			t.Fatalf("Update was called")
+		})
 	})
 
 	t.Run("first data from vote-service", func(t *testing.T) {
-		got, err := updateResult(ctx, source, func() {
+		got, err := updateResult(ctx, flow, func() {
 			sender <- `{"1":42}`
 		})
 		if err != nil {
@@ -172,7 +171,7 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 	})
 
 	t.Run("second data from vote-service", func(t *testing.T) {
-		got, err := updateResult(ctx, source, func() {
+		got, err := updateResult(ctx, flow, func() {
 			sender <- `{"1":43}`
 		})
 		if err != nil {
@@ -186,7 +185,7 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 	})
 
 	t.Run("receive 0", func(t *testing.T) {
-		got, err := updateResult(ctx, source, func() {
+		got, err := updateResult(ctx, flow, func() {
 			sender <- `{"1":0}`
 		})
 		if err != nil {
@@ -227,7 +226,7 @@ func TestReconnect(t *testing.T) {
 		"VOTE_PROTOCOL": schema,
 	})
 
-	source := newVoteCountSource(env)
+	source := newFlowVoteCount(env)
 	go source.Connect(ctx, eventer, func(error) {})
 
 	sender <- struct{}{} // Close connection so there is a reconnect
@@ -262,15 +261,20 @@ func TestReconnectWhenDeletedBetween(t *testing.T) {
 		"VOTE_PROTOCOL": schema,
 	})
 
-	source := newVoteCountSource(env)
-	go source.Connect(ctx, eventer, func(error) {})
+	flow := newFlowVoteCount(env)
+	go flow.Connect(ctx, eventer, func(error) {})
 	msg <- `{"1":23,"2":42}`
 	msg <- `{"1":23}`
 
-	source.Update(ctx) // wait for the service to process the update.
+	received := make(chan struct{}, 0)
+	go flow.Update(ctx, func(map[dskey.Key][]byte, error) {
+		close(received)
+	})
+
+	<-received
 
 	key := dskey.MustKey("poll/2/vote_count")
-	data, err := source.Get(ctx, key)
+	data, err := flow.Get(ctx, key)
 	if err != nil {
 		t.Errorf("Get: %v", err)
 	}
@@ -299,7 +303,7 @@ func TestGetWithoutConnect(t *testing.T) {
 		"VOTE_PROTOCOL": schema,
 	})
 
-	source := newVoteCountSource(env)
+	source := newFlowVoteCount(env)
 
 	key := dskey.MustKey("poll/1/vote_count")
 
@@ -314,34 +318,34 @@ func TestGetWithoutConnect(t *testing.T) {
 
 // waitForResponse calls the given function and waits until the data is
 // processed.
-func waitForResponse(ctx context.Context, source *voteCountSource, fn func()) {
+func waitForResponse(ctx context.Context, flow *flowVoteCount, fn func()) {
+	myCtx, cancel := context.WithCancel(ctx)
+
 	received := make(chan struct{})
-	go func() {
-		source.Update(ctx) // wait for the service to process the update.
-		close(received)
-	}()
+	go flow.Update(myCtx, func(m map[dskey.Key][]byte, err error) {
+		cancel()
+	})
 
 	fn()
 
 	<-received
 }
 
-// updateResult returns the return values from source.Update after the given function is processed.
-func updateResult(ctx context.Context, source *voteCountSource, fn func()) (map[dskey.Key][]byte, error) {
+// updateResult returns the return values from flow.Update after the given function is processed.
+func updateResult(ctx context.Context, flow *flowVoteCount, fn func()) (map[dskey.Key][]byte, error) {
 	type dataErr struct {
 		data map[dskey.Key][]byte
 		err  error
 	}
 
-	done := make(chan dataErr)
-	go func() {
-		v, err := source.Update(ctx)
-		done <- dataErr{v, err}
-	}()
+	myCtx, cancel := context.WithCancel(ctx)
 
-	fn()
-
-	got := <-done
+	got := dataErr{}
+	flow.Update(myCtx, func(v map[dskey.Key][]byte, err error) {
+		fn()
+		got = dataErr{v, err}
+		cancel()
+	})
 
 	return got.data, got.err
 }

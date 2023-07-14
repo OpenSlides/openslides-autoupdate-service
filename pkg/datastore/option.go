@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
@@ -20,8 +21,8 @@ func WithVoteCount() Option {
 	}
 
 	return func(ds *Datastore, lookup environment.Environmenter) (func(context.Context, func(error)), error) {
-		voteCountSource := newVoteCountSource(lookup)
-		ds.keySource["poll/vote_count"] = voteCountSource
+		voteCountSource := newFlowVoteCount(lookup)
+		ds.additionalFlows["poll/vote_count"] = voteCountSource
 		background := func(ctx context.Context, errorHandler func(error)) {
 			voteCountSource.Connect(ctx, eventer, errorHandler)
 		}
@@ -29,10 +30,10 @@ func WithVoteCount() Option {
 	}
 }
 
-// WithDefaultSource uses a different (not postgres) source. Helpful for testing.
-func WithDefaultSource(source Source) Option {
+// WithDefaultFlow uses a different (not postgres) flow. Helpful for testing.
+func WithDefaultFlow(flow flow.Flow) Option {
 	return func(ds *Datastore, lookup environment.Environmenter) (func(context.Context, func(error)), error) {
-		ds.defaultSource = source
+		ds.flow = flow
 		return nil, nil
 	}
 }

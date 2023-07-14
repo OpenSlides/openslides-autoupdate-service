@@ -67,18 +67,21 @@ func (s *StubWithUpdate) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.
 }
 
 // Update blocks until new data is received via the Send method.
-func (s *StubWithUpdate) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
-	select {
-	case newValues := <-s.ch:
-		s.mu.Lock()
-		for k, v := range newValues {
-			s.stub[k] = v
-		}
-		s.mu.Unlock()
-		return newValues, nil
+func (s *StubWithUpdate) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+	for {
+		select {
+		case newValues := <-s.ch:
+			s.mu.Lock()
+			for k, v := range newValues {
+				s.stub[k] = v
+			}
+			updateFn(newValues, nil)
+			s.mu.Unlock()
+			continue
 
-	case <-ctx.Done():
-		return nil, ctx.Err()
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 

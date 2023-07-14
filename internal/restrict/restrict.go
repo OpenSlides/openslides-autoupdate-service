@@ -15,17 +15,17 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
-// Middleware can be used as a datastore.Getter that restrict the data for a
+// Middleware can be used as a flow.Getter that restrict the data for a
 // user.
 //
 // It also initializes a ctx that has to be used in the future getter calls.
-func Middleware(ctx context.Context, getter datastore.Getter, uid int) (context.Context, datastore.Getter) {
+func Middleware(ctx context.Context, getter flow.Getter, uid int) (context.Context, flow.Getter) {
 	ctx = contextWithCache(ctx, getter, uid)
 	return ctx, restricter{
 		getter: getter,
@@ -34,14 +34,14 @@ func Middleware(ctx context.Context, getter datastore.Getter, uid int) (context.
 }
 
 // contextWithCache adds some restrictor caches to the context.
-func contextWithCache(ctx context.Context, getter datastore.Getter, uid int) context.Context {
+func contextWithCache(ctx context.Context, getter flow.Getter, uid int) context.Context {
 	ctx = collection.ContextWithRestrictCache(ctx)
 	ctx = perm.ContextWithPermissionCache(ctx, getter, uid)
 	return ctx
 }
 
 type restricter struct {
-	getter datastore.Getter
+	getter flow.Getter
 	uid    int
 }
 
@@ -73,7 +73,7 @@ func (r restricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][
 
 // restrict changes the keys and values in data for the user with the given user
 // id.
-func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[dskey.Key][]byte) (map[string]timeCount, error) {
+func restrict(ctx context.Context, getter flow.Getter, uid int, data map[dskey.Key][]byte) (map[string]timeCount, error) {
 	ds := dsfetch.New(getter)
 
 	isSuperAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, uid, perm.OMLSuperadmin)
@@ -166,7 +166,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[ds
 	return times, nil
 }
 
-func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, data map[dskey.Key][]byte) error {
+func restrictSuperAdmin(ctx context.Context, getter flow.Getter, uid int, data map[dskey.Key][]byte) error {
 	ds := dsfetch.New(getter)
 
 	for key := range data {
