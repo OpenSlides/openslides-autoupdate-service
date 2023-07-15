@@ -30,14 +30,12 @@ type Datastore struct {
 	cache *cache
 
 	flow            flow.Flow
-	additionalFlows map[string]flow.Flow
+	additionalFlows map[string]flow.Flow // Only needed for the init process. Maybe can be removed?
 
 	changeListeners  []func(map[dskey.Key][]byte) error
 	calculatedFields map[string]func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error)
 	calculatedKeys   map[dskey.Key]string
 	calculatedKeysMu sync.RWMutex
-
-	resetMu sync.Mutex
 
 	metricGetHitCount uint64
 }
@@ -45,8 +43,6 @@ type Datastore struct {
 // New returns a new Datastore object.
 func New(lookup environment.Environmenter, messageBus flow.Updater, options ...Option) (*Datastore, func(context.Context, func(error)), error) {
 	ds := Datastore{
-		cache: newCache(),
-
 		additionalFlows: make(map[string]flow.Flow),
 
 		calculatedFields: make(map[string]func(context.Context, dskey.Key, map[dskey.Key][]byte) ([]byte, bool, error)),
@@ -78,6 +74,9 @@ func New(lookup environment.Environmenter, messageBus flow.Updater, options ...O
 		ds.flow = flow.Combine(ds.flow, ds.additionalFlows)
 	}
 
+	ds.cache = newCache(ds.flow)
+	ds.flow = ds.cache
+
 	metric.Register(ds.metric)
 
 	background := func(ctx context.Context, errorHandler func(error)) {
@@ -96,14 +95,16 @@ func New(lookup environment.Environmenter, messageBus flow.Updater, options ...O
 // If a key does not exist, the value nil is returned for that key.
 func (d *Datastore) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	atomic.AddUint64(&d.metricGetHitCount, 1)
-	values, err := d.cache.GetOrSet(ctx, keys, func(keys []dskey.Key, set func(map[dskey.Key][]byte)) error {
-		return d.loadKeys(keys, set)
-	})
-	if err != nil {
-		return nil, fmt.Errorf("getOrSet`: %w", err)
-	}
+	// TODO: projector (calculated keys)
+	return d.flow.Get(ctx, keys...)
+	// values, err := d.cache.GetOrSet(ctx, keys, func(keys []dskey.Key, set func(map[dskey.Key][]byte)) error {
+	// 	return d.loadKeys(keys, set)
+	// })
+	// if err != nil {
+	// 	return nil, fmt.Errorf("getOrSet`: %w", err)
+	// }
 
-	return values, nil
+	// return values, nil
 }
 
 // RegisterChangeListener registers a function that is called whenever an
@@ -132,9 +133,8 @@ func (d *Datastore) RegisterCalculatedField(
 
 // ResetCache clears the internal cache.
 func (d *Datastore) ResetCache() {
-	d.resetMu.Lock()
-	d.cache = newCache()
-	d.resetMu.Unlock()
+	// TODO: Make sure with works without a lock here
+	d.cache.Reset()
 }
 
 // listenOnUpdates listens for updates and informs all listeners.
@@ -149,24 +149,20 @@ func (d *Datastore) listenOnUpdates(ctx context.Context, errHandler func(error))
 			return
 		}
 
-		d.resetMu.Lock()
-		defer d.resetMu.Unlock()
+		// TODO: Handle projector
+		// d.calculatedKeysMu.RLock()
+		// for key, field := range d.calculatedKeys {
+		// 	bs, changed := d.calculateField(field, key, data)
+		// 	if !changed {
+		// 		continue
+		// 	}
 
-		d.cache.SetIfExistMany(data)
-
-		d.calculatedKeysMu.RLock()
-		for key, field := range d.calculatedKeys {
-			bs, changed := d.calculateField(field, key, data)
-			if !changed {
-				continue
-			}
-
-			// Update the cache and also update the data-map. The data-map is
-			// used later in this function to inform the changeListeners.
-			d.cache.SetIfExist(key, bs)
-			data[key] = bs
-		}
-		d.calculatedKeysMu.RUnlock()
+		// 	// Update the cache and also update the data-map. The data-map is
+		// 	// used later in this function to inform the changeListeners.
+		// 	d.cache.SetIfExist(key, bs)
+		// 	data[key] = bs
+		// }
+		// d.calculatedKeysMu.RUnlock()
 
 		for _, f := range d.changeListeners {
 			if err := f(data); err != nil {

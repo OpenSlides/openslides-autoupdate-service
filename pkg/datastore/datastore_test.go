@@ -24,7 +24,7 @@ var (
 )
 
 func TestDataStoreGet(t *testing.T) {
-	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
+	flow := dsmock.NewFlowFromStub(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"Hello World"`),
 	}))
 
@@ -43,7 +43,7 @@ func TestDataStoreGet(t *testing.T) {
 }
 
 func TestDataStoreGetMultiValue(t *testing.T) {
-	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
+	flow := dsmock.NewFlowFromStub(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"v1"`),
 		myKey2: []byte(`"v2"`),
 	}), dsmock.NewCounter)
@@ -61,13 +61,13 @@ func TestDataStoreGetMultiValue(t *testing.T) {
 		t.Errorf("Get() returned %s, expected %s", got, expect)
 	}
 
-	if counter := flow.Middlewares()[0].(*dsmock.Counter); counter.Value() != 1 {
-		t.Errorf("Got %d requests to the datastore, expected 1: %v", counter.Value(), counter.Requests())
+	if counter := flow.Middlewares()[0].(*dsmock.Counter); counter.Count() != 1 {
+		t.Errorf("Got %d requests to the datastore, expected 1: %v", counter.Count(), counter.Requests())
 	}
 }
 
 func TestDataStoreGetKeyTwice(t *testing.T) {
-	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
+	flow := dsmock.NewFlowFromStub(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"v1"`),
 	}), dsmock.NewCounter)
 
@@ -84,13 +84,13 @@ func TestDataStoreGetKeyTwice(t *testing.T) {
 		t.Errorf("Get() returned %s, expected %s", got, expect)
 	}
 
-	if counter := flow.Middlewares()[0].(*dsmock.Counter); counter.Value() != 1 {
-		t.Errorf("Got %d requests to the datastore, expected 1: %v", counter.Value(), counter.Requests())
+	if counter := flow.Middlewares()[0].(*dsmock.Counter); counter.Count() != 1 {
+		t.Errorf("Got %d requests to the datastore, expected 1: %v", counter.Count(), counter.Requests())
 	}
 }
 
 func TestCalculatedFields(t *testing.T) {
-	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
+	flow := dsmock.NewFlowFromStub(dsmock.Stub(map[dskey.Key][]byte{}))
 
 	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
@@ -123,7 +123,7 @@ func TestCalculatedFieldsNewDataInReceiver(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
+	flow := dsmock.NewFlowFromStub(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"original value"`),
 	}))
 
@@ -160,7 +160,7 @@ func TestCalculatedFieldsNewDataInReceiverAfterGet(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
+	flow := dsmock.NewFlowFromStub(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"original value"`),
 	}))
 
@@ -200,7 +200,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
+	flow := dsmock.NewFlowFromStub(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"original value"`),
 	}))
 
@@ -225,7 +225,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTime(t *testing.T) {
 }
 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.T) {
-	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{
+	flow := dsmock.NewFlowFromStub(dsmock.Stub(map[dskey.Key][]byte{
 		myKey1: []byte(`"original value"`),
 	}))
 
@@ -248,7 +248,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeTwice(t *testing.
 }
 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExist(t *testing.T) {
-	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
+	flow := dsmock.NewFlowFromStub(dsmock.Stub(map[dskey.Key][]byte{}))
 
 	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
@@ -270,7 +270,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExist(t 
 }
 
 func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExistTwice(t *testing.T) {
-	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
+	flow := dsmock.NewFlowFromStub(dsmock.Stub(map[dskey.Key][]byte{}))
 
 	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
@@ -292,7 +292,7 @@ func TestCalculatedFieldsRequireNormalFieldFetchedAtTheSameTimeAtDoesNotExistTwi
 }
 
 func TestCalculatedFieldsNoDBQuery(t *testing.T) {
-	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}), dsmock.NewCounter)
+	flow := dsmock.NewFlowFromStub(dsmock.Stub(map[dskey.Key][]byte{}), dsmock.NewCounter)
 
 	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
@@ -308,8 +308,8 @@ func TestCalculatedFieldsNoDBQuery(t *testing.T) {
 	_, err = ds.Get(ctx, myCalculated)
 	require.NoError(t, err, "Get returned unexpected error")
 
-	if counter := flow.Middlewares()[0].(*dsmock.Counter); counter.Value() != 0 {
-		t.Errorf("Got %d requests to the datastore, expected 0: %v", counter.Value(), counter.Requests())
+	if counter := flow.Middlewares()[0].(*dsmock.Counter); counter.Count() != 0 {
+		t.Errorf("Got %d requests to the datastore, expected 0: %v", counter.Count(), counter.Requests())
 	}
 }
 
@@ -317,7 +317,7 @@ func TestChangeListeners(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
+	flow := dsmock.NewFlowFromStub(dsmock.Stub(map[dskey.Key][]byte{}))
 
 	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
@@ -344,7 +344,7 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
+	flow := dsmock.NewFlowFromStub(dsmock.Stub(map[dskey.Key][]byte{}))
 	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
 		t.Fatalf("init ds: %v", err)
@@ -379,7 +379,7 @@ func TestChangeListenersWithCalculatedFields(t *testing.T) {
 }
 
 func TestResetCache(t *testing.T) {
-	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}), dsmock.NewCounter)
+	flow := dsmock.NewFlowFromStub(dsmock.Stub(map[dskey.Key][]byte{}), dsmock.NewCounter)
 
 	ds, _, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {
@@ -393,8 +393,8 @@ func TestResetCache(t *testing.T) {
 	ds.Get(context.Background(), myKey1)
 
 	// After a reset, the key should be fetched from the server again.
-	if counter := flow.Middlewares()[0].(*dsmock.Counter); counter.Value() != 2 {
-		t.Errorf("Got %d requests to the datastore, expected 2: %v", counter.Value(), counter.Requests())
+	if counter := flow.Middlewares()[0].(*dsmock.Counter); counter.Count() != 2 {
+		t.Errorf("Got %d requests to the datastore, expected 2: %v", counter.Count(), counter.Requests())
 	}
 }
 
@@ -402,7 +402,7 @@ func TestResetWhileUpdate(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	flow := dsmock.NewStubWithUpdate(dsmock.Stub(map[dskey.Key][]byte{}))
+	flow := dsmock.NewFlowFromStub(dsmock.Stub(map[dskey.Key][]byte{}))
 
 	ds, bg, err := datastore.New(environment.ForTests{}, nil, datastore.WithDefaultFlow(flow))
 	if err != nil {

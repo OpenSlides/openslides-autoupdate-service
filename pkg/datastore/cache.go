@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/pendingmap"
 )
 
@@ -13,6 +14,8 @@ import (
 type cacheSetFunc func(keys []dskey.Key, set func(map[dskey.Key][]byte)) error
 
 // cache stores the values to the datastore.
+//
+// It is impelemented as a flow middleware.
 //
 // Each value of the cache has three states. Either it exists, it does not
 // exist, or it is pending. Pending means, that there is a current request to
@@ -23,44 +26,41 @@ type cacheSetFunc func(keys []dskey.Key, set func(map[dskey.Key][]byte)) error
 // A new cache instance has to be created with newCache().
 type cache struct {
 	data *pendingmap.PendingMap
+	flow flow.Flow
 }
 
 // newCache creates an initialized cache instance.
-func newCache() *cache {
+func newCache(flow flow.Flow) *cache {
 	return &cache{
 		data: pendingmap.New(),
+		flow: flow,
 	}
 }
 
-// GetOrSet returns the values for a list of keys. If one or more keys do not
-// exist in the cache, then the missing values are fetched with the given set
-// function. If this method is called more then once at the same time, only the
-// first call fetches the result, the other calles get blocked until it the
-// answer was fetched.
+// Get returns the values for a list of keys. If one or more keys do not exist
+// in the cache, then the missing values are fetched. If this method is called
+// more then once at the same time, only the first call fetches the result, the
+// other calles get blocked until it the answer was fetched.
 //
-// If a key is not returned by set, GetOrSet returns nil for it. But if a
-// parallel call gets an error, GetOrSet also returns an error.
+// If a parallel call gets an error, GetOrSet also returns an error.
 //
 // All values get returned together. If only one key is missing, this function
 // blocks, until all values are retrieved.
 //
-// The set function is used to create the cache values. It is called only with
-// the missing keys.
+// If a value can not be fetched from the flow, it is saved in the cache as nil
+// to prevent a second call for the same key.
 //
-// If a value is not returned by the set function, it is saved in the cache as
-// nil to prevent a second call for the same key.
-//
-// If the context is done, GetOrSet returns. But the set() call is not stopped.
+// If the context is done, GetOrSet returns. But the call to the flow is not stopped.
 // Other calls to GetOrSet may wait for its result.
 //
 // Possible Errors: context.Canceled or context.DeadlineExeeded or the return
 // value from hte set func.
-func (c *cache) GetOrSet(ctx context.Context, keys []dskey.Key, set cacheSetFunc) (map[dskey.Key][]byte, error) {
+func (c *cache) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	// Blocks until all missing (but not pending) keys are fetched.
 	//
 	// After this call, all keys are either pending (from another parallel call)
 	// or in the c.data.
-	if err := c.fetchMissing(ctx, keys, set); err != nil {
+	if err := c.fetchMissing(ctx, keys); err != nil {
 		return nil, fmt.Errorf("fetching missing keys: %w", err)
 	}
 
@@ -80,7 +80,7 @@ func (c *cache) GetOrSet(ctx context.Context, keys []dskey.Key, set cacheSetFunc
 //
 // Possible Errors: context.Canceled or context.DeadlineExeeded or the return
 // value from the set func.
-func (c *cache) fetchMissing(ctx context.Context, keys []dskey.Key, set cacheSetFunc) error {
+func (c *cache) fetchMissing(ctx context.Context, keys []dskey.Key) error {
 	missingKeys := c.data.MarkPending(keys...)
 
 	if len(missingKeys) == 0 {
@@ -91,20 +91,20 @@ func (c *cache) fetchMissing(ctx context.Context, keys []dskey.Key, set cacheSet
 	// when the context is done. Other calls could also request it.
 	errChan := make(chan error, 1)
 	go func() {
-		err := set(missingKeys, func(data map[dskey.Key][]byte) {
-			for key, value := range data {
-				if string(value) == "null" {
-					data[key] = nil
-				}
-			}
-
-			c.data.SetIfPending(data)
-		})
+		data, err := c.flow.Get(ctx, missingKeys...)
 		if err != nil {
 			c.data.UnMarkPending(missingKeys...)
-			errChan <- fmt.Errorf("fetching missing keys: %w", err)
+			errChan <- fmt.Errorf("getting data from flow: %w", err)
 			return
 		}
+
+		for key, value := range data {
+			if string(value) == "null" {
+				data[key] = nil
+			}
+		}
+		// TODO: with this implementation, SetIfPending and SetEmptyIfPending could be one function to remove one lock.
+		c.data.SetIfPending(data)
 
 		// Make sure all pending keys are closed. Make also sure, that
 		// missing keys are set to nil.
@@ -125,22 +125,27 @@ func (c *cache) fetchMissing(ctx context.Context, keys []dskey.Key, set cacheSet
 	return nil
 }
 
-// SetIfExist updates the cache if the key exists or is pending.
-func (c *cache) SetIfExist(key dskey.Key, value []byte) {
-	if string(value) == "null" {
-		value = nil
+// Update gets values from the flow to update the cached values.
+func (c *cache) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+	if updateFn == nil {
+		updateFn = func(m map[dskey.Key][]byte, err error) {}
 	}
-	c.data.SetIfPendingOrExists(map[dskey.Key][]byte{key: value})
-}
 
-// SetIfExistMany is like SetIfExist but with many keys.
-func (c *cache) SetIfExistMany(data map[dskey.Key][]byte) {
-	for k, v := range data {
-		if string(v) == "null" {
-			data[k] = nil
+	c.flow.Update(ctx, func(data map[dskey.Key][]byte, err error) {
+		if err != nil {
+			updateFn(nil, err)
+			return
 		}
-	}
-	c.data.SetIfPendingOrExists(data)
+
+		for key, value := range data {
+			if string(value) == "null" {
+				data[key] = nil
+			}
+		}
+
+		c.data.SetIfPendingOrExists(data)
+		updateFn(data, nil)
+	})
 }
 
 func (c *cache) len() int {
@@ -149,4 +154,8 @@ func (c *cache) len() int {
 
 func (c *cache) size() int {
 	return c.data.Size()
+}
+
+func (c *cache) Reset() {
+	c.data.Reset()
 }

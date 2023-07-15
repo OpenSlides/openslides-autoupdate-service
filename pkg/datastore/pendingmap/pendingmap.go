@@ -239,6 +239,15 @@ func (pm *PendingMap) SetEmptyIfPending(keys ...dskey.Key) {
 	}
 }
 
+// Reset removes all data from PendingMap
+func (pm *PendingMap) Reset() {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+
+	pm.data = make(map[dskey.Key][]byte)
+	pm.pending = make(map[dskey.Key]chan struct{})
+}
+
 // Len returns the amout of keys in the pending map.
 func (pm *PendingMap) Len() int {
 	pm.mu.RLock()
