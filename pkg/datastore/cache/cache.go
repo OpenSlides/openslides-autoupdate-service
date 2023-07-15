@@ -111,7 +111,6 @@ func (c *Cache) fetchMissing(ctx context.Context, keys []dskey.Key) error {
 				data[key] = nil
 			}
 		}
-		// TODO: with this implementation, SetIfPending and SetEmptyIfPending could be one function to remove one lock.
 		c.data.SetIfPending(data)
 
 		errChan <- nil

@@ -24,8 +24,6 @@ var (
 )
 
 // FlowPostgres uses postgres to get the connections.
-//
-// TODO: This should be unexported, but there is an import cycle in the tests.
 type FlowPostgres struct {
 	pool    *pgxpool.Pool
 	updater flow.Updater
