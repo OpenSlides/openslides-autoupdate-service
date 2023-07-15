@@ -24,6 +24,9 @@ import (
 type Cache struct {
 	data *pendingmap.PendingMap
 	flow flow.Flow
+
+	onlyCollectionField bool
+	collectionField     dskey.Key
 }
 
 // New creates an initialized cache instance.

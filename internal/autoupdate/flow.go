@@ -20,14 +20,8 @@ import (
 // cached again.
 //
 //	postgres     <->
-//	                  cache2 <-> projector <-> cache1
+//	                  cache <-> projector
 //	vote-service <->
-//
-// The cache1 contains most of the data. cache2 only contains the data needed
-// for the projector.
-//
-// TODO: The cache1 needs an argument, that it only caches projector/content
-// fields, or the cache has to be part of the projector.
 type Flow struct {
 	flow.Flow
 	cacheReset func()
@@ -47,13 +41,11 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater) (*Flow, 
 		map[string]flow.Flow{"poll/vote_count": vote},
 	)
 
-	cache2 := cache.New(combined)
-	projector := projector.NewProjector(cache2, slide.Slides())
-	cache1 := cache.New(projector)
+	cache := cache.New(combined)
+	projector := projector.NewProjector(cache, slide.Slides())
 
 	cacheReset := func() {
-		cache1.Reset()
-		cache2.Reset()
+		cache.Reset()
 		projector.Reset()
 	}
 
@@ -67,7 +59,7 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater) (*Flow, 
 	}
 
 	return &Flow{
-		Flow:       cache1,
+		Flow:       projector,
 		cacheReset: cacheReset,
 	}, background, nil
 }

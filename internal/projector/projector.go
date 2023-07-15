@@ -23,6 +23,7 @@ const longCalculation = time.Second
 func NewProjector(ds flow.Flow, slides *SlideStore) *Projector {
 	return &Projector{
 		hotKeys: make(map[dskey.Key]map[dskey.Key]struct{}),
+		cache:   make(map[dskey.Key][]byte),
 
 		flow:   ds,
 		slides: slides,
@@ -40,8 +41,9 @@ func NewProjector(ds flow.Flow, slides *SlideStore) *Projector {
 // other projections return nil. If current_projector_id get updated to nil/0,
 // then the field is removed from the cache.
 type Projector struct {
-	mu      sync.Mutex
-	hotKeys map[dskey.Key]map[dskey.Key]struct{} // TODO use set.Sets
+	mu      sync.RWMutex
+	hotKeys map[dskey.Key]map[dskey.Key]struct{}
+	cache   map[dskey.Key][]byte
 
 	flow   flow.Flow
 	slides *SlideStore
@@ -68,11 +70,30 @@ func (p *Projector) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][
 		return values, nil
 	}
 
+	p.mu.RLock()
+	var needCalc []dskey.Key
 	for _, k := range contentKeys {
-		v := p.calculate(ctx, k)
+		v, ok := p.cache[k]
+		if !ok {
+			needCalc = append(needCalc, k)
+			continue
+		}
 
 		values[k] = v
 	}
+	p.mu.RUnlock()
+
+	if len(needCalc) == 0 {
+		return values, nil
+	}
+
+	p.mu.Lock()
+	for _, k := range needCalc {
+		v := p.calculate(ctx, k)
+		p.cache[k] = v
+		values[k] = v
+	}
+	p.mu.Unlock()
 
 	return values, nil
 }
@@ -85,6 +106,9 @@ func (p *Projector) Update(ctx context.Context, updateFn func(map[dskey.Key][]by
 			return
 		}
 
+		p.mu.Lock()
+		defer p.mu.Unlock()
+
 		needUpdate := p.needUpdate(data)
 
 		if len(needUpdate) == 0 {
@@ -95,6 +119,7 @@ func (p *Projector) Update(ctx context.Context, updateFn func(map[dskey.Key][]by
 		for _, key := range needUpdate {
 			value := p.calculate(ctx, key)
 			data[key] = value
+			p.cache[key] = value
 		}
 
 		updateFn(data, nil)
@@ -102,9 +127,6 @@ func (p *Projector) Update(ctx context.Context, updateFn func(map[dskey.Key][]by
 }
 
 func (p *Projector) needUpdate(data map[dskey.Key][]byte) []dskey.Key {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	var needUpdate []dskey.Key
 	for calculated := range p.hotKeys {
 		for key := range data {
@@ -150,9 +172,7 @@ func (p *Projector) calculateHelper(ctx context.Context, fqfield dskey.Key) ([]b
 	defer func() {
 		// At the end, save all requested keys to check later if one has
 		// changed.
-		p.mu.Lock()
 		p.hotKeys[fqfield] = recorder.Keys()
-		p.mu.Unlock()
 	}()
 
 	data := fetch.Object(
