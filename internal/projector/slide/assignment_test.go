@@ -64,7 +64,7 @@ func TestAssignment(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			ds, _ := dsmock.NewMockDatastore(tt.data)
+			ds := dsmock.NewFlow(tt.data)
 			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{

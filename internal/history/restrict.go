@@ -6,18 +6,18 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 )
 
 type restricter struct {
 	userID        int
-	currentGetter datastore.Getter
-	oldGetter     datastore.Getter
+	currentGetter flow.Getter
+	oldGetter     flow.Getter
 }
 
-func newRestricter(current datastore.Getter, old datastore.Getter, userID int) restricter {
+func newRestricter(current flow.Getter, old flow.Getter, userID int) restricter {
 	return restricter{userID, current, old}
 }
 

@@ -11,9 +11,9 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
@@ -33,7 +33,7 @@ type History struct {
 
 // KeysBuilder holds the keys that are requested by a user.
 type KeysBuilder interface {
-	Update(ctx context.Context, ds datastore.Getter) ([]dskey.Key, error)
+	Update(ctx context.Context, ds flow.Getter) ([]dskey.Key, error)
 }
 
 // New initializes a new history.

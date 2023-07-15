@@ -15,10 +15,10 @@ func TestSingleDataEmptyValues(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	flow := dsmock.NewFlow(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin
 	`))
-	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
+	s, _, _ := autoupdate.New(environment.ForTests{}, flow, RestrictAllowed)
 
 	kb, err := keysbuilder.FromKeys("user/1/username")
 	if err != nil {
@@ -39,7 +39,7 @@ func TestRestrictFQIDs(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	ds := dsmock.NewFlow(dsmock.YAMLData(`---
 		user/1:
 			username: superadmin
 			first_name: kevin

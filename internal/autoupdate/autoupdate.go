@@ -14,11 +14,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 	"github.com/ostcar/topic"
@@ -36,29 +37,18 @@ var (
 	envCacheReset      = environment.NewVariable("CACHE_RESET", "24h", "Time to reset the cache.")
 )
 
-// Datastore is the source for the data.
-type Datastore interface {
-	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
-	RegisterChangeListener(f func(map[dskey.Key][]byte) error)
-	ResetCache()
-	RegisterCalculatedField(
-		field string,
-		f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error),
-	)
-}
-
 // KeysBuilder holds the keys that are requested by a user.
 type KeysBuilder interface {
-	Update(ctx context.Context, ds datastore.Getter) ([]dskey.Key, error)
+	Update(ctx context.Context, ds flow.Getter) ([]dskey.Key, error)
 }
 
 // RestrictMiddleware is a function that can restrict data.
-type RestrictMiddleware func(ctx context.Context, getter datastore.Getter, uid int) (context.Context, datastore.Getter)
+type RestrictMiddleware func(ctx context.Context, getter flow.Getter, uid int) (context.Context, flow.Getter)
 
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
 // with autoupdate.New().
 type Autoupdate struct {
-	datastore  Datastore
+	flow       flow.Flow
 	topic      *topic.Topic[dskey.Key]
 	restricter RestrictMiddleware
 	pool       *workPool
@@ -70,7 +60,7 @@ type Autoupdate struct {
 //
 // You should call `go a.PruneOldData()` and `go a.ResetCache()` after creating
 // the service.
-func New(lookup environment.Environmenter, ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context.Context, func(error)), error) {
+func New(lookup environment.Environmenter, flow flow.Flow, restricter RestrictMiddleware) (*Autoupdate, func(context.Context, func(error)), error) {
 	workers, err := strconv.Atoi(envConcurentWorker.Value(lookup))
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid value for %s: %w", envConcurentWorker.Key, err)
@@ -86,27 +76,29 @@ func New(lookup environment.Environmenter, ds Datastore, restricter RestrictMidd
 	}
 
 	a := &Autoupdate{
-		datastore:  ds,
+		flow:       flow,
 		topic:      topic.New[dskey.Key](),
 		restricter: restricter,
 		pool:       newWorkPool(workers),
 		cacheReset: cacheResetTime,
 	}
 
-	// Update the topic when an data update is received.
-	a.datastore.RegisterChangeListener(func(data map[dskey.Key][]byte) error {
-		keys := make([]dskey.Key, 0, len(data))
-		for k := range data {
-			keys = append(keys, k)
-		}
-
-		a.topic.Publish(keys...)
-		return nil
-	})
-
 	background := func(ctx context.Context, errorHandler func(error)) {
 		go a.pruneOldData(ctx)
 		go a.resetCache(ctx)
+		go a.flow.Update(ctx, func(data map[dskey.Key][]byte, err error) {
+			if err != nil {
+				oserror.Handle(err)
+				// Continue. The update function can return an error and data.
+			}
+
+			keys := make([]dskey.Key, 0, len(data))
+			for k := range data {
+				keys = append(keys, k)
+			}
+
+			a.topic.Publish(keys...)
+		})
 	}
 
 	return a, background, nil
@@ -137,7 +129,7 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (D
 
 // SingleData returns the data for the given keysbuilder without autoupdates.
 func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder) (map[dskey.Key][]byte, error) {
-	ctx, restricter := a.restricter(ctx, a.datastore, userID)
+	ctx, restricter := a.restricter(ctx, a.flow, userID)
 
 	keys, err := kb.Update(ctx, restricter)
 	if err != nil {
@@ -177,6 +169,14 @@ func (a *Autoupdate) pruneOldData(ctx context.Context) {
 // resetCache runs in the background and cleans the cache from time to time.
 // Blocks until the service is closed.
 func (a *Autoupdate) resetCache(ctx context.Context) {
+	type resetter interface {
+		ResetCache()
+	}
+	reset, ok := a.flow.(resetter)
+	if !ok {
+		return
+	}
+
 	tick := time.NewTicker(a.cacheReset)
 	defer tick.Stop()
 
@@ -185,7 +185,7 @@ func (a *Autoupdate) resetCache(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-tick.C:
-			a.datastore.ResetCache()
+			reset.ResetCache()
 		}
 	}
 }
@@ -227,7 +227,7 @@ func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []stri
 		}
 	}
 
-	ctx, restricter := a.restricter(ctx, a.datastore, userID)
+	ctx, restricter := a.restricter(ctx, a.flow, userID)
 
 	values, err := restricter.Get(ctx, keys...)
 	if err != nil {
@@ -260,7 +260,7 @@ func (a *Autoupdate) skipWorkpool(ctx context.Context, userID int) (bool, error)
 		return false, nil
 	}
 
-	ds := dsfetch.New(a.datastore)
+	ds := dsfetch.New(a.flow)
 
 	meetingUserIDs, err := ds.User_MeetingUserIDs(userID).Value(ctx)
 	if err != nil {
@@ -288,7 +288,7 @@ func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (boo
 		return false, nil
 	}
 
-	ds := dsfetch.New(a.datastore)
+	ds := dsfetch.New(a.flow)
 
 	hasOML, err := perm.HasOrganizationManagementLevel(ctx, ds, userID, perm.OMLCanManageOrganization)
 	if err != nil {
