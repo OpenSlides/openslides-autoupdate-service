@@ -36,11 +36,7 @@ type Flow struct {
 
 // NewFlow initializes a stub with Get and Update.
 func NewFlow(data map[dskey.Key][]byte, middlewares ...func(flow.Getter) flow.Getter) *Flow {
-	return NewFlowFromStub(Stub(data), middlewares...)
-}
-
-// NewFlowFromStub adds an update function to a Stub.
-func NewFlowFromStub(stub Stub, middlewares ...func(flow.Getter) flow.Getter) *Flow {
+	stub := Stub(data)
 	getter := flow.Getter(stub)
 	initialized := make([]flow.Getter, len(middlewares))
 	for i, m := range middlewares {
