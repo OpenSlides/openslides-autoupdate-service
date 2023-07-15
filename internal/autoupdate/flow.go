@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
@@ -24,7 +25,9 @@ import (
 //	vote-service <->
 type Flow struct {
 	flow.Flow
-	cacheReset func()
+
+	cache     *cache.Cache
+	projector *projector.Projector
 }
 
 // NewFlow initializes a flow for the autoupdate service.
@@ -44,11 +47,6 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater) (*Flow, 
 	cache := cache.New(combined)
 	projector := projector.NewProjector(cache, slide.Slides())
 
-	cacheReset := func() {
-		cache.Reset()
-		projector.Reset()
-	}
-
 	eventer := func() (<-chan time.Time, func() bool) {
 		timer := time.NewTimer(time.Second)
 		return timer.C, timer.Stop
@@ -59,21 +57,19 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater) (*Flow, 
 	}
 
 	return &Flow{
-		Flow:       projector,
-		cacheReset: cacheReset,
+		Flow:      projector,
+		cache:     cache,
+		projector: projector,
 	}, background, nil
 }
 
 // ResetCache clears the cache.
 func (f *Flow) ResetCache() {
-	f.cacheReset()
+	f.cache.Reset()
+	f.projector.Reset()
 }
 
-// TODO
-// func (f *Flow) metric(values metric.Container) {
-// 	values.Add("datastore_cache_key_len", f.cache.len())
-// 	values.Add("datastore_cache_size", f.cache.size())
-
-// 	hitCount := atomic.LoadUint64(&f.metricGetHitCount)
-// 	values.Add("datastore_get_calls", int(hitCount))
-// }
+func (f *Flow) metric(values metric.Container) {
+	values.Add("datastore_cache_key_len", f.cache.Len())
+	values.Add("datastore_cache_size", f.cache.Size())
+}

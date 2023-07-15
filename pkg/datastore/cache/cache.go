@@ -152,11 +152,13 @@ func (c *Cache) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, 
 	})
 }
 
-func (c *Cache) len() int {
+// Len returns the amount of keys in the cache.
+func (c *Cache) Len() int {
 	return c.data.Len()
 }
 
-func (c *Cache) size() int {
+// Size returns the size of all values in the cache.
+func (c *Cache) Size() int {
 	return c.data.Size()
 }
 
