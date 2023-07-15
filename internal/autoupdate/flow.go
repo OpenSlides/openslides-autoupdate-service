@@ -56,11 +56,15 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater) (*Flow, 
 		vote.Connect(ctx, eventer, errorHandler)
 	}
 
-	return &Flow{
+	flow := Flow{
 		Flow:      projector,
 		cache:     cache,
 		projector: projector,
-	}, background, nil
+	}
+
+	metric.Register(flow.metric)
+
+	return &flow, background, nil
 }
 
 // ResetCache clears the cache.
