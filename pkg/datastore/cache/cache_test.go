@@ -1,4 +1,4 @@
-package datastore
+package cache_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/cache"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
@@ -18,7 +19,7 @@ func TestCache_call_Get_returns_the_value_from_flow(t *testing.T) {
 	key/1/field: value
 	`))
 
-	c := newCache(flow)
+	c := cache.New(flow)
 
 	got, err := c.Get(ctx, myKey)
 	if err != nil {
@@ -39,7 +40,7 @@ func TestCache_Get_with_a_key_not_in_the_flow_returns_nil_as_value(t *testing.T)
 	)
 	counter := flow.Middlewares()[0].(*dsmock.Counter)
 	myKey := dskey.MustKey("key/1/field")
-	c := newCache(flow)
+	c := cache.New(flow)
 
 	if _, err := c.Get(ctx, myKey); err != nil {
 		t.Errorf("cache.Get(): %v", err)
@@ -71,7 +72,7 @@ func TestCache_call_Get_two_times_only_calls_the_flow_one_time(t *testing.T) {
 		dsmock.NewCounter,
 	)
 	myKey := dskey.MustKey("key/1/field")
-	c := newCache(flow)
+	c := cache.New(flow)
 
 	if _, err := c.Get(ctx, myKey); err != nil {
 		t.Fatalf("cache.Get(): %v", err)
@@ -97,7 +98,7 @@ func TestCache_calling_get_at_the_same_time_second_call_waits_until_first_is_fin
 		dsmock.NewWait(wait),
 	)
 	myKey := dskey.MustKey("key/1/field")
-	c := newCache(flow)
+	c := cache.New(flow)
 
 	err1 := make(chan error)
 	go func() {
@@ -148,7 +149,7 @@ func TestCache_Get_gets_an_error_from_flow_does_not_effect_a_second_call_to_Get(
 		dsmock.NewWait(waiter),
 	)
 	myKey1 := dskey.MustKey("key/1/field")
-	c := newCache(flow)
+	c := cache.New(flow)
 
 	waiter <- fmt.Errorf("some error")
 	if _, err := c.Get(ctx, myKey1); err == nil {
@@ -174,7 +175,7 @@ func TestCache_Update_values_not_in_the_cache_do_not_update_the_cache(t *testing
 	)
 	myKey1 := dskey.MustKey("key/1/field")
 	myKey2 := dskey.MustKey("key/2/field")
-	c := newCache(flow)
+	c := cache.New(flow)
 
 	// Calls update in background.
 	go c.Update(ctx, nil)
@@ -213,12 +214,12 @@ func TestCache_Get_a_value_when_in_parallel_it_is_updated(t *testing.T) {
 
 	flow := dsmock.NewFlow(
 		dsmock.YAMLData(`---
-		key/1/field: value
+		key/1/field: old value
 		`),
 		dsmock.NewWait(waiter),
 	)
 	myKey := dskey.MustKey("key/1/field")
-	c := newCache(flow)
+	c := cache.New(flow)
 
 	go c.Update(ctx, nil)
 
@@ -249,8 +250,16 @@ func TestCache_Get_a_value_when_in_parallel_it_is_updated(t *testing.T) {
 
 	expect := map[dskey.Key][]byte{myKey: []byte("new value")}
 	if !reflect.DeepEqual(got.data, expect) {
-		t.Errorf("Got %v, expected %v", got.data, expect)
+		t.Errorf("Got %v, expected %v", converted(got.data), converted(expect))
 	}
+}
+
+func converted(data map[dskey.Key][]byte) map[string]string {
+	out := make(map[string]string, len(data))
+	for k, v := range data {
+		out[k.String()] = string(v)
+	}
+	return out
 }
 
 func TestCache_flow_returns_null_should_return_nil(t *testing.T) {
@@ -262,7 +271,7 @@ func TestCache_flow_returns_null_should_return_nil(t *testing.T) {
 		`),
 	)
 	myKey := dskey.MustKey("key/1/field")
-	c := newCache(flow)
+	c := cache.New(flow)
 
 	got, err := c.Get(ctx, myKey)
 	if err != nil {
@@ -287,7 +296,7 @@ func TestCache_flow_update_pushed_null_is_saved_as_nil(t *testing.T) {
 	)
 	counter := flow.Middlewares()[0].(*dsmock.Counter)
 	myKey := dskey.MustKey("key/1/field")
-	c := newCache(flow)
+	c := cache.New(flow)
 
 	waitForUpdated := make(chan struct{})
 	go c.Update(ctx, func(map[dskey.Key][]byte, error) {

@@ -1,37 +1,34 @@
-package datastore
+package cache
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/cache/pendingmap"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/pendingmap"
 )
 
-// cacheSetFunc is a function to update cache keys.
-type cacheSetFunc func(keys []dskey.Key, set func(map[dskey.Key][]byte)) error
-
-// cache stores the values to the datastore.
+// Cache stores the values to the datastore.
 //
 // It is impelemented as a flow middleware.
 //
-// Each value of the cache has three states. Either it exists, it does not
+// Each value of the Cache has three states. Either it exists, it does not
 // exist, or it is pending. Pending means, that there is a current request to
 // the datastore. An existing key can have the value `nil` which means, that the
-// cache knows, that the key does not exist in the datastore. Each value
+// Cache knows, that the key does not exist in the datastore. Each value
 // []byte("null") is changed to nil.
 //
-// A new cache instance has to be created with newCache().
-type cache struct {
+// A new Cache instance has to be created with newCache().
+type Cache struct {
 	data *pendingmap.PendingMap
 	flow flow.Flow
 }
 
-// newCache creates an initialized cache instance.
-func newCache(flow flow.Flow) *cache {
-	return &cache{
+// New creates an initialized cache instance.
+func New(flow flow.Flow) *Cache {
+	return &Cache{
 		data: pendingmap.New(),
 		flow: flow,
 	}
@@ -55,7 +52,7 @@ func newCache(flow flow.Flow) *cache {
 //
 // Possible Errors: context.Canceled or context.DeadlineExeeded or the return
 // value from hte set func.
-func (c *cache) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+func (c *Cache) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	// Blocks until all missing (but not pending) keys are fetched.
 	//
 	// After this call, all keys are either pending (from another parallel call)
@@ -80,7 +77,7 @@ func (c *cache) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byt
 //
 // Possible Errors: context.Canceled or context.DeadlineExeeded or the return
 // value from the set func.
-func (c *cache) fetchMissing(ctx context.Context, keys []dskey.Key) error {
+func (c *Cache) fetchMissing(ctx context.Context, keys []dskey.Key) error {
 	missingKeys := c.data.MarkPending(keys...)
 
 	if len(missingKeys) == 0 {
@@ -130,7 +127,7 @@ func (c *cache) fetchMissing(ctx context.Context, keys []dskey.Key) error {
 }
 
 // Update gets values from the flow to update the cached values.
-func (c *cache) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+func (c *Cache) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
 	if updateFn == nil {
 		updateFn = func(m map[dskey.Key][]byte, err error) {}
 	}
@@ -152,14 +149,15 @@ func (c *cache) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, 
 	})
 }
 
-func (c *cache) len() int {
+func (c *Cache) len() int {
 	return c.data.Len()
 }
 
-func (c *cache) size() int {
+func (c *Cache) size() int {
 	return c.data.Size()
 }
 
-func (c *cache) Reset() {
+// Reset clears the cache.
+func (c *Cache) Reset() {
 	c.data.Reset()
 }

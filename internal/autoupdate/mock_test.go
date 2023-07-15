@@ -13,13 +13,13 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
-func getConnection() (func(context.Context) (map[dskey.Key][]byte, error), *dsmock.MockDatastore, func(context.Context, func(error))) {
-	datastore, dsBackground := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+func getConnection() (func(context.Context) (map[dskey.Key][]byte, error), *dsmock.Flow, func(context.Context, func(error))) {
+	datastore := dsmock.NewFlow(dsmock.YAMLData(`---
 	user/1/name: Hello World
 	`))
 
 	lookup := environment.ForTests{}
-	s, _, _ := autoupdate.New(lookup, datastore, RestrictAllowed)
+	s, bg, _ := autoupdate.New(lookup, datastore, RestrictAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 	next, err := s.Connect(context.Background(), 1, kb)
 	if err != nil {
@@ -28,7 +28,7 @@ func getConnection() (func(context.Context) (map[dskey.Key][]byte, error), *dsmo
 
 	f, _ := next()
 
-	return f, datastore, dsBackground
+	return f, datastore, bg
 }
 
 func blocking(f func()) bool {

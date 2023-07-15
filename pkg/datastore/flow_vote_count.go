@@ -22,8 +22,8 @@ var (
 
 const voteCountPath = "/internal/vote/vote_count"
 
-// flowVoteCount is a datastore flow for the poll/vote_count value.
-type flowVoteCount struct {
+// FlowVoteCount is a datastore flow for the poll/vote_count value.
+type FlowVoteCount struct {
 	voteServiceURL string
 	client         *http.Client
 	id             uint64
@@ -34,8 +34,8 @@ type flowVoteCount struct {
 	ready     chan struct{}
 }
 
-// newFlowVoteCount initializes the object.
-func newFlowVoteCount(lookup environment.Environmenter) *flowVoteCount {
+// NewFlowVoteCount initializes the object.
+func NewFlowVoteCount(lookup environment.Environmenter) *FlowVoteCount {
 	url := fmt.Sprintf(
 		"%s://%s:%s",
 		envVoteProtocol.Value(lookup),
@@ -43,7 +43,7 @@ func newFlowVoteCount(lookup environment.Environmenter) *flowVoteCount {
 		envVotePort.Value(lookup),
 	)
 
-	flow := flowVoteCount{
+	flow := FlowVoteCount{
 		voteServiceURL: url,
 		client:         &http.Client{},
 		update:         make(chan map[int]int, 1),
@@ -60,7 +60,7 @@ func newFlowVoteCount(lookup environment.Environmenter) *flowVoteCount {
 // eventProvider is a function that returns a channel. If the connection fails,
 // this function fetches such a channel and waits for a signal before it tries
 // to open a new connection.
-func (s *flowVoteCount) Connect(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool), errHandler func(error)) {
+func (s *FlowVoteCount) Connect(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool), errHandler func(error)) {
 	for ctx.Err() == nil {
 		if err := s.connect(ctx); err != nil {
 			errHandler(fmt.Errorf("connecting to vote service: %w", err))
@@ -71,7 +71,7 @@ func (s *flowVoteCount) Connect(ctx context.Context, eventProvider func() (<-cha
 }
 
 // wait waits for an event in s.eventProvider.
-func (s *flowVoteCount) wait(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool)) {
+func (s *FlowVoteCount) wait(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool)) {
 	event, close := eventProvider()
 	defer close()
 
@@ -81,7 +81,7 @@ func (s *flowVoteCount) wait(ctx context.Context, eventProvider func() (<-chan t
 	}
 }
 
-func (s *flowVoteCount) connect(ctx context.Context) error {
+func (s *FlowVoteCount) connect(ctx context.Context) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", s.voteServiceURL+voteCountPath, nil)
 	if err != nil {
 		return fmt.Errorf("building request: %w", err)
@@ -128,7 +128,7 @@ func (s *flowVoteCount) connect(ctx context.Context) error {
 }
 
 // Get is called when a key is not in the cache.
-func (s *flowVoteCount) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+func (s *FlowVoteCount) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	select {
 	case <-s.ready:
 	case <-ctx.Done():
@@ -154,7 +154,7 @@ func (s *flowVoteCount) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.K
 }
 
 // Update has to be called frequently. It blocks, until there is new data.
-func (s *flowVoteCount) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+func (s *FlowVoteCount) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
 	for {
 		var data map[int]int
 		select {

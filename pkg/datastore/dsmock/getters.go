@@ -62,14 +62,12 @@ func (s *Flow) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte
 
 // Update blocks until new data is received via the Send method.
 func (s *Flow) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+	if updateFn == nil {
+		updateFn = func(map[dskey.Key][]byte, error) {}
+	}
 	for {
 		select {
 		case newValues := <-s.ch:
-			s.mu.Lock()
-			for k, v := range newValues {
-				s.stub[k] = v
-			}
-			s.mu.Unlock()
 			updateFn(newValues, nil)
 			continue
 
@@ -81,6 +79,11 @@ func (s *Flow) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, e
 
 // Send sends keys to the mock that can be received with Update().
 func (s *Flow) Send(values map[dskey.Key][]byte) {
+	s.mu.Lock()
+	for k, v := range values {
+		s.stub[k] = v
+	}
+	s.mu.Unlock()
 	s.ch <- values
 }
 
