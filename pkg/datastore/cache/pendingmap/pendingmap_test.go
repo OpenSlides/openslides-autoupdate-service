@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/cache/pendingmap"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/pendingmap"
 )
 
 func TestGet_When_a_key_gets_unmarked_while_waiting_an_error_is_returned(t *testing.T) {

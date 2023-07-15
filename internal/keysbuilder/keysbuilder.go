@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 )
 
 // Builder builds the keys. It is not save for concourent use. There is one
@@ -78,7 +78,7 @@ func bodyFieldLen(bodies []body) int {
 // tree.
 //
 // It is not allowed to call builder.Keys() after Update returned an error.
-func (b *Builder) Update(ctx context.Context, getter datastore.Getter) ([]dskey.Key, error) {
+func (b *Builder) Update(ctx context.Context, getter flow.Getter) ([]dskey.Key, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 

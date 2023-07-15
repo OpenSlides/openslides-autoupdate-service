@@ -22,8 +22,8 @@ var (
 
 const voteCountPath = "/internal/vote/vote_count"
 
-// voteCountSource is a datastore source for the poll/vote_count value.
-type voteCountSource struct {
+// FlowVoteCount is a datastore flow for the poll/vote_count value.
+type FlowVoteCount struct {
 	voteServiceURL string
 	client         *http.Client
 	id             uint64
@@ -34,8 +34,8 @@ type voteCountSource struct {
 	ready     chan struct{}
 }
 
-// newVoteCountSource initializes the object.
-func newVoteCountSource(lookup environment.Environmenter) *voteCountSource {
+// NewFlowVoteCount initializes the object.
+func NewFlowVoteCount(lookup environment.Environmenter) *FlowVoteCount {
 	url := fmt.Sprintf(
 		"%s://%s:%s",
 		envVoteProtocol.Value(lookup),
@@ -43,7 +43,7 @@ func newVoteCountSource(lookup environment.Environmenter) *voteCountSource {
 		envVotePort.Value(lookup),
 	)
 
-	source := voteCountSource{
+	flow := FlowVoteCount{
 		voteServiceURL: url,
 		client:         &http.Client{},
 		update:         make(chan map[int]int, 1),
@@ -51,7 +51,7 @@ func newVoteCountSource(lookup environment.Environmenter) *voteCountSource {
 		ready:          make(chan struct{}),
 	}
 
-	return &source
+	return &flow
 }
 
 // Connect creates a connection to the vote service and makes sure, it stays
@@ -60,7 +60,7 @@ func newVoteCountSource(lookup environment.Environmenter) *voteCountSource {
 // eventProvider is a function that returns a channel. If the connection fails,
 // this function fetches such a channel and waits for a signal before it tries
 // to open a new connection.
-func (s *voteCountSource) Connect(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool), errHandler func(error)) {
+func (s *FlowVoteCount) Connect(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool), errHandler func(error)) {
 	for ctx.Err() == nil {
 		if err := s.connect(ctx); err != nil {
 			errHandler(fmt.Errorf("connecting to vote service: %w", err))
@@ -71,7 +71,7 @@ func (s *voteCountSource) Connect(ctx context.Context, eventProvider func() (<-c
 }
 
 // wait waits for an event in s.eventProvider.
-func (s *voteCountSource) wait(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool)) {
+func (s *FlowVoteCount) wait(ctx context.Context, eventProvider func() (<-chan time.Time, func() bool)) {
 	event, close := eventProvider()
 	defer close()
 
@@ -81,7 +81,7 @@ func (s *voteCountSource) wait(ctx context.Context, eventProvider func() (<-chan
 	}
 }
 
-func (s *voteCountSource) connect(ctx context.Context) error {
+func (s *FlowVoteCount) connect(ctx context.Context) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", s.voteServiceURL+voteCountPath, nil)
 	if err != nil {
 		return fmt.Errorf("building request: %w", err)
@@ -128,7 +128,7 @@ func (s *voteCountSource) connect(ctx context.Context) error {
 }
 
 // Get is called when a key is not in the cache.
-func (s *voteCountSource) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+func (s *FlowVoteCount) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	select {
 	case <-s.ready:
 	case <-ctx.Done():
@@ -154,22 +154,25 @@ func (s *voteCountSource) Get(ctx context.Context, keys ...dskey.Key) (map[dskey
 }
 
 // Update has to be called frequently. It blocks, until there is new data.
-func (s *voteCountSource) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
-	var data map[int]int
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
+func (s *FlowVoteCount) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+	for {
+		var data map[int]int
+		select {
+		case <-ctx.Done():
+			return // TODO: Should the error be returned?
 
-	case data = <-s.update:
-	}
-
-	out := make(map[dskey.Key][]byte, len(data))
-	for pollID, count := range data {
-		bs := []byte(strconv.Itoa(count))
-		if count == 0 {
-			bs = nil
+		case data = <-s.update:
 		}
-		out[dskey.Key{Collection: "poll", ID: pollID, Field: "vote_count"}] = bs
+
+		out := make(map[dskey.Key][]byte, len(data))
+		for pollID, count := range data {
+			bs := []byte(strconv.Itoa(count))
+			if count == 0 {
+				bs = nil
+			}
+			out[dskey.Key{Collection: "poll", ID: pollID, Field: "vote_count"}] = bs
+		}
+
+		updateFn(out, nil)
 	}
-	return out, nil
 }

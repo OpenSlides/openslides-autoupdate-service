@@ -2,7 +2,7 @@ package keysbuilder_test
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -464,6 +464,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestConcurency(t *testing.T) {
+	ctx := context.Background()
 	jsonData := `
 	{
 		"ids": [1, 2, 3],
@@ -484,26 +485,30 @@ func TestConcurency(t *testing.T) {
 
 	}`
 
-	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
-	user/1/group_ids: [1,2]
-	user/2/group_ids: [1,2]
-	user/3/group_ids: [1,2]
-	group/1/perm_ids: [1,2]
-	group/2/perm_ids: [1,2]
-	`))
+	ds := dsmock.NewFlow(
+		dsmock.YAMLData(`---
+		user/1/group_ids: [1,2]
+		user/2/group_ids: [1,2]
+		user/3/group_ids: [1,2]
+		group/1/perm_ids: [1,2]
+		group/2/perm_ids: [1,2]
+		`),
+		dsmock.NewCounter,
+	)
+	counter := ds.Middlewares()[0].(*dsmock.Counter)
 
 	b, err := keysbuilder.FromJSON(strings.NewReader(jsonData))
 	if err != nil {
 		t.Fatalf("Expected FromJSON() not to return an error, got: %v", err)
 	}
 
-	keys, err := b.Update(context.Background(), ds)
+	keys, err := b.Update(ctx, ds)
 	if err != nil {
 		t.Fatalf("Building keys: %v", err)
 	}
 
-	if got := len(ds.Requests()); got != 2 {
-		t.Errorf("Got %d requests to the datastore, expected 2: %v", got, ds.Requests())
+	if got := counter.Count(); got != 2 {
+		t.Errorf("Got %d requests to the datastore, expected 2: %v", got, counter.Requests())
 	}
 
 	expect := mustKeys("user/1/group_ids", "user/2/group_ids", "user/3/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name")
@@ -542,10 +547,14 @@ func TestManyRequests(t *testing.T) {
 		}
 	]`
 
-	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
-	user/1/note_id: 1
-	user/2/note_id: 1
-	`))
+	ds := dsmock.NewFlow(
+		dsmock.YAMLData(`---
+		user/1/note_id: 1
+		user/2/note_id: 1
+		`),
+		dsmock.NewCounter,
+	)
+	counter := ds.Middlewares()[0].(*dsmock.Counter)
 
 	b, err := keysbuilder.ManyFromJSON(strings.NewReader(jsonData))
 	if err != nil {
@@ -557,8 +566,8 @@ func TestManyRequests(t *testing.T) {
 		t.Fatalf("Building keys: %v", err)
 	}
 
-	if got := len(ds.Requests()); got != 1 {
-		t.Errorf("Got %d requests, expected 1: %v", got, ds.Requests())
+	if got := counter.Count(); got != 1 {
+		t.Errorf("Got %d requests, expected 1: %v", got, counter.Requests())
 	}
 
 	expect := mustKeys("user/1/note_id", "user/2/note_id", "motion/1/name", "note/1/important")
@@ -617,8 +626,16 @@ func TestManyRequestsSameKeys(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
-	ds, _ := dsmock.NewMockDatastore(nil)
-	ds.InjectError(errors.New("Some Error"))
+	ctx := context.Background()
+	waiter := make(chan error, 1)
+	ds := dsmock.NewFlow(
+		nil,
+		dsmock.NewWait(waiter),
+		dsmock.NewCounter,
+	)
+	counter := ds.Middlewares()[1].(*dsmock.Counter)
+	waiter <- fmt.Errorf("some error")
+
 	json := `
 	{
 		"ids": [1],
@@ -637,17 +654,22 @@ func TestError(t *testing.T) {
 		t.Fatalf("Got unexpected error: %v", err)
 	}
 
-	if _, err := b.Update(context.Background(), ds); err == nil {
+	if _, err := b.Update(ctx, ds); err == nil {
 		t.Fatalf("Expected Update() to return an error, got none")
 	}
 
-	if got := len(ds.Requests()); got != 0 {
-		t.Errorf("Got %d requests, expected 0: %v", got, ds.Requests())
+	if got := counter.Count(); got != 1 {
+		t.Errorf("Got %d requests, expected 1: %v", got, counter.Requests())
 	}
 }
 
 func TestRequestCount(t *testing.T) {
-	ds, _ := dsmock.NewMockDatastore(nil)
+	ctx := context.Background()
+	ds := dsmock.NewFlow(
+		nil,
+		dsmock.NewCounter,
+	)
+	counter := ds.Middlewares()[0].(*dsmock.Counter)
 	json := `{
 		"ids": [1],
 		"collection": "user",
@@ -676,11 +698,11 @@ func TestRequestCount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FromJSON returned unexpected error: %v", err)
 	}
-	if _, err := b.Update(context.Background(), ds); err != nil {
+	if _, err := b.Update(ctx, ds); err != nil {
 		t.Fatalf("Building keys: %v", err)
 	}
 
-	if got := len(ds.Requests()); got != 1 {
+	if got := counter.Count(); got != 1 {
 		t.Errorf("Updated() did %d requests, expected 1", got)
 	}
 }
