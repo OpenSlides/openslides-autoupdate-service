@@ -98,6 +98,14 @@ func (c *cache) fetchMissing(ctx context.Context, keys []dskey.Key) error {
 			return
 		}
 
+		if len(data) != len(missingKeys) {
+			// A getter has to return the same amount of values, as keys where
+			// requested. So this check should not be necessary. But there will
+			// be very strange behaviour, if the getter has a but.
+			errChan <- fmt.Errorf("got %d keys from getter, but requested %d", len(data), len(missingKeys))
+			return
+		}
+
 		for key, value := range data {
 			if string(value) == "null" {
 				data[key] = nil
@@ -105,10 +113,6 @@ func (c *cache) fetchMissing(ctx context.Context, keys []dskey.Key) error {
 		}
 		// TODO: with this implementation, SetIfPending and SetEmptyIfPending could be one function to remove one lock.
 		c.data.SetIfPending(data)
-
-		// Make sure all pending keys are closed. Make also sure, that
-		// missing keys are set to nil.
-		c.data.SetEmptyIfPending(missingKeys...)
 
 		errChan <- nil
 	}()

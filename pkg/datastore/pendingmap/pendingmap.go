@@ -225,20 +225,6 @@ func (pm *PendingMap) SetIfPending(data map[dskey.Key][]byte) {
 	}
 }
 
-// SetEmptyIfPending set all keys that are still pending to the zero value.
-func (pm *PendingMap) SetEmptyIfPending(keys ...dskey.Key) {
-	pm.mu.Lock()
-	defer pm.mu.Unlock()
-
-	for _, key := range keys {
-		if pending, isPending := pm.pending[key]; isPending {
-			pm.data[key] = nil
-			close(pending)
-			delete(pm.pending, key)
-		}
-	}
-}
-
 // Reset removes all data from PendingMap
 func (pm *PendingMap) Reset() {
 	pm.mu.Lock()

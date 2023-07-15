@@ -31,26 +31,33 @@ func TestCache_call_Get_returns_the_value_from_flow(t *testing.T) {
 	}
 }
 
-func TestCache_Get_with_a_key_not_in_the_flow_returns_nil_as_valueMissingKeys(t *testing.T) {
+func TestCache_Get_with_a_key_not_in_the_flow_returns_nil_as_value(t *testing.T) {
 	ctx := context.Background()
-	flow := dsmock.NewFlow(dsmock.YAMLData(`---
-	key/1/field: value
-	`))
-	myKey1 := dskey.MustKey("key/1/field")
-	myKey2 := dskey.MustKey("key/2/field")
+	flow := dsmock.NewFlow(
+		dsmock.YAMLData(``),
+		dsmock.NewCounter,
+	)
+	counter := flow.Middlewares()[0].(*dsmock.Counter)
+	myKey := dskey.MustKey("key/1/field")
 	c := newCache(flow)
 
-	got, err := c.Get(ctx, myKey1, myKey2)
+	if _, err := c.Get(ctx, myKey); err != nil {
+		t.Errorf("cache.Get(): %v", err)
+	}
+	counter.Reset()
+
+	got, err := c.Get(ctx, myKey)
 	if err != nil {
 		t.Errorf("cache.Get(): %v", err)
 	}
 
-	expect := map[dskey.Key][]byte{
-		myKey1: []byte(`"value"`),
-		myKey2: nil,
-	}
+	expect := map[dskey.Key][]byte{myKey: nil}
 	if !reflect.DeepEqual(got, expect) {
-		t.Errorf("Get() == `%v`, expected `%v`", got, expect)
+		t.Errorf("Got %v, expected %v", got, expect)
+	}
+
+	if counter.Count() != 0 {
+		t.Errorf("Got %d requests, expected 0", counter.Count())
 	}
 }
 
