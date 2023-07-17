@@ -56,6 +56,27 @@ func New(lookup environment.Environmenter) *Redis {
 	}
 }
 
+// Wait blocks until a connection can be established.
+func (r *Redis) Wait(ctx context.Context) error {
+	var lastErr error
+	for {
+		conn := r.pool.Get()
+		_, err := redis.DoContext(conn, ctx, "PING")
+		conn.Close()
+
+		if err == nil {
+			return nil
+		}
+		lastErr = err
+
+		select {
+		case <-time.After(200 * time.Millisecond):
+		case <-ctx.Done():
+			return lastErr
+		}
+	}
+}
+
 // Update is a blocking function that returns, when there is new data.
 func (r *Redis) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
 	id := r.lastAutoupdateID
@@ -120,25 +141,4 @@ func (r *Redis) LogoutEvent(ctx context.Context) ([]string, error) {
 		r.lastLogoutID = id
 	}
 	return sessionIDs, nil
-}
-
-// Wait blocks until a connection can be established.
-func (r *Redis) Wait(ctx context.Context) error {
-	var lastErr error
-	for {
-		conn := r.pool.Get()
-		_, err := redis.DoContext(conn, ctx, "PING")
-		conn.Close()
-
-		if err == nil {
-			return nil
-		}
-		lastErr = err
-
-		select {
-		case <-time.After(200 * time.Millisecond):
-		case <-ctx.Done():
-			return lastErr
-		}
-	}
 }
