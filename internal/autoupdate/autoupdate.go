@@ -11,17 +11,15 @@ import (
 	"fmt"
 	"runtime"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	restrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 	"github.com/ostcar/topic"
 )
 
@@ -48,19 +46,16 @@ type RestrictMiddleware func(ctx context.Context, getter flow.Getter, uid int) (
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
 // with autoupdate.New().
 type Autoupdate struct {
-	flow       flow.Flow
 	topic      *topic.Topic[dskey.Key]
-	restricter RestrictMiddleware
+	restricter restrict.Restricter
 	pool       *workPool
-
-	cacheReset time.Duration
 }
 
 // New creates a new autoupdate service.
 //
 // You should call `go a.PruneOldData()` and `go a.ResetCache()` after creating
 // the service.
-func New(lookup environment.Environmenter, flow flow.Flow, restricter RestrictMiddleware) (*Autoupdate, func(context.Context, func(error)), error) {
+func New(lookup environment.Environmenter, restricter restrict.Restricter) (*Autoupdate, func(context.Context, func(error)), error) {
 	workers, err := strconv.Atoi(envConcurentWorker.Value(lookup))
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid value for %s: %w", envConcurentWorker.Key, err)
@@ -76,17 +71,15 @@ func New(lookup environment.Environmenter, flow flow.Flow, restricter RestrictMi
 	}
 
 	a := &Autoupdate{
-		flow:       flow,
 		topic:      topic.New[dskey.Key](),
 		restricter: restricter,
 		pool:       newWorkPool(workers),
-		cacheReset: cacheResetTime,
 	}
 
 	background := func(ctx context.Context, errorHandler func(error)) {
 		go a.pruneOldData(ctx)
-		go a.resetCache(ctx)
-		go a.flow.Update(ctx, func(data map[dskey.Key][]byte, err error) {
+		go a.resetCache(ctx, cacheResetTime)
+		go a.restricter.Update(ctx, func(data map[dskey.Key][]byte, err error) {
 			if err != nil {
 				oserror.Handle(err)
 				// Continue. The update function can return an error and data.
@@ -129,7 +122,7 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (D
 
 // SingleData returns the data for the given keysbuilder without autoupdates.
 func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder) (map[dskey.Key][]byte, error) {
-	ctx, restricter := a.restricter(ctx, a.flow, userID)
+	ctx, restricter := a.restricter.ForUser(ctx, userID)
 
 	keys, err := kb.Update(ctx, restricter)
 	if err != nil {
@@ -168,16 +161,8 @@ func (a *Autoupdate) pruneOldData(ctx context.Context) {
 
 // resetCache runs in the background and cleans the cache from time to time.
 // Blocks until the service is closed.
-func (a *Autoupdate) resetCache(ctx context.Context) {
-	type resetter interface {
-		ResetCache()
-	}
-	reset, ok := a.flow.(resetter)
-	if !ok {
-		return
-	}
-
-	tick := time.NewTicker(a.cacheReset)
+func (a *Autoupdate) resetCache(ctx context.Context, d time.Duration) {
+	tick := time.NewTicker(d)
 	defer tick.Stop()
 
 	for {
@@ -185,70 +170,9 @@ func (a *Autoupdate) resetCache(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-tick.C:
-			reset.ResetCache()
+			// TODO: Reinitialize the flow backend
 		}
 	}
-}
-
-// RestrictFQIDs returns the full collections, restricted for the user for a
-// list of fqids.
-// In requestedFields one can specify which fields per collection should be
-// returned if not specified all available fields will be included.
-//
-// The return format is a map from fqid to an object as map from field to value.
-func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []string, requestedFields map[string][]string) (map[string]map[string][]byte, error) {
-	requestedFieldsMap := make(map[string]set.Set[string], len(requestedFields))
-	for col, val := range requestedFields {
-		requestedFieldsMap[col] = set.New(val...)
-	}
-
-	var keys []dskey.Key
-	for _, fqid := range fqids {
-		collection, rawID, found := strings.Cut(fqid, "/")
-		if !found {
-			return nil, fmt.Errorf("invalid fqid %s, expected one /", fqid)
-		}
-
-		id, err := strconv.Atoi(rawID)
-		if err != nil {
-			return nil, fmt.Errorf("invalid fqid %s, second part has to be an nummber", fqid)
-		}
-
-		fields := restrict.FieldsForCollection(collection)
-		if fields == nil {
-			return nil, fmt.Errorf("unknown collection in fqid %s", fqid)
-		}
-
-		for _, field := range fields {
-			if _, ok := requestedFields[collection]; !ok || requestedFieldsMap[collection].Has(field) {
-				key := dskey.Key{Collection: collection, ID: id, Field: field}
-				keys = append(keys, key)
-			}
-		}
-	}
-
-	ctx, restricter := a.restricter(ctx, a.flow, userID)
-
-	values, err := restricter.Get(ctx, keys...)
-	if err != nil {
-		return nil, fmt.Errorf("getting data: %w", err)
-	}
-
-	result := make(map[string]map[string][]byte, len(fqids))
-	for key, value := range values {
-		fqid := key.FQID()
-		if _, ok := result[fqid]; !ok {
-			result[fqid] = make(map[string][]byte)
-		}
-
-		if value == nil {
-			continue
-		}
-
-		result[fqid][key.Field] = value
-	}
-
-	return result, nil
 }
 
 // skipWorkpool desides, if a connection is allowed to skip the workpool.
@@ -260,7 +184,7 @@ func (a *Autoupdate) skipWorkpool(ctx context.Context, userID int) (bool, error)
 		return false, nil
 	}
 
-	ds := dsfetch.New(a.flow)
+	ds := dsfetch.New(&a.restricter)
 
 	meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
 
@@ -285,7 +209,7 @@ func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (boo
 		return false, nil
 	}
 
-	ds := dsfetch.New(a.flow)
+	ds := dsfetch.New(&a.restricter)
 
 	hasOML, err := perm.HasOrganizationManagementLevel(ctx, ds, userID, perm.OMLCanManageOrganization)
 	if err != nil {

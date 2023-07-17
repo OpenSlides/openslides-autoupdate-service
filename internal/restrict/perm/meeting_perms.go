@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // MeetingPermission is a cache for different Permission objects for each
@@ -13,6 +14,8 @@ import (
 //
 // Can be used if fields from different meetings are checked.
 type meetingPermission struct {
+	forMeetingID map[int]map[TPermission]set.Set[int]
+
 	perms map[int]*Permission
 	ds    *dsfetch.Fetch
 	uid   int
@@ -40,6 +43,20 @@ func (p *meetingPermission) Meeting(ctx context.Context, meetingID int) (*Permis
 		return nil, err
 	}
 	p.perms[meetingID] = perms
+	return perms, nil
+}
+
+func (p *meetingPermission) MeetingGroupMap(ctx context.Context, ds *dsfetch.Fetch, meetingID int) (map[TPermission]set.Set[int], error) {
+	perms, ok := p.forMeetingID[meetingID]
+	if ok {
+		return perms, nil
+	}
+
+	perms, err := GroupByPerm(ctx, ds, meetingID)
+	if err != nil {
+		return nil, fmt.Errorf("group by perm: %w", err)
+	}
+	p.forMeetingID[meetingID] = perms
 	return perms, nil
 }
 
@@ -73,6 +90,20 @@ func FromContext(ctx context.Context, meetingID int) (*Permission, error) {
 	}
 
 	return meetingPermission.Meeting(ctx, meetingID)
+}
+
+func GroupMapFromContext(ctx context.Context, ds *dsfetch.Fetch, meetingID int) (map[TPermission]set.Set[int], error) {
+	v := ctx.Value(contextKey)
+	if v == nil {
+		return nil, fmt.Errorf("context does not contain a meeting permission. Make sure to create the context with 'ContextWithPermissionCache'")
+	}
+
+	meetingPermission, ok := v.(*meetingPermission)
+	if !ok {
+		return nil, fmt.Errorf("meeting permission has wrong type: %T", v)
+	}
+
+	return meetingPermission.MeetingGroupMap(ctx, ds, meetingID)
 }
 
 // RequestUserFromContext returns the request user from the context.

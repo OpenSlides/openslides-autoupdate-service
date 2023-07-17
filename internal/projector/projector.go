@@ -49,13 +49,6 @@ type Projector struct {
 	slides *SlideStore
 }
 
-// Reset clears the projector object.
-func (p *Projector) Reset() {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.hotKeys = make(map[dskey.Key]map[dskey.Key]struct{})
-}
-
 // Get is a Getter middleware that passes all keys though but calculates
 // projection/content keys.
 func (p *Projector) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {

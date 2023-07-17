@@ -51,7 +51,6 @@ func Run(
 	HandleAutoupdate(mux, auth, autoupdate, history, connectionCount)
 	HandleShowConnectionCount(mux, autoupdate, auth, connectionCount)
 	HandleHistoryInformation(mux, auth, history)
-	HandleRestrictFQIDs(mux, autoupdate)
 
 	srv := &http.Server{
 		Addr:        addr,

@@ -160,8 +160,3 @@ func (c *Cache) Len() int {
 func (c *Cache) Size() int {
 	return c.data.Size()
 }
-
-// Reset clears the cache.
-func (c *Cache) Reset() {
-	c.data.Reset()
-}

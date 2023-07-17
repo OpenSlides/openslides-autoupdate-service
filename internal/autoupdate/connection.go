@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsrecorder"
 )
 
 // connection holds the state of a client. It has to be created by colling
@@ -104,8 +103,8 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 		defer done()
 	}
 
-	recorder := dsrecorder.New(c.autoupdate.flow)
-	ctx, restricter := c.autoupdate.restricter(ctx, recorder, c.uid)
+	// recorder := dsrecorder.New(&c.autoupdate.restricter)
+	ctx, restricter := c.autoupdate.restricter.ForUser(ctx, c.uid)
 
 	keys, err := c.kb.Update(ctx, restricter)
 	if err != nil {
@@ -116,7 +115,8 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 	if err != nil {
 		return nil, fmt.Errorf("get restricted data: %w", err)
 	}
-	c.hotkeys = recorder.Keys()
+	// TODO: Fix the recorder
+	// c.hotkeys = recorder.Keys()
 
 	c.filter.filter(data)
 

@@ -67,12 +67,6 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater) (*Flow, 
 	return &flow, background, nil
 }
 
-// ResetCache clears the cache.
-func (f *Flow) ResetCache() {
-	f.cache.Reset()
-	f.projector.Reset()
-}
-
 func (f *Flow) metric(values metric.Container) {
 	values.Add("datastore_cache_key_len", f.cache.Len())
 	values.Add("datastore_cache_size", f.cache.Size())
