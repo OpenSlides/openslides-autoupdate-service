@@ -33,3 +33,14 @@ The Service uses the following environment variables:
 * `METRIC_INTERVAL`: Time in how often the metrics are gathered. Zero disables the metrics. The default is `5m`.
 * `METRIC_SAVE_INTERVAL`: Interval, how often the metric should be saved to redis. Redis will ignore entries, that are twice at old then the save interval. The default is `5m`.
 * `DISABLE_CONNECTION_COUNT`: Do not count connections. The default is `false`.
+
+
+## Secrets
+
+Secrets are filenames in the directory `SECRETS_PATH` (default: `/run/secrets/`). 
+The service only starts if it can find each secret file and read its content. 
+The default values are only used, if the environment variable `OPENSLIDES_DEVELOPMENT` is set.
+
+* `postgres_password`: Postgres Password. The default is `openslides`.
+* `auth_token_key`: Key to sign the JWT auth tocken. The default is `auth-dev-token-key`.
+* `auth_cookie_key`: Key to sign the JWT auth cookie. The default is `auth-dev-cookie-key`.

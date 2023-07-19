@@ -3,16 +3,11 @@ package dsmock
 import (
 	"context"
 	"fmt"
-	"io"
 	"sync"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 )
-
-// Getter is the same interface as Getter
-type Getter interface {
-	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
-}
 
 // Stub are data that can be used as a datastore value.
 type Stub map[dskey.Key][]byte
@@ -27,31 +22,29 @@ func (s Stub) Get(_ context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, e
 	return requested, nil
 }
 
-// StubWithUpdate is like Stub but the values can be changed via the Send
-// method.
-//
-// It implements the datastore.Source interface.
-type StubWithUpdate struct {
+// Flow is is a mock flow.
+type Flow struct {
 	mu sync.RWMutex
 
 	stub Stub
 	ch   chan map[dskey.Key][]byte
 
-	getter Getter
+	getter flow.Getter
 
-	middlewares []Getter
+	middlewares []flow.Getter
 }
 
-// NewStubWithUpdate initializes a the object.
-func NewStubWithUpdate(stub Stub, middlewares ...func(Getter) Getter) *StubWithUpdate {
-	getter := Getter(stub)
-	initialized := make([]Getter, len(middlewares))
+// NewFlow initializes a stub with Get and Update.
+func NewFlow(data map[dskey.Key][]byte, middlewares ...func(flow.Getter) flow.Getter) *Flow {
+	stub := Stub(data)
+	getter := flow.Getter(stub)
+	initialized := make([]flow.Getter, len(middlewares))
 	for i, m := range middlewares {
 		getter = m(getter)
 		initialized[i] = getter
 	}
 
-	return &StubWithUpdate{
+	return &Flow{
 		stub:        stub,
 		ch:          make(chan map[dskey.Key][]byte),
 		getter:      getter,
@@ -60,7 +53,7 @@ func NewStubWithUpdate(stub Stub, middlewares ...func(Getter) Getter) *StubWithU
 }
 
 // Get returns the current value for the given keys.
-func (s *StubWithUpdate) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+func (s *Flow) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -68,23 +61,29 @@ func (s *StubWithUpdate) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.
 }
 
 // Update blocks until new data is received via the Send method.
-func (s *StubWithUpdate) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
-	select {
-	case newValues := <-s.ch:
-		s.mu.Lock()
-		for k, v := range newValues {
-			s.stub[k] = v
-		}
-		s.mu.Unlock()
-		return newValues, nil
+func (s *Flow) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+	if updateFn == nil {
+		updateFn = func(map[dskey.Key][]byte, error) {}
+	}
+	for {
+		select {
+		case newValues := <-s.ch:
+			updateFn(newValues, nil)
+			continue
 
-	case <-ctx.Done():
-		return nil, ctx.Err()
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 
 // Send sends keys to the mock that can be received with Update().
-func (s *StubWithUpdate) Send(values map[dskey.Key][]byte) {
+func (s *Flow) Send(values map[dskey.Key][]byte) {
+	s.mu.Lock()
+	for k, v := range values {
+		s.stub[k] = v
+	}
+	s.mu.Unlock()
 	s.ch <- values
 }
 
@@ -95,26 +94,20 @@ func (s *StubWithUpdate) Send(values map[dskey.Key][]byte) {
 //
 //	ds := NewStubWithUpdate(stub, dsmock.NewCounter)
 //	counter := ds.Middlewares()[0].(*dsmock.Counter)
-func (s *StubWithUpdate) Middlewares() []Getter {
+func (s *Flow) Middlewares() []flow.Getter {
 	return s.middlewares
-}
-
-// HistoryInformation writes a fake history.
-func (s *StubWithUpdate) HistoryInformation(ctx context.Context, fqid string, w io.Writer) error {
-	w.Write([]byte(`[{"position":42,"user_id": 5,"information": "motion was created","timestamp: 1234567}]`))
-	return nil
 }
 
 // Counter counts all keys that where requested.
 type Counter struct {
 	mu sync.Mutex
 
-	ds       Getter
+	ds       flow.Getter
 	requests [][]dskey.Key
 }
 
 // NewCounter initializes a Counter.
-func NewCounter(ds Getter) Getter {
+func NewCounter(ds flow.Getter) flow.Getter {
 	return &Counter{ds: ds}
 }
 
@@ -135,8 +128,8 @@ func (ds *Counter) Reset() {
 	ds.requests = nil
 }
 
-// Value returns the number of requests.
-func (ds *Counter) Value() int {
+// Count returns the number of requests.
+func (ds *Counter) Count() int {
 	ds.mu.Lock()
 	defer ds.mu.Unlock()
 
@@ -156,12 +149,12 @@ func (ds *Counter) Requests() [][]dskey.Key {
 type Cache struct {
 	mu sync.Mutex
 
-	ds    Getter
+	ds    flow.Getter
 	cache map[dskey.Key][]byte
 }
 
 // NewCache initializes a Cache.
-func NewCache(ds Getter) Getter {
+func NewCache(ds flow.Getter) flow.Getter {
 	return &Cache{ds: ds, cache: make(map[dskey.Key][]byte)}
 }
 
@@ -196,4 +189,37 @@ func (ds *Cache) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]by
 		ds.cache[k] = v
 	}
 	return out, nil
+}
+
+// Wait is a Getter that blocks until there is a signal on a channel.
+//
+// If the signal is an error, it is returned
+type Wait struct {
+	waiter chan error
+	getter flow.Getter
+}
+
+// NewWait initializes a Wait.
+func NewWait(waiter chan error) func(flow.Getter) flow.Getter {
+	return func(getter flow.Getter) flow.Getter {
+		return &Wait{
+			waiter: waiter,
+			getter: getter,
+		}
+	}
+}
+
+// Get retuns the values from the getter as soon, as there is a signal on the channel.
+func (w *Wait) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+
+	case err := <-w.waiter:
+		if err != nil {
+			return nil, err
+		}
+
+		return w.getter.Get(ctx, keys...)
+	}
 }

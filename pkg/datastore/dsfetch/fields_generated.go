@@ -1977,6 +1977,12 @@ func (r *Fetch) Meeting_ListOfSpeakersCoupleCountdown(meetingID int) *ValueBool 
 	return v
 }
 
+func (r *Fetch) Meeting_ListOfSpeakersEnablePointOfOrderCategories(meetingID int) *ValueBool {
+	v := &ValueBool{fetch: r, collection: "meeting", id: meetingID, field: "list_of_speakers_enable_point_of_order_categories"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_enable_point_of_order_categories"}] = v
+	return v
+}
+
 func (r *Fetch) Meeting_ListOfSpeakersEnablePointOfOrderSpeakers(meetingID int) *ValueBool {
 	v := &ValueBool{fetch: r, collection: "meeting", id: meetingID, field: "list_of_speakers_enable_point_of_order_speakers"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_enable_point_of_order_speakers"}] = v
@@ -2364,6 +2370,12 @@ func (r *Fetch) Meeting_OrganizationTagIDs(meetingID int) *ValueIntSlice {
 func (r *Fetch) Meeting_PersonalNoteIDs(meetingID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "personal_note_ids"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "personal_note_ids"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_PointOfOrderCategoryIDs(meetingID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "point_of_order_category_ids"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "point_of_order_category_ids"}] = v
 	return v
 }
 
@@ -3801,6 +3813,36 @@ func (r *Fetch) PersonalNote_UserID(personalNoteID int) *ValueInt {
 	return v
 }
 
+func (r *Fetch) PointOfOrderCategory_ID(pointOfOrderCategoryID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "pointOfOrderCategory", id: pointOfOrderCategoryID, field: "id"}
+	r.requested[dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "id"}] = v
+	return v
+}
+
+func (r *Fetch) PointOfOrderCategory_MeetingID(pointOfOrderCategoryID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "pointOfOrderCategory", id: pointOfOrderCategoryID, field: "meeting_id", required: true}
+	r.requested[dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) PointOfOrderCategory_Rank(pointOfOrderCategoryID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "pointOfOrderCategory", id: pointOfOrderCategoryID, field: "rank", required: true}
+	r.requested[dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "rank"}] = v
+	return v
+}
+
+func (r *Fetch) PointOfOrderCategory_SpeakerIDs(pointOfOrderCategoryID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "pointOfOrderCategory", id: pointOfOrderCategoryID, field: "speaker_ids"}
+	r.requested[dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "speaker_ids"}] = v
+	return v
+}
+
+func (r *Fetch) PointOfOrderCategory_Text(pointOfOrderCategoryID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "pointOfOrderCategory", id: pointOfOrderCategoryID, field: "text", required: true}
+	r.requested[dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "text"}] = v
+	return v
+}
+
 func (r *Fetch) PollCandidateList_ID(pollCandidateListID int) *ValueInt {
 	v := &ValueInt{fetch: r, collection: "pollCandidateList", id: pollCandidateListID, field: "id"}
 	r.requested[dskey.Key{Collection: "poll_candidate_list", ID: pollCandidateListID, Field: "id"}] = v
@@ -4398,6 +4440,12 @@ func (r *Fetch) Speaker_Note(speakerID int) *ValueString {
 func (r *Fetch) Speaker_PointOfOrder(speakerID int) *ValueBool {
 	v := &ValueBool{fetch: r, collection: "speaker", id: speakerID, field: "point_of_order"}
 	r.requested[dskey.Key{Collection: "speaker", ID: speakerID, Field: "point_of_order"}] = v
+	return v
+}
+
+func (r *Fetch) Speaker_PointOfOrderCategoryID(speakerID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "speaker", id: speakerID, field: "point_of_order_category_id"}
+	r.requested[dskey.Key{Collection: "speaker", ID: speakerID, Field: "point_of_order_category_id"}] = v
 	return v
 }
 
