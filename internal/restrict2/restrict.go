@@ -188,19 +188,22 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 }
 
 // UserPermissions returns the global permission and all group ids of an user.
-func userPermissions(ctx context.Context, fetcher *dsfetch.Fetch, uid int) (perm.OrganizationManagementLevel, []int, error) {
-	meetingIDs, err := fetcher.User_GroupIDsTmpl(uid).Value(ctx)
-	if err != nil {
-		return "", nil, fmt.Errorf("getting meetings of user: %w", err)
-	}
+func userPermissions(ctx context.Context, fetcher *dsfetch.Fetch, userID int) (perm.OrganizationManagementLevel, []int, error) {
+	var groupIDHelper [][]int
+	if userID != 0 {
+		meetingIDs, err := fetcher.User_GroupIDsTmpl(userID).Value(ctx)
+		if err != nil {
+			return "", nil, fmt.Errorf("getting meetings of user: %w", err)
+		}
 
-	groupIDHelper := make([][]int, len(meetingIDs))
-	for i := 0; i < len(meetingIDs); i++ {
-		fetcher.User_GroupIDs(uid, meetingIDs[i]).Lazy(&groupIDHelper[i])
+		groupIDHelper = make([][]int, len(meetingIDs))
+		for i := 0; i < len(meetingIDs); i++ {
+			fetcher.User_GroupIDs(userID, meetingIDs[i]).Lazy(&groupIDHelper[i])
+		}
 	}
 
 	var globalPermStr string
-	fetcher.User_OrganizationManagementLevel(uid).Lazy(&globalPermStr)
+	fetcher.User_OrganizationManagementLevel(userID).Lazy(&globalPermStr)
 
 	if err := fetcher.Execute(ctx); err != nil {
 		return "", nil, fmt.Errorf("getting groupIDs: %w", err)
