@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"path"
 	"strconv"
 	"strings"
 	"text/template"
@@ -20,7 +19,6 @@ import (
 
 // Environment variables used to configure the environment.
 var (
-	envSecretsPath = NewVariable("SECRETS_PATH", "/run/secrets", "Path where the secrets are stored.")
 	EnvDevelopment = NewVariable("OPENSLIDES_DEVELOPMENT", "false", "If set, the service uses the default secrets.")
 )
 
@@ -32,7 +30,6 @@ type Variable struct {
 	Key         string
 	Default     string
 	Description string
-	isSecret    bool
 }
 
 // NewVariable initializes a environment.Variable
@@ -41,39 +38,12 @@ func NewVariable(key, defaultValue, description string) Variable {
 		Key:         key,
 		Default:     defaultValue,
 		Description: description,
-		isSecret:    false,
-	}
-}
-
-// NewSecret initializes a secret.
-func NewSecret(key, description string) Variable {
-	return Variable{
-		Key:         key,
-		Default:     "openslides",
-		Description: description,
-		isSecret:    true,
-	}
-}
-
-// NewSecretWithDefault initializes a secret with a secial default value.
-//
-// Try not to use this. The default value for all secrets should be 'openslides'.
-func NewSecretWithDefault(key, defaultValue, description string) Variable {
-	return Variable{
-		Key:         key,
-		Default:     defaultValue,
-		Description: description,
-		isSecret:    true,
 	}
 }
 
 // Value returns the value for an environment.Variable using a Getenver.
 func (v Variable) Value(lookup Environmenter) string {
 	lookup.UseVariable(v)
-
-	if v.isSecret {
-		return v.secret(lookup)
-	}
 
 	if lookup == nil {
 		return v.Default
@@ -84,32 +54,6 @@ func (v Variable) Value(lookup Environmenter) string {
 		return v.Default
 	}
 	return val
-}
-
-// Secret returns the value as secret.
-//
-// It uses the environment varialbe SECRETS_PATH to find the secrets. The
-// defaults are only (and allways) used if OPENSLIDES_DEVELOPMENT is set to
-// true. If no Default is set, then "openslides" is used as default.
-func (v Variable) secret(lookup Environmenter) string {
-	useDev, _ := strconv.ParseBool(EnvDevelopment.Value(lookup))
-	path := path.Join(envSecretsPath.Value(lookup), v.Key)
-
-	if useDev {
-		defaultVal := v.Default
-		if defaultVal == "" {
-			defaultVal = "openslides"
-		}
-
-		return defaultVal
-	}
-
-	secret, err := os.ReadFile(path)
-	if err != nil {
-		panic(fmt.Sprintf("Can not read secret in %s: %v", path, err))
-	}
-
-	return string(secret)
 }
 
 // Environmenter is an type, that can return the value for environment
@@ -160,8 +104,7 @@ func (e *ForDocu) UseVariable(v Variable) {
 // BuildDoc create the environment documentation with all used variables.
 func (e *ForDocu) BuildDoc() (string, error) {
 	var variables struct {
-		Env    []Variable
-		Secret []Variable
+		Env []Variable
 	}
 
 	seen := set.New[string]()
@@ -171,11 +114,6 @@ func (e *ForDocu) BuildDoc() (string, error) {
 			continue
 		}
 		seen.Add(v.Key)
-
-		if v.isSecret {
-			variables.Secret = append(variables.Secret, v)
-			continue
-		}
 
 		variables.Env = append(variables.Env, v)
 	}
@@ -191,6 +129,32 @@ func (e *ForDocu) BuildDoc() (string, error) {
 	}
 
 	return strings.ReplaceAll(buf.String(), "$", "`"), nil
+}
+
+// ReadSecret reads a secret from a file given by an environment variable.
+//
+// If OPENSLIDES_DEVELOPMENT is set, then this will always return the string
+// 'openslides'
+func ReadSecret(lookup Environmenter, pathVariable Variable) (string, error) {
+	return ReadSecretWithDefault(lookup, pathVariable, "openslides")
+}
+
+// ReadSecretWithDefault is like ReadSecret, but it allows to set another
+// default value then "openslides".
+func ReadSecretWithDefault(lookup Environmenter, pathVariable Variable, defaultValue string) (string, error) {
+	useDev, _ := strconv.ParseBool(EnvDevelopment.Value(lookup))
+	path := pathVariable.Value(lookup)
+
+	if useDev {
+		return defaultValue, nil
+	}
+
+	secret, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("read secret from %s: %w", path, err)
+	}
+
+	return string(secret), nil
 }
 
 // ForTests is a map that simulates environment variables.
@@ -246,15 +210,4 @@ const tmplDoc = `<!--- Code generated with go generate ./... DO NOT EDIT. --->
 The Service uses the following environment variables:
 {{range .Env}}
 * ${{.Key}}$: {{.Description}} The default is ${{.Default}}$.
-{{- end}}
-
-{{if .Secret}}
-## Secrets
-
-Secrets are filenames in the directory $SECRETS_PATH$ (default: $/run/secrets/$). 
-The service only starts if it can find each secret file and read its content. 
-The default values are only used, if the environment variable $OPENSLIDES_DEVELOPMENT$ is set.
-{{range .Secret}}
-* ${{.Key}}$: {{.Description}} The default is ${{.Default}}$.
-{{- end}}
 {{- end}}`
