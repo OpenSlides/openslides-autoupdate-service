@@ -1137,6 +1137,12 @@ func (r *Fetch) Committee_Description(committeeID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Committee_ExternalID(committeeID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "committee", id: committeeID, field: "external_id"}
+	r.requested[dskey.Key{Collection: "committee", ID: committeeID, Field: "external_id"}] = v
+	return v
+}
+
 func (r *Fetch) Committee_ForwardToCommitteeIDs(committeeID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r, collection: "committee", id: committeeID, field: "forward_to_committee_ids"}
 	r.requested[dskey.Key{Collection: "committee", ID: committeeID, Field: "forward_to_committee_ids"}] = v
@@ -1212,6 +1218,12 @@ func (r *Fetch) Group_AdminGroupForMeetingID(groupID int) *ValueMaybeInt {
 func (r *Fetch) Group_DefaultGroupForMeetingID(groupID int) *ValueMaybeInt {
 	v := &ValueMaybeInt{fetch: r, collection: "group", id: groupID, field: "default_group_for_meeting_id"}
 	r.requested[dskey.Key{Collection: "group", ID: groupID, Field: "default_group_for_meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) Group_ExternalID(groupID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "group", id: groupID, field: "external_id"}
+	r.requested[dskey.Key{Collection: "group", ID: groupID, Field: "external_id"}] = v
 	return v
 }
 
@@ -1857,6 +1869,12 @@ func (r *Fetch) Meeting_ExportPdfPagesize(meetingID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Meeting_ExternalID(meetingID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "meeting", id: meetingID, field: "external_id"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "external_id"}] = v
+	return v
+}
+
 func (r *Fetch) Meeting_FontIDTmpl(meetingID int) *ValueStringSlice {
 	v := &ValueStringSlice{fetch: r, collection: "meeting", id: meetingID, field: "font_$_id"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_$_id"}] = v
@@ -1956,6 +1974,12 @@ func (r *Fetch) Meeting_ListOfSpeakersCountdownID(meetingID int) *ValueMaybeInt 
 func (r *Fetch) Meeting_ListOfSpeakersCoupleCountdown(meetingID int) *ValueBool {
 	v := &ValueBool{fetch: r, collection: "meeting", id: meetingID, field: "list_of_speakers_couple_countdown"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_couple_countdown"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_ListOfSpeakersEnablePointOfOrderCategories(meetingID int) *ValueBool {
+	v := &ValueBool{fetch: r, collection: "meeting", id: meetingID, field: "list_of_speakers_enable_point_of_order_categories"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_enable_point_of_order_categories"}] = v
 	return v
 }
 
@@ -2346,6 +2370,12 @@ func (r *Fetch) Meeting_OrganizationTagIDs(meetingID int) *ValueIntSlice {
 func (r *Fetch) Meeting_PersonalNoteIDs(meetingID int) *ValueIntSlice {
 	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "personal_note_ids"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "personal_note_ids"}] = v
+	return v
+}
+
+func (r *Fetch) Meeting_PointOfOrderCategoryIDs(meetingID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "meeting", id: meetingID, field: "point_of_order_category_ids"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "point_of_order_category_ids"}] = v
 	return v
 }
 
@@ -2973,15 +3003,15 @@ func (r *Fetch) MotionState_Restrictions(motionStateID int) *ValueStringSlice {
 	return v
 }
 
-func (r *Fetch) MotionState_SetCreatedTimestamp(motionStateID int) *ValueBool {
-	v := &ValueBool{fetch: r, collection: "motionState", id: motionStateID, field: "set_created_timestamp"}
-	r.requested[dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "set_created_timestamp"}] = v
-	return v
-}
-
 func (r *Fetch) MotionState_SetNumber(motionStateID int) *ValueBool {
 	v := &ValueBool{fetch: r, collection: "motionState", id: motionStateID, field: "set_number"}
 	r.requested[dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "set_number"}] = v
+	return v
+}
+
+func (r *Fetch) MotionState_SetWorkflowTimestamp(motionStateID int) *ValueBool {
+	v := &ValueBool{fetch: r, collection: "motionState", id: motionStateID, field: "set_workflow_timestamp"}
+	r.requested[dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "set_workflow_timestamp"}] = v
 	return v
 }
 
@@ -3441,6 +3471,12 @@ func (r *Fetch) Motion_Title(motionID int) *ValueString {
 	return v
 }
 
+func (r *Fetch) Motion_WorkflowTimestamp(motionID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "motion", id: motionID, field: "workflow_timestamp"}
+	r.requested[dskey.Key{Collection: "motion", ID: motionID, Field: "workflow_timestamp"}] = v
+	return v
+}
+
 func (r *Fetch) Option_Abstain(optionID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "option", id: optionID, field: "abstain"}
 	r.requested[dskey.Key{Collection: "option", ID: optionID, Field: "abstain"}] = v
@@ -3576,6 +3612,12 @@ func (r *Fetch) Organization_EnableChat(organizationID int) *ValueBool {
 func (r *Fetch) Organization_EnableElectronicVoting(organizationID int) *ValueBool {
 	v := &ValueBool{fetch: r, collection: "organization", id: organizationID, field: "enable_electronic_voting"}
 	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "enable_electronic_voting"}] = v
+	return v
+}
+
+func (r *Fetch) Organization_Genders(organizationID int) *ValueStringSlice {
+	v := &ValueStringSlice{fetch: r, collection: "organization", id: organizationID, field: "genders"}
+	r.requested[dskey.Key{Collection: "organization", ID: organizationID, Field: "genders"}] = v
 	return v
 }
 
@@ -3768,6 +3810,36 @@ func (r *Fetch) PersonalNote_Star(personalNoteID int) *ValueBool {
 func (r *Fetch) PersonalNote_UserID(personalNoteID int) *ValueInt {
 	v := &ValueInt{fetch: r, collection: "personalNote", id: personalNoteID, field: "user_id", required: true}
 	r.requested[dskey.Key{Collection: "personal_note", ID: personalNoteID, Field: "user_id"}] = v
+	return v
+}
+
+func (r *Fetch) PointOfOrderCategory_ID(pointOfOrderCategoryID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "pointOfOrderCategory", id: pointOfOrderCategoryID, field: "id"}
+	r.requested[dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "id"}] = v
+	return v
+}
+
+func (r *Fetch) PointOfOrderCategory_MeetingID(pointOfOrderCategoryID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "pointOfOrderCategory", id: pointOfOrderCategoryID, field: "meeting_id", required: true}
+	r.requested[dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "meeting_id"}] = v
+	return v
+}
+
+func (r *Fetch) PointOfOrderCategory_Rank(pointOfOrderCategoryID int) *ValueInt {
+	v := &ValueInt{fetch: r, collection: "pointOfOrderCategory", id: pointOfOrderCategoryID, field: "rank", required: true}
+	r.requested[dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "rank"}] = v
+	return v
+}
+
+func (r *Fetch) PointOfOrderCategory_SpeakerIDs(pointOfOrderCategoryID int) *ValueIntSlice {
+	v := &ValueIntSlice{fetch: r, collection: "pointOfOrderCategory", id: pointOfOrderCategoryID, field: "speaker_ids"}
+	r.requested[dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "speaker_ids"}] = v
+	return v
+}
+
+func (r *Fetch) PointOfOrderCategory_Text(pointOfOrderCategoryID int) *ValueString {
+	v := &ValueString{fetch: r, collection: "pointOfOrderCategory", id: pointOfOrderCategoryID, field: "text", required: true}
+	r.requested[dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "text"}] = v
 	return v
 }
 
@@ -4368,6 +4440,12 @@ func (r *Fetch) Speaker_Note(speakerID int) *ValueString {
 func (r *Fetch) Speaker_PointOfOrder(speakerID int) *ValueBool {
 	v := &ValueBool{fetch: r, collection: "speaker", id: speakerID, field: "point_of_order"}
 	r.requested[dskey.Key{Collection: "speaker", ID: speakerID, Field: "point_of_order"}] = v
+	return v
+}
+
+func (r *Fetch) Speaker_PointOfOrderCategoryID(speakerID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "speaker", id: speakerID, field: "point_of_order_category_id"}
+	r.requested[dskey.Key{Collection: "speaker", ID: speakerID, Field: "point_of_order_category_id"}] = v
 	return v
 }
 

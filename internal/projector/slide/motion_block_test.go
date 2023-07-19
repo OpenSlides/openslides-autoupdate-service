@@ -104,7 +104,7 @@ func TestMotionBlock(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			ds, _ := dsmock.NewMockDatastore(tt.data)
+			ds := dsmock.Stub(tt.data)
 			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{

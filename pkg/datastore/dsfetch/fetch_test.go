@@ -39,7 +39,7 @@ func TestRequestEmpty(t *testing.T) {
 		t.Fatalf("Execute returned: %v", err)
 	}
 
-	if got := counter.Value(); got != 0 {
+	if got := counter.Count(); got != 0 {
 		t.Errorf("Got %d requests, expected 0: %v", got, counter.Requests())
 	}
 }

@@ -21,5 +21,6 @@ func Slides() *projector.SlideStore {
 	Topic(s)
 	User(s)
 	PollCandidateList(s)
+	WiFiAccessData(s)
 	return s
 }

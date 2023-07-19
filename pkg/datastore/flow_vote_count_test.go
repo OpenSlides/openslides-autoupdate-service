@@ -1,14 +1,16 @@
-package datastore
+package datastore_test
 
 import (
 	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
@@ -34,17 +36,17 @@ func TestVoteCountSourceGet(t *testing.T) {
 		"VOTE_PROTOCOL": schema,
 	})
 
-	source := newVoteCountSource(env)
+	flow := datastore.NewFlowVoteCount(env)
 	eventer := func() (<-chan time.Time, func() bool) { return make(chan time.Time), func() bool { return true } }
 
-	waitForResponse(ctx, source, func() {
-		go source.Connect(ctx, eventer, func(error) {})
+	waitForResponse(ctx, flow, func() {
+		go flow.Connect(ctx, eventer, func(error) {})
 	})
 
 	key1 := dskey.MustKey("poll/1/vote_count")
 
 	t.Run("no data from vote-service", func(t *testing.T) {
-		got, err := source.Get(ctx, key1)
+		got, err := flow.Get(ctx, key1)
 		if err != nil {
 			t.Fatalf("Get: %v", err)
 		}
@@ -55,11 +57,11 @@ func TestVoteCountSourceGet(t *testing.T) {
 	})
 
 	t.Run("first data from vote-service", func(t *testing.T) {
-		waitForResponse(ctx, source, func() {
+		waitForResponse(ctx, flow, func() {
 			sender <- `{"1":42}`
 		})
 
-		got, err := source.Get(ctx, key1)
+		got, err := flow.Get(ctx, key1)
 		if err != nil {
 			t.Fatalf("Get: %v", err)
 		}
@@ -70,11 +72,11 @@ func TestVoteCountSourceGet(t *testing.T) {
 	})
 
 	t.Run("second data from vote-service", func(t *testing.T) {
-		waitForResponse(ctx, source, func() {
+		waitForResponse(ctx, flow, func() {
 			sender <- `{"1":43}`
 		})
 
-		got, err := source.Get(ctx, key1)
+		got, err := flow.Get(ctx, key1)
 		if err != nil {
 			t.Fatalf("Get: %v", err)
 		}
@@ -85,11 +87,11 @@ func TestVoteCountSourceGet(t *testing.T) {
 	})
 
 	t.Run("again data from vote-service", func(t *testing.T) {
-		waitForResponse(ctx, source, func() {
+		waitForResponse(ctx, flow, func() {
 			sender <- `{"1":44}`
 		})
 
-		got, err := source.Get(ctx, key1)
+		got, err := flow.Get(ctx, key1)
 		if err != nil {
 			t.Fatalf("Get: %v", err)
 		}
@@ -100,11 +102,11 @@ func TestVoteCountSourceGet(t *testing.T) {
 	})
 
 	t.Run("receive 0", func(t *testing.T) {
-		waitForResponse(ctx, source, func() {
+		waitForResponse(ctx, flow, func() {
 			sender <- `{"1":0}`
 		})
 
-		got, err := source.Get(ctx, key1)
+		got, err := flow.Get(ctx, key1)
 		if err != nil {
 			t.Fatalf("Get: %v", err)
 		}
@@ -137,11 +139,11 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 		"VOTE_PROTOCOL": schema,
 	})
 
-	source := newVoteCountSource(env)
+	flow := datastore.NewFlowVoteCount(env)
 	eventer := func() (<-chan time.Time, func() bool) { return make(chan time.Time), func() bool { return true } }
 
-	waitForResponse(ctx, source, func() {
-		go source.Connect(ctx, eventer, func(error) {})
+	waitForResponse(ctx, flow, func() {
+		go flow.Connect(ctx, eventer, func(error) {})
 	})
 
 	key1 := dskey.MustKey("poll/1/vote_count")
@@ -150,14 +152,13 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 		ctxTimeout, cancel := context.WithTimeout(ctx, time.Millisecond)
 		defer cancel()
 
-		_, err := source.Update(ctxTimeout)
-		if err != context.DeadlineExceeded {
-			t.Fatalf("Update: %v, expected context.DeadlineExceeded", err)
-		}
+		flow.Update(ctxTimeout, func(map[dskey.Key][]byte, error) {
+			t.Fatalf("Update was called")
+		})
 	})
 
 	t.Run("first data from vote-service", func(t *testing.T) {
-		got, err := updateResult(ctx, source, func() {
+		got, err := updateResult(ctx, flow, func() {
 			sender <- `{"1":42}`
 		})
 		if err != nil {
@@ -171,7 +172,7 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 	})
 
 	t.Run("second data from vote-service", func(t *testing.T) {
-		got, err := updateResult(ctx, source, func() {
+		got, err := updateResult(ctx, flow, func() {
 			sender <- `{"1":43}`
 		})
 		if err != nil {
@@ -185,7 +186,7 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 	})
 
 	t.Run("receive 0", func(t *testing.T) {
-		got, err := updateResult(ctx, source, func() {
+		got, err := updateResult(ctx, flow, func() {
 			sender <- `{"1":0}`
 		})
 		if err != nil {
@@ -226,8 +227,8 @@ func TestReconnect(t *testing.T) {
 		"VOTE_PROTOCOL": schema,
 	})
 
-	source := newVoteCountSource(env)
-	go source.Connect(ctx, eventer, func(error) {})
+	flow := datastore.NewFlowVoteCount(env)
+	go flow.Connect(ctx, eventer, func(error) {})
 
 	sender <- struct{}{} // Close connection so there is a reconnect
 	sender <- struct{}{} // Close connection again
@@ -261,15 +262,20 @@ func TestReconnectWhenDeletedBetween(t *testing.T) {
 		"VOTE_PROTOCOL": schema,
 	})
 
-	source := newVoteCountSource(env)
-	go source.Connect(ctx, eventer, func(error) {})
+	flow := datastore.NewFlowVoteCount(env)
+	go flow.Connect(ctx, eventer, func(error) {})
 	msg <- `{"1":23,"2":42}`
 	msg <- `{"1":23}`
 
-	source.Update(ctx) // wait for the service to process the update.
+	received, cancel := context.WithCancel(ctx)
+	go flow.Update(ctx, func(map[dskey.Key][]byte, error) {
+		cancel()
+	})
+
+	<-received.Done()
 
 	key := dskey.MustKey("poll/2/vote_count")
-	data, err := source.Get(ctx, key)
+	data, err := flow.Get(ctx, key)
 	if err != nil {
 		t.Errorf("Get: %v", err)
 	}
@@ -298,7 +304,7 @@ func TestGetWithoutConnect(t *testing.T) {
 		"VOTE_PROTOCOL": schema,
 	})
 
-	source := newVoteCountSource(env)
+	source := datastore.NewFlowVoteCount(env)
 
 	key := dskey.MustKey("poll/1/vote_count")
 
@@ -313,34 +319,37 @@ func TestGetWithoutConnect(t *testing.T) {
 
 // waitForResponse calls the given function and waits until the data is
 // processed.
-func waitForResponse(ctx context.Context, source *voteCountSource, fn func()) {
-	received := make(chan struct{})
-	go func() {
-		source.Update(ctx) // wait for the service to process the update.
-		close(received)
-	}()
-
-	fn()
-
-	<-received
+func waitForResponse(ctx context.Context, flow *datastore.FlowVoteCount, fn func()) {
+	updateResult(ctx, flow, fn)
 }
 
-// updateResult returns the return values from source.Update after the given function is processed.
-func updateResult(ctx context.Context, source *voteCountSource, fn func()) (map[dskey.Key][]byte, error) {
+// updateResult returns the return values from flow.Update after the given function is processed.
+func updateResult(ctx context.Context, flow *datastore.FlowVoteCount, fn func()) (map[dskey.Key][]byte, error) {
 	type dataErr struct {
 		data map[dskey.Key][]byte
 		err  error
 	}
 
-	done := make(chan dataErr)
-	go func() {
-		v, err := source.Update(ctx)
-		done <- dataErr{v, err}
-	}()
+	myCtx, cancel := context.WithCancel(ctx)
+
+	got := dataErr{}
+	go flow.Update(myCtx, func(v map[dskey.Key][]byte, err error) {
+		got = dataErr{v, err}
+		cancel()
+	})
 
 	fn()
 
-	got := <-done
+	<-myCtx.Done()
 
 	return got.data, got.err
+}
+
+func parseURL(raw string) (host, port, protocol string) {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		panic(fmt.Sprintf("parsing url %s: %v", raw, err))
+	}
+
+	return parsed.Hostname(), parsed.Port(), parsed.Scheme
 }

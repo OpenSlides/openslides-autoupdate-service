@@ -70,7 +70,6 @@ func (s *VoteDecryptPubKey) Get(ctx context.Context, keys ...dskey.Key) (map[dsk
 }
 
 // Update does nothing for this source.
-func (s *VoteDecryptPubKey) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
+func (s *VoteDecryptPubKey) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
 	<-ctx.Done()
-	return nil, ctx.Err()
 }

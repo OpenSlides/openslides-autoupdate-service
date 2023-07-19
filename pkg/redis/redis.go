@@ -56,37 +56,58 @@ func New(lookup environment.Environmenter) *Redis {
 	}
 }
 
-// Update is a blocking function that returns, when there is new data.
-func (r *Redis) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
-	id := r.lastAutoupdateID
-	if id == "" {
-		id = "$"
-	}
+// Wait blocks until a connection can be established.
+func (r *Redis) Wait(ctx context.Context) error {
+	var lastErr error
+	for {
+		conn := r.pool.Get()
+		_, err := redis.DoContext(conn, ctx, "PING")
+		conn.Close()
 
+		if err == nil {
+			return nil
+		}
+		lastErr = err
+
+		select {
+		case <-time.After(200 * time.Millisecond):
+		case <-ctx.Done():
+			return lastErr
+		}
+	}
+}
+
+// Update implements the Flow interface.
+func (r *Redis) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
 	conn := r.pool.Get()
 	defer conn.Close()
 
+	id := "$"
+
+	for ctx.Err() == nil {
+		newID, data, err := singleUpdate(ctx, conn, id)
+		updateFn(data, err)
+		id = newID
+	}
+}
+
+func singleUpdate(ctx context.Context, conn redis.Conn, id string) (string, map[dskey.Key][]byte, error) {
 	reply, err := redis.DoContext(conn, ctx, "XREAD", "COUNT", maxMessages, "BLOCK", "0", "STREAMS", fieldChangedTopic, id)
 	if err != nil {
-		return nil, fmt.Errorf("redis reply: %w", err)
+		return "", nil, fmt.Errorf("redis reply: %w", err)
 	}
 
 	if reply == nil {
 		// This happens, when the redis command times out.
-		return nil, nil
+		return id, nil, nil
 	}
 
 	id, data, err := parseMessageBus(reply)
 	if err != nil {
-		return nil, fmt.Errorf("parsing message bus: %w", err)
+		return "", nil, fmt.Errorf("parsing message bus: %w", err)
 	}
 
-	if id != "" {
-		// TODO When is id empty????
-		r.lastAutoupdateID = id
-	}
-
-	return data, nil
+	return id, data, nil
 }
 
 // LogoutEvent is a blocking function that returns, when a session was revoked.
@@ -120,25 +141,4 @@ func (r *Redis) LogoutEvent(ctx context.Context) ([]string, error) {
 		r.lastLogoutID = id
 	}
 	return sessionIDs, nil
-}
-
-// Wait blocks until a connection can be established.
-func (r *Redis) Wait(ctx context.Context) error {
-	var lastErr error
-	for {
-		conn := r.pool.Get()
-		_, err := redis.DoContext(conn, ctx, "PING")
-		conn.Close()
-
-		if err == nil {
-			return nil
-		}
-		lastErr = err
-
-		select {
-		case <-time.After(200 * time.Millisecond):
-		case <-ctx.Done():
-			return lastErr
-		}
-	}
 }
