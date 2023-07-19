@@ -189,17 +189,18 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 
 // UserPermissions returns the global permission and all group ids of an user.
 func userPermissions(ctx context.Context, fetcher *dsfetch.Fetch, userID int) (perm.OrganizationManagementLevel, []int, error) {
-	var groupIDHelper [][]int
-	if userID != 0 {
-		meetingIDs, err := fetcher.User_GroupIDsTmpl(userID).Value(ctx)
-		if err != nil {
-			return "", nil, fmt.Errorf("getting meetings of user: %w", err)
-		}
+	if userID == 0 {
+		return perm.OMLNone, nil, nil
+	}
 
-		groupIDHelper = make([][]int, len(meetingIDs))
-		for i := 0; i < len(meetingIDs); i++ {
-			fetcher.User_GroupIDs(userID, meetingIDs[i]).Lazy(&groupIDHelper[i])
-		}
+	meetingIDs, err := fetcher.User_GroupIDsTmpl(userID).Value(ctx)
+	if err != nil {
+		return "", nil, fmt.Errorf("getting meetings of user: %w", err)
+	}
+
+	groupIDHelper := make([][]int, len(meetingIDs))
+	for i := 0; i < len(meetingIDs); i++ {
+		fetcher.User_GroupIDs(userID, meetingIDs[i]).Lazy(&groupIDHelper[i])
 	}
 
 	var globalPermStr string
