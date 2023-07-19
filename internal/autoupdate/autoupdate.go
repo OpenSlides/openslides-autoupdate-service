@@ -47,15 +47,12 @@ type RestrictMiddleware func(ctx context.Context, getter flow.Getter, uid int) (
 // with autoupdate.New().
 type Autoupdate struct {
 	topic      *topic.Topic[dskey.Key]
-	restricter restrict.Restricter
+	restricter *restrict.Restricter
 	pool       *workPool
 }
 
 // New creates a new autoupdate service.
-//
-// You should call `go a.PruneOldData()` and `go a.ResetCache()` after creating
-// the service.
-func New(lookup environment.Environmenter, restricter restrict.Restricter) (*Autoupdate, func(context.Context, func(error)), error) {
+func New(lookup environment.Environmenter, restricter *restrict.Restricter) (*Autoupdate, func(context.Context, func(error)), error) {
 	workers, err := strconv.Atoi(envConcurentWorker.Value(lookup))
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid value for %s: %w", envConcurentWorker.Key, err)
@@ -184,7 +181,7 @@ func (a *Autoupdate) skipWorkpool(ctx context.Context, userID int) (bool, error)
 		return false, nil
 	}
 
-	ds := dsfetch.New(&a.restricter)
+	ds := dsfetch.New(a.restricter)
 
 	meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
 
@@ -209,7 +206,7 @@ func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (boo
 		return false, nil
 	}
 
-	ds := dsfetch.New(&a.restricter)
+	ds := dsfetch.New(a.restricter)
 
 	hasOML, err := perm.HasOrganizationManagementLevel(ctx, ds, userID, perm.OMLCanManageOrganization)
 	if err != nil {

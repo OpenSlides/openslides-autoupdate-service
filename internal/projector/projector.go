@@ -165,7 +165,7 @@ func (p *Projector) calculateHelper(ctx context.Context, fqfield dskey.Key) ([]b
 	defer func() {
 		// At the end, save all requested keys to check later if one has
 		// changed.
-		p.hotKeys[fqfield] = recorder.Keys()
+		p.hotKeys[fqfield] = recorder.KeysAsMap()
 	}()
 
 	data := fetch.Object(

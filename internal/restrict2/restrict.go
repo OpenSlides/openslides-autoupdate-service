@@ -2,7 +2,9 @@ package restrict
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
 
 	oldRestrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
@@ -10,7 +12,9 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsrecorder"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // Restricter TODO
@@ -18,6 +22,10 @@ type Restricter struct {
 	flow flow.Flow
 	// TODO: Probably needs a mutex
 	attributes *attribute.Map
+	hotKeys    set.Set[dskey.Key]
+
+	// TODO: Remove me
+	implementedCollections set.Set[string]
 }
 
 // New initializes a restricter
@@ -25,6 +33,9 @@ func New(flow flow.Flow) *Restricter {
 	return &Restricter{
 		flow:       flow,
 		attributes: attribute.NewMap(),
+		hotKeys:    set.New[dskey.Key](),
+
+		implementedCollections: set.New("agenda_item"),
 	}
 }
 
@@ -35,7 +46,25 @@ func (r *Restricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key]
 
 // Update updates the precalculation.
 func (r *Restricter) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
-	r.flow.Update(ctx, updateFn)
+	r.flow.Update(ctx, func(data map[dskey.Key][]byte, err error) {
+		var found bool
+		for key := range data {
+			if r.hotKeys.Has(key) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			updateFn(data, err)
+			return
+		}
+
+		if preError := r.precalculate(ctx, r.attributes.Keys()); err != nil {
+			err = errors.Join(err, preError)
+		}
+
+		updateFn(data, err)
+	})
 }
 
 // ForUser returns a getter that returns restricted data for an user id.
@@ -52,37 +81,40 @@ func (r *Restricter) ForUser(ctx context.Context, userID int) (context.Context, 
 	}
 }
 
-func (r *Restricter) precalculate(ctx context.Context, keys []dskey.Key) error {
+// precalculate calculates the attributes for modes.
+func (r *Restricter) precalculate(ctx context.Context, collectionModes []dskey.Key) error {
 	// TODO: Make concurency save
-	if len(keys) == 0 {
+	if len(collectionModes) == 0 {
 		return nil
 	}
 
-	ctx = collection.ContextWithRestrictCache(ctx)
-	// TODO: Use a counter to get requested keys.
-	fetcher := dsfetch.New(r.flow)
+	recorder := dsrecorder.New(r.flow)
+	fetcher := dsfetch.New(recorder)
 
-	// Group by collection
 	byCollection := make(map[string][]dskey.Key)
-	for _, key := range keys {
-		byCollection[key.Collection] = append(byCollection[key.Collection], key)
+	for _, collectionMode := range collectionModes {
+		byCollection[collectionMode.Collection] = append(byCollection[collectionMode.Collection], collectionMode)
 	}
 
-	for name, keys := range byCollection {
+	ctx = perm.ContextWithGroupCache(ctx)
+
+	for name, collectionModes := range byCollection {
 		restricter := collection.Collection(ctx, name)
 
 		byMode := make(map[string][]int)
-		for _, key := range keys {
-			byMode[restrictionModes[key.CollectionField()]] = append(byMode[restrictionModes[key.CollectionField()]], key.ID)
+		for _, collectionMode := range collectionModes {
+			byMode[collectionMode.Field] = append(byMode[collectionMode.Field], collectionMode.ID)
 		}
 
 		for mode, ids := range byMode {
-			// TODO: This sets the locks very ofeten. It would be better, if the lock on r.attribute would set on the start of precalculate
-			if err := restricter.Modes(mode)(ctx, fetcher, r.attributes, ids); err != nil {
+			modefunc := restricter.Modes(mode)
+			if err := modefunc(ctx, fetcher, r.attributes, ids); err != nil {
 				return fmt.Errorf("precalculate %s/%s: %w", name, mode, err)
 			}
 		}
 	}
+
+	r.hotKeys.Merge(recorder.Keys())
 
 	return nil
 }
@@ -94,7 +126,20 @@ type restrictedGetter struct {
 }
 
 func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
-	needPrecalculate := r.restricter.attributes.NeedCalc(keys)
+	keyToMode := make(map[dskey.Key]dskey.Key, len(keys))
+	modeKeys := set.New[dskey.Key]()
+	for _, key := range keys {
+		mode, ok := restrictionModes[key.CollectionField()]
+		if !ok {
+			log.Printf("no restriction for %s", key.CollectionField())
+			continue
+		}
+		modeKey := dskey.Key{Collection: key.Collection, ID: key.ID, Field: mode}
+		modeKeys.Add(modeKey)
+		keyToMode[key] = modeKey
+	}
+
+	needPrecalculate := r.restricter.attributes.NeedCalc(modeKeys.List())
 
 	if err := r.restricter.precalculate(ctx, needPrecalculate); err != nil {
 		return nil, fmt.Errorf("restricter precalculate: %w", err)
@@ -106,49 +151,64 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 		return nil, fmt.Errorf("calculate user permission: %w", err)
 	}
 
-	for _, key := range keys {
-		mode, ok := restrictionModes[key.CollectionField()]
-		if !ok {
-			return nil, fmt.Errorf("unknown restrictoin mode for %s", key.CollectionField())
-		}
+	data, err := r.restricter.Get(ctx, keys...)
+	if err != nil {
+		return nil, fmt.Errorf("fetch full data: %w", err)
+	}
 
-		requiredAttr, err := r.restricter.attributes.Get(ctx, fetcher, mperms, dskey.Key{Collection: key.Collection, ID: key.ID, Field: restrictionMode})
-		if err != nil {
-			return nil, fmt.Errorf("attributemap: %w", err)
-		}
+	attributes := r.restricter.attributes.Get(modeKeys.List()...)
 
-		if requiredAttr == nil {
-			fmt.Printf("TODO: did not found attr for %s (%s)\n", key, restrictionMode)
+	var oldKeys []dskey.Key
+	for key := range data {
+		if !r.restricter.implementedCollections.Has(key.Collection) {
+			oldKeys = append(oldKeys, key)
 			continue
 		}
 
-		if !AllowedByAttr(requiredAttr, uid, orgaLevel, groupIDs) {
+		if !allowedByAttr(attributes[keyToMode[key]], r.userID, orgaLevel, groupIDs) {
 			data[key] = nil
 			continue
 		}
 
 		// TODO: relation fields
-
 	}
 
-	// TODO: only send not implemented collections
-	return r.todoOldRestricter.Get(ctx, keys...)
-}
+	if len(oldKeys) > 0 {
+		oldData, err := r.todoOldRestricter.Get(ctx, oldKeys...)
+		if err != nil {
+			return nil, fmt.Errorf("old restricter: %w", err)
+		}
 
-var implementedCollections = []string{
-	"agenda_item",
+		for k, v := range oldData {
+			data[k] = v
+		}
+	}
+
+	return data, nil
 }
 
 // UserPermissions returns the global permission and all group ids of an user.
 func userPermissions(ctx context.Context, fetcher *dsfetch.Fetch, uid int) (perm.OrganizationManagementLevel, []int, error) {
-	globalPermStr, err := fetcher.User_OrganizationManagementLevel(uid).Value(ctx)
+	meetingIDs, err := fetcher.User_GroupIDsTmpl(uid).Value(ctx)
 	if err != nil {
-		return "", nil, fmt.Errorf("getting orga level from user: %w", err)
+		return "", nil, fmt.Errorf("getting meetings of user: %w", err)
 	}
 
-	groupIDs, err := userGroups(ctx, fetcher, uid)
-	if err != nil {
-		return "", nil, fmt.Errorf("getting group ids: %w", err)
+	groupIDHelper := make([][]int, len(meetingIDs))
+	for i := 0; i < len(meetingIDs); i++ {
+		fetcher.User_GroupIDs(uid, meetingIDs[i]).Lazy(&groupIDHelper[i])
+	}
+
+	var globalPermStr string
+	fetcher.User_OrganizationManagementLevel(uid).Lazy(&globalPermStr)
+
+	if err := fetcher.Execute(ctx); err != nil {
+		return "", nil, fmt.Errorf("getting groupIDs: %w", err)
+	}
+
+	var groupIDs []int
+	for _, ids := range groupIDHelper {
+		groupIDs = append(groupIDs, ids...)
 	}
 
 	orgaLevel := perm.OrganizationManagementLevel(globalPermStr)
@@ -156,26 +216,53 @@ func userPermissions(ctx context.Context, fetcher *dsfetch.Fetch, uid int) (perm
 	return orgaLevel, groupIDs, nil
 }
 
-// userGroups returns all groups from a user.
-func userGroups(ctx context.Context, fetcher *dsfetch.Fetch, uid int) ([]int, error) {
-	meetingIDs, err := fetcher.User_GroupIDsTmpl(uid).Value(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getting meetings of user: %w", err)
+// allowedByAttr tells if the user is allowed to see the attribute.
+func allowedByAttr(requiredAttr *attribute.Attribute, uid int, orgaLevel perm.OrganizationManagementLevel, groupIDs []int) bool {
+	if requiredAttr == nil {
+		return false
 	}
 
-	groupIDs := make([][]int, len(meetingIDs))
-	for i := 0; i < len(meetingIDs); i++ {
-		fetcher.User_GroupIDs(uid, meetingIDs[i]).Lazy(&groupIDs[i])
+	if requiredAttr.GlobalPermission == 255 {
+		return false
 	}
 
-	if err := fetcher.Execute(ctx); err != nil {
-		return nil, fmt.Errorf("getting groupIDs: %w", err)
+	if allowedByGlobalPerm(orgaLevel, uid, requiredAttr.GlobalPermission) {
+		return true
 	}
 
-	var result []int
-	for _, ids := range groupIDs {
-		result = append(result, ids...)
+	if allowedByGroup(requiredAttr.GroupIDs, groupIDs) {
+		// if nextAttr := requiredAttr.GroupAnd; nextAttr != nil {
+		// 	return allowedByAttr(nextAttr, uid, orgaLevel, groupIDs)
+		// }
+		return true
 	}
 
-	return result, nil
+	if allowedByUser(requiredAttr.UserIDs, uid) {
+		return true
+	}
+
+	return false
+}
+
+// allowedByGlobalPerm tells, if the user has the correct global permission.
+func allowedByGlobalPerm(orgaLevel perm.OrganizationManagementLevel, userID int, globalAttr attribute.GlobalPermission) bool {
+	return globalAttr == attribute.GlobalAll ||
+		globalAttr == attribute.GlobalLoggedIn && userID > 0 ||
+		globalAttr == attribute.GlobalSuperadmin && orgaLevel == perm.OMLSuperadmin ||
+		globalAttr == attribute.GlobalCanManageOrganization && (orgaLevel == perm.OMLSuperadmin || orgaLevel == perm.OMLCanManageOrganization) ||
+		globalAttr == attribute.GlobalCanManageUsers && (orgaLevel == perm.OMLSuperadmin || orgaLevel == perm.OMLCanManageOrganization || orgaLevel == perm.OMLCanManageUsers)
+}
+
+func allowedByGroup(requiredGroups set.Set[int], hasGroups []int) bool {
+	for _, gid := range hasGroups {
+		if requiredGroups.Has(gid) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func allowedByUser(requiredIDs set.Set[int], uid int) bool {
+	return requiredIDs.Has(uid)
 }

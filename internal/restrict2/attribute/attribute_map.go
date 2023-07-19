@@ -8,7 +8,7 @@ import (
 
 // Map holds attributes for each restriction mod
 type Map struct {
-	mu   sync.RWMutex // TODO: This is a bad place for the lock.
+	mu   sync.RWMutex // TODO: This is a bad place for the mutex.
 	data map[dskey.Key]*Attribute
 }
 
@@ -27,13 +27,30 @@ func (am *Map) Add(modeKey dskey.Key, value *Attribute) {
 	am.data[modeKey] = value
 }
 
-func (am *Map) Get(keys ...dskey.Key) map[dskey.Key]*Attribute {
+// Keys returns all keys from the Map.
+func (am *Map) Keys() []dskey.Key {
 	am.mu.RLock()
-	defer am.mu.Unlock()
+	defer am.mu.RUnlock()
 
-	out := make(map[dskey.Key]*Attribute, len(keys))
-	for _, k := range keys {
+	keys := make([]dskey.Key, 0, len(am.data))
+	for key := range am.data {
+		keys = append(keys, key)
 	}
+
+	return keys
+}
+
+// Get returns the attributes for keys.
+func (am *Map) Get(modeKeys ...dskey.Key) map[dskey.Key]*Attribute {
+	am.mu.RLock()
+	defer am.mu.RUnlock()
+
+	out := make(map[dskey.Key]*Attribute, len(modeKeys))
+	for _, key := range modeKeys {
+		out[key] = am.data[key]
+	}
+
+	return out
 }
 
 // NeedCalc returns a list of keys, that are not in the map.
@@ -42,9 +59,9 @@ func (am *Map) NeedCalc(keys []dskey.Key) []dskey.Key {
 	defer am.mu.RUnlock()
 
 	var needPrecalculate []dskey.Key
-	for _, k := range keys {
-		if _, ok := am.data[k]; !ok {
-			needPrecalculate = append(needPrecalculate, k)
+	for _, key := range keys {
+		if _, ok := am.data[key]; !ok {
+			needPrecalculate = append(needPrecalculate, key)
 		}
 	}
 

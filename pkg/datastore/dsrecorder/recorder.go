@@ -6,47 +6,50 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
-
-// Getter is the same as datastore.Getter
-type Getter interface {
-	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
-}
 
 // Recorder implements the datastore.Getter interface. It records all requested
 // keys. They can be get with Recorder.Keys().
 type Recorder struct {
-	getter Getter
-	keys   map[dskey.Key]struct{}
+	getter flow.Getter
+	keys   set.Set[dskey.Key]
 }
 
 // New initializes a Recorder.
-func New(g Getter) *Recorder {
+func New(g flow.Getter) *Recorder {
 	return &Recorder{
 		getter: g,
-		keys:   map[dskey.Key]struct{}{},
+		keys:   set.New[dskey.Key](),
 	}
 }
 
 // Get fetches the keys from the datastore.
 func (r *Recorder) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
-	for _, k := range keys {
-		r.keys[k] = struct{}{}
-	}
+	r.keys.Add(keys...)
 	return r.getter.Get(ctx, keys...)
 }
 
 // Keys returns all datastore keys that where fetched in the process.
-func (r *Recorder) Keys() map[dskey.Key]struct{} {
+func (r *Recorder) Keys() set.Set[dskey.Key] {
 	return r.keys
+}
+
+// KeysAsMap returns all keys as map structure.
+//
+// Only used for the projector. Can be removed when the projector is refactored.
+func (r *Recorder) KeysAsMap() map[dskey.Key]struct{} {
+	out := make(map[dskey.Key]struct{}, r.keys.Len())
+	for _, k := range r.keys.List() {
+		out[k] = struct{}{}
+	}
+	return out
 }
 
 // DB creates a json database that contains all values from the recorder.
 func (r *Recorder) DB() ([]byte, error) {
-	keys := make([]dskey.Key, 0, len(r.keys))
-	for k := range r.keys {
-		keys = append(keys, k)
-	}
+	keys := r.keys.List()
 
 	data, err := r.getter.Get(context.Background(), keys...)
 	if err != nil {

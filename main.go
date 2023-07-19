@@ -15,7 +15,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/http"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
+	restrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
@@ -151,7 +151,8 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	backgroundTasks = append(backgroundTasks, authBackground)
 
 	// Autoupdate Service.
-	auService, auBackground, err := autoupdate.New(lookup, flow, restrict.Middleware)
+	restricter := restrict.New(flow)
+	auService, auBackground, err := autoupdate.New(lookup, restricter)
 	if err != nil {
 		return nil, fmt.Errorf("init autoupdate: %w", err)
 	}

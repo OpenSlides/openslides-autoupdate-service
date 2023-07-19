@@ -20,6 +20,7 @@ type Attribute struct {
 	GlobalPermission GlobalPermission
 
 	// GroupIDs are groups, that can see the field. Groups are meeting specific.
+	// TODO: For performance, a set is good. But for memory usage, an (sorted) array could be better. Same for UserIDs
 	GroupIDs set.Set[int]
 
 	// UserIDs are list from users that can see the field but do not have the
