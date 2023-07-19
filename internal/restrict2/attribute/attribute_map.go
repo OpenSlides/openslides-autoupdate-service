@@ -27,6 +27,15 @@ func (am *Map) Add(modeKey dskey.Key, value *Attribute) {
 	am.data[modeKey] = value
 }
 
+func (am *Map) Get(keys ...dskey.Key) map[dskey.Key]*Attribute {
+	am.mu.RLock()
+	defer am.mu.Unlock()
+
+	out := make(map[dskey.Key]*Attribute, len(keys))
+	for _, k := range keys {
+	}
+}
+
 // NeedCalc returns a list of keys, that are not in the map.
 func (am *Map) NeedCalc(keys []dskey.Key) []dskey.Key {
 	am.mu.RLock()
