@@ -153,45 +153,66 @@ type restrictedGetter struct {
 }
 
 func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
-	keyToMode := make(map[dskey.Key]dskey.Key, len(keys))
-	modeKeys := set.New[dskey.Key]()
+	start := time.Now()
+	defer func() {
+		log.Printf("full restrict %d keys took: %s", len(keys), time.Since(start))
+	}()
+
+	relevantKey := make([]dskey.Key, 0, len(keys))
 	for _, key := range keys {
-		if !r.restricter.implementedCollections.Has(key.Collection) {
+		if !(key.Collection == "agenda_item" || key.Collection == "motion") {
 			// TODO: Remove me
 			continue
 		}
 
-		mode, ok := restrictionModes[key.CollectionField()]
+		_, ok := restrictionModes[key.CollectionField()]
 		if !ok {
 			// TODO
 			// log.Printf("no restriction for %s", key.CollectionField())
 			continue
 		}
-		modeKey := dskey.Key{Collection: key.Collection, ID: key.ID, Field: mode}
-		modeKeys.Add(modeKey)
-		keyToMode[key] = modeKey
+
+		relevantKey = append(relevantKey, key)
 	}
 
-	needPrecalculate := r.restricter.attributes.NeedCalc(modeKeys.List())
+	startIndexing := time.Now()
+	modeKeys := make([]dskey.Key, len(relevantKey))
+	for i, key := range relevantKey {
+		mode := restrictionModes[key.CollectionField()]
 
+		modeKey := dskey.Key{Collection: key.Collection, ID: key.ID, Field: mode}
+		modeKeys[i] = modeKey
+	}
+	log.Printf("indexing took: %s", time.Since(startIndexing))
+
+	startPrecalc := time.Now()
+	needPrecalculate := r.restricter.attributes.NeedCalc(modeKeys)
 	if err := r.restricter.precalculate(ctx, needPrecalculate); err != nil {
 		return nil, fmt.Errorf("restricter precalculate: %w", err)
 	}
+	log.Printf("precalcing took: %s", time.Since(startPrecalc))
 
 	// Check the permissions from here
 
+	startUser := time.Now()
 	user, err := buildUserAttributes(ctx, r.getter, r.userID)
 	if err != nil {
 		return nil, fmt.Errorf("calculate user permission: %w", err)
 	}
+	log.Printf("building user took: %s", time.Since(startUser))
 
+	startData := time.Now()
 	data, err := r.getter.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("fetch full data: %w", err)
 	}
+	log.Printf("fetching %d keys took: %s", len(keys), time.Since(startData))
 
-	attrFuncs := r.restricter.attributes.Get(modeKeys.List()...)
+	startModeKeys := time.Now()
+	attrFuncs := r.restricter.attributes.Get(modeKeys...)
+	log.Printf("getting mode funcs took: %s", time.Since(startModeKeys))
 
+	startRestrict := time.Now()
 	var oldKeys []dskey.Key // TODO: Remove me. This is only necessary for restrict1
 	for key := range data {
 		if !r.restricter.implementedCollections.Has(key.Collection) {
@@ -199,9 +220,12 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 			continue
 		}
 
-		attrFunc := attrFuncs[keyToMode[key]]
+		mode := restrictionModes[key.CollectionField()]
+		modeKey := dskey.Key{Collection: key.Collection, ID: key.ID, Field: mode}
+
+		attrFunc := attrFuncs[modeKey]
 		if attrFunc == nil {
-			log.Printf("attrFunc for key %s, mode %s, is nil", key, keyToMode[key])
+			log.Printf("attrFunc for key %s, mode %s, is nil", key, modeKey)
 			data[key] = nil
 			continue
 		}
@@ -214,6 +238,9 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 		// TODO: relation fields
 	}
 
+	log.Printf("precalculated restrict %d keys took: %s", len(keys), time.Since(startRestrict))
+
+	startOld := time.Now()
 	if len(oldKeys) > 0 {
 		oldData, err := r.todoOldRestricter.Get(ctx, oldKeys...)
 		if err != nil {
@@ -224,6 +251,7 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 			data[k] = v
 		}
 	}
+	log.Printf("old restricter for %d keys took: %s", len(oldKeys), time.Since(startOld))
 
 	return data, nil
 }
