@@ -22,7 +22,7 @@ var collectionMap = map[string]Restricter{
 	// Group{}.Name():                      Group{},
 	// Mediafile{}.Name():                  Mediafile{},
 	// Meeting{}.Name():                    Meeting{},
-	// Motion{}.Name():                     Motion{},
+	Motion{}.Name(): Motion{},
 	// MotionBlock{}.Name():                MotionBlock{},
 	// MotionCategory{}.Name():             MotionCategory{},
 	// MotionChangeRecommendation{}.Name(): MotionChangeRecommendation{},
