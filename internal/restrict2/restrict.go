@@ -173,7 +173,14 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 			continue
 		}
 
-		if !attrFuncs[keyToMode[key]](user) {
+		attrFunc := attrFuncs[keyToMode[key]]
+		if attrFunc == nil {
+			log.Printf("attrFunc for key %s, mode %s, is nil", key, keyToMode[key])
+			data[key] = nil
+			continue
+		}
+
+		if !attrFunc(user) {
 			data[key] = nil
 			continue
 		}
