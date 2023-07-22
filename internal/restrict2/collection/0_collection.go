@@ -240,5 +240,5 @@ func never(ctx context.Context, ds *dsfetch.Fetch, agendaIDs []int) ([]Tuple, er
 }
 
 func modeKey(r Restricter, id int, mode string) dskey.Key {
-	return dskey.Key{Collection: r.Name(), ID: id, Field: "A"}
+	return dskey.Key{Collection: r.Name(), ID: id, Field: mode}
 }

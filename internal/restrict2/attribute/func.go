@@ -34,7 +34,7 @@ func FuncOr(fn ...Func) Func {
 
 func FuncGlobalLevel(oml perm.OrganizationManagementLevel) Func {
 	return func(user UserAttributes) bool {
-		switch oml {
+		switch user.OrgaLevel {
 		case perm.OMLSuperadmin:
 			return true
 

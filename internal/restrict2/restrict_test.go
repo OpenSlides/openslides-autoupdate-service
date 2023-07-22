@@ -67,7 +67,7 @@ func TestRestritGet(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(got, expect) {
-		t.Errorf("Got %v, expected %v", got, expect)
+		t.Errorf("Got\n%v\n\nexpected\n%v", got, expect)
 	}
 
 	t.Run("Update another key", func(t *testing.T) {
@@ -92,7 +92,7 @@ func TestRestritGet(t *testing.T) {
 
 	t.Run("update an hot key", func(t *testing.T) {
 		counter.Reset()
-		flow.Send(map[dskey.Key][]byte{dskey.MustKey("group/7/permissions"): []byte(`["agenda_item.can_manage"]`)})
+		flow.Send(map[dskey.Key][]byte{dskey.MustKey("agenda_item/1/is_internal"): []byte(`true`)})
 		<-waiter
 
 		if counter.Count() == 0 {
@@ -106,8 +106,8 @@ func TestRestritGet(t *testing.T) {
 			t.Fatalf("Get: %v", err)
 		}
 
-		if counter.Count() != 3 {
-			t.Errorf("Got %d requests to the db. Expected 3 (to get groups of user and the weight key): %v", counter.Count(), counter.Requests())
+		if counter.Count() != 6 {
+			t.Errorf("Got %d requests to the db. Expected 6 (to get the weight key and to build perm.Permission): %v", counter.Count(), counter.Requests())
 		}
 	})
 }
