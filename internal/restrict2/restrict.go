@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	oldRestrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
@@ -35,7 +36,10 @@ func New(flow flow.Flow) *Restricter {
 		attributes: newAttrMap(),
 		hotKeys:    set.New[dskey.Key](),
 
-		implementedCollections: set.New("agenda_item"),
+		implementedCollections: set.New(
+			"agenda_item",
+			"motion",
+		),
 	}
 }
 
@@ -195,6 +199,10 @@ func buildUserAttributes(ctx context.Context, getter flow.Getter, userID int) (a
 	var zero attribute.UserAttributes
 	fetcher := dsfetch.New(getter)
 
+	if userID == 0 {
+		return zero, nil
+	}
+
 	var meetingIDs []int
 	var globalLevelStr string
 	fetcher.User_OrganizationManagementLevel(userID).Lazy(&globalLevelStr)
@@ -204,19 +212,20 @@ func buildUserAttributes(ctx context.Context, getter flow.Getter, userID int) (a
 		return zero, fmt.Errorf("getting meeting ids and global level for user %d: %w", userID, err)
 	}
 
-	meetingPerms := make(map[int]*perm.Permission)
-	for _, meetingID := range meetingIDs {
-		perms, err := perm.New(ctx, fetcher, userID, meetingID)
+	meetingPermission := perm.NewMeetingPermission(fetcher, userID)
+	meetingGetter := func(meetingID int) *perm.Permission {
+		perm, err := meetingPermission.Meeting(ctx, meetingID)
 		if err != nil {
-			return zero, fmt.Errorf("getting permissions for user %d in meeting %d: %w", userID, meetingID, err)
+			oserror.Handle(fmt.Errorf("getting meeting: %w", err))
+			return nil
 		}
 
-		meetingPerms[meetingID] = perms
+		return perm
 	}
 
 	return attribute.UserAttributes{
-		UserID:       userID,
-		MeetingPerms: meetingPerms,
-		OrgaLevel:    perm.OrganizationManagementLevel(globalLevelStr),
+		UserID:          userID,
+		GetMeetingPerms: meetingGetter,
+		OrgaLevel:       perm.OrganizationManagementLevel(globalLevelStr),
 	}, nil
 }

@@ -35,15 +35,15 @@ func (p *groupForMeeting) MeetingGroupMap(ctx context.Context, ds *dsfetch.Fetch
 // meeting.
 //
 // Can be used if fields from different meetings are checked.
-type meetingPermission struct {
+type MeetingPermission struct {
 	perms map[int]*Permission
 	ds    *dsfetch.Fetch
 	uid   int
 }
 
 // NewMeetingPermission initializes a new MeetingPermission.
-func newMeetingPermission(ds *dsfetch.Fetch, uid int) *meetingPermission {
-	p := meetingPermission{
+func NewMeetingPermission(ds *dsfetch.Fetch, uid int) *MeetingPermission {
+	p := MeetingPermission{
 		perms: make(map[int]*Permission),
 		ds:    ds,
 		uid:   uid,
@@ -52,7 +52,7 @@ func newMeetingPermission(ds *dsfetch.Fetch, uid int) *meetingPermission {
 }
 
 // Meeting returns the permission object for the meeting.
-func (p *meetingPermission) Meeting(ctx context.Context, meetingID int) (*Permission, error) {
+func (p *MeetingPermission) Meeting(ctx context.Context, meetingID int) (*Permission, error) {
 	perms, ok := p.perms[meetingID]
 	if ok {
 		return perms, nil
@@ -67,7 +67,7 @@ func (p *meetingPermission) Meeting(ctx context.Context, meetingID int) (*Permis
 }
 
 // UserID returns the user id the object was initialized with.
-func (p *meetingPermission) UserID() int {
+func (p *MeetingPermission) UserID() int {
 	return p.uid
 }
 
@@ -81,7 +81,7 @@ const (
 // ContextWithPermissionCache adds a permission cache to the context.
 func ContextWithPermissionCache(ctx context.Context, getter datastore.Getter, uid int) context.Context {
 	fetcher := dsfetch.New(getter)
-	return context.WithValue(ctx, contextKey, newMeetingPermission(fetcher, uid))
+	return context.WithValue(ctx, contextKey, NewMeetingPermission(fetcher, uid))
 }
 
 // ContextWithGroupCache creates a context with the group cache.
@@ -98,7 +98,7 @@ func FromContext(ctx context.Context, meetingID int) (*Permission, error) {
 		return nil, fmt.Errorf("context does not contain a meeting permission. Make sure to create the context with 'ContextWithPermissionCache'")
 	}
 
-	meetingPermission, ok := v.(*meetingPermission)
+	meetingPermission, ok := v.(*MeetingPermission)
 	if !ok {
 		return nil, fmt.Errorf("meeting permission has wrong type: %T", v)
 	}
@@ -129,7 +129,7 @@ func RequestUserFromContext(ctx context.Context) (int, error) {
 		return 0, fmt.Errorf("context does not contain a meeting permission. Make sure to create the context with 'ContextWithPermissionCache'")
 	}
 
-	meetingPermission, ok := v.(*meetingPermission)
+	meetingPermission, ok := v.(*MeetingPermission)
 	if !ok {
 		return 0, fmt.Errorf("meeting permission has wrong type: %T", v)
 	}
