@@ -9,7 +9,6 @@ package autoupdate
 import (
 	"context"
 	"fmt"
-	"log"
 	"runtime"
 	"strconv"
 	"time"
@@ -88,7 +87,6 @@ func New(lookup environment.Environmenter, restricter *restrict.Restricter) (*Au
 				keys = append(keys, k)
 			}
 
-			log.Printf("publish keys %v", keys) // TODO: Remove this line
 			a.topic.Publish(keys...)
 		})
 	}

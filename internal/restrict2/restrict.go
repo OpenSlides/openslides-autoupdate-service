@@ -95,6 +95,13 @@ func (r *Restricter) ForUser(ctx context.Context, userID int) (context.Context, 
 	}, recorder
 }
 
+func slice[T any](list []T, c int) []T {
+	if len(list) <= c {
+		return list
+	}
+	return list[:c]
+}
+
 // precalculate calculates the attributes for modes.
 func (r *Restricter) precalculate(ctx context.Context, collectionModes []dskey.Key) error {
 	// TODO: Make concurency save
@@ -102,7 +109,7 @@ func (r *Restricter) precalculate(ctx context.Context, collectionModes []dskey.K
 		return nil
 	}
 
-	log.Printf("precalculate: %v", collectionModes)
+	log.Printf("precalculate %d modes: %v", len(collectionModes), slice(collectionModes, 10))
 
 	recorder := dsrecorder.New(r.flow)
 	fetcher := dsfetch.New(recorder)
