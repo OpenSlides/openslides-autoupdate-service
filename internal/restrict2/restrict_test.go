@@ -44,7 +44,7 @@ func TestRestritGet(t *testing.T) {
 		waiter <- struct{}{}
 	})
 
-	ctx, userRestricter := restricter.ForUser(ctx, 1)
+	ctx, userRestricter, _ := restricter.ForUser(ctx, 1)
 	keys := []dskey.Key{
 		dskey.MustKey("agenda_item/1/weight"),
 		dskey.MustKey("agenda_item/1/duration"),

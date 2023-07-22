@@ -9,6 +9,7 @@ package autoupdate
 import (
 	"context"
 	"fmt"
+	"log"
 	"runtime"
 	"strconv"
 	"time"
@@ -87,6 +88,7 @@ func New(lookup environment.Environmenter, restricter *restrict.Restricter) (*Au
 				keys = append(keys, k)
 			}
 
+			log.Printf("publish keys %v", keys) // TODO: Remove this line
 			a.topic.Publish(keys...)
 		})
 	}
@@ -119,7 +121,7 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (D
 
 // SingleData returns the data for the given keysbuilder without autoupdates.
 func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder) (map[dskey.Key][]byte, error) {
-	ctx, restricter := a.restricter.ForUser(ctx, userID)
+	ctx, restricter, _ := a.restricter.ForUser(ctx, userID)
 
 	keys, err := kb.Update(ctx, restricter)
 	if err != nil {

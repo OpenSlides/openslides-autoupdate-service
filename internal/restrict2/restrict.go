@@ -71,6 +71,9 @@ func (r *Restricter) Update(ctx context.Context, updateFn func(map[dskey.Key][]b
 		}
 		log.Printf("Update on hot key: %d keys in %s", r.attributes.Len(), time.Since(start))
 
+		// Send a signal to the autoupdate so the connections recalculate
+		data[dskey.Key{Collection: "meta", ID: 1, Field: "update"}] = nil
+
 		updateFn(data, err)
 	})
 }
@@ -80,13 +83,16 @@ func (r *Restricter) Update(ctx context.Context, updateFn func(map[dskey.Key][]b
 // Fetches keys from the flow and pre calculates the restriction for each key.
 //
 // TODO: Remove the ctx here and add it on every Get() call in the restricter
-func (r *Restricter) ForUser(ctx context.Context, userID int) (context.Context, flow.Getter) {
-	ctx, todoOldRestricter := oldRestrict.Middleware(ctx, r.flow, userID)
+func (r *Restricter) ForUser(ctx context.Context, userID int) (context.Context, flow.Getter, *dsrecorder.Recorder) {
+	recorder := dsrecorder.New(r.flow)
+
+	ctx, todoOldRestricter := oldRestrict.Middleware(ctx, recorder, userID)
 	return ctx, &restrictedGetter{
 		todoOldRestricter: todoOldRestricter,
 		userID:            userID,
 		restricter:        r,
-	}
+		getter:            recorder,
+	}, recorder
 }
 
 // precalculate calculates the attributes for modes.
@@ -136,6 +142,7 @@ type restrictedGetter struct {
 	todoOldRestricter flow.Getter
 	userID            int
 	restricter        *Restricter
+	getter            flow.Getter
 }
 
 func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
@@ -166,12 +173,12 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 
 	// Check the permissions from here
 
-	user, err := buildUserAttributes(ctx, r.restricter.flow, r.userID)
+	user, err := buildUserAttributes(ctx, r.getter, r.userID)
 	if err != nil {
 		return nil, fmt.Errorf("calculate user permission: %w", err)
 	}
 
-	data, err := r.restricter.Get(ctx, keys...)
+	data, err := r.getter.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("fetch full data: %w", err)
 	}
