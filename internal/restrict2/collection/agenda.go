@@ -7,7 +7,6 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // AgendaItem handels permission for the agenda.
@@ -30,8 +29,8 @@ func (a AgendaItem) Name() string {
 }
 
 // MeetingID returns the meetingID for the object.
-func (a AgendaItem) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
-	mid, err := ds.AgendaItem_MeetingID(id).Value(ctx)
+func (a AgendaItem) MeetingID(ctx context.Context, fetcher *dsfetch.Fetch, id int) (int, bool, error) {
+	mid, err := fetcher.AgendaItem_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting meeting id: %w", err)
 	}
@@ -51,36 +50,22 @@ func (a AgendaItem) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, attrMap *attribute.Map, agendaIDs []int) error {
-	return mapMeeting(ctx, ds, a, agendaIDs, func(meetingID int, ids []int) error {
-		groupMap, err := perm.GroupMapFromContext(ctx, ds, meetingID)
-		if err != nil {
-			return fmt.Errorf("getting permission: %w", err)
-		}
+func (a AgendaItem) see(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs []int) ([]Tuple, error) {
+	return byMeeting(ctx, fetcher, a, agendaIDs, func(meetingID int, agendaIDs []int) ([]Tuple, error) {
+		attrSuperadmin := attribute.FuncGlobalLevel(perm.OMLSuperadmin)
+		attrCanManage := attribute.FuncPerm(meetingID, perm.AgendaItemCanManage)
+		attrCanSeeInternal := attribute.FuncPerm(meetingID, perm.AgendaItemCanSeeInternal)
+		attrCanSee := attribute.FuncPerm(meetingID, perm.AgendaItemCanSee)
 
-		attrCanManage := attribute.Attribute{
-			GlobalPermission: attribute.GlobalFromPerm(perm.OMLSuperadmin),
-			GroupIDs:         groupMap[perm.AgendaItemCanManage],
-		}
-
-		attrCanSeeInternal := attribute.Attribute{
-			GlobalPermission: attribute.GlobalFromPerm(perm.OMLSuperadmin),
-			GroupIDs:         groupMap[perm.AgendaItemCanSeeInternal],
-		}
-
-		attrCanSee := attribute.Attribute{
-			GlobalPermission: attribute.GlobalFromPerm(perm.OMLSuperadmin),
-			GroupIDs:         groupMap[perm.AgendaItemCanSee],
-		}
-
-		for _, agendaID := range ids {
-			isHidden := ds.AgendaItem_IsHidden(agendaID).ErrorLater(ctx)
-			isInternal := ds.AgendaItem_IsInternal(agendaID).ErrorLater(ctx)
-			if err := ds.Err(); err != nil {
-				return fmt.Errorf("fetching isHidden and isInternal: %w", err)
+		result := make([]Tuple, len(agendaIDs))
+		for i, agendaID := range agendaIDs {
+			isHidden := fetcher.AgendaItem_IsHidden(agendaID).ErrorLater(ctx)
+			isInternal := fetcher.AgendaItem_IsInternal(agendaID).ErrorLater(ctx)
+			if err := fetcher.Err(); err != nil {
+				return nil, fmt.Errorf("fetching isHidden and isInternal: %w", err)
 			}
 
-			var attr attribute.Attribute
+			var attr attribute.Func
 			switch {
 			case isHidden:
 				attr = attrCanManage
@@ -89,17 +74,20 @@ func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, attrMap *attribu
 			default:
 				attr = attrCanSee
 			}
-			attrMap.Add(dskey.Key{Collection: a.Name(), ID: agendaID, Field: "A"}, &attr)
+
+			attr = attribute.FuncOr(attrSuperadmin, attr)
+
+			result[i] = Tuple{modeKey(a, agendaID, "A"), attr}
 		}
 
-		return nil
+		return result, nil
 	})
 }
 
-func (a AgendaItem) modeB(ctx context.Context, ds *dsfetch.Fetch, attrMap *attribute.Map, agendaIDs []int) error {
-	return meetingPerm(ctx, ds, a, "B", agendaIDs, perm.AgendaItemCanSeeInternal, attrMap)
+func (a AgendaItem) modeB(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs []int) ([]Tuple, error) {
+	return meetingPerm(ctx, fetcher, a, "B", agendaIDs, perm.AgendaItemCanSeeInternal)
 }
 
-func (a AgendaItem) modeC(ctx context.Context, ds *dsfetch.Fetch, attrMap *attribute.Map, agendaIDs []int) error {
-	return meetingPerm(ctx, ds, a, "C", agendaIDs, perm.AgendaItemCanManage, attrMap)
+func (a AgendaItem) modeC(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs []int) ([]Tuple, error) {
+	return meetingPerm(ctx, fetcher, a, "C", agendaIDs, perm.AgendaItemCanManage)
 }

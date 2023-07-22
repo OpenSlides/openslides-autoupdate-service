@@ -2,8 +2,6 @@ package attribute
 
 import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // Attribute is are flags that each field has. A user is allowed to see a
@@ -19,27 +17,31 @@ type Attribute struct {
 	// 5: Nobody can see this (not even the superadmin)
 	GlobalPermission GlobalPermission
 
-	// GroupIDs are groups, that can see the field. Groups are meeting specific.
-	// TODO: For performance, a set is good. But for memory usage, an (sorted) array could be better. Same for UserIDs
-	GroupIDs set.Set[int]
+	// Permissions is a list of lists of permissions.
+	//
+	// The outer list meens AND and the inner list meens OR
+	//
+	// [[perm1, perm2], [perm3, perm4]]
+	// meens ((perm1 or perm2) and (perm3 or perm4))
+	//
+	// TODO: Make TPermission an int or byte so it takes less memory (or is a string a pointer anyway?)
+	MeetingID   int
+	Permissions [][]perm.TPermission
 
 	// UserIDs are list from users that can see the field but do not have the
 	// globalPermission or are not in the groups.
-	UserIDs set.Set[int]
-
-	// HotKeys are all the keys that where needed to calculate the Attribute
-	HotKeys set.Set[dskey.Key]
+	UserIDs []int
 }
 
 type GlobalPermission byte
 
 const (
-	GlobalAll GlobalPermission = iota
+	GlobalNobody GlobalPermission = iota
 	GlobalSuperadmin
 	GlobalCanManageOrganization
 	GlobalCanManageUsers
 	GlobalLoggedIn
-	GlobalNobody
+	GlobalAll
 )
 
 func GlobalFromPerm(p perm.OrganizationManagementLevel) GlobalPermission {

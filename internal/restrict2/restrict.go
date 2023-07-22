@@ -21,7 +21,7 @@ import (
 type Restricter struct {
 	flow flow.Flow
 	// TODO: Probably needs a mutex
-	attributes *attribute.Map
+	attributes *attrMap
 	hotKeys    set.Set[dskey.Key]
 
 	// TODO: Remove me
@@ -32,7 +32,7 @@ type Restricter struct {
 func New(flow flow.Flow) *Restricter {
 	return &Restricter{
 		flow:       flow,
-		attributes: attribute.NewMap(),
+		attributes: newAttrMap(),
 		hotKeys:    set.New[dskey.Key](),
 
 		implementedCollections: set.New("agenda_item"),
@@ -96,8 +96,8 @@ func (r *Restricter) precalculate(ctx context.Context, collectionModes []dskey.K
 		byCollection[collectionMode.Collection] = append(byCollection[collectionMode.Collection], collectionMode)
 	}
 
-	ctx = perm.ContextWithGroupCache(ctx)
-
+	// Put all tuples together so they can be added at once (with one lock)
+	var allTuples []collection.Tuple
 	for name, collectionModes := range byCollection {
 		restricter := collection.Collection(ctx, name)
 
@@ -108,12 +108,15 @@ func (r *Restricter) precalculate(ctx context.Context, collectionModes []dskey.K
 
 		for mode, ids := range byMode {
 			modefunc := restricter.Modes(mode)
-			if err := modefunc(ctx, fetcher, r.attributes, ids); err != nil {
+			tuples, err := modefunc(ctx, fetcher, ids)
+			if err != nil {
 				return fmt.Errorf("precalculate %s/%s: %w", name, mode, err)
 			}
+			allTuples = append(allTuples, tuples...)
 		}
 	}
 
+	r.attributes.Add(allTuples...)
 	r.hotKeys.Merge(recorder.Keys())
 
 	return nil
@@ -145,8 +148,9 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 		return nil, fmt.Errorf("restricter precalculate: %w", err)
 	}
 
-	fetcher := dsfetch.New(r.restricter.flow)
-	orgaLevel, groupIDs, err := userPermissions(ctx, fetcher, r.userID)
+	// Check the permissions from here
+
+	user, err := buildUserAttributes(ctx, r.restricter.flow, r.userID)
 	if err != nil {
 		return nil, fmt.Errorf("calculate user permission: %w", err)
 	}
@@ -156,16 +160,16 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 		return nil, fmt.Errorf("fetch full data: %w", err)
 	}
 
-	attributes := r.restricter.attributes.Get(modeKeys.List()...)
+	attrFuncs := r.restricter.attributes.Get(modeKeys.List()...)
 
-	var oldKeys []dskey.Key
+	var oldKeys []dskey.Key // TODO: Remove me. This is only necessary for restrict1
 	for key := range data {
 		if !r.restricter.implementedCollections.Has(key.Collection) {
 			oldKeys = append(oldKeys, key)
 			continue
 		}
 
-		if !allowedByAttr(attributes[keyToMode[key]], r.userID, orgaLevel, groupIDs) {
+		if !attrFuncs[keyToMode[key]](user) {
 			data[key] = nil
 			continue
 		}
@@ -187,86 +191,32 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 	return data, nil
 }
 
-// UserPermissions returns the global permission and all group ids of an user.
-func userPermissions(ctx context.Context, fetcher *dsfetch.Fetch, userID int) (perm.OrganizationManagementLevel, []int, error) {
-	if userID == 0 {
-		return perm.OMLNone, nil, nil
-	}
+func buildUserAttributes(ctx context.Context, getter flow.Getter, userID int) (attribute.UserAttributes, error) {
+	var zero attribute.UserAttributes
+	fetcher := dsfetch.New(getter)
 
-	meetingIDs, err := fetcher.User_GroupIDsTmpl(userID).Value(ctx)
-	if err != nil {
-		return "", nil, fmt.Errorf("getting meetings of user: %w", err)
-	}
-
-	groupIDHelper := make([][]int, len(meetingIDs))
-	for i := 0; i < len(meetingIDs); i++ {
-		fetcher.User_GroupIDs(userID, meetingIDs[i]).Lazy(&groupIDHelper[i])
-	}
-
-	var globalPermStr string
-	fetcher.User_OrganizationManagementLevel(userID).Lazy(&globalPermStr)
+	var meetingIDs []int
+	var globalLevelStr string
+	fetcher.User_OrganizationManagementLevel(userID).Lazy(&globalLevelStr)
+	fetcher.User_GroupIDsTmpl(userID).Lazy(&meetingIDs)
 
 	if err := fetcher.Execute(ctx); err != nil {
-		return "", nil, fmt.Errorf("getting groupIDs: %w", err)
+		return zero, fmt.Errorf("getting meeting ids and global level for user %d: %w", userID, err)
 	}
 
-	var groupIDs []int
-	for _, ids := range groupIDHelper {
-		groupIDs = append(groupIDs, ids...)
-	}
-
-	orgaLevel := perm.OrganizationManagementLevel(globalPermStr)
-
-	return orgaLevel, groupIDs, nil
-}
-
-// allowedByAttr tells if the user is allowed to see the attribute.
-func allowedByAttr(requiredAttr *attribute.Attribute, uid int, orgaLevel perm.OrganizationManagementLevel, groupIDs []int) bool {
-	if requiredAttr == nil {
-		return false
-	}
-
-	if requiredAttr.GlobalPermission == 255 {
-		return false
-	}
-
-	if allowedByGlobalPerm(orgaLevel, uid, requiredAttr.GlobalPermission) {
-		return true
-	}
-
-	if allowedByGroup(requiredAttr.GroupIDs, groupIDs) {
-		// if nextAttr := requiredAttr.GroupAnd; nextAttr != nil {
-		// 	return allowedByAttr(nextAttr, uid, orgaLevel, groupIDs)
-		// }
-		return true
-	}
-
-	if allowedByUser(requiredAttr.UserIDs, uid) {
-		return true
-	}
-
-	return false
-}
-
-// allowedByGlobalPerm tells, if the user has the correct global permission.
-func allowedByGlobalPerm(orgaLevel perm.OrganizationManagementLevel, userID int, globalAttr attribute.GlobalPermission) bool {
-	return globalAttr == attribute.GlobalAll ||
-		globalAttr == attribute.GlobalLoggedIn && userID > 0 ||
-		globalAttr == attribute.GlobalSuperadmin && orgaLevel == perm.OMLSuperadmin ||
-		globalAttr == attribute.GlobalCanManageOrganization && (orgaLevel == perm.OMLSuperadmin || orgaLevel == perm.OMLCanManageOrganization) ||
-		globalAttr == attribute.GlobalCanManageUsers && (orgaLevel == perm.OMLSuperadmin || orgaLevel == perm.OMLCanManageOrganization || orgaLevel == perm.OMLCanManageUsers)
-}
-
-func allowedByGroup(requiredGroups set.Set[int], hasGroups []int) bool {
-	for _, gid := range hasGroups {
-		if requiredGroups.Has(gid) {
-			return true
+	meetingPerms := make(map[int]*perm.Permission)
+	for _, meetingID := range meetingIDs {
+		perms, err := perm.New(ctx, fetcher, userID, meetingID)
+		if err != nil {
+			return zero, fmt.Errorf("getting permissions for user %d in meeting %d: %w", userID, meetingID, err)
 		}
+
+		meetingPerms[meetingID] = perms
 	}
 
-	return false
-}
-
-func allowedByUser(requiredIDs set.Set[int], uid int) bool {
-	return requiredIDs.Has(uid)
+	return attribute.UserAttributes{
+		UserID:       userID,
+		MeetingPerms: meetingPerms,
+		OrgaLevel:    perm.OrganizationManagementLevel(globalLevelStr),
+	}, nil
 }
