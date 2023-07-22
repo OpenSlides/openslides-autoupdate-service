@@ -43,6 +43,13 @@ func (am *attrMap) Keys() []dskey.Key {
 	return keys
 }
 
+func (am *attrMap) Len() int {
+	am.mu.RLock()
+	defer am.mu.RUnlock()
+
+	return len(am.data)
+}
+
 // Get returns the attributes for keys.
 func (am *attrMap) Get(modeKeys ...dskey.Key) map[dskey.Key]attribute.Func {
 	am.mu.RLock()

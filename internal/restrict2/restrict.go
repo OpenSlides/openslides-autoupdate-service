@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	oldRestrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
@@ -59,13 +60,16 @@ func (r *Restricter) Update(ctx context.Context, updateFn func(map[dskey.Key][]b
 			}
 		}
 		if !found {
+			log.Printf("Update on not hot key")
 			updateFn(data, err)
 			return
 		}
 
+		start := time.Now()
 		if preError := r.precalculate(ctx, r.attributes.Keys()); err != nil {
 			err = errors.Join(err, preError)
 		}
+		log.Printf("Update on hot key: %d keys in %s", r.attributes.Len(), time.Since(start))
 
 		updateFn(data, err)
 	})
@@ -138,6 +142,11 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 	keyToMode := make(map[dskey.Key]dskey.Key, len(keys))
 	modeKeys := set.New[dskey.Key]()
 	for _, key := range keys {
+		if !r.restricter.implementedCollections.Has(key.Collection) {
+			// TODO: Remove me
+			continue
+		}
+
 		mode, ok := restrictionModes[key.CollectionField()]
 		if !ok {
 			// TODO
