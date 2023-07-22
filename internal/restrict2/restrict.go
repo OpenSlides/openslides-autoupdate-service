@@ -92,6 +92,8 @@ func (r *Restricter) precalculate(ctx context.Context, collectionModes []dskey.K
 		return nil
 	}
 
+	log.Printf("precalculate: %v", collectionModes)
+
 	recorder := dsrecorder.New(r.flow)
 	fetcher := dsfetch.New(recorder)
 
@@ -138,7 +140,8 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 	for _, key := range keys {
 		mode, ok := restrictionModes[key.CollectionField()]
 		if !ok {
-			log.Printf("no restriction for %s", key.CollectionField())
+			// TODO
+			// log.Printf("no restriction for %s", key.CollectionField())
 			continue
 		}
 		modeKey := dskey.Key{Collection: key.Collection, ID: key.ID, Field: mode}
