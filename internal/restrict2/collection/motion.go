@@ -154,58 +154,51 @@ func leadMotionIndex(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []in
 	return index, nil
 }
 
-// isAllowedByLead returns true if the lead motion and its lead motion and so on is allowed
-func isAllowedByLead(motionID int, allowedIDs set.Set[int], index map[int]int) bool {
-	leadMotion := index[motionID]
-	for {
-		if leadMotion == 0 || leadMotion == motionID {
-			return true
-		}
-
-		if !allowedIDs.Has(leadMotion) {
-			return false
-		}
-
-		leadMotion = index[leadMotion]
-	}
-}
-
 // filterCanSeeLeadMotion calls the given function by adding the lead motions to
 // the motionIDs list.
 //
 // It only returns motions, where the user can also see the lead motion. This is
 // done recursive, so for a lead_motion that also has a lead motion, the user
 // must see all of them.
-func filterCanSeeLeadMotion(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int, fn func([]int) ([]int, error)) ([]int, error) {
+func filterCanSeeLeadMotion(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int, fn func([]int) ([]Tuple, error)) ([]Tuple, error) {
 	index, err := leadMotionIndex(ctx, fetcher, motionIDs)
 	if err != nil {
 		return nil, fmt.Errorf("create lead motion index: %w", err)
 	}
 
-	allIDs := make([]int, 0, len(index))
-	for k := range index {
-		allIDs = append(allIDs, k)
+	// TODO: add a shortcut if no requested motion has a lead motion
+
+	allMotionIDs := make([]int, 0, len(index))
+	for motionID := range index {
+		allMotionIDs = append(allMotionIDs, motionID)
 	}
 
-	allowedIDs, err := fn(allIDs)
+	tuples, err := fn(allMotionIDs)
 	if err != nil {
 		return nil, fmt.Errorf("checking motions with lead motions: %w", err)
 	}
 
-	allowedSet := set.New(allowedIDs...)
+	motionIDToFunc := make(map[int]attribute.Func, len(allMotionIDs))
+	for _, tuple := range tuples {
+		motionID := tuple.Key.ID
+		motionIDToFunc[motionID] = tuple.Value
+	}
 
-	var filtered []int
-	for _, motionID := range motionIDs {
-		if !allowedSet.Has(motionID) {
+	for _, tuple := range tuples {
+		motionID := tuple.Key.ID
+		leadMotionID := index[motionID]
+		if leadMotionID == 0 {
 			continue
 		}
 
-		if isAllowedByLead(motionID, allowedSet, index) {
-			filtered = append(filtered, motionID)
-		}
+		tuple.Value = attribute.FuncAnd(
+			tuple.Value,
+			motionIDToFunc[leadMotionID],
+			// TODO: What about lead motion from lead motion and so on?
+		)
 	}
 
-	return filtered, nil
+	return tuples, nil
 }
 
 func (m Motion) modeA(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int) ([]Tuple, error) {
