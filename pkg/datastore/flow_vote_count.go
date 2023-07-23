@@ -143,7 +143,7 @@ func (s *FlowVoteCount) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.K
 	for _, key := range keys {
 		out[key] = nil
 
-		if !(strings.HasPrefix(string(key), "poll/") && strings.HasSuffix(string(key), "/vote_count")) {
+		if !(strings.HasPrefix(key.String(), "poll/") && strings.HasSuffix(key.String(), "/vote_count")) {
 			continue
 		}
 

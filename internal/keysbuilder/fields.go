@@ -335,7 +335,7 @@ func (t *templateField) appendKeys(key dskey.Key, value json.RawMessage, data []
 	}
 
 	for _, value := range values {
-		newkey := dskey.Key(key.FQID() + "/" + strings.Replace(key.Field(), "$", "$"+value, 1))
+		newkey, _ := dskey.FromString(key.FQID() + "/" + strings.Replace(key.Field(), "$", "$"+value, 1))
 		data = append(data, keyDescription{key: newkey, description: t.values})
 	}
 	return data, nil

@@ -1,6 +1,7 @@
 package dskey_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
@@ -26,6 +27,27 @@ func TestFromString(t *testing.T) {
 
 			if tt.valid && key.String() != tt.key {
 				t.Errorf("build key != created key: %s != %s", tt.key, key.String())
+			}
+		})
+	}
+}
+
+func TestFromParts(t *testing.T) {
+	for _, tt := range []struct {
+		collection string
+		id         int
+		field      string
+		expect     string
+	}{
+		{"user", 1, "username", "user/1/username"},
+		{"user", 12, "username", "user/12/username"},
+		{"motion_version", 12, "username", "motion_version/12/username"},
+	} {
+		t.Run(fmt.Sprintf("%s/%d/%s", tt.collection, tt.id, tt.field), func(t *testing.T) {
+			key := dskey.FromParts(tt.collection, tt.id, tt.field)
+
+			if key.String() != tt.expect {
+				t.Errorf("got %s, expected %s", key, tt.expect)
 			}
 		})
 	}
@@ -155,7 +177,7 @@ func TestIDField(t *testing.T) {
 				t.Fatalf("Key is not valid: %v", err)
 			}
 
-			if string(key.IDField()) != tt.expect {
+			if key.IDField().String() != tt.expect {
 				t.Errorf("got %s, expected %s", key.IDField(), tt.expect)
 			}
 		})

@@ -7,7 +7,12 @@ import (
 	"strings"
 )
 
-type Key string
+type Key struct {
+	value string
+	idx1  int
+	idx2  int
+	id    int
+}
 
 // Key represents a FQField.
 type KeyOld struct {
@@ -22,14 +27,31 @@ type KeyOld struct {
 // called many times. It is faster to manually validate the key.
 func FromString(in string) (Key, error) {
 	if !keyValid(in) {
-		return "", invalidKeyError{in}
+		return Key{}, invalidKeyError{in}
 	}
 
-	return Key(in), nil
+	idx1 := strings.IndexByte(in, '/')
+	idx2 := strings.LastIndexByte(in, '/')
+	id, _ := strconv.Atoi(in[idx1+1 : idx2])
+
+	key := Key{
+		value: in,
+		idx1:  idx1,
+		idx2:  idx2,
+		id:    id,
+	}
+
+	return key, nil
 }
 
 func FromParts(collection string, id int, field string) Key {
-	return Key(fmt.Sprintf("%s/%d/%s", collection, id, field))
+	value := fmt.Sprintf("%s/%d/%s", collection, id, field)
+	return Key{
+		value: value,
+		idx1:  len(collection),
+		idx2:  len(value) - len(field),
+		id:    id,
+	}
 }
 
 // MustKey is like FromString but panics, if the key is invalid.
@@ -44,53 +66,24 @@ func MustKey(in string) Key {
 }
 
 func (k Key) String() string {
-	return string(k)
+	return k.value
 }
 
 func (k Key) ID() int {
-	idx1 := strings.IndexByte(string(k), '/')
-	if idx1 < 0 {
-		panic(fmt.Sprintf("invalid key %s", k))
-	}
-
-	idx2 := strings.LastIndexByte(string(k), '/')
-	if idx2 < 0 {
-		panic(fmt.Sprintf("invalid key %s", k))
-	}
-
-	n, err := strconv.Atoi(string(k)[idx1+1 : idx2])
-	if err != nil {
-		panic(fmt.Sprintf("invalid key: %s: %v", k, err))
-	}
-
-	return n
+	return k.id
 }
 
 func (k Key) Collection() string {
-	idx1 := strings.IndexByte(string(k), '/')
-	if idx1 < 0 {
-		panic(fmt.Sprintf("invalid key %s", k))
-	}
-
-	return string(k)[:idx1]
+	return k.value[:k.idx1]
 }
 
 func (k Key) Field() string {
-	idx2 := strings.LastIndexByte(string(k), '/')
-	if idx2 < 0 {
-		panic(fmt.Sprintf("invalid key %s", k))
-	}
-
-	return string(k)[idx2+1:]
+	return k.value[k.idx2+1:]
 }
 
 // FQID returns the FQID part of the field
 func (k Key) FQID() string {
-	idx2 := strings.LastIndexByte(string(k), '/')
-	if idx2 < 0 {
-		panic(fmt.Sprintf("invalid key %s", k))
-	}
-	return string(k)[:idx2]
+	return k.value[:k.idx2]
 }
 
 // CollectionField returns the first and last part of the key.
@@ -100,12 +93,12 @@ func (k Key) CollectionField() string {
 
 // IDField retuns the the /id field for the key.
 func (k Key) IDField() Key {
-	idx2 := strings.LastIndexByte(string(k), '/')
-	if idx2 < 0 {
-		panic(fmt.Sprintf("invalid key %s", k))
+	return Key{
+		value: k.value[:k.idx2] + "/id",
+		idx1:  k.idx1,
+		idx2:  k.idx2,
+		id:    k.id,
 	}
-
-	return Key(string(k)[:idx2] + "/id")
 }
 
 // MarshalJSON converts the key to a json string.
