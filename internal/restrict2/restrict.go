@@ -201,20 +201,16 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 	}
 	log.Printf("building user took: %s", time.Since(startUser))
 
-	startData := time.Now()
-	data, err := r.getter.Get(ctx, keys...)
-	if err != nil {
-		return nil, fmt.Errorf("fetch full data: %w", err)
-	}
-	log.Printf("fetching %d keys took: %s", len(keys), time.Since(startData))
-
 	startModeKeys := time.Now()
 	attrFuncs := r.restricter.attributes.Get(modeKeys...)
 	log.Printf("getting mode funcs took: %s", time.Since(startModeKeys))
 
 	startRestrict := time.Now()
 	var oldKeys []dskey.Key // TODO: Remove me. This is only necessary for restrict1
-	for key := range data {
+
+	allowedKeys := make([]dskey.Key, 0, len(keys))
+
+	for _, key := range keys {
 		if !r.restricter.implementedCollections.Has(key.Collection) {
 			oldKeys = append(oldKeys, key)
 			continue
@@ -226,19 +222,25 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 		attrFunc := attrFuncs[modeKey]
 		if attrFunc == nil {
 			log.Printf("attrFunc for key %s, mode %s, is nil", key, modeKey)
-			data[key] = nil
 			continue
 		}
 
 		if !attrFunc(user) {
-			data[key] = nil
 			continue
 		}
 
+		allowedKeys = append(allowedKeys, key)
+
 		// TODO: relation fields
 	}
-
 	log.Printf("precalculated restrict %d keys took: %s", len(keys), time.Since(startRestrict))
+
+	startData := time.Now()
+	data, err := r.getter.Get(ctx, allowedKeys...)
+	if err != nil {
+		return nil, fmt.Errorf("fetch full data: %w", err)
+	}
+	log.Printf("fetching %d keys took: %s", len(allowedKeys), time.Since(startData))
 
 	startOld := time.Now()
 	if len(oldKeys) > 0 {
