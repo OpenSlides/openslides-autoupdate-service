@@ -102,7 +102,7 @@ func parse(r io.Reader) ([]collectionField, error) {
 const tpl = `// Code generated with models.yml DO NOT EDIT.
 package dskey
 
-var collectionFields = []collectionField{
+var collectionFields = [...]collectionField{
 	{{- range $cf := .CollectionFields}}
 		{"{{$cf.Collection}}", "{{$cf.Field}}"},
 	{{- end}}

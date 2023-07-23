@@ -1,7 +1,7 @@
 // Code generated with models.yml DO NOT EDIT.
 package dskey
 
-var collectionFields = []collectionField{
+var collectionFields = [...]collectionField{
 	{"action_worker", "A"},
 	{"action_worker", "created"},
 	{"action_worker", "id"},
