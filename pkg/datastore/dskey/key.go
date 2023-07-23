@@ -53,12 +53,12 @@ func (k Key) ID() int {
 		panic(fmt.Sprintf("invalid key %s", k))
 	}
 
-	idx2 := strings.IndexByte(string(k)[idx1:], '/')
+	idx2 := strings.LastIndexByte(string(k), '/')
 	if idx2 < 0 {
 		panic(fmt.Sprintf("invalid key %s", k))
 	}
 
-	n, err := strconv.Atoi(string(k)[idx1+1 : idx2-1])
+	n, err := strconv.Atoi(string(k)[idx1+1 : idx2])
 	if err != nil {
 		panic(fmt.Sprintf("invalid key: %s: %v", k, err))
 	}
@@ -72,7 +72,7 @@ func (k Key) Collection() string {
 		panic(fmt.Sprintf("invalid key %s", k))
 	}
 
-	return string(k)[:idx1-1]
+	return string(k)[:idx1]
 }
 
 func (k Key) Field() string {
@@ -81,7 +81,7 @@ func (k Key) Field() string {
 		panic(fmt.Sprintf("invalid key %s", k))
 	}
 
-	return string(k)[idx2:]
+	return string(k)[idx2+1:]
 }
 
 // FQID returns the FQID part of the field
@@ -90,7 +90,7 @@ func (k Key) FQID() string {
 	if idx2 < 0 {
 		panic(fmt.Sprintf("invalid key %s", k))
 	}
-	return string(k)[:idx2-1]
+	return string(k)[:idx2]
 }
 
 // CollectionField returns the first and last part of the key.
@@ -105,7 +105,7 @@ func (k Key) IDField() Key {
 		panic(fmt.Sprintf("invalid key %s", k))
 	}
 
-	return Key(string(k)[:idx2] + "id")
+	return Key(string(k)[:idx2] + "/id")
 }
 
 // MarshalJSON converts the key to a json string.
