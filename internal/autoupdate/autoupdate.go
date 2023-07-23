@@ -221,7 +221,7 @@ func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []stri
 
 		for _, field := range fields {
 			if _, ok := requestedFields[collection]; !ok || requestedFieldsMap[collection].Has(field) {
-				key := dskey.Key{Collection: collection, ID: id, Field: field}
+				key := dskey.FromParts(collection, id, field)
 				keys = append(keys, key)
 			}
 		}
@@ -245,7 +245,7 @@ func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []stri
 			continue
 		}
 
-		result[fqid][key.Field] = value
+		result[fqid][key.Field()] = value
 	}
 
 	return result, nil

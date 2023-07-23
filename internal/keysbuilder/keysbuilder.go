@@ -43,11 +43,11 @@ func FromKeys(rawKeys ...string) (*Builder, error) {
 
 	for _, key := range keys {
 		body := body{
-			ids:        []int{key.ID},
-			collection: key.Collection,
+			ids:        []int{key.ID()},
+			collection: key.Collection(),
 			fieldsMap: fieldsMap{
 				fields: map[string]fieldDescription{
-					key.Field: nil,
+					key.Field(): nil,
 				},
 			},
 		}

@@ -143,7 +143,7 @@ func splitKeys(keys []dskey.Key) ([]dskey.Key, []dskey.Key) {
 	var contentKeys []dskey.Key
 	normalKeys := make([]dskey.Key, 0, len(keys))
 	for _, k := range keys {
-		if !(k.Collection == "projection" && k.Field == "content") {
+		if !(k.Collection() == "projection" && k.Field() == "content") {
 			normalKeys = append(normalKeys, k)
 			continue
 		}
@@ -190,7 +190,7 @@ func (p *Projector) calculateHelper(ctx context.Context, fqfield dskey.Key) ([]b
 		if errors.As(err, &errDoesNotExist) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("fetching projection %d from datastore: %w", fqfield.ID, err)
+		return nil, fmt.Errorf("fetching projection %d from datastore: %w", fqfield.ID(), err)
 	}
 
 	p7on, err := p7onFromMap(data)

@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -142,11 +143,11 @@ func (s *FlowVoteCount) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.K
 	for _, key := range keys {
 		out[key] = nil
 
-		if key.Collection != "poll" || key.Field != "vote_count" {
+		if !(strings.HasPrefix(string(key), "poll/") && strings.HasSuffix(string(key), "/vote_count")) {
 			continue
 		}
 
-		if count, ok := s.voteCount[key.ID]; ok {
+		if count, ok := s.voteCount[key.ID()]; ok {
 			out[key] = []byte(strconv.Itoa(count))
 		}
 	}
@@ -170,7 +171,7 @@ func (s *FlowVoteCount) Update(ctx context.Context, updateFn func(map[dskey.Key]
 			if count == 0 {
 				bs = nil
 			}
-			out[dskey.Key{Collection: "poll", ID: pollID, Field: "vote_count"}] = bs
+			out[dskey.FromParts("poll", pollID, "vote_count")] = bs
 		}
 
 		updateFn(out, nil)

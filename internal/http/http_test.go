@@ -17,8 +17,8 @@ import (
 )
 
 var (
-	myKey1 = dskey.Key{Collection: "collection", ID: 1, Field: "field"}
-	myKey2 = dskey.Key{Collection: "collection", ID: 2, Field: "field"}
+	myKey1 = dskey.FromParts("collection", 1, "field")
+	myKey2 = dskey.FromParts("collection", 2, "field")
 )
 
 type connecterMock struct {

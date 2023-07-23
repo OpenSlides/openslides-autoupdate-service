@@ -7,8 +7,10 @@ import (
 	"strings"
 )
 
+type Key string
+
 // Key represents a FQField.
-type Key struct {
+type KeyOld struct {
 	Collection string
 	ID         int
 	Field      string
@@ -20,12 +22,14 @@ type Key struct {
 // called many times. It is faster to manually validate the key.
 func FromString(in string) (Key, error) {
 	if !keyValid(in) {
-		return Key{}, invalidKeyError{in}
+		return "", invalidKeyError{in}
 	}
 
-	parts := strings.Split(in, "/")
-	id, _ := strconv.Atoi(parts[1])
-	return Key{parts[0], id, parts[2]}, nil
+	return Key(in), nil
+}
+
+func FromParts(collection string, id int, field string) Key {
+	return Key(fmt.Sprintf("%s/%d/%s", collection, id, field))
 }
 
 // MustKey is like FromString but panics, if the key is invalid.
@@ -40,23 +44,68 @@ func MustKey(in string) Key {
 }
 
 func (k Key) String() string {
-	return fmt.Sprintf("%s/%d/%s", k.Collection, k.ID, k.Field)
+	return string(k)
+}
+
+func (k Key) ID() int {
+	idx1 := strings.IndexByte(string(k), '/')
+	if idx1 < 0 {
+		panic(fmt.Sprintf("invalid key %s", k))
+	}
+
+	idx2 := strings.IndexByte(string(k)[idx1:], '/')
+	if idx2 < 0 {
+		panic(fmt.Sprintf("invalid key %s", k))
+	}
+
+	n, err := strconv.Atoi(string(k)[idx1+1 : idx2-1])
+	if err != nil {
+		panic(fmt.Sprintf("invalid key: %s: %v", k, err))
+	}
+
+	return n
+}
+
+func (k Key) Collection() string {
+	idx1 := strings.IndexByte(string(k), '/')
+	if idx1 < 0 {
+		panic(fmt.Sprintf("invalid key %s", k))
+	}
+
+	return string(k)[:idx1-1]
+}
+
+func (k Key) Field() string {
+	idx2 := strings.LastIndexByte(string(k), '/')
+	if idx2 < 0 {
+		panic(fmt.Sprintf("invalid key %s", k))
+	}
+
+	return string(k)[idx2:]
 }
 
 // FQID returns the FQID part of the field
 func (k Key) FQID() string {
-	return fmt.Sprintf("%s/%d", k.Collection, k.ID)
+	idx2 := strings.LastIndexByte(string(k), '/')
+	if idx2 < 0 {
+		panic(fmt.Sprintf("invalid key %s", k))
+	}
+	return string(k)[:idx2-1]
 }
 
 // CollectionField returns the first and last part of the key.
 func (k Key) CollectionField() string {
-	return k.Collection + "/" + k.Field
+	return k.Collection() + "/" + k.Field()
 }
 
 // IDField retuns the the /id field for the key.
 func (k Key) IDField() Key {
-	k.Field = "id"
-	return k
+	idx2 := strings.LastIndexByte(string(k), '/')
+	if idx2 < 0 {
+		panic(fmt.Sprintf("invalid key %s", k))
+	}
+
+	return Key(string(k)[:idx2] + "id")
 }
 
 // MarshalJSON converts the key to a json string.

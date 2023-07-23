@@ -191,7 +191,7 @@ func (r *relationListField) appendKeys(key dskey.Key, value json.RawMessage, dat
 
 	for _, id := range ids {
 		for field, description := range r.fields {
-			key := dskey.Key{Collection: r.collection, ID: id, Field: field}
+			key := dskey.FromParts(r.collection, id, field)
 			data = append(data, keyDescription{key: key, description: description})
 		}
 	}
@@ -335,8 +335,7 @@ func (t *templateField) appendKeys(key dskey.Key, value json.RawMessage, data []
 	}
 
 	for _, value := range values {
-		newkey := key
-		newkey.Field = strings.Replace(key.Field, "$", "$"+value, 1)
+		newkey := dskey.Key(key.FQID() + "/" + strings.Replace(key.Field(), "$", "$"+value, 1))
 		data = append(data, keyDescription{key: newkey, description: t.values})
 	}
 	return data, nil
@@ -425,7 +424,7 @@ func (f *fieldsMap) UnmarshalJSON(data []byte) error {
 // It is like the fieldDescription interface. But it requires other arguments.
 func (f *fieldsMap) appendKeys(collection string, id int, data []keyDescription) []keyDescription {
 	for field, description := range f.fields {
-		key := dskey.Key{Collection: collection, ID: id, Field: field}
+		key := dskey.FromParts(collection, id, field)
 		data = append(data, keyDescription{key: key, description: description})
 	}
 	return data

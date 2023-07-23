@@ -88,12 +88,12 @@ func (h restricter) canSeeKey(
 	adminInMeeting map[int]struct{},
 	key dskey.Key,
 ) (bool, error) {
-	if key.Collection == "user" && key.Field == "password" {
+	if key.Collection() == "user" && key.Field() == "password" {
 		return false, nil
 	}
 
-	if key.Collection == "personal_note" {
-		personalNoteUser, err := oldDS.PersonalNote_UserID(key.ID).Value(ctx)
+	if key.Collection() == "personal_note" {
+		personalNoteUser, err := oldDS.PersonalNote_UserID(key.ID()).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("getting personal note user: %w", err)
 		}
@@ -105,15 +105,15 @@ func (h restricter) canSeeKey(
 		return true, nil
 	}
 
-	if key.Collection == "theme" || key.Collection == "organization" || key.Collection == "organization_tag" || key.Collection == "mediafile" {
+	if key.Collection() == "theme" || key.Collection() == "organization" || key.Collection() == "organization_tag" || key.Collection() == "mediafile" {
 		return true, nil
 	}
 
-	if key.Collection == "committee" {
+	if key.Collection() == "committee" {
 		return false, nil
 	}
 
-	meetingID, hasMeeting, err := collection.Collection(ctx, key.Collection).MeetingID(ctx, oldDS, key.ID)
+	meetingID, hasMeeting, err := collection.Collection(ctx, key.Collection()).MeetingID(ctx, oldDS, key.ID())
 	if err != nil {
 		return false, fmt.Errorf("getting meeting id: %w", err)
 	}
@@ -123,9 +123,9 @@ func (h restricter) canSeeKey(
 		return isAdmin, nil
 	}
 
-	if key.Collection == "user" {
+	if key.Collection() == "user" {
 		for _, r := range (collection.User{}).RequiredObjects(ctx, oldDS) {
-			meetingIDs, err := r.TmplFunc(key.ID).Value(ctx)
+			meetingIDs, err := r.TmplFunc(key.ID()).Value(ctx)
 			if err != nil {
 				return false, fmt.Errorf("getting meeting ids for %s: %w", r.Name, err)
 			}
