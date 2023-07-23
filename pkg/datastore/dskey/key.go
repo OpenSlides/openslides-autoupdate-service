@@ -34,13 +34,14 @@ func FromString(in string) (Key, error) {
 	return Key(joinInt(cfID, id)), nil
 }
 
-func FromParts(collection string, id int, field string) Key {
+func FromParts(collection string, id int, field string) (Key, error) {
+	// TODO: Use a separate function with different namespace for mode-keys
 	cfID := collectionFieldToID(collection + "/" + field)
 	if cfID == -1 {
-		panic(invalidKeyError{fmt.Sprintf("%s/%d/%s", collection, id, field)}) // TODO return error
+		return 0, invalidKeyError{fmt.Sprintf("%s/%d/%s", collection, id, field)}
 	}
 
-	return Key(joinInt(cfID, id))
+	return Key(joinInt(cfID, id)), nil
 }
 
 // MustKey is like FromString but panics, if the key is invalid.

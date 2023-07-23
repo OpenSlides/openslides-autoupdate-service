@@ -171,7 +171,8 @@ func (s *FlowVoteCount) Update(ctx context.Context, updateFn func(map[dskey.Key]
 			if count == 0 {
 				bs = nil
 			}
-			out[dskey.FromParts("poll", pollID, "vote_count")] = bs
+			key, _ := dskey.FromParts("poll", pollID, "vote_count")
+			out[key] = bs
 		}
 
 		updateFn(out, nil)

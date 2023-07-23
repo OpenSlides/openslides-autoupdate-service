@@ -13,6 +13,7 @@ import (
 	"text/template"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/models"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 func main() {
@@ -46,7 +47,6 @@ func loadDefition() (io.ReadCloser, error) {
 type collectionField struct {
 	Collection string
 	Field      string
-	mode       string
 }
 
 func parse(r io.Reader) ([]collectionField, error) {
@@ -57,12 +57,18 @@ func parse(r io.Reader) ([]collectionField, error) {
 
 	var result []collectionField
 
+	modefields := set.New[collectionField]()
+
 	for collection, collInfo := range inData {
 		for field, fieldInfo := range collInfo.Fields {
 			result = append(result, collectionField{
 				Collection: collection,
 				Field:      field,
-				mode:       fieldInfo.RestrictionMode(),
+			})
+
+			modefields.Add(collectionField{
+				Collection: collection,
+				Field:      fieldInfo.RestrictionMode(),
 			})
 
 			if !strings.Contains(field, "$") {
@@ -74,9 +80,13 @@ func parse(r io.Reader) ([]collectionField, error) {
 			result = append(result, collectionField{
 				Collection: collection,
 				Field:      templateField,
-				mode:       fieldInfo.RestrictionMode(),
 			})
 		}
+	}
+
+	// TODO: Save mode fields in own datastructure
+	for _, cf := range modefields.List() {
+		result = append(result, cf)
 	}
 
 	sort.Slice(result, func(i, j int) bool {

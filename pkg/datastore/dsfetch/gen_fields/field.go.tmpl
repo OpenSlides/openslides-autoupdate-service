@@ -2,26 +2,30 @@
 {{if eq .TemplateAttr ""}}
 	func (r *Fetch) {{.GoName}}({{.Collection}}ID int) *{{.ValueType}} {
 		v := &{{.ValueType}}{fetch: r, collection: "{{.Collection}}", id: {{.Collection}}ID, field: "{{.FieldName}}" {{if .Required}},required:true{{end}} }
-		r.requested[dskey.FromParts("{{.CollectionName}}", {{.Collection}}ID, "{{.FieldName}}" )] = v
+		key, _ := dskey.FromParts("{{.CollectionName}}", {{.Collection}}ID, "{{.FieldName}}" )
+		r.requested[key] = v
 		return v
 	}
 {{else}}
 	{{if eq .TemplateAttrType "int"}}
 		func (r *Fetch) {{.GoName}}Tmpl({{.Collection}}ID int) *ValueIDSlice {
 			v := &ValueIDSlice{fetch: r, collection: "{{.Collection}}", id: {{.Collection}}ID, field: "{{.FieldName}}" {{if .Required}},required:true{{end}} }
-			r.requested[dskey.FromParts("{{.CollectionName}}", {{ .Collection }}ID, "{{.FieldName}}" )] = v
+			key, _ := dskey.FromParts("{{.CollectionName}}", {{ .Collection }}ID, "{{.FieldName}}" )
+			r.requested[key] = v
 			return v
 		}
 	{{else}}
 		func (r *Fetch) {{.GoName}}Tmpl({{.Collection}}ID int) *ValueStringSlice {
 			v := &ValueStringSlice{fetch: r, collection: "{{.Collection}}", id: {{.Collection}}ID, field: "{{.FieldName}}" {{if .Required}},required:true{{end}} }
-			r.requested[dskey.FromParts("{{.CollectionName}}", {{ .Collection }}ID, "{{.FieldName}}" )] = v
+			key, _ :=dskey.FromParts("{{.CollectionName}}", {{ .Collection }}ID, "{{.FieldName}}" )
+			r.requested[key] = v
 			return v
 		}
 	{{end}}
 	func (r *Fetch) {{.GoName}}({{.Collection}}ID int, {{.TemplateAttr}} {{.TemplateAttrType}}) *{{.ValueType}} {
 			v := &{{.ValueType}}{fetch: r, collection: "{{.Collection}}", id: {{.Collection}}ID, field: "{{.FieldName}}" {{if .Required}},required:true{{end}} }
-			r.requested[dskey.FromParts("{{.CollectionName}}", {{ .Collection }}ID, fmt.Sprintf("{{.TemplateFieldName}}", {{.TemplateAttr}}) )] = v
+			key, _ := dskey.FromParts("{{.CollectionName}}", {{ .Collection }}ID, fmt.Sprintf("{{.TemplateFieldName}}", {{.TemplateAttr}}) )
+			r.requested[key] = v
 			return v
 		}
 {{end}}

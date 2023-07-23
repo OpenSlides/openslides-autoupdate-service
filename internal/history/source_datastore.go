@@ -261,7 +261,8 @@ func parseGetManyResponse(r io.Reader) (map[dskey.Key][]byte, error) {
 				return nil, fmt.Errorf("invalid key. Id is no number: %s", idstr)
 			}
 			for field, value := range fieldValue {
-				keyValue[dskey.FromParts(collection, id, field)] = value
+				key, _ := dskey.FromParts(collection, id, field)
+				keyValue[key] = value
 			}
 		}
 	}

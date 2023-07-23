@@ -17,8 +17,8 @@ import (
 )
 
 var (
-	myKey1 = dskey.FromParts("collection", 1, "field")
-	myKey2 = dskey.FromParts("collection", 2, "field")
+	myKey1, _ = dskey.FromParts("user", 1, "username")
+	myKey2, _ = dskey.FromParts("user", 2, "username")
 )
 
 type connecterMock struct {
@@ -63,7 +63,7 @@ func TestKeysHandler(t *testing.T) {
 		t.Errorf("Got status %q, expected %q", res.Status, http.StatusText(200))
 	}
 
-	expect := `{"collection/1/field":"bar"}` + "\n"
+	expect := `{"user/1/username":"bar"}` + "\n"
 	got, _ := io.ReadAll(res.Body)
 	if string(got) != expect {
 		t.Errorf("Got content `%s`, expected `%s`", got, expect)
@@ -103,7 +103,7 @@ func TestComplexHandler(t *testing.T) {
 		t.Errorf("Got status %s, expected %s", res.Status, http.StatusText(200))
 	}
 
-	expect := `{"collection/1/field":"bar"}` + "\n"
+	expect := `{"user/1/username":"bar"}` + "\n"
 	got, _ := io.ReadAll(res.Body)
 	if string(got) != expect {
 		t.Errorf("Got %s, expected %s", got, expect)

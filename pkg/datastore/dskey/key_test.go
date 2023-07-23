@@ -45,7 +45,11 @@ func TestFromParts(t *testing.T) {
 		{"motion", 12, "title", "motion/12/title"},
 	} {
 		t.Run(fmt.Sprintf("%s/%d/%s", tt.collection, tt.id, tt.field), func(t *testing.T) {
-			keyFromParts := dskey.FromParts(tt.collection, tt.id, tt.field)
+			keyFromParts, err := dskey.FromParts(tt.collection, tt.id, tt.field)
+			if err != nil {
+				t.Fatalf("FromParts: %v", err)
+			}
+
 			keyFromString, _ := dskey.FromString(tt.fromString)
 
 			if keyFromParts != keyFromString {
