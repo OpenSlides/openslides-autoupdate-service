@@ -8,17 +8,9 @@ import (
 )
 
 type Key struct {
-	value string
-	idx1  int
-	idx2  int
-	id    int
-}
-
-// Key represents a FQField.
-type KeyOld struct {
-	Collection string
-	ID         int
-	Field      string
+	collectionField string
+	fieldIdx        int
+	id              int
 }
 
 // FromString parses a string to a Key.
@@ -35,22 +27,19 @@ func FromString(in string) (Key, error) {
 	id, _ := strconv.Atoi(in[idx1+1 : idx2])
 
 	key := Key{
-		value: in,
-		idx1:  idx1,
-		idx2:  idx2,
-		id:    id,
+		collectionField: in[:idx1] + in[idx2+1:],
+		fieldIdx:        idx1,
+		id:              id,
 	}
 
 	return key, nil
 }
 
 func FromParts(collection string, id int, field string) Key {
-	value := fmt.Sprintf("%s/%d/%s", collection, id, field)
 	return Key{
-		value: value,
-		idx1:  len(collection),
-		idx2:  len(value) - len(field) - 1,
-		id:    id,
+		collectionField: collection + field,
+		fieldIdx:        len(collection),
+		id:              id,
 	}
 }
 
@@ -66,7 +55,7 @@ func MustKey(in string) Key {
 }
 
 func (k Key) String() string {
-	return k.value
+	return fmt.Sprintf("%s/%d/%s", k.Collection(), k.ID(), k.Field())
 }
 
 func (k Key) ID() int {
@@ -74,16 +63,16 @@ func (k Key) ID() int {
 }
 
 func (k Key) Collection() string {
-	return k.value[:k.idx1]
+	return k.collectionField[:k.fieldIdx]
 }
 
 func (k Key) Field() string {
-	return k.value[k.idx2+1:]
+	return k.collectionField[k.fieldIdx:]
 }
 
 // FQID returns the FQID part of the field
 func (k Key) FQID() string {
-	return k.value[:k.idx2]
+	return fmt.Sprintf("%s/%d", k.Collection(), k.id)
 }
 
 // CollectionField returns the first and last part of the key.
@@ -94,10 +83,9 @@ func (k Key) CollectionField() string {
 // IDField retuns the the /id field for the key.
 func (k Key) IDField() Key {
 	return Key{
-		value: k.value[:k.idx2] + "/id",
-		idx1:  k.idx1,
-		idx2:  k.idx2,
-		id:    k.id,
+		collectionField: k.collectionField[:k.fieldIdx] + "id",
+		fieldIdx:        k.fieldIdx,
+		id:              k.id,
 	}
 }
 
