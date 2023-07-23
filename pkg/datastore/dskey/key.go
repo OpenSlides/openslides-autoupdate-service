@@ -49,7 +49,7 @@ func FromParts(collection string, id int, field string) Key {
 	return Key{
 		value: value,
 		idx1:  len(collection),
-		idx2:  len(value) - len(field),
+		idx2:  len(value) - len(field) - 1,
 		id:    id,
 	}
 }

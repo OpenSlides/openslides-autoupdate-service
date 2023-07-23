@@ -2,6 +2,7 @@ package dskey_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
@@ -37,17 +38,18 @@ func TestFromParts(t *testing.T) {
 		collection string
 		id         int
 		field      string
-		expect     string
+		fromString string
 	}{
 		{"user", 1, "username", "user/1/username"},
 		{"user", 12, "username", "user/12/username"},
 		{"motion_version", 12, "username", "motion_version/12/username"},
 	} {
 		t.Run(fmt.Sprintf("%s/%d/%s", tt.collection, tt.id, tt.field), func(t *testing.T) {
-			key := dskey.FromParts(tt.collection, tt.id, tt.field)
+			keyFromParts := dskey.FromParts(tt.collection, tt.id, tt.field)
+			keyFromString, _ := dskey.FromString(tt.fromString)
 
-			if key.String() != tt.expect {
-				t.Errorf("got %s, expected %s", key, tt.expect)
+			if keyFromParts != keyFromString {
+				t.Errorf("from parts != from string")
 			}
 		})
 	}
@@ -170,6 +172,7 @@ func TestIDField(t *testing.T) {
 		{"user/1/username", "user/1/id"},
 		{"user/12/username", "user/12/id"},
 		{"motion_version/12/with_$_template", "motion_version/12/id"},
+		{"motion_version/12/with_$2_template", "motion_version/12/id"},
 	} {
 		t.Run(tt.key, func(t *testing.T) {
 			key, err := dskey.FromString(tt.key)
@@ -181,5 +184,16 @@ func TestIDField(t *testing.T) {
 				t.Errorf("got %s, expected %s", key.IDField(), tt.expect)
 			}
 		})
+	}
+}
+
+func TestReplaceField(t *testing.T) {
+	key := dskey.MustKey("user/1/group_$_ids")
+	value := "2"
+	newkey, _ := dskey.FromString(key.FQID() + "/" + strings.Replace(key.Field(), "$", "$"+value, 1))
+
+	expect := "user/1/group_$2_ids"
+	if got := newkey.String(); got != expect {
+		t.Errorf("got %s, expected %s", got, expect)
 	}
 }

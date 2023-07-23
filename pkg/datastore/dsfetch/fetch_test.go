@@ -10,16 +10,18 @@ import (
 )
 
 func TestRequestTwoWithErrors(t *testing.T) {
+	ctx := context.Background()
+
 	ds := dsfetch.New(dsmock.Stub(dsmock.YAMLData(`---
 	topic/1/title: foo
 	`)))
 
-	_, err := ds.Topic_Title(2).Value(context.Background())
+	_, err := ds.Topic_Title(2).Value(ctx)
 	if err == nil {
 		t.Fatalf("Title2 returned no error, expected DoesNotExist")
 	}
 
-	_, err = ds.Topic_Title(1).Value(context.Background())
+	_, err = ds.Topic_Title(1).Value(ctx)
 	if err != nil {
 		t.Errorf("Title1 returned unexpected error: %v", err)
 	}
