@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+// go test  -bench . github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey
+
 func MyBenchmark[Key comparable](b *testing.B, buildKey func(id int) Key) {
 	count := 100_000
 	myMap := make(map[Key]string, count)
@@ -32,6 +34,41 @@ func BenchmarkString(b *testing.B) {
 
 	buildKey := func(id int) Key {
 		return Key(fmt.Sprintf("foo/%d/bar", id))
+	}
+
+	MyBenchmark(b, buildKey)
+}
+
+func BenchmarkStringInStruct(b *testing.B) {
+	type Key struct {
+		value string
+	}
+
+	buildKey := func(id int) Key {
+		return Key{fmt.Sprintf("foo/%d/bar", id)}
+	}
+
+	MyBenchmark(b, buildKey)
+}
+
+func BenchmarkIntInt(b *testing.B) {
+	type Key struct {
+		fieldCollectionIdx int
+		id                 int
+	}
+
+	buildKey := func(id int) Key {
+		return Key{1, id}
+	}
+
+	MyBenchmark(b, buildKey)
+}
+
+func BenchmarkUInt64(b *testing.B) {
+	type Key uint64 // Somehow calculate the fieldCollection and id from this value with shift
+
+	buildKey := func(id int) Key {
+		return Key(id)
 	}
 
 	MyBenchmark(b, buildKey)

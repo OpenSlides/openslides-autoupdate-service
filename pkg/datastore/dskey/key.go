@@ -7,40 +7,40 @@ import (
 	"strings"
 )
 
-type Key struct {
-	collectionField string
-	fieldIdx        int
-	id              int
-}
+// Key ...
+type Key uint64
 
 // FromString parses a string to a Key.
 //
 // This uses a regular expression to validate the key. This can be slow if
 // called many times. It is faster to manually validate the key.
 func FromString(in string) (Key, error) {
-	if !keyValid(in) {
-		return Key{}, invalidKeyError{in}
-	}
+	// if !keyValid(in) {
+	// 	return 0, invalidKeyError{in}
+	// }
 
 	idx1 := strings.IndexByte(in, '/')
 	idx2 := strings.LastIndexByte(in, '/')
-	id, _ := strconv.Atoi(in[idx1+1 : idx2])
-
-	key := Key{
-		collectionField: in[:idx1] + in[idx2+1:],
-		fieldIdx:        idx1,
-		id:              id,
+	if idx1 == -1 || idx1 == idx2 {
+		return 0, invalidKeyError{in}
 	}
 
-	return key, nil
+	id, _ := strconv.Atoi(in[idx1+1 : idx2])
+
+	cfID := collectionFieldToID(in[:idx1] + "/" + in[idx2+1:])
+	if cfID == -1 {
+		return 0, invalidKeyError{in}
+	}
+	return Key(joinInt(cfID, id)), nil
 }
 
 func FromParts(collection string, id int, field string) Key {
-	return Key{
-		collectionField: collection + field,
-		fieldIdx:        len(collection),
-		id:              id,
+	cfID := collectionFieldToID(collection + "/" + field)
+	if cfID == -1 {
+		panic(invalidKeyError{fmt.Sprintf("%s/%d/%s", collection, id, field)}) // TODO return error
 	}
+
+	return Key(joinInt(cfID, id))
 }
 
 // MustKey is like FromString but panics, if the key is invalid.
@@ -59,34 +59,37 @@ func (k Key) String() string {
 }
 
 func (k Key) ID() int {
-	return k.id
+	_, id := splitUInt64(uint64(k))
+	return id
 }
 
 func (k Key) Collection() string {
-	return k.collectionField[:k.fieldIdx]
+	cfIdx, _ := splitUInt64(uint64(k))
+	return collectionFields[cfIdx].collection
 }
 
 func (k Key) Field() string {
-	return k.collectionField[k.fieldIdx:]
+	cfIdx, _ := splitUInt64(uint64(k))
+	return collectionFields[cfIdx].field
 }
 
 // FQID returns the FQID part of the field
 func (k Key) FQID() string {
-	return fmt.Sprintf("%s/%d", k.Collection(), k.id)
+	cfIdx, id := splitUInt64(uint64(k))
+	return fmt.Sprintf("%s/%d", collectionFields[cfIdx].collection, id)
 }
 
 // CollectionField returns the first and last part of the key.
 func (k Key) CollectionField() string {
-	return k.Collection() + "/" + k.Field()
+	cfIdx, _ := splitUInt64(uint64(k))
+	return collectionFields[cfIdx].collection + "/" + collectionFields[cfIdx].field
 }
 
 // IDField retuns the the /id field for the key.
 func (k Key) IDField() Key {
-	return Key{
-		collectionField: k.collectionField[:k.fieldIdx] + "id",
-		fieldIdx:        k.fieldIdx,
-		id:              k.id,
-	}
+	idCfID := collectionFieldToID(k.Collection() + "/id")
+
+	return Key(joinInt(idCfID, k.ID()))
 }
 
 // MarshalJSON converts the key to a json string.
