@@ -83,11 +83,13 @@ func (r *Redis) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, 
 
 	for ctx.Err() == nil {
 		newID, data, err := r.singleUpdate(ctx, id)
-		updateFn(data, err)
-		id = newID
 		if err != nil {
+			updateFn(nil, err)
 			time.Sleep(5 * time.Second)
+			continue
 		}
+		updateFn(data, nil)
+		id = newID
 	}
 }
 
