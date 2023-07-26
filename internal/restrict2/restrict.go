@@ -7,7 +7,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	oldRestrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
@@ -85,6 +84,8 @@ func (r *Restricter) Update(ctx context.Context, updateFn func(map[dskey.Key][]b
 // TODO: Remove the ctx here and add it on every Get() call in the restricter
 func (r *Restricter) ForUser(ctx context.Context, userID int) (context.Context, flow.Getter, *dsrecorder.Recorder) {
 	recorder := dsrecorder.New(r.flow)
+
+	ctx = perm.ContextWithGroupMap(ctx)
 
 	ctx, todoOldRestricter := oldRestrict.Middleware(ctx, recorder, userID)
 	return ctx, &restrictedGetter{
@@ -275,20 +276,23 @@ func buildUserAttributes(ctx context.Context, getter flow.Getter, userID int) (a
 		return zero, fmt.Errorf("getting meeting ids and global level for user %d: %w", userID, err)
 	}
 
-	meetingPermission := perm.NewMeetingPermission(fetcher, userID)
-	meetingGetter := func(meetingID int) *perm.Permission {
-		perm, err := meetingPermission.Meeting(ctx, meetingID)
-		if err != nil {
-			oserror.Handle(fmt.Errorf("getting meeting: %w", err))
-			return nil
-		}
+	groupIDList := make([][]int, len(meetingIDs))
+	for i, mid := range meetingIDs {
+		fetcher.User_GroupIDs(userID, mid).Lazy(&groupIDList[i])
+	}
 
-		return perm
+	if err := fetcher.Execute(ctx); err != nil {
+		return zero, fmt.Errorf("getting group IDs %d: %w", userID, err)
+	}
+
+	groupIDs := set.New[int]()
+	for _, idList := range groupIDList {
+		groupIDs.Add(idList...)
 	}
 
 	return attribute.UserAttributes{
-		UserID:          userID,
-		GetMeetingPerms: meetingGetter,
-		OrgaLevel:       perm.OrganizationManagementLevel(globalLevelStr),
+		UserID:    userID,
+		GroupIDs:  groupIDs,
+		OrgaLevel: perm.OrganizationManagementLevel(globalLevelStr),
 	}, nil
 }

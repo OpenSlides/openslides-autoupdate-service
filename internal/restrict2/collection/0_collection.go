@@ -151,9 +151,14 @@ type FieldRestricter func(ctx context.Context, fetcher *dsfetch.Fetch, ids []int
 
 func meetingPerm(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, mode string, ids []int, permission perm.TPermission) ([]Tuple, error) {
 	return byMeeting(ctx, fetcher, r, ids, func(meetingID int, ids []int) ([]Tuple, error) {
+		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting group map: %w", err)
+		}
+
 		attr := attribute.FuncOr(
 			attribute.FuncGlobalLevel(perm.OMLSuperadmin),
-			attribute.FuncPerm(meetingID, permission),
+			attribute.FuncInGroup(groupMap[permission]),
 		)
 
 		result := make([]Tuple, len(ids))

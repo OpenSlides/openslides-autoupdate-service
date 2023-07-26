@@ -52,10 +52,15 @@ func (a AgendaItem) Modes(mode string) FieldRestricter {
 
 func (a AgendaItem) see(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs []int) ([]Tuple, error) {
 	return byMeeting(ctx, fetcher, a, agendaIDs, func(meetingID int, agendaIDs []int) ([]Tuple, error) {
+		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting group map: %w", err)
+		}
+
 		attrSuperadmin := attribute.FuncGlobalLevel(perm.OMLSuperadmin)
-		attrCanManage := attribute.FuncPerm(meetingID, perm.AgendaItemCanManage)
-		attrCanSeeInternal := attribute.FuncPerm(meetingID, perm.AgendaItemCanSeeInternal)
-		attrCanSee := attribute.FuncPerm(meetingID, perm.AgendaItemCanSee)
+		attrCanManage := attribute.FuncInGroup(groupMap[perm.AgendaItemCanManage])
+		attrCanSeeInternal := attribute.FuncInGroup(groupMap[perm.AgendaItemCanSeeInternal])
+		attrCanSee := attribute.FuncInGroup(groupMap[perm.AgendaItemCanSee])
 
 		result := make([]Tuple, len(agendaIDs))
 		for i, agendaID := range agendaIDs {

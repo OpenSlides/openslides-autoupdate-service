@@ -58,8 +58,13 @@ func (m Motion) Modes(mode string) FieldRestricter {
 func (m Motion) see(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int) ([]Tuple, error) {
 	// TODO: Filter lead motion
 	return byMeeting(ctx, fetcher, m, motionIDs, func(meetingID int, motionIDs []int) ([]Tuple, error) {
+		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting group map: %w", err)
+		}
+
 		// TODO: What about the super admin
-		attrMotionCanSee := attribute.FuncPerm(meetingID, perm.MotionCanSee)
+		attrMotionCanSee := attribute.FuncInGroup(groupMap[perm.MotionCanSee])
 
 		return byRelationField(ctx, fetcher, m, fetcher.Motion_StateID, motionIDs, func(stateID int, motionIDs []int) ([]Tuple, error) {
 			restrictions, err := fetcher.MotionState_Restrictions(stateID).Value(ctx)
@@ -72,19 +77,19 @@ func (m Motion) see(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int
 			}
 
 			var hasIsSubmitterRestriction bool
-			restrictPerms := make([]attribute.Func, 0, len(restrictions))
+			var restrictGroups []int
 			for _, restriction := range restrictions {
 				if restriction == "is_submitter" {
 					hasIsSubmitterRestriction = true
 					continue
 				}
-				restrictPerms = append(restrictPerms, attribute.FuncPerm(meetingID, perm.TPermission(restriction)))
+				restrictGroups = append(restrictGroups, groupMap[perm.TPermission(restriction)]...)
 			}
 
 			if !hasIsSubmitterRestriction {
 				attr := attribute.FuncAnd(
 					attrMotionCanSee,
-					attribute.FuncOr(restrictPerms...),
+					attribute.FuncOr(attribute.FuncInGroup(restrictGroups)),
 				)
 				return TupleFromModeKeys(m, motionIDs, "C", attr), nil
 			}
@@ -103,7 +108,7 @@ func (m Motion) see(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int
 					Value: attribute.FuncAnd(
 						attrMotionCanSee,
 						attribute.FuncOr(
-							attribute.FuncOr(restrictPerms...),
+							attribute.FuncInGroup(restrictGroups),
 							isSubmitter,
 						),
 					),

@@ -1,11 +1,14 @@
 package attribute
 
-import "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+import (
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
+)
 
 type UserAttributes struct {
-	UserID          int
-	GetMeetingPerms func(int) *perm.Permission
-	OrgaLevel       perm.OrganizationManagementLevel
+	UserID    int
+	GroupIDs  set.Set[int]
+	OrgaLevel perm.OrganizationManagementLevel
 }
 
 type Func func(user UserAttributes) bool
@@ -50,19 +53,15 @@ func FuncGlobalLevel(oml perm.OrganizationManagementLevel) Func {
 	}
 }
 
-func FuncPerm(meetingID int, p perm.TPermission) Func {
+func FuncInGroup(groupIDs []int) Func {
 	return func(user UserAttributes) bool {
-		// TODO: This is very hacky. But I don't know how to get all required
-		// meetings.
-		//
-		// Another way would be to save the meetingID of each key or calculate
-		// the meeting for each requested key before calling the Func.
-		perms := user.GetMeetingPerms(meetingID)
-		if perms == nil {
-			return false
+		for _, id := range groupIDs {
+			if user.GroupIDs.Has(id) {
+				return true
+			}
 		}
 
-		return perms.Has(p)
+		return false
 	}
 }
 
