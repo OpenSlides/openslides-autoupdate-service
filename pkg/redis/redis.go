@@ -97,7 +97,7 @@ func (r *Redis) singleUpdate(ctx context.Context, id string) (string, map[dskey.
 
 	reply, err := redis.DoContext(conn, ctx, "XREAD", "COUNT", maxMessages, "BLOCK", "0", "STREAMS", fieldChangedTopic, id)
 	if err != nil {
-		return "", nil, fmt.Errorf("redis reply: %w", err)
+		return "", nil, fmt.Errorf("redis `XREAD count %s BLOCK 0 STREAMS %s %s: %w", maxMessages, fieldChangedTopic, id, err)
 	}
 
 	if reply == nil {
