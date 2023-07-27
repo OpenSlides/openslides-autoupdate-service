@@ -6,9 +6,10 @@ import (
 )
 
 type UserAttributes struct {
-	UserID    int
-	GroupIDs  set.Set[int]
-	OrgaLevel perm.OrganizationManagementLevel
+	UserID            int
+	GroupIDs          set.Set[int]
+	OrgaLevel         perm.OrganizationManagementLevel
+	IsCommitteManager bool
 }
 
 type Func func(user UserAttributes) bool
@@ -73,5 +74,23 @@ func FuncUserIDs(userIDs []int) Func {
 			}
 		}
 		return false
+	}
+}
+
+func FuncAllow() Func {
+	return func(UserAttributes) bool {
+		return true
+	}
+}
+
+func FuncNotAllowed() Func {
+	return func(UserAttributes) bool {
+		return false
+	}
+}
+
+func FuncIsCommitteeManager() Func {
+	return func(user UserAttributes) bool {
+		return user.IsCommitteManager
 	}
 }

@@ -15,14 +15,14 @@ var collectionMap = map[string]Restricter{
 	AgendaItem{}.Name(): AgendaItem{},
 	// Assignment{}.Name():                 Assignment{},
 	// AssignmentCandidate{}.Name():        AssignmentCandidate{},
-	// ListOfSpeakers{}.Name():             ListOfSpeakers{},
+	ListOfSpeakers{}.Name(): ListOfSpeakers{},
 	// ChatGroup{}.Name():                  ChatGroup{},
 	// ChatMessage{}.Name():                ChatMessage{},
 	// Committee{}.Name():                  Committee{},
-	// Group{}.Name():                      Group{},
+	Group{}.Name(): Group{},
 	// Mediafile{}.Name():                  Mediafile{},
-	// Meeting{}.Name():                    Meeting{},
-	Motion{}.Name(): Motion{},
+	Meeting{}.Name(): Meeting{},
+	Motion{}.Name():  Motion{},
 	// MotionBlock{}.Name():                MotionBlock{},
 	// MotionCategory{}.Name():             MotionCategory{},
 	// MotionChangeRecommendation{}.Name(): MotionChangeRecommendation{},
@@ -30,7 +30,7 @@ var collectionMap = map[string]Restricter{
 	// MotionStatuteParagraph{}.Name():     MotionStatuteParagraph{},
 	// MotionComment{}.Name():              MotionComment{},
 	// MotionCommentSection{}.Name():       MotionCommentSection{},
-	// MotionSubmitter{}.Name():            MotionSubmitter{},
+	MotionSubmitter{}.Name(): MotionSubmitter{},
 	// MotionWorkflow{}.Name():             MotionWorkflow{},
 	// Option{}.Name():                     Option{},
 	// Organization{}.Name():               Organization{},
@@ -81,6 +81,13 @@ func (u Unknown) MeetingID(context.Context, *dsfetch.Fetch, int) (int, bool, err
 // Name returns the collection name.
 func (u Unknown) Name() string {
 	return u.name
+}
+
+// Allways is a restricter func that just returns true.
+func Allways(r Restricter, mode string) FieldRestricter {
+	return func(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]Tuple, error) {
+		return TupleFromModeKeys(r, ids, mode, attribute.FuncAllow()), nil
+	}
 }
 
 type restrictCache struct {
