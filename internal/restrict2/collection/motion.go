@@ -50,7 +50,7 @@ func (m Motion) Modes(mode string) FieldRestricter {
 	case "C":
 		return m.see
 	case "D":
-		return never
+		return never(m, "D")
 	}
 	return nil
 }

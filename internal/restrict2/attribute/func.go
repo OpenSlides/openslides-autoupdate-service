@@ -94,3 +94,9 @@ func FuncIsCommitteeManager() Func {
 		return user.IsCommitteManager
 	}
 }
+
+func FuncLoggedIn() Func {
+	return func(user UserAttributes) bool {
+		return user.UserID > 0
+	}
+}

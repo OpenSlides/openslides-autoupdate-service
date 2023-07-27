@@ -26,14 +26,14 @@ var collectionMap = map[string]Restricter{
 	// MotionBlock{}.Name():                MotionBlock{},
 	// MotionCategory{}.Name():             MotionCategory{},
 	// MotionChangeRecommendation{}.Name(): MotionChangeRecommendation{},
-	// MotionState{}.Name():                MotionState{},
+	MotionState{}.Name(): MotionState{},
 	// MotionStatuteParagraph{}.Name():     MotionStatuteParagraph{},
 	// MotionComment{}.Name():              MotionComment{},
 	// MotionCommentSection{}.Name():       MotionCommentSection{},
 	MotionSubmitter{}.Name(): MotionSubmitter{},
-	// MotionWorkflow{}.Name():             MotionWorkflow{},
+	MotionWorkflow{}.Name():  MotionWorkflow{},
 	// Option{}.Name():                     Option{},
-	// Organization{}.Name():               Organization{},
+	Organization{}.Name(): Organization{},
 	// OrganizationTag{}.Name():            OrganizationTag{},
 	// PersonalNote{}.Name():               PersonalNote{},
 	// PointOfOrderCategory{}.Name():       PointOfOrderCategory{},
@@ -41,14 +41,14 @@ var collectionMap = map[string]Restricter{
 	// PollCandidate{}.Name():              PollCandidate{},
 	// PollCandidateList{}.Name():          PollCandidateList{},
 	// Projection{}.Name():                 Projection{},
-	// Projector{}.Name():                  Projector{},
+	Projector{}.Name(): Projector{},
 	// ProjectorCountdown{}.Name():         ProjectorCountdown{},
 	// ProjectorMessage{}.Name():           ProjectorMessage{},
 	// Speaker{}.Name():                    Speaker{},
 	// Tag{}.Name():                        Tag{},
-	// Theme{}.Name():                      Theme{},
+	Theme{}.Name(): Theme{},
 	// Topic{}.Name():                      Topic{},
-	// User{}.Name():                       User{},
+	User{}.Name(): User{},
 	// Vote{}.Name():                       Vote{},
 }
 
@@ -69,8 +69,8 @@ type Unknown struct {
 }
 
 // Modes on an unknown field can not be seen.
-func (u Unknown) Modes(string) FieldRestricter {
-	return never
+func (u Unknown) Modes(mode string) FieldRestricter {
+	return never(u, mode)
 }
 
 // MeetingID is not a thing on a unknown meeting
@@ -87,6 +87,18 @@ func (u Unknown) Name() string {
 func Allways(r Restricter, mode string) FieldRestricter {
 	return func(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]Tuple, error) {
 		return TupleFromModeKeys(r, ids, mode, attribute.FuncAllow()), nil
+	}
+}
+
+func loggedIn(r Restricter, mode string) FieldRestricter {
+	return func(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]Tuple, error) {
+		return TupleFromModeKeys(r, ids, mode, attribute.FuncAllow()), nil
+	}
+}
+
+func never(r Restricter, mode string) FieldRestricter {
+	return func(ctx context.Context, ds *dsfetch.Fetch, ids []int) ([]Tuple, error) {
+		return TupleFromModeKeys(r, ids, mode, attribute.FuncNotAllowed()), nil
 	}
 }
 
@@ -245,10 +257,6 @@ func byRelationField(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, 
 	}
 
 	return combined, nil
-}
-
-func never(ctx context.Context, ds *dsfetch.Fetch, agendaIDs []int) ([]Tuple, error) {
-	return nil, nil
 }
 
 func modeKey(r Restricter, id int, mode string) dskey.Key {
