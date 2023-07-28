@@ -42,8 +42,8 @@ func (p Projector) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p Projector) see(ctx context.Context, fetcher *dsfetch.Fetch, projectorIDs []int) ([]Tuple, error) {
-	return byMeeting(ctx, fetcher, p, projectorIDs, func(meetingID int, projectorIDs []int) ([]Tuple, error) {
+func (p Projector) see(ctx context.Context, fetcher *dsfetch.Fetch, projectorIDs []int) ([]attribute.Func, error) {
+	return byMeeting(ctx, fetcher, p, projectorIDs, func(meetingID int, projectorIDs []int) ([]attribute.Func, error) {
 		internal := make([]bool, len(projectorIDs))
 		for i, id := range projectorIDs {
 			fetcher.Projector_IsInternal(id).Lazy(&internal[i])
@@ -61,15 +61,13 @@ func (p Projector) see(ctx context.Context, fetcher *dsfetch.Fetch, projectorIDs
 		forInternal := attribute.FuncInGroup(groupMap[perm.ProjectorCanSee])
 		forPublic := attribute.FuncInGroup(groupMap[perm.ProjectorCanManage])
 
-		result := make([]Tuple, len(projectorIDs))
-		for i, id := range projectorIDs {
-			result[i].Key = modeKey(p, id, "A")
-
+		result := make([]attribute.Func, len(projectorIDs))
+		for i := range projectorIDs {
 			if internal[i] {
-				result[i].Value = forInternal
+				result[i] = forInternal
 				continue
 			}
-			result[i].Value = forPublic
+			result[i] = forPublic
 		}
 
 		return result, nil

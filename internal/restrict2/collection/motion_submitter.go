@@ -6,7 +6,6 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // MotionSubmitter handels restrictions of the collection motion_submitter.
@@ -40,34 +39,14 @@ func (m MotionSubmitter) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionSubmitter) see(ctx context.Context, fetcher *dsfetch.Fetch, motionSubmitterIDs []int) ([]Tuple, error) {
-	submitterToMotion := make(map[int]int, len(motionSubmitterIDs))
-	motionIDs := set.New[int]()
-	for _, submitterID := range motionSubmitterIDs {
-		motionID := fetcher.MotionSubmitter_MotionID(submitterID).ErrorLater(ctx)
-		submitterToMotion[submitterID] = motionID
-		motionIDs.Add(motionID)
-	}
-	if err := fetcher.Err(); err != nil {
-		return nil, fmt.Errorf("getting motionIDs: %w", err)
-	}
+func (m MotionSubmitter) see(ctx context.Context, fetcher *dsfetch.Fetch, motionSubmitterIDs []int) ([]attribute.Func, error) {
+	// TODO: It would be faster to call Collection().Mode(C) with all motionIDs at once.
+	return byRelationField(ctx, fetcher.MotionSubmitter_MotionID, motionSubmitterIDs, func(motionID int, motionSubmitterIDs []int) ([]attribute.Func, error) {
+		motionAttr, err := Collection(ctx, "motion").Modes("C")(ctx, fetcher, []int{motionID})
+		if err != nil {
+			return nil, fmt.Errorf("checking motion.see: %w", err)
+		}
 
-	motionAttrList, err := Collection(ctx, "motion").Modes("C")(ctx, fetcher, motionIDs.List())
-	if err != nil {
-		return nil, fmt.Errorf("checking motion.see: %w", err)
-	}
-
-	indexMotionToAttr := make(map[int]attribute.Func, len(motionAttrList))
-	for _, motionAttr := range motionAttrList {
-		indexMotionToAttr[motionAttr.Key.ID] = motionAttr.Value
-	}
-
-	results := make([]Tuple, len(motionSubmitterIDs))
-	for i, id := range motionSubmitterIDs {
-		results[i].Key = modeKey(m, id, "A")
-		motionID := submitterToMotion[id]
-		results[i].Value = indexMotionToAttr[motionID]
-	}
-
-	return results, nil
+		return attributeFuncList(len(motionSubmitterIDs), motionAttr[0]), nil
+	})
 }

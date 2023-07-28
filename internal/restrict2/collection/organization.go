@@ -33,15 +33,15 @@ func (o Organization) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) 
 func (o Organization) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return Allways(o, "A")
+		return Allways
 	case "B":
-		return loggedIn(o, "B")
+		return loggedIn
 	case "C":
 		return o.modeC
 	}
 	return nil
 }
 
-func (o Organization) modeC(ctx context.Context, fetcher *dsfetch.Fetch, organizationIDs []int) ([]Tuple, error) {
-	return TupleFromModeKeys(o, organizationIDs, "C", attribute.FuncGlobalLevel(perm.OMLCanManageOrganization)), nil
+func (o Organization) modeC(ctx context.Context, fetcher *dsfetch.Fetch, organizationIDs []int) ([]attribute.Func, error) {
+	return attributeFuncList(len(organizationIDs), attribute.FuncGlobalLevel(perm.OMLCanManageOrganization)), nil
 }

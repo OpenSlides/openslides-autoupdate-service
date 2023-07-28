@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
@@ -21,12 +20,12 @@ func newAttrMap() *attrMap {
 }
 
 // Add adds a value to the map.
-func (am *attrMap) Add(tuples ...collection.Tuple) {
+func (am *attrMap) Add(keys []dskey.Key, funcs []attribute.Func) {
 	am.mu.Lock()
 	defer am.mu.Unlock()
 
-	for _, tuple := range tuples {
-		am.data[tuple.Key] = tuple.Value
+	for i := range keys {
+		am.data[keys[i]] = funcs[i]
 	}
 }
 

@@ -40,21 +40,18 @@ func (los ListOfSpeakers) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (los ListOfSpeakers) see(ctx context.Context, fetcher *dsfetch.Fetch, losIDs []int) ([]Tuple, error) {
-	return byMeeting(ctx, fetcher, los, losIDs, func(meetingID int, ids []int) ([]Tuple, error) {
+func (los ListOfSpeakers) see(ctx context.Context, fetcher *dsfetch.Fetch, losIDs []int) ([]attribute.Func, error) {
+	return byMeeting(ctx, fetcher, los, losIDs, func(meetingID int, ids []int) ([]attribute.Func, error) {
 		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting group map: %w", err)
 		}
 
-		return TupleFromModeKeys(
-			los,
-			losIDs,
-			"A",
-			attribute.FuncOr(
-				attribute.FuncInGroup(groupMap[perm.ListOfSpeakersCanSee]),
-				attribute.FuncInGroup(groupMap[perm.ListOfSpeakersCanBeSpeaker]),
-			),
-		), nil
+		attrFn := attribute.FuncOr(
+			attribute.FuncInGroup(groupMap[perm.ListOfSpeakersCanSee]),
+			attribute.FuncInGroup(groupMap[perm.ListOfSpeakersCanBeSpeaker]),
+		)
+
+		return attributeFuncList(len(ids), attrFn), nil
 	})
 }

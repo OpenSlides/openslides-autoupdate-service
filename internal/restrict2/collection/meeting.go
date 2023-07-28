@@ -42,7 +42,7 @@ func (m Meeting) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int,
 func (m Meeting) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return Allways(m, "A")
+		return Allways
 	case "B":
 		return m.see
 	case "C":
@@ -53,20 +53,19 @@ func (m Meeting) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m Meeting) see(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs []int) ([]Tuple, error) {
+func (m Meeting) see(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs []int) ([]attribute.Func, error) {
 	orgaManger := attribute.FuncGlobalLevel(perm.OMLCanManageOrganization)
 
-	result := make([]Tuple, len(meetingIDs))
+	result := make([]attribute.Func, len(meetingIDs))
 	for i, meetingID := range meetingIDs {
-		result[i].Key = modeKey(m, meetingID, "B")
-
 		enableAnonymous, err := fetcher.Meeting_EnableAnonymous(meetingID).Value(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("checking enabled anonymous: %w", err)
 		}
 
 		if enableAnonymous {
-			result[i].Value = attribute.FuncAllow()
+			result[i] = attribute.FuncAllow
+			continue
 		}
 
 		groupIDs, err := fetcher.Meeting_GroupIDs(meetingID).Value(ctx)
@@ -93,12 +92,12 @@ func (m Meeting) see(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs []i
 			return nil, fmt.Errorf("getting template meeting: %w", err)
 		}
 
-		templateMeeting := attribute.FuncNotAllowed()
+		templateMeeting := attribute.FuncNotAllowed
 		if isTemplateMeeting {
-			templateMeeting = attribute.FuncIsCommitteeManager()
+			templateMeeting = attribute.FuncIsCommitteeManager
 		}
 
-		result[i].Value = attribute.FuncOr(
+		result[i] = attribute.FuncOr(
 			orgaManger,
 			inMeeting,
 			committeeManager,
@@ -109,32 +108,28 @@ func (m Meeting) see(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs []i
 	return result, nil
 }
 
-func (m Meeting) modeC(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs []int) ([]Tuple, error) {
-	result := make([]Tuple, len(meetingIDs))
+func (m Meeting) modeC(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs []int) ([]attribute.Func, error) {
+	result := make([]attribute.Func, len(meetingIDs))
 	for i, id := range meetingIDs {
-		result[i].Key = modeKey(m, id, "C")
-
 		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, id)
 		if err != nil {
 			return nil, fmt.Errorf("getting group map: %w", err)
 		}
 
-		result[i].Value = attribute.FuncInGroup(groupMap[perm.MeetingCanSeeFrontpage])
+		result[i] = attribute.FuncInGroup(groupMap[perm.MeetingCanSeeFrontpage])
 	}
 	return result, nil
 }
 
-func (m Meeting) modeD(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs []int) ([]Tuple, error) {
-	result := make([]Tuple, len(meetingIDs))
+func (m Meeting) modeD(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs []int) ([]attribute.Func, error) {
+	result := make([]attribute.Func, len(meetingIDs))
 	for i, id := range meetingIDs {
-		result[i].Key = modeKey(m, id, "D")
-
 		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, id)
 		if err != nil {
 			return nil, fmt.Errorf("getting group map: %w", err)
 		}
 
-		result[i].Value = attribute.FuncInGroup(groupMap[perm.MeetingCanSeeLivestream])
+		result[i] = attribute.FuncInGroup(groupMap[perm.MeetingCanSeeLivestream])
 	}
 	return result, nil
 }

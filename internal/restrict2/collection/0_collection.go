@@ -70,7 +70,7 @@ type Unknown struct {
 
 // Modes on an unknown field can not be seen.
 func (u Unknown) Modes(mode string) FieldRestricter {
-	return never(u, mode)
+	return never
 }
 
 // MeetingID is not a thing on a unknown meeting
@@ -84,22 +84,20 @@ func (u Unknown) Name() string {
 }
 
 // Allways is a restricter func that just returns true.
-func Allways(r Restricter, mode string) FieldRestricter {
-	return func(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]Tuple, error) {
-		return TupleFromModeKeys(r, ids, mode, attribute.FuncAllow()), nil
-	}
+func Allways(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]attribute.Func, error) {
+	return attributeFuncList(len(ids), attribute.FuncAllow), nil
 }
 
-func loggedIn(r Restricter, mode string) FieldRestricter {
-	return func(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]Tuple, error) {
-		return TupleFromModeKeys(r, ids, mode, attribute.FuncAllow()), nil
-	}
+func loggedIn(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]attribute.Func, error) {
+	return attributeFuncList(len(ids), attribute.FuncLoggedIn), nil
 }
 
-func never(r Restricter, mode string) FieldRestricter {
-	return func(ctx context.Context, ds *dsfetch.Fetch, ids []int) ([]Tuple, error) {
-		return TupleFromModeKeys(r, ids, mode, attribute.FuncNotAllowed()), nil
+func never(ctx context.Context, ds *dsfetch.Fetch, ids []int) ([]attribute.Func, error) {
+	result := make([]attribute.Func, len(ids))
+	for i := range ids {
+		result[i] = attribute.FuncNotAllowed
 	}
+	return result, nil
 }
 
 type restrictCache struct {
@@ -147,29 +145,11 @@ type Restricter interface {
 	Name() string
 }
 
-// Tuple is a pair of modekey and attribute.func
-//
-// They can be merged into a map later.
-type Tuple struct {
-	Key   dskey.Key
-	Value attribute.Func
-}
-
-// TupleFromModeKeys creates list of Tuples for a list of ids from the same
-// collection mode.
-func TupleFromModeKeys(r Restricter, ids []int, mode string, attr attribute.Func) []Tuple {
-	result := make([]Tuple, len(ids))
-	for i, id := range ids {
-		result[i] = Tuple{modeKey(r, id, mode), attr}
-	}
-	return result
-}
-
 // FieldRestricter is a function to restrict fields of a collection.
-type FieldRestricter func(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]Tuple, error)
+type FieldRestricter func(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]attribute.Func, error)
 
-func meetingPerm(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, mode string, ids []int, permission perm.TPermission) ([]Tuple, error) {
-	return byMeeting(ctx, fetcher, r, ids, func(meetingID int, ids []int) ([]Tuple, error) {
+func meetingPerm(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, ids []int, permission perm.TPermission) ([]attribute.Func, error) {
+	return byMeeting(ctx, fetcher, r, ids, func(meetingID int, ids []int) ([]attribute.Func, error) {
 		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting group map: %w", err)
@@ -180,20 +160,19 @@ func meetingPerm(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, mode
 			attribute.FuncInGroup(groupMap[permission]),
 		)
 
-		result := make([]Tuple, len(ids))
-		for i, id := range ids {
-			result[i] = Tuple{
-				Key:   modeKey(r, id, mode),
-				Value: attr,
-			}
+		result := make([]attribute.Func, len(ids))
+		for i := range ids {
+			result[i] = attr
 		}
 		return result, nil
 	})
 }
 
-func byMeeting(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, ids []int, fn func(meetingID int, ids []int) ([]Tuple, error)) ([]Tuple, error) {
+func byMeeting(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, ids []int, fn func(meetingID int, ids []int) ([]attribute.Func, error)) ([]attribute.Func, error) {
 	meetingToIDs := make(map[int][]int)
-	for _, id := range ids {
+	idxToMeeting := make([]int, len(ids))
+	idxToMeetingIdx := make([]int, len(ids))
+	for i, id := range ids {
 		meetingID, hasMeeting, err := r.MeetingID(ctx, fetcher, id)
 		if err != nil {
 			return nil, fmt.Errorf("getting meeting id of element %d: %w", id, err)
@@ -203,33 +182,37 @@ func byMeeting(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, ids []
 			return nil, fmt.Errorf("element with id %d has no meeting", id)
 		}
 
+		idxToMeeting[i] = meetingID
+		idxToMeetingIdx[i] = len(meetingToIDs[meetingID])
 		meetingToIDs[meetingID] = append(meetingToIDs[meetingID], id)
 	}
 
-	resultList := make([][]Tuple, 0, len(meetingToIDs))
-	var count int
+	resultList := make([][]attribute.Func, 0, len(meetingToIDs))
 	for meetingID, ids := range meetingToIDs {
 		result, err := fn(meetingID, ids)
 		if err != nil {
 			return nil, fmt.Errorf("restricting for meeting %d: %w", meetingID, err)
 		}
 		resultList = append(resultList, result)
-		count += len(result)
 	}
 
-	combined := make([]Tuple, 0, count)
-	for _, result := range resultList {
-		combined = append(combined, result...)
+	result := make([]attribute.Func, len(ids))
+	for i := range ids {
+		meetingID := idxToMeeting[i]
+		resultIdx := idxToMeetingIdx[i]
+		result[i] = resultList[meetingID][resultIdx]
 	}
 
-	return combined, nil
+	return result, nil
 }
 
 // TODO: byRelationField and byMeeting are very simular. Maybe write an abstract
 // function that takes a filter function.
-func byRelationField(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, toField func(int) *dsfetch.ValueInt, ids []int, fn func(relationID int, ids []int) ([]Tuple, error)) ([]Tuple, error) {
+func byRelationField(ctx context.Context, toField func(int) *dsfetch.ValueInt, ids []int, fn func(relationID int, ids []int) ([]attribute.Func, error)) ([]attribute.Func, error) {
 	filteredIDs := make(map[int][]int)
-	for _, id := range ids {
+	idxToFiltered := make([]int, len(ids))
+	idxToFilteredIdx := make([]int, len(ids))
+	for i, id := range ids {
 		fieldID, err := toField(id).Value(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("getting id for element %d: %w", id, err)
@@ -237,28 +220,36 @@ func byRelationField(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, 
 		if fieldID == 0 {
 			return nil, fmt.Errorf("element with id %d has no relation", id)
 		}
+
+		idxToFiltered[i] = fieldID
+		idxToFilteredIdx[i] = len(filteredIDs[fieldID])
 		filteredIDs[fieldID] = append(filteredIDs[fieldID], id)
 	}
 
-	resultList := make([][]Tuple, 0, len(filteredIDs))
-	var count int
+	resultList := make([][]attribute.Func, 0, len(filteredIDs))
 	for meetingID, ids := range filteredIDs {
 		result, err := fn(meetingID, ids)
 		if err != nil {
 			return nil, fmt.Errorf("restricting for meeting %d: %w", meetingID, err)
 		}
 		resultList = append(resultList, result)
-		count += len(result)
 	}
 
-	combined := make([]Tuple, 0, count)
-	for _, result := range resultList {
-		combined = append(combined, result...)
+	result := make([]attribute.Func, len(ids))
+	for i := range ids {
+		meetingID := idxToFiltered[i]
+		resultIdx := idxToFilteredIdx[i]
+		result[i] = resultList[meetingID][resultIdx]
 	}
 
-	return combined, nil
+	return result, nil
 }
 
-func modeKey(r Restricter, id int, mode string) dskey.Key {
-	return dskey.Key{Collection: r.Name(), ID: id, Field: mode}
+func attributeFuncList(len int, attr attribute.Func) []attribute.Func {
+	result := make([]attribute.Func, len)
+	for i := 0; i < len; i++ {
+		result[i] = attr
+	}
+
+	return result
 }

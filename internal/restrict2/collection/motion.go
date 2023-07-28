@@ -7,7 +7,6 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // Motion handels restrictions of the collection motion.
@@ -50,113 +49,112 @@ func (m Motion) Modes(mode string) FieldRestricter {
 	case "C":
 		return m.see
 	case "D":
-		return never(m, "D")
+		return never
 	}
 	return nil
 }
 
-func (m Motion) see(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int) ([]Tuple, error) {
-	// TODO: Filter lead motion
-	return byMeeting(ctx, fetcher, m, motionIDs, func(meetingID int, motionIDs []int) ([]Tuple, error) {
-		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID)
-		if err != nil {
-			return nil, fmt.Errorf("getting group map: %w", err)
-		}
-
-		// TODO: What about the super admin
-		attrMotionCanSee := attribute.FuncInGroup(groupMap[perm.MotionCanSee])
-
-		return byRelationField(ctx, fetcher, m, fetcher.Motion_StateID, motionIDs, func(stateID int, motionIDs []int) ([]Tuple, error) {
-			restrictions, err := fetcher.MotionState_Restrictions(stateID).Value(ctx)
+func (m Motion) see(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int) ([]attribute.Func, error) {
+	return filterCanSeeLeadMotion(ctx, fetcher, motionIDs, func(motionIDs []int) ([]attribute.Func, error) {
+		return byMeeting(ctx, fetcher, m, motionIDs, func(meetingID int, motionIDs []int) ([]attribute.Func, error) {
+			groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID)
 			if err != nil {
-				return nil, fmt.Errorf("getting restrictions: %w", err)
+				return nil, fmt.Errorf("getting group map: %w", err)
 			}
 
-			if len(restrictions) == 0 {
-				return TupleFromModeKeys(m, motionIDs, "C", attrMotionCanSee), nil
-			}
+			// TODO: What about the super admin
+			attrMotionCanSee := attribute.FuncInGroup(groupMap[perm.MotionCanSee])
 
-			var hasIsSubmitterRestriction bool
-			var restrictGroups []int
-			for _, restriction := range restrictions {
-				if restriction == "is_submitter" {
-					hasIsSubmitterRestriction = true
-					continue
+			return byRelationField(ctx, fetcher.Motion_StateID, motionIDs, func(stateID int, motionIDs []int) ([]attribute.Func, error) {
+				restrictions, err := fetcher.MotionState_Restrictions(stateID).Value(ctx)
+				if err != nil {
+					return nil, fmt.Errorf("getting restrictions: %w", err)
 				}
-				restrictGroups = append(restrictGroups, groupMap[perm.TPermission(restriction)]...)
-			}
 
-			if !hasIsSubmitterRestriction {
-				attr := attribute.FuncAnd(
-					attrMotionCanSee,
-					attribute.FuncOr(attribute.FuncInGroup(restrictGroups)),
-				)
-				return TupleFromModeKeys(m, motionIDs, "C", attr), nil
-			}
+				if len(restrictions) == 0 {
+					return attributeFuncList(len(motionIDs), attrMotionCanSee), nil
+				}
 
-			motionAttr, err := submitterFunc(ctx, fetcher, motionIDs)
-			if err != nil {
-				return nil, fmt.Errorf("calculate submitter attributes: %w", err)
-			}
+				var hasIsSubmitterRestriction bool
+				var restrictGroups []int
+				for _, restriction := range restrictions {
+					if restriction == "is_submitter" {
+						hasIsSubmitterRestriction = true
+						continue
+					}
+					restrictGroups = append(restrictGroups, groupMap[perm.TPermission(restriction)]...)
+				}
 
-			result := make([]Tuple, len(motionAttr))
-			for i, isSubmitter := range motionAttr {
-				motionID := motionIDs[i]
+				if !hasIsSubmitterRestriction {
+					attr := attribute.FuncAnd(
+						attrMotionCanSee,
+						attribute.FuncOr(attribute.FuncInGroup(restrictGroups)),
+					)
+					return attributeFuncList(len(motionIDs), attr), nil
+				}
 
-				result[i] = Tuple{
-					Key: modeKey(m, motionID, "C"),
-					Value: attribute.FuncAnd(
+				motionAttr, err := submitterFunc(ctx, fetcher, motionIDs)
+				if err != nil {
+					return nil, fmt.Errorf("calculate submitter attributes: %w", err)
+				}
+
+				result := make([]attribute.Func, len(motionIDs))
+				for i := range motionIDs {
+					isSubmitter := motionAttr[i]
+
+					result[i] = attribute.FuncAnd(
 						attrMotionCanSee,
 						attribute.FuncOr(
 							attribute.FuncInGroup(restrictGroups),
 							isSubmitter,
 						),
-					),
+					)
 				}
 
-			}
-
-			return result, nil
+				return result, nil
+			})
 		})
 	})
 }
 
-// leadMotionIndex creates an index from a motionID to its lead motion id. It
-// also contains pairs for each found lead motion id.
-//
-// So each value in the index can also be found in the keys.
-//
-// motions without a lead motion are added with value 0
-func leadMotionIndex(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int) (map[int]int, error) {
-	index := make(map[int]int, len(motionIDs))
+// leadMotionIndex create for each element in motionIDs a list of it self + its
+// lead motionID and its lead motionID and so on.
+func leadMotionIndex(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int) ([][]int, error) {
+	result := make([][]int, len(motionIDs))
 
-	for len(motionIDs) > 0 {
-		leadMotionIDs := make([]int, len(motionIDs))
+	// Add the motionID as first element
+	for i, motionID := range motionIDs {
+		result[i] = []int{motionID}
+	}
+
+	finished := make([]bool, len(motionIDs))
+	var finishedCount int
+	for finishedCount < len(motionIDs) {
+		leadMotionID := make([]int, len(motionIDs))
 		for i, motionID := range motionIDs {
-			fetcher.Motion_LeadMotionID(motionID).Lazy(&leadMotionIDs[i])
+			if finished[i] {
+				continue
+			}
+
+			fetcher.Motion_LeadMotionID(motionID).Lazy(&leadMotionID[i])
 		}
 
 		if err := fetcher.Execute(ctx); err != nil {
 			return nil, fmt.Errorf("fetching lead motion ids: %w", err)
 		}
 
-		var nextMotionIDs []int
-		for i := range leadMotionIDs {
-
-			if _, ok := index[motionIDs[i]]; ok {
+		for i := range motionIDs {
+			if !finished[i] && leadMotionID[i] == 0 {
+				finished[i] = true
+				finishedCount++
 				continue
 			}
 
-			index[motionIDs[i]] = leadMotionIDs[i]
-
-			if leadMotionIDs[i] != 0 {
-				nextMotionIDs = append(nextMotionIDs, leadMotionIDs[i])
-			}
+			result[i] = append(result[i], leadMotionID[i])
 		}
-		motionIDs = nextMotionIDs
 	}
 
-	return index, nil
+	return result, nil
 }
 
 // filterCanSeeLeadMotion calls the given function by adding the lead motions to
@@ -165,7 +163,7 @@ func leadMotionIndex(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []in
 // It only returns motions, where the user can also see the lead motion. This is
 // done recursive, so for a lead_motion that also has a lead motion, the user
 // must see all of them.
-func filterCanSeeLeadMotion(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int, fn func([]int) ([]Tuple, error)) ([]Tuple, error) {
+func filterCanSeeLeadMotion(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int, fn func([]int) ([]attribute.Func, error)) ([]attribute.Func, error) {
 	index, err := leadMotionIndex(ctx, fetcher, motionIDs)
 	if err != nil {
 		return nil, fmt.Errorf("create lead motion index: %w", err)
@@ -173,88 +171,70 @@ func filterCanSeeLeadMotion(ctx context.Context, fetcher *dsfetch.Fetch, motionI
 
 	// TODO: add a shortcut if no requested motion has a lead motion
 
-	allMotionIDs := make([]int, 0, len(index))
-	for motionID := range index {
-		allMotionIDs = append(allMotionIDs, motionID)
+	allMotionIDs := make([]int, 0, len(motionIDs))
+	idxToRelatedIdx := make(map[int][]int)
+	for i := range motionIDs {
+		start := len(allMotionIDs)
+		allMotionIDs = append(allMotionIDs, index[i]...)
+		idxToRelatedIdx[i] = allMotionIDs[start:]
 	}
 
-	tuples, err := fn(allMotionIDs)
+	attrFunc, err := fn(allMotionIDs)
 	if err != nil {
 		return nil, fmt.Errorf("checking motions with lead motions: %w", err)
 	}
 
-	motionIDToFunc := make(map[int]attribute.Func, len(allMotionIDs))
-	for _, tuple := range tuples {
-		motionID := tuple.Key.ID
-		motionIDToFunc[motionID] = tuple.Value
-	}
-
-	for _, tuple := range tuples {
-		motionID := tuple.Key.ID
-		leadMotionID := index[motionID]
-		if leadMotionID == 0 {
-			continue
+	result := make([]attribute.Func, len(motionIDs))
+	for i := range motionIDs {
+		relatedIdx := idxToRelatedIdx[i]
+		funcList := make([]attribute.Func, len(relatedIdx))
+		for j, idx := range relatedIdx {
+			funcList[j] = attrFunc[idx]
 		}
 
-		tuple.Value = attribute.FuncAnd(
-			tuple.Value,
-			motionIDToFunc[leadMotionID],
-			// TODO: What about lead motion from lead motion and so on?
-		)
+		result[i] = attribute.FuncAnd(funcList...)
 	}
 
-	return tuples, nil
+	return result, nil
 }
 
-func (m Motion) modeA(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int) ([]Tuple, error) {
+func (m Motion) modeA(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int) ([]attribute.Func, error) {
 	originIDs := make([][]int, len(motionIDs))
 	derivedIDs := make([][]int, len(motionIDs))
-	motionIDToRelatedIdx := make(map[int]int, len(motionIDs))
+
 	for i, motionID := range motionIDs {
 		fetcher.Motion_AllOriginIDs(motionID).Lazy(&originIDs[i])
 		fetcher.Motion_AllDerivedMotionIDs(motionID).Lazy(&derivedIDs[i])
-		motionIDToRelatedIdx[motionID] = i
 	}
 
 	if err := fetcher.Execute(ctx); err != nil {
 		return nil, fmt.Errorf("getting origin and derived ids: %w", err)
 	}
 
-	allIDSet := set.New(motionIDs...)
-	for i := range motionIDs {
-		allIDSet.Add(originIDs[i]...)
-		allIDSet.Add(derivedIDs[i]...)
+	idxToRelatedIdx := make(map[int][]int)
+	var allMotionIDs []int
+	for i, motionID := range motionIDs {
+		allMotionIDs = append(allMotionIDs, motionID)
+		relatedIDs := append([]int{motionID}, append(originIDs[i], derivedIDs[i]...)...)
+		start := len(allMotionIDs)
+		allMotionIDs = append(allMotionIDs, relatedIDs...)
+		idxToRelatedIdx[i] = allMotionIDs[start:]
 	}
-	allMotionIDs := allIDSet.List()
 
-	tuples, err := m.see(ctx, fetcher, allMotionIDs)
+	attrFunc, err := Collection(ctx, "motion").Modes("B")(ctx, fetcher, allMotionIDs)
 	if err != nil {
 		return nil, fmt.Errorf("see motion: %w", err)
 	}
 
-	motionIDToFunc := make(map[int]attribute.Func, len(allMotionIDs))
-	for _, tuple := range tuples {
-		motionID := tuple.Key.ID
-		motionIDToFunc[motionID] = tuple.Value
-	}
-
-	result := make([]Tuple, len(motionIDs))
-	for i, motionID := range motionIDs {
-		relatedIdx := motionIDToRelatedIdx[motionID]
-		originMotionIDs := originIDs[relatedIdx]
-		derivedMotionIDs := derivedIDs[relatedIdx]
-
-		funcList := make([]attribute.Func, 0, len(originMotionIDs)+len(derivedMotionIDs)+1)
-		funcList = append(funcList, motionIDToFunc[motionID])
-		for _, motionID := range originMotionIDs {
-			funcList = append(funcList, motionIDToFunc[motionID])
-		}
-		for _, motionID := range derivedMotionIDs {
-			funcList = append(funcList, motionIDToFunc[motionID])
+	result := make([]attribute.Func, len(motionIDs))
+	for i := range motionIDs {
+		relatedIdx := idxToRelatedIdx[i]
+		funcList := make([]attribute.Func, len(relatedIdx))
+		for j, idx := range relatedIdx {
+			funcList[j] = attrFunc[idx]
 		}
 
-		result[i].Key = modeKey(m, motionID, "A")
-		result[i].Value = attribute.FuncOr(funcList...)
+		result[i] = attribute.FuncOr(funcList...)
 	}
 
 	return result, nil

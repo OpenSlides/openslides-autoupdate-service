@@ -50,8 +50,8 @@ func (a AgendaItem) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a AgendaItem) see(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs []int) ([]Tuple, error) {
-	return byMeeting(ctx, fetcher, a, agendaIDs, func(meetingID int, agendaIDs []int) ([]Tuple, error) {
+func (a AgendaItem) see(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs []int) ([]attribute.Func, error) {
+	return byMeeting(ctx, fetcher, a, agendaIDs, func(meetingID int, agendaIDs []int) ([]attribute.Func, error) {
 		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting group map: %w", err)
@@ -62,7 +62,7 @@ func (a AgendaItem) see(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs [
 		attrCanSeeInternal := attribute.FuncInGroup(groupMap[perm.AgendaItemCanSeeInternal])
 		attrCanSee := attribute.FuncInGroup(groupMap[perm.AgendaItemCanSee])
 
-		result := make([]Tuple, len(agendaIDs))
+		result := make([]attribute.Func, len(agendaIDs))
 		for i, agendaID := range agendaIDs {
 			isHidden := fetcher.AgendaItem_IsHidden(agendaID).ErrorLater(ctx)
 			isInternal := fetcher.AgendaItem_IsInternal(agendaID).ErrorLater(ctx)
@@ -80,19 +80,17 @@ func (a AgendaItem) see(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs [
 				attr = attrCanSee
 			}
 
-			attr = attribute.FuncOr(attrSuperadmin, attr)
-
-			result[i] = Tuple{modeKey(a, agendaID, "A"), attr}
+			result[i] = attribute.FuncOr(attrSuperadmin, attr)
 		}
 
 		return result, nil
 	})
 }
 
-func (a AgendaItem) modeB(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs []int) ([]Tuple, error) {
-	return meetingPerm(ctx, fetcher, a, "B", agendaIDs, perm.AgendaItemCanSeeInternal)
+func (a AgendaItem) modeB(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs []int) ([]attribute.Func, error) {
+	return meetingPerm(ctx, fetcher, a, agendaIDs, perm.AgendaItemCanSeeInternal)
 }
 
-func (a AgendaItem) modeC(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs []int) ([]Tuple, error) {
-	return meetingPerm(ctx, fetcher, a, "C", agendaIDs, perm.AgendaItemCanManage)
+func (a AgendaItem) modeC(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs []int) ([]attribute.Func, error) {
+	return meetingPerm(ctx, fetcher, a, agendaIDs, perm.AgendaItemCanManage)
 }

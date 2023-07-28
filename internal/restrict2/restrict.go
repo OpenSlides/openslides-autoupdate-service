@@ -132,7 +132,8 @@ func (r *Restricter) precalculate(ctx context.Context, collectionModes []dskey.K
 	}
 
 	// Put all tuples together so they can be added at once (with one lock)
-	var allTuples []collection.Tuple
+	allFuncs := make([]attribute.Func, 0, len(collectionModes))
+	allKeys := make([]dskey.Key, 0, len(collectionModes))
 	for name, collectionModes := range byCollection {
 		restricter := collection.Collection(ctx, name)
 
@@ -143,15 +144,19 @@ func (r *Restricter) precalculate(ctx context.Context, collectionModes []dskey.K
 
 		for mode, ids := range byMode {
 			modefunc := restricter.Modes(mode)
-			tuples, err := modefunc(ctx, fetcher, ids)
+			attrFunc, err := modefunc(ctx, fetcher, ids)
 			if err != nil {
 				return fmt.Errorf("precalculate %s/%s: %w", name, mode, err)
 			}
-			allTuples = append(allTuples, tuples...)
+
+			allFuncs = append(allFuncs, attrFunc...)
+			for _, id := range ids {
+				allKeys = append(allKeys, dskey.Key{Collection: name, ID: id, Field: mode})
+			}
 		}
 	}
 
-	r.attributes.Add(allTuples...)
+	r.attributes.Add(allKeys, allFuncs)
 	r.hotKeys.Merge(recorder.Keys())
 
 	return nil
@@ -165,10 +170,10 @@ type restrictedGetter struct {
 }
 
 func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
-	// start := time.Now()
-	// defer func() {
-	// 	log.Printf("full restrict %d keys took: %s", len(keys), time.Since(start))
-	// }()
+	start := time.Now()
+	defer func() {
+		log.Printf("full restrict %d keys took: %s", len(keys), time.Since(start))
+	}()
 
 	relevantKey := make([]dskey.Key, 0, len(keys))
 	for _, key := range keys {
@@ -190,7 +195,7 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 	// startIndexing := time.Now()
 	modeKeys := make([]dskey.Key, len(relevantKey))
 	for i, key := range relevantKey {
-		mode := restrictionModes[key.CollectionField()]
+		mode := restrictionModes[templateKeyPrefix(key.CollectionField())]
 
 		modeKey := dskey.Key{Collection: key.Collection, ID: key.ID, Field: mode}
 		modeKeys[i] = modeKey

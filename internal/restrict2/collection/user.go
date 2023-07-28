@@ -78,7 +78,7 @@ func (u User) Modes(mode string) FieldRestricter {
 	case "F":
 		return u.modeF
 	case "G":
-		return never(u, "G")
+		return never
 	case "H":
 		return u.modeH
 	}
@@ -87,14 +87,15 @@ func (u User) Modes(mode string) FieldRestricter {
 
 // SuperAdmin restricts the super admin.
 func (u User) SuperAdmin(mode string) FieldRestricter {
+	// TODO: When to call me????
 	if mode == "G" {
-		return never(u, "G")
+		return never
 	}
-	return Allways(u, "G")
+	return Allways
 }
 
 // TODO: this is not good.
-func (u User) see(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]Tuple, error) {
+func (u User) see(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
 	userManager := attribute.FuncGlobalLevel(perm.OMLCanManageUsers)
 
 	inCommitteList := make([][]int, len(userIDs))
@@ -108,10 +109,8 @@ func (u User) see(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([
 		return nil, fmt.Errorf("fetching user data: %w", err)
 	}
 
-	result := make([]Tuple, len(userIDs))
+	result := make([]attribute.Func, len(userIDs))
 	for i, userID := range userIDs {
-		result[i].Key = modeKey(u, userID, "A")
-
 		committeeManagerList := make([][]int, len(inCommitteList[i]))
 		for j, committeeID := range inCommitteList[i] {
 			fetcher.Committee_UserManagementLevel(committeeID, "can_manage").Lazy(&committeeManagerList[j])
@@ -136,7 +135,7 @@ func (u User) see(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([
 			canSeeGroups = append(canSeeGroups, groupMap[perm.UserCanSee]...)
 		}
 
-		result[i].Value = attribute.FuncOr(
+		result[i] = attribute.FuncOr(
 			attribute.FuncUserIDs([]int{userID}),
 			userManager,
 			attribute.FuncUserIDs(committeeManagers),
@@ -224,16 +223,15 @@ func (User) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []UserRequir
 	}
 }
 
-func (u User) modeB(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]Tuple, error) {
-	result := make([]Tuple, len(userIDs))
+func (u User) modeB(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
+	result := make([]attribute.Func, len(userIDs))
 	for i, userID := range userIDs {
-		result[i].Key = modeKey(u, userID, "B")
-		result[i].Value = attribute.FuncUserIDs([]int{userID})
+		result[i] = attribute.FuncUserIDs([]int{userID})
 	}
 	return result, nil
 }
 
-func (u User) modeD(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]Tuple, error) {
+func (u User) modeD(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
 	userManager := attribute.FuncGlobalLevel(perm.OMLCanManageUsers)
 
 	inMeetingList := make([][]int, len(userIDs))
@@ -245,10 +243,8 @@ func (u User) modeD(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 		return nil, fmt.Errorf("fetching user data: %w", err)
 	}
 
-	result := make([]Tuple, len(userIDs))
+	result := make([]attribute.Func, len(userIDs))
 	for i, userID := range userIDs {
-		result[i].Key = modeKey(u, userID, "D")
-
 		var canSeeGroups []int
 		for _, meetingID := range inMeetingList[i] {
 			groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID)
@@ -259,7 +255,7 @@ func (u User) modeD(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 			canSeeGroups = append(canSeeGroups, groupMap[perm.UserCanManage]...)
 		}
 
-		result[i].Value = attribute.FuncOr(
+		result[i] = attribute.FuncOr(
 			userManager,
 			attribute.FuncInGroup(canSeeGroups),
 		)
@@ -267,7 +263,7 @@ func (u User) modeD(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 	return result, nil
 }
 
-func (u User) modeE(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]Tuple, error) {
+func (u User) modeE(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
 	userManager := attribute.FuncGlobalLevel(perm.OMLCanManageUsers)
 
 	inCommitteList := make([][]int, len(userIDs))
@@ -281,10 +277,8 @@ func (u User) modeE(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 		return nil, fmt.Errorf("fetching user data: %w", err)
 	}
 
-	result := make([]Tuple, len(userIDs))
+	result := make([]attribute.Func, len(userIDs))
 	for i, userID := range userIDs {
-		result[i].Key = modeKey(u, userID, "E")
-
 		committeeManagerList := make([][]int, len(inCommitteList[i]))
 		for j, committeeID := range inCommitteList[i] {
 			fetcher.Committee_UserManagementLevel(committeeID, "can_manage").Lazy(&committeeManagerList[j])
@@ -309,7 +303,7 @@ func (u User) modeE(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 			canSeeGroups = append(canSeeGroups, groupMap[perm.UserCanSee]...)
 		}
 
-		result[i].Value = attribute.FuncOr(
+		result[i] = attribute.FuncOr(
 			attribute.FuncUserIDs([]int{userID}),
 			userManager,
 			attribute.FuncUserIDs(committeeManagers),
@@ -319,15 +313,9 @@ func (u User) modeE(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 	return result, nil
 }
 
-func (u User) modeF(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]Tuple, error) {
+func (u User) modeF(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
 	userManager := attribute.FuncGlobalLevel(perm.OMLCanManageUsers)
-
-	result := make([]Tuple, len(userIDs))
-	for i, userID := range userIDs {
-		result[i].Key = modeKey(u, userID, "F")
-		result[i].Value = userManager
-	}
-	return result, nil
+	return attributeFuncList(len(userIDs), userManager), nil
 }
 
 // higherOrgaManagement returns true if request equal or higher  then
@@ -346,32 +334,26 @@ func higherOrgaManagement(level perm.OrganizationManagementLevel) perm.Organizat
 	}
 }
 
-func (u User) modeH(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]Tuple, error) {
-	// Like D but the fields are not visible, if the request has a lower
-	// organization management level then the requested user.
-
+func (u User) modeH(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
 	userOrgaLevel := make([]string, len(userIDs))
-	userIDtoIdx := make(map[int]int, len(userIDs))
 	for i, userID := range userIDs {
 		fetcher.User_OrganizationManagementLevel(userID).Lazy(&userOrgaLevel[i])
-		userIDtoIdx[userID] = i
 	}
 
 	if err := fetcher.Execute(ctx); err != nil {
 		return nil, fmt.Errorf("fetching orga levels: %w", err)
 	}
 
-	tuples, err := Collection(ctx, "user").Modes("D")(ctx, fetcher, userIDs)
+	result, err := Collection(ctx, "user").Modes("D")(ctx, fetcher, userIDs)
 	if err != nil {
 		return nil, fmt.Errorf("check like D: %w", err)
 	}
 
-	for i := range tuples {
-		tuples[i].Key.Field = "H"
-		tuples[i].Value = attribute.FuncAnd(
-			attribute.FuncGlobalLevel(higherOrgaManagement(perm.OrganizationManagementLevel(userOrgaLevel[userIDtoIdx[tuples[i].Key.ID]]))),
-			tuples[i].Value,
+	for i := range userIDs {
+		result[i] = attribute.FuncAnd(
+			attribute.FuncGlobalLevel(higherOrgaManagement(perm.OrganizationManagementLevel(userOrgaLevel[i]))),
+			result[i],
 		)
 	}
-	return tuples, nil
+	return result, nil
 }

@@ -77,26 +77,18 @@ func FuncUserIDs(userIDs []int) Func {
 	}
 }
 
-func FuncAllow() Func {
-	return func(UserAttributes) bool {
-		return true
-	}
+func FuncAllow(UserAttributes) bool {
+	return true
 }
 
-func FuncNotAllowed() Func {
-	return func(UserAttributes) bool {
-		return false
-	}
+func FuncNotAllowed(UserAttributes) bool {
+	return false
 }
 
-func FuncIsCommitteeManager() Func {
-	return func(user UserAttributes) bool {
-		return user.IsCommitteManager
-	}
+func FuncIsCommitteeManager(user UserAttributes) bool {
+	return user.IsCommitteManager
 }
 
-func FuncLoggedIn() Func {
-	return func(user UserAttributes) bool {
-		return user.UserID > 0
-	}
+func FuncLoggedIn(user UserAttributes) bool {
+	return user.UserID > 0
 }

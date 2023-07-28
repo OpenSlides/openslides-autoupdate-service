@@ -6,7 +6,6 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // Group handels restrictions of the collection group.
@@ -40,33 +39,14 @@ func (g Group) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (g Group) see(ctx context.Context, fetcher *dsfetch.Fetch, groupIDs []int) ([]Tuple, error) {
-	groupToMeeting := make(map[int]int, len(groupIDs))
-	meetingIDs := set.New[int]()
-	for _, groupID := range groupIDs {
-		meetingID := fetcher.Group_MeetingID(groupID).ErrorLater(ctx)
-		groupToMeeting[groupID] = meetingID
-		meetingIDs.Add(meetingID)
-	}
-	if err := fetcher.Err(); err != nil {
-		return nil, fmt.Errorf("getting meetingIDs: %w", err)
-	}
+func (g Group) see(ctx context.Context, fetcher *dsfetch.Fetch, groupIDs []int) ([]attribute.Func, error) {
+	// TODO: It would be faster to call Collection().Mode(B) with all meeting IDs at once.
+	return byMeeting(ctx, fetcher, g, groupIDs, func(meetingID int, ids []int) ([]attribute.Func, error) {
+		meetingAttr, err := Collection(ctx, "meeting").Modes("B")(ctx, fetcher, []int{meetingID})
+		if err != nil {
+			return nil, fmt.Errorf("checking motion.see: %w", err)
+		}
 
-	motionAttrList, err := Collection(ctx, "meeting").Modes("B")(ctx, fetcher, meetingIDs.List())
-	if err != nil {
-		return nil, fmt.Errorf("checking motion.see: %w", err)
-	}
-
-	indexMeetingToAttr := make(map[int]attribute.Func, len(motionAttrList))
-	for _, motionAttr := range motionAttrList {
-		indexMeetingToAttr[motionAttr.Key.ID] = motionAttr.Value
-	}
-
-	results := make([]Tuple, len(groupIDs))
-	for i, id := range groupIDs {
-		results[i].Key = modeKey(g, id, "A")
-		motionID := groupToMeeting[id]
-		results[i].Value = indexMeetingToAttr[motionID]
-	}
-	return results, nil
+		return attributeFuncList(len(ids), meetingAttr[0]), nil
+	})
 }

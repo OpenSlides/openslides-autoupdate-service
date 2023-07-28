@@ -25,7 +25,7 @@ func (t Theme) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, b
 func (t Theme) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return Allways(t, "A")
+		return Allways
 	}
 	return nil
 }
