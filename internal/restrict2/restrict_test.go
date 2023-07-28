@@ -30,8 +30,16 @@ func TestRestritGet(t *testing.T) {
 		group/7:
 			permissions:
 			- agenda_item.can_see
+			- motion.can_see
 			meeting_id: 5
 			user_ids: [1]
+		motion/13:
+			title: foobar
+			meeting_id: 5
+			state_id: 15
+		motion_state/15/id: 15
+
+		committee/2/user_$can_manage_management_level: []
 		`),
 		dsmock.NewCounter,
 	)
@@ -50,7 +58,8 @@ func TestRestritGet(t *testing.T) {
 		dskey.MustKey("agenda_item/1/duration"),
 		dskey.MustKey("agenda_item/1/comment"),
 		dskey.MustKey("agenda_item/1/does_not_exist"),
-		dskey.MustKey("meeting/5/group_ids"), // Old restricter
+		dskey.MustKey("meeting/5/group_ids"),
+		dskey.MustKey("motion/13/title"),
 	}
 
 	got, err := userRestricter.Get(ctx, keys...)
@@ -64,6 +73,7 @@ func TestRestritGet(t *testing.T) {
 		dskey.MustKey("agenda_item/1/comment"):        nil,
 		dskey.MustKey("agenda_item/1/does_not_exist"): nil,
 		dskey.MustKey("meeting/5/group_ids"):          []byte("[7]"),
+		dskey.MustKey("motion/13/title"):              []byte(`"foobar"`),
 	}
 
 	if !reflect.DeepEqual(got, expect) {
@@ -106,8 +116,8 @@ func TestRestritGet(t *testing.T) {
 			t.Fatalf("Get: %v", err)
 		}
 
-		if counter.Count() != 6 {
-			t.Errorf("Got %d requests to the db. Expected 6 (to get the weight key and to build perm.Permission): %v", counter.Count(), counter.Requests())
+		if counter.Count() != 3 {
+			t.Errorf("Got %d requests to the db. Expected 3 (to get the user attributes and the weight key): %v", counter.Count(), counter.Requests())
 		}
 	})
 }

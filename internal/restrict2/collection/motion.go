@@ -172,11 +172,12 @@ func filterCanSeeLeadMotion(ctx context.Context, fetcher *dsfetch.Fetch, motionI
 	// TODO: add a shortcut if no requested motion has a lead motion
 
 	allMotionIDs := make([]int, 0, len(motionIDs))
-	idxToRelatedIdx := make(map[int][]int)
+	relatedIdxFrom := make([]int, len(motionIDs))
+	relatedIdxTo := make([]int, len(motionIDs))
 	for i := range motionIDs {
-		start := len(allMotionIDs)
+		relatedIdxFrom[i] = len(allMotionIDs)
 		allMotionIDs = append(allMotionIDs, index[i]...)
-		idxToRelatedIdx[i] = allMotionIDs[start:]
+		relatedIdxTo[i] = len(allMotionIDs)
 	}
 
 	attrFunc, err := fn(allMotionIDs)
@@ -186,10 +187,11 @@ func filterCanSeeLeadMotion(ctx context.Context, fetcher *dsfetch.Fetch, motionI
 
 	result := make([]attribute.Func, len(motionIDs))
 	for i := range motionIDs {
-		relatedIdx := idxToRelatedIdx[i]
-		funcList := make([]attribute.Func, len(relatedIdx))
-		for j, idx := range relatedIdx {
-			funcList[j] = attrFunc[idx]
+		size := relatedIdxTo[i] - relatedIdxFrom[i]
+
+		funcList := make([]attribute.Func, size)
+		for j := 0; j < size; j++ {
+			funcList[j] = attrFunc[relatedIdxFrom[i]+j]
 		}
 
 		result[i] = attribute.FuncAnd(funcList...)
@@ -211,27 +213,29 @@ func (m Motion) modeA(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []i
 		return nil, fmt.Errorf("getting origin and derived ids: %w", err)
 	}
 
-	idxToRelatedIdx := make(map[int][]int)
+	relatedIdxFrom := make([]int, len(motionIDs))
+	relatedIdxTo := make([]int, len(motionIDs))
 	var allMotionIDs []int
 	for i, motionID := range motionIDs {
 		allMotionIDs = append(allMotionIDs, motionID)
 		relatedIDs := append([]int{motionID}, append(originIDs[i], derivedIDs[i]...)...)
-		start := len(allMotionIDs)
+		relatedIdxFrom[i] = len(allMotionIDs)
 		allMotionIDs = append(allMotionIDs, relatedIDs...)
-		idxToRelatedIdx[i] = allMotionIDs[start:]
+		relatedIdxTo[i] = len(allMotionIDs)
 	}
 
-	attrFunc, err := Collection(ctx, "motion").Modes("B")(ctx, fetcher, allMotionIDs)
+	attrFunc, err := Collection(ctx, m.Name()).Modes("C")(ctx, fetcher, allMotionIDs)
 	if err != nil {
 		return nil, fmt.Errorf("see motion: %w", err)
 	}
 
 	result := make([]attribute.Func, len(motionIDs))
 	for i := range motionIDs {
-		relatedIdx := idxToRelatedIdx[i]
-		funcList := make([]attribute.Func, len(relatedIdx))
-		for j, idx := range relatedIdx {
-			funcList[j] = attrFunc[idx]
+		size := relatedIdxTo[i] - relatedIdxFrom[i]
+
+		funcList := make([]attribute.Func, size)
+		for j := 0; j < size; j++ {
+			funcList[j] = attrFunc[relatedIdxFrom[i]+j]
 		}
 
 		result[i] = attribute.FuncOr(funcList...)

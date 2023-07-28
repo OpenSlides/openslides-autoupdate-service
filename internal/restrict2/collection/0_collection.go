@@ -187,13 +187,13 @@ func byMeeting(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, ids []
 		meetingToIDs[meetingID] = append(meetingToIDs[meetingID], id)
 	}
 
-	resultList := make([][]attribute.Func, 0, len(meetingToIDs))
+	resultList := make(map[int][]attribute.Func, len(meetingToIDs))
 	for meetingID, ids := range meetingToIDs {
 		result, err := fn(meetingID, ids)
 		if err != nil {
 			return nil, fmt.Errorf("restricting for meeting %d: %w", meetingID, err)
 		}
-		resultList = append(resultList, result)
+		resultList[meetingID] = append(resultList[meetingID], result...)
 	}
 
 	result := make([]attribute.Func, len(ids))
@@ -226,13 +226,13 @@ func byRelationField(ctx context.Context, toField func(int) *dsfetch.ValueInt, i
 		filteredIDs[fieldID] = append(filteredIDs[fieldID], id)
 	}
 
-	resultList := make([][]attribute.Func, 0, len(filteredIDs))
+	resultList := make(map[int][]attribute.Func, len(filteredIDs))
 	for meetingID, ids := range filteredIDs {
 		result, err := fn(meetingID, ids)
 		if err != nil {
 			return nil, fmt.Errorf("restricting for meeting %d: %w", meetingID, err)
 		}
-		resultList = append(resultList, result)
+		resultList[meetingID] = append(resultList[meetingID], result...)
 	}
 
 	result := make([]attribute.Func, len(ids))

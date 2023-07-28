@@ -225,7 +225,12 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 	// startRestrict := time.Now()
 	var oldKeys []dskey.Key // TODO: Remove me. This is only necessary for restrict1
 
-	allowedKeys := make([]dskey.Key, 0, len(keys))
+	// startData := time.Now()
+	data, err := r.getter.Get(ctx, keys...)
+	if err != nil {
+		return nil, fmt.Errorf("fetch full data: %w", err)
+	}
+	// log.Printf("fetching %d keys took: %s", len(allowedKeys), time.Since(startData))
 
 	for _, key := range keys {
 		if !r.restricter.implementedCollections.Has(key.Collection) {
@@ -243,21 +248,13 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 		}
 
 		if !attrFunc(user) {
+			data[key] = nil
 			continue
 		}
-
-		allowedKeys = append(allowedKeys, key)
 
 		// TODO: relation fields
 	}
 	// log.Printf("precalculated restrict %d keys took: %s", len(keys), time.Since(startRestrict))
-
-	// startData := time.Now()
-	data, err := r.getter.Get(ctx, allowedKeys...)
-	if err != nil {
-		return nil, fmt.Errorf("fetch full data: %w", err)
-	}
-	// log.Printf("fetching %d keys took: %s", len(allowedKeys), time.Since(startData))
 
 	// coundOld := make(map[string]int)
 	// for _, key := range oldKeys {
