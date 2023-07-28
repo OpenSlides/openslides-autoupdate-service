@@ -50,13 +50,13 @@ func (am *attrMap) Len() int {
 }
 
 // Get returns the attributes for keys.
-func (am *attrMap) Get(modeKeys ...dskey.Key) map[dskey.Key]attribute.Func {
+func (am *attrMap) Get(modeKeys ...dskey.Key) []attribute.Func {
 	am.mu.RLock()
 	defer am.mu.RUnlock()
 
-	out := make(map[dskey.Key]attribute.Func, len(modeKeys))
-	for _, key := range modeKeys {
-		out[key] = am.data[key]
+	out := make([]attribute.Func, len(modeKeys))
+	for i, key := range modeKeys {
+		out[i] = am.data[key]
 	}
 
 	return out
