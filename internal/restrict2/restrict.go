@@ -36,7 +36,7 @@ type Restricter struct {
 func New(flow flow.Flow) *Restricter {
 	return &Restricter{
 		flow:       flow,
-		attributes: newAttrMap(),
+		attributes: make(map[dskey.Key]attribute.Func),
 		hotKeys:    set.New[dskey.Key](),
 
 		implementedCollections: set.New(
