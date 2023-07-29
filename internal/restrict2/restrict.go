@@ -320,11 +320,13 @@ func buildUserAttributes(ctx context.Context, getter flow.Getter, userID int) (a
 
 	var meetingIDs []int
 	var globalLevelStr string
+	var committeeAsManager []string
 	fetcher.User_OrganizationManagementLevel(userID).Lazy(&globalLevelStr)
 	fetcher.User_GroupIDsTmpl(userID).Lazy(&meetingIDs)
+	fetcher.User_CommitteeManagementLevelTmpl(userID).Lazy(&committeeAsManager)
 
 	if err := fetcher.Execute(ctx); err != nil {
-		return zero, fmt.Errorf("getting meeting ids and global level for user %d: %w", userID, err)
+		return zero, fmt.Errorf("getting meeting ids,  global and committee level for user %d: %w", userID, err)
 	}
 
 	groupIDList := make([][]int, len(meetingIDs))
@@ -342,9 +344,10 @@ func buildUserAttributes(ctx context.Context, getter flow.Getter, userID int) (a
 	}
 
 	return attribute.UserAttributes{
-		UserID:    userID,
-		GroupIDs:  groupIDs,
-		OrgaLevel: perm.OrganizationManagementLevel(globalLevelStr),
+		UserID:            userID,
+		GroupIDs:          groupIDs,
+		OrgaLevel:         perm.OrganizationManagementLevel(globalLevelStr),
+		IsCommitteManager: len(committeeAsManager) > 0,
 	}, nil
 }
 
