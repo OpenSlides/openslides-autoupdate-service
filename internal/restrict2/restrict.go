@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	oldRestrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
@@ -22,8 +23,9 @@ import (
 // Restricter TODO
 type Restricter struct {
 	flow flow.Flow
-	// TODO: Probably needs a mutex
-	attributes *attrMap
+
+	mu         sync.RWMutex
+	attributes map[dskey.Key]attribute.Func
 	hotKeys    set.Set[dskey.Key]
 
 	// TODO: Remove me
@@ -75,11 +77,19 @@ func (r *Restricter) Update(ctx context.Context, updateFn func(map[dskey.Key][]b
 			return
 		}
 
+		r.mu.Lock()
+		defer r.mu.Unlock()
+
 		start := time.Now()
-		if preError := r.precalculate(ctx, r.attributes.Keys()); err != nil {
+		calculatedKeys := make([]dskey.Key, 0, len(r.attributes))
+		for k := range r.attributes {
+			calculatedKeys = append(calculatedKeys, k)
+		}
+
+		if preError := r.precalculate(ctx, calculatedKeys); err != nil {
 			err = errors.Join(err, preError)
 		}
-		log.Printf("Update on hot key: %d keys in %s", r.attributes.Len(), time.Since(start))
+		log.Printf("Update on hot key: %d keys in %s", len(calculatedKeys), time.Since(start))
 
 		// Send a signal to the autoupdate so the connections recalculate
 		data[dskey.Key{Collection: "meta", ID: 1, Field: "update"}] = nil
@@ -99,7 +109,7 @@ func (r *Restricter) ForUser(ctx context.Context, userID int) (context.Context, 
 	ctx = perm.ContextWithGroupMap(ctx)
 
 	ctx, todoOldRestricter := oldRestrict.Middleware(ctx, recorder, userID)
-	return ctx, &restrictedGetter{
+	return ctx, &userRestricter{
 		todoOldRestricter: todoOldRestricter,
 		userID:            userID,
 		restricter:        r,
@@ -107,22 +117,10 @@ func (r *Restricter) ForUser(ctx context.Context, userID int) (context.Context, 
 	}, recorder
 }
 
-func slice[T any](list []T, c int) []T {
-	if len(list) <= c {
-		return list
-	}
-	return list[:c]
-}
-
 // precalculate calculates the attributes for modes.
+//
+// Has to be called with a locked r.mu
 func (r *Restricter) precalculate(ctx context.Context, collectionModes []dskey.Key) error {
-	// TODO: Make concurency save
-	if len(collectionModes) == 0 {
-		return nil
-	}
-
-	log.Printf("precalculate %d modes: %v", len(collectionModes), slice(collectionModes, 10))
-
 	recorder := dsrecorder.New(r.flow)
 	fetcher := dsfetch.New(recorder)
 
@@ -131,9 +129,6 @@ func (r *Restricter) precalculate(ctx context.Context, collectionModes []dskey.K
 		byCollection[collectionMode.Collection] = append(byCollection[collectionMode.Collection], collectionMode)
 	}
 
-	// Put all tuples together so they can be added at once (with one lock)
-	allFuncs := make([]attribute.Func, 0, len(collectionModes))
-	allKeys := make([]dskey.Key, 0, len(collectionModes))
 	for name, collectionModes := range byCollection {
 		restricter := collection.Collection(ctx, name)
 
@@ -146,6 +141,7 @@ func (r *Restricter) precalculate(ctx context.Context, collectionModes []dskey.K
 		for mode, ids := range byMode {
 			modefunc := restricter.Modes(mode)
 			if modefunc == nil {
+				// TODO: Maybe log something, that there is a key without a modfunc (hast to be done when all restricters are implemented)
 				continue
 			}
 
@@ -154,27 +150,80 @@ func (r *Restricter) precalculate(ctx context.Context, collectionModes []dskey.K
 				return fmt.Errorf("precalculate %s/%s: %w", name, mode, err)
 			}
 
-			allFuncs = append(allFuncs, attrFunc...)
-			for _, id := range ids {
-				allKeys = append(allKeys, dskey.Key{Collection: name, ID: id, Field: mode})
+			for i, id := range ids {
+				r.attributes[dskey.Key{Collection: name, ID: id, Field: mode}] = attrFunc[i]
 			}
 		}
 	}
 
-	r.attributes.Add(allKeys, allFuncs)
 	r.hotKeys.Merge(recorder.Keys())
 
 	return nil
 }
 
-type restrictedGetter struct {
+// missingKeys returns keys, that are not in the attributes.
+//
+// Has to be called with a read lock or write lock on r.mu.
+func (r *Restricter) missingModKeys(keys []dskey.Key) []dskey.Key {
+	missing := make([]dskey.Key, 0, len(keys))
+	for _, key := range keys {
+		if _, ok := r.attributes[key]; !ok {
+			missing = append(missing, key)
+		}
+	}
+	return missing
+}
+
+func (r *Restricter) precalcMissing(ctx context.Context, keys []dskey.Key) error {
+	r.mu.RLock()
+	missingKeys := r.missingModKeys(keys)
+	r.mu.RUnlock()
+
+	if len(missingKeys) == 0 {
+		return nil
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	// This has to be done again with a write lock. Only the write lock makes
+	// sure, that there was no call to Update() in between.
+	missingKeys = r.missingModKeys(keys)
+	if len(missingKeys) == 0 {
+		return nil
+	}
+
+	if err := r.precalculate(ctx, missingKeys); err != nil {
+		return fmt.Errorf("restricter precalculate: %w", err)
+	}
+
+	return nil
+}
+
+func (r *Restricter) calculatedAttributes(ctx context.Context, keys []dskey.Key) ([]attribute.Func, error) {
+	if err := r.precalcMissing(ctx, keys); err != nil {
+		return nil, fmt.Errorf("precalculate missing: %w", err)
+	}
+
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	result := make([]attribute.Func, len(keys))
+	for i, key := range keys {
+		result[i] = r.attributes[key]
+	}
+
+	return result, nil
+}
+
+// userRestricter is a getter specific for an userID.
+type userRestricter struct {
 	todoOldRestricter flow.Getter
 	userID            int
 	restricter        *Restricter
 	getter            flow.Getter
 }
 
-func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+func (r *userRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	// start := time.Now()
 	// defer func() {
 	// 	log.Printf("full restrict %d keys took: %s", len(keys), time.Since(start))
@@ -192,14 +241,6 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 	}
 	// log.Printf("building mod keys took: %s", time.Since(startIndexing))
 
-	// startPrecalc := time.Now()
-	// TODO: This maybe would be faster, if modeKeys would be unique
-	needPrecalculate := r.restricter.attributes.NeedCalc(modeKeys)
-	if err := r.restricter.precalculate(ctx, needPrecalculate); err != nil {
-		return nil, fmt.Errorf("restricter precalculate: %w", err)
-	}
-	// log.Printf("precalcing took: %s", time.Since(startPrecalc))
-
 	// Check the permissions from here
 
 	// startUser := time.Now()
@@ -209,16 +250,19 @@ func (r *restrictedGetter) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 	}
 	// log.Printf("building user took: %s", time.Since(startUser))
 
-	// startModeKeys := time.Now()
-	attrFuncs := r.restricter.attributes.Get(modeKeys...)
-	// log.Printf("getting mode funcs took: %s", time.Since(startModeKeys))
-
 	// startData := time.Now()
 	data, err := r.getter.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("fetch full data: %w", err)
 	}
 	// log.Printf("fetching %d keys took: %s", len(keys), time.Since(startData))
+
+	// startModeKeys := time.Now()
+	attrFuncs, err := r.restricter.calculatedAttributes(ctx, modeKeys)
+	if err != nil {
+		return nil, fmt.Errorf("get precalculated functions: %w", err)
+	}
+	// log.Printf("getting mode funcs took: %s", time.Since(startModeKeys))
 
 	// startRestrict := time.Now()
 	var oldKeys []dskey.Key // TODO: Remove me. This is only necessary for old restrict
