@@ -1965,6 +1965,12 @@ func (r *Fetch) Meeting_ListOfSpeakersCanSetContributionSelf(meetingID int) *Val
 	return v
 }
 
+func (r *Fetch) Meeting_ListOfSpeakersClosingDisablesPointOfOrder(meetingID int) *ValueBool {
+	v := &ValueBool{fetch: r, collection: "meeting", id: meetingID, field: "list_of_speakers_closing_disables_point_of_order"}
+	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_closing_disables_point_of_order"}] = v
+	return v
+}
+
 func (r *Fetch) Meeting_ListOfSpeakersCountdownID(meetingID int) *ValueMaybeInt {
 	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "list_of_speakers_countdown_id"}
 	r.requested[dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_countdown_id"}] = v
