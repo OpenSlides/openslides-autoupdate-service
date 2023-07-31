@@ -2161,6 +2161,13 @@ func (r *Fetch) Meeting_ListOfSpeakersCanSetContributionSelf(meetingID int) *Val
 	return v
 }
 
+func (r *Fetch) Meeting_ListOfSpeakersClosingDisablesPointOfOrder(meetingID int) *ValueBool {
+	v := &ValueBool{fetch: r, collection: "meeting", id: meetingID, field: "list_of_speakers_closing_disables_point_of_order"}
+	key, _ := dskey.FromParts("meeting", meetingID, "list_of_speakers_closing_disables_point_of_order")
+	r.requested[key] = v
+	return v
+}
+
 func (r *Fetch) Meeting_ListOfSpeakersCountdownID(meetingID int) *ValueMaybeInt {
 	v := &ValueMaybeInt{fetch: r, collection: "meeting", id: meetingID, field: "list_of_speakers_countdown_id"}
 	key, _ := dskey.FromParts("meeting", meetingID, "list_of_speakers_countdown_id")
@@ -5510,13 +5517,6 @@ func (r *Fetch) Topic_ProjectionIDs(topicID int) *ValueIntSlice {
 func (r *Fetch) Topic_SequentialNumber(topicID int) *ValueInt {
 	v := &ValueInt{fetch: r, collection: "topic", id: topicID, field: "sequential_number", required: true}
 	key, _ := dskey.FromParts("topic", topicID, "sequential_number")
-	r.requested[key] = v
-	return v
-}
-
-func (r *Fetch) Topic_TagIDs(topicID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "topic", id: topicID, field: "tag_ids"}
-	key, _ := dskey.FromParts("topic", topicID, "tag_ids")
 	r.requested[key] = v
 	return v
 }

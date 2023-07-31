@@ -79,22 +79,27 @@ func (r *Redis) Wait(ctx context.Context) error {
 
 // Update implements the Flow interface.
 func (r *Redis) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
-	conn := r.pool.Get()
-	defer conn.Close()
-
 	id := "$"
 
 	for ctx.Err() == nil {
-		newID, data, err := singleUpdate(ctx, conn, id)
-		updateFn(data, err)
+		newID, data, err := r.singleUpdate(ctx, id)
+		if err != nil {
+			updateFn(nil, err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		updateFn(data, nil)
 		id = newID
 	}
 }
 
-func singleUpdate(ctx context.Context, conn redis.Conn, id string) (string, map[dskey.Key][]byte, error) {
+func (r *Redis) singleUpdate(ctx context.Context, id string) (string, map[dskey.Key][]byte, error) {
+	conn := r.pool.Get()
+	defer conn.Close()
+
 	reply, err := redis.DoContext(conn, ctx, "XREAD", "COUNT", maxMessages, "BLOCK", "0", "STREAMS", fieldChangedTopic, id)
 	if err != nil {
-		return "", nil, fmt.Errorf("redis reply: %w", err)
+		return "", nil, fmt.Errorf("redis `XREAD count %s BLOCK 0 STREAMS %s %s: %w", maxMessages, fieldChangedTopic, id, err)
 	}
 
 	if reply == nil {
