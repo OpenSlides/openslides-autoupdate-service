@@ -34,6 +34,7 @@ func FromString(in string) (Key, error) {
 	return Key(joinInt(cfID, id)), nil
 }
 
+// FromParts create a key from collection, id an field.
 func FromParts(collection string, id int, field string) (Key, error) {
 	// TODO: Use a separate function with different namespace for mode-keys
 	cfID := collectionFieldToID(collection + "/" + field)
@@ -59,16 +60,19 @@ func (k Key) String() string {
 	return fmt.Sprintf("%s/%d/%s", k.Collection(), k.ID(), k.Field())
 }
 
+// ID returns the id attribute from the Key.
 func (k Key) ID() int {
 	_, id := splitUInt64(uint64(k))
 	return id
 }
 
+// Collection returns the collection attribute from the Key.
 func (k Key) Collection() string {
 	cfIdx, _ := splitUInt64(uint64(k))
 	return collectionFields[cfIdx].collection
 }
 
+// Field returns the Field attribute from the key.
 func (k Key) Field() string {
 	cfIdx, _ := splitUInt64(uint64(k))
 	return collectionFields[cfIdx].field
