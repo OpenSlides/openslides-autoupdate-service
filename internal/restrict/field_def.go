@@ -251,7 +251,6 @@ var relationListFields = map[string]string{
 	"topic/attachment_ids":                                     "mediafile/attachment_ids",
 	"topic/poll_ids":                                           "poll/content_object_id",
 	"topic/projection_ids":                                     "projection/content_object_id",
-	"topic/tag_ids":                                            "tag/tagged_ids",
 	"user/assignment_candidate_$":                              "assignment_candidate/user_id",
 	"user/chat_message_$":                                      "chat_message/user_id",
 	"user/committee_$":                                         "committee/user_$_management_level",
@@ -286,7 +285,7 @@ var genericRelationListFields = map[string]map[string]string{
 	"motion/recommendation_extension_reference_ids": {"motion": "referenced_in_motion_recommendation_extension_ids"},
 	"motion/state_extension_reference_ids":          {"motion": "referenced_in_motion_state_extension_ids"},
 	"organization_tag/tagged_ids":                   {"committee": "organization_tag_ids", "meeting": "organization_tag_ids"},
-	"tag/tagged_ids":                                {"agenda_item": "tag_ids", "assignment": "tag_ids", "motion": "tag_ids", "topic": "tag_ids"},
+	"tag/tagged_ids":                                {"agenda_item": "tag_ids", "assignment": "tag_ids", "motion": "tag_ids"},
 }
 
 // restrictionModes are all fields to there restriction_mode.
@@ -1039,7 +1038,6 @@ var restrictionModes = map[string]string{
 	"topic/poll_ids":            "A",
 	"topic/projection_ids":      "A",
 	"topic/sequential_number":   "A",
-	"topic/tag_ids":             "A",
 	"topic/text":                "A",
 	"topic/title":               "A",
 
@@ -1154,7 +1152,7 @@ var collectionFields = map[string][]string{
 	"speaker":                      {"begin_time", "end_time", "id", "list_of_speakers_id", "meeting_id", "note", "point_of_order", "point_of_order_category_id", "speech_state", "user_id", "weight"},
 	"tag":                          {"id", "meeting_id", "name", "tagged_ids"},
 	"theme":                        {"abstain", "accent_100", "accent_200", "accent_300", "accent_400", "accent_50", "accent_500", "accent_600", "accent_700", "accent_800", "accent_900", "accent_a100", "accent_a200", "accent_a400", "accent_a700", "headbar", "id", "name", "no", "organization_id", "primary_100", "primary_200", "primary_300", "primary_400", "primary_50", "primary_500", "primary_600", "primary_700", "primary_800", "primary_900", "primary_a100", "primary_a200", "primary_a400", "primary_a700", "theme_for_organization_id", "warn_100", "warn_200", "warn_300", "warn_400", "warn_50", "warn_500", "warn_600", "warn_700", "warn_800", "warn_900", "warn_a100", "warn_a200", "warn_a400", "warn_a700", "yes"},
-	"topic":                        {"agenda_item_id", "attachment_ids", "id", "list_of_speakers_id", "meeting_id", "poll_ids", "projection_ids", "sequential_number", "tag_ids", "text", "title"},
+	"topic":                        {"agenda_item_id", "attachment_ids", "id", "list_of_speakers_id", "meeting_id", "poll_ids", "projection_ids", "sequential_number", "text", "title"},
 	"user":                         {"about_me_$", "assignment_candidate_$", "assignment_candidate_$_ids", "chat_message_$", "chat_message_$_ids", "default_number", "default_structure_level", "default_vote_weight", "first_name", "gender", "group_$", "group_$_ids", "id", "is_demo_user", "is_physical_person", "is_present_in_meeting_ids", "last_login", "last_name", "number_$", "option_$", "option_$_ids", "poll_candidate_ids", "poll_voted_$", "poll_voted_$_ids", "pronoun", "saml_id", "speaker_$", "speaker_$_ids", "structure_level_$", "submitted_motion_$", "submitted_motion_$_ids", "supported_motion_$", "supported_motion_$_ids", "title", "username", "vote_$", "vote_$_ids", "vote_delegated_$", "vote_delegated_$_to_id", "vote_delegated_vote_$", "vote_delegated_vote_$_ids", "vote_delegations_$", "vote_delegations_$_from_ids", "vote_weight_$", "personal_note_$", "personal_note_$_ids", "can_change_own_password", "comment_$", "is_active", "last_email_sent", "committee_$", "committee_$_management_level", "committee_ids", "email", "forwarding_committee_ids", "meeting_ids", "organization_management_level", "organization_id", "password", "default_password"},
 	"vote":                         {"delegated_user_id", "id", "meeting_id", "option_id", "user_id", "value", "weight", "user_token"},
 }

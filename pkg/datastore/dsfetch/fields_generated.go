@@ -4845,12 +4845,6 @@ func (r *Fetch) Topic_SequentialNumber(topicID int) *ValueInt {
 	return v
 }
 
-func (r *Fetch) Topic_TagIDs(topicID int) *ValueIntSlice {
-	v := &ValueIntSlice{fetch: r, collection: "topic", id: topicID, field: "tag_ids"}
-	r.requested[dskey.Key{Collection: "topic", ID: topicID, Field: "tag_ids"}] = v
-	return v
-}
-
 func (r *Fetch) Topic_Text(topicID int) *ValueString {
 	v := &ValueString{fetch: r, collection: "topic", id: topicID, field: "text"}
 	r.requested[dskey.Key{Collection: "topic", ID: topicID, Field: "text"}] = v
