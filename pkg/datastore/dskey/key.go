@@ -18,14 +18,14 @@ func FromString(format string, a ...any) (Key, error) {
 	idx1 := strings.IndexByte(keyStr, '/')
 	idx2 := strings.LastIndexByte(keyStr, '/')
 	if idx1 == -1 || idx1 == idx2 {
-		return 0, invalidKeyError{keyStr}
+		return 0, InvalidKeyError{keyStr}
 	}
 
 	id, _ := strconv.Atoi(keyStr[idx1+1 : idx2])
 
 	cfID := collectionFieldToID(keyStr[:idx1] + "/" + keyStr[idx2+1:])
 	if cfID == -1 {
-		return 0, invalidKeyError{keyStr}
+		return 0, InvalidKeyError{keyStr}
 	}
 	return Key(joinInt(cfID, id)), nil
 }
@@ -35,7 +35,7 @@ func FromParts(collection string, id int, field string) (Key, error) {
 	// TODO: Use a separate function with different namespace for mode-keys
 	cfID := collectionFieldToID(collection + "/" + field)
 	if cfID == -1 {
-		return 0, invalidKeyError{fmt.Sprintf("%s/%d/%s", collection, id, field)}
+		return 0, InvalidKeyError{fmt.Sprintf("%s/%d/%s", collection, id, field)}
 	}
 
 	return Key(joinInt(cfID, id)), nil
@@ -98,14 +98,17 @@ func (k Key) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + k.String() + `"`), nil
 }
 
-type invalidKeyError struct {
+// InvalidKeyError is returned from dskey.FromKey or dskey.FromParts, if the key
+// in not valid.
+type InvalidKeyError struct {
 	key string
 }
 
-func (i invalidKeyError) Error() string {
+func (i InvalidKeyError) Error() string {
 	return fmt.Sprintf("the key/fqfield is invalid: %s", i.key)
 }
 
-func (i invalidKeyError) Type() string {
+// Type returns "invalid"
+func (i InvalidKeyError) Type() string {
 	return "invalid"
 }

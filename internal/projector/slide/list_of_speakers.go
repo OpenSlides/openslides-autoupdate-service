@@ -3,6 +3,7 @@ package slide
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 type dbListOfSpeakers struct {
@@ -182,21 +184,32 @@ func getLosID(ctx context.Context, ContentObjectID string, fetch *datastore.Fetc
 	}
 	referenceProjectorID = datastore.Int(ctx, fetch.FetchIfExist, "meeting/%d/reference_projector_id", meetingID)
 	referenceP7onIDs := datastore.Ints(ctx, fetch.FetchIfExist, "projector/%d/current_projection_ids", referenceProjectorID)
+	if err := fetch.Err(); err != nil {
+		return losID, referenceProjectorID, err
+	}
 
 	for _, pID := range referenceP7onIDs {
 		contentObjectID := datastore.String(ctx, fetch.FetchIfExist, "projection/%d/content_object_id", pID)
+		if err := fetch.Err(); err != nil {
+			return 0, 0, fmt.Errorf("fetching projection/%d/content_object_id: %w", pID, err)
+		}
+
 		if contentObjectID == "" {
 			continue
 		}
 		losID = datastore.Int(ctx, fetch.FetchIfExist, "%s/list_of_speakers_id", contentObjectID)
+		if err := fetch.Err(); err != nil {
+			var errInvalidKey dskey.InvalidKeyError
+			if !errors.As(err, &errInvalidKey) {
+				return 0, 0, fmt.Errorf("%s/content_object_id: %w", contentObjectID, err)
+			}
+		}
 
 		if losID != 0 {
 			break
 		}
 	}
-	if err := fetch.Err(); err != nil {
-		return losID, referenceProjectorID, err
-	}
+
 	return losID, referenceProjectorID, nil
 }
 

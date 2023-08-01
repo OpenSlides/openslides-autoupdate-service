@@ -26,7 +26,7 @@ func TestKeys(t *testing.T) {
 				"fields": {"name": null}
 			}`,
 			"",
-			mustKeys("user/1/name"),
+			mustKeys("user/1/username"),
 		},
 		{
 			"Many Fields",
@@ -34,12 +34,12 @@ func TestKeys(t *testing.T) {
 				"ids": [1],
 				"collection": "user",
 				"fields": {
-					"first": null,
-					"last": null
+					"first_name": null,
+					"last_name": null
 				}
 			}`,
 			"",
-			mustKeys("user/1/first", "user/1/last"),
+			mustKeys("user/1/first_name", "user/1/last_name"),
 		},
 		{
 			"Many IDs Many Fields",
@@ -47,12 +47,12 @@ func TestKeys(t *testing.T) {
 				"ids": [1, 2],
 				"collection": "user",
 				"fields": {
-					"first": null,
-					"last": null
+					"first_name": null,
+					"last_name": null
 				}
 			}`,
 			"",
-			mustKeys("user/1/first", "user/1/last", "user/2/first", "user/2/last"),
+			mustKeys("user/1/first_name", "user/1/last_name", "user/2/first_name", "user/2/last_name"),
 		},
 		{
 			"Redirect Once id",
@@ -60,15 +60,15 @@ func TestKeys(t *testing.T) {
 				"ids": [1],
 				"collection": "user",
 				"fields": {
-					"note_id": {
+					"organization_id": {
 						"type": "relation",
-						"collection": "note",
-						"fields": {"important": null}
+						"collection": "organization",
+						"fields": {"name": null}
 					}
 				}
 			}`,
-			"user/1/note_id: 1",
-			mustKeys("user/1/note_id", "note/1/important"),
+			"user/1/organization_id: 1",
+			mustKeys("user/1/organization_id", "organization/1/name"),
 		},
 		{
 			"Redirect Once ids",
@@ -76,15 +76,15 @@ func TestKeys(t *testing.T) {
 				"ids": [1],
 				"collection": "user",
 				"fields": {
-					"group_ids": {
+					"meeting_user_ids": {
 						"type": "relation-list",
-						"collection": "group",
-						"fields": {"admin": null}
+						"collection": "meeting_user",
+						"fields": {"comment": null}
 					}
 				}
 			}`,
-			"user/1/group_ids: [1,2]",
-			mustKeys("user/1/group_ids", "group/1/admin", "group/2/admin"),
+			"user/1/meeting_user_ids: [1,2]",
+			mustKeys("user/1/meeting_user_ids", "meeting_user/1/comment", "meeting_user/2/comment"),
 		},
 		{
 			"Redirect twice id",
@@ -92,13 +92,13 @@ func TestKeys(t *testing.T) {
 				"ids": [1],
 				"collection": "user",
 				"fields": {
-					"note_id": {
+					"organization_id": {
 						"type": "relation",
-						"collection": "note",
+						"collection": "organization",
 						"fields": {
-							"motion_id": {
+							"theme_id": {
 								"type": "relation",
-								"collection": "motion",
+								"collection": "theme",
 								"fields": {"name": null}
 							}
 						}
@@ -106,10 +106,10 @@ func TestKeys(t *testing.T) {
 				}
 			}`,
 			`---
-			user/1/note_id: 1
-			note/1/motion_id: 1
+			user/1/organization_id: 1
+			organization/1/theme_id: 1
 			`,
-			mustKeys("user/1/note_id", "note/1/motion_id", "motion/1/name"),
+			mustKeys("user/1/organization_id", "organization/1/theme_id", "theme/1/name"),
 		},
 		{
 			"Redirect twice ids",
@@ -117,13 +117,13 @@ func TestKeys(t *testing.T) {
 				"ids": [1],
 				"collection": "user",
 				"fields": {
-					"group_ids": {
+					"meeting_user_ids": {
 						"type": "relation-list",
-						"collection": "group",
+						"collection": "meeting_user",
 						"fields": {
-							"perm_ids": {
+							"group_ids": {
 								"type": "relation-list",
-								"collection": "perm",
+								"collection": "group",
 								"fields": {"name": null}
 							}
 						}
@@ -131,21 +131,21 @@ func TestKeys(t *testing.T) {
 				}
 			}`,
 			`---
-			user/1/group_ids: [1,2]
-			group/1/perm_ids: [1,2]
-			group/2/perm_ids: [1,2]
+			user/1/meeting_user_ids: [1,2]
+			meeting_user/1/group_ids: [1,2]
+			meeting_user/2/group_ids: [1,2]
 			`,
-			mustKeys("user/1/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name"),
+			mustKeys("user/1/meeting_user_ids", "meeting_user/1/group_ids", "meeting_user/2/group_ids", "group/1/name", "group/2/name"),
 		},
 		{
 			"Request _id without redirect",
 			`{
 				"ids": [1],
 				"collection": "user",
-				"fields": {"note_id": null}
+				"fields": {"organization_id": null}
 			}`,
 			"",
-			mustKeys("user/1/note_id"),
+			mustKeys("user/1/organization_id"),
 		},
 		{
 			"Redirect id not exist",
@@ -161,7 +161,7 @@ func TestKeys(t *testing.T) {
 				}
 			}`,
 			"",
-			mustKeys("not_exist/1/note_id"),
+			mustKeys(),
 		},
 		{
 			"Redirect ids not exist",
@@ -177,61 +177,61 @@ func TestKeys(t *testing.T) {
 				}
 			}`,
 			"",
-			mustKeys("not_exist/1/group_ids"),
+			mustKeys(),
 		},
 		{
 			"Generic field",
 			`{
 				"ids": [1],
-				"collection": "user",
+				"collection": "personal_note",
 				"fields": {
-					"likes": {
+					"content_object_id": {
 						"type": "generic-relation",
-						"fields": {"name": null}
+						"fields": {"title": null}
 					}
 				}
 			}`,
-			"user/1/likes: other/1",
-			mustKeys("user/1/likes", "other/1/name"),
+			"personal_note/1/content_object_id: motion/1",
+			mustKeys("personal_note/1/content_object_id", "motion/1/title"),
 		},
 		{
 			"Generic field with sub fields",
 			`{
 				"ids": [1],
-				"collection": "user",
+				"collection": "personal_note",
 				"fields": {
-					"likes": {
+					"content_object_id": {
 						"type": "generic-relation",
 						"fields": {
-							"tag_ids": {
+							"amendment_ids": {
 								"type": "relation-list",
-								"collection": "tag",
-								"fields": {"name": null}
+								"collection": "motion",
+								"fields": {"title": null}
 							}
 						}
 					}
 				}
 			}`,
 			`---
-			user/1/likes:    other/1
-			other/1/tag_ids: [1,2]
+			personal_note/1/content_object_id:    motion/1
+			motion/1/amendment_ids: [1,2]
 			`,
-			mustKeys("user/1/likes", "other/1/tag_ids", "tag/1/name", "tag/2/name"),
+			mustKeys("personal_note/1/content_object_id", "motion/1/amendment_ids", "motion/1/title", "motion/2/title"),
 		},
 		{
 			"Generic list field",
 			`{
 				"ids": [1],
-				"collection": "user",
+				"collection": "organization_tag",
 				"fields": {
-					"likes": {
+					"tagged_ids": {
 						"type": "generic-relation-list",
 						"fields": {"name": null}
 					}
 				}
 			}`,
-			`user/1/likes: ["other/1","other/2"]`,
-			mustKeys("user/1/likes", "other/1/name", "other/2/name"),
+			`organization_tag/1/tagged_ids: ["meeting/1","meeting/2"]`,
+			mustKeys("organization_tag/1/tagged_ids", "meeting/1/name", "meeting/2/name"),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
