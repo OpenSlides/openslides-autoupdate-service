@@ -1,6 +1,6 @@
 
 func (r *Fetch) {{.GoName}}({{.Collection}}ID int) *{{.ValueType}} {
-	key := dskey.Key{Collection: "{{.CollectionName}}", ID: {{.Collection}}ID, Field: "{{.FieldName}}" }
+	key, _ := dskey.FromParts("{{.CollectionName}}", {{.Collection}}ID, "{{.FieldName}}" )
 	if v, ok := r.requested[key]; ok {
 		return v.(*{{.ValueType}})
 	}

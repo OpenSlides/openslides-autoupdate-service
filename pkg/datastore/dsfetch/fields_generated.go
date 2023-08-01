@@ -840,7 +840,7 @@ func (v *ValueStringSlice) execute(p []byte) error {
 }
 
 func (r *Fetch) ActionWorker_Created(actionWorkerID int) *ValueInt {
-	key := dskey.Key{Collection: "action_worker", ID: actionWorkerID, Field: "created"}
+	key, _ := dskey.FromParts("action_worker", actionWorkerID, "created")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -850,7 +850,7 @@ func (r *Fetch) ActionWorker_Created(actionWorkerID int) *ValueInt {
 }
 
 func (r *Fetch) ActionWorker_ID(actionWorkerID int) *ValueInt {
-	key := dskey.Key{Collection: "action_worker", ID: actionWorkerID, Field: "id"}
+	key, _ := dskey.FromParts("action_worker", actionWorkerID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -860,7 +860,7 @@ func (r *Fetch) ActionWorker_ID(actionWorkerID int) *ValueInt {
 }
 
 func (r *Fetch) ActionWorker_Name(actionWorkerID int) *ValueString {
-	key := dskey.Key{Collection: "action_worker", ID: actionWorkerID, Field: "name"}
+	key, _ := dskey.FromParts("action_worker", actionWorkerID, "name")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -870,7 +870,7 @@ func (r *Fetch) ActionWorker_Name(actionWorkerID int) *ValueString {
 }
 
 func (r *Fetch) ActionWorker_Result(actionWorkerID int) *ValueJSON {
-	key := dskey.Key{Collection: "action_worker", ID: actionWorkerID, Field: "result"}
+	key, _ := dskey.FromParts("action_worker", actionWorkerID, "result")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueJSON)
 	}
@@ -880,7 +880,7 @@ func (r *Fetch) ActionWorker_Result(actionWorkerID int) *ValueJSON {
 }
 
 func (r *Fetch) ActionWorker_State(actionWorkerID int) *ValueString {
-	key := dskey.Key{Collection: "action_worker", ID: actionWorkerID, Field: "state"}
+	key, _ := dskey.FromParts("action_worker", actionWorkerID, "state")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -890,7 +890,7 @@ func (r *Fetch) ActionWorker_State(actionWorkerID int) *ValueString {
 }
 
 func (r *Fetch) ActionWorker_Timestamp(actionWorkerID int) *ValueInt {
-	key := dskey.Key{Collection: "action_worker", ID: actionWorkerID, Field: "timestamp"}
+	key, _ := dskey.FromParts("action_worker", actionWorkerID, "timestamp")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -900,7 +900,7 @@ func (r *Fetch) ActionWorker_Timestamp(actionWorkerID int) *ValueInt {
 }
 
 func (r *Fetch) AgendaItem_ChildIDs(agendaItemID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "agenda_item", ID: agendaItemID, Field: "child_ids"}
+	key, _ := dskey.FromParts("agenda_item", agendaItemID, "child_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -910,7 +910,7 @@ func (r *Fetch) AgendaItem_ChildIDs(agendaItemID int) *ValueIntSlice {
 }
 
 func (r *Fetch) AgendaItem_Closed(agendaItemID int) *ValueBool {
-	key := dskey.Key{Collection: "agenda_item", ID: agendaItemID, Field: "closed"}
+	key, _ := dskey.FromParts("agenda_item", agendaItemID, "closed")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -920,7 +920,7 @@ func (r *Fetch) AgendaItem_Closed(agendaItemID int) *ValueBool {
 }
 
 func (r *Fetch) AgendaItem_Comment(agendaItemID int) *ValueString {
-	key := dskey.Key{Collection: "agenda_item", ID: agendaItemID, Field: "comment"}
+	key, _ := dskey.FromParts("agenda_item", agendaItemID, "comment")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -930,7 +930,7 @@ func (r *Fetch) AgendaItem_Comment(agendaItemID int) *ValueString {
 }
 
 func (r *Fetch) AgendaItem_ContentObjectID(agendaItemID int) *ValueString {
-	key := dskey.Key{Collection: "agenda_item", ID: agendaItemID, Field: "content_object_id"}
+	key, _ := dskey.FromParts("agenda_item", agendaItemID, "content_object_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -940,7 +940,7 @@ func (r *Fetch) AgendaItem_ContentObjectID(agendaItemID int) *ValueString {
 }
 
 func (r *Fetch) AgendaItem_Duration(agendaItemID int) *ValueInt {
-	key := dskey.Key{Collection: "agenda_item", ID: agendaItemID, Field: "duration"}
+	key, _ := dskey.FromParts("agenda_item", agendaItemID, "duration")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -950,7 +950,7 @@ func (r *Fetch) AgendaItem_Duration(agendaItemID int) *ValueInt {
 }
 
 func (r *Fetch) AgendaItem_ID(agendaItemID int) *ValueInt {
-	key := dskey.Key{Collection: "agenda_item", ID: agendaItemID, Field: "id"}
+	key, _ := dskey.FromParts("agenda_item", agendaItemID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -960,7 +960,7 @@ func (r *Fetch) AgendaItem_ID(agendaItemID int) *ValueInt {
 }
 
 func (r *Fetch) AgendaItem_IsHidden(agendaItemID int) *ValueBool {
-	key := dskey.Key{Collection: "agenda_item", ID: agendaItemID, Field: "is_hidden"}
+	key, _ := dskey.FromParts("agenda_item", agendaItemID, "is_hidden")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -970,7 +970,7 @@ func (r *Fetch) AgendaItem_IsHidden(agendaItemID int) *ValueBool {
 }
 
 func (r *Fetch) AgendaItem_IsInternal(agendaItemID int) *ValueBool {
-	key := dskey.Key{Collection: "agenda_item", ID: agendaItemID, Field: "is_internal"}
+	key, _ := dskey.FromParts("agenda_item", agendaItemID, "is_internal")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -980,7 +980,7 @@ func (r *Fetch) AgendaItem_IsInternal(agendaItemID int) *ValueBool {
 }
 
 func (r *Fetch) AgendaItem_ItemNumber(agendaItemID int) *ValueString {
-	key := dskey.Key{Collection: "agenda_item", ID: agendaItemID, Field: "item_number"}
+	key, _ := dskey.FromParts("agenda_item", agendaItemID, "item_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -990,7 +990,7 @@ func (r *Fetch) AgendaItem_ItemNumber(agendaItemID int) *ValueString {
 }
 
 func (r *Fetch) AgendaItem_Level(agendaItemID int) *ValueInt {
-	key := dskey.Key{Collection: "agenda_item", ID: agendaItemID, Field: "level"}
+	key, _ := dskey.FromParts("agenda_item", agendaItemID, "level")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1000,7 +1000,7 @@ func (r *Fetch) AgendaItem_Level(agendaItemID int) *ValueInt {
 }
 
 func (r *Fetch) AgendaItem_MeetingID(agendaItemID int) *ValueInt {
-	key := dskey.Key{Collection: "agenda_item", ID: agendaItemID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("agenda_item", agendaItemID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1010,7 +1010,7 @@ func (r *Fetch) AgendaItem_MeetingID(agendaItemID int) *ValueInt {
 }
 
 func (r *Fetch) AgendaItem_ParentID(agendaItemID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "agenda_item", ID: agendaItemID, Field: "parent_id"}
+	key, _ := dskey.FromParts("agenda_item", agendaItemID, "parent_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -1020,7 +1020,7 @@ func (r *Fetch) AgendaItem_ParentID(agendaItemID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) AgendaItem_ProjectionIDs(agendaItemID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "agenda_item", ID: agendaItemID, Field: "projection_ids"}
+	key, _ := dskey.FromParts("agenda_item", agendaItemID, "projection_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1030,7 +1030,7 @@ func (r *Fetch) AgendaItem_ProjectionIDs(agendaItemID int) *ValueIntSlice {
 }
 
 func (r *Fetch) AgendaItem_TagIDs(agendaItemID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "agenda_item", ID: agendaItemID, Field: "tag_ids"}
+	key, _ := dskey.FromParts("agenda_item", agendaItemID, "tag_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1040,7 +1040,7 @@ func (r *Fetch) AgendaItem_TagIDs(agendaItemID int) *ValueIntSlice {
 }
 
 func (r *Fetch) AgendaItem_Type(agendaItemID int) *ValueString {
-	key := dskey.Key{Collection: "agenda_item", ID: agendaItemID, Field: "type"}
+	key, _ := dskey.FromParts("agenda_item", agendaItemID, "type")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1050,7 +1050,7 @@ func (r *Fetch) AgendaItem_Type(agendaItemID int) *ValueString {
 }
 
 func (r *Fetch) AgendaItem_Weight(agendaItemID int) *ValueInt {
-	key := dskey.Key{Collection: "agenda_item", ID: agendaItemID, Field: "weight"}
+	key, _ := dskey.FromParts("agenda_item", agendaItemID, "weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1060,7 +1060,7 @@ func (r *Fetch) AgendaItem_Weight(agendaItemID int) *ValueInt {
 }
 
 func (r *Fetch) AssignmentCandidate_AssignmentID(assignmentCandidateID int) *ValueInt {
-	key := dskey.Key{Collection: "assignment_candidate", ID: assignmentCandidateID, Field: "assignment_id"}
+	key, _ := dskey.FromParts("assignment_candidate", assignmentCandidateID, "assignment_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1070,7 +1070,7 @@ func (r *Fetch) AssignmentCandidate_AssignmentID(assignmentCandidateID int) *Val
 }
 
 func (r *Fetch) AssignmentCandidate_ID(assignmentCandidateID int) *ValueInt {
-	key := dskey.Key{Collection: "assignment_candidate", ID: assignmentCandidateID, Field: "id"}
+	key, _ := dskey.FromParts("assignment_candidate", assignmentCandidateID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1080,7 +1080,7 @@ func (r *Fetch) AssignmentCandidate_ID(assignmentCandidateID int) *ValueInt {
 }
 
 func (r *Fetch) AssignmentCandidate_MeetingID(assignmentCandidateID int) *ValueInt {
-	key := dskey.Key{Collection: "assignment_candidate", ID: assignmentCandidateID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("assignment_candidate", assignmentCandidateID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1090,7 +1090,7 @@ func (r *Fetch) AssignmentCandidate_MeetingID(assignmentCandidateID int) *ValueI
 }
 
 func (r *Fetch) AssignmentCandidate_MeetingUserID(assignmentCandidateID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "assignment_candidate", ID: assignmentCandidateID, Field: "meeting_user_id"}
+	key, _ := dskey.FromParts("assignment_candidate", assignmentCandidateID, "meeting_user_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -1100,7 +1100,7 @@ func (r *Fetch) AssignmentCandidate_MeetingUserID(assignmentCandidateID int) *Va
 }
 
 func (r *Fetch) AssignmentCandidate_Weight(assignmentCandidateID int) *ValueInt {
-	key := dskey.Key{Collection: "assignment_candidate", ID: assignmentCandidateID, Field: "weight"}
+	key, _ := dskey.FromParts("assignment_candidate", assignmentCandidateID, "weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1110,7 +1110,7 @@ func (r *Fetch) AssignmentCandidate_Weight(assignmentCandidateID int) *ValueInt 
 }
 
 func (r *Fetch) Assignment_AgendaItemID(assignmentID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "assignment", ID: assignmentID, Field: "agenda_item_id"}
+	key, _ := dskey.FromParts("assignment", assignmentID, "agenda_item_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -1120,7 +1120,7 @@ func (r *Fetch) Assignment_AgendaItemID(assignmentID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Assignment_AttachmentIDs(assignmentID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "assignment", ID: assignmentID, Field: "attachment_ids"}
+	key, _ := dskey.FromParts("assignment", assignmentID, "attachment_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1130,7 +1130,7 @@ func (r *Fetch) Assignment_AttachmentIDs(assignmentID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Assignment_CandidateIDs(assignmentID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "assignment", ID: assignmentID, Field: "candidate_ids"}
+	key, _ := dskey.FromParts("assignment", assignmentID, "candidate_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1140,7 +1140,7 @@ func (r *Fetch) Assignment_CandidateIDs(assignmentID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Assignment_DefaultPollDescription(assignmentID int) *ValueString {
-	key := dskey.Key{Collection: "assignment", ID: assignmentID, Field: "default_poll_description"}
+	key, _ := dskey.FromParts("assignment", assignmentID, "default_poll_description")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1150,7 +1150,7 @@ func (r *Fetch) Assignment_DefaultPollDescription(assignmentID int) *ValueString
 }
 
 func (r *Fetch) Assignment_Description(assignmentID int) *ValueString {
-	key := dskey.Key{Collection: "assignment", ID: assignmentID, Field: "description"}
+	key, _ := dskey.FromParts("assignment", assignmentID, "description")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1160,7 +1160,7 @@ func (r *Fetch) Assignment_Description(assignmentID int) *ValueString {
 }
 
 func (r *Fetch) Assignment_ID(assignmentID int) *ValueInt {
-	key := dskey.Key{Collection: "assignment", ID: assignmentID, Field: "id"}
+	key, _ := dskey.FromParts("assignment", assignmentID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1170,7 +1170,7 @@ func (r *Fetch) Assignment_ID(assignmentID int) *ValueInt {
 }
 
 func (r *Fetch) Assignment_ListOfSpeakersID(assignmentID int) *ValueInt {
-	key := dskey.Key{Collection: "assignment", ID: assignmentID, Field: "list_of_speakers_id"}
+	key, _ := dskey.FromParts("assignment", assignmentID, "list_of_speakers_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1180,7 +1180,7 @@ func (r *Fetch) Assignment_ListOfSpeakersID(assignmentID int) *ValueInt {
 }
 
 func (r *Fetch) Assignment_MeetingID(assignmentID int) *ValueInt {
-	key := dskey.Key{Collection: "assignment", ID: assignmentID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("assignment", assignmentID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1190,7 +1190,7 @@ func (r *Fetch) Assignment_MeetingID(assignmentID int) *ValueInt {
 }
 
 func (r *Fetch) Assignment_NumberPollCandidates(assignmentID int) *ValueBool {
-	key := dskey.Key{Collection: "assignment", ID: assignmentID, Field: "number_poll_candidates"}
+	key, _ := dskey.FromParts("assignment", assignmentID, "number_poll_candidates")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -1200,7 +1200,7 @@ func (r *Fetch) Assignment_NumberPollCandidates(assignmentID int) *ValueBool {
 }
 
 func (r *Fetch) Assignment_OpenPosts(assignmentID int) *ValueInt {
-	key := dskey.Key{Collection: "assignment", ID: assignmentID, Field: "open_posts"}
+	key, _ := dskey.FromParts("assignment", assignmentID, "open_posts")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1210,7 +1210,7 @@ func (r *Fetch) Assignment_OpenPosts(assignmentID int) *ValueInt {
 }
 
 func (r *Fetch) Assignment_Phase(assignmentID int) *ValueString {
-	key := dskey.Key{Collection: "assignment", ID: assignmentID, Field: "phase"}
+	key, _ := dskey.FromParts("assignment", assignmentID, "phase")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1220,7 +1220,7 @@ func (r *Fetch) Assignment_Phase(assignmentID int) *ValueString {
 }
 
 func (r *Fetch) Assignment_PollIDs(assignmentID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "assignment", ID: assignmentID, Field: "poll_ids"}
+	key, _ := dskey.FromParts("assignment", assignmentID, "poll_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1230,7 +1230,7 @@ func (r *Fetch) Assignment_PollIDs(assignmentID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Assignment_ProjectionIDs(assignmentID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "assignment", ID: assignmentID, Field: "projection_ids"}
+	key, _ := dskey.FromParts("assignment", assignmentID, "projection_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1240,7 +1240,7 @@ func (r *Fetch) Assignment_ProjectionIDs(assignmentID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Assignment_SequentialNumber(assignmentID int) *ValueInt {
-	key := dskey.Key{Collection: "assignment", ID: assignmentID, Field: "sequential_number"}
+	key, _ := dskey.FromParts("assignment", assignmentID, "sequential_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1250,7 +1250,7 @@ func (r *Fetch) Assignment_SequentialNumber(assignmentID int) *ValueInt {
 }
 
 func (r *Fetch) Assignment_TagIDs(assignmentID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "assignment", ID: assignmentID, Field: "tag_ids"}
+	key, _ := dskey.FromParts("assignment", assignmentID, "tag_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1260,7 +1260,7 @@ func (r *Fetch) Assignment_TagIDs(assignmentID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Assignment_Title(assignmentID int) *ValueString {
-	key := dskey.Key{Collection: "assignment", ID: assignmentID, Field: "title"}
+	key, _ := dskey.FromParts("assignment", assignmentID, "title")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1270,7 +1270,7 @@ func (r *Fetch) Assignment_Title(assignmentID int) *ValueString {
 }
 
 func (r *Fetch) ChatGroup_ChatMessageIDs(chatGroupID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "chat_group", ID: chatGroupID, Field: "chat_message_ids"}
+	key, _ := dskey.FromParts("chat_group", chatGroupID, "chat_message_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1280,7 +1280,7 @@ func (r *Fetch) ChatGroup_ChatMessageIDs(chatGroupID int) *ValueIntSlice {
 }
 
 func (r *Fetch) ChatGroup_ID(chatGroupID int) *ValueInt {
-	key := dskey.Key{Collection: "chat_group", ID: chatGroupID, Field: "id"}
+	key, _ := dskey.FromParts("chat_group", chatGroupID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1290,7 +1290,7 @@ func (r *Fetch) ChatGroup_ID(chatGroupID int) *ValueInt {
 }
 
 func (r *Fetch) ChatGroup_MeetingID(chatGroupID int) *ValueInt {
-	key := dskey.Key{Collection: "chat_group", ID: chatGroupID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("chat_group", chatGroupID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1300,7 +1300,7 @@ func (r *Fetch) ChatGroup_MeetingID(chatGroupID int) *ValueInt {
 }
 
 func (r *Fetch) ChatGroup_Name(chatGroupID int) *ValueString {
-	key := dskey.Key{Collection: "chat_group", ID: chatGroupID, Field: "name"}
+	key, _ := dskey.FromParts("chat_group", chatGroupID, "name")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1310,7 +1310,7 @@ func (r *Fetch) ChatGroup_Name(chatGroupID int) *ValueString {
 }
 
 func (r *Fetch) ChatGroup_ReadGroupIDs(chatGroupID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "chat_group", ID: chatGroupID, Field: "read_group_ids"}
+	key, _ := dskey.FromParts("chat_group", chatGroupID, "read_group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1320,7 +1320,7 @@ func (r *Fetch) ChatGroup_ReadGroupIDs(chatGroupID int) *ValueIntSlice {
 }
 
 func (r *Fetch) ChatGroup_Weight(chatGroupID int) *ValueInt {
-	key := dskey.Key{Collection: "chat_group", ID: chatGroupID, Field: "weight"}
+	key, _ := dskey.FromParts("chat_group", chatGroupID, "weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1330,7 +1330,7 @@ func (r *Fetch) ChatGroup_Weight(chatGroupID int) *ValueInt {
 }
 
 func (r *Fetch) ChatGroup_WriteGroupIDs(chatGroupID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "chat_group", ID: chatGroupID, Field: "write_group_ids"}
+	key, _ := dskey.FromParts("chat_group", chatGroupID, "write_group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1340,7 +1340,7 @@ func (r *Fetch) ChatGroup_WriteGroupIDs(chatGroupID int) *ValueIntSlice {
 }
 
 func (r *Fetch) ChatMessage_ChatGroupID(chatMessageID int) *ValueInt {
-	key := dskey.Key{Collection: "chat_message", ID: chatMessageID, Field: "chat_group_id"}
+	key, _ := dskey.FromParts("chat_message", chatMessageID, "chat_group_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1350,7 +1350,7 @@ func (r *Fetch) ChatMessage_ChatGroupID(chatMessageID int) *ValueInt {
 }
 
 func (r *Fetch) ChatMessage_Content(chatMessageID int) *ValueString {
-	key := dskey.Key{Collection: "chat_message", ID: chatMessageID, Field: "content"}
+	key, _ := dskey.FromParts("chat_message", chatMessageID, "content")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1360,7 +1360,7 @@ func (r *Fetch) ChatMessage_Content(chatMessageID int) *ValueString {
 }
 
 func (r *Fetch) ChatMessage_Created(chatMessageID int) *ValueInt {
-	key := dskey.Key{Collection: "chat_message", ID: chatMessageID, Field: "created"}
+	key, _ := dskey.FromParts("chat_message", chatMessageID, "created")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1370,7 +1370,7 @@ func (r *Fetch) ChatMessage_Created(chatMessageID int) *ValueInt {
 }
 
 func (r *Fetch) ChatMessage_ID(chatMessageID int) *ValueInt {
-	key := dskey.Key{Collection: "chat_message", ID: chatMessageID, Field: "id"}
+	key, _ := dskey.FromParts("chat_message", chatMessageID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1380,7 +1380,7 @@ func (r *Fetch) ChatMessage_ID(chatMessageID int) *ValueInt {
 }
 
 func (r *Fetch) ChatMessage_MeetingID(chatMessageID int) *ValueInt {
-	key := dskey.Key{Collection: "chat_message", ID: chatMessageID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("chat_message", chatMessageID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1390,7 +1390,7 @@ func (r *Fetch) ChatMessage_MeetingID(chatMessageID int) *ValueInt {
 }
 
 func (r *Fetch) ChatMessage_MeetingUserID(chatMessageID int) *ValueInt {
-	key := dskey.Key{Collection: "chat_message", ID: chatMessageID, Field: "meeting_user_id"}
+	key, _ := dskey.FromParts("chat_message", chatMessageID, "meeting_user_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1400,7 +1400,7 @@ func (r *Fetch) ChatMessage_MeetingUserID(chatMessageID int) *ValueInt {
 }
 
 func (r *Fetch) Committee_DefaultMeetingID(committeeID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "committee", ID: committeeID, Field: "default_meeting_id"}
+	key, _ := dskey.FromParts("committee", committeeID, "default_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -1410,7 +1410,7 @@ func (r *Fetch) Committee_DefaultMeetingID(committeeID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Committee_Description(committeeID int) *ValueString {
-	key := dskey.Key{Collection: "committee", ID: committeeID, Field: "description"}
+	key, _ := dskey.FromParts("committee", committeeID, "description")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1420,7 +1420,7 @@ func (r *Fetch) Committee_Description(committeeID int) *ValueString {
 }
 
 func (r *Fetch) Committee_ExternalID(committeeID int) *ValueString {
-	key := dskey.Key{Collection: "committee", ID: committeeID, Field: "external_id"}
+	key, _ := dskey.FromParts("committee", committeeID, "external_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1430,7 +1430,7 @@ func (r *Fetch) Committee_ExternalID(committeeID int) *ValueString {
 }
 
 func (r *Fetch) Committee_ForwardToCommitteeIDs(committeeID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "committee", ID: committeeID, Field: "forward_to_committee_ids"}
+	key, _ := dskey.FromParts("committee", committeeID, "forward_to_committee_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1440,7 +1440,7 @@ func (r *Fetch) Committee_ForwardToCommitteeIDs(committeeID int) *ValueIntSlice 
 }
 
 func (r *Fetch) Committee_ForwardingUserID(committeeID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "committee", ID: committeeID, Field: "forwarding_user_id"}
+	key, _ := dskey.FromParts("committee", committeeID, "forwarding_user_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -1450,7 +1450,7 @@ func (r *Fetch) Committee_ForwardingUserID(committeeID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Committee_ID(committeeID int) *ValueInt {
-	key := dskey.Key{Collection: "committee", ID: committeeID, Field: "id"}
+	key, _ := dskey.FromParts("committee", committeeID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1460,7 +1460,7 @@ func (r *Fetch) Committee_ID(committeeID int) *ValueInt {
 }
 
 func (r *Fetch) Committee_ManagerIDs(committeeID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "committee", ID: committeeID, Field: "manager_ids"}
+	key, _ := dskey.FromParts("committee", committeeID, "manager_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1470,7 +1470,7 @@ func (r *Fetch) Committee_ManagerIDs(committeeID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Committee_MeetingIDs(committeeID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "committee", ID: committeeID, Field: "meeting_ids"}
+	key, _ := dskey.FromParts("committee", committeeID, "meeting_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1480,7 +1480,7 @@ func (r *Fetch) Committee_MeetingIDs(committeeID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Committee_Name(committeeID int) *ValueString {
-	key := dskey.Key{Collection: "committee", ID: committeeID, Field: "name"}
+	key, _ := dskey.FromParts("committee", committeeID, "name")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1490,7 +1490,7 @@ func (r *Fetch) Committee_Name(committeeID int) *ValueString {
 }
 
 func (r *Fetch) Committee_OrganizationID(committeeID int) *ValueInt {
-	key := dskey.Key{Collection: "committee", ID: committeeID, Field: "organization_id"}
+	key, _ := dskey.FromParts("committee", committeeID, "organization_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1500,7 +1500,7 @@ func (r *Fetch) Committee_OrganizationID(committeeID int) *ValueInt {
 }
 
 func (r *Fetch) Committee_OrganizationTagIDs(committeeID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "committee", ID: committeeID, Field: "organization_tag_ids"}
+	key, _ := dskey.FromParts("committee", committeeID, "organization_tag_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1510,7 +1510,7 @@ func (r *Fetch) Committee_OrganizationTagIDs(committeeID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Committee_ReceiveForwardingsFromCommitteeIDs(committeeID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "committee", ID: committeeID, Field: "receive_forwardings_from_committee_ids"}
+	key, _ := dskey.FromParts("committee", committeeID, "receive_forwardings_from_committee_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1520,7 +1520,7 @@ func (r *Fetch) Committee_ReceiveForwardingsFromCommitteeIDs(committeeID int) *V
 }
 
 func (r *Fetch) Committee_UserIDs(committeeID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "committee", ID: committeeID, Field: "user_ids"}
+	key, _ := dskey.FromParts("committee", committeeID, "user_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1530,7 +1530,7 @@ func (r *Fetch) Committee_UserIDs(committeeID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Group_AdminGroupForMeetingID(groupID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "admin_group_for_meeting_id"}
+	key, _ := dskey.FromParts("group", groupID, "admin_group_for_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -1540,7 +1540,7 @@ func (r *Fetch) Group_AdminGroupForMeetingID(groupID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Group_DefaultGroupForMeetingID(groupID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "default_group_for_meeting_id"}
+	key, _ := dskey.FromParts("group", groupID, "default_group_for_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -1550,7 +1550,7 @@ func (r *Fetch) Group_DefaultGroupForMeetingID(groupID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Group_ExternalID(groupID int) *ValueString {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "external_id"}
+	key, _ := dskey.FromParts("group", groupID, "external_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1560,7 +1560,7 @@ func (r *Fetch) Group_ExternalID(groupID int) *ValueString {
 }
 
 func (r *Fetch) Group_ID(groupID int) *ValueInt {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "id"}
+	key, _ := dskey.FromParts("group", groupID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1570,7 +1570,7 @@ func (r *Fetch) Group_ID(groupID int) *ValueInt {
 }
 
 func (r *Fetch) Group_MediafileAccessGroupIDs(groupID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "mediafile_access_group_ids"}
+	key, _ := dskey.FromParts("group", groupID, "mediafile_access_group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1580,7 +1580,7 @@ func (r *Fetch) Group_MediafileAccessGroupIDs(groupID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Group_MediafileInheritedAccessGroupIDs(groupID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "mediafile_inherited_access_group_ids"}
+	key, _ := dskey.FromParts("group", groupID, "mediafile_inherited_access_group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1590,7 +1590,7 @@ func (r *Fetch) Group_MediafileInheritedAccessGroupIDs(groupID int) *ValueIntSli
 }
 
 func (r *Fetch) Group_MeetingID(groupID int) *ValueInt {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("group", groupID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1600,7 +1600,7 @@ func (r *Fetch) Group_MeetingID(groupID int) *ValueInt {
 }
 
 func (r *Fetch) Group_MeetingUserIDs(groupID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "meeting_user_ids"}
+	key, _ := dskey.FromParts("group", groupID, "meeting_user_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1610,7 +1610,7 @@ func (r *Fetch) Group_MeetingUserIDs(groupID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Group_Name(groupID int) *ValueString {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "name"}
+	key, _ := dskey.FromParts("group", groupID, "name")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1620,7 +1620,7 @@ func (r *Fetch) Group_Name(groupID int) *ValueString {
 }
 
 func (r *Fetch) Group_Permissions(groupID int) *ValueStringSlice {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "permissions"}
+	key, _ := dskey.FromParts("group", groupID, "permissions")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueStringSlice)
 	}
@@ -1630,7 +1630,7 @@ func (r *Fetch) Group_Permissions(groupID int) *ValueStringSlice {
 }
 
 func (r *Fetch) Group_PollIDs(groupID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "poll_ids"}
+	key, _ := dskey.FromParts("group", groupID, "poll_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1640,7 +1640,7 @@ func (r *Fetch) Group_PollIDs(groupID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Group_ReadChatGroupIDs(groupID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "read_chat_group_ids"}
+	key, _ := dskey.FromParts("group", groupID, "read_chat_group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1650,7 +1650,7 @@ func (r *Fetch) Group_ReadChatGroupIDs(groupID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Group_ReadCommentSectionIDs(groupID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "read_comment_section_ids"}
+	key, _ := dskey.FromParts("group", groupID, "read_comment_section_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1660,7 +1660,7 @@ func (r *Fetch) Group_ReadCommentSectionIDs(groupID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Group_UsedAsAssignmentPollDefaultID(groupID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "used_as_assignment_poll_default_id"}
+	key, _ := dskey.FromParts("group", groupID, "used_as_assignment_poll_default_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -1670,7 +1670,7 @@ func (r *Fetch) Group_UsedAsAssignmentPollDefaultID(groupID int) *ValueMaybeInt 
 }
 
 func (r *Fetch) Group_UsedAsMotionPollDefaultID(groupID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "used_as_motion_poll_default_id"}
+	key, _ := dskey.FromParts("group", groupID, "used_as_motion_poll_default_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -1680,7 +1680,7 @@ func (r *Fetch) Group_UsedAsMotionPollDefaultID(groupID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Group_UsedAsPollDefaultID(groupID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "used_as_poll_default_id"}
+	key, _ := dskey.FromParts("group", groupID, "used_as_poll_default_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -1690,7 +1690,7 @@ func (r *Fetch) Group_UsedAsPollDefaultID(groupID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Group_UsedAsTopicPollDefaultID(groupID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "used_as_topic_poll_default_id"}
+	key, _ := dskey.FromParts("group", groupID, "used_as_topic_poll_default_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -1700,7 +1700,7 @@ func (r *Fetch) Group_UsedAsTopicPollDefaultID(groupID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Group_Weight(groupID int) *ValueInt {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "weight"}
+	key, _ := dskey.FromParts("group", groupID, "weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1710,7 +1710,7 @@ func (r *Fetch) Group_Weight(groupID int) *ValueInt {
 }
 
 func (r *Fetch) Group_WriteChatGroupIDs(groupID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "write_chat_group_ids"}
+	key, _ := dskey.FromParts("group", groupID, "write_chat_group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1720,7 +1720,7 @@ func (r *Fetch) Group_WriteChatGroupIDs(groupID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Group_WriteCommentSectionIDs(groupID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "group", ID: groupID, Field: "write_comment_section_ids"}
+	key, _ := dskey.FromParts("group", groupID, "write_comment_section_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1730,7 +1730,7 @@ func (r *Fetch) Group_WriteCommentSectionIDs(groupID int) *ValueIntSlice {
 }
 
 func (r *Fetch) ListOfSpeakers_Closed(listOfSpeakersID int) *ValueBool {
-	key := dskey.Key{Collection: "list_of_speakers", ID: listOfSpeakersID, Field: "closed"}
+	key, _ := dskey.FromParts("list_of_speakers", listOfSpeakersID, "closed")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -1740,7 +1740,7 @@ func (r *Fetch) ListOfSpeakers_Closed(listOfSpeakersID int) *ValueBool {
 }
 
 func (r *Fetch) ListOfSpeakers_ContentObjectID(listOfSpeakersID int) *ValueString {
-	key := dskey.Key{Collection: "list_of_speakers", ID: listOfSpeakersID, Field: "content_object_id"}
+	key, _ := dskey.FromParts("list_of_speakers", listOfSpeakersID, "content_object_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1750,7 +1750,7 @@ func (r *Fetch) ListOfSpeakers_ContentObjectID(listOfSpeakersID int) *ValueStrin
 }
 
 func (r *Fetch) ListOfSpeakers_ID(listOfSpeakersID int) *ValueInt {
-	key := dskey.Key{Collection: "list_of_speakers", ID: listOfSpeakersID, Field: "id"}
+	key, _ := dskey.FromParts("list_of_speakers", listOfSpeakersID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1760,7 +1760,7 @@ func (r *Fetch) ListOfSpeakers_ID(listOfSpeakersID int) *ValueInt {
 }
 
 func (r *Fetch) ListOfSpeakers_MeetingID(listOfSpeakersID int) *ValueInt {
-	key := dskey.Key{Collection: "list_of_speakers", ID: listOfSpeakersID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("list_of_speakers", listOfSpeakersID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1770,7 +1770,7 @@ func (r *Fetch) ListOfSpeakers_MeetingID(listOfSpeakersID int) *ValueInt {
 }
 
 func (r *Fetch) ListOfSpeakers_ProjectionIDs(listOfSpeakersID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "list_of_speakers", ID: listOfSpeakersID, Field: "projection_ids"}
+	key, _ := dskey.FromParts("list_of_speakers", listOfSpeakersID, "projection_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1780,7 +1780,7 @@ func (r *Fetch) ListOfSpeakers_ProjectionIDs(listOfSpeakersID int) *ValueIntSlic
 }
 
 func (r *Fetch) ListOfSpeakers_SequentialNumber(listOfSpeakersID int) *ValueInt {
-	key := dskey.Key{Collection: "list_of_speakers", ID: listOfSpeakersID, Field: "sequential_number"}
+	key, _ := dskey.FromParts("list_of_speakers", listOfSpeakersID, "sequential_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1790,7 +1790,7 @@ func (r *Fetch) ListOfSpeakers_SequentialNumber(listOfSpeakersID int) *ValueInt 
 }
 
 func (r *Fetch) ListOfSpeakers_SpeakerIDs(listOfSpeakersID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "list_of_speakers", ID: listOfSpeakersID, Field: "speaker_ids"}
+	key, _ := dskey.FromParts("list_of_speakers", listOfSpeakersID, "speaker_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1800,7 +1800,7 @@ func (r *Fetch) ListOfSpeakers_SpeakerIDs(listOfSpeakersID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Mediafile_AccessGroupIDs(mediafileID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "access_group_ids"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "access_group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1810,7 +1810,7 @@ func (r *Fetch) Mediafile_AccessGroupIDs(mediafileID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Mediafile_AttachmentIDs(mediafileID int) *ValueStringSlice {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "attachment_ids"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "attachment_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueStringSlice)
 	}
@@ -1820,7 +1820,7 @@ func (r *Fetch) Mediafile_AttachmentIDs(mediafileID int) *ValueStringSlice {
 }
 
 func (r *Fetch) Mediafile_ChildIDs(mediafileID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "child_ids"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "child_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1830,7 +1830,7 @@ func (r *Fetch) Mediafile_ChildIDs(mediafileID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Mediafile_CreateTimestamp(mediafileID int) *ValueInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "create_timestamp"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "create_timestamp")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1840,7 +1840,7 @@ func (r *Fetch) Mediafile_CreateTimestamp(mediafileID int) *ValueInt {
 }
 
 func (r *Fetch) Mediafile_Filename(mediafileID int) *ValueString {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "filename"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "filename")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1850,7 +1850,7 @@ func (r *Fetch) Mediafile_Filename(mediafileID int) *ValueString {
 }
 
 func (r *Fetch) Mediafile_Filesize(mediafileID int) *ValueInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "filesize"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "filesize")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1860,7 +1860,7 @@ func (r *Fetch) Mediafile_Filesize(mediafileID int) *ValueInt {
 }
 
 func (r *Fetch) Mediafile_ID(mediafileID int) *ValueInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -1870,7 +1870,7 @@ func (r *Fetch) Mediafile_ID(mediafileID int) *ValueInt {
 }
 
 func (r *Fetch) Mediafile_InheritedAccessGroupIDs(mediafileID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "inherited_access_group_ids"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "inherited_access_group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1880,7 +1880,7 @@ func (r *Fetch) Mediafile_InheritedAccessGroupIDs(mediafileID int) *ValueIntSlic
 }
 
 func (r *Fetch) Mediafile_IsDirectory(mediafileID int) *ValueBool {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "is_directory"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "is_directory")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -1890,7 +1890,7 @@ func (r *Fetch) Mediafile_IsDirectory(mediafileID int) *ValueBool {
 }
 
 func (r *Fetch) Mediafile_IsPublic(mediafileID int) *ValueBool {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "is_public"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "is_public")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -1900,7 +1900,7 @@ func (r *Fetch) Mediafile_IsPublic(mediafileID int) *ValueBool {
 }
 
 func (r *Fetch) Mediafile_ListOfSpeakersID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "list_of_speakers_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "list_of_speakers_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -1910,7 +1910,7 @@ func (r *Fetch) Mediafile_ListOfSpeakersID(mediafileID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Mediafile_Mimetype(mediafileID int) *ValueString {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "mimetype"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "mimetype")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1920,7 +1920,7 @@ func (r *Fetch) Mediafile_Mimetype(mediafileID int) *ValueString {
 }
 
 func (r *Fetch) Mediafile_OwnerID(mediafileID int) *ValueString {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "owner_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "owner_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1930,7 +1930,7 @@ func (r *Fetch) Mediafile_OwnerID(mediafileID int) *ValueString {
 }
 
 func (r *Fetch) Mediafile_ParentID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "parent_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "parent_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -1940,7 +1940,7 @@ func (r *Fetch) Mediafile_ParentID(mediafileID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Mediafile_PdfInformation(mediafileID int) *ValueJSON {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "pdf_information"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "pdf_information")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueJSON)
 	}
@@ -1950,7 +1950,7 @@ func (r *Fetch) Mediafile_PdfInformation(mediafileID int) *ValueJSON {
 }
 
 func (r *Fetch) Mediafile_ProjectionIDs(mediafileID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "projection_ids"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "projection_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -1960,7 +1960,7 @@ func (r *Fetch) Mediafile_ProjectionIDs(mediafileID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Mediafile_Title(mediafileID int) *ValueString {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "title"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "title")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1970,7 +1970,7 @@ func (r *Fetch) Mediafile_Title(mediafileID int) *ValueString {
 }
 
 func (r *Fetch) Mediafile_Token(mediafileID int) *ValueString {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "token"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "token")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -1980,7 +1980,7 @@ func (r *Fetch) Mediafile_Token(mediafileID int) *ValueString {
 }
 
 func (r *Fetch) Mediafile_UsedAsFontBoldInMeetingID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_font_bold_in_meeting_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "used_as_font_bold_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -1990,7 +1990,7 @@ func (r *Fetch) Mediafile_UsedAsFontBoldInMeetingID(mediafileID int) *ValueMaybe
 }
 
 func (r *Fetch) Mediafile_UsedAsFontBoldItalicInMeetingID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_font_bold_italic_in_meeting_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "used_as_font_bold_italic_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2000,7 +2000,7 @@ func (r *Fetch) Mediafile_UsedAsFontBoldItalicInMeetingID(mediafileID int) *Valu
 }
 
 func (r *Fetch) Mediafile_UsedAsFontChyronSpeakerNameInMeetingID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_font_chyron_speaker_name_in_meeting_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "used_as_font_chyron_speaker_name_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2010,7 +2010,7 @@ func (r *Fetch) Mediafile_UsedAsFontChyronSpeakerNameInMeetingID(mediafileID int
 }
 
 func (r *Fetch) Mediafile_UsedAsFontItalicInMeetingID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_font_italic_in_meeting_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "used_as_font_italic_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2020,7 +2020,7 @@ func (r *Fetch) Mediafile_UsedAsFontItalicInMeetingID(mediafileID int) *ValueMay
 }
 
 func (r *Fetch) Mediafile_UsedAsFontMonospaceInMeetingID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_font_monospace_in_meeting_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "used_as_font_monospace_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2030,7 +2030,7 @@ func (r *Fetch) Mediafile_UsedAsFontMonospaceInMeetingID(mediafileID int) *Value
 }
 
 func (r *Fetch) Mediafile_UsedAsFontProjectorH1InMeetingID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_font_projector_h1_in_meeting_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "used_as_font_projector_h1_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2040,7 +2040,7 @@ func (r *Fetch) Mediafile_UsedAsFontProjectorH1InMeetingID(mediafileID int) *Val
 }
 
 func (r *Fetch) Mediafile_UsedAsFontProjectorH2InMeetingID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_font_projector_h2_in_meeting_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "used_as_font_projector_h2_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2050,7 +2050,7 @@ func (r *Fetch) Mediafile_UsedAsFontProjectorH2InMeetingID(mediafileID int) *Val
 }
 
 func (r *Fetch) Mediafile_UsedAsFontRegularInMeetingID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_font_regular_in_meeting_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "used_as_font_regular_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2060,7 +2060,7 @@ func (r *Fetch) Mediafile_UsedAsFontRegularInMeetingID(mediafileID int) *ValueMa
 }
 
 func (r *Fetch) Mediafile_UsedAsLogoPdfBallotPaperInMeetingID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_logo_pdf_ballot_paper_in_meeting_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "used_as_logo_pdf_ballot_paper_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2070,7 +2070,7 @@ func (r *Fetch) Mediafile_UsedAsLogoPdfBallotPaperInMeetingID(mediafileID int) *
 }
 
 func (r *Fetch) Mediafile_UsedAsLogoPdfFooterLInMeetingID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_logo_pdf_footer_l_in_meeting_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "used_as_logo_pdf_footer_l_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2080,7 +2080,7 @@ func (r *Fetch) Mediafile_UsedAsLogoPdfFooterLInMeetingID(mediafileID int) *Valu
 }
 
 func (r *Fetch) Mediafile_UsedAsLogoPdfFooterRInMeetingID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_logo_pdf_footer_r_in_meeting_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "used_as_logo_pdf_footer_r_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2090,7 +2090,7 @@ func (r *Fetch) Mediafile_UsedAsLogoPdfFooterRInMeetingID(mediafileID int) *Valu
 }
 
 func (r *Fetch) Mediafile_UsedAsLogoPdfHeaderLInMeetingID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_logo_pdf_header_l_in_meeting_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "used_as_logo_pdf_header_l_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2100,7 +2100,7 @@ func (r *Fetch) Mediafile_UsedAsLogoPdfHeaderLInMeetingID(mediafileID int) *Valu
 }
 
 func (r *Fetch) Mediafile_UsedAsLogoPdfHeaderRInMeetingID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_logo_pdf_header_r_in_meeting_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "used_as_logo_pdf_header_r_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2110,7 +2110,7 @@ func (r *Fetch) Mediafile_UsedAsLogoPdfHeaderRInMeetingID(mediafileID int) *Valu
 }
 
 func (r *Fetch) Mediafile_UsedAsLogoProjectorHeaderInMeetingID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_logo_projector_header_in_meeting_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "used_as_logo_projector_header_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2120,7 +2120,7 @@ func (r *Fetch) Mediafile_UsedAsLogoProjectorHeaderInMeetingID(mediafileID int) 
 }
 
 func (r *Fetch) Mediafile_UsedAsLogoProjectorMainInMeetingID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_logo_projector_main_in_meeting_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "used_as_logo_projector_main_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2130,7 +2130,7 @@ func (r *Fetch) Mediafile_UsedAsLogoProjectorMainInMeetingID(mediafileID int) *V
 }
 
 func (r *Fetch) Mediafile_UsedAsLogoWebHeaderInMeetingID(mediafileID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "mediafile", ID: mediafileID, Field: "used_as_logo_web_header_in_meeting_id"}
+	key, _ := dskey.FromParts("mediafile", mediafileID, "used_as_logo_web_header_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2140,7 +2140,7 @@ func (r *Fetch) Mediafile_UsedAsLogoWebHeaderInMeetingID(mediafileID int) *Value
 }
 
 func (r *Fetch) MeetingUser_AboutMe(meetingUserID int) *ValueString {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "about_me"}
+	key, _ := dskey.FromParts("meeting_user", meetingUserID, "about_me")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2150,7 +2150,7 @@ func (r *Fetch) MeetingUser_AboutMe(meetingUserID int) *ValueString {
 }
 
 func (r *Fetch) MeetingUser_AssignmentCandidateIDs(meetingUserID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "assignment_candidate_ids"}
+	key, _ := dskey.FromParts("meeting_user", meetingUserID, "assignment_candidate_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2160,7 +2160,7 @@ func (r *Fetch) MeetingUser_AssignmentCandidateIDs(meetingUserID int) *ValueIntS
 }
 
 func (r *Fetch) MeetingUser_ChatMessageIDs(meetingUserID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "chat_message_ids"}
+	key, _ := dskey.FromParts("meeting_user", meetingUserID, "chat_message_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2170,7 +2170,7 @@ func (r *Fetch) MeetingUser_ChatMessageIDs(meetingUserID int) *ValueIntSlice {
 }
 
 func (r *Fetch) MeetingUser_Comment(meetingUserID int) *ValueString {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "comment"}
+	key, _ := dskey.FromParts("meeting_user", meetingUserID, "comment")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2180,7 +2180,7 @@ func (r *Fetch) MeetingUser_Comment(meetingUserID int) *ValueString {
 }
 
 func (r *Fetch) MeetingUser_GroupIDs(meetingUserID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "group_ids"}
+	key, _ := dskey.FromParts("meeting_user", meetingUserID, "group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2190,7 +2190,7 @@ func (r *Fetch) MeetingUser_GroupIDs(meetingUserID int) *ValueIntSlice {
 }
 
 func (r *Fetch) MeetingUser_ID(meetingUserID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "id"}
+	key, _ := dskey.FromParts("meeting_user", meetingUserID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -2200,7 +2200,7 @@ func (r *Fetch) MeetingUser_ID(meetingUserID int) *ValueInt {
 }
 
 func (r *Fetch) MeetingUser_MeetingID(meetingUserID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("meeting_user", meetingUserID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -2210,7 +2210,7 @@ func (r *Fetch) MeetingUser_MeetingID(meetingUserID int) *ValueInt {
 }
 
 func (r *Fetch) MeetingUser_MotionSubmitterIDs(meetingUserID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "motion_submitter_ids"}
+	key, _ := dskey.FromParts("meeting_user", meetingUserID, "motion_submitter_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2220,7 +2220,7 @@ func (r *Fetch) MeetingUser_MotionSubmitterIDs(meetingUserID int) *ValueIntSlice
 }
 
 func (r *Fetch) MeetingUser_Number(meetingUserID int) *ValueString {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "number"}
+	key, _ := dskey.FromParts("meeting_user", meetingUserID, "number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2230,7 +2230,7 @@ func (r *Fetch) MeetingUser_Number(meetingUserID int) *ValueString {
 }
 
 func (r *Fetch) MeetingUser_PersonalNoteIDs(meetingUserID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "personal_note_ids"}
+	key, _ := dskey.FromParts("meeting_user", meetingUserID, "personal_note_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2240,7 +2240,7 @@ func (r *Fetch) MeetingUser_PersonalNoteIDs(meetingUserID int) *ValueIntSlice {
 }
 
 func (r *Fetch) MeetingUser_SpeakerIDs(meetingUserID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "speaker_ids"}
+	key, _ := dskey.FromParts("meeting_user", meetingUserID, "speaker_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2250,7 +2250,7 @@ func (r *Fetch) MeetingUser_SpeakerIDs(meetingUserID int) *ValueIntSlice {
 }
 
 func (r *Fetch) MeetingUser_StructureLevel(meetingUserID int) *ValueString {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "structure_level"}
+	key, _ := dskey.FromParts("meeting_user", meetingUserID, "structure_level")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2260,7 +2260,7 @@ func (r *Fetch) MeetingUser_StructureLevel(meetingUserID int) *ValueString {
 }
 
 func (r *Fetch) MeetingUser_SupportedMotionIDs(meetingUserID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "supported_motion_ids"}
+	key, _ := dskey.FromParts("meeting_user", meetingUserID, "supported_motion_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2270,7 +2270,7 @@ func (r *Fetch) MeetingUser_SupportedMotionIDs(meetingUserID int) *ValueIntSlice
 }
 
 func (r *Fetch) MeetingUser_UserID(meetingUserID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "user_id"}
+	key, _ := dskey.FromParts("meeting_user", meetingUserID, "user_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -2280,7 +2280,7 @@ func (r *Fetch) MeetingUser_UserID(meetingUserID int) *ValueInt {
 }
 
 func (r *Fetch) MeetingUser_VoteDelegatedToID(meetingUserID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "vote_delegated_to_id"}
+	key, _ := dskey.FromParts("meeting_user", meetingUserID, "vote_delegated_to_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2290,7 +2290,7 @@ func (r *Fetch) MeetingUser_VoteDelegatedToID(meetingUserID int) *ValueMaybeInt 
 }
 
 func (r *Fetch) MeetingUser_VoteDelegationsFromIDs(meetingUserID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "vote_delegations_from_ids"}
+	key, _ := dskey.FromParts("meeting_user", meetingUserID, "vote_delegations_from_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2300,7 +2300,7 @@ func (r *Fetch) MeetingUser_VoteDelegationsFromIDs(meetingUserID int) *ValueIntS
 }
 
 func (r *Fetch) MeetingUser_VoteWeight(meetingUserID int) *ValueString {
-	key := dskey.Key{Collection: "meeting_user", ID: meetingUserID, Field: "vote_weight"}
+	key, _ := dskey.FromParts("meeting_user", meetingUserID, "vote_weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2310,7 +2310,7 @@ func (r *Fetch) MeetingUser_VoteWeight(meetingUserID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_AdminGroupID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "admin_group_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "admin_group_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2320,7 +2320,7 @@ func (r *Fetch) Meeting_AdminGroupID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_AgendaEnableNumbering(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "agenda_enable_numbering"}
+	key, _ := dskey.FromParts("meeting", meetingID, "agenda_enable_numbering")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -2330,7 +2330,7 @@ func (r *Fetch) Meeting_AgendaEnableNumbering(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_AgendaItemCreation(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "agenda_item_creation"}
+	key, _ := dskey.FromParts("meeting", meetingID, "agenda_item_creation")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2340,7 +2340,7 @@ func (r *Fetch) Meeting_AgendaItemCreation(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_AgendaItemIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "agenda_item_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "agenda_item_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2350,7 +2350,7 @@ func (r *Fetch) Meeting_AgendaItemIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_AgendaNewItemsDefaultVisibility(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "agenda_new_items_default_visibility"}
+	key, _ := dskey.FromParts("meeting", meetingID, "agenda_new_items_default_visibility")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2360,7 +2360,7 @@ func (r *Fetch) Meeting_AgendaNewItemsDefaultVisibility(meetingID int) *ValueStr
 }
 
 func (r *Fetch) Meeting_AgendaNumberPrefix(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "agenda_number_prefix"}
+	key, _ := dskey.FromParts("meeting", meetingID, "agenda_number_prefix")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2370,7 +2370,7 @@ func (r *Fetch) Meeting_AgendaNumberPrefix(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_AgendaNumeralSystem(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "agenda_numeral_system"}
+	key, _ := dskey.FromParts("meeting", meetingID, "agenda_numeral_system")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2380,7 +2380,7 @@ func (r *Fetch) Meeting_AgendaNumeralSystem(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_AgendaShowInternalItemsOnProjector(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "agenda_show_internal_items_on_projector"}
+	key, _ := dskey.FromParts("meeting", meetingID, "agenda_show_internal_items_on_projector")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -2390,7 +2390,7 @@ func (r *Fetch) Meeting_AgendaShowInternalItemsOnProjector(meetingID int) *Value
 }
 
 func (r *Fetch) Meeting_AgendaShowSubtitles(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "agenda_show_subtitles"}
+	key, _ := dskey.FromParts("meeting", meetingID, "agenda_show_subtitles")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -2400,7 +2400,7 @@ func (r *Fetch) Meeting_AgendaShowSubtitles(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_AllProjectionIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "all_projection_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "all_projection_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2410,7 +2410,7 @@ func (r *Fetch) Meeting_AllProjectionIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_ApplauseEnable(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "applause_enable"}
+	key, _ := dskey.FromParts("meeting", meetingID, "applause_enable")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -2420,7 +2420,7 @@ func (r *Fetch) Meeting_ApplauseEnable(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_ApplauseMaxAmount(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "applause_max_amount"}
+	key, _ := dskey.FromParts("meeting", meetingID, "applause_max_amount")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -2430,7 +2430,7 @@ func (r *Fetch) Meeting_ApplauseMaxAmount(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_ApplauseMinAmount(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "applause_min_amount"}
+	key, _ := dskey.FromParts("meeting", meetingID, "applause_min_amount")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -2440,7 +2440,7 @@ func (r *Fetch) Meeting_ApplauseMinAmount(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_ApplauseParticleImageUrl(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "applause_particle_image_url"}
+	key, _ := dskey.FromParts("meeting", meetingID, "applause_particle_image_url")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2450,7 +2450,7 @@ func (r *Fetch) Meeting_ApplauseParticleImageUrl(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_ApplauseShowLevel(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "applause_show_level"}
+	key, _ := dskey.FromParts("meeting", meetingID, "applause_show_level")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -2460,7 +2460,7 @@ func (r *Fetch) Meeting_ApplauseShowLevel(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_ApplauseTimeout(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "applause_timeout"}
+	key, _ := dskey.FromParts("meeting", meetingID, "applause_timeout")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -2470,7 +2470,7 @@ func (r *Fetch) Meeting_ApplauseTimeout(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_ApplauseType(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "applause_type"}
+	key, _ := dskey.FromParts("meeting", meetingID, "applause_type")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2480,7 +2480,7 @@ func (r *Fetch) Meeting_ApplauseType(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_AssignmentCandidateIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_candidate_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "assignment_candidate_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2490,7 +2490,7 @@ func (r *Fetch) Meeting_AssignmentCandidateIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_AssignmentIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "assignment_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2500,7 +2500,7 @@ func (r *Fetch) Meeting_AssignmentIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_AssignmentPollAddCandidatesToListOfSpeakers(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_poll_add_candidates_to_list_of_speakers"}
+	key, _ := dskey.FromParts("meeting", meetingID, "assignment_poll_add_candidates_to_list_of_speakers")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -2510,7 +2510,7 @@ func (r *Fetch) Meeting_AssignmentPollAddCandidatesToListOfSpeakers(meetingID in
 }
 
 func (r *Fetch) Meeting_AssignmentPollBallotPaperNumber(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_poll_ballot_paper_number"}
+	key, _ := dskey.FromParts("meeting", meetingID, "assignment_poll_ballot_paper_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -2520,7 +2520,7 @@ func (r *Fetch) Meeting_AssignmentPollBallotPaperNumber(meetingID int) *ValueInt
 }
 
 func (r *Fetch) Meeting_AssignmentPollBallotPaperSelection(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_poll_ballot_paper_selection"}
+	key, _ := dskey.FromParts("meeting", meetingID, "assignment_poll_ballot_paper_selection")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2530,7 +2530,7 @@ func (r *Fetch) Meeting_AssignmentPollBallotPaperSelection(meetingID int) *Value
 }
 
 func (r *Fetch) Meeting_AssignmentPollDefaultBackend(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_poll_default_backend"}
+	key, _ := dskey.FromParts("meeting", meetingID, "assignment_poll_default_backend")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2540,7 +2540,7 @@ func (r *Fetch) Meeting_AssignmentPollDefaultBackend(meetingID int) *ValueString
 }
 
 func (r *Fetch) Meeting_AssignmentPollDefaultGroupIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_poll_default_group_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "assignment_poll_default_group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2550,7 +2550,7 @@ func (r *Fetch) Meeting_AssignmentPollDefaultGroupIDs(meetingID int) *ValueIntSl
 }
 
 func (r *Fetch) Meeting_AssignmentPollDefaultMethod(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_poll_default_method"}
+	key, _ := dskey.FromParts("meeting", meetingID, "assignment_poll_default_method")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2560,7 +2560,7 @@ func (r *Fetch) Meeting_AssignmentPollDefaultMethod(meetingID int) *ValueString 
 }
 
 func (r *Fetch) Meeting_AssignmentPollDefaultOnehundredPercentBase(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_poll_default_onehundred_percent_base"}
+	key, _ := dskey.FromParts("meeting", meetingID, "assignment_poll_default_onehundred_percent_base")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2570,7 +2570,7 @@ func (r *Fetch) Meeting_AssignmentPollDefaultOnehundredPercentBase(meetingID int
 }
 
 func (r *Fetch) Meeting_AssignmentPollDefaultType(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_poll_default_type"}
+	key, _ := dskey.FromParts("meeting", meetingID, "assignment_poll_default_type")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2580,7 +2580,7 @@ func (r *Fetch) Meeting_AssignmentPollDefaultType(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_AssignmentPollEnableMaxVotesPerOption(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_poll_enable_max_votes_per_option"}
+	key, _ := dskey.FromParts("meeting", meetingID, "assignment_poll_enable_max_votes_per_option")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -2590,7 +2590,7 @@ func (r *Fetch) Meeting_AssignmentPollEnableMaxVotesPerOption(meetingID int) *Va
 }
 
 func (r *Fetch) Meeting_AssignmentPollSortPollResultByVotes(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignment_poll_sort_poll_result_by_votes"}
+	key, _ := dskey.FromParts("meeting", meetingID, "assignment_poll_sort_poll_result_by_votes")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -2600,7 +2600,7 @@ func (r *Fetch) Meeting_AssignmentPollSortPollResultByVotes(meetingID int) *Valu
 }
 
 func (r *Fetch) Meeting_AssignmentsExportPreamble(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignments_export_preamble"}
+	key, _ := dskey.FromParts("meeting", meetingID, "assignments_export_preamble")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2610,7 +2610,7 @@ func (r *Fetch) Meeting_AssignmentsExportPreamble(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_AssignmentsExportTitle(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "assignments_export_title"}
+	key, _ := dskey.FromParts("meeting", meetingID, "assignments_export_title")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2620,7 +2620,7 @@ func (r *Fetch) Meeting_AssignmentsExportTitle(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_ChatGroupIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "chat_group_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "chat_group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2630,7 +2630,7 @@ func (r *Fetch) Meeting_ChatGroupIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_ChatMessageIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "chat_message_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "chat_message_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2640,7 +2640,7 @@ func (r *Fetch) Meeting_ChatMessageIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_CommitteeID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "committee_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "committee_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -2650,7 +2650,7 @@ func (r *Fetch) Meeting_CommitteeID(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_ConferenceAutoConnect(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "conference_auto_connect"}
+	key, _ := dskey.FromParts("meeting", meetingID, "conference_auto_connect")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -2660,7 +2660,7 @@ func (r *Fetch) Meeting_ConferenceAutoConnect(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_ConferenceAutoConnectNextSpeakers(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "conference_auto_connect_next_speakers"}
+	key, _ := dskey.FromParts("meeting", meetingID, "conference_auto_connect_next_speakers")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -2670,7 +2670,7 @@ func (r *Fetch) Meeting_ConferenceAutoConnectNextSpeakers(meetingID int) *ValueI
 }
 
 func (r *Fetch) Meeting_ConferenceEnableHelpdesk(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "conference_enable_helpdesk"}
+	key, _ := dskey.FromParts("meeting", meetingID, "conference_enable_helpdesk")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -2680,7 +2680,7 @@ func (r *Fetch) Meeting_ConferenceEnableHelpdesk(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_ConferenceLosRestriction(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "conference_los_restriction"}
+	key, _ := dskey.FromParts("meeting", meetingID, "conference_los_restriction")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -2690,7 +2690,7 @@ func (r *Fetch) Meeting_ConferenceLosRestriction(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_ConferenceOpenMicrophone(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "conference_open_microphone"}
+	key, _ := dskey.FromParts("meeting", meetingID, "conference_open_microphone")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -2700,7 +2700,7 @@ func (r *Fetch) Meeting_ConferenceOpenMicrophone(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_ConferenceOpenVideo(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "conference_open_video"}
+	key, _ := dskey.FromParts("meeting", meetingID, "conference_open_video")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -2710,7 +2710,7 @@ func (r *Fetch) Meeting_ConferenceOpenVideo(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_ConferenceShow(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "conference_show"}
+	key, _ := dskey.FromParts("meeting", meetingID, "conference_show")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -2720,7 +2720,7 @@ func (r *Fetch) Meeting_ConferenceShow(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_ConferenceStreamPosterUrl(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "conference_stream_poster_url"}
+	key, _ := dskey.FromParts("meeting", meetingID, "conference_stream_poster_url")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2730,7 +2730,7 @@ func (r *Fetch) Meeting_ConferenceStreamPosterUrl(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_ConferenceStreamUrl(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "conference_stream_url"}
+	key, _ := dskey.FromParts("meeting", meetingID, "conference_stream_url")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2740,7 +2740,7 @@ func (r *Fetch) Meeting_ConferenceStreamUrl(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_CustomTranslations(meetingID int) *ValueJSON {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "custom_translations"}
+	key, _ := dskey.FromParts("meeting", meetingID, "custom_translations")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueJSON)
 	}
@@ -2750,7 +2750,7 @@ func (r *Fetch) Meeting_CustomTranslations(meetingID int) *ValueJSON {
 }
 
 func (r *Fetch) Meeting_DefaultGroupID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_group_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "default_group_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -2760,7 +2760,7 @@ func (r *Fetch) Meeting_DefaultGroupID(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_DefaultMeetingForCommitteeID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_meeting_for_committee_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "default_meeting_for_committee_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -2770,7 +2770,7 @@ func (r *Fetch) Meeting_DefaultMeetingForCommitteeID(meetingID int) *ValueMaybeI
 }
 
 func (r *Fetch) Meeting_DefaultProjectorAgendaItemListIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_agenda_item_list_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "default_projector_agenda_item_list_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2780,7 +2780,7 @@ func (r *Fetch) Meeting_DefaultProjectorAgendaItemListIDs(meetingID int) *ValueI
 }
 
 func (r *Fetch) Meeting_DefaultProjectorAmendmentIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_amendment_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "default_projector_amendment_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2790,7 +2790,7 @@ func (r *Fetch) Meeting_DefaultProjectorAmendmentIDs(meetingID int) *ValueIntSli
 }
 
 func (r *Fetch) Meeting_DefaultProjectorAssignmentIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_assignment_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "default_projector_assignment_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2800,7 +2800,7 @@ func (r *Fetch) Meeting_DefaultProjectorAssignmentIDs(meetingID int) *ValueIntSl
 }
 
 func (r *Fetch) Meeting_DefaultProjectorAssignmentPollIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_assignment_poll_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "default_projector_assignment_poll_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2810,7 +2810,7 @@ func (r *Fetch) Meeting_DefaultProjectorAssignmentPollIDs(meetingID int) *ValueI
 }
 
 func (r *Fetch) Meeting_DefaultProjectorCountdownIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_countdown_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "default_projector_countdown_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2820,7 +2820,7 @@ func (r *Fetch) Meeting_DefaultProjectorCountdownIDs(meetingID int) *ValueIntSli
 }
 
 func (r *Fetch) Meeting_DefaultProjectorCurrentListOfSpeakersIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_current_list_of_speakers_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "default_projector_current_list_of_speakers_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2830,7 +2830,7 @@ func (r *Fetch) Meeting_DefaultProjectorCurrentListOfSpeakersIDs(meetingID int) 
 }
 
 func (r *Fetch) Meeting_DefaultProjectorListOfSpeakersIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_list_of_speakers_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "default_projector_list_of_speakers_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2840,7 +2840,7 @@ func (r *Fetch) Meeting_DefaultProjectorListOfSpeakersIDs(meetingID int) *ValueI
 }
 
 func (r *Fetch) Meeting_DefaultProjectorMediafileIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_mediafile_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "default_projector_mediafile_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2850,7 +2850,7 @@ func (r *Fetch) Meeting_DefaultProjectorMediafileIDs(meetingID int) *ValueIntSli
 }
 
 func (r *Fetch) Meeting_DefaultProjectorMessageIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_message_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "default_projector_message_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2860,7 +2860,7 @@ func (r *Fetch) Meeting_DefaultProjectorMessageIDs(meetingID int) *ValueIntSlice
 }
 
 func (r *Fetch) Meeting_DefaultProjectorMotionBlockIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_motion_block_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "default_projector_motion_block_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2870,7 +2870,7 @@ func (r *Fetch) Meeting_DefaultProjectorMotionBlockIDs(meetingID int) *ValueIntS
 }
 
 func (r *Fetch) Meeting_DefaultProjectorMotionIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_motion_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "default_projector_motion_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2880,7 +2880,7 @@ func (r *Fetch) Meeting_DefaultProjectorMotionIDs(meetingID int) *ValueIntSlice 
 }
 
 func (r *Fetch) Meeting_DefaultProjectorMotionPollIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_motion_poll_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "default_projector_motion_poll_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2890,7 +2890,7 @@ func (r *Fetch) Meeting_DefaultProjectorMotionPollIDs(meetingID int) *ValueIntSl
 }
 
 func (r *Fetch) Meeting_DefaultProjectorPollIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_poll_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "default_projector_poll_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2900,7 +2900,7 @@ func (r *Fetch) Meeting_DefaultProjectorPollIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_DefaultProjectorTopicIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "default_projector_topic_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "default_projector_topic_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -2910,7 +2910,7 @@ func (r *Fetch) Meeting_DefaultProjectorTopicIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_Description(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "description"}
+	key, _ := dskey.FromParts("meeting", meetingID, "description")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2920,7 +2920,7 @@ func (r *Fetch) Meeting_Description(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_EnableAnonymous(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "enable_anonymous"}
+	key, _ := dskey.FromParts("meeting", meetingID, "enable_anonymous")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -2930,7 +2930,7 @@ func (r *Fetch) Meeting_EnableAnonymous(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_EndTime(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "end_time"}
+	key, _ := dskey.FromParts("meeting", meetingID, "end_time")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -2940,7 +2940,7 @@ func (r *Fetch) Meeting_EndTime(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_ExportCsvEncoding(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "export_csv_encoding"}
+	key, _ := dskey.FromParts("meeting", meetingID, "export_csv_encoding")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2950,7 +2950,7 @@ func (r *Fetch) Meeting_ExportCsvEncoding(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_ExportCsvSeparator(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "export_csv_separator"}
+	key, _ := dskey.FromParts("meeting", meetingID, "export_csv_separator")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -2960,7 +2960,7 @@ func (r *Fetch) Meeting_ExportCsvSeparator(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_ExportPdfFontsize(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "export_pdf_fontsize"}
+	key, _ := dskey.FromParts("meeting", meetingID, "export_pdf_fontsize")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -2970,7 +2970,7 @@ func (r *Fetch) Meeting_ExportPdfFontsize(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_ExportPdfLineHeight(meetingID int) *ValueFloat {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "export_pdf_line_height"}
+	key, _ := dskey.FromParts("meeting", meetingID, "export_pdf_line_height")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueFloat)
 	}
@@ -2980,7 +2980,7 @@ func (r *Fetch) Meeting_ExportPdfLineHeight(meetingID int) *ValueFloat {
 }
 
 func (r *Fetch) Meeting_ExportPdfPageMarginBottom(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "export_pdf_page_margin_bottom"}
+	key, _ := dskey.FromParts("meeting", meetingID, "export_pdf_page_margin_bottom")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -2990,7 +2990,7 @@ func (r *Fetch) Meeting_ExportPdfPageMarginBottom(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_ExportPdfPageMarginLeft(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "export_pdf_page_margin_left"}
+	key, _ := dskey.FromParts("meeting", meetingID, "export_pdf_page_margin_left")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -3000,7 +3000,7 @@ func (r *Fetch) Meeting_ExportPdfPageMarginLeft(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_ExportPdfPageMarginRight(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "export_pdf_page_margin_right"}
+	key, _ := dskey.FromParts("meeting", meetingID, "export_pdf_page_margin_right")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -3010,7 +3010,7 @@ func (r *Fetch) Meeting_ExportPdfPageMarginRight(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_ExportPdfPageMarginTop(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "export_pdf_page_margin_top"}
+	key, _ := dskey.FromParts("meeting", meetingID, "export_pdf_page_margin_top")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -3020,7 +3020,7 @@ func (r *Fetch) Meeting_ExportPdfPageMarginTop(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_ExportPdfPagenumberAlignment(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "export_pdf_pagenumber_alignment"}
+	key, _ := dskey.FromParts("meeting", meetingID, "export_pdf_pagenumber_alignment")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3030,7 +3030,7 @@ func (r *Fetch) Meeting_ExportPdfPagenumberAlignment(meetingID int) *ValueString
 }
 
 func (r *Fetch) Meeting_ExportPdfPagesize(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "export_pdf_pagesize"}
+	key, _ := dskey.FromParts("meeting", meetingID, "export_pdf_pagesize")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3040,7 +3040,7 @@ func (r *Fetch) Meeting_ExportPdfPagesize(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_ExternalID(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "external_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "external_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3050,7 +3050,7 @@ func (r *Fetch) Meeting_ExternalID(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_FontBoldID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_bold_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "font_bold_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3060,7 +3060,7 @@ func (r *Fetch) Meeting_FontBoldID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_FontBoldItalicID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_bold_italic_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "font_bold_italic_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3070,7 +3070,7 @@ func (r *Fetch) Meeting_FontBoldItalicID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_FontChyronSpeakerNameID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_chyron_speaker_name_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "font_chyron_speaker_name_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3080,7 +3080,7 @@ func (r *Fetch) Meeting_FontChyronSpeakerNameID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_FontItalicID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_italic_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "font_italic_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3090,7 +3090,7 @@ func (r *Fetch) Meeting_FontItalicID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_FontMonospaceID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_monospace_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "font_monospace_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3100,7 +3100,7 @@ func (r *Fetch) Meeting_FontMonospaceID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_FontProjectorH1ID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_projector_h1_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "font_projector_h1_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3110,7 +3110,7 @@ func (r *Fetch) Meeting_FontProjectorH1ID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_FontProjectorH2ID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_projector_h2_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "font_projector_h2_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3120,7 +3120,7 @@ func (r *Fetch) Meeting_FontProjectorH2ID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_FontRegularID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "font_regular_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "font_regular_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3130,7 +3130,7 @@ func (r *Fetch) Meeting_FontRegularID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_ForwardedMotionIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "forwarded_motion_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "forwarded_motion_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -3140,7 +3140,7 @@ func (r *Fetch) Meeting_ForwardedMotionIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_GroupIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "group_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -3150,7 +3150,7 @@ func (r *Fetch) Meeting_GroupIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_ID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -3160,7 +3160,7 @@ func (r *Fetch) Meeting_ID(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_ImportedAt(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "imported_at"}
+	key, _ := dskey.FromParts("meeting", meetingID, "imported_at")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -3170,7 +3170,7 @@ func (r *Fetch) Meeting_ImportedAt(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_IsActiveInOrganizationID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "is_active_in_organization_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "is_active_in_organization_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3180,7 +3180,7 @@ func (r *Fetch) Meeting_IsActiveInOrganizationID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_IsArchivedInOrganizationID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "is_archived_in_organization_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "is_archived_in_organization_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3190,7 +3190,7 @@ func (r *Fetch) Meeting_IsArchivedInOrganizationID(meetingID int) *ValueMaybeInt
 }
 
 func (r *Fetch) Meeting_JitsiDomain(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "jitsi_domain"}
+	key, _ := dskey.FromParts("meeting", meetingID, "jitsi_domain")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3200,7 +3200,7 @@ func (r *Fetch) Meeting_JitsiDomain(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_JitsiRoomName(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "jitsi_room_name"}
+	key, _ := dskey.FromParts("meeting", meetingID, "jitsi_room_name")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3210,7 +3210,7 @@ func (r *Fetch) Meeting_JitsiRoomName(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_JitsiRoomPassword(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "jitsi_room_password"}
+	key, _ := dskey.FromParts("meeting", meetingID, "jitsi_room_password")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3220,7 +3220,7 @@ func (r *Fetch) Meeting_JitsiRoomPassword(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_Language(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "language"}
+	key, _ := dskey.FromParts("meeting", meetingID, "language")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3230,7 +3230,7 @@ func (r *Fetch) Meeting_Language(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersAmountLastOnProjector(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_amount_last_on_projector"}
+	key, _ := dskey.FromParts("meeting", meetingID, "list_of_speakers_amount_last_on_projector")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -3240,7 +3240,7 @@ func (r *Fetch) Meeting_ListOfSpeakersAmountLastOnProjector(meetingID int) *Valu
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersAmountNextOnProjector(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_amount_next_on_projector"}
+	key, _ := dskey.FromParts("meeting", meetingID, "list_of_speakers_amount_next_on_projector")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -3250,7 +3250,7 @@ func (r *Fetch) Meeting_ListOfSpeakersAmountNextOnProjector(meetingID int) *Valu
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersCanSetContributionSelf(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_can_set_contribution_self"}
+	key, _ := dskey.FromParts("meeting", meetingID, "list_of_speakers_can_set_contribution_self")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3260,7 +3260,7 @@ func (r *Fetch) Meeting_ListOfSpeakersCanSetContributionSelf(meetingID int) *Val
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersCountdownID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_countdown_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "list_of_speakers_countdown_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3270,7 +3270,7 @@ func (r *Fetch) Meeting_ListOfSpeakersCountdownID(meetingID int) *ValueMaybeInt 
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersCoupleCountdown(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_couple_countdown"}
+	key, _ := dskey.FromParts("meeting", meetingID, "list_of_speakers_couple_countdown")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3280,7 +3280,7 @@ func (r *Fetch) Meeting_ListOfSpeakersCoupleCountdown(meetingID int) *ValueBool 
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersEnablePointOfOrderCategories(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_enable_point_of_order_categories"}
+	key, _ := dskey.FromParts("meeting", meetingID, "list_of_speakers_enable_point_of_order_categories")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3290,7 +3290,7 @@ func (r *Fetch) Meeting_ListOfSpeakersEnablePointOfOrderCategories(meetingID int
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersEnablePointOfOrderSpeakers(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_enable_point_of_order_speakers"}
+	key, _ := dskey.FromParts("meeting", meetingID, "list_of_speakers_enable_point_of_order_speakers")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3300,7 +3300,7 @@ func (r *Fetch) Meeting_ListOfSpeakersEnablePointOfOrderSpeakers(meetingID int) 
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersEnableProContraSpeech(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_enable_pro_contra_speech"}
+	key, _ := dskey.FromParts("meeting", meetingID, "list_of_speakers_enable_pro_contra_speech")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3310,7 +3310,7 @@ func (r *Fetch) Meeting_ListOfSpeakersEnableProContraSpeech(meetingID int) *Valu
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "list_of_speakers_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -3320,7 +3320,7 @@ func (r *Fetch) Meeting_ListOfSpeakersIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersInitiallyClosed(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_initially_closed"}
+	key, _ := dskey.FromParts("meeting", meetingID, "list_of_speakers_initially_closed")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3330,7 +3330,7 @@ func (r *Fetch) Meeting_ListOfSpeakersInitiallyClosed(meetingID int) *ValueBool 
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersPresentUsersOnly(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_present_users_only"}
+	key, _ := dskey.FromParts("meeting", meetingID, "list_of_speakers_present_users_only")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3340,7 +3340,7 @@ func (r *Fetch) Meeting_ListOfSpeakersPresentUsersOnly(meetingID int) *ValueBool
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersShowAmountOfSpeakersOnSlide(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_show_amount_of_speakers_on_slide"}
+	key, _ := dskey.FromParts("meeting", meetingID, "list_of_speakers_show_amount_of_speakers_on_slide")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3350,7 +3350,7 @@ func (r *Fetch) Meeting_ListOfSpeakersShowAmountOfSpeakersOnSlide(meetingID int)
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersShowFirstContribution(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_show_first_contribution"}
+	key, _ := dskey.FromParts("meeting", meetingID, "list_of_speakers_show_first_contribution")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3360,7 +3360,7 @@ func (r *Fetch) Meeting_ListOfSpeakersShowFirstContribution(meetingID int) *Valu
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersSpeakerNoteForEveryone(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "list_of_speakers_speaker_note_for_everyone"}
+	key, _ := dskey.FromParts("meeting", meetingID, "list_of_speakers_speaker_note_for_everyone")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3370,7 +3370,7 @@ func (r *Fetch) Meeting_ListOfSpeakersSpeakerNoteForEveryone(meetingID int) *Val
 }
 
 func (r *Fetch) Meeting_Location(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "location"}
+	key, _ := dskey.FromParts("meeting", meetingID, "location")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3380,7 +3380,7 @@ func (r *Fetch) Meeting_Location(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_LogoPdfBallotPaperID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "logo_pdf_ballot_paper_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "logo_pdf_ballot_paper_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3390,7 +3390,7 @@ func (r *Fetch) Meeting_LogoPdfBallotPaperID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_LogoPdfFooterLID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "logo_pdf_footer_l_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "logo_pdf_footer_l_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3400,7 +3400,7 @@ func (r *Fetch) Meeting_LogoPdfFooterLID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_LogoPdfFooterRID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "logo_pdf_footer_r_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "logo_pdf_footer_r_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3410,7 +3410,7 @@ func (r *Fetch) Meeting_LogoPdfFooterRID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_LogoPdfHeaderLID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "logo_pdf_header_l_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "logo_pdf_header_l_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3420,7 +3420,7 @@ func (r *Fetch) Meeting_LogoPdfHeaderLID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_LogoPdfHeaderRID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "logo_pdf_header_r_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "logo_pdf_header_r_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3430,7 +3430,7 @@ func (r *Fetch) Meeting_LogoPdfHeaderRID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_LogoProjectorHeaderID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "logo_projector_header_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "logo_projector_header_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3440,7 +3440,7 @@ func (r *Fetch) Meeting_LogoProjectorHeaderID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_LogoProjectorMainID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "logo_projector_main_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "logo_projector_main_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3450,7 +3450,7 @@ func (r *Fetch) Meeting_LogoProjectorMainID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_LogoWebHeaderID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "logo_web_header_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "logo_web_header_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -3460,7 +3460,7 @@ func (r *Fetch) Meeting_LogoWebHeaderID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_MediafileIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "mediafile_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "mediafile_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -3470,7 +3470,7 @@ func (r *Fetch) Meeting_MediafileIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_MeetingUserIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "meeting_user_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "meeting_user_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -3480,7 +3480,7 @@ func (r *Fetch) Meeting_MeetingUserIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_MotionBlockIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_block_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motion_block_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -3490,7 +3490,7 @@ func (r *Fetch) Meeting_MotionBlockIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_MotionCategoryIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_category_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motion_category_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -3500,7 +3500,7 @@ func (r *Fetch) Meeting_MotionCategoryIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_MotionChangeRecommendationIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_change_recommendation_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motion_change_recommendation_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -3510,7 +3510,7 @@ func (r *Fetch) Meeting_MotionChangeRecommendationIDs(meetingID int) *ValueIntSl
 }
 
 func (r *Fetch) Meeting_MotionCommentIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_comment_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motion_comment_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -3520,7 +3520,7 @@ func (r *Fetch) Meeting_MotionCommentIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_MotionCommentSectionIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_comment_section_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motion_comment_section_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -3530,7 +3530,7 @@ func (r *Fetch) Meeting_MotionCommentSectionIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_MotionIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motion_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -3540,7 +3540,7 @@ func (r *Fetch) Meeting_MotionIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_MotionPollBallotPaperNumber(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_poll_ballot_paper_number"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motion_poll_ballot_paper_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -3550,7 +3550,7 @@ func (r *Fetch) Meeting_MotionPollBallotPaperNumber(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_MotionPollBallotPaperSelection(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_poll_ballot_paper_selection"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motion_poll_ballot_paper_selection")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3560,7 +3560,7 @@ func (r *Fetch) Meeting_MotionPollBallotPaperSelection(meetingID int) *ValueStri
 }
 
 func (r *Fetch) Meeting_MotionPollDefaultBackend(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_poll_default_backend"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motion_poll_default_backend")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3570,7 +3570,7 @@ func (r *Fetch) Meeting_MotionPollDefaultBackend(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_MotionPollDefaultGroupIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_poll_default_group_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motion_poll_default_group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -3580,7 +3580,7 @@ func (r *Fetch) Meeting_MotionPollDefaultGroupIDs(meetingID int) *ValueIntSlice 
 }
 
 func (r *Fetch) Meeting_MotionPollDefaultOnehundredPercentBase(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_poll_default_onehundred_percent_base"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motion_poll_default_onehundred_percent_base")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3590,7 +3590,7 @@ func (r *Fetch) Meeting_MotionPollDefaultOnehundredPercentBase(meetingID int) *V
 }
 
 func (r *Fetch) Meeting_MotionPollDefaultType(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_poll_default_type"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motion_poll_default_type")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3600,7 +3600,7 @@ func (r *Fetch) Meeting_MotionPollDefaultType(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_MotionStateIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_state_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motion_state_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -3610,7 +3610,7 @@ func (r *Fetch) Meeting_MotionStateIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_MotionStatuteParagraphIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_statute_paragraph_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motion_statute_paragraph_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -3620,7 +3620,7 @@ func (r *Fetch) Meeting_MotionStatuteParagraphIDs(meetingID int) *ValueIntSlice 
 }
 
 func (r *Fetch) Meeting_MotionSubmitterIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_submitter_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motion_submitter_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -3630,7 +3630,7 @@ func (r *Fetch) Meeting_MotionSubmitterIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_MotionWorkflowIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motion_workflow_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motion_workflow_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -3640,7 +3640,7 @@ func (r *Fetch) Meeting_MotionWorkflowIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_MotionsAmendmentsEnabled(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_amendments_enabled"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_amendments_enabled")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3650,7 +3650,7 @@ func (r *Fetch) Meeting_MotionsAmendmentsEnabled(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_MotionsAmendmentsInMainList(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_amendments_in_main_list"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_amendments_in_main_list")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3660,7 +3660,7 @@ func (r *Fetch) Meeting_MotionsAmendmentsInMainList(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_MotionsAmendmentsMultipleParagraphs(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_amendments_multiple_paragraphs"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_amendments_multiple_paragraphs")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3670,7 +3670,7 @@ func (r *Fetch) Meeting_MotionsAmendmentsMultipleParagraphs(meetingID int) *Valu
 }
 
 func (r *Fetch) Meeting_MotionsAmendmentsOfAmendments(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_amendments_of_amendments"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_amendments_of_amendments")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3680,7 +3680,7 @@ func (r *Fetch) Meeting_MotionsAmendmentsOfAmendments(meetingID int) *ValueBool 
 }
 
 func (r *Fetch) Meeting_MotionsAmendmentsPrefix(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_amendments_prefix"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_amendments_prefix")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3690,7 +3690,7 @@ func (r *Fetch) Meeting_MotionsAmendmentsPrefix(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_MotionsAmendmentsTextMode(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_amendments_text_mode"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_amendments_text_mode")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3700,7 +3700,7 @@ func (r *Fetch) Meeting_MotionsAmendmentsTextMode(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_MotionsBlockSlideColumns(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_block_slide_columns"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_block_slide_columns")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -3710,7 +3710,7 @@ func (r *Fetch) Meeting_MotionsBlockSlideColumns(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_MotionsDefaultAmendmentWorkflowID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_default_amendment_workflow_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_default_amendment_workflow_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -3720,7 +3720,7 @@ func (r *Fetch) Meeting_MotionsDefaultAmendmentWorkflowID(meetingID int) *ValueI
 }
 
 func (r *Fetch) Meeting_MotionsDefaultLineNumbering(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_default_line_numbering"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_default_line_numbering")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3730,7 +3730,7 @@ func (r *Fetch) Meeting_MotionsDefaultLineNumbering(meetingID int) *ValueString 
 }
 
 func (r *Fetch) Meeting_MotionsDefaultSorting(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_default_sorting"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_default_sorting")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3740,7 +3740,7 @@ func (r *Fetch) Meeting_MotionsDefaultSorting(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_MotionsDefaultStatuteAmendmentWorkflowID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_default_statute_amendment_workflow_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_default_statute_amendment_workflow_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -3750,7 +3750,7 @@ func (r *Fetch) Meeting_MotionsDefaultStatuteAmendmentWorkflowID(meetingID int) 
 }
 
 func (r *Fetch) Meeting_MotionsDefaultWorkflowID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_default_workflow_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_default_workflow_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -3760,7 +3760,7 @@ func (r *Fetch) Meeting_MotionsDefaultWorkflowID(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_MotionsEnableReasonOnProjector(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_enable_reason_on_projector"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_enable_reason_on_projector")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3770,7 +3770,7 @@ func (r *Fetch) Meeting_MotionsEnableReasonOnProjector(meetingID int) *ValueBool
 }
 
 func (r *Fetch) Meeting_MotionsEnableRecommendationOnProjector(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_enable_recommendation_on_projector"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_enable_recommendation_on_projector")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3780,7 +3780,7 @@ func (r *Fetch) Meeting_MotionsEnableRecommendationOnProjector(meetingID int) *V
 }
 
 func (r *Fetch) Meeting_MotionsEnableSideboxOnProjector(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_enable_sidebox_on_projector"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_enable_sidebox_on_projector")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3790,7 +3790,7 @@ func (r *Fetch) Meeting_MotionsEnableSideboxOnProjector(meetingID int) *ValueBoo
 }
 
 func (r *Fetch) Meeting_MotionsEnableTextOnProjector(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_enable_text_on_projector"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_enable_text_on_projector")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3800,7 +3800,7 @@ func (r *Fetch) Meeting_MotionsEnableTextOnProjector(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_MotionsExportFollowRecommendation(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_export_follow_recommendation"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_export_follow_recommendation")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3810,7 +3810,7 @@ func (r *Fetch) Meeting_MotionsExportFollowRecommendation(meetingID int) *ValueB
 }
 
 func (r *Fetch) Meeting_MotionsExportPreamble(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_export_preamble"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_export_preamble")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3820,7 +3820,7 @@ func (r *Fetch) Meeting_MotionsExportPreamble(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_MotionsExportSubmitterRecommendation(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_export_submitter_recommendation"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_export_submitter_recommendation")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3830,7 +3830,7 @@ func (r *Fetch) Meeting_MotionsExportSubmitterRecommendation(meetingID int) *Val
 }
 
 func (r *Fetch) Meeting_MotionsExportTitle(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_export_title"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_export_title")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3840,7 +3840,7 @@ func (r *Fetch) Meeting_MotionsExportTitle(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_MotionsLineLength(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_line_length"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_line_length")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -3850,7 +3850,7 @@ func (r *Fetch) Meeting_MotionsLineLength(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_MotionsNumberMinDigits(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_number_min_digits"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_number_min_digits")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -3860,7 +3860,7 @@ func (r *Fetch) Meeting_MotionsNumberMinDigits(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_MotionsNumberType(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_number_type"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_number_type")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3870,7 +3870,7 @@ func (r *Fetch) Meeting_MotionsNumberType(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_MotionsNumberWithBlank(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_number_with_blank"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_number_with_blank")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3880,7 +3880,7 @@ func (r *Fetch) Meeting_MotionsNumberWithBlank(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_MotionsPreamble(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_preamble"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_preamble")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3890,7 +3890,7 @@ func (r *Fetch) Meeting_MotionsPreamble(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_MotionsReasonRequired(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_reason_required"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_reason_required")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3900,7 +3900,7 @@ func (r *Fetch) Meeting_MotionsReasonRequired(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_MotionsRecommendationTextMode(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_recommendation_text_mode"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_recommendation_text_mode")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3910,7 +3910,7 @@ func (r *Fetch) Meeting_MotionsRecommendationTextMode(meetingID int) *ValueStrin
 }
 
 func (r *Fetch) Meeting_MotionsRecommendationsBy(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_recommendations_by"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_recommendations_by")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3920,7 +3920,7 @@ func (r *Fetch) Meeting_MotionsRecommendationsBy(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_MotionsShowReferringMotions(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_show_referring_motions"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_show_referring_motions")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3930,7 +3930,7 @@ func (r *Fetch) Meeting_MotionsShowReferringMotions(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_MotionsShowSequentialNumber(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_show_sequential_number"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_show_sequential_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3940,7 +3940,7 @@ func (r *Fetch) Meeting_MotionsShowSequentialNumber(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_MotionsStatuteRecommendationsBy(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_statute_recommendations_by"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_statute_recommendations_by")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3950,7 +3950,7 @@ func (r *Fetch) Meeting_MotionsStatuteRecommendationsBy(meetingID int) *ValueStr
 }
 
 func (r *Fetch) Meeting_MotionsStatutesEnabled(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_statutes_enabled"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_statutes_enabled")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -3960,7 +3960,7 @@ func (r *Fetch) Meeting_MotionsStatutesEnabled(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_MotionsSupportersMinAmount(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "motions_supporters_min_amount"}
+	key, _ := dskey.FromParts("meeting", meetingID, "motions_supporters_min_amount")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -3970,7 +3970,7 @@ func (r *Fetch) Meeting_MotionsSupportersMinAmount(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_Name(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "name"}
+	key, _ := dskey.FromParts("meeting", meetingID, "name")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -3980,7 +3980,7 @@ func (r *Fetch) Meeting_Name(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_OptionIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "option_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "option_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -3990,7 +3990,7 @@ func (r *Fetch) Meeting_OptionIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_OrganizationTagIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "organization_tag_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "organization_tag_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4000,7 +4000,7 @@ func (r *Fetch) Meeting_OrganizationTagIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_PersonalNoteIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "personal_note_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "personal_note_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4010,7 +4010,7 @@ func (r *Fetch) Meeting_PersonalNoteIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_PointOfOrderCategoryIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "point_of_order_category_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "point_of_order_category_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4020,7 +4020,7 @@ func (r *Fetch) Meeting_PointOfOrderCategoryIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_PollBallotPaperNumber(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_ballot_paper_number"}
+	key, _ := dskey.FromParts("meeting", meetingID, "poll_ballot_paper_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4030,7 +4030,7 @@ func (r *Fetch) Meeting_PollBallotPaperNumber(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_PollBallotPaperSelection(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_ballot_paper_selection"}
+	key, _ := dskey.FromParts("meeting", meetingID, "poll_ballot_paper_selection")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4040,7 +4040,7 @@ func (r *Fetch) Meeting_PollBallotPaperSelection(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_PollCandidateIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_candidate_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "poll_candidate_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4050,7 +4050,7 @@ func (r *Fetch) Meeting_PollCandidateIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_PollCandidateListIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_candidate_list_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "poll_candidate_list_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4060,7 +4060,7 @@ func (r *Fetch) Meeting_PollCandidateListIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_PollCountdownID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_countdown_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "poll_countdown_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -4070,7 +4070,7 @@ func (r *Fetch) Meeting_PollCountdownID(meetingID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Meeting_PollCoupleCountdown(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_couple_countdown"}
+	key, _ := dskey.FromParts("meeting", meetingID, "poll_couple_countdown")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -4080,7 +4080,7 @@ func (r *Fetch) Meeting_PollCoupleCountdown(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_PollDefaultBackend(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_default_backend"}
+	key, _ := dskey.FromParts("meeting", meetingID, "poll_default_backend")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4090,7 +4090,7 @@ func (r *Fetch) Meeting_PollDefaultBackend(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_PollDefaultGroupIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_default_group_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "poll_default_group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4100,7 +4100,7 @@ func (r *Fetch) Meeting_PollDefaultGroupIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_PollDefaultMethod(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_default_method"}
+	key, _ := dskey.FromParts("meeting", meetingID, "poll_default_method")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4110,7 +4110,7 @@ func (r *Fetch) Meeting_PollDefaultMethod(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_PollDefaultOnehundredPercentBase(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_default_onehundred_percent_base"}
+	key, _ := dskey.FromParts("meeting", meetingID, "poll_default_onehundred_percent_base")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4120,7 +4120,7 @@ func (r *Fetch) Meeting_PollDefaultOnehundredPercentBase(meetingID int) *ValueSt
 }
 
 func (r *Fetch) Meeting_PollDefaultType(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_default_type"}
+	key, _ := dskey.FromParts("meeting", meetingID, "poll_default_type")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4130,7 +4130,7 @@ func (r *Fetch) Meeting_PollDefaultType(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_PollIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "poll_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4140,7 +4140,7 @@ func (r *Fetch) Meeting_PollIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_PollSortPollResultByVotes(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "poll_sort_poll_result_by_votes"}
+	key, _ := dskey.FromParts("meeting", meetingID, "poll_sort_poll_result_by_votes")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -4150,7 +4150,7 @@ func (r *Fetch) Meeting_PollSortPollResultByVotes(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_PresentUserIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "present_user_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "present_user_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4160,7 +4160,7 @@ func (r *Fetch) Meeting_PresentUserIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_ProjectionIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "projection_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "projection_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4170,7 +4170,7 @@ func (r *Fetch) Meeting_ProjectionIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_ProjectorCountdownDefaultTime(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "projector_countdown_default_time"}
+	key, _ := dskey.FromParts("meeting", meetingID, "projector_countdown_default_time")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4180,7 +4180,7 @@ func (r *Fetch) Meeting_ProjectorCountdownDefaultTime(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_ProjectorCountdownIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "projector_countdown_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "projector_countdown_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4190,7 +4190,7 @@ func (r *Fetch) Meeting_ProjectorCountdownIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_ProjectorCountdownWarningTime(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "projector_countdown_warning_time"}
+	key, _ := dskey.FromParts("meeting", meetingID, "projector_countdown_warning_time")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4200,7 +4200,7 @@ func (r *Fetch) Meeting_ProjectorCountdownWarningTime(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_ProjectorIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "projector_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "projector_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4210,7 +4210,7 @@ func (r *Fetch) Meeting_ProjectorIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_ProjectorMessageIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "projector_message_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "projector_message_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4220,7 +4220,7 @@ func (r *Fetch) Meeting_ProjectorMessageIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_ReferenceProjectorID(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "reference_projector_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "reference_projector_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4230,7 +4230,7 @@ func (r *Fetch) Meeting_ReferenceProjectorID(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_SpeakerIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "speaker_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "speaker_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4240,7 +4240,7 @@ func (r *Fetch) Meeting_SpeakerIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_StartTime(meetingID int) *ValueInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "start_time"}
+	key, _ := dskey.FromParts("meeting", meetingID, "start_time")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4250,7 +4250,7 @@ func (r *Fetch) Meeting_StartTime(meetingID int) *ValueInt {
 }
 
 func (r *Fetch) Meeting_TagIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "tag_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "tag_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4260,7 +4260,7 @@ func (r *Fetch) Meeting_TagIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_TemplateForOrganizationID(meetingID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "template_for_organization_id"}
+	key, _ := dskey.FromParts("meeting", meetingID, "template_for_organization_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -4270,7 +4270,7 @@ func (r *Fetch) Meeting_TemplateForOrganizationID(meetingID int) *ValueMaybeInt 
 }
 
 func (r *Fetch) Meeting_TopicIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "topic_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "topic_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4280,7 +4280,7 @@ func (r *Fetch) Meeting_TopicIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_TopicPollDefaultGroupIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "topic_poll_default_group_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "topic_poll_default_group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4290,7 +4290,7 @@ func (r *Fetch) Meeting_TopicPollDefaultGroupIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_UserIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "user_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "user_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4300,7 +4300,7 @@ func (r *Fetch) Meeting_UserIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_UsersAllowSelfSetPresent(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "users_allow_self_set_present"}
+	key, _ := dskey.FromParts("meeting", meetingID, "users_allow_self_set_present")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -4310,7 +4310,7 @@ func (r *Fetch) Meeting_UsersAllowSelfSetPresent(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_UsersEmailBody(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "users_email_body"}
+	key, _ := dskey.FromParts("meeting", meetingID, "users_email_body")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4320,7 +4320,7 @@ func (r *Fetch) Meeting_UsersEmailBody(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_UsersEmailReplyto(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "users_email_replyto"}
+	key, _ := dskey.FromParts("meeting", meetingID, "users_email_replyto")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4330,7 +4330,7 @@ func (r *Fetch) Meeting_UsersEmailReplyto(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_UsersEmailSender(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "users_email_sender"}
+	key, _ := dskey.FromParts("meeting", meetingID, "users_email_sender")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4340,7 +4340,7 @@ func (r *Fetch) Meeting_UsersEmailSender(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_UsersEmailSubject(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "users_email_subject"}
+	key, _ := dskey.FromParts("meeting", meetingID, "users_email_subject")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4350,7 +4350,7 @@ func (r *Fetch) Meeting_UsersEmailSubject(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_UsersEnablePresenceView(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "users_enable_presence_view"}
+	key, _ := dskey.FromParts("meeting", meetingID, "users_enable_presence_view")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -4360,7 +4360,7 @@ func (r *Fetch) Meeting_UsersEnablePresenceView(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_UsersEnableVoteDelegations(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "users_enable_vote_delegations"}
+	key, _ := dskey.FromParts("meeting", meetingID, "users_enable_vote_delegations")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -4370,7 +4370,7 @@ func (r *Fetch) Meeting_UsersEnableVoteDelegations(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_UsersEnableVoteWeight(meetingID int) *ValueBool {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "users_enable_vote_weight"}
+	key, _ := dskey.FromParts("meeting", meetingID, "users_enable_vote_weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -4380,7 +4380,7 @@ func (r *Fetch) Meeting_UsersEnableVoteWeight(meetingID int) *ValueBool {
 }
 
 func (r *Fetch) Meeting_UsersPdfWelcometext(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "users_pdf_welcometext"}
+	key, _ := dskey.FromParts("meeting", meetingID, "users_pdf_welcometext")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4390,7 +4390,7 @@ func (r *Fetch) Meeting_UsersPdfWelcometext(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_UsersPdfWelcometitle(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "users_pdf_welcometitle"}
+	key, _ := dskey.FromParts("meeting", meetingID, "users_pdf_welcometitle")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4400,7 +4400,7 @@ func (r *Fetch) Meeting_UsersPdfWelcometitle(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_UsersPdfWlanEncryption(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "users_pdf_wlan_encryption"}
+	key, _ := dskey.FromParts("meeting", meetingID, "users_pdf_wlan_encryption")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4410,7 +4410,7 @@ func (r *Fetch) Meeting_UsersPdfWlanEncryption(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_UsersPdfWlanPassword(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "users_pdf_wlan_password"}
+	key, _ := dskey.FromParts("meeting", meetingID, "users_pdf_wlan_password")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4420,7 +4420,7 @@ func (r *Fetch) Meeting_UsersPdfWlanPassword(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_UsersPdfWlanSsid(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "users_pdf_wlan_ssid"}
+	key, _ := dskey.FromParts("meeting", meetingID, "users_pdf_wlan_ssid")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4430,7 +4430,7 @@ func (r *Fetch) Meeting_UsersPdfWlanSsid(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_VoteIDs(meetingID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "vote_ids"}
+	key, _ := dskey.FromParts("meeting", meetingID, "vote_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4440,7 +4440,7 @@ func (r *Fetch) Meeting_VoteIDs(meetingID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Meeting_WelcomeText(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "welcome_text"}
+	key, _ := dskey.FromParts("meeting", meetingID, "welcome_text")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4450,7 +4450,7 @@ func (r *Fetch) Meeting_WelcomeText(meetingID int) *ValueString {
 }
 
 func (r *Fetch) Meeting_WelcomeTitle(meetingID int) *ValueString {
-	key := dskey.Key{Collection: "meeting", ID: meetingID, Field: "welcome_title"}
+	key, _ := dskey.FromParts("meeting", meetingID, "welcome_title")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4460,7 +4460,7 @@ func (r *Fetch) Meeting_WelcomeTitle(meetingID int) *ValueString {
 }
 
 func (r *Fetch) MotionBlock_AgendaItemID(motionBlockID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "motion_block", ID: motionBlockID, Field: "agenda_item_id"}
+	key, _ := dskey.FromParts("motion_block", motionBlockID, "agenda_item_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -4470,7 +4470,7 @@ func (r *Fetch) MotionBlock_AgendaItemID(motionBlockID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) MotionBlock_ID(motionBlockID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_block", ID: motionBlockID, Field: "id"}
+	key, _ := dskey.FromParts("motion_block", motionBlockID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4480,7 +4480,7 @@ func (r *Fetch) MotionBlock_ID(motionBlockID int) *ValueInt {
 }
 
 func (r *Fetch) MotionBlock_Internal(motionBlockID int) *ValueBool {
-	key := dskey.Key{Collection: "motion_block", ID: motionBlockID, Field: "internal"}
+	key, _ := dskey.FromParts("motion_block", motionBlockID, "internal")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -4490,7 +4490,7 @@ func (r *Fetch) MotionBlock_Internal(motionBlockID int) *ValueBool {
 }
 
 func (r *Fetch) MotionBlock_ListOfSpeakersID(motionBlockID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_block", ID: motionBlockID, Field: "list_of_speakers_id"}
+	key, _ := dskey.FromParts("motion_block", motionBlockID, "list_of_speakers_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4500,7 +4500,7 @@ func (r *Fetch) MotionBlock_ListOfSpeakersID(motionBlockID int) *ValueInt {
 }
 
 func (r *Fetch) MotionBlock_MeetingID(motionBlockID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_block", ID: motionBlockID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("motion_block", motionBlockID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4510,7 +4510,7 @@ func (r *Fetch) MotionBlock_MeetingID(motionBlockID int) *ValueInt {
 }
 
 func (r *Fetch) MotionBlock_MotionIDs(motionBlockID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion_block", ID: motionBlockID, Field: "motion_ids"}
+	key, _ := dskey.FromParts("motion_block", motionBlockID, "motion_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4520,7 +4520,7 @@ func (r *Fetch) MotionBlock_MotionIDs(motionBlockID int) *ValueIntSlice {
 }
 
 func (r *Fetch) MotionBlock_ProjectionIDs(motionBlockID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion_block", ID: motionBlockID, Field: "projection_ids"}
+	key, _ := dskey.FromParts("motion_block", motionBlockID, "projection_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4530,7 +4530,7 @@ func (r *Fetch) MotionBlock_ProjectionIDs(motionBlockID int) *ValueIntSlice {
 }
 
 func (r *Fetch) MotionBlock_SequentialNumber(motionBlockID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_block", ID: motionBlockID, Field: "sequential_number"}
+	key, _ := dskey.FromParts("motion_block", motionBlockID, "sequential_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4540,7 +4540,7 @@ func (r *Fetch) MotionBlock_SequentialNumber(motionBlockID int) *ValueInt {
 }
 
 func (r *Fetch) MotionBlock_Title(motionBlockID int) *ValueString {
-	key := dskey.Key{Collection: "motion_block", ID: motionBlockID, Field: "title"}
+	key, _ := dskey.FromParts("motion_block", motionBlockID, "title")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4550,7 +4550,7 @@ func (r *Fetch) MotionBlock_Title(motionBlockID int) *ValueString {
 }
 
 func (r *Fetch) MotionCategory_ChildIDs(motionCategoryID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion_category", ID: motionCategoryID, Field: "child_ids"}
+	key, _ := dskey.FromParts("motion_category", motionCategoryID, "child_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4560,7 +4560,7 @@ func (r *Fetch) MotionCategory_ChildIDs(motionCategoryID int) *ValueIntSlice {
 }
 
 func (r *Fetch) MotionCategory_ID(motionCategoryID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_category", ID: motionCategoryID, Field: "id"}
+	key, _ := dskey.FromParts("motion_category", motionCategoryID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4570,7 +4570,7 @@ func (r *Fetch) MotionCategory_ID(motionCategoryID int) *ValueInt {
 }
 
 func (r *Fetch) MotionCategory_Level(motionCategoryID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_category", ID: motionCategoryID, Field: "level"}
+	key, _ := dskey.FromParts("motion_category", motionCategoryID, "level")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4580,7 +4580,7 @@ func (r *Fetch) MotionCategory_Level(motionCategoryID int) *ValueInt {
 }
 
 func (r *Fetch) MotionCategory_MeetingID(motionCategoryID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_category", ID: motionCategoryID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("motion_category", motionCategoryID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4590,7 +4590,7 @@ func (r *Fetch) MotionCategory_MeetingID(motionCategoryID int) *ValueInt {
 }
 
 func (r *Fetch) MotionCategory_MotionIDs(motionCategoryID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion_category", ID: motionCategoryID, Field: "motion_ids"}
+	key, _ := dskey.FromParts("motion_category", motionCategoryID, "motion_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4600,7 +4600,7 @@ func (r *Fetch) MotionCategory_MotionIDs(motionCategoryID int) *ValueIntSlice {
 }
 
 func (r *Fetch) MotionCategory_Name(motionCategoryID int) *ValueString {
-	key := dskey.Key{Collection: "motion_category", ID: motionCategoryID, Field: "name"}
+	key, _ := dskey.FromParts("motion_category", motionCategoryID, "name")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4610,7 +4610,7 @@ func (r *Fetch) MotionCategory_Name(motionCategoryID int) *ValueString {
 }
 
 func (r *Fetch) MotionCategory_ParentID(motionCategoryID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "motion_category", ID: motionCategoryID, Field: "parent_id"}
+	key, _ := dskey.FromParts("motion_category", motionCategoryID, "parent_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -4620,7 +4620,7 @@ func (r *Fetch) MotionCategory_ParentID(motionCategoryID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) MotionCategory_Prefix(motionCategoryID int) *ValueString {
-	key := dskey.Key{Collection: "motion_category", ID: motionCategoryID, Field: "prefix"}
+	key, _ := dskey.FromParts("motion_category", motionCategoryID, "prefix")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4630,7 +4630,7 @@ func (r *Fetch) MotionCategory_Prefix(motionCategoryID int) *ValueString {
 }
 
 func (r *Fetch) MotionCategory_SequentialNumber(motionCategoryID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_category", ID: motionCategoryID, Field: "sequential_number"}
+	key, _ := dskey.FromParts("motion_category", motionCategoryID, "sequential_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4640,7 +4640,7 @@ func (r *Fetch) MotionCategory_SequentialNumber(motionCategoryID int) *ValueInt 
 }
 
 func (r *Fetch) MotionCategory_Weight(motionCategoryID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_category", ID: motionCategoryID, Field: "weight"}
+	key, _ := dskey.FromParts("motion_category", motionCategoryID, "weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4650,7 +4650,7 @@ func (r *Fetch) MotionCategory_Weight(motionCategoryID int) *ValueInt {
 }
 
 func (r *Fetch) MotionChangeRecommendation_CreationTime(motionChangeRecommendationID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_change_recommendation", ID: motionChangeRecommendationID, Field: "creation_time"}
+	key, _ := dskey.FromParts("motion_change_recommendation", motionChangeRecommendationID, "creation_time")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4660,7 +4660,7 @@ func (r *Fetch) MotionChangeRecommendation_CreationTime(motionChangeRecommendati
 }
 
 func (r *Fetch) MotionChangeRecommendation_ID(motionChangeRecommendationID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_change_recommendation", ID: motionChangeRecommendationID, Field: "id"}
+	key, _ := dskey.FromParts("motion_change_recommendation", motionChangeRecommendationID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4670,7 +4670,7 @@ func (r *Fetch) MotionChangeRecommendation_ID(motionChangeRecommendationID int) 
 }
 
 func (r *Fetch) MotionChangeRecommendation_Internal(motionChangeRecommendationID int) *ValueBool {
-	key := dskey.Key{Collection: "motion_change_recommendation", ID: motionChangeRecommendationID, Field: "internal"}
+	key, _ := dskey.FromParts("motion_change_recommendation", motionChangeRecommendationID, "internal")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -4680,7 +4680,7 @@ func (r *Fetch) MotionChangeRecommendation_Internal(motionChangeRecommendationID
 }
 
 func (r *Fetch) MotionChangeRecommendation_LineFrom(motionChangeRecommendationID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_change_recommendation", ID: motionChangeRecommendationID, Field: "line_from"}
+	key, _ := dskey.FromParts("motion_change_recommendation", motionChangeRecommendationID, "line_from")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4690,7 +4690,7 @@ func (r *Fetch) MotionChangeRecommendation_LineFrom(motionChangeRecommendationID
 }
 
 func (r *Fetch) MotionChangeRecommendation_LineTo(motionChangeRecommendationID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_change_recommendation", ID: motionChangeRecommendationID, Field: "line_to"}
+	key, _ := dskey.FromParts("motion_change_recommendation", motionChangeRecommendationID, "line_to")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4700,7 +4700,7 @@ func (r *Fetch) MotionChangeRecommendation_LineTo(motionChangeRecommendationID i
 }
 
 func (r *Fetch) MotionChangeRecommendation_MeetingID(motionChangeRecommendationID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_change_recommendation", ID: motionChangeRecommendationID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("motion_change_recommendation", motionChangeRecommendationID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4710,7 +4710,7 @@ func (r *Fetch) MotionChangeRecommendation_MeetingID(motionChangeRecommendationI
 }
 
 func (r *Fetch) MotionChangeRecommendation_MotionID(motionChangeRecommendationID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_change_recommendation", ID: motionChangeRecommendationID, Field: "motion_id"}
+	key, _ := dskey.FromParts("motion_change_recommendation", motionChangeRecommendationID, "motion_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4720,7 +4720,7 @@ func (r *Fetch) MotionChangeRecommendation_MotionID(motionChangeRecommendationID
 }
 
 func (r *Fetch) MotionChangeRecommendation_OtherDescription(motionChangeRecommendationID int) *ValueString {
-	key := dskey.Key{Collection: "motion_change_recommendation", ID: motionChangeRecommendationID, Field: "other_description"}
+	key, _ := dskey.FromParts("motion_change_recommendation", motionChangeRecommendationID, "other_description")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4730,7 +4730,7 @@ func (r *Fetch) MotionChangeRecommendation_OtherDescription(motionChangeRecommen
 }
 
 func (r *Fetch) MotionChangeRecommendation_Rejected(motionChangeRecommendationID int) *ValueBool {
-	key := dskey.Key{Collection: "motion_change_recommendation", ID: motionChangeRecommendationID, Field: "rejected"}
+	key, _ := dskey.FromParts("motion_change_recommendation", motionChangeRecommendationID, "rejected")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -4740,7 +4740,7 @@ func (r *Fetch) MotionChangeRecommendation_Rejected(motionChangeRecommendationID
 }
 
 func (r *Fetch) MotionChangeRecommendation_Text(motionChangeRecommendationID int) *ValueString {
-	key := dskey.Key{Collection: "motion_change_recommendation", ID: motionChangeRecommendationID, Field: "text"}
+	key, _ := dskey.FromParts("motion_change_recommendation", motionChangeRecommendationID, "text")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4750,7 +4750,7 @@ func (r *Fetch) MotionChangeRecommendation_Text(motionChangeRecommendationID int
 }
 
 func (r *Fetch) MotionChangeRecommendation_Type(motionChangeRecommendationID int) *ValueString {
-	key := dskey.Key{Collection: "motion_change_recommendation", ID: motionChangeRecommendationID, Field: "type"}
+	key, _ := dskey.FromParts("motion_change_recommendation", motionChangeRecommendationID, "type")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4760,7 +4760,7 @@ func (r *Fetch) MotionChangeRecommendation_Type(motionChangeRecommendationID int
 }
 
 func (r *Fetch) MotionCommentSection_CommentIDs(motionCommentSectionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion_comment_section", ID: motionCommentSectionID, Field: "comment_ids"}
+	key, _ := dskey.FromParts("motion_comment_section", motionCommentSectionID, "comment_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4770,7 +4770,7 @@ func (r *Fetch) MotionCommentSection_CommentIDs(motionCommentSectionID int) *Val
 }
 
 func (r *Fetch) MotionCommentSection_ID(motionCommentSectionID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_comment_section", ID: motionCommentSectionID, Field: "id"}
+	key, _ := dskey.FromParts("motion_comment_section", motionCommentSectionID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4780,7 +4780,7 @@ func (r *Fetch) MotionCommentSection_ID(motionCommentSectionID int) *ValueInt {
 }
 
 func (r *Fetch) MotionCommentSection_MeetingID(motionCommentSectionID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_comment_section", ID: motionCommentSectionID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("motion_comment_section", motionCommentSectionID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4790,7 +4790,7 @@ func (r *Fetch) MotionCommentSection_MeetingID(motionCommentSectionID int) *Valu
 }
 
 func (r *Fetch) MotionCommentSection_Name(motionCommentSectionID int) *ValueString {
-	key := dskey.Key{Collection: "motion_comment_section", ID: motionCommentSectionID, Field: "name"}
+	key, _ := dskey.FromParts("motion_comment_section", motionCommentSectionID, "name")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4800,7 +4800,7 @@ func (r *Fetch) MotionCommentSection_Name(motionCommentSectionID int) *ValueStri
 }
 
 func (r *Fetch) MotionCommentSection_ReadGroupIDs(motionCommentSectionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion_comment_section", ID: motionCommentSectionID, Field: "read_group_ids"}
+	key, _ := dskey.FromParts("motion_comment_section", motionCommentSectionID, "read_group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4810,7 +4810,7 @@ func (r *Fetch) MotionCommentSection_ReadGroupIDs(motionCommentSectionID int) *V
 }
 
 func (r *Fetch) MotionCommentSection_SequentialNumber(motionCommentSectionID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_comment_section", ID: motionCommentSectionID, Field: "sequential_number"}
+	key, _ := dskey.FromParts("motion_comment_section", motionCommentSectionID, "sequential_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4820,7 +4820,7 @@ func (r *Fetch) MotionCommentSection_SequentialNumber(motionCommentSectionID int
 }
 
 func (r *Fetch) MotionCommentSection_SubmitterCanWrite(motionCommentSectionID int) *ValueBool {
-	key := dskey.Key{Collection: "motion_comment_section", ID: motionCommentSectionID, Field: "submitter_can_write"}
+	key, _ := dskey.FromParts("motion_comment_section", motionCommentSectionID, "submitter_can_write")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -4830,7 +4830,7 @@ func (r *Fetch) MotionCommentSection_SubmitterCanWrite(motionCommentSectionID in
 }
 
 func (r *Fetch) MotionCommentSection_Weight(motionCommentSectionID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_comment_section", ID: motionCommentSectionID, Field: "weight"}
+	key, _ := dskey.FromParts("motion_comment_section", motionCommentSectionID, "weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4840,7 +4840,7 @@ func (r *Fetch) MotionCommentSection_Weight(motionCommentSectionID int) *ValueIn
 }
 
 func (r *Fetch) MotionCommentSection_WriteGroupIDs(motionCommentSectionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion_comment_section", ID: motionCommentSectionID, Field: "write_group_ids"}
+	key, _ := dskey.FromParts("motion_comment_section", motionCommentSectionID, "write_group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -4850,7 +4850,7 @@ func (r *Fetch) MotionCommentSection_WriteGroupIDs(motionCommentSectionID int) *
 }
 
 func (r *Fetch) MotionComment_Comment(motionCommentID int) *ValueString {
-	key := dskey.Key{Collection: "motion_comment", ID: motionCommentID, Field: "comment"}
+	key, _ := dskey.FromParts("motion_comment", motionCommentID, "comment")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4860,7 +4860,7 @@ func (r *Fetch) MotionComment_Comment(motionCommentID int) *ValueString {
 }
 
 func (r *Fetch) MotionComment_ID(motionCommentID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_comment", ID: motionCommentID, Field: "id"}
+	key, _ := dskey.FromParts("motion_comment", motionCommentID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4870,7 +4870,7 @@ func (r *Fetch) MotionComment_ID(motionCommentID int) *ValueInt {
 }
 
 func (r *Fetch) MotionComment_MeetingID(motionCommentID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_comment", ID: motionCommentID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("motion_comment", motionCommentID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4880,7 +4880,7 @@ func (r *Fetch) MotionComment_MeetingID(motionCommentID int) *ValueInt {
 }
 
 func (r *Fetch) MotionComment_MotionID(motionCommentID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_comment", ID: motionCommentID, Field: "motion_id"}
+	key, _ := dskey.FromParts("motion_comment", motionCommentID, "motion_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4890,7 +4890,7 @@ func (r *Fetch) MotionComment_MotionID(motionCommentID int) *ValueInt {
 }
 
 func (r *Fetch) MotionComment_SectionID(motionCommentID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_comment", ID: motionCommentID, Field: "section_id"}
+	key, _ := dskey.FromParts("motion_comment", motionCommentID, "section_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4900,7 +4900,7 @@ func (r *Fetch) MotionComment_SectionID(motionCommentID int) *ValueInt {
 }
 
 func (r *Fetch) MotionState_AllowCreatePoll(motionStateID int) *ValueBool {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "allow_create_poll"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "allow_create_poll")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -4910,7 +4910,7 @@ func (r *Fetch) MotionState_AllowCreatePoll(motionStateID int) *ValueBool {
 }
 
 func (r *Fetch) MotionState_AllowMotionForwarding(motionStateID int) *ValueBool {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "allow_motion_forwarding"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "allow_motion_forwarding")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -4920,7 +4920,7 @@ func (r *Fetch) MotionState_AllowMotionForwarding(motionStateID int) *ValueBool 
 }
 
 func (r *Fetch) MotionState_AllowSubmitterEdit(motionStateID int) *ValueBool {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "allow_submitter_edit"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "allow_submitter_edit")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -4930,7 +4930,7 @@ func (r *Fetch) MotionState_AllowSubmitterEdit(motionStateID int) *ValueBool {
 }
 
 func (r *Fetch) MotionState_AllowSupport(motionStateID int) *ValueBool {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "allow_support"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "allow_support")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -4940,7 +4940,7 @@ func (r *Fetch) MotionState_AllowSupport(motionStateID int) *ValueBool {
 }
 
 func (r *Fetch) MotionState_CssClass(motionStateID int) *ValueString {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "css_class"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "css_class")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4950,7 +4950,7 @@ func (r *Fetch) MotionState_CssClass(motionStateID int) *ValueString {
 }
 
 func (r *Fetch) MotionState_FirstStateOfWorkflowID(motionStateID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "first_state_of_workflow_id"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "first_state_of_workflow_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -4960,7 +4960,7 @@ func (r *Fetch) MotionState_FirstStateOfWorkflowID(motionStateID int) *ValueMayb
 }
 
 func (r *Fetch) MotionState_ID(motionStateID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "id"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4970,7 +4970,7 @@ func (r *Fetch) MotionState_ID(motionStateID int) *ValueInt {
 }
 
 func (r *Fetch) MotionState_MeetingID(motionStateID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -4980,7 +4980,7 @@ func (r *Fetch) MotionState_MeetingID(motionStateID int) *ValueInt {
 }
 
 func (r *Fetch) MotionState_MergeAmendmentIntoFinal(motionStateID int) *ValueString {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "merge_amendment_into_final"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "merge_amendment_into_final")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -4990,7 +4990,7 @@ func (r *Fetch) MotionState_MergeAmendmentIntoFinal(motionStateID int) *ValueStr
 }
 
 func (r *Fetch) MotionState_MotionIDs(motionStateID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "motion_ids"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "motion_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5000,7 +5000,7 @@ func (r *Fetch) MotionState_MotionIDs(motionStateID int) *ValueIntSlice {
 }
 
 func (r *Fetch) MotionState_MotionRecommendationIDs(motionStateID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "motion_recommendation_ids"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "motion_recommendation_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5010,7 +5010,7 @@ func (r *Fetch) MotionState_MotionRecommendationIDs(motionStateID int) *ValueInt
 }
 
 func (r *Fetch) MotionState_Name(motionStateID int) *ValueString {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "name"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "name")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5020,7 +5020,7 @@ func (r *Fetch) MotionState_Name(motionStateID int) *ValueString {
 }
 
 func (r *Fetch) MotionState_NextStateIDs(motionStateID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "next_state_ids"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "next_state_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5030,7 +5030,7 @@ func (r *Fetch) MotionState_NextStateIDs(motionStateID int) *ValueIntSlice {
 }
 
 func (r *Fetch) MotionState_PreviousStateIDs(motionStateID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "previous_state_ids"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "previous_state_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5040,7 +5040,7 @@ func (r *Fetch) MotionState_PreviousStateIDs(motionStateID int) *ValueIntSlice {
 }
 
 func (r *Fetch) MotionState_RecommendationLabel(motionStateID int) *ValueString {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "recommendation_label"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "recommendation_label")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5050,7 +5050,7 @@ func (r *Fetch) MotionState_RecommendationLabel(motionStateID int) *ValueString 
 }
 
 func (r *Fetch) MotionState_Restrictions(motionStateID int) *ValueStringSlice {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "restrictions"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "restrictions")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueStringSlice)
 	}
@@ -5060,7 +5060,7 @@ func (r *Fetch) MotionState_Restrictions(motionStateID int) *ValueStringSlice {
 }
 
 func (r *Fetch) MotionState_SetNumber(motionStateID int) *ValueBool {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "set_number"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "set_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -5070,7 +5070,7 @@ func (r *Fetch) MotionState_SetNumber(motionStateID int) *ValueBool {
 }
 
 func (r *Fetch) MotionState_SetWorkflowTimestamp(motionStateID int) *ValueBool {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "set_workflow_timestamp"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "set_workflow_timestamp")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -5080,7 +5080,7 @@ func (r *Fetch) MotionState_SetWorkflowTimestamp(motionStateID int) *ValueBool {
 }
 
 func (r *Fetch) MotionState_ShowRecommendationExtensionField(motionStateID int) *ValueBool {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "show_recommendation_extension_field"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "show_recommendation_extension_field")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -5090,7 +5090,7 @@ func (r *Fetch) MotionState_ShowRecommendationExtensionField(motionStateID int) 
 }
 
 func (r *Fetch) MotionState_ShowStateExtensionField(motionStateID int) *ValueBool {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "show_state_extension_field"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "show_state_extension_field")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -5100,7 +5100,7 @@ func (r *Fetch) MotionState_ShowStateExtensionField(motionStateID int) *ValueBoo
 }
 
 func (r *Fetch) MotionState_SubmitterWithdrawBackIDs(motionStateID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "submitter_withdraw_back_ids"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "submitter_withdraw_back_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5110,7 +5110,7 @@ func (r *Fetch) MotionState_SubmitterWithdrawBackIDs(motionStateID int) *ValueIn
 }
 
 func (r *Fetch) MotionState_SubmitterWithdrawStateID(motionStateID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "submitter_withdraw_state_id"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "submitter_withdraw_state_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -5120,7 +5120,7 @@ func (r *Fetch) MotionState_SubmitterWithdrawStateID(motionStateID int) *ValueMa
 }
 
 func (r *Fetch) MotionState_Weight(motionStateID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "weight"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5130,7 +5130,7 @@ func (r *Fetch) MotionState_Weight(motionStateID int) *ValueInt {
 }
 
 func (r *Fetch) MotionState_WorkflowID(motionStateID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_state", ID: motionStateID, Field: "workflow_id"}
+	key, _ := dskey.FromParts("motion_state", motionStateID, "workflow_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5140,7 +5140,7 @@ func (r *Fetch) MotionState_WorkflowID(motionStateID int) *ValueInt {
 }
 
 func (r *Fetch) MotionStatuteParagraph_ID(motionStatuteParagraphID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_statute_paragraph", ID: motionStatuteParagraphID, Field: "id"}
+	key, _ := dskey.FromParts("motion_statute_paragraph", motionStatuteParagraphID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5150,7 +5150,7 @@ func (r *Fetch) MotionStatuteParagraph_ID(motionStatuteParagraphID int) *ValueIn
 }
 
 func (r *Fetch) MotionStatuteParagraph_MeetingID(motionStatuteParagraphID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_statute_paragraph", ID: motionStatuteParagraphID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("motion_statute_paragraph", motionStatuteParagraphID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5160,7 +5160,7 @@ func (r *Fetch) MotionStatuteParagraph_MeetingID(motionStatuteParagraphID int) *
 }
 
 func (r *Fetch) MotionStatuteParagraph_MotionIDs(motionStatuteParagraphID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion_statute_paragraph", ID: motionStatuteParagraphID, Field: "motion_ids"}
+	key, _ := dskey.FromParts("motion_statute_paragraph", motionStatuteParagraphID, "motion_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5170,7 +5170,7 @@ func (r *Fetch) MotionStatuteParagraph_MotionIDs(motionStatuteParagraphID int) *
 }
 
 func (r *Fetch) MotionStatuteParagraph_SequentialNumber(motionStatuteParagraphID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_statute_paragraph", ID: motionStatuteParagraphID, Field: "sequential_number"}
+	key, _ := dskey.FromParts("motion_statute_paragraph", motionStatuteParagraphID, "sequential_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5180,7 +5180,7 @@ func (r *Fetch) MotionStatuteParagraph_SequentialNumber(motionStatuteParagraphID
 }
 
 func (r *Fetch) MotionStatuteParagraph_Text(motionStatuteParagraphID int) *ValueString {
-	key := dskey.Key{Collection: "motion_statute_paragraph", ID: motionStatuteParagraphID, Field: "text"}
+	key, _ := dskey.FromParts("motion_statute_paragraph", motionStatuteParagraphID, "text")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5190,7 +5190,7 @@ func (r *Fetch) MotionStatuteParagraph_Text(motionStatuteParagraphID int) *Value
 }
 
 func (r *Fetch) MotionStatuteParagraph_Title(motionStatuteParagraphID int) *ValueString {
-	key := dskey.Key{Collection: "motion_statute_paragraph", ID: motionStatuteParagraphID, Field: "title"}
+	key, _ := dskey.FromParts("motion_statute_paragraph", motionStatuteParagraphID, "title")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5200,7 +5200,7 @@ func (r *Fetch) MotionStatuteParagraph_Title(motionStatuteParagraphID int) *Valu
 }
 
 func (r *Fetch) MotionStatuteParagraph_Weight(motionStatuteParagraphID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_statute_paragraph", ID: motionStatuteParagraphID, Field: "weight"}
+	key, _ := dskey.FromParts("motion_statute_paragraph", motionStatuteParagraphID, "weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5210,7 +5210,7 @@ func (r *Fetch) MotionStatuteParagraph_Weight(motionStatuteParagraphID int) *Val
 }
 
 func (r *Fetch) MotionSubmitter_ID(motionSubmitterID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_submitter", ID: motionSubmitterID, Field: "id"}
+	key, _ := dskey.FromParts("motion_submitter", motionSubmitterID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5220,7 +5220,7 @@ func (r *Fetch) MotionSubmitter_ID(motionSubmitterID int) *ValueInt {
 }
 
 func (r *Fetch) MotionSubmitter_MeetingID(motionSubmitterID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_submitter", ID: motionSubmitterID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("motion_submitter", motionSubmitterID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5230,7 +5230,7 @@ func (r *Fetch) MotionSubmitter_MeetingID(motionSubmitterID int) *ValueInt {
 }
 
 func (r *Fetch) MotionSubmitter_MeetingUserID(motionSubmitterID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_submitter", ID: motionSubmitterID, Field: "meeting_user_id"}
+	key, _ := dskey.FromParts("motion_submitter", motionSubmitterID, "meeting_user_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5240,7 +5240,7 @@ func (r *Fetch) MotionSubmitter_MeetingUserID(motionSubmitterID int) *ValueInt {
 }
 
 func (r *Fetch) MotionSubmitter_MotionID(motionSubmitterID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_submitter", ID: motionSubmitterID, Field: "motion_id"}
+	key, _ := dskey.FromParts("motion_submitter", motionSubmitterID, "motion_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5250,7 +5250,7 @@ func (r *Fetch) MotionSubmitter_MotionID(motionSubmitterID int) *ValueInt {
 }
 
 func (r *Fetch) MotionSubmitter_Weight(motionSubmitterID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_submitter", ID: motionSubmitterID, Field: "weight"}
+	key, _ := dskey.FromParts("motion_submitter", motionSubmitterID, "weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5260,7 +5260,7 @@ func (r *Fetch) MotionSubmitter_Weight(motionSubmitterID int) *ValueInt {
 }
 
 func (r *Fetch) MotionWorkflow_DefaultAmendmentWorkflowMeetingID(motionWorkflowID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "motion_workflow", ID: motionWorkflowID, Field: "default_amendment_workflow_meeting_id"}
+	key, _ := dskey.FromParts("motion_workflow", motionWorkflowID, "default_amendment_workflow_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -5270,7 +5270,7 @@ func (r *Fetch) MotionWorkflow_DefaultAmendmentWorkflowMeetingID(motionWorkflowI
 }
 
 func (r *Fetch) MotionWorkflow_DefaultStatuteAmendmentWorkflowMeetingID(motionWorkflowID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "motion_workflow", ID: motionWorkflowID, Field: "default_statute_amendment_workflow_meeting_id"}
+	key, _ := dskey.FromParts("motion_workflow", motionWorkflowID, "default_statute_amendment_workflow_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -5280,7 +5280,7 @@ func (r *Fetch) MotionWorkflow_DefaultStatuteAmendmentWorkflowMeetingID(motionWo
 }
 
 func (r *Fetch) MotionWorkflow_DefaultWorkflowMeetingID(motionWorkflowID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "motion_workflow", ID: motionWorkflowID, Field: "default_workflow_meeting_id"}
+	key, _ := dskey.FromParts("motion_workflow", motionWorkflowID, "default_workflow_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -5290,7 +5290,7 @@ func (r *Fetch) MotionWorkflow_DefaultWorkflowMeetingID(motionWorkflowID int) *V
 }
 
 func (r *Fetch) MotionWorkflow_FirstStateID(motionWorkflowID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_workflow", ID: motionWorkflowID, Field: "first_state_id"}
+	key, _ := dskey.FromParts("motion_workflow", motionWorkflowID, "first_state_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5300,7 +5300,7 @@ func (r *Fetch) MotionWorkflow_FirstStateID(motionWorkflowID int) *ValueInt {
 }
 
 func (r *Fetch) MotionWorkflow_ID(motionWorkflowID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_workflow", ID: motionWorkflowID, Field: "id"}
+	key, _ := dskey.FromParts("motion_workflow", motionWorkflowID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5310,7 +5310,7 @@ func (r *Fetch) MotionWorkflow_ID(motionWorkflowID int) *ValueInt {
 }
 
 func (r *Fetch) MotionWorkflow_MeetingID(motionWorkflowID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_workflow", ID: motionWorkflowID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("motion_workflow", motionWorkflowID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5320,7 +5320,7 @@ func (r *Fetch) MotionWorkflow_MeetingID(motionWorkflowID int) *ValueInt {
 }
 
 func (r *Fetch) MotionWorkflow_Name(motionWorkflowID int) *ValueString {
-	key := dskey.Key{Collection: "motion_workflow", ID: motionWorkflowID, Field: "name"}
+	key, _ := dskey.FromParts("motion_workflow", motionWorkflowID, "name")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5330,7 +5330,7 @@ func (r *Fetch) MotionWorkflow_Name(motionWorkflowID int) *ValueString {
 }
 
 func (r *Fetch) MotionWorkflow_SequentialNumber(motionWorkflowID int) *ValueInt {
-	key := dskey.Key{Collection: "motion_workflow", ID: motionWorkflowID, Field: "sequential_number"}
+	key, _ := dskey.FromParts("motion_workflow", motionWorkflowID, "sequential_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5340,7 +5340,7 @@ func (r *Fetch) MotionWorkflow_SequentialNumber(motionWorkflowID int) *ValueInt 
 }
 
 func (r *Fetch) MotionWorkflow_StateIDs(motionWorkflowID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion_workflow", ID: motionWorkflowID, Field: "state_ids"}
+	key, _ := dskey.FromParts("motion_workflow", motionWorkflowID, "state_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5350,7 +5350,7 @@ func (r *Fetch) MotionWorkflow_StateIDs(motionWorkflowID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Motion_AgendaItemID(motionID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "agenda_item_id"}
+	key, _ := dskey.FromParts("motion", motionID, "agenda_item_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -5360,7 +5360,7 @@ func (r *Fetch) Motion_AgendaItemID(motionID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Motion_AllDerivedMotionIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "all_derived_motion_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "all_derived_motion_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5370,7 +5370,7 @@ func (r *Fetch) Motion_AllDerivedMotionIDs(motionID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Motion_AllOriginIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "all_origin_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "all_origin_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5380,7 +5380,7 @@ func (r *Fetch) Motion_AllOriginIDs(motionID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Motion_AmendmentIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "amendment_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "amendment_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5390,7 +5390,7 @@ func (r *Fetch) Motion_AmendmentIDs(motionID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Motion_AmendmentParagraphs(motionID int) *ValueJSON {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "amendment_paragraphs"}
+	key, _ := dskey.FromParts("motion", motionID, "amendment_paragraphs")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueJSON)
 	}
@@ -5400,7 +5400,7 @@ func (r *Fetch) Motion_AmendmentParagraphs(motionID int) *ValueJSON {
 }
 
 func (r *Fetch) Motion_AttachmentIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "attachment_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "attachment_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5410,7 +5410,7 @@ func (r *Fetch) Motion_AttachmentIDs(motionID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Motion_BlockID(motionID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "block_id"}
+	key, _ := dskey.FromParts("motion", motionID, "block_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -5420,7 +5420,7 @@ func (r *Fetch) Motion_BlockID(motionID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Motion_CategoryID(motionID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "category_id"}
+	key, _ := dskey.FromParts("motion", motionID, "category_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -5430,7 +5430,7 @@ func (r *Fetch) Motion_CategoryID(motionID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Motion_CategoryWeight(motionID int) *ValueInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "category_weight"}
+	key, _ := dskey.FromParts("motion", motionID, "category_weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5440,7 +5440,7 @@ func (r *Fetch) Motion_CategoryWeight(motionID int) *ValueInt {
 }
 
 func (r *Fetch) Motion_ChangeRecommendationIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "change_recommendation_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "change_recommendation_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5450,7 +5450,7 @@ func (r *Fetch) Motion_ChangeRecommendationIDs(motionID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Motion_CommentIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "comment_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "comment_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5460,7 +5460,7 @@ func (r *Fetch) Motion_CommentIDs(motionID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Motion_Created(motionID int) *ValueInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "created"}
+	key, _ := dskey.FromParts("motion", motionID, "created")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5470,7 +5470,7 @@ func (r *Fetch) Motion_Created(motionID int) *ValueInt {
 }
 
 func (r *Fetch) Motion_DerivedMotionIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "derived_motion_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "derived_motion_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5480,7 +5480,7 @@ func (r *Fetch) Motion_DerivedMotionIDs(motionID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Motion_Forwarded(motionID int) *ValueInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "forwarded"}
+	key, _ := dskey.FromParts("motion", motionID, "forwarded")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5490,7 +5490,7 @@ func (r *Fetch) Motion_Forwarded(motionID int) *ValueInt {
 }
 
 func (r *Fetch) Motion_ID(motionID int) *ValueInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "id"}
+	key, _ := dskey.FromParts("motion", motionID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5500,7 +5500,7 @@ func (r *Fetch) Motion_ID(motionID int) *ValueInt {
 }
 
 func (r *Fetch) Motion_LastModified(motionID int) *ValueInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "last_modified"}
+	key, _ := dskey.FromParts("motion", motionID, "last_modified")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5510,7 +5510,7 @@ func (r *Fetch) Motion_LastModified(motionID int) *ValueInt {
 }
 
 func (r *Fetch) Motion_LeadMotionID(motionID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "lead_motion_id"}
+	key, _ := dskey.FromParts("motion", motionID, "lead_motion_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -5520,7 +5520,7 @@ func (r *Fetch) Motion_LeadMotionID(motionID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Motion_ListOfSpeakersID(motionID int) *ValueInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "list_of_speakers_id"}
+	key, _ := dskey.FromParts("motion", motionID, "list_of_speakers_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5530,7 +5530,7 @@ func (r *Fetch) Motion_ListOfSpeakersID(motionID int) *ValueInt {
 }
 
 func (r *Fetch) Motion_MeetingID(motionID int) *ValueInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("motion", motionID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5540,7 +5540,7 @@ func (r *Fetch) Motion_MeetingID(motionID int) *ValueInt {
 }
 
 func (r *Fetch) Motion_ModifiedFinalVersion(motionID int) *ValueString {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "modified_final_version"}
+	key, _ := dskey.FromParts("motion", motionID, "modified_final_version")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5550,7 +5550,7 @@ func (r *Fetch) Motion_ModifiedFinalVersion(motionID int) *ValueString {
 }
 
 func (r *Fetch) Motion_Number(motionID int) *ValueString {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "number"}
+	key, _ := dskey.FromParts("motion", motionID, "number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5560,7 +5560,7 @@ func (r *Fetch) Motion_Number(motionID int) *ValueString {
 }
 
 func (r *Fetch) Motion_NumberValue(motionID int) *ValueInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "number_value"}
+	key, _ := dskey.FromParts("motion", motionID, "number_value")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5570,7 +5570,7 @@ func (r *Fetch) Motion_NumberValue(motionID int) *ValueInt {
 }
 
 func (r *Fetch) Motion_OptionIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "option_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "option_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5580,7 +5580,7 @@ func (r *Fetch) Motion_OptionIDs(motionID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Motion_OriginID(motionID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "origin_id"}
+	key, _ := dskey.FromParts("motion", motionID, "origin_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -5590,7 +5590,7 @@ func (r *Fetch) Motion_OriginID(motionID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Motion_OriginMeetingID(motionID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "origin_meeting_id"}
+	key, _ := dskey.FromParts("motion", motionID, "origin_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -5600,7 +5600,7 @@ func (r *Fetch) Motion_OriginMeetingID(motionID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Motion_PersonalNoteIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "personal_note_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "personal_note_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5610,7 +5610,7 @@ func (r *Fetch) Motion_PersonalNoteIDs(motionID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Motion_PollIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "poll_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "poll_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5620,7 +5620,7 @@ func (r *Fetch) Motion_PollIDs(motionID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Motion_ProjectionIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "projection_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "projection_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5630,7 +5630,7 @@ func (r *Fetch) Motion_ProjectionIDs(motionID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Motion_Reason(motionID int) *ValueString {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "reason"}
+	key, _ := dskey.FromParts("motion", motionID, "reason")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5640,7 +5640,7 @@ func (r *Fetch) Motion_Reason(motionID int) *ValueString {
 }
 
 func (r *Fetch) Motion_RecommendationExtension(motionID int) *ValueString {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "recommendation_extension"}
+	key, _ := dskey.FromParts("motion", motionID, "recommendation_extension")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5650,7 +5650,7 @@ func (r *Fetch) Motion_RecommendationExtension(motionID int) *ValueString {
 }
 
 func (r *Fetch) Motion_RecommendationExtensionReferenceIDs(motionID int) *ValueStringSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "recommendation_extension_reference_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "recommendation_extension_reference_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueStringSlice)
 	}
@@ -5660,7 +5660,7 @@ func (r *Fetch) Motion_RecommendationExtensionReferenceIDs(motionID int) *ValueS
 }
 
 func (r *Fetch) Motion_RecommendationID(motionID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "recommendation_id"}
+	key, _ := dskey.FromParts("motion", motionID, "recommendation_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -5670,7 +5670,7 @@ func (r *Fetch) Motion_RecommendationID(motionID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Motion_ReferencedInMotionRecommendationExtensionIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "referenced_in_motion_recommendation_extension_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "referenced_in_motion_recommendation_extension_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5680,7 +5680,7 @@ func (r *Fetch) Motion_ReferencedInMotionRecommendationExtensionIDs(motionID int
 }
 
 func (r *Fetch) Motion_ReferencedInMotionStateExtensionIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "referenced_in_motion_state_extension_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "referenced_in_motion_state_extension_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5690,7 +5690,7 @@ func (r *Fetch) Motion_ReferencedInMotionStateExtensionIDs(motionID int) *ValueI
 }
 
 func (r *Fetch) Motion_SequentialNumber(motionID int) *ValueInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "sequential_number"}
+	key, _ := dskey.FromParts("motion", motionID, "sequential_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5700,7 +5700,7 @@ func (r *Fetch) Motion_SequentialNumber(motionID int) *ValueInt {
 }
 
 func (r *Fetch) Motion_SortChildIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "sort_child_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "sort_child_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5710,7 +5710,7 @@ func (r *Fetch) Motion_SortChildIDs(motionID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Motion_SortParentID(motionID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "sort_parent_id"}
+	key, _ := dskey.FromParts("motion", motionID, "sort_parent_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -5720,7 +5720,7 @@ func (r *Fetch) Motion_SortParentID(motionID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Motion_SortWeight(motionID int) *ValueInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "sort_weight"}
+	key, _ := dskey.FromParts("motion", motionID, "sort_weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5730,7 +5730,7 @@ func (r *Fetch) Motion_SortWeight(motionID int) *ValueInt {
 }
 
 func (r *Fetch) Motion_StartLineNumber(motionID int) *ValueInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "start_line_number"}
+	key, _ := dskey.FromParts("motion", motionID, "start_line_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5740,7 +5740,7 @@ func (r *Fetch) Motion_StartLineNumber(motionID int) *ValueInt {
 }
 
 func (r *Fetch) Motion_StateExtension(motionID int) *ValueString {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "state_extension"}
+	key, _ := dskey.FromParts("motion", motionID, "state_extension")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5750,7 +5750,7 @@ func (r *Fetch) Motion_StateExtension(motionID int) *ValueString {
 }
 
 func (r *Fetch) Motion_StateExtensionReferenceIDs(motionID int) *ValueStringSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "state_extension_reference_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "state_extension_reference_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueStringSlice)
 	}
@@ -5760,7 +5760,7 @@ func (r *Fetch) Motion_StateExtensionReferenceIDs(motionID int) *ValueStringSlic
 }
 
 func (r *Fetch) Motion_StateID(motionID int) *ValueInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "state_id"}
+	key, _ := dskey.FromParts("motion", motionID, "state_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5770,7 +5770,7 @@ func (r *Fetch) Motion_StateID(motionID int) *ValueInt {
 }
 
 func (r *Fetch) Motion_StatuteParagraphID(motionID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "statute_paragraph_id"}
+	key, _ := dskey.FromParts("motion", motionID, "statute_paragraph_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -5780,7 +5780,7 @@ func (r *Fetch) Motion_StatuteParagraphID(motionID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Motion_SubmitterIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "submitter_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "submitter_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5790,7 +5790,7 @@ func (r *Fetch) Motion_SubmitterIDs(motionID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Motion_SupporterMeetingUserIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "supporter_meeting_user_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "supporter_meeting_user_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5800,7 +5800,7 @@ func (r *Fetch) Motion_SupporterMeetingUserIDs(motionID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Motion_TagIDs(motionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "tag_ids"}
+	key, _ := dskey.FromParts("motion", motionID, "tag_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5810,7 +5810,7 @@ func (r *Fetch) Motion_TagIDs(motionID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Motion_Text(motionID int) *ValueString {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "text"}
+	key, _ := dskey.FromParts("motion", motionID, "text")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5820,7 +5820,7 @@ func (r *Fetch) Motion_Text(motionID int) *ValueString {
 }
 
 func (r *Fetch) Motion_Title(motionID int) *ValueString {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "title"}
+	key, _ := dskey.FromParts("motion", motionID, "title")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5830,7 +5830,7 @@ func (r *Fetch) Motion_Title(motionID int) *ValueString {
 }
 
 func (r *Fetch) Motion_WorkflowTimestamp(motionID int) *ValueInt {
-	key := dskey.Key{Collection: "motion", ID: motionID, Field: "workflow_timestamp"}
+	key, _ := dskey.FromParts("motion", motionID, "workflow_timestamp")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5840,7 +5840,7 @@ func (r *Fetch) Motion_WorkflowTimestamp(motionID int) *ValueInt {
 }
 
 func (r *Fetch) Option_Abstain(optionID int) *ValueString {
-	key := dskey.Key{Collection: "option", ID: optionID, Field: "abstain"}
+	key, _ := dskey.FromParts("option", optionID, "abstain")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5850,7 +5850,7 @@ func (r *Fetch) Option_Abstain(optionID int) *ValueString {
 }
 
 func (r *Fetch) Option_ContentObjectID(optionID int) *ValueMaybeString {
-	key := dskey.Key{Collection: "option", ID: optionID, Field: "content_object_id"}
+	key, _ := dskey.FromParts("option", optionID, "content_object_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeString)
 	}
@@ -5860,7 +5860,7 @@ func (r *Fetch) Option_ContentObjectID(optionID int) *ValueMaybeString {
 }
 
 func (r *Fetch) Option_ID(optionID int) *ValueInt {
-	key := dskey.Key{Collection: "option", ID: optionID, Field: "id"}
+	key, _ := dskey.FromParts("option", optionID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5870,7 +5870,7 @@ func (r *Fetch) Option_ID(optionID int) *ValueInt {
 }
 
 func (r *Fetch) Option_MeetingID(optionID int) *ValueInt {
-	key := dskey.Key{Collection: "option", ID: optionID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("option", optionID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5880,7 +5880,7 @@ func (r *Fetch) Option_MeetingID(optionID int) *ValueInt {
 }
 
 func (r *Fetch) Option_No(optionID int) *ValueString {
-	key := dskey.Key{Collection: "option", ID: optionID, Field: "no"}
+	key, _ := dskey.FromParts("option", optionID, "no")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5890,7 +5890,7 @@ func (r *Fetch) Option_No(optionID int) *ValueString {
 }
 
 func (r *Fetch) Option_PollID(optionID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "option", ID: optionID, Field: "poll_id"}
+	key, _ := dskey.FromParts("option", optionID, "poll_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -5900,7 +5900,7 @@ func (r *Fetch) Option_PollID(optionID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Option_Text(optionID int) *ValueString {
-	key := dskey.Key{Collection: "option", ID: optionID, Field: "text"}
+	key, _ := dskey.FromParts("option", optionID, "text")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5910,7 +5910,7 @@ func (r *Fetch) Option_Text(optionID int) *ValueString {
 }
 
 func (r *Fetch) Option_UsedAsGlobalOptionInPollID(optionID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "option", ID: optionID, Field: "used_as_global_option_in_poll_id"}
+	key, _ := dskey.FromParts("option", optionID, "used_as_global_option_in_poll_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -5920,7 +5920,7 @@ func (r *Fetch) Option_UsedAsGlobalOptionInPollID(optionID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Option_VoteIDs(optionID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "option", ID: optionID, Field: "vote_ids"}
+	key, _ := dskey.FromParts("option", optionID, "vote_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -5930,7 +5930,7 @@ func (r *Fetch) Option_VoteIDs(optionID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Option_Weight(optionID int) *ValueInt {
-	key := dskey.Key{Collection: "option", ID: optionID, Field: "weight"}
+	key, _ := dskey.FromParts("option", optionID, "weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5940,7 +5940,7 @@ func (r *Fetch) Option_Weight(optionID int) *ValueInt {
 }
 
 func (r *Fetch) Option_Yes(optionID int) *ValueString {
-	key := dskey.Key{Collection: "option", ID: optionID, Field: "yes"}
+	key, _ := dskey.FromParts("option", optionID, "yes")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5950,7 +5950,7 @@ func (r *Fetch) Option_Yes(optionID int) *ValueString {
 }
 
 func (r *Fetch) OrganizationTag_Color(organizationTagID int) *ValueString {
-	key := dskey.Key{Collection: "organization_tag", ID: organizationTagID, Field: "color"}
+	key, _ := dskey.FromParts("organization_tag", organizationTagID, "color")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5960,7 +5960,7 @@ func (r *Fetch) OrganizationTag_Color(organizationTagID int) *ValueString {
 }
 
 func (r *Fetch) OrganizationTag_ID(organizationTagID int) *ValueInt {
-	key := dskey.Key{Collection: "organization_tag", ID: organizationTagID, Field: "id"}
+	key, _ := dskey.FromParts("organization_tag", organizationTagID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5970,7 +5970,7 @@ func (r *Fetch) OrganizationTag_ID(organizationTagID int) *ValueInt {
 }
 
 func (r *Fetch) OrganizationTag_Name(organizationTagID int) *ValueString {
-	key := dskey.Key{Collection: "organization_tag", ID: organizationTagID, Field: "name"}
+	key, _ := dskey.FromParts("organization_tag", organizationTagID, "name")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -5980,7 +5980,7 @@ func (r *Fetch) OrganizationTag_Name(organizationTagID int) *ValueString {
 }
 
 func (r *Fetch) OrganizationTag_OrganizationID(organizationTagID int) *ValueInt {
-	key := dskey.Key{Collection: "organization_tag", ID: organizationTagID, Field: "organization_id"}
+	key, _ := dskey.FromParts("organization_tag", organizationTagID, "organization_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -5990,7 +5990,7 @@ func (r *Fetch) OrganizationTag_OrganizationID(organizationTagID int) *ValueInt 
 }
 
 func (r *Fetch) OrganizationTag_TaggedIDs(organizationTagID int) *ValueStringSlice {
-	key := dskey.Key{Collection: "organization_tag", ID: organizationTagID, Field: "tagged_ids"}
+	key, _ := dskey.FromParts("organization_tag", organizationTagID, "tagged_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueStringSlice)
 	}
@@ -6000,7 +6000,7 @@ func (r *Fetch) OrganizationTag_TaggedIDs(organizationTagID int) *ValueStringSli
 }
 
 func (r *Fetch) Organization_ActiveMeetingIDs(organizationID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "active_meeting_ids"}
+	key, _ := dskey.FromParts("organization", organizationID, "active_meeting_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -6010,7 +6010,7 @@ func (r *Fetch) Organization_ActiveMeetingIDs(organizationID int) *ValueIntSlice
 }
 
 func (r *Fetch) Organization_ArchivedMeetingIDs(organizationID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "archived_meeting_ids"}
+	key, _ := dskey.FromParts("organization", organizationID, "archived_meeting_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -6020,7 +6020,7 @@ func (r *Fetch) Organization_ArchivedMeetingIDs(organizationID int) *ValueIntSli
 }
 
 func (r *Fetch) Organization_CommitteeIDs(organizationID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "committee_ids"}
+	key, _ := dskey.FromParts("organization", organizationID, "committee_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -6030,7 +6030,7 @@ func (r *Fetch) Organization_CommitteeIDs(organizationID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Organization_DefaultLanguage(organizationID int) *ValueString {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "default_language"}
+	key, _ := dskey.FromParts("organization", organizationID, "default_language")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6040,7 +6040,7 @@ func (r *Fetch) Organization_DefaultLanguage(organizationID int) *ValueString {
 }
 
 func (r *Fetch) Organization_Description(organizationID int) *ValueString {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "description"}
+	key, _ := dskey.FromParts("organization", organizationID, "description")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6050,7 +6050,7 @@ func (r *Fetch) Organization_Description(organizationID int) *ValueString {
 }
 
 func (r *Fetch) Organization_EnableChat(organizationID int) *ValueBool {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "enable_chat"}
+	key, _ := dskey.FromParts("organization", organizationID, "enable_chat")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -6060,7 +6060,7 @@ func (r *Fetch) Organization_EnableChat(organizationID int) *ValueBool {
 }
 
 func (r *Fetch) Organization_EnableElectronicVoting(organizationID int) *ValueBool {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "enable_electronic_voting"}
+	key, _ := dskey.FromParts("organization", organizationID, "enable_electronic_voting")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -6070,7 +6070,7 @@ func (r *Fetch) Organization_EnableElectronicVoting(organizationID int) *ValueBo
 }
 
 func (r *Fetch) Organization_Genders(organizationID int) *ValueStringSlice {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "genders"}
+	key, _ := dskey.FromParts("organization", organizationID, "genders")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueStringSlice)
 	}
@@ -6080,7 +6080,7 @@ func (r *Fetch) Organization_Genders(organizationID int) *ValueStringSlice {
 }
 
 func (r *Fetch) Organization_ID(organizationID int) *ValueInt {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "id"}
+	key, _ := dskey.FromParts("organization", organizationID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6090,7 +6090,7 @@ func (r *Fetch) Organization_ID(organizationID int) *ValueInt {
 }
 
 func (r *Fetch) Organization_LegalNotice(organizationID int) *ValueString {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "legal_notice"}
+	key, _ := dskey.FromParts("organization", organizationID, "legal_notice")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6100,7 +6100,7 @@ func (r *Fetch) Organization_LegalNotice(organizationID int) *ValueString {
 }
 
 func (r *Fetch) Organization_LimitOfMeetings(organizationID int) *ValueInt {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "limit_of_meetings"}
+	key, _ := dskey.FromParts("organization", organizationID, "limit_of_meetings")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6110,7 +6110,7 @@ func (r *Fetch) Organization_LimitOfMeetings(organizationID int) *ValueInt {
 }
 
 func (r *Fetch) Organization_LimitOfUsers(organizationID int) *ValueInt {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "limit_of_users"}
+	key, _ := dskey.FromParts("organization", organizationID, "limit_of_users")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6120,7 +6120,7 @@ func (r *Fetch) Organization_LimitOfUsers(organizationID int) *ValueInt {
 }
 
 func (r *Fetch) Organization_LoginText(organizationID int) *ValueString {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "login_text"}
+	key, _ := dskey.FromParts("organization", organizationID, "login_text")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6130,7 +6130,7 @@ func (r *Fetch) Organization_LoginText(organizationID int) *ValueString {
 }
 
 func (r *Fetch) Organization_MediafileIDs(organizationID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "mediafile_ids"}
+	key, _ := dskey.FromParts("organization", organizationID, "mediafile_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -6140,7 +6140,7 @@ func (r *Fetch) Organization_MediafileIDs(organizationID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Organization_Name(organizationID int) *ValueString {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "name"}
+	key, _ := dskey.FromParts("organization", organizationID, "name")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6150,7 +6150,7 @@ func (r *Fetch) Organization_Name(organizationID int) *ValueString {
 }
 
 func (r *Fetch) Organization_OrganizationTagIDs(organizationID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "organization_tag_ids"}
+	key, _ := dskey.FromParts("organization", organizationID, "organization_tag_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -6160,7 +6160,7 @@ func (r *Fetch) Organization_OrganizationTagIDs(organizationID int) *ValueIntSli
 }
 
 func (r *Fetch) Organization_PrivacyPolicy(organizationID int) *ValueString {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "privacy_policy"}
+	key, _ := dskey.FromParts("organization", organizationID, "privacy_policy")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6170,7 +6170,7 @@ func (r *Fetch) Organization_PrivacyPolicy(organizationID int) *ValueString {
 }
 
 func (r *Fetch) Organization_ResetPasswordVerboseErrors(organizationID int) *ValueBool {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "reset_password_verbose_errors"}
+	key, _ := dskey.FromParts("organization", organizationID, "reset_password_verbose_errors")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -6180,7 +6180,7 @@ func (r *Fetch) Organization_ResetPasswordVerboseErrors(organizationID int) *Val
 }
 
 func (r *Fetch) Organization_SamlAttrMapping(organizationID int) *ValueJSON {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "saml_attr_mapping"}
+	key, _ := dskey.FromParts("organization", organizationID, "saml_attr_mapping")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueJSON)
 	}
@@ -6190,7 +6190,7 @@ func (r *Fetch) Organization_SamlAttrMapping(organizationID int) *ValueJSON {
 }
 
 func (r *Fetch) Organization_SamlEnabled(organizationID int) *ValueBool {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "saml_enabled"}
+	key, _ := dskey.FromParts("organization", organizationID, "saml_enabled")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -6200,7 +6200,7 @@ func (r *Fetch) Organization_SamlEnabled(organizationID int) *ValueBool {
 }
 
 func (r *Fetch) Organization_SamlLoginButtonText(organizationID int) *ValueString {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "saml_login_button_text"}
+	key, _ := dskey.FromParts("organization", organizationID, "saml_login_button_text")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6210,7 +6210,7 @@ func (r *Fetch) Organization_SamlLoginButtonText(organizationID int) *ValueStrin
 }
 
 func (r *Fetch) Organization_SamlMetadataIDp(organizationID int) *ValueString {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "saml_metadata_idp"}
+	key, _ := dskey.FromParts("organization", organizationID, "saml_metadata_idp")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6220,7 +6220,7 @@ func (r *Fetch) Organization_SamlMetadataIDp(organizationID int) *ValueString {
 }
 
 func (r *Fetch) Organization_SamlMetadataSp(organizationID int) *ValueString {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "saml_metadata_sp"}
+	key, _ := dskey.FromParts("organization", organizationID, "saml_metadata_sp")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6230,7 +6230,7 @@ func (r *Fetch) Organization_SamlMetadataSp(organizationID int) *ValueString {
 }
 
 func (r *Fetch) Organization_SamlPrivateKey(organizationID int) *ValueString {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "saml_private_key"}
+	key, _ := dskey.FromParts("organization", organizationID, "saml_private_key")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6240,7 +6240,7 @@ func (r *Fetch) Organization_SamlPrivateKey(organizationID int) *ValueString {
 }
 
 func (r *Fetch) Organization_TemplateMeetingIDs(organizationID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "template_meeting_ids"}
+	key, _ := dskey.FromParts("organization", organizationID, "template_meeting_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -6250,7 +6250,7 @@ func (r *Fetch) Organization_TemplateMeetingIDs(organizationID int) *ValueIntSli
 }
 
 func (r *Fetch) Organization_ThemeID(organizationID int) *ValueInt {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "theme_id"}
+	key, _ := dskey.FromParts("organization", organizationID, "theme_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6260,7 +6260,7 @@ func (r *Fetch) Organization_ThemeID(organizationID int) *ValueInt {
 }
 
 func (r *Fetch) Organization_ThemeIDs(organizationID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "theme_ids"}
+	key, _ := dskey.FromParts("organization", organizationID, "theme_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -6270,7 +6270,7 @@ func (r *Fetch) Organization_ThemeIDs(organizationID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Organization_Url(organizationID int) *ValueString {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "url"}
+	key, _ := dskey.FromParts("organization", organizationID, "url")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6280,7 +6280,7 @@ func (r *Fetch) Organization_Url(organizationID int) *ValueString {
 }
 
 func (r *Fetch) Organization_UserIDs(organizationID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "user_ids"}
+	key, _ := dskey.FromParts("organization", organizationID, "user_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -6290,7 +6290,7 @@ func (r *Fetch) Organization_UserIDs(organizationID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Organization_UsersEmailBody(organizationID int) *ValueString {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "users_email_body"}
+	key, _ := dskey.FromParts("organization", organizationID, "users_email_body")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6300,7 +6300,7 @@ func (r *Fetch) Organization_UsersEmailBody(organizationID int) *ValueString {
 }
 
 func (r *Fetch) Organization_UsersEmailReplyto(organizationID int) *ValueString {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "users_email_replyto"}
+	key, _ := dskey.FromParts("organization", organizationID, "users_email_replyto")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6310,7 +6310,7 @@ func (r *Fetch) Organization_UsersEmailReplyto(organizationID int) *ValueString 
 }
 
 func (r *Fetch) Organization_UsersEmailSender(organizationID int) *ValueString {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "users_email_sender"}
+	key, _ := dskey.FromParts("organization", organizationID, "users_email_sender")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6320,7 +6320,7 @@ func (r *Fetch) Organization_UsersEmailSender(organizationID int) *ValueString {
 }
 
 func (r *Fetch) Organization_UsersEmailSubject(organizationID int) *ValueString {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "users_email_subject"}
+	key, _ := dskey.FromParts("organization", organizationID, "users_email_subject")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6330,7 +6330,7 @@ func (r *Fetch) Organization_UsersEmailSubject(organizationID int) *ValueString 
 }
 
 func (r *Fetch) Organization_VoteDecryptPublicMainKey(organizationID int) *ValueString {
-	key := dskey.Key{Collection: "organization", ID: organizationID, Field: "vote_decrypt_public_main_key"}
+	key, _ := dskey.FromParts("organization", organizationID, "vote_decrypt_public_main_key")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6340,7 +6340,7 @@ func (r *Fetch) Organization_VoteDecryptPublicMainKey(organizationID int) *Value
 }
 
 func (r *Fetch) PersonalNote_ContentObjectID(personalNoteID int) *ValueMaybeString {
-	key := dskey.Key{Collection: "personal_note", ID: personalNoteID, Field: "content_object_id"}
+	key, _ := dskey.FromParts("personal_note", personalNoteID, "content_object_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeString)
 	}
@@ -6350,7 +6350,7 @@ func (r *Fetch) PersonalNote_ContentObjectID(personalNoteID int) *ValueMaybeStri
 }
 
 func (r *Fetch) PersonalNote_ID(personalNoteID int) *ValueInt {
-	key := dskey.Key{Collection: "personal_note", ID: personalNoteID, Field: "id"}
+	key, _ := dskey.FromParts("personal_note", personalNoteID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6360,7 +6360,7 @@ func (r *Fetch) PersonalNote_ID(personalNoteID int) *ValueInt {
 }
 
 func (r *Fetch) PersonalNote_MeetingID(personalNoteID int) *ValueInt {
-	key := dskey.Key{Collection: "personal_note", ID: personalNoteID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("personal_note", personalNoteID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6370,7 +6370,7 @@ func (r *Fetch) PersonalNote_MeetingID(personalNoteID int) *ValueInt {
 }
 
 func (r *Fetch) PersonalNote_MeetingUserID(personalNoteID int) *ValueInt {
-	key := dskey.Key{Collection: "personal_note", ID: personalNoteID, Field: "meeting_user_id"}
+	key, _ := dskey.FromParts("personal_note", personalNoteID, "meeting_user_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6380,7 +6380,7 @@ func (r *Fetch) PersonalNote_MeetingUserID(personalNoteID int) *ValueInt {
 }
 
 func (r *Fetch) PersonalNote_Note(personalNoteID int) *ValueString {
-	key := dskey.Key{Collection: "personal_note", ID: personalNoteID, Field: "note"}
+	key, _ := dskey.FromParts("personal_note", personalNoteID, "note")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6390,7 +6390,7 @@ func (r *Fetch) PersonalNote_Note(personalNoteID int) *ValueString {
 }
 
 func (r *Fetch) PersonalNote_Star(personalNoteID int) *ValueBool {
-	key := dskey.Key{Collection: "personal_note", ID: personalNoteID, Field: "star"}
+	key, _ := dskey.FromParts("personal_note", personalNoteID, "star")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -6400,7 +6400,7 @@ func (r *Fetch) PersonalNote_Star(personalNoteID int) *ValueBool {
 }
 
 func (r *Fetch) PointOfOrderCategory_ID(pointOfOrderCategoryID int) *ValueInt {
-	key := dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "id"}
+	key, _ := dskey.FromParts("point_of_order_category", pointOfOrderCategoryID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6410,7 +6410,7 @@ func (r *Fetch) PointOfOrderCategory_ID(pointOfOrderCategoryID int) *ValueInt {
 }
 
 func (r *Fetch) PointOfOrderCategory_MeetingID(pointOfOrderCategoryID int) *ValueInt {
-	key := dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("point_of_order_category", pointOfOrderCategoryID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6420,7 +6420,7 @@ func (r *Fetch) PointOfOrderCategory_MeetingID(pointOfOrderCategoryID int) *Valu
 }
 
 func (r *Fetch) PointOfOrderCategory_Rank(pointOfOrderCategoryID int) *ValueInt {
-	key := dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "rank"}
+	key, _ := dskey.FromParts("point_of_order_category", pointOfOrderCategoryID, "rank")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6430,7 +6430,7 @@ func (r *Fetch) PointOfOrderCategory_Rank(pointOfOrderCategoryID int) *ValueInt 
 }
 
 func (r *Fetch) PointOfOrderCategory_SpeakerIDs(pointOfOrderCategoryID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "speaker_ids"}
+	key, _ := dskey.FromParts("point_of_order_category", pointOfOrderCategoryID, "speaker_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -6440,7 +6440,7 @@ func (r *Fetch) PointOfOrderCategory_SpeakerIDs(pointOfOrderCategoryID int) *Val
 }
 
 func (r *Fetch) PointOfOrderCategory_Text(pointOfOrderCategoryID int) *ValueString {
-	key := dskey.Key{Collection: "point_of_order_category", ID: pointOfOrderCategoryID, Field: "text"}
+	key, _ := dskey.FromParts("point_of_order_category", pointOfOrderCategoryID, "text")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6450,7 +6450,7 @@ func (r *Fetch) PointOfOrderCategory_Text(pointOfOrderCategoryID int) *ValueStri
 }
 
 func (r *Fetch) PollCandidateList_ID(pollCandidateListID int) *ValueInt {
-	key := dskey.Key{Collection: "poll_candidate_list", ID: pollCandidateListID, Field: "id"}
+	key, _ := dskey.FromParts("poll_candidate_list", pollCandidateListID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6460,7 +6460,7 @@ func (r *Fetch) PollCandidateList_ID(pollCandidateListID int) *ValueInt {
 }
 
 func (r *Fetch) PollCandidateList_MeetingID(pollCandidateListID int) *ValueInt {
-	key := dskey.Key{Collection: "poll_candidate_list", ID: pollCandidateListID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("poll_candidate_list", pollCandidateListID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6470,7 +6470,7 @@ func (r *Fetch) PollCandidateList_MeetingID(pollCandidateListID int) *ValueInt {
 }
 
 func (r *Fetch) PollCandidateList_OptionID(pollCandidateListID int) *ValueInt {
-	key := dskey.Key{Collection: "poll_candidate_list", ID: pollCandidateListID, Field: "option_id"}
+	key, _ := dskey.FromParts("poll_candidate_list", pollCandidateListID, "option_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6480,7 +6480,7 @@ func (r *Fetch) PollCandidateList_OptionID(pollCandidateListID int) *ValueInt {
 }
 
 func (r *Fetch) PollCandidateList_PollCandidateIDs(pollCandidateListID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "poll_candidate_list", ID: pollCandidateListID, Field: "poll_candidate_ids"}
+	key, _ := dskey.FromParts("poll_candidate_list", pollCandidateListID, "poll_candidate_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -6490,7 +6490,7 @@ func (r *Fetch) PollCandidateList_PollCandidateIDs(pollCandidateListID int) *Val
 }
 
 func (r *Fetch) PollCandidate_ID(pollCandidateID int) *ValueInt {
-	key := dskey.Key{Collection: "poll_candidate", ID: pollCandidateID, Field: "id"}
+	key, _ := dskey.FromParts("poll_candidate", pollCandidateID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6500,7 +6500,7 @@ func (r *Fetch) PollCandidate_ID(pollCandidateID int) *ValueInt {
 }
 
 func (r *Fetch) PollCandidate_MeetingID(pollCandidateID int) *ValueInt {
-	key := dskey.Key{Collection: "poll_candidate", ID: pollCandidateID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("poll_candidate", pollCandidateID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6510,7 +6510,7 @@ func (r *Fetch) PollCandidate_MeetingID(pollCandidateID int) *ValueInt {
 }
 
 func (r *Fetch) PollCandidate_PollCandidateListID(pollCandidateID int) *ValueInt {
-	key := dskey.Key{Collection: "poll_candidate", ID: pollCandidateID, Field: "poll_candidate_list_id"}
+	key, _ := dskey.FromParts("poll_candidate", pollCandidateID, "poll_candidate_list_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6520,7 +6520,7 @@ func (r *Fetch) PollCandidate_PollCandidateListID(pollCandidateID int) *ValueInt
 }
 
 func (r *Fetch) PollCandidate_UserID(pollCandidateID int) *ValueInt {
-	key := dskey.Key{Collection: "poll_candidate", ID: pollCandidateID, Field: "user_id"}
+	key, _ := dskey.FromParts("poll_candidate", pollCandidateID, "user_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6530,7 +6530,7 @@ func (r *Fetch) PollCandidate_UserID(pollCandidateID int) *ValueInt {
 }
 
 func (r *Fetch) PollCandidate_Weight(pollCandidateID int) *ValueInt {
-	key := dskey.Key{Collection: "poll_candidate", ID: pollCandidateID, Field: "weight"}
+	key, _ := dskey.FromParts("poll_candidate", pollCandidateID, "weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6540,7 +6540,7 @@ func (r *Fetch) PollCandidate_Weight(pollCandidateID int) *ValueInt {
 }
 
 func (r *Fetch) Poll_Backend(pollID int) *ValueString {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "backend"}
+	key, _ := dskey.FromParts("poll", pollID, "backend")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6550,7 +6550,7 @@ func (r *Fetch) Poll_Backend(pollID int) *ValueString {
 }
 
 func (r *Fetch) Poll_ContentObjectID(pollID int) *ValueString {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "content_object_id"}
+	key, _ := dskey.FromParts("poll", pollID, "content_object_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6560,7 +6560,7 @@ func (r *Fetch) Poll_ContentObjectID(pollID int) *ValueString {
 }
 
 func (r *Fetch) Poll_CryptKey(pollID int) *ValueString {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "crypt_key"}
+	key, _ := dskey.FromParts("poll", pollID, "crypt_key")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6570,7 +6570,7 @@ func (r *Fetch) Poll_CryptKey(pollID int) *ValueString {
 }
 
 func (r *Fetch) Poll_CryptSignature(pollID int) *ValueString {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "crypt_signature"}
+	key, _ := dskey.FromParts("poll", pollID, "crypt_signature")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6580,7 +6580,7 @@ func (r *Fetch) Poll_CryptSignature(pollID int) *ValueString {
 }
 
 func (r *Fetch) Poll_Description(pollID int) *ValueString {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "description"}
+	key, _ := dskey.FromParts("poll", pollID, "description")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6590,7 +6590,7 @@ func (r *Fetch) Poll_Description(pollID int) *ValueString {
 }
 
 func (r *Fetch) Poll_EntitledGroupIDs(pollID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "entitled_group_ids"}
+	key, _ := dskey.FromParts("poll", pollID, "entitled_group_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -6600,7 +6600,7 @@ func (r *Fetch) Poll_EntitledGroupIDs(pollID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Poll_EntitledUsersAtStop(pollID int) *ValueJSON {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "entitled_users_at_stop"}
+	key, _ := dskey.FromParts("poll", pollID, "entitled_users_at_stop")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueJSON)
 	}
@@ -6610,7 +6610,7 @@ func (r *Fetch) Poll_EntitledUsersAtStop(pollID int) *ValueJSON {
 }
 
 func (r *Fetch) Poll_GlobalAbstain(pollID int) *ValueBool {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "global_abstain"}
+	key, _ := dskey.FromParts("poll", pollID, "global_abstain")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -6620,7 +6620,7 @@ func (r *Fetch) Poll_GlobalAbstain(pollID int) *ValueBool {
 }
 
 func (r *Fetch) Poll_GlobalNo(pollID int) *ValueBool {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "global_no"}
+	key, _ := dskey.FromParts("poll", pollID, "global_no")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -6630,7 +6630,7 @@ func (r *Fetch) Poll_GlobalNo(pollID int) *ValueBool {
 }
 
 func (r *Fetch) Poll_GlobalOptionID(pollID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "global_option_id"}
+	key, _ := dskey.FromParts("poll", pollID, "global_option_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -6640,7 +6640,7 @@ func (r *Fetch) Poll_GlobalOptionID(pollID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Poll_GlobalYes(pollID int) *ValueBool {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "global_yes"}
+	key, _ := dskey.FromParts("poll", pollID, "global_yes")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -6650,7 +6650,7 @@ func (r *Fetch) Poll_GlobalYes(pollID int) *ValueBool {
 }
 
 func (r *Fetch) Poll_ID(pollID int) *ValueInt {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "id"}
+	key, _ := dskey.FromParts("poll", pollID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6660,7 +6660,7 @@ func (r *Fetch) Poll_ID(pollID int) *ValueInt {
 }
 
 func (r *Fetch) Poll_IsPseudoanonymized(pollID int) *ValueBool {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "is_pseudoanonymized"}
+	key, _ := dskey.FromParts("poll", pollID, "is_pseudoanonymized")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -6670,7 +6670,7 @@ func (r *Fetch) Poll_IsPseudoanonymized(pollID int) *ValueBool {
 }
 
 func (r *Fetch) Poll_MaxVotesAmount(pollID int) *ValueInt {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "max_votes_amount"}
+	key, _ := dskey.FromParts("poll", pollID, "max_votes_amount")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6680,7 +6680,7 @@ func (r *Fetch) Poll_MaxVotesAmount(pollID int) *ValueInt {
 }
 
 func (r *Fetch) Poll_MaxVotesPerOption(pollID int) *ValueInt {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "max_votes_per_option"}
+	key, _ := dskey.FromParts("poll", pollID, "max_votes_per_option")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6690,7 +6690,7 @@ func (r *Fetch) Poll_MaxVotesPerOption(pollID int) *ValueInt {
 }
 
 func (r *Fetch) Poll_MeetingID(pollID int) *ValueInt {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("poll", pollID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6700,7 +6700,7 @@ func (r *Fetch) Poll_MeetingID(pollID int) *ValueInt {
 }
 
 func (r *Fetch) Poll_MinVotesAmount(pollID int) *ValueInt {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "min_votes_amount"}
+	key, _ := dskey.FromParts("poll", pollID, "min_votes_amount")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6710,7 +6710,7 @@ func (r *Fetch) Poll_MinVotesAmount(pollID int) *ValueInt {
 }
 
 func (r *Fetch) Poll_OnehundredPercentBase(pollID int) *ValueString {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "onehundred_percent_base"}
+	key, _ := dskey.FromParts("poll", pollID, "onehundred_percent_base")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6720,7 +6720,7 @@ func (r *Fetch) Poll_OnehundredPercentBase(pollID int) *ValueString {
 }
 
 func (r *Fetch) Poll_OptionIDs(pollID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "option_ids"}
+	key, _ := dskey.FromParts("poll", pollID, "option_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -6730,7 +6730,7 @@ func (r *Fetch) Poll_OptionIDs(pollID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Poll_Pollmethod(pollID int) *ValueString {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "pollmethod"}
+	key, _ := dskey.FromParts("poll", pollID, "pollmethod")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6740,7 +6740,7 @@ func (r *Fetch) Poll_Pollmethod(pollID int) *ValueString {
 }
 
 func (r *Fetch) Poll_ProjectionIDs(pollID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "projection_ids"}
+	key, _ := dskey.FromParts("poll", pollID, "projection_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -6750,7 +6750,7 @@ func (r *Fetch) Poll_ProjectionIDs(pollID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Poll_SequentialNumber(pollID int) *ValueInt {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "sequential_number"}
+	key, _ := dskey.FromParts("poll", pollID, "sequential_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6760,7 +6760,7 @@ func (r *Fetch) Poll_SequentialNumber(pollID int) *ValueInt {
 }
 
 func (r *Fetch) Poll_State(pollID int) *ValueString {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "state"}
+	key, _ := dskey.FromParts("poll", pollID, "state")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6770,7 +6770,7 @@ func (r *Fetch) Poll_State(pollID int) *ValueString {
 }
 
 func (r *Fetch) Poll_Title(pollID int) *ValueString {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "title"}
+	key, _ := dskey.FromParts("poll", pollID, "title")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6780,7 +6780,7 @@ func (r *Fetch) Poll_Title(pollID int) *ValueString {
 }
 
 func (r *Fetch) Poll_Type(pollID int) *ValueString {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "type"}
+	key, _ := dskey.FromParts("poll", pollID, "type")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6790,7 +6790,7 @@ func (r *Fetch) Poll_Type(pollID int) *ValueString {
 }
 
 func (r *Fetch) Poll_VoteCount(pollID int) *ValueInt {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "vote_count"}
+	key, _ := dskey.FromParts("poll", pollID, "vote_count")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6800,7 +6800,7 @@ func (r *Fetch) Poll_VoteCount(pollID int) *ValueInt {
 }
 
 func (r *Fetch) Poll_VotedIDs(pollID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "voted_ids"}
+	key, _ := dskey.FromParts("poll", pollID, "voted_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -6810,7 +6810,7 @@ func (r *Fetch) Poll_VotedIDs(pollID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Poll_VotesRaw(pollID int) *ValueString {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "votes_raw"}
+	key, _ := dskey.FromParts("poll", pollID, "votes_raw")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6820,7 +6820,7 @@ func (r *Fetch) Poll_VotesRaw(pollID int) *ValueString {
 }
 
 func (r *Fetch) Poll_VotesSignature(pollID int) *ValueString {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "votes_signature"}
+	key, _ := dskey.FromParts("poll", pollID, "votes_signature")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6830,7 +6830,7 @@ func (r *Fetch) Poll_VotesSignature(pollID int) *ValueString {
 }
 
 func (r *Fetch) Poll_Votescast(pollID int) *ValueString {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "votescast"}
+	key, _ := dskey.FromParts("poll", pollID, "votescast")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6840,7 +6840,7 @@ func (r *Fetch) Poll_Votescast(pollID int) *ValueString {
 }
 
 func (r *Fetch) Poll_Votesinvalid(pollID int) *ValueString {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "votesinvalid"}
+	key, _ := dskey.FromParts("poll", pollID, "votesinvalid")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6850,7 +6850,7 @@ func (r *Fetch) Poll_Votesinvalid(pollID int) *ValueString {
 }
 
 func (r *Fetch) Poll_Votesvalid(pollID int) *ValueString {
-	key := dskey.Key{Collection: "poll", ID: pollID, Field: "votesvalid"}
+	key, _ := dskey.FromParts("poll", pollID, "votesvalid")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6860,7 +6860,7 @@ func (r *Fetch) Poll_Votesvalid(pollID int) *ValueString {
 }
 
 func (r *Fetch) Projection_Content(projectionID int) *ValueJSON {
-	key := dskey.Key{Collection: "projection", ID: projectionID, Field: "content"}
+	key, _ := dskey.FromParts("projection", projectionID, "content")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueJSON)
 	}
@@ -6870,7 +6870,7 @@ func (r *Fetch) Projection_Content(projectionID int) *ValueJSON {
 }
 
 func (r *Fetch) Projection_ContentObjectID(projectionID int) *ValueString {
-	key := dskey.Key{Collection: "projection", ID: projectionID, Field: "content_object_id"}
+	key, _ := dskey.FromParts("projection", projectionID, "content_object_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6880,7 +6880,7 @@ func (r *Fetch) Projection_ContentObjectID(projectionID int) *ValueString {
 }
 
 func (r *Fetch) Projection_CurrentProjectorID(projectionID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projection", ID: projectionID, Field: "current_projector_id"}
+	key, _ := dskey.FromParts("projection", projectionID, "current_projector_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -6890,7 +6890,7 @@ func (r *Fetch) Projection_CurrentProjectorID(projectionID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Projection_HistoryProjectorID(projectionID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projection", ID: projectionID, Field: "history_projector_id"}
+	key, _ := dskey.FromParts("projection", projectionID, "history_projector_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -6900,7 +6900,7 @@ func (r *Fetch) Projection_HistoryProjectorID(projectionID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Projection_ID(projectionID int) *ValueInt {
-	key := dskey.Key{Collection: "projection", ID: projectionID, Field: "id"}
+	key, _ := dskey.FromParts("projection", projectionID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6910,7 +6910,7 @@ func (r *Fetch) Projection_ID(projectionID int) *ValueInt {
 }
 
 func (r *Fetch) Projection_MeetingID(projectionID int) *ValueInt {
-	key := dskey.Key{Collection: "projection", ID: projectionID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("projection", projectionID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6920,7 +6920,7 @@ func (r *Fetch) Projection_MeetingID(projectionID int) *ValueInt {
 }
 
 func (r *Fetch) Projection_Options(projectionID int) *ValueJSON {
-	key := dskey.Key{Collection: "projection", ID: projectionID, Field: "options"}
+	key, _ := dskey.FromParts("projection", projectionID, "options")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueJSON)
 	}
@@ -6930,7 +6930,7 @@ func (r *Fetch) Projection_Options(projectionID int) *ValueJSON {
 }
 
 func (r *Fetch) Projection_PreviewProjectorID(projectionID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projection", ID: projectionID, Field: "preview_projector_id"}
+	key, _ := dskey.FromParts("projection", projectionID, "preview_projector_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -6940,7 +6940,7 @@ func (r *Fetch) Projection_PreviewProjectorID(projectionID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Projection_Stable(projectionID int) *ValueBool {
-	key := dskey.Key{Collection: "projection", ID: projectionID, Field: "stable"}
+	key, _ := dskey.FromParts("projection", projectionID, "stable")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -6950,7 +6950,7 @@ func (r *Fetch) Projection_Stable(projectionID int) *ValueBool {
 }
 
 func (r *Fetch) Projection_Type(projectionID int) *ValueString {
-	key := dskey.Key{Collection: "projection", ID: projectionID, Field: "type"}
+	key, _ := dskey.FromParts("projection", projectionID, "type")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -6960,7 +6960,7 @@ func (r *Fetch) Projection_Type(projectionID int) *ValueString {
 }
 
 func (r *Fetch) Projection_Weight(projectionID int) *ValueInt {
-	key := dskey.Key{Collection: "projection", ID: projectionID, Field: "weight"}
+	key, _ := dskey.FromParts("projection", projectionID, "weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6970,7 +6970,7 @@ func (r *Fetch) Projection_Weight(projectionID int) *ValueInt {
 }
 
 func (r *Fetch) ProjectorCountdown_CountdownTime(projectorCountdownID int) *ValueFloat {
-	key := dskey.Key{Collection: "projector_countdown", ID: projectorCountdownID, Field: "countdown_time"}
+	key, _ := dskey.FromParts("projector_countdown", projectorCountdownID, "countdown_time")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueFloat)
 	}
@@ -6980,7 +6980,7 @@ func (r *Fetch) ProjectorCountdown_CountdownTime(projectorCountdownID int) *Valu
 }
 
 func (r *Fetch) ProjectorCountdown_DefaultTime(projectorCountdownID int) *ValueInt {
-	key := dskey.Key{Collection: "projector_countdown", ID: projectorCountdownID, Field: "default_time"}
+	key, _ := dskey.FromParts("projector_countdown", projectorCountdownID, "default_time")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -6990,7 +6990,7 @@ func (r *Fetch) ProjectorCountdown_DefaultTime(projectorCountdownID int) *ValueI
 }
 
 func (r *Fetch) ProjectorCountdown_Description(projectorCountdownID int) *ValueString {
-	key := dskey.Key{Collection: "projector_countdown", ID: projectorCountdownID, Field: "description"}
+	key, _ := dskey.FromParts("projector_countdown", projectorCountdownID, "description")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7000,7 +7000,7 @@ func (r *Fetch) ProjectorCountdown_Description(projectorCountdownID int) *ValueS
 }
 
 func (r *Fetch) ProjectorCountdown_ID(projectorCountdownID int) *ValueInt {
-	key := dskey.Key{Collection: "projector_countdown", ID: projectorCountdownID, Field: "id"}
+	key, _ := dskey.FromParts("projector_countdown", projectorCountdownID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7010,7 +7010,7 @@ func (r *Fetch) ProjectorCountdown_ID(projectorCountdownID int) *ValueInt {
 }
 
 func (r *Fetch) ProjectorCountdown_MeetingID(projectorCountdownID int) *ValueInt {
-	key := dskey.Key{Collection: "projector_countdown", ID: projectorCountdownID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("projector_countdown", projectorCountdownID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7020,7 +7020,7 @@ func (r *Fetch) ProjectorCountdown_MeetingID(projectorCountdownID int) *ValueInt
 }
 
 func (r *Fetch) ProjectorCountdown_ProjectionIDs(projectorCountdownID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "projector_countdown", ID: projectorCountdownID, Field: "projection_ids"}
+	key, _ := dskey.FromParts("projector_countdown", projectorCountdownID, "projection_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -7030,7 +7030,7 @@ func (r *Fetch) ProjectorCountdown_ProjectionIDs(projectorCountdownID int) *Valu
 }
 
 func (r *Fetch) ProjectorCountdown_Running(projectorCountdownID int) *ValueBool {
-	key := dskey.Key{Collection: "projector_countdown", ID: projectorCountdownID, Field: "running"}
+	key, _ := dskey.FromParts("projector_countdown", projectorCountdownID, "running")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -7040,7 +7040,7 @@ func (r *Fetch) ProjectorCountdown_Running(projectorCountdownID int) *ValueBool 
 }
 
 func (r *Fetch) ProjectorCountdown_Title(projectorCountdownID int) *ValueString {
-	key := dskey.Key{Collection: "projector_countdown", ID: projectorCountdownID, Field: "title"}
+	key, _ := dskey.FromParts("projector_countdown", projectorCountdownID, "title")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7050,7 +7050,7 @@ func (r *Fetch) ProjectorCountdown_Title(projectorCountdownID int) *ValueString 
 }
 
 func (r *Fetch) ProjectorCountdown_UsedAsListOfSpeakersCountdownMeetingID(projectorCountdownID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector_countdown", ID: projectorCountdownID, Field: "used_as_list_of_speakers_countdown_meeting_id"}
+	key, _ := dskey.FromParts("projector_countdown", projectorCountdownID, "used_as_list_of_speakers_countdown_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7060,7 +7060,7 @@ func (r *Fetch) ProjectorCountdown_UsedAsListOfSpeakersCountdownMeetingID(projec
 }
 
 func (r *Fetch) ProjectorCountdown_UsedAsPollCountdownMeetingID(projectorCountdownID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector_countdown", ID: projectorCountdownID, Field: "used_as_poll_countdown_meeting_id"}
+	key, _ := dskey.FromParts("projector_countdown", projectorCountdownID, "used_as_poll_countdown_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7070,7 +7070,7 @@ func (r *Fetch) ProjectorCountdown_UsedAsPollCountdownMeetingID(projectorCountdo
 }
 
 func (r *Fetch) ProjectorMessage_ID(projectorMessageID int) *ValueInt {
-	key := dskey.Key{Collection: "projector_message", ID: projectorMessageID, Field: "id"}
+	key, _ := dskey.FromParts("projector_message", projectorMessageID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7080,7 +7080,7 @@ func (r *Fetch) ProjectorMessage_ID(projectorMessageID int) *ValueInt {
 }
 
 func (r *Fetch) ProjectorMessage_MeetingID(projectorMessageID int) *ValueInt {
-	key := dskey.Key{Collection: "projector_message", ID: projectorMessageID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("projector_message", projectorMessageID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7090,7 +7090,7 @@ func (r *Fetch) ProjectorMessage_MeetingID(projectorMessageID int) *ValueInt {
 }
 
 func (r *Fetch) ProjectorMessage_Message(projectorMessageID int) *ValueString {
-	key := dskey.Key{Collection: "projector_message", ID: projectorMessageID, Field: "message"}
+	key, _ := dskey.FromParts("projector_message", projectorMessageID, "message")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7100,7 +7100,7 @@ func (r *Fetch) ProjectorMessage_Message(projectorMessageID int) *ValueString {
 }
 
 func (r *Fetch) ProjectorMessage_ProjectionIDs(projectorMessageID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "projector_message", ID: projectorMessageID, Field: "projection_ids"}
+	key, _ := dskey.FromParts("projector_message", projectorMessageID, "projection_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -7110,7 +7110,7 @@ func (r *Fetch) ProjectorMessage_ProjectionIDs(projectorMessageID int) *ValueInt
 }
 
 func (r *Fetch) Projector_AspectRatioDenominator(projectorID int) *ValueInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "aspect_ratio_denominator"}
+	key, _ := dskey.FromParts("projector", projectorID, "aspect_ratio_denominator")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7120,7 +7120,7 @@ func (r *Fetch) Projector_AspectRatioDenominator(projectorID int) *ValueInt {
 }
 
 func (r *Fetch) Projector_AspectRatioNumerator(projectorID int) *ValueInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "aspect_ratio_numerator"}
+	key, _ := dskey.FromParts("projector", projectorID, "aspect_ratio_numerator")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7130,7 +7130,7 @@ func (r *Fetch) Projector_AspectRatioNumerator(projectorID int) *ValueInt {
 }
 
 func (r *Fetch) Projector_BackgroundColor(projectorID int) *ValueString {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "background_color"}
+	key, _ := dskey.FromParts("projector", projectorID, "background_color")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7140,7 +7140,7 @@ func (r *Fetch) Projector_BackgroundColor(projectorID int) *ValueString {
 }
 
 func (r *Fetch) Projector_ChyronBackgroundColor(projectorID int) *ValueString {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "chyron_background_color"}
+	key, _ := dskey.FromParts("projector", projectorID, "chyron_background_color")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7150,7 +7150,7 @@ func (r *Fetch) Projector_ChyronBackgroundColor(projectorID int) *ValueString {
 }
 
 func (r *Fetch) Projector_ChyronFontColor(projectorID int) *ValueString {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "chyron_font_color"}
+	key, _ := dskey.FromParts("projector", projectorID, "chyron_font_color")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7160,7 +7160,7 @@ func (r *Fetch) Projector_ChyronFontColor(projectorID int) *ValueString {
 }
 
 func (r *Fetch) Projector_Color(projectorID int) *ValueString {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "color"}
+	key, _ := dskey.FromParts("projector", projectorID, "color")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7170,7 +7170,7 @@ func (r *Fetch) Projector_Color(projectorID int) *ValueString {
 }
 
 func (r *Fetch) Projector_CurrentProjectionIDs(projectorID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "current_projection_ids"}
+	key, _ := dskey.FromParts("projector", projectorID, "current_projection_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -7180,7 +7180,7 @@ func (r *Fetch) Projector_CurrentProjectionIDs(projectorID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Projector_HeaderBackgroundColor(projectorID int) *ValueString {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "header_background_color"}
+	key, _ := dskey.FromParts("projector", projectorID, "header_background_color")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7190,7 +7190,7 @@ func (r *Fetch) Projector_HeaderBackgroundColor(projectorID int) *ValueString {
 }
 
 func (r *Fetch) Projector_HeaderFontColor(projectorID int) *ValueString {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "header_font_color"}
+	key, _ := dskey.FromParts("projector", projectorID, "header_font_color")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7200,7 +7200,7 @@ func (r *Fetch) Projector_HeaderFontColor(projectorID int) *ValueString {
 }
 
 func (r *Fetch) Projector_HeaderH1Color(projectorID int) *ValueString {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "header_h1_color"}
+	key, _ := dskey.FromParts("projector", projectorID, "header_h1_color")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7210,7 +7210,7 @@ func (r *Fetch) Projector_HeaderH1Color(projectorID int) *ValueString {
 }
 
 func (r *Fetch) Projector_HistoryProjectionIDs(projectorID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "history_projection_ids"}
+	key, _ := dskey.FromParts("projector", projectorID, "history_projection_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -7220,7 +7220,7 @@ func (r *Fetch) Projector_HistoryProjectionIDs(projectorID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Projector_ID(projectorID int) *ValueInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "id"}
+	key, _ := dskey.FromParts("projector", projectorID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7230,7 +7230,7 @@ func (r *Fetch) Projector_ID(projectorID int) *ValueInt {
 }
 
 func (r *Fetch) Projector_IsInternal(projectorID int) *ValueBool {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "is_internal"}
+	key, _ := dskey.FromParts("projector", projectorID, "is_internal")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -7240,7 +7240,7 @@ func (r *Fetch) Projector_IsInternal(projectorID int) *ValueBool {
 }
 
 func (r *Fetch) Projector_MeetingID(projectorID int) *ValueInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("projector", projectorID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7250,7 +7250,7 @@ func (r *Fetch) Projector_MeetingID(projectorID int) *ValueInt {
 }
 
 func (r *Fetch) Projector_Name(projectorID int) *ValueString {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "name"}
+	key, _ := dskey.FromParts("projector", projectorID, "name")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7260,7 +7260,7 @@ func (r *Fetch) Projector_Name(projectorID int) *ValueString {
 }
 
 func (r *Fetch) Projector_PreviewProjectionIDs(projectorID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "preview_projection_ids"}
+	key, _ := dskey.FromParts("projector", projectorID, "preview_projection_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -7270,7 +7270,7 @@ func (r *Fetch) Projector_PreviewProjectionIDs(projectorID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Projector_Scale(projectorID int) *ValueInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "scale"}
+	key, _ := dskey.FromParts("projector", projectorID, "scale")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7280,7 +7280,7 @@ func (r *Fetch) Projector_Scale(projectorID int) *ValueInt {
 }
 
 func (r *Fetch) Projector_Scroll(projectorID int) *ValueInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "scroll"}
+	key, _ := dskey.FromParts("projector", projectorID, "scroll")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7290,7 +7290,7 @@ func (r *Fetch) Projector_Scroll(projectorID int) *ValueInt {
 }
 
 func (r *Fetch) Projector_SequentialNumber(projectorID int) *ValueInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "sequential_number"}
+	key, _ := dskey.FromParts("projector", projectorID, "sequential_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7300,7 +7300,7 @@ func (r *Fetch) Projector_SequentialNumber(projectorID int) *ValueInt {
 }
 
 func (r *Fetch) Projector_ShowClock(projectorID int) *ValueBool {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "show_clock"}
+	key, _ := dskey.FromParts("projector", projectorID, "show_clock")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -7310,7 +7310,7 @@ func (r *Fetch) Projector_ShowClock(projectorID int) *ValueBool {
 }
 
 func (r *Fetch) Projector_ShowHeaderFooter(projectorID int) *ValueBool {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "show_header_footer"}
+	key, _ := dskey.FromParts("projector", projectorID, "show_header_footer")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -7320,7 +7320,7 @@ func (r *Fetch) Projector_ShowHeaderFooter(projectorID int) *ValueBool {
 }
 
 func (r *Fetch) Projector_ShowLogo(projectorID int) *ValueBool {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "show_logo"}
+	key, _ := dskey.FromParts("projector", projectorID, "show_logo")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -7330,7 +7330,7 @@ func (r *Fetch) Projector_ShowLogo(projectorID int) *ValueBool {
 }
 
 func (r *Fetch) Projector_ShowTitle(projectorID int) *ValueBool {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "show_title"}
+	key, _ := dskey.FromParts("projector", projectorID, "show_title")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -7340,7 +7340,7 @@ func (r *Fetch) Projector_ShowTitle(projectorID int) *ValueBool {
 }
 
 func (r *Fetch) Projector_UsedAsDefaultProjectorForAgendaItemListInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_agenda_item_list_in_meeting_id"}
+	key, _ := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_agenda_item_list_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7350,7 +7350,7 @@ func (r *Fetch) Projector_UsedAsDefaultProjectorForAgendaItemListInMeetingID(pro
 }
 
 func (r *Fetch) Projector_UsedAsDefaultProjectorForAmendmentInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_amendment_in_meeting_id"}
+	key, _ := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_amendment_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7360,7 +7360,7 @@ func (r *Fetch) Projector_UsedAsDefaultProjectorForAmendmentInMeetingID(projecto
 }
 
 func (r *Fetch) Projector_UsedAsDefaultProjectorForAssignmentInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_assignment_in_meeting_id"}
+	key, _ := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_assignment_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7370,7 +7370,7 @@ func (r *Fetch) Projector_UsedAsDefaultProjectorForAssignmentInMeetingID(project
 }
 
 func (r *Fetch) Projector_UsedAsDefaultProjectorForAssignmentPollInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_assignment_poll_in_meeting_id"}
+	key, _ := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_assignment_poll_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7380,7 +7380,7 @@ func (r *Fetch) Projector_UsedAsDefaultProjectorForAssignmentPollInMeetingID(pro
 }
 
 func (r *Fetch) Projector_UsedAsDefaultProjectorForCountdownInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_countdown_in_meeting_id"}
+	key, _ := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_countdown_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7390,7 +7390,7 @@ func (r *Fetch) Projector_UsedAsDefaultProjectorForCountdownInMeetingID(projecto
 }
 
 func (r *Fetch) Projector_UsedAsDefaultProjectorForCurrentListOfSpeakersInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_current_list_of_speakers_in_meeting_id"}
+	key, _ := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_current_list_of_speakers_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7400,7 +7400,7 @@ func (r *Fetch) Projector_UsedAsDefaultProjectorForCurrentListOfSpeakersInMeetin
 }
 
 func (r *Fetch) Projector_UsedAsDefaultProjectorForListOfSpeakersInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_list_of_speakers_in_meeting_id"}
+	key, _ := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_list_of_speakers_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7410,7 +7410,7 @@ func (r *Fetch) Projector_UsedAsDefaultProjectorForListOfSpeakersInMeetingID(pro
 }
 
 func (r *Fetch) Projector_UsedAsDefaultProjectorForMediafileInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_mediafile_in_meeting_id"}
+	key, _ := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_mediafile_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7420,7 +7420,7 @@ func (r *Fetch) Projector_UsedAsDefaultProjectorForMediafileInMeetingID(projecto
 }
 
 func (r *Fetch) Projector_UsedAsDefaultProjectorForMessageInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_message_in_meeting_id"}
+	key, _ := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_message_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7430,7 +7430,7 @@ func (r *Fetch) Projector_UsedAsDefaultProjectorForMessageInMeetingID(projectorI
 }
 
 func (r *Fetch) Projector_UsedAsDefaultProjectorForMotionBlockInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_motion_block_in_meeting_id"}
+	key, _ := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_motion_block_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7440,7 +7440,7 @@ func (r *Fetch) Projector_UsedAsDefaultProjectorForMotionBlockInMeetingID(projec
 }
 
 func (r *Fetch) Projector_UsedAsDefaultProjectorForMotionInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_motion_in_meeting_id"}
+	key, _ := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_motion_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7450,7 +7450,7 @@ func (r *Fetch) Projector_UsedAsDefaultProjectorForMotionInMeetingID(projectorID
 }
 
 func (r *Fetch) Projector_UsedAsDefaultProjectorForMotionPollInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_motion_poll_in_meeting_id"}
+	key, _ := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_motion_poll_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7460,7 +7460,7 @@ func (r *Fetch) Projector_UsedAsDefaultProjectorForMotionPollInMeetingID(project
 }
 
 func (r *Fetch) Projector_UsedAsDefaultProjectorForPollInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_poll_in_meeting_id"}
+	key, _ := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_poll_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7470,7 +7470,7 @@ func (r *Fetch) Projector_UsedAsDefaultProjectorForPollInMeetingID(projectorID i
 }
 
 func (r *Fetch) Projector_UsedAsDefaultProjectorForTopicInMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_default_projector_for_topic_in_meeting_id"}
+	key, _ := dskey.FromParts("projector", projectorID, "used_as_default_projector_for_topic_in_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7480,7 +7480,7 @@ func (r *Fetch) Projector_UsedAsDefaultProjectorForTopicInMeetingID(projectorID 
 }
 
 func (r *Fetch) Projector_UsedAsReferenceProjectorMeetingID(projectorID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "used_as_reference_projector_meeting_id"}
+	key, _ := dskey.FromParts("projector", projectorID, "used_as_reference_projector_meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7490,7 +7490,7 @@ func (r *Fetch) Projector_UsedAsReferenceProjectorMeetingID(projectorID int) *Va
 }
 
 func (r *Fetch) Projector_Width(projectorID int) *ValueInt {
-	key := dskey.Key{Collection: "projector", ID: projectorID, Field: "width"}
+	key, _ := dskey.FromParts("projector", projectorID, "width")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7500,7 +7500,7 @@ func (r *Fetch) Projector_Width(projectorID int) *ValueInt {
 }
 
 func (r *Fetch) Speaker_BeginTime(speakerID int) *ValueInt {
-	key := dskey.Key{Collection: "speaker", ID: speakerID, Field: "begin_time"}
+	key, _ := dskey.FromParts("speaker", speakerID, "begin_time")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7510,7 +7510,7 @@ func (r *Fetch) Speaker_BeginTime(speakerID int) *ValueInt {
 }
 
 func (r *Fetch) Speaker_EndTime(speakerID int) *ValueInt {
-	key := dskey.Key{Collection: "speaker", ID: speakerID, Field: "end_time"}
+	key, _ := dskey.FromParts("speaker", speakerID, "end_time")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7520,7 +7520,7 @@ func (r *Fetch) Speaker_EndTime(speakerID int) *ValueInt {
 }
 
 func (r *Fetch) Speaker_ID(speakerID int) *ValueInt {
-	key := dskey.Key{Collection: "speaker", ID: speakerID, Field: "id"}
+	key, _ := dskey.FromParts("speaker", speakerID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7530,7 +7530,7 @@ func (r *Fetch) Speaker_ID(speakerID int) *ValueInt {
 }
 
 func (r *Fetch) Speaker_ListOfSpeakersID(speakerID int) *ValueInt {
-	key := dskey.Key{Collection: "speaker", ID: speakerID, Field: "list_of_speakers_id"}
+	key, _ := dskey.FromParts("speaker", speakerID, "list_of_speakers_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7540,7 +7540,7 @@ func (r *Fetch) Speaker_ListOfSpeakersID(speakerID int) *ValueInt {
 }
 
 func (r *Fetch) Speaker_MeetingID(speakerID int) *ValueInt {
-	key := dskey.Key{Collection: "speaker", ID: speakerID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("speaker", speakerID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7550,7 +7550,7 @@ func (r *Fetch) Speaker_MeetingID(speakerID int) *ValueInt {
 }
 
 func (r *Fetch) Speaker_MeetingUserID(speakerID int) *ValueInt {
-	key := dskey.Key{Collection: "speaker", ID: speakerID, Field: "meeting_user_id"}
+	key, _ := dskey.FromParts("speaker", speakerID, "meeting_user_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7560,7 +7560,7 @@ func (r *Fetch) Speaker_MeetingUserID(speakerID int) *ValueInt {
 }
 
 func (r *Fetch) Speaker_Note(speakerID int) *ValueString {
-	key := dskey.Key{Collection: "speaker", ID: speakerID, Field: "note"}
+	key, _ := dskey.FromParts("speaker", speakerID, "note")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7570,7 +7570,7 @@ func (r *Fetch) Speaker_Note(speakerID int) *ValueString {
 }
 
 func (r *Fetch) Speaker_PointOfOrder(speakerID int) *ValueBool {
-	key := dskey.Key{Collection: "speaker", ID: speakerID, Field: "point_of_order"}
+	key, _ := dskey.FromParts("speaker", speakerID, "point_of_order")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -7580,7 +7580,7 @@ func (r *Fetch) Speaker_PointOfOrder(speakerID int) *ValueBool {
 }
 
 func (r *Fetch) Speaker_PointOfOrderCategoryID(speakerID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "speaker", ID: speakerID, Field: "point_of_order_category_id"}
+	key, _ := dskey.FromParts("speaker", speakerID, "point_of_order_category_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -7590,7 +7590,7 @@ func (r *Fetch) Speaker_PointOfOrderCategoryID(speakerID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Speaker_SpeechState(speakerID int) *ValueString {
-	key := dskey.Key{Collection: "speaker", ID: speakerID, Field: "speech_state"}
+	key, _ := dskey.FromParts("speaker", speakerID, "speech_state")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7600,7 +7600,7 @@ func (r *Fetch) Speaker_SpeechState(speakerID int) *ValueString {
 }
 
 func (r *Fetch) Speaker_Weight(speakerID int) *ValueInt {
-	key := dskey.Key{Collection: "speaker", ID: speakerID, Field: "weight"}
+	key, _ := dskey.FromParts("speaker", speakerID, "weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7610,7 +7610,7 @@ func (r *Fetch) Speaker_Weight(speakerID int) *ValueInt {
 }
 
 func (r *Fetch) Tag_ID(tagID int) *ValueInt {
-	key := dskey.Key{Collection: "tag", ID: tagID, Field: "id"}
+	key, _ := dskey.FromParts("tag", tagID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7620,7 +7620,7 @@ func (r *Fetch) Tag_ID(tagID int) *ValueInt {
 }
 
 func (r *Fetch) Tag_MeetingID(tagID int) *ValueInt {
-	key := dskey.Key{Collection: "tag", ID: tagID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("tag", tagID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7630,7 +7630,7 @@ func (r *Fetch) Tag_MeetingID(tagID int) *ValueInt {
 }
 
 func (r *Fetch) Tag_Name(tagID int) *ValueString {
-	key := dskey.Key{Collection: "tag", ID: tagID, Field: "name"}
+	key, _ := dskey.FromParts("tag", tagID, "name")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7640,7 +7640,7 @@ func (r *Fetch) Tag_Name(tagID int) *ValueString {
 }
 
 func (r *Fetch) Tag_TaggedIDs(tagID int) *ValueStringSlice {
-	key := dskey.Key{Collection: "tag", ID: tagID, Field: "tagged_ids"}
+	key, _ := dskey.FromParts("tag", tagID, "tagged_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueStringSlice)
 	}
@@ -7650,7 +7650,7 @@ func (r *Fetch) Tag_TaggedIDs(tagID int) *ValueStringSlice {
 }
 
 func (r *Fetch) Theme_Abstain(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "abstain"}
+	key, _ := dskey.FromParts("theme", themeID, "abstain")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7660,7 +7660,7 @@ func (r *Fetch) Theme_Abstain(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Accent100(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "accent_100"}
+	key, _ := dskey.FromParts("theme", themeID, "accent_100")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7670,7 +7670,7 @@ func (r *Fetch) Theme_Accent100(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Accent200(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "accent_200"}
+	key, _ := dskey.FromParts("theme", themeID, "accent_200")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7680,7 +7680,7 @@ func (r *Fetch) Theme_Accent200(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Accent300(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "accent_300"}
+	key, _ := dskey.FromParts("theme", themeID, "accent_300")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7690,7 +7690,7 @@ func (r *Fetch) Theme_Accent300(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Accent400(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "accent_400"}
+	key, _ := dskey.FromParts("theme", themeID, "accent_400")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7700,7 +7700,7 @@ func (r *Fetch) Theme_Accent400(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Accent50(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "accent_50"}
+	key, _ := dskey.FromParts("theme", themeID, "accent_50")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7710,7 +7710,7 @@ func (r *Fetch) Theme_Accent50(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Accent500(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "accent_500"}
+	key, _ := dskey.FromParts("theme", themeID, "accent_500")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7720,7 +7720,7 @@ func (r *Fetch) Theme_Accent500(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Accent600(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "accent_600"}
+	key, _ := dskey.FromParts("theme", themeID, "accent_600")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7730,7 +7730,7 @@ func (r *Fetch) Theme_Accent600(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Accent700(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "accent_700"}
+	key, _ := dskey.FromParts("theme", themeID, "accent_700")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7740,7 +7740,7 @@ func (r *Fetch) Theme_Accent700(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Accent800(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "accent_800"}
+	key, _ := dskey.FromParts("theme", themeID, "accent_800")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7750,7 +7750,7 @@ func (r *Fetch) Theme_Accent800(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Accent900(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "accent_900"}
+	key, _ := dskey.FromParts("theme", themeID, "accent_900")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7760,7 +7760,7 @@ func (r *Fetch) Theme_Accent900(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_AccentA100(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "accent_a100"}
+	key, _ := dskey.FromParts("theme", themeID, "accent_a100")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7770,7 +7770,7 @@ func (r *Fetch) Theme_AccentA100(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_AccentA200(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "accent_a200"}
+	key, _ := dskey.FromParts("theme", themeID, "accent_a200")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7780,7 +7780,7 @@ func (r *Fetch) Theme_AccentA200(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_AccentA400(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "accent_a400"}
+	key, _ := dskey.FromParts("theme", themeID, "accent_a400")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7790,7 +7790,7 @@ func (r *Fetch) Theme_AccentA400(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_AccentA700(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "accent_a700"}
+	key, _ := dskey.FromParts("theme", themeID, "accent_a700")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7800,7 +7800,7 @@ func (r *Fetch) Theme_AccentA700(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Headbar(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "headbar"}
+	key, _ := dskey.FromParts("theme", themeID, "headbar")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7810,7 +7810,7 @@ func (r *Fetch) Theme_Headbar(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_ID(themeID int) *ValueInt {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "id"}
+	key, _ := dskey.FromParts("theme", themeID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7820,7 +7820,7 @@ func (r *Fetch) Theme_ID(themeID int) *ValueInt {
 }
 
 func (r *Fetch) Theme_Name(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "name"}
+	key, _ := dskey.FromParts("theme", themeID, "name")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7830,7 +7830,7 @@ func (r *Fetch) Theme_Name(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_No(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "no"}
+	key, _ := dskey.FromParts("theme", themeID, "no")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7840,7 +7840,7 @@ func (r *Fetch) Theme_No(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_OrganizationID(themeID int) *ValueInt {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "organization_id"}
+	key, _ := dskey.FromParts("theme", themeID, "organization_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -7850,7 +7850,7 @@ func (r *Fetch) Theme_OrganizationID(themeID int) *ValueInt {
 }
 
 func (r *Fetch) Theme_Primary100(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "primary_100"}
+	key, _ := dskey.FromParts("theme", themeID, "primary_100")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7860,7 +7860,7 @@ func (r *Fetch) Theme_Primary100(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Primary200(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "primary_200"}
+	key, _ := dskey.FromParts("theme", themeID, "primary_200")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7870,7 +7870,7 @@ func (r *Fetch) Theme_Primary200(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Primary300(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "primary_300"}
+	key, _ := dskey.FromParts("theme", themeID, "primary_300")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7880,7 +7880,7 @@ func (r *Fetch) Theme_Primary300(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Primary400(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "primary_400"}
+	key, _ := dskey.FromParts("theme", themeID, "primary_400")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7890,7 +7890,7 @@ func (r *Fetch) Theme_Primary400(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Primary50(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "primary_50"}
+	key, _ := dskey.FromParts("theme", themeID, "primary_50")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7900,7 +7900,7 @@ func (r *Fetch) Theme_Primary50(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Primary500(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "primary_500"}
+	key, _ := dskey.FromParts("theme", themeID, "primary_500")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7910,7 +7910,7 @@ func (r *Fetch) Theme_Primary500(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Primary600(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "primary_600"}
+	key, _ := dskey.FromParts("theme", themeID, "primary_600")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7920,7 +7920,7 @@ func (r *Fetch) Theme_Primary600(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Primary700(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "primary_700"}
+	key, _ := dskey.FromParts("theme", themeID, "primary_700")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7930,7 +7930,7 @@ func (r *Fetch) Theme_Primary700(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Primary800(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "primary_800"}
+	key, _ := dskey.FromParts("theme", themeID, "primary_800")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7940,7 +7940,7 @@ func (r *Fetch) Theme_Primary800(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Primary900(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "primary_900"}
+	key, _ := dskey.FromParts("theme", themeID, "primary_900")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7950,7 +7950,7 @@ func (r *Fetch) Theme_Primary900(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_PrimaryA100(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "primary_a100"}
+	key, _ := dskey.FromParts("theme", themeID, "primary_a100")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7960,7 +7960,7 @@ func (r *Fetch) Theme_PrimaryA100(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_PrimaryA200(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "primary_a200"}
+	key, _ := dskey.FromParts("theme", themeID, "primary_a200")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7970,7 +7970,7 @@ func (r *Fetch) Theme_PrimaryA200(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_PrimaryA400(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "primary_a400"}
+	key, _ := dskey.FromParts("theme", themeID, "primary_a400")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7980,7 +7980,7 @@ func (r *Fetch) Theme_PrimaryA400(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_PrimaryA700(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "primary_a700"}
+	key, _ := dskey.FromParts("theme", themeID, "primary_a700")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -7990,7 +7990,7 @@ func (r *Fetch) Theme_PrimaryA700(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_ThemeForOrganizationID(themeID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "theme_for_organization_id"}
+	key, _ := dskey.FromParts("theme", themeID, "theme_for_organization_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -8000,7 +8000,7 @@ func (r *Fetch) Theme_ThemeForOrganizationID(themeID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Theme_Warn100(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "warn_100"}
+	key, _ := dskey.FromParts("theme", themeID, "warn_100")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8010,7 +8010,7 @@ func (r *Fetch) Theme_Warn100(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Warn200(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "warn_200"}
+	key, _ := dskey.FromParts("theme", themeID, "warn_200")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8020,7 +8020,7 @@ func (r *Fetch) Theme_Warn200(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Warn300(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "warn_300"}
+	key, _ := dskey.FromParts("theme", themeID, "warn_300")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8030,7 +8030,7 @@ func (r *Fetch) Theme_Warn300(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Warn400(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "warn_400"}
+	key, _ := dskey.FromParts("theme", themeID, "warn_400")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8040,7 +8040,7 @@ func (r *Fetch) Theme_Warn400(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Warn50(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "warn_50"}
+	key, _ := dskey.FromParts("theme", themeID, "warn_50")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8050,7 +8050,7 @@ func (r *Fetch) Theme_Warn50(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Warn500(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "warn_500"}
+	key, _ := dskey.FromParts("theme", themeID, "warn_500")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8060,7 +8060,7 @@ func (r *Fetch) Theme_Warn500(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Warn600(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "warn_600"}
+	key, _ := dskey.FromParts("theme", themeID, "warn_600")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8070,7 +8070,7 @@ func (r *Fetch) Theme_Warn600(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Warn700(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "warn_700"}
+	key, _ := dskey.FromParts("theme", themeID, "warn_700")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8080,7 +8080,7 @@ func (r *Fetch) Theme_Warn700(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Warn800(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "warn_800"}
+	key, _ := dskey.FromParts("theme", themeID, "warn_800")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8090,7 +8090,7 @@ func (r *Fetch) Theme_Warn800(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Warn900(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "warn_900"}
+	key, _ := dskey.FromParts("theme", themeID, "warn_900")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8100,7 +8100,7 @@ func (r *Fetch) Theme_Warn900(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_WarnA100(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "warn_a100"}
+	key, _ := dskey.FromParts("theme", themeID, "warn_a100")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8110,7 +8110,7 @@ func (r *Fetch) Theme_WarnA100(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_WarnA200(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "warn_a200"}
+	key, _ := dskey.FromParts("theme", themeID, "warn_a200")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8120,7 +8120,7 @@ func (r *Fetch) Theme_WarnA200(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_WarnA400(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "warn_a400"}
+	key, _ := dskey.FromParts("theme", themeID, "warn_a400")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8130,7 +8130,7 @@ func (r *Fetch) Theme_WarnA400(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_WarnA700(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "warn_a700"}
+	key, _ := dskey.FromParts("theme", themeID, "warn_a700")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8140,7 +8140,7 @@ func (r *Fetch) Theme_WarnA700(themeID int) *ValueString {
 }
 
 func (r *Fetch) Theme_Yes(themeID int) *ValueString {
-	key := dskey.Key{Collection: "theme", ID: themeID, Field: "yes"}
+	key, _ := dskey.FromParts("theme", themeID, "yes")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8150,7 +8150,7 @@ func (r *Fetch) Theme_Yes(themeID int) *ValueString {
 }
 
 func (r *Fetch) Topic_AgendaItemID(topicID int) *ValueInt {
-	key := dskey.Key{Collection: "topic", ID: topicID, Field: "agenda_item_id"}
+	key, _ := dskey.FromParts("topic", topicID, "agenda_item_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -8160,7 +8160,7 @@ func (r *Fetch) Topic_AgendaItemID(topicID int) *ValueInt {
 }
 
 func (r *Fetch) Topic_AttachmentIDs(topicID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "topic", ID: topicID, Field: "attachment_ids"}
+	key, _ := dskey.FromParts("topic", topicID, "attachment_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -8170,7 +8170,7 @@ func (r *Fetch) Topic_AttachmentIDs(topicID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Topic_ID(topicID int) *ValueInt {
-	key := dskey.Key{Collection: "topic", ID: topicID, Field: "id"}
+	key, _ := dskey.FromParts("topic", topicID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -8180,7 +8180,7 @@ func (r *Fetch) Topic_ID(topicID int) *ValueInt {
 }
 
 func (r *Fetch) Topic_ListOfSpeakersID(topicID int) *ValueInt {
-	key := dskey.Key{Collection: "topic", ID: topicID, Field: "list_of_speakers_id"}
+	key, _ := dskey.FromParts("topic", topicID, "list_of_speakers_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -8190,7 +8190,7 @@ func (r *Fetch) Topic_ListOfSpeakersID(topicID int) *ValueInt {
 }
 
 func (r *Fetch) Topic_MeetingID(topicID int) *ValueInt {
-	key := dskey.Key{Collection: "topic", ID: topicID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("topic", topicID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -8200,7 +8200,7 @@ func (r *Fetch) Topic_MeetingID(topicID int) *ValueInt {
 }
 
 func (r *Fetch) Topic_PollIDs(topicID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "topic", ID: topicID, Field: "poll_ids"}
+	key, _ := dskey.FromParts("topic", topicID, "poll_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -8210,7 +8210,7 @@ func (r *Fetch) Topic_PollIDs(topicID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Topic_ProjectionIDs(topicID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "topic", ID: topicID, Field: "projection_ids"}
+	key, _ := dskey.FromParts("topic", topicID, "projection_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -8220,7 +8220,7 @@ func (r *Fetch) Topic_ProjectionIDs(topicID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Topic_SequentialNumber(topicID int) *ValueInt {
-	key := dskey.Key{Collection: "topic", ID: topicID, Field: "sequential_number"}
+	key, _ := dskey.FromParts("topic", topicID, "sequential_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -8230,7 +8230,7 @@ func (r *Fetch) Topic_SequentialNumber(topicID int) *ValueInt {
 }
 
 func (r *Fetch) Topic_TagIDs(topicID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "topic", ID: topicID, Field: "tag_ids"}
+	key, _ := dskey.FromParts("topic", topicID, "tag_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -8240,7 +8240,7 @@ func (r *Fetch) Topic_TagIDs(topicID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Topic_Text(topicID int) *ValueString {
-	key := dskey.Key{Collection: "topic", ID: topicID, Field: "text"}
+	key, _ := dskey.FromParts("topic", topicID, "text")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8250,7 +8250,7 @@ func (r *Fetch) Topic_Text(topicID int) *ValueString {
 }
 
 func (r *Fetch) Topic_Title(topicID int) *ValueString {
-	key := dskey.Key{Collection: "topic", ID: topicID, Field: "title"}
+	key, _ := dskey.FromParts("topic", topicID, "title")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8260,7 +8260,7 @@ func (r *Fetch) Topic_Title(topicID int) *ValueString {
 }
 
 func (r *Fetch) User_CanChangeOwnPassword(userID int) *ValueBool {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "can_change_own_password"}
+	key, _ := dskey.FromParts("user", userID, "can_change_own_password")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -8270,7 +8270,7 @@ func (r *Fetch) User_CanChangeOwnPassword(userID int) *ValueBool {
 }
 
 func (r *Fetch) User_CommitteeIDs(userID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "committee_ids"}
+	key, _ := dskey.FromParts("user", userID, "committee_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -8280,7 +8280,7 @@ func (r *Fetch) User_CommitteeIDs(userID int) *ValueIntSlice {
 }
 
 func (r *Fetch) User_CommitteeManagementIDs(userID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "committee_management_ids"}
+	key, _ := dskey.FromParts("user", userID, "committee_management_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -8290,7 +8290,7 @@ func (r *Fetch) User_CommitteeManagementIDs(userID int) *ValueIntSlice {
 }
 
 func (r *Fetch) User_DefaultNumber(userID int) *ValueString {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "default_number"}
+	key, _ := dskey.FromParts("user", userID, "default_number")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8300,7 +8300,7 @@ func (r *Fetch) User_DefaultNumber(userID int) *ValueString {
 }
 
 func (r *Fetch) User_DefaultPassword(userID int) *ValueString {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "default_password"}
+	key, _ := dskey.FromParts("user", userID, "default_password")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8310,7 +8310,7 @@ func (r *Fetch) User_DefaultPassword(userID int) *ValueString {
 }
 
 func (r *Fetch) User_DefaultStructureLevel(userID int) *ValueString {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "default_structure_level"}
+	key, _ := dskey.FromParts("user", userID, "default_structure_level")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8320,7 +8320,7 @@ func (r *Fetch) User_DefaultStructureLevel(userID int) *ValueString {
 }
 
 func (r *Fetch) User_DefaultVoteWeight(userID int) *ValueString {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "default_vote_weight"}
+	key, _ := dskey.FromParts("user", userID, "default_vote_weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8330,7 +8330,7 @@ func (r *Fetch) User_DefaultVoteWeight(userID int) *ValueString {
 }
 
 func (r *Fetch) User_DelegatedVoteIDs(userID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "delegated_vote_ids"}
+	key, _ := dskey.FromParts("user", userID, "delegated_vote_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -8340,7 +8340,7 @@ func (r *Fetch) User_DelegatedVoteIDs(userID int) *ValueIntSlice {
 }
 
 func (r *Fetch) User_Email(userID int) *ValueString {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "email"}
+	key, _ := dskey.FromParts("user", userID, "email")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8350,7 +8350,7 @@ func (r *Fetch) User_Email(userID int) *ValueString {
 }
 
 func (r *Fetch) User_FirstName(userID int) *ValueString {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "first_name"}
+	key, _ := dskey.FromParts("user", userID, "first_name")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8360,7 +8360,7 @@ func (r *Fetch) User_FirstName(userID int) *ValueString {
 }
 
 func (r *Fetch) User_ForwardingCommitteeIDs(userID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "forwarding_committee_ids"}
+	key, _ := dskey.FromParts("user", userID, "forwarding_committee_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -8370,7 +8370,7 @@ func (r *Fetch) User_ForwardingCommitteeIDs(userID int) *ValueIntSlice {
 }
 
 func (r *Fetch) User_Gender(userID int) *ValueString {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "gender"}
+	key, _ := dskey.FromParts("user", userID, "gender")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8380,7 +8380,7 @@ func (r *Fetch) User_Gender(userID int) *ValueString {
 }
 
 func (r *Fetch) User_ID(userID int) *ValueInt {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "id"}
+	key, _ := dskey.FromParts("user", userID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -8390,7 +8390,7 @@ func (r *Fetch) User_ID(userID int) *ValueInt {
 }
 
 func (r *Fetch) User_IsActive(userID int) *ValueBool {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "is_active"}
+	key, _ := dskey.FromParts("user", userID, "is_active")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -8400,7 +8400,7 @@ func (r *Fetch) User_IsActive(userID int) *ValueBool {
 }
 
 func (r *Fetch) User_IsDemoUser(userID int) *ValueBool {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "is_demo_user"}
+	key, _ := dskey.FromParts("user", userID, "is_demo_user")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -8410,7 +8410,7 @@ func (r *Fetch) User_IsDemoUser(userID int) *ValueBool {
 }
 
 func (r *Fetch) User_IsPhysicalPerson(userID int) *ValueBool {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "is_physical_person"}
+	key, _ := dskey.FromParts("user", userID, "is_physical_person")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueBool)
 	}
@@ -8420,7 +8420,7 @@ func (r *Fetch) User_IsPhysicalPerson(userID int) *ValueBool {
 }
 
 func (r *Fetch) User_IsPresentInMeetingIDs(userID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "is_present_in_meeting_ids"}
+	key, _ := dskey.FromParts("user", userID, "is_present_in_meeting_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -8430,7 +8430,7 @@ func (r *Fetch) User_IsPresentInMeetingIDs(userID int) *ValueIntSlice {
 }
 
 func (r *Fetch) User_LastEmailSent(userID int) *ValueInt {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "last_email_sent"}
+	key, _ := dskey.FromParts("user", userID, "last_email_sent")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -8440,7 +8440,7 @@ func (r *Fetch) User_LastEmailSent(userID int) *ValueInt {
 }
 
 func (r *Fetch) User_LastLogin(userID int) *ValueInt {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "last_login"}
+	key, _ := dskey.FromParts("user", userID, "last_login")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -8450,7 +8450,7 @@ func (r *Fetch) User_LastLogin(userID int) *ValueInt {
 }
 
 func (r *Fetch) User_LastName(userID int) *ValueString {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "last_name"}
+	key, _ := dskey.FromParts("user", userID, "last_name")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8460,7 +8460,7 @@ func (r *Fetch) User_LastName(userID int) *ValueString {
 }
 
 func (r *Fetch) User_MeetingIDs(userID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "meeting_ids"}
+	key, _ := dskey.FromParts("user", userID, "meeting_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -8470,7 +8470,7 @@ func (r *Fetch) User_MeetingIDs(userID int) *ValueIntSlice {
 }
 
 func (r *Fetch) User_MeetingUserIDs(userID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "meeting_user_ids"}
+	key, _ := dskey.FromParts("user", userID, "meeting_user_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -8480,7 +8480,7 @@ func (r *Fetch) User_MeetingUserIDs(userID int) *ValueIntSlice {
 }
 
 func (r *Fetch) User_OptionIDs(userID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "option_ids"}
+	key, _ := dskey.FromParts("user", userID, "option_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -8490,7 +8490,7 @@ func (r *Fetch) User_OptionIDs(userID int) *ValueIntSlice {
 }
 
 func (r *Fetch) User_OrganizationID(userID int) *ValueInt {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "organization_id"}
+	key, _ := dskey.FromParts("user", userID, "organization_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -8500,7 +8500,7 @@ func (r *Fetch) User_OrganizationID(userID int) *ValueInt {
 }
 
 func (r *Fetch) User_OrganizationManagementLevel(userID int) *ValueString {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "organization_management_level"}
+	key, _ := dskey.FromParts("user", userID, "organization_management_level")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8510,7 +8510,7 @@ func (r *Fetch) User_OrganizationManagementLevel(userID int) *ValueString {
 }
 
 func (r *Fetch) User_Password(userID int) *ValueString {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "password"}
+	key, _ := dskey.FromParts("user", userID, "password")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8520,7 +8520,7 @@ func (r *Fetch) User_Password(userID int) *ValueString {
 }
 
 func (r *Fetch) User_PollCandidateIDs(userID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "poll_candidate_ids"}
+	key, _ := dskey.FromParts("user", userID, "poll_candidate_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -8530,7 +8530,7 @@ func (r *Fetch) User_PollCandidateIDs(userID int) *ValueIntSlice {
 }
 
 func (r *Fetch) User_PollVotedIDs(userID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "poll_voted_ids"}
+	key, _ := dskey.FromParts("user", userID, "poll_voted_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -8540,7 +8540,7 @@ func (r *Fetch) User_PollVotedIDs(userID int) *ValueIntSlice {
 }
 
 func (r *Fetch) User_Pronoun(userID int) *ValueString {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "pronoun"}
+	key, _ := dskey.FromParts("user", userID, "pronoun")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8550,7 +8550,7 @@ func (r *Fetch) User_Pronoun(userID int) *ValueString {
 }
 
 func (r *Fetch) User_SamlID(userID int) *ValueString {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "saml_id"}
+	key, _ := dskey.FromParts("user", userID, "saml_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8560,7 +8560,7 @@ func (r *Fetch) User_SamlID(userID int) *ValueString {
 }
 
 func (r *Fetch) User_Title(userID int) *ValueString {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "title"}
+	key, _ := dskey.FromParts("user", userID, "title")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8570,7 +8570,7 @@ func (r *Fetch) User_Title(userID int) *ValueString {
 }
 
 func (r *Fetch) User_Username(userID int) *ValueString {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "username"}
+	key, _ := dskey.FromParts("user", userID, "username")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8580,7 +8580,7 @@ func (r *Fetch) User_Username(userID int) *ValueString {
 }
 
 func (r *Fetch) User_VoteIDs(userID int) *ValueIntSlice {
-	key := dskey.Key{Collection: "user", ID: userID, Field: "vote_ids"}
+	key, _ := dskey.FromParts("user", userID, "vote_ids")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueIntSlice)
 	}
@@ -8590,7 +8590,7 @@ func (r *Fetch) User_VoteIDs(userID int) *ValueIntSlice {
 }
 
 func (r *Fetch) Vote_DelegatedUserID(voteID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "vote", ID: voteID, Field: "delegated_user_id"}
+	key, _ := dskey.FromParts("vote", voteID, "delegated_user_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -8600,7 +8600,7 @@ func (r *Fetch) Vote_DelegatedUserID(voteID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Vote_ID(voteID int) *ValueInt {
-	key := dskey.Key{Collection: "vote", ID: voteID, Field: "id"}
+	key, _ := dskey.FromParts("vote", voteID, "id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -8610,7 +8610,7 @@ func (r *Fetch) Vote_ID(voteID int) *ValueInt {
 }
 
 func (r *Fetch) Vote_MeetingID(voteID int) *ValueInt {
-	key := dskey.Key{Collection: "vote", ID: voteID, Field: "meeting_id"}
+	key, _ := dskey.FromParts("vote", voteID, "meeting_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -8620,7 +8620,7 @@ func (r *Fetch) Vote_MeetingID(voteID int) *ValueInt {
 }
 
 func (r *Fetch) Vote_OptionID(voteID int) *ValueInt {
-	key := dskey.Key{Collection: "vote", ID: voteID, Field: "option_id"}
+	key, _ := dskey.FromParts("vote", voteID, "option_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueInt)
 	}
@@ -8630,7 +8630,7 @@ func (r *Fetch) Vote_OptionID(voteID int) *ValueInt {
 }
 
 func (r *Fetch) Vote_UserID(voteID int) *ValueMaybeInt {
-	key := dskey.Key{Collection: "vote", ID: voteID, Field: "user_id"}
+	key, _ := dskey.FromParts("vote", voteID, "user_id")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueMaybeInt)
 	}
@@ -8640,7 +8640,7 @@ func (r *Fetch) Vote_UserID(voteID int) *ValueMaybeInt {
 }
 
 func (r *Fetch) Vote_UserToken(voteID int) *ValueString {
-	key := dskey.Key{Collection: "vote", ID: voteID, Field: "user_token"}
+	key, _ := dskey.FromParts("vote", voteID, "user_token")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8650,7 +8650,7 @@ func (r *Fetch) Vote_UserToken(voteID int) *ValueString {
 }
 
 func (r *Fetch) Vote_Value(voteID int) *ValueString {
-	key := dskey.Key{Collection: "vote", ID: voteID, Field: "value"}
+	key, _ := dskey.FromParts("vote", voteID, "value")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}
@@ -8660,7 +8660,7 @@ func (r *Fetch) Vote_Value(voteID int) *ValueString {
 }
 
 func (r *Fetch) Vote_Weight(voteID int) *ValueString {
-	key := dskey.Key{Collection: "vote", ID: voteID, Field: "weight"}
+	key, _ := dskey.FromParts("vote", voteID, "weight")
 	if v, ok := r.requested[key]; ok {
 		return v.(*ValueString)
 	}

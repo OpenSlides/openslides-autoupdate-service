@@ -91,19 +91,19 @@ func (s *sourceDatastore) GetPosition(ctx context.Context, position int, keys ..
 
 	// Sort keys to help datastore
 	sort.Slice(keys, func(i, j int) bool {
-		if keys[i].Collection < keys[j].Collection {
+		if keys[i].Collection() < keys[j].Collection() {
 			return true
-		} else if keys[i].Collection < keys[j].Collection {
+		} else if keys[i].Collection() > keys[j].Collection() {
 			return false
 		}
 
-		if keys[i].ID < keys[j].ID {
+		if keys[i].ID() < keys[j].ID() {
 			return true
-		} else if keys[i].ID < keys[j].ID {
+		} else if keys[i].ID() > keys[j].ID() {
 			return false
 		}
 
-		return keys[i].Field < keys[j].Field
+		return keys[i].Field() < keys[j].Field()
 	})
 
 	eg, ctx := errgroup.WithContext(ctx)
@@ -261,7 +261,12 @@ func parseGetManyResponse(r io.Reader) (map[dskey.Key][]byte, error) {
 				return nil, fmt.Errorf("invalid key. Id is no number: %s", idstr)
 			}
 			for field, value := range fieldValue {
-				keyValue[dskey.Key{Collection: collection, ID: id, Field: field}] = value
+				key, err := dskey.FromParts(collection, id, field)
+				if err != nil {
+					return nil, fmt.Errorf("invalid key: %w", err)
+				}
+
+				keyValue[key] = value
 			}
 		}
 	}

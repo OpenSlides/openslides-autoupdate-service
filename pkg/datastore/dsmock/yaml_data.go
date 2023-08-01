@@ -44,15 +44,23 @@ func YAMLData(input string) map[dskey.Key][]byte {
 				}
 
 				for fieldName, fieldValue := range field {
-					key := dskey.MustKey("%s/%d/%s", dbKey, id, fieldName)
+					key, err := dskey.FromParts(dbKey, id, fieldName)
+					if err != nil {
+						panic(err)
+					}
+
 					bs, err := json.Marshal(fieldValue)
 					if err != nil {
 						panic(fmt.Errorf("creating test db. Key %s: %w", key, err))
 					}
+
 					data[key] = bs
 				}
 
-				idKey := dskey.MustKey("%s/%d/id", dbKey, id)
+				idKey, err := dskey.FromParts(dbKey, id, "id")
+				if err != nil {
+					panic(err)
+				}
 				data[idKey] = []byte(strconv.Itoa(id))
 			}
 
@@ -62,8 +70,18 @@ func YAMLData(input string) map[dskey.Key][]byte {
 				panic(fmt.Errorf("invalid object type: got %T, expected map[string]interface{}", dbValue))
 			}
 
+			id, err := strconv.Atoi(parts[1])
+			if err != nil {
+				panic(err)
+			}
+
 			for fieldName, fieldValue := range field {
-				fqfield := dskey.MustKey("%s/%s/%s", parts[0], parts[1], fieldName)
+
+				fqfield, err := dskey.FromParts(parts[0], id, fieldName)
+				if err != nil {
+					panic(err)
+				}
+
 				bs, err := json.Marshal(fieldValue)
 				if err != nil {
 					panic(fmt.Errorf("creating test db. Key %s: %w", fqfield, err))
@@ -71,7 +89,10 @@ func YAMLData(input string) map[dskey.Key][]byte {
 				data[fqfield] = bs
 			}
 
-			idKey := dskey.MustKey("%s/%s/id", parts[0], parts[1])
+			idKey, err := dskey.FromParts(parts[0], id, "id")
+			if err != nil {
+				panic(err)
+			}
 			data[idKey] = []byte(parts[1])
 
 		case 3:
@@ -83,7 +104,15 @@ func YAMLData(input string) map[dskey.Key][]byte {
 
 			data[key] = bs
 
-			idKey := dskey.MustKey("%s/%s/id", parts[0], parts[1])
+			id, err := strconv.Atoi(parts[1])
+			if err != nil {
+				panic(err)
+			}
+
+			idKey, err := dskey.FromParts(parts[0], id, "id")
+			if err != nil {
+				panic(err)
+			}
 			data[idKey] = []byte(parts[1])
 		default:
 			panic(fmt.Errorf("invalid db key %s", dbKey))
