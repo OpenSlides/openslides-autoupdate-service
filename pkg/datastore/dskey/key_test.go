@@ -110,7 +110,6 @@ func TestField(t *testing.T) {
 		{"user/1/username", "username"},
 		{"user/12/username", "username"},
 		{"motion/12/title", "title"},
-		{"user/12/group_$_ids", "group_$_ids"},
 	} {
 		t.Run(tt.key, func(t *testing.T) {
 			key, err := dskey.FromString(tt.key)
@@ -133,7 +132,6 @@ func TestFQID(t *testing.T) {
 		{"user/1/username", "user/1"},
 		{"user/12/username", "user/12"},
 		{"motion/12/title", "motion/12"},
-		{"user/12/group_$_ids", "user/12"},
 	} {
 		t.Run(tt.key, func(t *testing.T) {
 			key, err := dskey.FromString(tt.key)
@@ -156,7 +154,6 @@ func TestCollectionField(t *testing.T) {
 		{"user/1/username", "user/username"},
 		{"user/12/username", "user/username"},
 		{"motion/12/title", "motion/title"},
-		{"user/12/group_$_ids", "user/group_$_ids"},
 	} {
 		t.Run(tt.key, func(t *testing.T) {
 			key, err := dskey.FromString(tt.key)
@@ -179,8 +176,6 @@ func TestIDField(t *testing.T) {
 		{"user/1/username", "user/1/id"},
 		{"user/12/username", "user/12/id"},
 		{"motion/12/title", "motion/12/id"},
-		{"user/12/group_$_ids", "user/12/id"},
-		{"user/12/group_$1_ids", "user/12/id"},
 	} {
 		t.Run(tt.key, func(t *testing.T) {
 			key, err := dskey.FromString(tt.key)

@@ -57,13 +57,13 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 				first_name: Hugo
 
 			motion/42:
-				name: antrag
+				title: antrag
 				text: beschluss
 			`,
 			map[string][]byte{
 				"user/1/username":   []byte(`"hugo"`),
 				"user/1/first_name": []byte(`"Hugo"`),
-				"motion/42/name":    []byte(`"antrag"`),
+				"motion/42/title":   []byte(`"antrag"`),
 				"motion/42/text":    []byte(`"beschluss"`),
 			},
 		},
@@ -75,7 +75,7 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 			`,
 			map[string][]byte{
 				"user/1/username": []byte(`"hugo"`),
-				"motion/2/name":   nil,
+				"motion/2/title":  nil,
 			},
 		},
 	} {

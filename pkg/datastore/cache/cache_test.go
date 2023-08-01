@@ -14,9 +14,9 @@ import (
 
 func TestCache_call_Get_returns_the_value_from_flow(t *testing.T) {
 	ctx := context.Background()
-	myKey := dskey.MustKey("key/1/field")
+	myKey := dskey.MustKey("user/1/username")
 	flow := dsmock.NewFlow(dsmock.YAMLData(`---
-	key/1/field: value
+	user/1/username: value
 	`))
 
 	c := cache.New(flow)
@@ -39,7 +39,7 @@ func TestCache_Get_with_a_key_not_in_the_flow_returns_nil_as_value(t *testing.T)
 		dsmock.NewCounter,
 	)
 	counter := flow.Middlewares()[0].(*dsmock.Counter)
-	myKey := dskey.MustKey("key/1/field")
+	myKey := dskey.MustKey("user/1/username")
 	c := cache.New(flow)
 
 	if _, err := c.Get(ctx, myKey); err != nil {
@@ -67,11 +67,11 @@ func TestCache_call_Get_two_times_only_calls_the_flow_one_time(t *testing.T) {
 
 	flow := dsmock.NewFlow(
 		dsmock.Stub(dsmock.YAMLData(`---
-		key/1/field: value
+		user/1/username: value
 		`)),
 		dsmock.NewCounter,
 	)
-	myKey := dskey.MustKey("key/1/field")
+	myKey := dskey.MustKey("user/1/username")
 	c := cache.New(flow)
 
 	if _, err := c.Get(ctx, myKey); err != nil {
@@ -93,11 +93,11 @@ func TestCache_calling_get_at_the_same_time_second_call_waits_until_first_is_fin
 	wait := make(chan error)
 	flow := dsmock.NewFlow(
 		dsmock.YAMLData(`---
-		key/1/field: value
+		user/1/username: value
 		`),
 		dsmock.NewWait(wait),
 	)
-	myKey := dskey.MustKey("key/1/field")
+	myKey := dskey.MustKey("user/1/username")
 	c := cache.New(flow)
 
 	err1 := make(chan error)
@@ -144,11 +144,11 @@ func TestCache_Get_gets_an_error_from_flow_does_not_effect_a_second_call_to_Get(
 	waiter := make(chan error, 1)
 	flow := dsmock.NewFlow(
 		dsmock.YAMLData(`---
-		key/1/field: value
+		user/1/username: value
 		`),
 		dsmock.NewWait(waiter),
 	)
-	myKey1 := dskey.MustKey("key/1/field")
+	myKey1 := dskey.MustKey("user/1/username")
 	c := cache.New(flow)
 
 	waiter <- fmt.Errorf("some error")
@@ -168,13 +168,13 @@ func TestCache_Update_values_not_in_the_cache_do_not_update_the_cache(t *testing
 
 	flow := dsmock.NewFlow(
 		dsmock.YAMLData(`---
-		key/1/field: value
-		key/2/field: value
+		user/1/username: value
+		user/2/username: value
 		`),
 		dsmock.NewCounter,
 	)
-	myKey1 := dskey.MustKey("key/1/field")
-	myKey2 := dskey.MustKey("key/2/field")
+	myKey1 := dskey.MustKey("user/1/username")
+	myKey2 := dskey.MustKey("user/2/username")
 	c := cache.New(flow)
 
 	// Calls update in background.
@@ -214,11 +214,11 @@ func TestCache_Get_a_value_when_in_parallel_it_is_updated(t *testing.T) {
 
 	flow := dsmock.NewFlow(
 		dsmock.YAMLData(`---
-		key/1/field: old value
+		user/1/username: old value
 		`),
 		dsmock.NewWait(waiter),
 	)
-	myKey := dskey.MustKey("key/1/field")
+	myKey := dskey.MustKey("user/1/username")
 	c := cache.New(flow)
 
 	go c.Update(ctx, nil)
@@ -267,10 +267,10 @@ func TestCache_flow_returns_null_should_return_nil(t *testing.T) {
 
 	flow := dsmock.NewFlow(
 		dsmock.YAMLData(`---
-		key/1/field: null
+		user/1/username: null
 		`),
 	)
-	myKey := dskey.MustKey("key/1/field")
+	myKey := dskey.MustKey("user/1/username")
 	c := cache.New(flow)
 
 	got, err := c.Get(ctx, myKey)
@@ -290,12 +290,12 @@ func TestCache_flow_update_pushed_null_is_saved_as_nil(t *testing.T) {
 
 	flow := dsmock.NewFlow(
 		dsmock.YAMLData(`---
-		key/1/field: value
+		user/1/username: value
 		`),
 		dsmock.NewCounter,
 	)
 	counter := flow.Middlewares()[0].(*dsmock.Counter)
-	myKey := dskey.MustKey("key/1/field")
+	myKey := dskey.MustKey("user/1/username")
 	c := cache.New(flow)
 
 	waitForUpdated := make(chan struct{})
