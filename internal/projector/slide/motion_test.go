@@ -450,6 +450,7 @@ func TestMotion(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			ds := dsmock.Stub(tt.data)
 			fetch := datastore.NewFetcher(ds)
 
@@ -459,7 +460,7 @@ func TestMotion(t *testing.T) {
 				Options:         tt.options,
 			}
 
-			bs, err := motionSlide.Slide(context.Background(), fetch, p7on)
+			bs, err := motionSlide.Slide(ctx, fetch, p7on)
 			assert.NoError(t, err)
 			assert.JSONEq(t, tt.expect, string(bs))
 		})

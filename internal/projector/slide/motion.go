@@ -91,7 +91,7 @@ type dbMotion struct {
 	LineLength                       int                            `json:"line_length"`
 	Preamble                         string                         `json:"preamble"`
 	LineNumbering                    string                         `json:"line_numbering"`
-	AmendmentParagraph               json.RawMessage                `json:"amendment_paragraph,omitempty"`
+	AmendmentParagraph               json.RawMessage                `json:"amendment_paragraphs,omitempty"`
 	LeadMotion                       *leadMotionType                `json:"lead_motion,omitempty"`
 	BaseStatute                      *dbMotionStatuteParagraph      `json:"base_statute,omitempty"`
 	ChangeRecommendations            []dbMotionChangeRecommendation `json:"change_recommendations"`

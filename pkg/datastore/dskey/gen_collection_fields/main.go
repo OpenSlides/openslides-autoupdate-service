@@ -91,6 +91,7 @@ const tpl = `// Code generated with models.yml DO NOT EDIT.
 package dskey
 
 var collectionFields = [...]collectionField{
+	{"invalid", "key"},
 	{{- range $cf := .CollectionFields}}
 		{"{{$cf.Collection}}", "{{$cf.Field}}"},
 	{{- end}}
@@ -100,7 +101,7 @@ func collectionFieldToID(cf string) int{
 	switch cf{
 	{{- range $idx, $cf := .CollectionFields}}
 	case "{{$cf.Collection}}/{{$cf.Field}}":
-		return {{$idx}}
+		return {{add1 $idx}}
 	{{- end}}
 	default: 
 		return -1
@@ -109,7 +110,11 @@ func collectionFieldToID(cf string) int{
 `
 
 func writeFile(w io.Writer, collectionFields []collectionField) error {
-	t := template.New("t")
+	t := template.New("t").Funcs(template.FuncMap{
+		"add1": func(num int) int {
+			return num + 1
+		},
+	})
 	t, err := t.Parse(tpl)
 	if err != nil {
 		return fmt.Errorf("parsing template: %w", err)

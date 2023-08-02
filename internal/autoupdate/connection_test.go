@@ -75,8 +75,8 @@ func TestConnectionReadNewData(t *testing.T) {
 
 func TestConnectionEmptyData(t *testing.T) {
 	var (
-		doesNotExistKey = dskey.MustKey("doesnot/1/exist")
-		doesExistKey    = userNameKey
+		doesNotExistKey = dskey.MustKey("user/2/username")
+		doesExistKey    = dskey.MustKey("user/1/username")
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())

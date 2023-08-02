@@ -23,7 +23,7 @@ func TestKeys(t *testing.T) {
 			`{
 				"ids": [1],
 				"collection": "user",
-				"fields": {"name": null}
+				"fields": {"username": null}
 			}`,
 			"",
 			mustKeys("user/1/username"),
@@ -148,38 +148,6 @@ func TestKeys(t *testing.T) {
 			mustKeys("user/1/organization_id"),
 		},
 		{
-			"Redirect id not exist",
-			`{
-				"ids": [1],
-				"collection": "not_exist",
-				"fields": {
-					"note_id": {
-						"type": "relation",
-						"collection": "note",
-						"fields": {"important": null}
-					}
-				}
-			}`,
-			"",
-			mustKeys(),
-		},
-		{
-			"Redirect ids not exist",
-			`{
-				"ids": [1],
-				"collection": "not_exist",
-				"fields": {
-					"group_ids": {
-						"type": "relation-list",
-						"collection": "group",
-						"fields": {"name": null}
-					}
-				}
-			}`,
-			"",
-			mustKeys(),
-		},
-		{
 			"Generic field",
 			`{
 				"ids": [1],
@@ -268,16 +236,16 @@ func TestUpdate(t *testing.T) {
 				"ids": [1],
 				"collection": "user",
 				"fields": {
-					"note_id": {
+					"organization_id": {
 						"type": "relation",
-						"collection": "note",
-						"fields": {"important": null}
+						"collection": "organization",
+						"fields": {"login_text": null}
 					}
 				}
 			}`,
-			"user/1/note_id: 1",
-			"user/1/note_id: 2",
-			mustKeys("user/1/note_id", "note/2/important"),
+			"user/1/organization_id: 1",
+			"user/1/organization_id: 2",
+			mustKeys("user/1/organization_id", "organization/2/login_text"),
 			1,
 		},
 		{
@@ -286,16 +254,16 @@ func TestUpdate(t *testing.T) {
 				"ids": [1],
 				"collection": "user",
 				"fields": {
-					"note_id": {
+					"organization_id": {
 						"type": "relation",
-						"collection": "note",
-						"fields": {"important": null}
+						"collection": "organization",
+						"fields": {"login_text": null}
 					}
 				}
 			}`,
-			"user/1/note_id: 1",
-			"user/1/note_id: 1",
-			mustKeys("user/1/note_id", "note/1/important"),
+			"user/1/organization_id: 1",
+			"user/1/organization_id: 1",
+			mustKeys("user/1/organization_id", "organization/1/login_text"),
 			0,
 		},
 		{
@@ -304,22 +272,22 @@ func TestUpdate(t *testing.T) {
 				"ids": [1, 2],
 				"collection": "user",
 				"fields": {
-					"note_id": {
+					"organization_id": {
 						"type": "relation",
-						"collection": "note",
-						"fields": {"important": null}
+						"collection": "organization",
+						"fields": {"login_text": null}
 					}
 				}
 			}`,
 			`---
-			user/1/note_id: 1
-			user/2/note_id: 1
+			user/1/organization_id: 1
+			user/2/organization_id: 1
 			`,
 			`---
-			user/1/note_id: 2
-			user/2/note_id: 1
+			user/1/organization_id: 2
+			user/2/organization_id: 1
 			`,
-			mustKeys("user/1/note_id", "user/2/note_id", "note/1/important", "note/2/important"),
+			mustKeys("user/1/organization_id", "user/2/organization_id", "organization/1/login_text", "organization/2/login_text"),
 			1,
 		},
 		{
@@ -328,29 +296,29 @@ func TestUpdate(t *testing.T) {
 				"ids": [1],
 				"collection": "user",
 				"fields": {
-					"note_id": {
+					"organization_id": {
 						"type": "relation",
-						"collection": "note",
-						"fields": {"important": null}
+						"collection": "organization",
+						"fields": {"login_text": null}
 					},
-					"group_ids": {
+					"meeting_user_ids": {
 						"type": "relation-list",
-						"collection": "group",
-						"fields": {"admin": null}
+						"collection": "meeting_user",
+						"fields": {"comment": null}
 					}
 				}
 			}`,
 			`---
-			user/1/note_id:   1
-			user/1/group_ids: [1,2]
-			user/2/group_ids: [1,2]
+			user/1/organization_id:   1
+			user/1/meeting_user_ids: [1,2]
+			user/2/meeting_user_ids: [1,2]
 			`,
 			`---
-			user/1/note_id:   2
-			user/1/group_ids: [1,2]
-			user/2/group_ids: [1,2]
+			user/1/organization_id:   2
+			user/1/meeting_user_ids: [1,2]
+			user/2/meeting_user_ids: [1,2]
 			`,
-			mustKeys("user/1/note_id", "user/1/group_ids", "note/2/important", "group/1/admin", "group/2/admin"),
+			mustKeys("user/1/organization_id", "user/1/meeting_user_ids", "organization/2/login_text", "meeting_user/1/comment", "meeting_user/2/comment"),
 			1,
 		},
 		{
@@ -359,27 +327,27 @@ func TestUpdate(t *testing.T) {
 				"ids": [1],
 				"collection": "user",
 				"fields": {
-					"note_id": {
+					"organization_id": {
 						"type": "relation",
-						"collection": "note",
-						"fields": {"important": null}
+						"collection": "organization",
+						"fields": {"login_text": null}
 					},
-					"group_ids": {
+					"meeting_user_ids": {
 						"type": "relation-list",
-						"collection": "group",
-						"fields": {"admin": null}
+						"collection": "meeting_user",
+						"fields": {"comment": null}
 					}
 				}
 			}`,
 			`---
-			user/1/note_id: 1
-			user/1/group_ids: [1,2]
+			user/1/organization_id: 1
+			user/1/meeting_user_ids: [1,2]
 			`,
 			`---
-			user/1/note_id: 2
-			user/1/group_ids: [2]
+			user/1/organization_id: 2
+			user/1/meeting_user_ids: [2]
 			`,
-			mustKeys("user/1/note_id", "note/2/important", "user/1/group_ids", "group/2/admin"),
+			mustKeys("user/1/organization_id", "organization/2/login_text", "user/1/meeting_user_ids", "meeting_user/2/comment"),
 			2,
 		},
 		{
@@ -388,30 +356,30 @@ func TestUpdate(t *testing.T) {
 				"ids": [1],
 				"collection": "user",
 				"fields": {
-					"group_ids": {
+					"meeting_user_ids": {
 						"type": "relation-list",
-						"collection": "group",
+						"collection": "meeting_user",
 						"fields": {
-							"perm_ids": {
+							"personal_note_ids": {
 								"type": "relation-list",
-								"collection": "perm",
-								"fields": {"name": null}
+								"collection": "personal_note",
+								"fields": {"note": null}
 							}
 						}
 					}
 				}
 			}`,
 			`---
-			user/1/group_ids: [1,2]
-			group/1/perm_ids: [1,2]
-			group/2/perm_ids: [1,2]
+			user/1/meeting_user_ids: [1,2]
+			meeting_user/1/personal_note_ids: [1,2]
+			meeting_user/2/personal_note_ids: [1,2]
 			`,
 			`---
-			user/1/group_ids: [2]
-			group/1/perm_ids: [1,2]
-			group/2/perm_ids: [1,2]
+			user/1/meeting_user_ids: [2]
+			meeting_user/1/personal_note_ids: [1,2]
+			meeting_user/2/personal_note_ids: [1,2]
 			`,
-			mustKeys("user/1/group_ids", "group/2/perm_ids", "perm/2/name", "perm/1/name"),
+			mustKeys("user/1/meeting_user_ids", "meeting_user/2/personal_note_ids", "personal_note/2/note", "personal_note/1/note"),
 			1,
 		},
 	} {
@@ -446,14 +414,14 @@ func TestConcurency(t *testing.T) {
 		"ids": [1, 2, 3],
 		"collection": "user",
 		"fields": {
-			"group_ids": {
+			"meeting_user_ids": {
 				"type": "relation-list",
-				"collection": "group",
+				"collection": "meeting_user",
 				"fields": {
-					"perm_ids": {
+					"personal_note_ids": {
 						"type": "relation-list",
-						"collection": "perm",
-						"fields": {"name": null}
+						"collection": "personal_note",
+						"fields": {"note": null}
 					}
 				}
 			}
@@ -463,11 +431,11 @@ func TestConcurency(t *testing.T) {
 
 	ds := dsmock.NewFlow(
 		dsmock.YAMLData(`---
-		user/1/group_ids: [1,2]
-		user/2/group_ids: [1,2]
-		user/3/group_ids: [1,2]
-		group/1/perm_ids: [1,2]
-		group/2/perm_ids: [1,2]
+		user/1/meeting_user_ids: [1,2]
+		user/2/meeting_user_ids: [1,2]
+		user/3/meeting_user_ids: [1,2]
+		meeting_user/1/personal_note_ids: [1,2]
+		meeting_user/2/personal_note_ids: [1,2]
 		`),
 		dsmock.NewCounter,
 	)
@@ -487,7 +455,15 @@ func TestConcurency(t *testing.T) {
 		t.Errorf("Got %d requests to the datastore, expected 2: %v", got, counter.Requests())
 	}
 
-	expect := mustKeys("user/1/group_ids", "user/2/group_ids", "user/3/group_ids", "group/1/perm_ids", "group/2/perm_ids", "perm/1/name", "perm/2/name")
+	expect := mustKeys(
+		"user/1/meeting_user_ids",
+		"user/2/meeting_user_ids",
+		"user/3/meeting_user_ids",
+		"meeting_user/1/personal_note_ids",
+		"meeting_user/2/personal_note_ids",
+		"personal_note/1/note",
+		"personal_note/2/note",
+	)
 	if diff := cmpSet(set(expect...), set(keys...)); diff != nil {
 		t.Errorf("Expected %v, got: %v", expect, diff)
 	}
@@ -500,24 +476,24 @@ func TestManyRequests(t *testing.T) {
 			"ids": [1],
 			"collection": "user",
 			"fields": {
-				"note_id": {
+				"organization_id": {
 					"type": "relation",
-					"collection": "note",
-					"fields": {"important": null}
+					"collection": "organization",
+					"fields": {"login_text": null}
 				}
 			}
 		}, {
 			"ids": [1],
 			"collection": "motion",
-			"fields": {"name": null}
+			"fields": {"title": null}
 		}, {
 			"ids": [2],
 			"collection": "user",
 			"fields": {
-				"note_id": {
+				"organization_id": {
 					"type": "relation",
-					"collection": "note",
-					"fields": {"important": null}
+					"collection": "organization",
+					"fields": {"login_text": null}
 				}
 			}
 		}
@@ -525,8 +501,8 @@ func TestManyRequests(t *testing.T) {
 
 	ds := dsmock.NewFlow(
 		dsmock.YAMLData(`---
-		user/1/note_id: 1
-		user/2/note_id: 1
+		user/1/organization_id: 1
+		user/2/organization_id: 1
 		`),
 		dsmock.NewCounter,
 	)
@@ -546,7 +522,7 @@ func TestManyRequests(t *testing.T) {
 		t.Errorf("Got %d requests, expected 1: %v", got, counter.Requests())
 	}
 
-	expect := mustKeys("user/1/note_id", "user/2/note_id", "motion/1/name", "note/1/important")
+	expect := mustKeys("user/1/organization_id", "user/2/organization_id", "motion/1/title", "organization/1/login_text")
 	if diff := cmpSet(set(expect...), set(keys...)); diff != nil {
 		t.Errorf("Got %v, expected %v", diff, expect)
 	}
@@ -561,11 +537,11 @@ func TestManyRequestsSameKeys(t *testing.T) {
 			"ids": [1],
 			"collection": "user",
 			"fields": {
-				"note_id": {
+				"organization_id": {
 					"type": "relation",
-					"collection": "note",
+					"collection": "organization",
 					"fields": {
-						"important": null
+						"login_text": null
 					}
 				}
 			}
@@ -573,13 +549,13 @@ func TestManyRequestsSameKeys(t *testing.T) {
 			"ids": [1],
 			"collection": "user",
 			"fields": {
-				"note_id": null
+				"organization_id": null
 			}
 		}
 	]`
 
 	ds := dsmock.Stub(dsmock.YAMLData(`---
-	user/1/note_id: 1
+	user/1/organization_id: 1
 	`))
 
 	b, err := keysbuilder.ManyFromJSON(strings.NewReader(jsonData))
@@ -593,8 +569,8 @@ func TestManyRequestsSameKeys(t *testing.T) {
 	}
 
 	expect := mustKeys(
-		"user/1/note_id",
-		"note/1/important",
+		"user/1/organization_id",
+		"organization/1/login_text",
 	)
 	if diff := cmpSet(set(expect...), set(keys...)); diff != nil {
 		t.Errorf("Got %v, expected %v", diff, expect)
@@ -617,10 +593,10 @@ func TestError(t *testing.T) {
 		"ids": [1],
 		"collection": "user",
 		"fields": {
-			"note_id": {
+			"organization_id": {
 				"type": "relation",
-				"collection": "note",
-				"fields": {"important": null}
+				"collection": "organization",
+				"fields": {"login_text": null}
 			}
 		}
 	}`
@@ -652,17 +628,17 @@ func TestRequestCount(t *testing.T) {
 		"fields": {
 			"name": null,
 			"goodlooking": null,
-			"note_ids": {
+			"organization_ids": {
 				"type": "relation-list",
-				"collection": "note",
+				"collection": "organization",
 				"fields": {
-					"important": null,
+					"login_text": null,
 					"text": null
 				}
 			},
 			"main_group": {
 				"type": "relation",
-				"collection": "note",
+				"collection": "organization",
 				"fields": {
 					"name": null,
 					"permissions": null
