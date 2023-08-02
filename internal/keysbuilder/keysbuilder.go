@@ -87,9 +87,13 @@ func (b *Builder) Update(ctx context.Context, getter flow.Getter) ([]dskey.Key, 
 	}
 
 	// Start with all keys from all the bodies.
+	var err error
 	queue := make([]keyDescription, 0, bodyFieldLen(b.bodies))
 	for _, body := range b.bodies {
-		queue = body.appendKeys(queue)
+		queue, err = body.appendKeys(queue)
+		if err != nil {
+			return nil, fmt.Errorf("building keys from bodys: %w", err)
+		}
 	}
 
 	var keys []dskey.Key
@@ -136,7 +140,7 @@ func (b *Builder) Update(ctx context.Context, getter flow.Getter) ([]dskey.Key, 
 					// value has wrong type.
 					return nil, ValueError{key: kd.key, gotType: invalidErr.Value, expectType: invalidErr.Type, err: err}
 				}
-				return nil, err
+				return nil, fmt.Errorf("appending keys for key %s: %w", kd.key, err)
 			}
 		}
 

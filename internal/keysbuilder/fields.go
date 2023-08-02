@@ -22,7 +22,6 @@ package keysbuilder
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -34,11 +33,6 @@ const (
 	ftRelationList        = "relation-list"
 	ftGenericRelation     = "generic-relation"
 	ftGenericRelationList = "generic-relation-list"
-)
-
-var (
-	reCollection = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])$`)
-	reField      = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 )
 
 // keyDescription combines a key and a fieldDescription.
@@ -81,6 +75,7 @@ func (b *body) UnmarshalJSON(data []byte) error {
 	if len(field.IDs) == 0 {
 		return InvalidError{msg: "no ids"}
 	}
+
 	for _, id := range field.IDs {
 		if id <= 0 {
 			return InvalidError{msg: "id has to be a positive number"}
@@ -90,11 +85,18 @@ func (b *body) UnmarshalJSON(data []byte) error {
 	if field.Collection == "" {
 		return InvalidError{msg: "attribute collection is missing"}
 	}
+
 	if field.Fields.fields == nil {
 		return InvalidError{msg: "attribte fields is missing"}
 	}
-	if !reCollection.MatchString(field.Collection) {
-		return InvalidError{msg: "invalid collection name"}
+
+	for fieldName := range field.Fields.fields {
+		if !dskey.ValidateCollectionField(field.Collection, fieldName) {
+			return InvalidError{
+				msg:   fmt.Sprintf("%s/%s does not exist", field.Collection, fieldName),
+				field: fieldName,
+			}
+		}
 	}
 
 	// Set the body fields.
@@ -108,11 +110,15 @@ func (b *body) UnmarshalJSON(data []byte) error {
 //
 // It is simular to the fieldDescription interface. But it requires other
 // arguments.
-func (b *body) appendKeys(data []keyDescription) []keyDescription {
+func (b *body) appendKeys(data []keyDescription) ([]keyDescription, error) {
+	var err error
 	for _, id := range b.ids {
-		data = b.fieldsMap.appendKeys(b.collection, id, data)
+		data, err = b.fieldsMap.appendKeys(b.collection, id, data)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return data
+	return data, nil
 }
 
 // relationField is a fieldtype that redirects to one other collection.
@@ -141,15 +147,24 @@ func (r *relationField) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &field); err != nil {
 		return err
 	}
+
 	if field.Collection == "" {
 		return InvalidError{msg: "no collection"}
 	}
+
 	if field.Fields.fields == nil {
 		return InvalidError{msg: "no fields"}
 	}
-	if !reCollection.MatchString(field.Collection) {
-		return InvalidError{msg: "invalid collection name"}
+
+	for fieldName := range field.Fields.fields {
+		if !dskey.ValidateCollectionField(field.Collection, fieldName) {
+			return InvalidError{
+				msg:   fmt.Sprintf("%s/%s does not exist", field.Collection, fieldName),
+				field: fieldName,
+			}
+		}
 	}
+
 	r.collection = field.Collection
 	r.fieldsMap = field.Fields
 	return nil
@@ -161,8 +176,12 @@ func (r *relationField) appendKeys(key dskey.Key, value json.RawMessage, data []
 		return nil, fmt.Errorf("decoding value for key %s: %w", key, err)
 	}
 
-	data = r.fieldsMap.appendKeys(r.collection, id, data)
-	return data, nil
+	if id <= 0 {
+		// TODO: This should be return an error on required fields
+		return data, nil
+	}
+
+	return r.fieldsMap.appendKeys(r.collection, id, data)
 }
 
 // relationListField is a fieldtype like relation, but redirects to a list of objects.
@@ -246,8 +265,13 @@ func (g *genericRelationField) appendKeys(key dskey.Key, value json.RawMessage, 
 		return nil, fmt.Errorf("invalid collection id: %s", fqID)
 	}
 
-	data = g.fieldsMap.appendKeys(collection, id, data)
-	return data, nil
+	for fieldName := range g.fieldsMap.fields {
+		if !dskey.ValidateCollectionField(collection, fieldName) {
+			delete(g.fieldsMap.fields, fieldName)
+		}
+	}
+
+	return g.fieldsMap.appendKeys(collection, id, data)
 }
 
 // genericRelationListField is like a genericRelationField but with a list of relations.
@@ -283,7 +307,16 @@ func (g *genericRelationListField) appendKeys(key dskey.Key, value json.RawMessa
 			return nil, fmt.Errorf("invalid collection id: %s", fqID)
 		}
 
-		data = g.fieldsMap.appendKeys(collection, id, data)
+		for fieldName := range g.fieldsMap.fields {
+			if !dskey.ValidateCollectionField(collection, fieldName) {
+				delete(g.fieldsMap.fields, fieldName)
+			}
+		}
+
+		data, err = g.fieldsMap.appendKeys(collection, id, data)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return data, nil
 }
@@ -347,10 +380,6 @@ func (f *fieldsMap) UnmarshalJSON(data []byte) error {
 
 	f.fields = make(map[string]fieldDescription, len(fm))
 	for name, field := range fm {
-		if !reField.MatchString(name) {
-			return InvalidError{msg: fmt.Sprintf("fieldname %q is not a valid fieldname", name), field: name}
-		}
-
 		fd, err := unmarshalField(field)
 		if err != nil {
 			if sub, ok := err.(InvalidError); ok {
@@ -366,10 +395,13 @@ func (f *fieldsMap) UnmarshalJSON(data []byte) error {
 // appendKeys appends its fields to data.
 //
 // It is like the fieldDescription interface. But it requires other arguments.
-func (f *fieldsMap) appendKeys(collection string, id int, data []keyDescription) []keyDescription {
+func (f *fieldsMap) appendKeys(collection string, id int, data []keyDescription) ([]keyDescription, error) {
 	for field, description := range f.fields {
-		key, _ := dskey.FromParts(collection, id, field)
+		key, err := dskey.FromParts(collection, id, field)
+		if err != nil {
+			return nil, err
+		}
 		data = append(data, keyDescription{key: key, description: description})
 	}
-	return data
+	return data, nil
 }

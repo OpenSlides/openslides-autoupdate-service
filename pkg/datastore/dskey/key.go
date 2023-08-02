@@ -38,6 +38,10 @@ func FromParts(collection string, id int, field string) (Key, error) {
 		return 0, InvalidKeyError{fmt.Sprintf("%s/%d/%s", collection, id, field)}
 	}
 
+	if id <= 0 {
+		return 0, InvalidKeyError{fmt.Sprintf("%s/%d/%s", collection, id, field)}
+	}
+
 	return Key(joinInt(cfID, id)), nil
 }
 

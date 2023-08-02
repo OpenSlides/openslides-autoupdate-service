@@ -2,7 +2,9 @@ package keysbuilder_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -407,6 +409,194 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+func TestInvalidRequestsAtParsingTime(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		request   string
+		isInvalid bool
+	}{
+		{
+			"invalid collection",
+			`{
+				"collection": "does_not_exist",
+				"ids":[1],
+				"fields": {"username": null}
+			}`,
+			true,
+		},
+		{
+			"invalid field",
+			`{
+				"collection": "user",
+				"ids":[1],
+				"fields": {"does_not_exist": null}
+			}`,
+			true,
+		},
+		{
+			"invalid id",
+			`{
+				"collection": "user",
+				"ids":[0],
+				"fields": {"username": null}
+			}`,
+			true,
+		},
+		{
+			"invalid collection in relation-list",
+			`{
+				"collection": "user",
+				"ids":[1],
+				"fields": {
+					"meeting_user_ids": {
+						"type": "relation-list",
+						"collection": "does_not_exist",
+						"fields": {"name": null}
+					}
+				}
+			}`,
+			true,
+		},
+		{
+			"invalid collection in relation",
+			`{
+				"collection": "user",
+				"ids":[1],
+				"fields": {
+					"organization_id": {
+						"type": "relation",
+						"collection": "does_not_exist",
+						"fields": {"name": null}
+					}
+				}
+			}`,
+			true,
+		},
+		{
+			"invalid collection in generic-relation does not return an error",
+			`{
+				"collection": "personal_note",
+				"ids":[1],
+				"fields": {
+					"content_object_id": {
+						"type": "generic-relation",
+						"fields": {"does-not-exist": null}
+					}
+				}
+			}`,
+			false,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, err := keysbuilder.FromJSON(strings.NewReader(tt.request)); err != nil {
+				if tt.isInvalid {
+					var errInvalid keysbuilder.InvalidError
+					if errors.As(err, &errInvalid) {
+						return
+					}
+
+					t.Fatalf("Got error `%v`, expedted InvalidError", err)
+				}
+
+				t.Fatalf("Update(): %v", err)
+			}
+
+			if tt.isInvalid {
+				t.Errorf("FromJson did not return an error")
+			}
+		})
+	}
+}
+
+func TestInvalidOnUpdateIgnoresKeys(t *testing.T) {
+	ctx := context.Background()
+	for _, tt := range []struct {
+		name       string
+		request    string
+		data       string
+		expectKeys []dskey.Key
+	}{
+		{
+			"invalid field on generic-relation",
+			`{
+				"collection": "personal_note",
+				"ids": [1],
+				"fields": {
+					"content_object_id": {
+						"type": "generic-relation",
+						"fields": {"does-not-exist": null}
+					}
+				}
+			}`,
+			`personal_note/1/content_object_id: motion/1`,
+			mustKeys("personal_note/1/content_object_id"),
+		},
+		{
+			"invalid field on generic-relation-list",
+			`{
+				"collection": "tag",
+				"ids": [1],
+				"fields": {
+					"tagged_ids": {
+						"type": "generic-relation-list",
+						"fields": {"does-not-exist": null}
+					}
+				}
+			}`,
+			`tag/1/tagged_ids: [motion/1, agenda_item/2]`,
+			mustKeys("tag/1/tagged_ids"),
+		},
+		{
+			"invalid field on one value of an generic-relation-list",
+			`{
+				"collection": "tag",
+				"ids": [1],
+				"fields": {
+					"tagged_ids": {
+						"type": "generic-relation-list",
+						"fields": {"title": null}
+					}
+				}
+			}`,
+			`tag/1/tagged_ids: [motion/1, agenda_item/2]`,
+			mustKeys("tag/1/tagged_ids", "motion/1/title"),
+		},
+		{
+			"optional value in database for an relation field",
+			`{
+				"collection": "agenda_item",
+				"ids": [1],
+				"fields": {
+					"parent_id": {
+						"type": "relation",
+						"collection": "agenda_item",
+						"fields": {"item_number": null}
+					}
+				}
+			}`,
+			`agenda_item/1/parent_id: 0`,
+			mustKeys("agenda_item/1/parent_id"),
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			kb, err := keysbuilder.FromJSON(strings.NewReader(tt.request))
+			if err != nil {
+				t.Fatalf("FromJSON: %v", err)
+			}
+
+			data := dsmock.NewFlow(dsmock.YAMLData(tt.data))
+			got, err := kb.Update(ctx, data)
+			if err != nil {
+				t.Fatalf("Update(): %v", err)
+			}
+
+			if !reflect.DeepEqual(got, tt.expectKeys) {
+				t.Errorf("Got keys %v, expected %v", got, tt.expectKeys)
+			}
+		})
+	}
+}
+
 func TestConcurency(t *testing.T) {
 	ctx := context.Background()
 	jsonData := `
@@ -626,22 +816,20 @@ func TestRequestCount(t *testing.T) {
 		"ids": [1],
 		"collection": "user",
 		"fields": {
-			"name": null,
-			"goodlooking": null,
-			"organization_ids": {
-				"type": "relation-list",
-				"collection": "organization",
-				"fields": {
-					"login_text": null,
-					"text": null
-				}
-			},
-			"main_group": {
+			"username": null,
+			"organization_id": {
 				"type": "relation",
 				"collection": "organization",
 				"fields": {
-					"name": null,
-					"permissions": null
+					"login_text": null,
+					"name": null
+				}
+			},
+			"meeting_user_ids": {
+				"type": "relation-list",
+				"collection": "meeting_user",
+				"fields": {
+					"comment": null
 				}
 			}
 		}

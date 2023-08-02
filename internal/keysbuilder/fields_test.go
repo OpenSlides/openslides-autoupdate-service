@@ -14,10 +14,10 @@ func TestJSONValid(t *testing.T) {
 		"ids": [5],
 		"collection": "user",
 		"fields": {
-			"motion_ids": {
+			"meeting_user_ids": {
 				"type": "relation-list",
-				"collection": "motion",
-				"fields": {"name": null}
+				"collection": "meeting_user",
+				"fields": {"comment": null}
 			}
 		}
 	}
@@ -81,13 +81,13 @@ func TestJSONSuffixNoFields(t *testing.T) {
 		"ids": [5],
 		"collection": "user",
 		"fields": {
-			"group_ids": null,
-			"note_id": null
+			"meeting_user_ids": null,
+			"username": null
 		}
 	}
 	`)
-	_, err := keysbuilder.FromJSON(json)
-	if err != nil {
+
+	if _, err := keysbuilder.FromJSON(json); err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
 }
@@ -238,8 +238,8 @@ func TestRequestErrors(t *testing.T) {
 				"fields": {"username": null}
 			}
 			`,
-			"invalid collection name",
-			nil,
+			"field \"username\": User/username does not exist",
+			[]string{"username"},
 		},
 		{
 			"field with upper letter",
@@ -249,7 +249,7 @@ func TestRequestErrors(t *testing.T) {
 				"fields": {"Username": null}
 			}
 			`,
-			"field \"Username\": fieldname \"Username\" is not a valid fieldname",
+			"field \"Username\": user/Username does not exist",
 			[]string{"Username"},
 		},
 		{
@@ -266,8 +266,8 @@ func TestRequestErrors(t *testing.T) {
 				}
 			}
 			`,
-			"field \"group_id\": invalid collection name",
-			[]string{"group_id"},
+			"field \"group_id.name\": Group/name does not exist",
+			[]string{"group_id", "name"},
 		},
 		{
 			"collection in relation-list-field has upper letter",
@@ -283,24 +283,27 @@ func TestRequestErrors(t *testing.T) {
 				}
 			}
 			`,
-			"field \"group_ids\": invalid collection name",
-			[]string{"group_ids"},
+			"field \"group_ids.name\": Group/name does not exist",
+			[]string{"group_ids", "name"},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := keysbuilder.FromJSON(strings.NewReader(tt.input))
 			if err == nil {
-				t.Errorf("Expected an error, got none")
+				t.Errorf("Got no error none")
 			}
+
 			var kErr keysbuilder.InvalidError
 			if !errors.As(err, &kErr) {
-				t.Errorf("Expected err to be %T, got: %v", kErr, err)
+				t.Errorf("Got error  %v. Expected err to be %T", err, kErr)
 			}
+
 			if got := kErr.Error(); got != tt.msg {
-				t.Errorf("Expected error message %q, got: %q", tt.msg, got)
+				t.Errorf("Got error message:\n%s\n\nExpected:\n%s", got, tt.msg)
 			}
+
 			if fields := kErr.Fields(); !cmpSlice(fields, tt.fields) {
-				t.Errorf("Expected error to be on field \"%v\", got %v", tt.fields, fields)
+				t.Errorf("Got error on field %v. Expected on field `%v`", fields, tt.fields)
 			}
 		})
 	}
@@ -312,11 +315,11 @@ func TestManyFromJSON(t *testing.T) {
 		"ids": [5],
 		"collection": "user",
 		"fields": {
-			"group_ids": {
+			"meeting_user_ids": {
 				"type": "relation-list",
-				"collection": "group",
+				"collection": "meeting_user",
 				"fields": {
-					"name": null
+					"comment": null
 				}
 			}
 		}
@@ -325,7 +328,7 @@ func TestManyFromJSON(t *testing.T) {
 		"ids": [5],
 		"collection": "user",
 		"fields": {
-			"name": null
+			"username": null
 		}
 	}]`)
 
