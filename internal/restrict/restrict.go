@@ -18,6 +18,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/fastjson"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
@@ -371,8 +372,8 @@ func isRelation(collectionField string, value []byte) (collection.CM, int, bool,
 		return collection.CM{}, 0, false, nil
 	}
 
-	var id int
-	if err := json.Unmarshal(value, &id); err != nil {
+	id, err := fastjson.DecodeInt(value)
+	if err != nil {
 		return collection.CM{}, 0, false, fmt.Errorf("decoding %q (`%s`): %w", collectionField, value, err)
 	}
 
@@ -391,8 +392,8 @@ func isRelationList(keyPrefix string, value []byte) (collection.CM, []int, bool,
 		return collection.CM{}, nil, false, nil
 	}
 
-	var ids []int
-	if err := json.Unmarshal(value, &ids); err != nil {
+	ids, err := fastjson.DecodeIntList(value)
+	if err != nil {
 		return collection.CM{}, nil, false, fmt.Errorf("decoding value (size: %d): %w", len(value), err)
 	}
 

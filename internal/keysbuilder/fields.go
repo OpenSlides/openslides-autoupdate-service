@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/fastjson"
 )
 
 const (
@@ -171,8 +172,8 @@ func (r *relationField) UnmarshalJSON(data []byte) error {
 }
 
 func (r *relationField) appendKeys(key dskey.Key, value json.RawMessage, data []keyDescription) ([]keyDescription, error) {
-	var id int
-	if err := json.Unmarshal(value, &id); err != nil {
+	id, err := fastjson.DecodeInt(value)
+	if err != nil {
 		return nil, fmt.Errorf("decoding value for key %s: %w", key, err)
 	}
 
@@ -202,8 +203,8 @@ type relationListField struct {
 }
 
 func (r *relationListField) appendKeys(key dskey.Key, value json.RawMessage, data []keyDescription) ([]keyDescription, error) {
-	var ids []int
-	if err := json.Unmarshal(value, &ids); err != nil {
+	ids, err := fastjson.DecodeIntList(value)
+	if err != nil {
 		return nil, fmt.Errorf("decoding value for key %s: %w", key, err)
 	}
 

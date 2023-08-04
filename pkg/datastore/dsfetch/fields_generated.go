@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/fastjson"
 )
 
 // ValueBool is a lazy value from the datastore.
@@ -334,9 +335,11 @@ func (v *ValueInt) execute(p []byte) error {
 		}
 		v.isNull = true
 	} else {
-		if err := json.Unmarshal(p, &v.value); err != nil {
+		r, err := fastjson.DecodeInt(p)
+		if err != nil {
 			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
+		v.value = r
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
@@ -416,9 +419,11 @@ func (v *ValueIntSlice) execute(p []byte) error {
 		}
 		v.isNull = true
 	} else {
-		if err := json.Unmarshal(p, &v.value); err != nil {
+		r, err := fastjson.DecodeIntList(p)
+		if err != nil {
 			return fmt.Errorf("decoding value %q: %w", p, err)
 		}
+		v.value = r
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
