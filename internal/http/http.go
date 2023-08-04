@@ -11,6 +11,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/pprof"
 	"strconv"
 	"strings"
 	"syscall"
@@ -39,6 +40,7 @@ func Run(
 	history History,
 	redisConnection *redis.Redis,
 	saveIntercal time.Duration,
+	profileRoutes bool,
 ) error {
 	var connectionCount *connectionCount
 	if redisConnection != nil {
@@ -52,6 +54,10 @@ func Run(
 	HandleShowConnectionCount(mux, autoupdate, auth, connectionCount)
 	HandleHistoryInformation(mux, auth, history)
 	HandleRestrictFQIDs(mux, autoupdate)
+
+	if profileRoutes {
+		HandleProfile(mux)
+	}
 
 	srv := &http.Server{
 		Addr:        addr,
@@ -371,6 +377,16 @@ func HandleHealth(mux *http.ServeMux) {
 	})
 
 	mux.Handle(url, handler)
+}
+
+// HandleProfile adds routes for profiling.
+func HandleProfile(mux *http.ServeMux) {
+	mux.Handle(prefixPublic+"/debug/pprof/", http.HandlerFunc(pprof.Index))
+	mux.Handle(prefixPublic+"/debug/pprof/heap", pprof.Handler("heap"))
+	mux.Handle(prefixPublic+"/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+	mux.Handle(prefixPublic+"/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	mux.Handle(prefixPublic+"/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	mux.Handle(prefixPublic+"/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 }
 
 func authMiddleware(next http.Handler, auth Authenticater) http.Handler {
