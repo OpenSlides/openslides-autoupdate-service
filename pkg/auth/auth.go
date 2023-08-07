@@ -120,7 +120,7 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 		return r.Context(), nil
 	}
 
-	ctx := context.WithValue(r.Context(), authenticateCalled, "yes")
+	ctx := r.Context()
 
 	p := new(payload)
 	if err := a.loadToken(w, r, p); err != nil {
@@ -128,12 +128,10 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 	}
 
 	if p.UserID == 0 {
-		// Empty token or anonymous token. No need to save anything in the
-		// context.
-		return ctx, nil
+		return a.AuthenticatedContext(ctx, 0), nil
 	}
 
-	_, sessionIDs, err := a.logedoutSessions.Receive(context.Background(), 0)
+	_, sessionIDs, err := a.logedoutSessions.Receive(ctx, 0)
 	if err != nil {
 		return nil, fmt.Errorf("getting already logged out sessions: %w", err)
 	}
@@ -143,7 +141,7 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 		}
 	}
 
-	ctx, cancelCtx := context.WithCancel(context.WithValue(ctx, userIDType, p.UserID))
+	ctx, cancelCtx := context.WithCancel(a.AuthenticatedContext(ctx, p.UserID))
 
 	go func() {
 		defer cancelCtx()
@@ -168,6 +166,13 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 	return ctx, nil
 }
 
+// AuthenticatedContext returns a new context that contains an userID.
+//
+// Should only used for internal URLs. All other URLs should use auth.Authenticate.
+func (a *Auth) AuthenticatedContext(ctx context.Context, userID int) context.Context {
+	return context.WithValue(ctx, userIDType, userID)
+}
+
 // FromContext returnes the user id from a context returned by Authenticate().
 //
 // If the user is an anonymous user 0 is returned.
@@ -178,14 +183,9 @@ func (a *Auth) FromContext(ctx context.Context) int {
 		return 1
 	}
 
-	initialized := ctx.Value(authenticateCalled)
-	if initialized == nil {
-		panic("call to auth.FromContext() without auth.Authenticate()")
-	}
-
 	v := ctx.Value(userIDType)
 	if v == nil {
-		return 0
+		panic("call to auth.FromContext() without auth.Authenticate()")
 	}
 
 	return v.(int)
@@ -341,8 +341,7 @@ func (a *Auth) refreshToken(ctx context.Context, token, cookie string) (string, 
 type authString string
 
 const (
-	userIDType         authString = "user_id"
-	authenticateCalled authString = "authenticate_called"
+	userIDType authString = "user_id"
 )
 
 type payload struct {
