@@ -192,13 +192,13 @@ To get the data at a position, use the normal autoupdate request with the
 attribute `position`. See above.
 
 
-### Internal Restrict FQIDs
+### Internal Autoupdate
 
-The autoupdate service provides an internal route to restrict a list of fqids.
+The autoupdate service provides an internal route to return fields for a defined user.
 
-`curl localhost:9012/internal/autoupdate -d '{"user_id":23,"fqids":["user/1","motion/6"]}'`
+`curl "localhost:9012/internal/autoupdate?user_id=42&k=user/1/username"`
 
-It returns all fields for the given objects restricted for the given user id.
+It also supports the attributes `single=1` and the normal autoupdate body.
 
 
 ## Configuration

@@ -11,17 +11,14 @@ import (
 	"fmt"
 	"runtime"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 	"github.com/ostcar/topic"
 )
 
@@ -188,71 +185,6 @@ func (a *Autoupdate) resetCache(ctx context.Context) {
 			reset.ResetCache()
 		}
 	}
-}
-
-// RestrictFQIDs returns the full collections, restricted for the user for a
-// list of fqids.
-// In requestedFields one can specify which fields per collection should be
-// returned if not specified all available fields will be included.
-//
-// The return format is a map from fqid to an object as map from field to value.
-func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []string, requestedFields map[string][]string) (map[string]map[string][]byte, error) {
-	requestedFieldsMap := make(map[string]set.Set[string], len(requestedFields))
-	for col, val := range requestedFields {
-		requestedFieldsMap[col] = set.New(val...)
-	}
-
-	var keys []dskey.Key
-	for _, fqid := range fqids {
-		collection, rawID, found := strings.Cut(fqid, "/")
-		if !found {
-			return nil, fmt.Errorf("invalid fqid %s, expected one /", fqid)
-		}
-
-		id, err := strconv.Atoi(rawID)
-		if err != nil {
-			return nil, fmt.Errorf("invalid fqid %s, second part has to be an nummber", fqid)
-		}
-
-		fields := restrict.FieldsForCollection(collection)
-		if fields == nil {
-			return nil, fmt.Errorf("unknown collection in fqid %s", fqid)
-		}
-
-		for _, field := range fields {
-			if _, ok := requestedFields[collection]; !ok || requestedFieldsMap[collection].Has(field) {
-				key, err := dskey.FromParts(collection, id, field)
-				if err != nil {
-					return nil, fmt.Errorf("invalid key: %w", err)
-				}
-
-				keys = append(keys, key)
-			}
-		}
-	}
-
-	ctx, restricter := a.restricter(ctx, a.flow, userID)
-
-	values, err := restricter.Get(ctx, keys...)
-	if err != nil {
-		return nil, fmt.Errorf("getting data: %w", err)
-	}
-
-	result := make(map[string]map[string][]byte, len(fqids))
-	for key, value := range values {
-		fqid := key.FQID()
-		if _, ok := result[fqid]; !ok {
-			result[fqid] = make(map[string][]byte)
-		}
-
-		if value == nil {
-			continue
-		}
-
-		result[fqid][key.Field()] = value
-	}
-
-	return result, nil
 }
 
 // skipWorkpool desides, if a connection is allowed to skip the workpool.
