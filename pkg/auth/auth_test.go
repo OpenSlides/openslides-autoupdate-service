@@ -226,6 +226,16 @@ func TestFromContext(t *testing.T) {
 			t.Errorf("Got uid %d from auth-context. Expected 1", got)
 		}
 	})
+
+	t.Run("Context from AuthenticatedContext", func(t *testing.T) {
+		ctx := context.Background()
+		ctx = a.AuthenticatedContext(ctx, 7)
+
+		got := a.FromContext(ctx)
+		if got != 7 {
+			t.Errorf("Got uid %d from auth-context. Expected 7", got)
+		}
+	})
 }
 
 func TestLogout(t *testing.T) {

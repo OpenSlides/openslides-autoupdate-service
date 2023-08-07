@@ -49,9 +49,9 @@ func Run(
 	mux := http.NewServeMux()
 	HandleHealth(mux)
 	HandleAutoupdate(mux, auth, autoupdate, history, connectionCount)
+	HandleInternalAutoupdate(mux, auth, history, autoupdate)
 	HandleShowConnectionCount(mux, autoupdate, auth, connectionCount)
 	HandleHistoryInformation(mux, auth, history)
-	HandleRestrictFQIDs(mux, autoupdate)
 
 	srv := &http.Server{
 		Addr:        addr,
@@ -85,10 +85,8 @@ type Connecter interface {
 	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (map[dskey.Key][]byte, error)
 }
 
-// HandleAutoupdate builds the requested keys from the body of a request. The
-// body has to be in the format specified in the keysbuilder package.
-func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, history History, connectionCount *connectionCount) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func autoupdateHandler(auth Authenticater, connecter Connecter, history History) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Cache-Control", "no-store, max-age=0")
 		ctx := r.Context()
@@ -183,16 +181,36 @@ func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecte
 			return
 		}
 	})
+}
 
+// HandleAutoupdate builds the requested keys from the body of a request. The
+// body has to be in the format specified in the keysbuilder package.
+func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, history History, connectionCount *connectionCount) {
 	mux.Handle(
 		prefixPublic,
 		validRequest(
 			authMiddleware(
 				connectionCountMiddleware(
-					handler,
+					autoupdateHandler(auth, connecter, history),
 					auth,
 					connectionCount,
 				),
+				auth,
+			),
+		),
+	)
+}
+
+// HandleInternalAutoupdate is the same as the normal autoupdate route, but it
+// uses the user_id from an argument.
+//
+// /internal/autoupdate?user_id=23&single=1&k=user/1/username
+func HandleInternalAutoupdate(mux *http.ServeMux, auth Authenticater, history History, connecter Connecter) {
+	mux.Handle(
+		prefixInternal,
+		validRequest(
+			internalAuthMiddleware(
+				autoupdateHandler(auth, connecter, history),
 				auth,
 			),
 		),
@@ -315,53 +333,6 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 	return ctx.Err()
 }
 
-type restrictFQIDser interface {
-	RestrictFQIDs(ctx context.Context, uid int, fqids []string, requestedFields map[string][]string) (map[string]map[string][]byte, error)
-}
-
-// HandleRestrictFQIDs returns restricted objects for a list of fqids.
-func HandleRestrictFQIDs(mux *http.ServeMux, service restrictFQIDser) {
-	mux.HandleFunc(
-		prefixInternal+"/restrict_fqids",
-		func(w http.ResponseWriter, r *http.Request) {
-			var requestBody struct {
-				UserID int                 `json:"user_id"`
-				FQIDs  []string            `json:"fqids"`
-				Fields map[string][]string `json:"fields"`
-			}
-			if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-				handleErrorInternal(w, fmt.Errorf("decoding body"))
-				return
-			}
-
-			if requestBody.UserID == 0 {
-				handleErrorInternal(w, fmt.Errorf("no user_id provided. A json-body with the attributes 'user_id' and 'fqids' is expected"))
-				return
-			}
-
-			restricted, err := service.RestrictFQIDs(r.Context(), requestBody.UserID, requestBody.FQIDs, requestBody.Fields)
-			if err != nil {
-				handleErrorInternal(w, fmt.Errorf("restrictFQIDs: %w", err))
-				return
-			}
-
-			responseBody := make(map[string]map[string]json.RawMessage, len(restricted))
-			for fqid, data := range restricted {
-				converted := make(map[string]json.RawMessage, len(data))
-				for k, v := range data {
-					converted[k] = v
-				}
-				responseBody[fqid] = converted
-			}
-
-			if err := json.NewEncoder(w).Encode(responseBody); err != nil {
-				handleErrorInternal(w, fmt.Errorf("encode response body: %w", err))
-				return
-			}
-		},
-	)
-}
-
 // HandleHealth tells, if the service is running.
 func HandleHealth(mux *http.ServeMux) {
 	url := prefixPublic + "/health"
@@ -380,6 +351,21 @@ func authMiddleware(next http.Handler, auth Authenticater) http.Handler {
 			handleErrorWithStatus(w, fmt.Errorf("authenticate request: %w", err))
 			return
 		}
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func internalAuthMiddleware(next http.Handler, auth Authenticater) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rawUserID := r.URL.Query().Get("user_id")
+		userID, err := strconv.Atoi(rawUserID)
+		if err != nil {
+			handleErrorInternal(w, fmt.Errorf("user_id has to be an int, not %s", rawUserID))
+			return
+		}
+
+		ctx := auth.AuthenticatedContext(r.Context(), userID)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

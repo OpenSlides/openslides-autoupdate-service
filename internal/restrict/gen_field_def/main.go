@@ -176,13 +176,6 @@ var restrictionModes = map[string]string{
 		{{- end}}
 	{{end}}
 }
-
-// collectionFields is an index from a collection name to all of its fieldnames.
-var collectionFields = map[string][]string{
-	{{- range $modelName, $model := .Restrictions}}
-		"{{$modelName}}": { {{range $field := $model}}"{{$field.Field}}", {{end}} },
-	{{- end}}
-}
 `
 
 func writeFile(w io.Writer, td templateData) error {
