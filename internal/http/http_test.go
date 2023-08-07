@@ -28,7 +28,7 @@ func (c *connecterMock) Connect(ctx context.Context, userID int, kb autoupdate.K
 	return c.f, nil
 }
 
-func (c *connecterMock) SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[dskey.Key][]byte, error) {
+func (c *connecterMock) SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (map[dskey.Key][]byte, error) {
 	next, _ := c.f()
 	return next(ctx)
 }
@@ -50,7 +50,7 @@ func TestKeysHandler(t *testing.T) {
 		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil)
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil, nil)
 
 	req := httptest.NewRequest("GET", "/system/autoupdate?k=user/1/name,user/2/name", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()
@@ -86,7 +86,7 @@ func TestComplexHandler(t *testing.T) {
 		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil)
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil, nil)
 
 	req := httptest.NewRequest(
 		"GET",
@@ -141,7 +141,7 @@ func TestErrors(t *testing.T) {
 		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil)
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil, nil)
 
 	for _, tt := range []struct {
 		name    string

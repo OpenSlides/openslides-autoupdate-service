@@ -78,7 +78,7 @@ gb/1:
 `
 
 func TestFeatures(t *testing.T) {
-	datastore, _ := dsmock.NewMockDatastore(dsmock.YAMLData(dataSet))
+	datastore := dsmock.NewFlow(dsmock.YAMLData(dataSet))
 	lookup := environment.ForTests{}
 	service, _, _ := autoupdate.New(lookup, datastore, RestrictAllowed)
 

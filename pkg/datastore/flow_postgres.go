@@ -7,25 +7,26 @@ import (
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+const maxFieldsOnQuery = 1_500
+
 var (
-	envPostgresHost     = environment.NewVariable("DATASTORE_DATABASE_HOST", "localhost", "Postgres Host.")
-	envPostgresPort     = environment.NewVariable("DATASTORE_DATABASE_PORT", "5432", "Postgres Post.")
-	envPostgresUser     = environment.NewVariable("DATASTORE_DATABASE_USER", "openslides", "Postgres User.")
-	envPostgresDatabase = environment.NewVariable("DATASTORE_DATABASE_NAME", "openslides", "Postgres Database.")
-	envPostgresPassword = environment.NewSecret("postgres_password", "Postgres Password.")
+	envPostgresHost         = environment.NewVariable("DATABASE_HOST", "localhost", "Postgres Host.")
+	envPostgresPort         = environment.NewVariable("DATABASE_PORT", "5432", "Postgres Post.")
+	envPostgresDatabase     = environment.NewVariable("DATABASE_NAME", "openslides", "Postgres User.")
+	envPostgresUser         = environment.NewVariable("DATABASE_USER", "openslides", "Postgres Database.")
+	envPostgresPasswordFile = environment.NewVariable("DATABASE_PASSWORD_FILE", "/run/secrets/postgres_password", "Postgres Password.")
 )
 
-// SourcePostgres uses postgres to get the connections.
-//
-// TODO: This should be unexported, but there is an import cycle in the tests.
-type SourcePostgres struct {
+// FlowPostgres uses postgres to get the connections.
+type FlowPostgres struct {
 	pool    *pgxpool.Pool
-	updater Updater
+	updater flow.Updater
 }
 
 // encodePostgresConfig encodes a string to be used in the postgres key value style.
@@ -37,14 +38,19 @@ func encodePostgresConfig(s string) string {
 	return s
 }
 
-// NewSourcePostgres initializes a SourcePostgres.
+// NewFlowPostgres initializes a SourcePostgres.
 //
 // TODO: This should be unexported, but there is an import cycle in the tests.
-func NewSourcePostgres(lookup environment.Environmenter, updater Updater) (*SourcePostgres, error) {
+func NewFlowPostgres(lookup environment.Environmenter, updater flow.Updater) (*FlowPostgres, error) {
+	password, err := environment.ReadSecret(lookup, envPostgresPasswordFile)
+	if err != nil {
+		return nil, fmt.Errorf("reading postgres password: %w", err)
+	}
+
 	addr := fmt.Sprintf(
 		`user='%s' password='%s' host='%s' port='%s' dbname='%s'`,
 		encodePostgresConfig(envPostgresUser.Value(lookup)),
-		encodePostgresConfig(envPostgresPassword.Value(lookup)),
+		encodePostgresConfig(password),
 		encodePostgresConfig(envPostgresHost.Value(lookup)),
 		encodePostgresConfig(envPostgresPort.Value(lookup)),
 		encodePostgresConfig(envPostgresDatabase.Value(lookup)),
@@ -62,13 +68,13 @@ func NewSourcePostgres(lookup environment.Environmenter, updater Updater) (*Sour
 		return nil, fmt.Errorf("creating connection pool: %w", err)
 	}
 
-	source := SourcePostgres{pool: pool, updater: updater}
+	flow := FlowPostgres{pool: pool, updater: updater}
 
-	return &source, nil
+	return &flow, nil
 }
 
 // Get fetches the keys from postgres.
-func (p *SourcePostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+func (p *FlowPostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	uniqueFieldsStr, fieldIndex, uniqueFQID := prepareQuery(keys)
 
 	// For very big SQL Queries, split them in part
@@ -132,8 +138,8 @@ func (p *SourcePostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.
 }
 
 // Update calls the updater.
-func (p *SourcePostgres) Update(ctx context.Context) (map[dskey.Key][]byte, error) {
-	return p.updater.Update(ctx)
+func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+	p.updater.Update(ctx, updateFn)
 }
 
 func prepareQuery(keys []dskey.Key) (uniqueFieldsStr string, fieldIndex map[string]int, uniqueFQID []string) {
@@ -158,8 +164,6 @@ func prepareQuery(keys []dskey.Key) (uniqueFieldsStr string, fieldIndex map[stri
 	uniqueFieldsStr = strings.Join(uniqueFields, ",")
 	return uniqueFieldsStr, fieldIndex, uniqueFQID
 }
-
-const maxFieldsOnQuery = 1_500
 
 // splitFieldKeys splits a list of keys to many lists where any list has a
 // maximum of different fields.

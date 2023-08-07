@@ -11,12 +11,12 @@ import (
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/history"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/http"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
 	"github.com/alecthomas/kong"
@@ -134,25 +134,27 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	// Redis as message bus for datastore and logout events.
 	messageBus := redis.New(lookup)
 
-	// Datastore Service.
-	datastoreService, dsBackground, err := datastore.New(
-		lookup,
-		messageBus,
-		datastore.WithVoteCount(),
-		datastore.WithHistory(),
-		datastore.WithProjector(),
-	)
+	// Autoupdate data flow.
+	flow, flowBackground, err := autoupdate.NewFlow(lookup, messageBus)
 	if err != nil {
-		return nil, fmt.Errorf("init datastore: %w", err)
+		return nil, fmt.Errorf("init autoupdate data flow: %w", err)
 	}
-	backgroundTasks = append(backgroundTasks, dsBackground)
+	backgroundTasks = append(backgroundTasks, flowBackground)
+
+	historyService, err := history.New(lookup)
+	if err != nil {
+		return nil, fmt.Errorf("init history: %w", err)
+	}
 
 	// Auth Service.
-	authService, authBackground := auth.New(lookup, messageBus)
+	authService, authBackground, err := auth.New(lookup, messageBus)
+	if err != nil {
+		return nil, fmt.Errorf("init connection to auth: %w", err)
+	}
 	backgroundTasks = append(backgroundTasks, authBackground)
 
 	// Autoupdate Service.
-	auService, auBackground, err := autoupdate.New(lookup, datastoreService, restrict.Middleware)
+	auService, auBackground, err := autoupdate.New(lookup, flow, restrict.Middleware)
 	if err != nil {
 		return nil, fmt.Errorf("init autoupdate: %w", err)
 	}
@@ -189,7 +191,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 
 		// Start http server.
 		fmt.Printf("Listen on %s\n", listenAddr)
-		return http.Run(ctx, listenAddr, authService, auService, metricStorage, metricSaveInterval)
+		return http.Run(ctx, listenAddr, authService, auService, historyService, metricStorage, metricSaveInterval)
 	}
 
 	return service, nil

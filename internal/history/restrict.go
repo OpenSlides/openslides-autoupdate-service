@@ -1,4 +1,4 @@
-package restrict
+package history
 
 import (
 	"context"
@@ -6,30 +6,26 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 )
 
-// History filters the keys for the history.
-//
-// It checks if the request User is organization manager or is admin in a meeting.
-type History struct {
+type restricter struct {
 	userID        int
-	currentGetter datastore.Getter
-	oldGetter     datastore.Getter
+	currentGetter flow.Getter
+	oldGetter     flow.Getter
 }
 
-// NewHistory initializes a History object.
-func NewHistory(current datastore.Getter, old datastore.Getter, userID int) History {
-	return History{userID, current, old}
+func newRestricter(current flow.Getter, old flow.Getter, userID int) restricter {
+	return restricter{userID, current, old}
 }
 
 // Get returns the keys the user can see.
 //
 // In summary, a organization manager can see nearly all keys. A meeting admin
 // can see all keys, that belong to there meeting.
-func (h History) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+func (h restricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
 	if h.userID == 0 {
 		return nil, nil
 	}
@@ -84,7 +80,7 @@ func (h History) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]by
 	return data, nil
 }
 
-func (h History) canSeeKey(
+func (h restricter) canSeeKey(
 	ctx context.Context,
 	oldDS,
 	currentDS *dsfetch.Fetch,

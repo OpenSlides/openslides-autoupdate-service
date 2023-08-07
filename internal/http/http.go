@@ -31,7 +31,15 @@ const (
 )
 
 // Run starts the http server.
-func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autoupdate.Autoupdate, redisConnection *redis.Redis, saveIntercal time.Duration) error {
+func Run(
+	ctx context.Context,
+	addr string,
+	auth Authenticater,
+	autoupdate *autoupdate.Autoupdate,
+	history History,
+	redisConnection *redis.Redis,
+	saveIntercal time.Duration,
+) error {
 	var connectionCount *connectionCount
 	if redisConnection != nil {
 		connectionCount = newConnectionCount(ctx, redisConnection, saveIntercal)
@@ -40,10 +48,10 @@ func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autou
 
 	mux := http.NewServeMux()
 	HandleHealth(mux)
-	HandleAutoupdate(mux, auth, autoupdate, connectionCount)
-	HandleInternalAutoupdate(mux, auth, autoupdate)
+	HandleAutoupdate(mux, auth, autoupdate, history, connectionCount)
+	HandleInternalAutoupdate(mux, auth, history, autoupdate)
 	HandleShowConnectionCount(mux, autoupdate, auth, connectionCount)
-	HandleHistoryInformation(mux, auth, autoupdate)
+	HandleHistoryInformation(mux, auth, history)
 
 	srv := &http.Server{
 		Addr:        addr,
@@ -74,10 +82,10 @@ func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autou
 // Connecter returns an connect object.
 type Connecter interface {
 	Connect(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (autoupdate.DataProvider, error)
-	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[dskey.Key][]byte, error)
+	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (map[dskey.Key][]byte, error)
 }
 
-func autoupdateHandler(auth Authenticater, connecter Connecter) http.Handler {
+func autoupdateHandler(auth Authenticater, connecter Connecter, history History) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Cache-Control", "no-store, max-age=0")
@@ -134,14 +142,29 @@ func autoupdateHandler(auth Authenticater, connecter Connecter) http.Handler {
 		}
 
 		if r.URL.Query().Has("single") || position != 0 {
-			data, err := connecter.SingleData(ctx, uid, builder, position)
-			if err != nil {
-				handleErrorWithStatus(w, fmt.Errorf("getting single data: %w", err))
-				return
+			var data map[dskey.Key][]byte
+			switch position {
+			case 0:
+				d, err := connecter.SingleData(ctx, uid, builder)
+				if err != nil {
+					handleErrorWithStatus(w, fmt.Errorf("getting single data: %w", err))
+					return
+				}
+
+				data = d
+
+			default:
+				d, err := history.Data(ctx, uid, builder, position)
+				if err != nil {
+					handleErrorWithStatus(w, fmt.Errorf("getting history data: %w", err))
+					return
+				}
+				data = d
 			}
 
 			if err := writeData(w, data, compress); err != nil {
 				handleErrorWithoutStatus(w, err)
+				return
 			}
 			return
 		}
@@ -162,13 +185,13 @@ func autoupdateHandler(auth Authenticater, connecter Connecter) http.Handler {
 
 // HandleAutoupdate builds the requested keys from the body of a request. The
 // body has to be in the format specified in the keysbuilder package.
-func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, connectionCount *connectionCount) {
+func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, history History, connectionCount *connectionCount) {
 	mux.Handle(
 		prefixPublic,
 		validRequest(
 			authMiddleware(
 				connectionCountMiddleware(
-					autoupdateHandler(auth, connecter),
+					autoupdateHandler(auth, connecter, history),
 					auth,
 					connectionCount,
 				),
@@ -182,12 +205,12 @@ func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecte
 // uses the user_id from an argument.
 //
 // /internal/autoupdate?user_id=23&single=1&k=user/1/username
-func HandleInternalAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter) {
+func HandleInternalAutoupdate(mux *http.ServeMux, auth Authenticater, history History, connecter Connecter) {
 	mux.Handle(
 		prefixInternal,
 		validRequest(
 			internalAuthMiddleware(
-				autoupdateHandler(auth, connecter),
+				autoupdateHandler(auth, connecter, history),
 				auth,
 			),
 		),

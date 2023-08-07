@@ -80,7 +80,7 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			source, err := datastore.NewSourcePostgres(environment.ForTests(tp.Env), nil)
+			source, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env), nil)
 			if err != nil {
 				t.Fatalf("NewSource(): %v", err)
 			}
@@ -129,7 +129,7 @@ func TestBigQuery(t *testing.T) {
 	}
 	defer tp.Close()
 
-	source, err := datastore.NewSourcePostgres(environment.ForTests(tp.Env), nil)
+	source, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env), nil)
 	if err != nil {
 		t.Fatalf("NewSource(): %v", err)
 	}
@@ -203,10 +203,10 @@ func newTestPostgres(ctx context.Context) (tp *testPostgres, err error) {
 		pgxConfig:      config,
 
 		Env: map[string]string{
-			"DATASTORE_DATABASE_HOST": "localhost",
-			"DATASTORE_DATABASE_PORT": port,
-			"DATASTORE_DATABASE_NAME": "database",
-			"DATASTORE_DATABASE_USER": "postgres",
+			"DATABASE_HOST": "localhost",
+			"DATABASE_PORT": port,
+			"DATABASE_NAME": "database",
+			"DATABASE_USER": "postgres",
 		},
 	}
 

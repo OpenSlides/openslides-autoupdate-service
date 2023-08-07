@@ -192,7 +192,7 @@ func TestListOfSpeakers(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ds, _ := dsmock.NewMockDatastore(tt.data)
+			ds := dsmock.NewFlow(tt.data)
 			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
@@ -301,7 +301,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ds, _ := dsmock.NewMockDatastore(tt.data)
+			ds := dsmock.NewFlow(tt.data)
 			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
@@ -379,7 +379,7 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ds, _ := dsmock.NewMockDatastore(tt.data)
+			ds := dsmock.NewFlow(tt.data)
 			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
