@@ -57,13 +57,13 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 				first_name: Hugo
 
 			motion/42:
-				name: antrag
+				title: antrag
 				text: beschluss
 			`,
 			map[string][]byte{
 				"user/1/username":   []byte(`"hugo"`),
 				"user/1/first_name": []byte(`"Hugo"`),
-				"motion/42/name":    []byte(`"antrag"`),
+				"motion/42/title":   []byte(`"antrag"`),
 				"motion/42/text":    []byte(`"beschluss"`),
 			},
 		},
@@ -75,7 +75,7 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 			`,
 			map[string][]byte{
 				"user/1/username": []byte(`"hugo"`),
-				"motion/2/name":   nil,
+				"motion/2/title":  nil,
 			},
 		},
 	} {
@@ -138,7 +138,7 @@ func TestBigQuery(t *testing.T) {
 
 	keys := make([]dskey.Key, count)
 	for i := 0; i < count; i++ {
-		keys[i] = dskey.Key{Collection: "user", ID: 1, Field: fmt.Sprintf("f%d", i)}
+		keys[i], _ = dskey.FromParts("user", 1, fmt.Sprintf("f%d", i))
 	}
 
 	testData := make(map[dskey.Key][]byte)
@@ -276,7 +276,7 @@ func (tp *testPostgres) addTestData(ctx context.Context, data map[dskey.Key][]by
 		if _, ok := objects[fqid]; !ok {
 			objects[fqid] = make(map[string]json.RawMessage)
 		}
-		objects[fqid][k.Field] = v
+		objects[fqid][k.Field()] = v
 	}
 
 	conn, err := tp.conn(ctx)

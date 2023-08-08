@@ -97,7 +97,10 @@ func (r *restrictCache) Modes(mode string) FieldRestricter {
 		notFound := make([]int, 0, len(ids))
 		cachedAllowedIDs := make([]int, 0, len(ids))
 		for _, id := range ids {
-			key := dskey.Key{Collection: r.Name(), ID: id, Field: mode}
+			key, err := dskey.FromParts(r.Name(), id, mode)
+			if err != nil {
+				return nil, err
+			}
 
 			allowed, found := r.cache[key]
 			if !found {
@@ -121,13 +124,19 @@ func (r *restrictCache) Modes(mode string) FieldRestricter {
 
 		// Add all not Found keys to the cache as not allowed.
 		for _, id := range notFound {
-			key := dskey.Key{Collection: r.Name(), ID: id, Field: mode}
+			key, err := dskey.FromParts(r.Name(), id, mode)
+			if err != nil {
+				return nil, err
+			}
 			r.cache[key] = false
 		}
 
 		// Set all new allowed ids to the cache as true.
 		for _, id := range newAllowedIDs {
-			key := dskey.Key{Collection: r.Name(), ID: id, Field: mode}
+			key, err := dskey.FromParts(r.Name(), id, mode)
+			if err != nil {
+				return nil, err
+			}
 			r.cache[key] = true
 		}
 

@@ -18,6 +18,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/fastjson"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
@@ -79,7 +80,7 @@ func restrict(ctx context.Context, getter flow.Getter, uid int, data map[dskey.K
 	isSuperAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, uid, perm.OMLSuperadmin)
 	if err != nil {
 		var errDoesNotExist dsfetch.DoesNotExistError
-		if errors.As(err, &errDoesNotExist) || dskey.Key(errDoesNotExist).Collection == "user" {
+		if errors.As(err, &errDoesNotExist) || dskey.Key(errDoesNotExist).Collection() == "user" {
 			// TODO LAST ERROR
 			return nil, fmt.Errorf("request user %d does not exist", uid)
 		}
@@ -142,13 +143,13 @@ func restrict(ctx context.Context, getter flow.Getter, uid int, data map[dskey.K
 			continue
 		}
 
-		restrictionMode, err := restrictModeName(key.Collection, key.Field)
+		restrictionMode, err := restrictModeName(key.Collection(), key.Field())
 		if err != nil {
 			return nil, fmt.Errorf("getting restriction Mode for %s: %w", key, err)
 		}
 
-		cm := collection.CM{Collection: key.Collection, Mode: restrictionMode}
-		if !allowedMods[cm].Has(key.ID) {
+		cm := collection.CM{Collection: key.Collection(), Mode: restrictionMode}
+		if !allowedMods[cm].Has(key.ID()) {
 			data[key] = nil
 			continue
 		}
@@ -174,7 +175,7 @@ func restrictSuperAdmin(ctx context.Context, getter flow.Getter, uid int, data m
 			continue
 		}
 
-		restricter := collection.Collection(ctx, key.Collection)
+		restricter := collection.Collection(ctx, key.Collection())
 		if restricter == nil {
 			// Superadmins can see unknown collections.
 			continue
@@ -188,7 +189,7 @@ func restrictSuperAdmin(ctx context.Context, getter flow.Getter, uid int, data m
 			continue
 		}
 
-		restrictionMode, err := restrictModeName(key.Collection, key.Field)
+		restrictionMode, err := restrictModeName(key.Collection(), key.Field())
 		if err != nil {
 			return fmt.Errorf("getting restriction Mode for %s: %w", key, err)
 		}
@@ -199,7 +200,7 @@ func restrictSuperAdmin(ctx context.Context, getter flow.Getter, uid int, data m
 			continue
 		}
 
-		allowed, err := modefunc(ctx, ds, key.ID)
+		allowed, err := modefunc(ctx, ds, key.ID())
 		if err != nil {
 			return fmt.Errorf("calling mode func: %w", err)
 		}
@@ -213,16 +214,16 @@ func restrictSuperAdmin(ctx context.Context, getter flow.Getter, uid int, data m
 
 // groupKeysByCollection groups all the keys in data by there collection.
 func groupKeysByCollection(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]set.Set[int]) error {
-	restrictionMode, err := restrictModeName(key.Collection, key.Field)
+	restrictionMode, err := restrictModeName(key.Collection(), key.Field())
 	if err != nil {
 		return fmt.Errorf("getting restriction Mode for %s: %w", key, err)
 	}
 
-	cm := collection.CM{Collection: key.Collection, Mode: restrictionMode}
+	cm := collection.CM{Collection: key.Collection(), Mode: restrictionMode}
 	if restrictModeIDs[cm].IsNotInitialized() {
 		restrictModeIDs[cm] = set.New[int]()
 	}
-	restrictModeIDs[cm].Add(key.ID)
+	restrictModeIDs[cm].Add(key.ID())
 
 	if err := addRelationToRestrictModeIDs(key, value, restrictModeIDs); err != nil {
 		return fmt.Errorf("check %s for relation: %w", key, err)
@@ -371,8 +372,8 @@ func isRelation(collectionField string, value []byte) (collection.CM, int, bool,
 		return collection.CM{}, 0, false, nil
 	}
 
-	var id int
-	if err := json.Unmarshal(value, &id); err != nil {
+	id, err := fastjson.DecodeInt(value)
+	if err != nil {
 		return collection.CM{}, 0, false, fmt.Errorf("decoding %q (`%s`): %w", collectionField, value, err)
 	}
 
@@ -391,8 +392,8 @@ func isRelationList(keyPrefix string, value []byte) (collection.CM, []int, bool,
 		return collection.CM{}, nil, false, nil
 	}
 
-	var ids []int
-	if err := json.Unmarshal(value, &ids); err != nil {
+	ids, err := fastjson.DecodeIntList(value)
+	if err != nil {
 		return collection.CM{}, nil, false, fmt.Errorf("decoding value (size: %d): %w", len(value), err)
 	}
 

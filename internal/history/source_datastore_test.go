@@ -64,7 +64,7 @@ func TestSourceDefaultRequestCount(t *testing.T) {
 
 			keys := make([]dskey.Key, tt.keyCount)
 			for i := 0; i < len(keys); i++ {
-				keys[i] = dskey.Key{Collection: "coll", ID: i + 1, Field: "field"}
+				keys[i], _ = dskey.FromParts("user", i+1, "username")
 			}
 
 			got, err := sd.GetPosition(context.Background(), 0, keys...)

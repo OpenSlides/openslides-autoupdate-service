@@ -58,7 +58,7 @@ type amendmentsType struct {
 	ID                      int                            `json:"id"`
 	Title                   string                         `json:"title"`
 	Number                  string                         `json:"number"`
-	AmendmentParagraph      json.RawMessage                `json:"amendment_paragraph"`
+	AmendmentParagraph      json.RawMessage                `json:"amendment_paragraphs"`
 	ChangeRecommendations   []dbMotionChangeRecommendation `json:"change_recommendations"`
 	MergeAmendmentIntoFinal string                         `json:"merge_amendment_into_final"`
 	MergeAmendmentIntoDiff  string                         `json:"merge_amendment_into_diff"`
@@ -91,7 +91,7 @@ type dbMotion struct {
 	LineLength                       int                            `json:"line_length"`
 	Preamble                         string                         `json:"preamble"`
 	LineNumbering                    string                         `json:"line_numbering"`
-	AmendmentParagraph               json.RawMessage                `json:"amendment_paragraph,omitempty"`
+	AmendmentParagraph               json.RawMessage                `json:"amendment_paragraphs,omitempty"`
 	LeadMotion                       *leadMotionType                `json:"lead_motion,omitempty"`
 	BaseStatute                      *dbMotionStatuteParagraph      `json:"base_statute,omitempty"`
 	ChangeRecommendations            []dbMotionChangeRecommendation `json:"change_recommendations"`
@@ -160,7 +160,7 @@ func Motion(store *projector.SlideStore) {
 			"meeting_id",
 			"lead_motion_id",
 			"statute_paragraph_id",
-			"amendment_paragraph",
+			"amendment_paragraphs",
 			"change_recommendation_ids",
 			"amendment_ids",
 			"submitter_ids",
@@ -454,7 +454,7 @@ func fillAmendments(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 		"title",
 		"number",
 		"meeting_id",
-		"amendment_paragraph",
+		"amendment_paragraphs",
 		"state_id",
 		"recommendation_id",
 		"change_recommendation_ids",

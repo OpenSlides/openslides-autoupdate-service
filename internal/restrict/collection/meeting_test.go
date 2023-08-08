@@ -91,7 +91,7 @@ func TestMeetingModeB(t *testing.T) {
 		false,
 		`---
 		meeting/30:
-			template_for_committee_id: 16
+			template_for_organization_id: 1
 			committee_id: 4
 		`,
 		withElementID(30),

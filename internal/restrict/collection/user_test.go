@@ -337,7 +337,7 @@ func TestUserModeA(t *testing.T) {
 		meeting/30/id: 30
 		
 		chat_message/4:
-			user_id: 2
+			meeting_user_id: 20
 			chat_group_id: 3
 		
 		chat_group/3:

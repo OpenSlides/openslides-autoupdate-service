@@ -48,11 +48,6 @@ func (m *mockFlow) Update(ctx context.Context, updateFn func(map[dskey.Key][]byt
 
 	<-ctx.Done()
 
-	m.mu.Lock()
-	m.updateFn = nil
-	m.registerCh = make(chan struct{})
-	m.mu.Unlock()
-
 	return
 }
 
@@ -60,6 +55,15 @@ func (m *mockFlow) Registered() <-chan struct{} {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.registerCh
+}
+
+// ClearUpdate waits until the update function is clean again.
+func (m *mockFlow) ClearUpdate() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.updateFn = nil
+	m.registerCh = make(chan struct{})
 }
 
 func (m *mockFlow) SendUpdate(data map[dskey.Key][]byte, err error) {

@@ -53,7 +53,6 @@ func TestRestrict(t *testing.T) {
 		1:
 			meeting_id: 30
 			item_number: five
-			unknown_field: unknown
 			tag_ids: [1,2]
 		2:
 			meeting_id: 30
@@ -79,8 +78,6 @@ func TestRestrict(t *testing.T) {
 		id: 1
 		meeting_id: 30
 		agenda_item_id: 1
-
-	unknown_collection/1/field: 404
 	`))
 
 	ctx, restricter := restrict.Middleware(ctx, ds, 1)
@@ -91,8 +88,8 @@ func TestRestrict(t *testing.T) {
 		dskey.MustKey("agenda_item/10/item_number"),
 		dskey.MustKey("tag/1/tagged_ids"),
 		dskey.MustKey("user/1/meeting_user_ids"),
-		dskey.MustKey("user_meeting/10/group_ids"),
-		dskey.MustKey("user_meeting/11/group_ids"),
+		dskey.MustKey("meeting_user/10/group_ids"),
+		dskey.MustKey("meeting_user/11/group_ids"),
 		dskey.MustKey("agenda_item/2/content_object_id"),
 		dskey.MustKey("agenda_item/2/parent_id"),
 		dskey.MustKey("motion/1/origin_id"),
@@ -108,16 +105,8 @@ func TestRestrict(t *testing.T) {
 		t.Errorf("agenda_item/1/item_number was removed")
 	}
 
-	if data[dskey.MustKey("agenda_item/1/unknown_field")] != nil {
-		t.Errorf("agenda_item/1/item_number was not removed")
-	}
-
 	if data[dskey.MustKey("agenda_item/10/item_number")] != nil {
 		t.Errorf("agenda_item/10/item_number was not removed")
-	}
-
-	if data[dskey.MustKey("unknown_collection/1/field")] != nil {
-		t.Errorf("unknown_collection/1/field was not removed")
 	}
 
 	if got := string(data[dskey.MustKey("tag/1/tagged_ids")]); got != `["agenda_item/1"]` {

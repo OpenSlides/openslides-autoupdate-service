@@ -17,11 +17,11 @@ func TestStream(t *testing.T) {
 			[
 				[
 					"12345-0",
-					["user/1/name", "Helga", "user/2/name", "Isolde"]
+					["user/1/username", "Helga", "user/2/username", "Isolde"]
 				],
 				[
 					"12346-0",
-					["user/1/name", "Hubert", "user/3/name", "Igor"]
+					["user/1/username", "Hubert", "user/3/username", "Igor"]
 				]
 			]
 		]
@@ -36,9 +36,9 @@ func TestStream(t *testing.T) {
 	}
 
 	expect := map[dskey.Key][]byte{
-		dskey.MustKey("user/1/name"): []byte("Hubert"),
-		dskey.MustKey("user/2/name"): []byte("Isolde"),
-		dskey.MustKey("user/3/name"): []byte("Igor"),
+		dskey.MustKey("user/1/username"): []byte("Hubert"),
+		dskey.MustKey("user/2/username"): []byte("Isolde"),
+		dskey.MustKey("user/3/username"): []byte("Igor"),
 	}
 	if !reflect.DeepEqual(got, expect) {
 		t.Errorf("Got %v, expected %v", got, expect)
