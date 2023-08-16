@@ -3891,8 +3891,8 @@ func (r *Fetch) PollCandidate_PollCandidateListID(pollCandidateID int) *ValueInt
 	return v
 }
 
-func (r *Fetch) PollCandidate_UserID(pollCandidateID int) *ValueInt {
-	v := &ValueInt{fetch: r, collection: "pollCandidate", id: pollCandidateID, field: "user_id", required: true}
+func (r *Fetch) PollCandidate_UserID(pollCandidateID int) *ValueMaybeInt {
+	v := &ValueMaybeInt{fetch: r, collection: "pollCandidate", id: pollCandidateID, field: "user_id"}
 	r.requested[dskey.Key{Collection: "poll_candidate", ID: pollCandidateID, Field: "user_id"}] = v
 	return v
 }
