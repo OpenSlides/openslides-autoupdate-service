@@ -131,6 +131,11 @@ func (p *FlowPostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Ke
 				value = element[idx]
 			}
 		}
+
+		if string(value) == "null" {
+			value = nil
+		}
+
 		values[k] = value
 	}
 
