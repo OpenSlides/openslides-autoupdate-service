@@ -32,17 +32,35 @@ func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permis
 		return &Permission{admin: true}, nil
 	}
 
-	groupIDs, err := ds.User_GroupIDs(userID, meetingID).Value(ctx)
+	meetingUserIDs, err := ds.User_MeetingUserIDs(userID).Value(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("get group ids: %w", err)
+		return nil, fmt.Errorf("getting meeting user for %d: %w", userID, err)
 	}
 
-	if len(groupIDs) == 0 {
+	var meetingUserID int
+	for _, muid := range meetingUserIDs {
+		mid, err := ds.MeetingUser_MeetingID(muid).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting userid of meeting user: %w", err)
+		}
+
+		if mid == meetingID {
+			meetingUserID = muid
+			break
+		}
+	}
+
+	if meetingUserID == 0 {
 		// User is not in the meeting. Do not just return nil. Nil would be an
 		// nil interface. But what we want is a interface of type permission
 		// with value nil.
 		var p *Permission
 		return p, nil
+	}
+
+	groupIDs, err := ds.MeetingUser_GroupIDs(meetingUserID).Value(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get group ids: %w", err)
 	}
 
 	admin, err := isAdmin(ctx, ds, meetingID, groupIDs)
@@ -207,9 +225,9 @@ func ManagementLevelCommittees(ctx context.Context, ds *dsfetch.Fetch, userID in
 		return nil, nil
 	}
 
-	commiteeIDs, err := ds.User_CommitteeManagementLevel(userID, "can_manage").Value(ctx)
+	commiteeIDs, err := ds.User_CommitteeManagementIDs(userID).Value(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("fetching user/%d/committee_$can_manage_management_level: %w", userID, err)
+		return nil, fmt.Errorf("fetching user/%d/committee_management_ids: %w", userID, err)
 	}
 	return commiteeIDs, nil
 }

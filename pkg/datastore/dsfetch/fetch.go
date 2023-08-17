@@ -36,6 +36,11 @@ func New(getter Getter) *Fetch {
 
 // Execute loads all requested keys from the datastore.
 func (r *Fetch) Execute(ctx context.Context) error {
+	if err := r.err; err != nil {
+		r.err = nil
+		return err
+	}
+
 	defer func() {
 		// Clear all requested fields in the end. Even if errors happened.
 		r.requested = make(map[dskey.Key]executer)
@@ -77,8 +82,12 @@ func (r *Fetch) Execute(ctx context.Context) error {
 }
 
 // Err returns an error from a previous call.
+//
+// Resets the error
 func (r *Fetch) Err() error {
-	return r.err
+	err := r.err
+	r.err = nil
+	return err
 }
 
 type executer interface {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // PersonalNote handels restriction for the personal_node collection.
@@ -47,8 +48,15 @@ func (p PersonalNote) see(ctx context.Context, ds *dsfetch.Fetch, personalNoteID
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	return eachRelationField(ctx, ds.PersonalNote_UserID, personalNoteIDs, func(userID int, ids []int) ([]int, error) {
-		if requestUser == userID {
+	meetingUserIDs, err := ds.User_MeetingUserIDs(requestUser).Value(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting meeting users: %w", err)
+	}
+
+	meetingUserSet := set.New(meetingUserIDs...)
+
+	return eachRelationField(ctx, ds.PersonalNote_MeetingUserID, personalNoteIDs, func(meetingUserID int, ids []int) ([]int, error) {
+		if meetingUserSet.Has(meetingUserID) {
 			return ids, nil
 		}
 		return nil, nil

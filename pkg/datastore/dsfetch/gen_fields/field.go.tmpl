@@ -1,27 +1,14 @@
 
-{{if eq .TemplateAttr ""}}
-	func (r *Fetch) {{.GoName}}({{.Collection}}ID int) *{{.ValueType}} {
-		v := &{{.ValueType}}{fetch: r, collection: "{{.Collection}}", id: {{.Collection}}ID, field: "{{.FieldName}}" {{if .Required}},required:true{{end}} }
-		r.requested[dskey.Key{Collection: "{{.CollectionName}}", ID: {{.Collection}}ID, Field: "{{.FieldName}}" }] = v
-		return v
+func (r *Fetch) {{.GoName}}({{.Collection}}ID int) *{{.ValueType}} {
+	key, err := dskey.FromParts("{{.CollectionName}}", {{.Collection}}ID, "{{.FieldName}}" )
+	if err != nil {
+		r.err = err
+		return  &{{.ValueType}}{fetch: r}
 	}
-{{else}}
-	{{if eq .TemplateAttrType "int"}}
-		func (r *Fetch) {{.GoName}}Tmpl({{.Collection}}ID int) *ValueIDSlice {
-			v := &ValueIDSlice{fetch: r, collection: "{{.Collection}}", id: {{.Collection}}ID, field: "{{.FieldName}}" {{if .Required}},required:true{{end}} }
-			r.requested[dskey.Key{Collection: "{{.CollectionName}}", ID: {{ .Collection }}ID, Field: "{{.FieldName}}" }] = v
-			return v
-		}
-	{{else}}
-		func (r *Fetch) {{.GoName}}Tmpl({{.Collection}}ID int) *ValueStringSlice {
-			v := &ValueStringSlice{fetch: r, collection: "{{.Collection}}", id: {{.Collection}}ID, field: "{{.FieldName}}" {{if .Required}},required:true{{end}} }
-			r.requested[dskey.Key{Collection: "{{.CollectionName}}", ID: {{ .Collection }}ID, Field: "{{.FieldName}}" }] = v
-			return v
-		}
-	{{end}}
-	func (r *Fetch) {{.GoName}}({{.Collection}}ID int, {{.TemplateAttr}} {{.TemplateAttrType}}) *{{.ValueType}} {
-			v := &{{.ValueType}}{fetch: r, collection: "{{.Collection}}", id: {{.Collection}}ID, field: "{{.FieldName}}" {{if .Required}},required:true{{end}} }
-			r.requested[dskey.Key{Collection: "{{.CollectionName}}", ID: {{ .Collection }}ID, Field: fmt.Sprintf("{{.TemplateFieldName}}", {{.TemplateAttr}}) }] = v
-			return v
-		}
-{{end}}
+	if v, ok := r.requested[key]; ok {
+		return v.(*{{.ValueType}})
+	}
+	v := &{{.ValueType}}{fetch: r, collection: "{{.Collection}}", id: {{.Collection}}ID, field: "{{.FieldName}}" {{if .Required}},required:true{{end}} }
+	r.requested[key] = v
+	return v
+}

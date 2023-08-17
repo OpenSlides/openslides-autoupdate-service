@@ -14,7 +14,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
-var userNameKey = dskey.MustKey("user/1/name")
+var userNameKey = dskey.MustKey("user/1/username")
 
 func TestConnect(t *testing.T) {
 	next, _, _ := getConnection()
@@ -25,7 +25,7 @@ func TestConnect(t *testing.T) {
 	}
 
 	if value, ok := data[userNameKey]; !ok || string(value) != `"Hello World"` {
-		t.Errorf("next() returned %v, expected map[user/1/name:\"Hello World\"", data)
+		t.Errorf("next() returned %v, expected map[user/1/username:\"Hello World\"", data)
 	}
 }
 
@@ -75,15 +75,15 @@ func TestConnectionReadNewData(t *testing.T) {
 
 func TestConnectionEmptyData(t *testing.T) {
 	var (
-		doesNotExistKey = dskey.MustKey("doesnot/1/exist")
-		doesExistKey    = userNameKey
+		doesNotExistKey = dskey.MustKey("user/2/username")
+		doesExistKey    = dskey.MustKey("user/1/username")
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	ds := dsmock.NewFlow(dsmock.YAMLData(`---
-		user/1/name: Hello World
+		user/1/username: Hello World
 	`))
 
 	s, bg, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
@@ -237,7 +237,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	defer cancel()
 
 	ds := dsmock.NewFlow(dsmock.YAMLData(`---
-	user/1/name: Hello World
+	user/1/username: Hello World
 	`))
 
 	s, bg, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
@@ -265,7 +265,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	}
 
 	if _, ok := data[userNameKey]; !ok {
-		t.Errorf("Returned value does not have key `user/1/name`")
+		t.Errorf("Returned value does not have key `user/1/username`")
 	}
 
 	if got := string(data[userNameKey]); got != `"newname"` {
@@ -275,7 +275,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 
 func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 	ds := dsmock.NewFlow(dsmock.YAMLData(`---
-	user/1/name: Hello World
+	user/1/username: Hello World
 	`))
 
 	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictNotAllowed)
@@ -349,7 +349,7 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 		organization/1/organization_tag_ids: [1,2]
 		organization_tag/1/id: 1
 		organization_tag/2/id: 2
-		user/1/name: Hello World
+		user/1/username: Hello World
 	`))
 
 	s, bg, _ := autoupdate.New(environment.ForTests{}, datastore, RestrictAllowed)
@@ -420,7 +420,7 @@ func TestKeyRequestedAgain(t *testing.T) {
 		organization/1/organization_tag_ids: [1,2]
 		organization_tag/1/id: 1
 		organization_tag/2/id: 2
-		user/1/name: Hello World
+		user/1/username: Hello World
 	`))
 
 	s, bg, _ := autoupdate.New(environment.ForTests{}, datastore, RestrictAllowed)

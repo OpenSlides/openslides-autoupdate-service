@@ -18,10 +18,6 @@ model:
 		type: relation-list
 		to: other/name
 		restriction_mode: B
-	template_$:
-		type: template
-		fields: string
-		restriction_mode: D
 other:
 	name:
 		type: string

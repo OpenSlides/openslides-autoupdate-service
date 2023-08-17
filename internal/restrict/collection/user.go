@@ -28,11 +28,9 @@ import (
 //	    There exists a poll where Y can see the poll/voted_ids and X is part of that list.
 //	    There exists a vote which Y can see and X is linked in user_id or delegated_user_id.
 //	    There exists a chat_message which Y can see and X has sent it (specified by chat_message/user_id).
-//	X is linked in one of the relations vote_delegated_$_to_id or vote_delegations_$_from_ids of Y.
+//	X is linked in one of the relations vote_delegated_to_id or vote_delegations_from_ids of Y.
 //
 // Mode A: Y can see X.
-//
-// Mode B: Y==X.
 //
 // Mode D: Y can see these fields if at least one condition is true:
 //
@@ -69,8 +67,6 @@ func (u User) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
 		return u.see
-	case "B":
-		return u.modeB
 	case "D":
 		return u.modeD
 	case "E":
@@ -93,14 +89,13 @@ func (User) SuperAdmin(mode string) FieldRestricter {
 	return Allways
 }
 
-// TODO: this is not good.
 func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int, error) {
-	requestUser, err := perm.RequestUserFromContext(ctx)
+	requestUserID, err := perm.RequestUserFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageUsers)
+	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUserID, perm.OMLCanManageUsers)
 	if err != nil {
 		return nil, fmt.Errorf("check organization management level: %w", err)
 	}
@@ -111,11 +106,11 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 
 	// Precalculated list of userIDs, that the user can see.
 	allowedUserIDs := set.New[int]()
-	if requestUser != 0 {
-		allowedUserIDs.Add(requestUser)
+	if requestUserID != 0 {
+		allowedUserIDs.Add(requestUserID)
 
 		// Get all userIDs of committees, where the request user is manager.
-		commiteeIDs, err := perm.ManagementLevelCommittees(ctx, ds, requestUser)
+		commiteeIDs, err := perm.ManagementLevelCommittees(ctx, ds, requestUserID)
 		if err != nil {
 			return nil, fmt.Errorf("getting committee ids: %w", err)
 		}
@@ -128,44 +123,62 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 			allowedUserIDs.Add(userIDs...)
 		}
 
-		// Getting users where the request users delegated his vote to.
-		meetingWithDelegationTo, err := ds.User_VoteDelegatedToIDTmpl(requestUser).Value(ctx)
+		meetingUserIDs, err := ds.User_MeetingUserIDs(requestUserID).Value(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("getting meeting ids with vote delegations: %w", err)
+			return nil, fmt.Errorf("getting meeting user: %w", err)
 		}
 
-		for _, meetingID := range meetingWithDelegationTo {
-			delegated, err := ds.User_VoteDelegatedToID(requestUser, meetingID).Value(ctx)
+		for _, meetingUserID := range meetingUserIDs {
+			// Getting users where the request users delegated his vote to.
+			delegatedToMeetingUserID, found, err := ds.MeetingUser_VoteDelegatedToID(meetingUserID).Value(ctx)
 			if err != nil {
-				return nil, fmt.Errorf("getting 'vote delegated to' in meeting %d: %w", meetingID, err)
+				return nil, fmt.Errorf("getting 'vote delegated to' for meeting_user %d: %w", meetingUserID, err)
 			}
-			allowedUserIDs.Add(delegated)
-		}
 
-		// Getting users, that delegated his vote to the request user.
-		meetingWithDelegationFrom, err := ds.User_VoteDelegationsFromIDsTmpl(requestUser).Value(ctx)
-		for _, meetingID := range meetingWithDelegationFrom {
-			delegations, err := ds.User_VoteDelegationsFromIDs(requestUser, meetingID).Value(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("getting 'vote delegations from' in meeting %d: %w", meetingID, err)
+			if found {
+				delegatedUser, err := ds.MeetingUser_UserID(delegatedToMeetingUserID).Value(ctx)
+				if err != nil {
+					return nil, fmt.Errorf("getting delegated user: %w", err)
+				}
+
+				allowedUserIDs.Add(delegatedUser)
 			}
-			allowedUserIDs.Add(delegations...)
+
+			// Getting users, that delegated his vote to the request user.
+			delegationsFromMeetingUserID, err := ds.MeetingUser_VoteDelegationsFromIDs(meetingUserID).Value(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("getting 'vote delegations from' for meeting_user %d: %w", meetingUserID, err)
+			}
+
+			for _, delegateMeetingUserID := range delegationsFromMeetingUserID {
+				delegationUserID, err := ds.MeetingUser_UserID(delegateMeetingUserID).Value(ctx)
+				if err != nil {
+					return nil, fmt.Errorf("getting delegation user id: %w", err)
+				}
+
+				allowedUserIDs.Add(delegationUserID)
+			}
 		}
 	}
 
-	return eachCondition(userIDs, func(userID int) (bool, error) {
-		if allowedUserIDs.Has(userID) {
+	return eachCondition(userIDs, func(otherUserID int) (bool, error) {
+		if allowedUserIDs.Has(otherUserID) {
 			return true, nil
 		}
 
 		// Check if the user is in a meeting, where the request user can
 		// user.can_see.
-		meetingIDs, err := ds.User_GroupIDsTmpl(userID).Value(ctx)
+		otherUserMeetingUserIDs, err := ds.User_MeetingUserIDs(otherUserID).Value(ctx)
 		if err != nil {
-			return false, fmt.Errorf("fetch meeting ids from requested user %d: %w", userID, err)
+			return false, fmt.Errorf("fetch meeting ids from requested user %d: %w", otherUserID, err)
 		}
 
-		for _, meetingID := range meetingIDs {
+		for _, meetingUserID := range otherUserMeetingUserIDs {
+			meetingID, err := ds.MeetingUser_MeetingID(meetingUserID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting meeting: %w", err)
+			}
+
 			perms, err := perm.FromContext(ctx, meetingID)
 			if err != nil {
 				return false, fmt.Errorf("checking permissions of meeting %d: %w", meetingID, err)
@@ -176,26 +189,37 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 			}
 		}
 
-		for _, r := range u.RequiredObjects(ctx, ds) {
-			for _, meetingID := range r.TmplFunc(userID).ErrorLater(ctx) {
-				ids := r.ElemFunc(userID, meetingID).ErrorLater(ctx)
+		meetingUserIDs, err := ds.User_MeetingUserIDs(otherUserID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("fetching meeting_user of %d: %w", otherUserID, err)
+		}
 
-				if len(ids) == 0 {
-					continue
+		for i, meetingUserID := range meetingUserIDs {
+			for _, r := range u.RequiredObjects(ctx, ds) {
+				id := meetingUserID
+				if r.OnUser {
+					if i > 0 {
+						// Some requiredObjects have the realtion directly on
+						// the user object. They only have to be checked once in
+						// this loop
+						continue
+					}
+					id = otherUserID
+				}
+
+				ids, err := r.ElemFunc(id).Value(ctx)
+				if err != nil {
+					return false, fmt.Errorf("getting ids for %s: %w", r.Name, err)
 				}
 
 				allowedIDs, err := r.SeeFunc(ctx, ds, ids...)
 				if err != nil {
-					return false, fmt.Errorf("checking required object %q: %w", r.Name, err)
+					return false, fmt.Errorf("checking required object %s: %w", r.Name, err)
 				}
-
 				if len(allowedIDs) > 0 {
 					return true, nil
 				}
 
-			}
-			if err := ds.Err(); err != nil {
-				return false, fmt.Errorf("getting object %q: %w", r.Name, err)
 			}
 		}
 
@@ -206,9 +230,9 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 // UserRequiredObject represents the reference from a user to other objects.
 type UserRequiredObject struct {
 	Name     string
-	TmplFunc func(int) *dsfetch.ValueIDSlice
-	ElemFunc func(int, int) *dsfetch.ValueIntSlice
+	ElemFunc func(int) *dsfetch.ValueIntSlice
 	SeeFunc  FieldRestricter
+	OnUser   bool // Tells, if the relation is via meeting_user_id or user_id
 }
 
 // RequiredObjects returns all references to other objects from the user.
@@ -216,81 +240,67 @@ func (User) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []UserRequir
 	return []UserRequiredObject{
 		{
 			"motion submitter",
-			ds.User_SubmittedMotionIDsTmpl,
-			ds.User_SubmittedMotionIDs,
-			Collection(ctx, "motion_submitter").Modes("A"),
+			ds.MeetingUser_MotionSubmitterIDs,
+			Collection(ctx, MotionSubmitter{}.Name()).Modes("A"),
+			false,
 		},
 
 		{
 			"motion supporter",
-			ds.User_SupportedMotionIDsTmpl,
-			ds.User_SupportedMotionIDs,
+			ds.MeetingUser_SupportedMotionIDs,
 			Collection(ctx, Motion{}.Name()).Modes("C"),
+			false,
 		},
 
 		{
 			"option",
-			ds.User_OptionIDsTmpl,
 			ds.User_OptionIDs,
 			Collection(ctx, Option{}.Name()).Modes("A"),
+			true,
 		},
 
 		{
 			"assignment candidate",
-			ds.User_AssignmentCandidateIDsTmpl,
-			ds.User_AssignmentCandidateIDs,
+			ds.MeetingUser_AssignmentCandidateIDs,
 			Collection(ctx, AssignmentCandidate{}.Name()).Modes("A"),
+			false,
 		},
 
 		{
 			"speaker",
-			ds.User_SpeakerIDsTmpl,
-			ds.User_SpeakerIDs,
+			ds.MeetingUser_SpeakerIDs,
 			Collection(ctx, Speaker{}.Name()).Modes("A"),
+			false,
 		},
 
 		{
 			"poll voted",
-			ds.User_PollVotedIDsTmpl,
 			ds.User_PollVotedIDs,
 			Collection(ctx, Poll{}.Name()).Modes("A"),
+			true,
 		},
 
 		{
 			"vote user",
-			ds.User_VoteIDsTmpl,
 			ds.User_VoteIDs,
 			Collection(ctx, Vote{}.Name()).Modes("A"),
+			true,
 		},
 
 		{
 			"vote delegated user",
-			ds.User_VoteDelegatedVoteIDsTmpl,
-			ds.User_VoteDelegatedVoteIDs,
+			ds.MeetingUser_VoteDelegationsFromIDs,
 			Collection(ctx, Vote{}.Name()).Modes("A"),
+			false,
 		},
 
 		{
 			"chat messages",
-			ds.User_ChatMessageIDsTmpl,
-			ds.User_ChatMessageIDs,
+			ds.MeetingUser_ChatMessageIDs,
 			Collection(ctx, ChatMessage{}.Name()).Modes("A"),
+			false,
 		},
 	}
-}
-
-func (User) modeB(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int, error) {
-	requestUser, err := perm.RequestUserFromContext(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getting request user: %w", err)
-	}
-
-	for _, userID := range userIDs {
-		if userID == requestUser {
-			return []int{userID}, nil
-		}
-	}
-	return nil, nil
 }
 
 func (User) modeD(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int, error) {
@@ -308,22 +318,24 @@ func (User) modeD(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 		return userIDs, nil
 	}
 
-	// meetingManager is a cache in which meeting the request user is manager.
-	meetingManager := set.New[int]()
-	return eachCondition(userIDs, func(userID int) (bool, error) {
-		meetingIDs, err := ds.User_GroupIDsTmpl(userID).Value(ctx)
+	return eachCondition(userIDs, func(otherUserID int) (bool, error) {
+		otherMeetingUserIDs, err := ds.User_MeetingUserIDs(otherUserID).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("get meeting ids: %w", err)
 		}
 
-		for _, meetingID := range meetingIDs {
+		for _, muid := range otherMeetingUserIDs {
+			meetingID, err := ds.MeetingUser_MeetingID(muid).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting meeting id: %w", err)
+			}
+
 			perms, err := perm.FromContext(ctx, meetingID)
 			if err != nil {
 				return false, fmt.Errorf("checking permissions of meeting %d: %w", meetingID, err)
 			}
 
 			if perms.Has(perm.UserCanManage) {
-				meetingManager.Add(meetingID)
 				return true, nil
 			}
 		}
@@ -333,16 +345,16 @@ func (User) modeD(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 }
 
 func (User) modeE(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int, error) {
-	requestUser, err := perm.RequestUserFromContext(ctx)
+	requestUserID, err := perm.RequestUserFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	if requestUser == 0 {
+	if requestUserID == 0 {
 		return nil, nil
 	}
 
-	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageUsers)
+	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUserID, perm.OMLCanManageUsers)
 	if err != nil {
 		return nil, fmt.Errorf("cheching oml: %w", err)
 	}
@@ -351,13 +363,12 @@ func (User) modeE(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 		return userIDs, nil
 	}
 
-	// TODO: optimize
-	return eachCondition(userIDs, func(userID int) (bool, error) {
-		if requestUser == userID {
+	return eachCondition(userIDs, func(otherUserID int) (bool, error) {
+		if requestUserID == otherUserID {
 			return true, nil
 		}
 
-		commiteeIDs, err := perm.ManagementLevelCommittees(ctx, ds, requestUser)
+		commiteeIDs, err := perm.ManagementLevelCommittees(ctx, ds, requestUserID)
 		if err != nil {
 			return false, fmt.Errorf("getting committee ids: %w", err)
 		}
@@ -365,7 +376,7 @@ func (User) modeE(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 		for _, committeeID := range commiteeIDs {
 			userIDs := ds.Committee_UserIDs(committeeID).ErrorLater(ctx)
 			for _, uid := range userIDs {
-				if userID == uid {
+				if otherUserID == uid {
 					return true, nil
 				}
 			}
@@ -374,8 +385,16 @@ func (User) modeE(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 			return false, fmt.Errorf("checking committee management level: %w", err)
 		}
 
-		meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
-		for _, meetingID := range meetingIDs {
+		otherUserMeetingUserIDs, err := ds.User_MeetingUserIDs(otherUserID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting meeting user ids: %w", err)
+		}
+
+		for _, otherUserMeetingUserID := range otherUserMeetingUserIDs {
+			meetingID, err := ds.MeetingUser_MeetingID(otherUserMeetingUserID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting meeting ID: %w", err)
+			}
 			perms, err := perm.FromContext(ctx, meetingID)
 			if err != nil {
 				return false, fmt.Errorf("checking permissions of meeting %d: %w", meetingID, err)

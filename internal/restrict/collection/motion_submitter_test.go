@@ -120,7 +120,8 @@ func TestMotionSubmitterModeA(t *testing.T) {
 		motion_state/3/restrictions:
 			- is_submitter
 
-		motion_submitter/4/user_id: 1
+		motion_submitter/4/meeting_user_id: 10
+		meeting_user/10/user_id: 1
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)

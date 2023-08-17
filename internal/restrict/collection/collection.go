@@ -97,7 +97,10 @@ func (r *restrictCache) Modes(mode string) FieldRestricter {
 		notFound := make([]int, 0, len(ids))
 		cachedAllowedIDs := make([]int, 0, len(ids))
 		for _, id := range ids {
-			key := dskey.Key{Collection: r.Name(), ID: id, Field: mode}
+			key, err := dskey.FromParts(r.Name(), id, mode)
+			if err != nil {
+				return nil, err
+			}
 
 			allowed, found := r.cache[key]
 			if !found {
@@ -121,13 +124,19 @@ func (r *restrictCache) Modes(mode string) FieldRestricter {
 
 		// Add all not Found keys to the cache as not allowed.
 		for _, id := range notFound {
-			key := dskey.Key{Collection: r.Name(), ID: id, Field: mode}
+			key, err := dskey.FromParts(r.Name(), id, mode)
+			if err != nil {
+				return nil, err
+			}
 			r.cache[key] = false
 		}
 
 		// Set all new allowed ids to the cache as true.
 		for _, id := range newAllowedIDs {
-			key := dskey.Key{Collection: r.Name(), ID: id, Field: mode}
+			key, err := dskey.FromParts(r.Name(), id, mode)
+			if err != nil {
+				return nil, err
+			}
 			r.cache[key] = true
 		}
 
@@ -159,6 +168,7 @@ var collectionMap = map[string]Restricter{
 	Group{}.Name():                      Group{},
 	Mediafile{}.Name():                  Mediafile{},
 	Meeting{}.Name():                    Meeting{},
+	MeetingUser{}.Name():                MeetingUser{},
 	Motion{}.Name():                     Motion{},
 	MotionBlock{}.Name():                MotionBlock{},
 	MotionCategory{}.Name():             MotionCategory{},
@@ -196,7 +206,6 @@ func Collection(ctx context.Context, collection string) Restricter {
 		return Unknown{collection}
 	}
 
-	// TODO: Fixme for superadmin. It needs the restrict superadmin method
 	return withRestrictCache(ctx, r)
 }
 

@@ -126,7 +126,7 @@ func (p *FlowPostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Ke
 		var value []byte
 		element, ok := table[k.FQID()]
 		if ok {
-			idx, ok := fieldIndex[k.Field]
+			idx, ok := fieldIndex[k.Field()]
 			if ok {
 				value = element[idx]
 			}
@@ -151,7 +151,7 @@ func prepareQuery(keys []dskey.Key) (uniqueFieldsStr string, fieldIndex map[stri
 	uniqueFQIDSet := make(map[string]struct{})
 	uniqueFieldsSet := make(map[string]struct{})
 	for _, k := range keys {
-		uniqueFieldsSet[k.Field] = struct{}{}
+		uniqueFieldsSet[k.Field()] = struct{}{}
 		uniqueFQIDSet[k.FQID()] = struct{}{}
 	}
 
@@ -174,7 +174,7 @@ func prepareQuery(keys []dskey.Key) (uniqueFieldsStr string, fieldIndex map[stri
 // maximum of different fields.
 func splitFieldKeys(keys []dskey.Key) [][]dskey.Key {
 	sort.Slice(keys, func(i, j int) bool {
-		return keys[i].Field < keys[j].Field
+		return keys[i].Field() < keys[j].Field()
 	})
 
 	var out [][]dskey.Key
@@ -184,7 +184,7 @@ func splitFieldKeys(keys []dskey.Key) [][]dskey.Key {
 	for _, k := range keys {
 		nextList = append(nextList, k)
 
-		if k.Field != lastField {
+		if k.Field() != lastField {
 			keyCount++
 			if keyCount >= maxFieldsOnQuery {
 				out = append(out, nextList)
@@ -192,7 +192,7 @@ func splitFieldKeys(keys []dskey.Key) [][]dskey.Key {
 				keyCount = 0
 			}
 		}
-		lastField = k.Field
+		lastField = k.Field()
 	}
 	out = append(out, nextList)
 
