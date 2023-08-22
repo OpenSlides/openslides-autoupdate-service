@@ -209,7 +209,9 @@ func filterCanSeeLeadMotion(ctx context.Context, ds *dsfetch.Fetch, motionIDs []
 
 func isSubmitter(ctx context.Context, ds *dsfetch.Fetch, uid int, motionID int) (bool, error) {
 	for _, submitterID := range ds.Motion_SubmitterIDs(motionID).ErrorLater(ctx) {
-		if ds.MotionSubmitter_UserID(submitterID).ErrorLater(ctx) == uid {
+		meetingUser := ds.MotionSubmitter_MeetingUserID(submitterID).ErrorLater(ctx)
+		submitter := ds.MeetingUser_UserID(meetingUser).ErrorLater(ctx)
+		if submitter == uid {
 			return true, nil
 		}
 	}

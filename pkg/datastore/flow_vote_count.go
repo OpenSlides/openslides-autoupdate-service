@@ -142,11 +142,11 @@ func (s *FlowVoteCount) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.K
 	for _, key := range keys {
 		out[key] = nil
 
-		if key.Collection != "poll" || key.Field != "vote_count" {
+		if key.Collection() != "poll" || key.Field() != "vote_count" {
 			continue
 		}
 
-		if count, ok := s.voteCount[key.ID]; ok {
+		if count, ok := s.voteCount[key.ID()]; ok {
 			out[key] = []byte(strconv.Itoa(count))
 		}
 	}
@@ -170,7 +170,12 @@ func (s *FlowVoteCount) Update(ctx context.Context, updateFn func(map[dskey.Key]
 			if count == 0 {
 				bs = nil
 			}
-			out[dskey.Key{Collection: "poll", ID: pollID, Field: "vote_count"}] = bs
+			key, err := dskey.FromParts("poll", pollID, "vote_count")
+			if err != nil {
+				updateFn(out, err)
+				return
+			}
+			out[key] = bs
 		}
 
 		updateFn(out, nil)

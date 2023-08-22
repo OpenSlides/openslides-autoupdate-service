@@ -5,4 +5,4 @@
 //
 // After chaning this value call `go generate ./...` to update the generated
 // files.
-main
+feature/remove-template-fields

@@ -15,7 +15,7 @@ import (
 
 func getConnection() (func(context.Context) (map[dskey.Key][]byte, error), *dsmock.Flow, func(context.Context, func(error))) {
 	datastore := dsmock.NewFlow(dsmock.YAMLData(`---
-	user/1/name: Hello World
+	user/1/username: Hello World
 	`))
 
 	lookup := environment.ForTests{}

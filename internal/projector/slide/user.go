@@ -17,7 +17,7 @@ type DbUser struct {
 	Title        string `json:"title"`
 	FirstName    string `json:"first_name"`
 	LastName     string `json:"last_name"`
-	Level        string `json:"structure_level_$"`
+	Level        string `json:"structure_level"`
 	DefaultLevel string `json:"default_structure_level"`
 }
 
@@ -30,19 +30,13 @@ func NewUser(ctx context.Context, fetch *datastore.Fetcher, id, meetingID int) (
 		"title",
 		"first_name",
 		"last_name",
+		"meeting_user_ids",
 		"default_structure_level",
-	}
-	if meetingID != 0 {
-		fields = append(fields, fmt.Sprintf("structure_level_$%d", meetingID))
 	}
 
 	data := fetch.Object(ctx, fmt.Sprintf("user/%d", id), fields...)
 	if err := fetch.Err(); err != nil {
-		return nil, fmt.Errorf("getting user object: %w", err)
-	}
-
-	if meetingID != 0 {
-		data["structure_level_$"] = data[fmt.Sprintf("structure_level_$%d", meetingID)]
+		return nil, fmt.Errorf("getting user object for id %d: %w", id, err)
 	}
 
 	bs, err := json.Marshal(data)
@@ -58,6 +52,34 @@ func NewUser(ctx context.Context, fetch *datastore.Fetcher, id, meetingID int) (
 	if u.FirstName == "" && u.LastName == "" && u.Username == "" {
 		return nil, fmt.Errorf("neither firstName, lastName nor username found")
 	}
+
+	if meetingID == 0 || data["meeting_user_ids"] == nil {
+		return &u, nil
+	}
+
+	var meetingUserIDs []int
+	if err := json.Unmarshal(data["meeting_user_ids"], &meetingUserIDs); err != nil {
+		return nil, fmt.Errorf("decoding meeting_user_ids: %w", err)
+	}
+
+	for _, id := range meetingUserIDs {
+		var mid int
+		fetch.Fetch(ctx, &mid, "meeting_user/%d/meeting_id", id)
+		if err := fetch.Err(); err != nil {
+			return nil, fmt.Errorf("get meeting of meeting_user %d: %w", id, err)
+		}
+
+		if mid != meetingID {
+			continue
+		}
+
+		fetch.Fetch(ctx, &u.Level, "meeting_user/%d/structure_level", id)
+		if err := fetch.Err(); err != nil {
+			return nil, fmt.Errorf("get structure level of meeting_user %d: %w", id, err)
+		}
+		break
+	}
+
 	return &u, nil
 }
 

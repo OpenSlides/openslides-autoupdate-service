@@ -40,7 +40,7 @@ func (f *Fetcher) Fetch(ctx context.Context, value interface{}, keyFmt string, a
 
 	fqfield, err := dskey.FromString(fmt.Sprintf(keyFmt, a...))
 	if err != nil {
-		f.err = fmt.Errorf("invalid key: %s", fmt.Sprintf(keyFmt, a...))
+		f.err = err
 		return
 	}
 
@@ -68,7 +68,7 @@ func (f *Fetcher) FetchIfExist(ctx context.Context, value interface{}, keyFmt st
 
 	fqfield, err := dskey.FromString(fmt.Sprintf(keyFmt, a...))
 	if err != nil {
-		f.err = fmt.Errorf("invalid key: %s", fmt.Sprintf(keyFmt, a...))
+		f.err = err
 		return
 	}
 
@@ -106,7 +106,7 @@ func (f *Fetcher) Object(ctx context.Context, fqID string, fields ...string) map
 	keys := make([]dskey.Key, len(fields)+1)
 	idKey, err := dskey.FromString(fqID + "/id")
 	if err != nil {
-		f.err = fmt.Errorf("invalid key: %s", fqID+"/id")
+		f.err = err
 		return nil
 	}
 	keys[0] = idKey
@@ -114,7 +114,7 @@ func (f *Fetcher) Object(ctx context.Context, fqID string, fields ...string) map
 	for i := 0; i < len(fields); i++ {
 		k, err := dskey.FromString(fqID + "/" + fields[i])
 		if err != nil {
-			f.err = fmt.Errorf("invalid key: %s", fqID+fields[i])
+			f.err = err
 			return nil
 		}
 		keys[i+1] = k
@@ -135,7 +135,7 @@ func (f *Fetcher) Object(ctx context.Context, fqID string, fields ...string) map
 	for i := 0; i < len(fields); i++ {
 		key, err := dskey.FromString(fqID + "/" + fields[i])
 		if err != nil {
-			f.err = fmt.Errorf("invalid key: %s", fqID+"/"+fields[i])
+			f.err = err
 			return nil
 		}
 		object[fields[i]] = vals[key]
@@ -147,6 +147,7 @@ func (f *Fetcher) Object(ctx context.Context, fqID string, fields ...string) map
 // then Err() returns nil.
 func (f *Fetcher) Err() error {
 	err := f.err
+	f.err = nil
 	return err
 }
 

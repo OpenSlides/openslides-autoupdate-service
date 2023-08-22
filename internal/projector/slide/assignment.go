@@ -20,8 +20,8 @@ type dbAssignment struct {
 }
 
 type dbAssignmentCandidate struct {
-	UserID int `json:"user_id"`
-	Weight int `json:"weight"`
+	MeetingUserID int `json:"meeting_user_id"`
+	Weight        int `json:"weight"`
 }
 
 func assignmentFromMap(in map[string]json.RawMessage) (*dbAssignment, error) {
@@ -70,14 +70,16 @@ func Assignment(store *projector.SlideStore) {
 
 		var allUsers []*dbAssignmentCandidate
 		for _, ac := range assignment.CandidateIDs {
-			data = fetch.Object(ctx, fmt.Sprintf("assignment_candidate/%d", ac), "user_id", "weight")
+			data = fetch.Object(ctx, fmt.Sprintf("assignment_candidate/%d", ac), "meeting_user_id", "weight")
 			userWeight, err := assignmentCandidateFromMap(data)
 			if err != nil {
 				return nil, fmt.Errorf("get assignment candidate: %w", err)
 			}
 			allUsers = append(allUsers, userWeight)
 		}
+
 		sort.SliceStable(allUsers, func(i, j int) bool { return allUsers[i].Weight < allUsers[j].Weight })
+
 		titler := store.GetTitleInformationFunc("user")
 		if titler == nil {
 			return nil, fmt.Errorf("no titler function registered for user")
@@ -85,7 +87,13 @@ func Assignment(store *projector.SlideStore) {
 
 		var users []string
 		for _, candidate := range allUsers {
-			user, err := NewUser(ctx, fetch, candidate.UserID, p7on.MeetingID)
+			var userID int
+			fetch.FetchIfExist(ctx, &userID, "meeting_user/%d/user_id", candidate.MeetingUserID)
+			if err := fetch.Err(); err != nil {
+				return nil, fmt.Errorf("getting user for meeting user %d: %w", candidate.MeetingUserID, err)
+			}
+
+			user, err := NewUser(ctx, fetch, userID, p7on.MeetingID)
 			if err != nil {
 				return nil, fmt.Errorf("getting new user id: %w", err)
 			}

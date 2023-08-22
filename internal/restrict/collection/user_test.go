@@ -61,7 +61,7 @@ func TestUserModeA(t *testing.T) {
 		`---
 		user/2/committee_ids: [5]
 		user/1:
-			committee_$can_manage_management_level: [5]
+			committee_management_ids: [5]
 		committee/5/user_ids: [2]
 		`,
 		withRequestUser(1),
@@ -76,7 +76,7 @@ func TestUserModeA(t *testing.T) {
 		`---
 		user/2/committee_ids: [5]
 		user/1:
-			committee_$can_manage_management_level: [5]
+			committee_management_ids: [5]
 		committee/5/user_ids: []
 		`,
 		withRequestUser(1),
@@ -89,7 +89,8 @@ func TestUserModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		user/2/group_$_ids: ["5"]
+		user/2/meeting_user_ids: [20]
+		meeting_user/20/meeting_id: 5
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -102,7 +103,7 @@ func TestUserModeA(t *testing.T) {
 		f,
 		false,
 		`---
-		user/2/group_$_ids: []
+		user/2/meeting_user_ids: []
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -116,10 +117,9 @@ func TestUserModeA(t *testing.T) {
 		true,
 		`---
 		user/1:
-			committee_$can_manage_management_level: [7]
+			committee_management_ids: [7]
 		committee/7/user_ids: [2]
 
-		user/2/group_$_ids: ["5"]
 		meeting/5/committee_id: 7
 		`,
 		withRequestUser(1),
@@ -132,10 +132,10 @@ func TestUserModeA(t *testing.T) {
 		f,
 		false,
 		`---
-		user/2/group_$_ids: []
+		user/2/meeting_user_ids: []
 		meeting/5/committee_id: 7
 		user/1:
-			committee_$can_manage_management_level: [7]
+			committee_management_ids: [7]
 		committee/7/id: 7
 		`,
 		withRequestUser(1),
@@ -148,10 +148,15 @@ func TestUserModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		user/1:
-			vote_delegated_$_to_id: ["3"]
-			vote_delegated_$3_to_id: 2
+		user/1/meeting_user_ids: [10]
 		user/2/id: 2
+
+		meeting_user:
+			10:
+				vote_delegated_to_id: 20
+				user_id: 1
+			20:
+				user_id: 2
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -163,10 +168,15 @@ func TestUserModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		user/1:
-			vote_delegations_$_from_ids: ["3"]
-			vote_delegations_$3_from_ids: [2]
+		user/1/meeting_user_ids: [10]
 		user/2/id: 2
+
+		meeting_user:
+			10:
+				vote_delegations_from_ids: [20]
+				user_id: 1
+			20:
+				user_id: 2
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -178,9 +188,14 @@ func TestUserModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		user/2:
-			submitted_motion_$_ids: ["1"]
-			submitted_motion_$1_ids: [4]
+		user/1/meeting_user_ids: [10]
+		user/2/meeting_user_ids: [20]
+
+		meeting_user/10:
+			meeting_id: 30
+		meeting_user/20:
+			motion_submitter_ids: [4]
+			meeting_id: 30
 		
 		motion_submitter/4:
 			motion_id: 7
@@ -202,11 +217,16 @@ func TestUserModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		user/2:
-			supported_motion_$_ids: ["1"]
-			supported_motion_$1_ids: [4]
+		user/1/meeting_user_ids: [10]
+		user/2/meeting_user_ids: [20]
+
+		meeting_user/10:
+			meeting_id: 30
+		meeting_user/20:
+			supported_motion_ids: [7]
+			meeting_id: 30
 		
-		motion/4:
+		motion/7:
 			meeting_id: 30
 			state_id: 5
 		
@@ -218,39 +238,19 @@ func TestUserModeA(t *testing.T) {
 	)
 
 	testCase(
-		"linked in option",
-		t,
-		f,
-		true,
-		`---
-		user/2:
-			option_$_ids: ["1"]
-			option_$1_ids: [4]
-		
-		option/4/poll_id: 5
-		poll/5:
-			meeting_id: 30
-			content_object_id: topic/5
-		topic/5:
-			meeting_id: 30
-			agenda_item_id: 7
-		agenda_item/7/meeting_id: 30
-		meeting/30/enable_anonymous: true
-		`,
-		withRequestUser(1),
-		withElementID(2),
-		withPerms(30, perm.AgendaItemCanSee),
-	)
-
-	testCase(
 		"assignment candidate",
 		t,
 		f,
 		true,
 		`---
-		user/2:
-			assignment_candidate_$_ids: ["1"]
-			assignment_candidate_$1_ids: [4]
+		user/1/meeting_user_ids: [10]
+		user/2/meeting_user_ids: [20]
+
+		meeting_user/10:
+			meeting_id: 30
+		meeting_user/20:
+			assignment_candidate_ids: [4]
+			meeting_id: 30
 		
 		assignment_candidate/4/assignment_id: 5
 		assignment/5/meeting_id: 30
@@ -266,9 +266,14 @@ func TestUserModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		user/2:
-			speaker_$_ids: ["1"]
-			speaker_$1_ids: [4]
+		user/1/meeting_user_ids: [10]
+		user/2/meeting_user_ids: [20]
+
+		meeting_user/10:
+			meeting_id: 30
+		meeting_user/20:
+			speaker_ids: [4]
+			meeting_id: 30
 		
 		speaker/4:
 			list_of_speakers_id: 5
@@ -286,63 +291,19 @@ func TestUserModeA(t *testing.T) {
 	)
 
 	testCase(
-		"poll vote",
-		t,
-		f,
-		true,
-		`---
-		user/2:
-			poll_voted_$_ids: ["1"]
-			poll_voted_$1_ids: [4]
-		
-		poll/4:
-			state: finished
-			meeting_id: 30
-			content_object_id: topic/5
-		
-		topic/5:	
-			meeting_id: 30
-			agenda_item_id: 7
-		agenda_item/7/meeting_id: 30
-		
-		meeting/30/id: 30
-		`,
-		withRequestUser(1),
-		withElementID(2),
-		withPerms(30, perm.AgendaItemCanSee),
-	)
-
-	testCase(
-		"vote user ids",
-		t,
-		f,
-		true,
-		`---
-		user/2:
-			vote_$_ids: ["1"]
-			vote_$1_ids: [4]
-		
-		vote/4/option_id: 5
-		option/5/poll_id: 6
-		poll/6:
-			state: published
-			meeting_id: 30
-
-		meeting/30/enable_anonymous: true
-		`,
-		withRequestUser(1),
-		withElementID(2),
-	)
-
-	testCase(
 		"vote delegated ids",
 		t,
 		f,
 		true,
 		`---
-		user/2:
-			vote_delegated_vote_$_ids: ["1"]
-			vote_delegated_vote_$1_ids: [4]
+		user/1/meeting_user_ids: [10]
+		user/2/meeting_user_ids: [20]
+
+		meeting_user/10:
+			meeting_id: 30
+		meeting_user/20:
+			vote_delegations_from_ids: [4]
+			meeting_id: 30
 		
 		vote/4/option_id: 5
 		option/5/poll_id: 6
@@ -362,18 +323,21 @@ func TestUserModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		user:
-			1:
-				group_$30_ids: [5]
+		user/1/meeting_user_ids: [10]
+		user/2/meeting_user_ids: [20]
 
-			2:
-				chat_message_$_ids: ["1"]
-				chat_message_$1_ids: [4]
+		meeting_user/10:
+			meeting_id: 30
+		meeting_user/20:
+			chat_message_ids: [4]
+			meeting_id: 30
+
+		meeting_user/10/group_ids: [5]
 		
 		meeting/30/id: 30
 		
 		chat_message/4:
-			user_id: 2
+			meeting_user_id: 20
 			chat_group_id: 3
 		
 		chat_group/3:
@@ -382,30 +346,6 @@ func TestUserModeA(t *testing.T) {
 
 		group/5/id: 5
 		`,
-		withRequestUser(1),
-		withElementID(2),
-	)
-}
-
-func TestUserModeB(t *testing.T) {
-	var u collection.User
-
-	testCase(
-		"X == Y",
-		t,
-		u.Modes("B"),
-		true,
-		``,
-		withRequestUser(1),
-		withElementID(1),
-	)
-
-	testCase(
-		"X != Y",
-		t,
-		u.Modes("B"),
-		false,
-		``,
 		withRequestUser(1),
 		withElementID(2),
 	)
@@ -442,7 +382,9 @@ func TestUserModeD(t *testing.T) {
 		u.Modes("D"),
 		true,
 		`---
-		user/2/group_$_ids: ["5"]
+		user/2/meeting_user_ids: [20]
+		meeting_user/20:
+			meeting_id: 5
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -455,7 +397,7 @@ func TestUserModeD(t *testing.T) {
 		u.Modes("D"),
 		false,
 		`---
-		user/2/group_$_ids: []
+		user/2/meeting_user_ids: []
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -506,7 +448,7 @@ func TestUserModeE(t *testing.T) {
 		`---
 		user/2/committee_ids: [5]
 		user/1:
-			committee_$can_manage_management_level: [5]
+			committee_management_ids: [5]
 		committee/5/user_ids: [2]
 		`,
 		withRequestUser(1),
@@ -521,7 +463,7 @@ func TestUserModeE(t *testing.T) {
 		`---
 		user/2/committee_ids: [5]
 		user/1:
-			committee_$can_manage_management_level: [5]
+			committee_management_ids: [5]
 		committee/5/user_ids: []
 		`,
 		withRequestUser(1),
@@ -544,7 +486,8 @@ func TestUserModeE(t *testing.T) {
 		u.Modes("E"),
 		true,
 		`---
-		user/2/group_$_ids: ["5"]
+		user/2/meeting_user_ids: [20]
+		meeting_user/20/meeting_id: 5
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -557,7 +500,7 @@ func TestUserModeE(t *testing.T) {
 		u.Modes("E"),
 		false,
 		`---
-		user/2/group_$_ids: []
+		user/2/meeting_user_ids: []
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -662,7 +605,6 @@ func TestUserModeH(t *testing.T) {
 		false,
 		`---
 		user/2:
-			group_$_ids: ["5"]
 			organization_management_level: superadmin
 		`,
 		withRequestUser(1),
@@ -678,7 +620,6 @@ func TestUserModeH(t *testing.T) {
 		`---
 		user/1/organization_management_level: can_manage_organization
 		user/2:
-			group_$_ids: ["5"]
 			organization_management_level: superadmin
 		`,
 		withRequestUser(1),
@@ -693,7 +634,6 @@ func TestUserModeH(t *testing.T) {
 		false,
 		`---
 		user/2:
-			group_$_ids: ["5"]
 			organization_management_level: can_manage_organization
 		`,
 		withRequestUser(1),
@@ -709,7 +649,6 @@ func TestUserModeH(t *testing.T) {
 		`---
 		user/1/organization_management_level: can_manage_organization
 		user/2:
-			group_$_ids: ["5"]
 			organization_management_level: can_manage_organization
 		`,
 		withRequestUser(1),
@@ -724,7 +663,6 @@ func TestUserModeH(t *testing.T) {
 		false,
 		`---
 		user/2:
-			group_$_ids: ["5"]
 			organization_management_level: can_manage_users
 		`,
 		withRequestUser(1),
@@ -740,7 +678,6 @@ func TestUserModeH(t *testing.T) {
 		`---
 		user/1/organization_management_level: can_manage_organization
 		user/2:
-			group_$_ids: ["5"]
 			organization_management_level: can_manage_users
 		`,
 		withRequestUser(1),
@@ -756,7 +693,6 @@ func TestUserModeH(t *testing.T) {
 		`---
 		user/1/organization_management_level: can_manage_users
 		user/2:
-			group_$_ids: ["5"]
 			organization_management_level: can_manage_users
 		`,
 		withRequestUser(1),

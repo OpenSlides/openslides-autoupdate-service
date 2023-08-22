@@ -76,20 +76,16 @@ type Field struct {
 	Type            string
 	restrictionMode string
 	relation        Relation
-	Template        *AttributeTemplate
 	Required        bool
 }
 
-// Relation returns the relation object if the Field is a relation or a
-// template with a relation. In other cases, it returns nil.
+// Relation returns the relation object if the Field is a relation. In other
+// cases, it returns nil.
 func (f *Field) Relation() Relation {
 	if f.relation != nil {
 		return f.relation
 	}
 
-	if f.Template != nil && f.Template.Fields.relation != nil {
-		return f.Template.Fields.relation
-	}
 	return nil
 }
 
@@ -100,14 +96,6 @@ func (f *Field) RestrictionMode() string {
 
 // UnmarshalYAML decodes a model attribute from yaml.
 func (f *Field) UnmarshalYAML(value *yaml.Node) error {
-	// Check if the value is a string. In this case, the string is the type.
-	// This is only allowed for template fields.
-	var s string
-	if err := value.Decode(&s); err == nil {
-		f.Type = s
-		return nil
-	}
-
 	var typer struct {
 		Type            string `yaml:"type"`
 		RestrictionMode string `yaml:"restriction_mode"`
@@ -126,6 +114,7 @@ func (f *Field) UnmarshalYAML(value *yaml.Node) error {
 	case "relation-list":
 		list = true
 		fallthrough
+
 	case "relation":
 		var relation AttributeRelation
 		if err := value.Decode(&relation); err != nil {
@@ -133,9 +122,11 @@ func (f *Field) UnmarshalYAML(value *yaml.Node) error {
 		}
 		relation.list = list
 		f.relation = &relation
+
 	case "generic-relation-list":
 		list = true
 		fallthrough
+
 	case "generic-relation":
 		var relation AttributeGenericRelation
 		if err := value.Decode(&relation); err != nil {
@@ -143,12 +134,7 @@ func (f *Field) UnmarshalYAML(value *yaml.Node) error {
 		}
 		relation.list = list
 		f.relation = &relation
-	case "template":
-		var template AttributeTemplate
-		if err := value.Decode(&template); err != nil {
-			return fmt.Errorf("invalid object of type template object in line %d: %w", value.Line, err)
-		}
-		f.Template = &template
+
 	}
 	return nil
 }
@@ -272,12 +258,6 @@ func (r AttributeGenericRelation) List() bool {
 // ToCollections returns all collection, where the generic field could point to.
 func (r AttributeGenericRelation) ToCollections() []ToCollectionField {
 	return r.To.CollectionFields
-}
-
-// AttributeTemplate represents a template field.
-type AttributeTemplate struct {
-	Replacement string `yaml:"replacement_collection"`
-	Fields      Field  `yaml:"fields"`
 }
 
 // ToGeneric is like a To object, but for generic relations.

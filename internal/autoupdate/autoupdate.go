@@ -198,11 +198,14 @@ func (a *Autoupdate) skipWorkpool(ctx context.Context, userID int) (bool, error)
 
 	ds := dsfetch.New(a.flow)
 
-	meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
+	meetingUserIDs, err := ds.User_MeetingUserIDs(userID).Value(ctx)
+	if err != nil {
+		return false, fmt.Errorf("getting meeting_user objects: %w", err)
+	}
 
-	for _, mid := range meetingIDs {
-		gids := ds.User_GroupIDs(userID, mid).ErrorLater(ctx)
-		for _, gid := range gids {
+	for _, muid := range meetingUserIDs {
+		groupIDs := ds.MeetingUser_GroupIDs(muid).ErrorLater(ctx)
+		for _, gid := range groupIDs {
 			if _, ok := ds.Group_AdminGroupForMeetingID(gid).ErrorLater(ctx); ok {
 				return true, nil
 			}

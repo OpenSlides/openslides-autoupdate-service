@@ -123,21 +123,29 @@ type testCaseOption func(*testData)
 // Make sure to call withRequestUser before withPerms.
 func withPerms(meetingID int, perms ...perm.TPermission) testCaseOption {
 	return func(td *testData) {
-		permString := "["
-		for _, p := range perms {
-			permString += fmt.Sprintf("%q,", p)
+		jsonPerms, err := json.Marshal(perms)
+		if err != nil {
+			panic(err)
 		}
-		permString = permString[:len(permString)-1] + "]"
-		groupID := 1000 + 337
 
-		groupsKey := dskey.MustKey(fmt.Sprintf("user/1/group_$%d_ids", meetingID))
-		groupIDKey := dskey.MustKey(fmt.Sprintf("group/%d/id", groupID))
-		groupPermissionKey := dskey.MustKey(fmt.Sprintf("group/%d/permissions", groupID))
-		meetingIDKey := dskey.MustKey(fmt.Sprintf("meeting/%d/id", meetingID))
+		meetingUserID := td.requestUserID * 10
+		groupID := 1337
 
-		td.data[groupsKey] = jsonAppend(td.data[groupsKey], groupID)
+		userMeetingUserIDsKey := dskey.MustKey("user/%d/meeting_user_ids", td.requestUserID)
+		meetingUserGroupIDsKey := dskey.MustKey("meeting_user/%d/group_ids", meetingUserID)
+		meeetingUserMeetingIDKey := dskey.MustKey("meeting_user/%d/meeting_id", meetingUserID)
+		meetingUserIDKey := dskey.MustKey("meeting_user/%d/id", meetingUserID)
+
+		groupIDKey := dskey.MustKey("group/%d/id", groupID)
+		groupPermissionKey := dskey.MustKey("group/%d/permissions", groupID)
+		meetingIDKey := dskey.MustKey("meeting/%d/id", meetingID)
+
+		td.data[userMeetingUserIDsKey] = jsonAppend(td.data[userMeetingUserIDsKey], meetingUserID)
+		td.data[meetingUserGroupIDsKey] = jsonAppend(td.data[meetingUserGroupIDsKey], groupID)
+		td.data[meeetingUserMeetingIDKey] = []byte(strconv.Itoa(meetingID))
+		td.data[meetingUserIDKey] = []byte(strconv.Itoa(meetingUserID))
 		td.data[groupIDKey] = []byte(strconv.Itoa(groupID))
-		td.data[groupPermissionKey] = []byte(permString)
+		td.data[groupPermissionKey] = jsonPerms
 		td.data[meetingIDKey] = []byte(strconv.Itoa(meetingID))
 	}
 }

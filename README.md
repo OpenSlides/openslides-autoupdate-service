@@ -115,7 +115,7 @@ A request can have a body and the `k`-query parameter.
 After the request is send, the values to the keys are returned as a json-object
 without a newline:
 ```
-{"user/1/name":"value","user/2/name":"value"}
+{"user/1/username":"value","user/2/username":"value"}
 ```
 
 With the query parameter `single` the server writes the first response and

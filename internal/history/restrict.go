@@ -88,32 +88,33 @@ func (h restricter) canSeeKey(
 	adminInMeeting map[int]struct{},
 	key dskey.Key,
 ) (bool, error) {
-	if key.Collection == "user" && key.Field == "password" {
+	if key.Collection() == "user" && key.Field() == "password" {
 		return false, nil
 	}
 
-	if key.Collection == "personal_note" {
-		personalNoteUser, err := oldDS.PersonalNote_UserID(key.ID).Value(ctx)
+	if key.Collection() == "personal_note" {
+		personalNoteMeetingUserID := oldDS.PersonalNote_MeetingUserID(key.ID()).ErrorLater(ctx)
+		personalNoteUserID, err := oldDS.MeetingUser_UserID(personalNoteMeetingUserID).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("getting personal note user: %w", err)
 		}
 
-		return personalNoteUser == h.userID, nil
+		return personalNoteUserID == h.userID, nil
 	}
 
 	if isOrgaManager {
 		return true, nil
 	}
 
-	if key.Collection == "theme" || key.Collection == "organization" || key.Collection == "organization_tag" || key.Collection == "mediafile" {
+	if key.Collection() == "theme" || key.Collection() == "organization" || key.Collection() == "organization_tag" || key.Collection() == "mediafile" {
 		return true, nil
 	}
 
-	if key.Collection == "committee" {
+	if key.Collection() == "committee" {
 		return false, nil
 	}
 
-	meetingID, hasMeeting, err := collection.Collection(ctx, key.Collection).MeetingID(ctx, oldDS, key.ID)
+	meetingID, hasMeeting, err := collection.Collection(ctx, key.Collection()).MeetingID(ctx, oldDS, key.ID())
 	if err != nil {
 		return false, fmt.Errorf("getting meeting id: %w", err)
 	}
@@ -123,19 +124,23 @@ func (h restricter) canSeeKey(
 		return isAdmin, nil
 	}
 
-	if key.Collection == "user" {
-		for _, r := range (collection.User{}).RequiredObjects(ctx, oldDS) {
-			meetingIDs, err := r.TmplFunc(key.ID).Value(ctx)
+	if key.Collection() == "user" {
+		meetingUserIDs, err := oldDS.User_MeetingUserIDs(key.ID()).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting meeting user ids from user %d in old version: %w", key.ID(), err)
+		}
+
+		for _, muID := range meetingUserIDs {
+			meetingID, err := oldDS.MeetingUser_MeetingID(muID).Value(ctx)
 			if err != nil {
-				return false, fmt.Errorf("getting meeting ids for %s: %w", r.Name, err)
+				return false, fmt.Errorf("getting meeting id from meeting user %d in old version: %w", muID, err)
 			}
 
-			for _, meetingID := range meetingIDs {
-				if _, ok := adminInMeeting[meetingID]; ok {
-					return true, nil
-				}
+			if _, ok := adminInMeeting[meetingID]; ok {
+				return true, nil
 			}
 		}
+		return false, nil
 	}
 
 	return false, nil
