@@ -42,8 +42,8 @@ go build
 ### With Docker
 
 Make sure the service inside the docker container can connect to the auth
-service, postgres and redis. For example with the docker argument --network
-host.
+service, postgres and redis, for example with the docker argument `--network
+host`.
 
 ```
 docker build . --tag openslides-autoupdate
@@ -197,33 +197,33 @@ It also supports the attributes `single=1` and the normal autoupdate body.
 
 ### Connection Count
 
-The autoupdate services saves, how many connections each user currently open.
-The save-interval can be defined with the environment variable
-METRIC_SAVE_INTERVAL. The default is 5 minutes.
+The autoupdate services saves how many connections are currently open to each user.
+The save interval can be defined with the environment variable
+`METRIC_SAVE_INTERVAL`. The default is 5 minutes.
 
-The values are saved for each instance of the autoupdate-service. So it is
-possible to access all open connection for every autoupdate-service-instance in
+The values are saved for each instance of the autoupdate service. So it is
+possible to access all open connection for every instance of the autoupdate service in
 the same cloud.
 
-`curl "localhost:9012/service/autoupdate/connection_count`
+`curl "localhost:9012/service/autoupdate/connection_count"`
 
-It returns a json-dictonary like this:
+It returns a JSON dictonary like this:
 
 `{"0":15,"1":4,"2":3}`
 
-The key is a user ID and the value amount of currently open connections. User-ID
+The key is a user ID and the value is the amount of currently open connections. User ID
 `0` is the anonymous user. It the example above, the anonymous user has 15 open
-connections, the user with the id 1 has 4 open connections and the user with the
+connections, the user with the ID 1 has 4 open connections and the user with the
 ID 2 has 3 open connection.
 
-Users can only access this page, if they have the organization management level
+Users can only access this page if they have the organization management level
 or higher.
 
 
 ## Metric
 
-The autoupdate-service logs some metric values. The interval can be set with the
-environment varialbe METRIC_INTERVAL.
+The autoupdate service logs some metric values. The interval can be set with the
+environment variable `METRIC_INTERVAL`.
 
 The logged metric is a json dictonary like:
 
@@ -246,7 +246,7 @@ The logged metric is a json dictonary like:
 The values are:
 
 * `connected_users_anonymous_connections`: Number of connections from the
-  anonymous users from all autoupdate-instances.
+  anonymous users from all autoupdate instances.
 * `connected_users_average_connections`: Average connection count for each user
   except for anonymous user.
 * `connected_users_current`: Amount of connected users that have at least one
@@ -254,9 +254,9 @@ The values are:
 * `connected_users_current_local`: Amount of connected users that have at least
   one open connection of this instance.
 * `connected_users_total`: Amount of different users that are currently
-  connected or where connection since the start of the autoupdate-service.
-* `connected_users_total_local`: Same as connected_users_total but only for this
-instance. one open connection of this instance.
+  connected or were connected since the autoupdate service was started.
+* `connected_users_total_local`: Same as `connected_users_total`, but only for this
+instance.
 * `current_connections`: Amount of all connections.
 * `current_connections_local`: Amount of all connections of this instance.
 * `datastore_cache_key_len`: Amount of keys in the cache.
