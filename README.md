@@ -24,11 +24,6 @@ It also needs a running postgres and redis instance. You can start one with:
 
 ```
 docker run  --network host -e POSTGRES_PASSWORD=password -e POSTGRES_USER=openslides -e POSTGRES_DB=openslides postgres:13
-```
-
-and
-
-```
 docker run --network host redis
 ```
 
@@ -36,7 +31,9 @@ docker run --network host redis
 ### With Golang
 
 ```
-export SECRETS_PATH=secrets
+export DATABASE_PASSWORD_FILE=secrets/postgres_password
+export AUTH_TOKEN_KEY_FILE=secrets/auth_token_key
+export AUTH_COOKIE_KEY_FILE=secrets/auth_cookie_key
 go build
 ./autoupdate
 ```
@@ -44,17 +41,14 @@ go build
 
 ### With Docker
 
-The docker build uses the auth token as default. Either configure it to use the
-auth-fake services (see environment variables below) or make sure the service
-inside the docker container can connect to the auth service. For example with
-the docker argument --network host. The auth-secrets have to given as a file.
+Make sure the service inside the docker container can connect to the auth
+service, postgres and redis, for example with the docker argument `--network
+host`.
 
 ```
 docker build . --tag openslides-autoupdate
 docker run --network host -v $PWD/secrets:/run/secrets openslides-autoupdate
 ```
-
-It uses the host network to connect to redis and postgres.
 
 
 ### With Auto Restart
@@ -137,7 +131,7 @@ specific position from the datastore. This implieds `single`:
 
 ### Updates via redis
 
-Keys are updated via redis:
+Values are updated via redis:
 
 `xadd ModifiedFields * user/1/username newName user/1/password newPassword`
 
@@ -199,6 +193,75 @@ The autoupdate service provides an internal route to return fields for a defined
 `curl "localhost:9012/internal/autoupdate?user_id=42&k=user/1/username"`
 
 It also supports the attributes `single=1` and the normal autoupdate body.
+
+
+### Connection Count
+
+The autoupdate services saves how many connections are currently open to each user.
+The save interval can be defined with the environment variable
+`METRIC_SAVE_INTERVAL`. The default is 5 minutes.
+
+The values are saved for each instance of the autoupdate service. So it is
+possible to access all open connection for every instance of the autoupdate service in
+the same cloud.
+
+`curl "localhost:9012/service/autoupdate/connection_count"`
+
+It returns a JSON dictonary like this:
+
+`{"0":15,"1":4,"2":3}`
+
+The key is a user ID and the value is the amount of currently open connections. User ID
+`0` is the anonymous user. It the example above, the anonymous user has 15 open
+connections, the user with the ID 1 has 4 open connections and the user with the
+ID 2 has 3 open connection.
+
+Users can only access this page if they have the organization management level
+or higher.
+
+
+## Metric
+
+The autoupdate service logs some metric values. The interval can be set with the
+environment variable `METRIC_INTERVAL`.
+
+The logged metric is a json dictonary like:
+
+```json
+{
+    "connected_users_anonymous_connections": 1,
+    "connected_users_average_connections": 3,
+    "connected_users_current": 3,
+    "connected_users_current_local": 3,
+    "connected_users_total": 3,
+    "connected_users_total_local": 3,
+    "current_connections": 8,
+    "current_connections_local": 8,
+    "datastore_cache_key_len": 343,
+    "datastore_cache_size": 3114,
+    "runtime_goroutines": 42
+}
+```
+
+The values are:
+
+* `connected_users_anonymous_connections`: Number of connections from the
+  anonymous users from all autoupdate instances.
+* `connected_users_average_connections`: Average connection count for each user
+  except for anonymous user.
+* `connected_users_current`: Amount of connected users that have at least one
+  open connection.
+* `connected_users_current_local`: Amount of connected users that have at least
+  one open connection of this instance.
+* `connected_users_total`: Amount of different users that are currently
+  connected or were connected since the autoupdate service was started.
+* `connected_users_total_local`: Same as `connected_users_total`, but only for this
+instance.
+* `current_connections`: Amount of all connections.
+* `current_connections_local`: Amount of all connections of this instance.
+* `datastore_cache_key_len`: Amount of keys in the cache.
+* `datastore_cache_size`: Combined size of all values in the cache.
+* `runtime_goroutines`: Current goroutines used by the instance.
 
 
 ## Configuration
