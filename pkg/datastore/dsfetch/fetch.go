@@ -90,6 +90,11 @@ func (r *Fetch) Err() error {
 	return err
 }
 
+// Get calls the getter the flow was created with.
+func (r *Fetch) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+	return r.getter.Get(ctx, keys...)
+}
+
 type executer interface {
 	execute([]byte) error
 }

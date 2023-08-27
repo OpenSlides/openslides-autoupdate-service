@@ -1,10 +1,16 @@
 package collection_test
 
 import (
+	"context"
+	"errors"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
 )
 
 func TestAgendaModeA(t *testing.T) {
@@ -178,4 +184,29 @@ func TestAgendaModeC(t *testing.T) {
 		false,
 		ds,
 	)
+}
+
+func TestAgendaItemMeetingID_0_returns_an_InvalidData_error(t *testing.T) {
+	ctx := context.Background()
+	fetcher := dsfetch.New(dsmock.Stub(dsmock.YAMLData(`---
+	agenda_item/1/meeting_id: 0
+	`)))
+
+	_, _, err := collection.AgendaItem{}.MeetingID(ctx, fetcher, 1)
+	if err == nil {
+		t.Fatalf("MeetingID did not return an error.")
+	}
+
+	var errInvalidData datastore.InvalidDataError
+	if !errors.As(err, &errInvalidData) {
+		t.Fatalf("MeetingID() == '%s', expected an InvalidDataError", err)
+	}
+
+	if got := errInvalidData.Key; got != dskey.MustKey("agenda_item/1/meeting_id") {
+		t.Fatalf("errInvalidData.Key == %s, expected key(agenda_item/1/meeting_id)", got)
+	}
+
+	if got := errInvalidData.Value; string(got) != "0" {
+		t.Fatalf("errInvalidData.Value == %s, expected 0", got)
+	}
 }

@@ -119,7 +119,11 @@ func (r *restrictCache) Modes(mode string) FieldRestricter {
 
 		newAllowedIDs, err := r.Restricter.Modes(mode)(ctx, ds, notFound...)
 		if err != nil {
-			return nil, fmt.Errorf("calling restricter: %w", err)
+			idsString := "with same ids"
+			if len(notFound) != len(ids) {
+				idsString = fmt.Sprintf("with ids %v", notFound)
+			}
+			return nil, fmt.Errorf("calling restricter %s: %w", idsString, err)
 		}
 
 		// Add all not Found keys to the cache as not allowed.
