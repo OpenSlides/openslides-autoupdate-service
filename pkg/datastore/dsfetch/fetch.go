@@ -20,7 +20,6 @@ type Getter interface {
 // used in one goroutine.
 type Fetch struct {
 	getter Getter
-	err    error
 
 	requested map[dskey.Key]executer
 }
@@ -36,11 +35,6 @@ func New(getter Getter) *Fetch {
 
 // Execute loads all requested keys from the datastore.
 func (r *Fetch) Execute(ctx context.Context) error {
-	if err := r.err; err != nil {
-		r.err = nil
-		return err
-	}
-
 	defer func() {
 		// Clear all requested fields in the end. Even if errors happened.
 		r.requested = make(map[dskey.Key]executer)
@@ -57,14 +51,12 @@ func (r *Fetch) Execute(ctx context.Context) error {
 
 	data, err := r.getter.Get(ctx, keys...)
 	if err != nil {
-		r.err = fmt.Errorf("fetching all requested keys: %w", err)
-		return r.err
+		return fmt.Errorf("fetching all requested keys: %w", err)
 	}
 
 	for key, value := range data {
 		if data[key.IDField()] == nil {
-			r.err = DoesNotExistError(key)
-			return r.err
+			return DoesNotExistError(key)
 		}
 
 		exec := r.requested[key]
@@ -72,12 +64,10 @@ func (r *Fetch) Execute(ctx context.Context) error {
 			continue
 		}
 		if err := exec.execute(value); err != nil {
-			r.err = fmt.Errorf("executing field %q: %w", key, err)
-			return r.err
+			return fmt.Errorf("executing field %q: %w", key, err)
 		}
 	}
 
-	r.err = nil
 	return nil
 }
 

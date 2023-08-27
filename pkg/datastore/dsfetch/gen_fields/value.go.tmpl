@@ -8,6 +8,7 @@ type {{.TypeName}} struct {
 
 	executed bool
 	isNull   bool
+	err      error
 
 	lazies []*{{.GoType}}
 
@@ -17,9 +18,8 @@ type {{.TypeName}} struct {
 {{if not .MaybeType}}
 	// Value returns the value.
 	func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, error) {
-		if err:=v.fetch.err; err != nil {
-			v.fetch.err = nil
-			return {{.Zero}}, v.fetch.err
+		if err:=v.err; err != nil {
+			return {{.Zero}}, v.err
 		}
 
 		if v.executed {
@@ -35,9 +35,8 @@ type {{.TypeName}} struct {
 {{else}}
 	// Value returns the value.
 	func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, bool, error) {
-		if err:=v.fetch.err; err != nil {
-			v.fetch.err = nil
-			return {{.Zero}}, false, v.fetch.err
+		if err:=v.err; err != nil {
+			return {{.Zero}}, false, v.err
 		}
 
 		if v.executed {
