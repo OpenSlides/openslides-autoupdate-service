@@ -122,7 +122,11 @@ func isAdmin(ctx context.Context, ds *dsfetch.Fetch, meetingID int, groupIDs []i
 func permissionsFromGroups(ctx context.Context, ds *dsfetch.Fetch, groupIDs ...int) (map[TPermission]bool, error) {
 	permissions := make(map[TPermission]bool)
 	for _, gid := range groupIDs {
-		perms := ds.Group_Permissions(gid).ErrorLater(ctx)
+		perms, err := ds.Group_Permissions(gid).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting permission for group %d: %w", gid, err)
+		}
+
 		for _, perm := range perms {
 			permissions[TPermission(perm)] = true
 			for _, p := range derivatePerms[TPermission(perm)] {
@@ -131,9 +135,6 @@ func permissionsFromGroups(ctx context.Context, ds *dsfetch.Fetch, groupIDs ...i
 		}
 	}
 
-	if err := ds.Err(); err != nil {
-		return nil, fmt.Errorf("getting permissions for groups %v: %w", groupIDs, err)
-	}
 	return permissions, nil
 }
 
