@@ -69,7 +69,7 @@ func Run(
 	wait := make(chan error)
 	go func() {
 		<-ctx.Done()
-		if err := srv.Shutdown(context.Background()); err != nil {
+		if err := srv.Shutdown(context.WithoutCancel(ctx)); err != nil {
 			// TODO EXTERNAL ERROR
 			wait <- fmt.Errorf("HTTP server shutdown: %w", err)
 			return
