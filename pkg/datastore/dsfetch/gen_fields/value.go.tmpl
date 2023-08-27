@@ -1,10 +1,8 @@
 // {{.TypeName}} is a lazy value from the datastore.
 type {{.TypeName}} struct {
-	collection string
-	id         int
-	field      string
-	value      {{.GoType}}
-	required   bool
+	key      dskey.Key
+	value    {{.GoType}}
+	required bool
 
 	executed bool
 	isNull   bool
@@ -65,7 +63,7 @@ func (v *{{.TypeName}}) execute(p []byte) error {
 		var values []string
 		if p == nil {
 			if v.required {
-				return fmt.Errorf("database is corrupted. Required field %s/%d/%s is null", v.collection, v.id, v.field)
+				return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 			}
 			v.isNull = true
 		} else {
@@ -84,7 +82,7 @@ func (v *{{.TypeName}}) execute(p []byte) error {
 	{{- else}}
 		if p == nil {
 			if v.required {
-				return fmt.Errorf("database is corrupted. Required field %s/%d/%s is null", v.collection, v.id, v.field)
+				return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 			}
 			v.isNull = true
 		} else {

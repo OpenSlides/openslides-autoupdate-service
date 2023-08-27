@@ -7,7 +7,7 @@ func (r *Fetch) {{.GoName}}({{.Collection}}ID int) *{{.ValueType}} {
 	if v, ok := r.requested[key]; ok {
 		return v.(*{{.ValueType}})
 	}
-	v := &{{.ValueType}}{fetch: r, collection: "{{.Collection}}", id: {{.Collection}}ID, field: "{{.FieldName}}" {{if .Required}},required:true{{end}} }
+	v := &{{.ValueType}}{fetch: r, key: key {{if .Required}},required:true{{end}} }
 	r.requested[key] = v
 	return v
 }
