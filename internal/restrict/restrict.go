@@ -115,8 +115,7 @@ func restrict(ctx context.Context, getter flow.Getter, uid int, data map[dskey.K
 	orderedCMs := sortRestrictModeIDs(restrictModeIDs)
 	allowedMods := make(map[collection.CM]set.Set[int])
 	for _, cm := range orderedCMs {
-		ids := restrictModeIDs[cm]
-		idsCount := ids.Len()
+		ids := restrictModeIDs[cm].List()
 		start := time.Now()
 
 		modeFunc, err := restrictModefunc(ctx, cm.Collection, cm.Mode)
@@ -124,17 +123,17 @@ func restrict(ctx context.Context, getter flow.Getter, uid int, data map[dskey.K
 			return nil, fmt.Errorf("getting restiction mode for %s/%s: %w", cm.Collection, cm.Mode, err)
 		}
 
-		allowedIDs, err := modeFunc(ctx, ds, ids.List()...)
+		allowedIDs, err := modeFunc(ctx, ds, ids...)
 		if err != nil {
 			var errDoesNotExist dsfetch.DoesNotExistError
 			if !errors.As(err, &errDoesNotExist) {
-				return nil, fmt.Errorf("calling collection %s modefunc %s with ids %v: %w", cm.Collection, cm.Mode, ids.List(), err)
+				return nil, fmt.Errorf("calling collection %s modefunc %s with ids %v: %w", cm.Collection, cm.Mode, ids, err)
 			}
 		}
 		allowedMods[cm] = set.New(allowedIDs...)
 
 		duration := time.Since(start)
-		times[cm.Collection+"/"+cm.Mode] = timeCount{time: duration, count: idsCount}
+		times[cm.Collection+"/"+cm.Mode] = timeCount{time: duration, count: len(ids)}
 	}
 
 	// Remove restricted keys.
