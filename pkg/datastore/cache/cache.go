@@ -88,7 +88,7 @@ func (c *Cache) fetchMissing(ctx context.Context, keys []dskey.Key) error {
 	// when the context is done. Other calls could also request it.
 	errChan := make(chan error, 1)
 	go func() {
-		data, err := c.flow.Get(context.Background(), missingKeys...)
+		data, err := c.flow.Get(context.WithoutCancel(ctx), missingKeys...)
 		if err != nil {
 			c.data.UnMarkPending(missingKeys...)
 			errChan <- fmt.Errorf("getting data from flow: %w", err)
