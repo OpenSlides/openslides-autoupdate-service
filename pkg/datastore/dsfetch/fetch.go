@@ -17,14 +17,14 @@ import (
 type Fetch struct {
 	getter flow.Getter
 
-	requested map[dskey.Key]executer
+	requested map[dskey.Key][]executer
 }
 
 // New initializes a Request object.
 func New(getter flow.Getter) *Fetch {
 	r := Fetch{
 		getter:    getter,
-		requested: make(map[dskey.Key]executer),
+		requested: make(map[dskey.Key][]executer),
 	}
 	return &r
 }
@@ -70,13 +70,10 @@ func (f *Fetch) Execute(ctx context.Context) error {
 			return DoesNotExistError(key)
 		}
 
-		exec := f.requested[key]
-		if exec == nil {
-			continue
-		}
-
-		if err := exec.execute(value); err != nil {
-			return fmt.Errorf("executing field %s: %w", key, err)
+		for _, exec := range f.requested[key] {
+			if err := exec.execute(value); err != nil {
+				return fmt.Errorf("executing field %s: %w", key, err)
+			}
 		}
 	}
 

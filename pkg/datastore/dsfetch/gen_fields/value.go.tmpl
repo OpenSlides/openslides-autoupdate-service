@@ -13,7 +13,7 @@ type {{.TypeName}} struct {
 
 {{if not .MaybeType}}
 	// Value returns the value.
-	func (v {{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, error) {
+	func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, error) {
 		if err:=v.err; err != nil {
 			return {{.Zero}}, v.err
 		}
@@ -34,7 +34,7 @@ type {{.TypeName}} struct {
 	}
 {{else}}
 	// Value returns the value.
-	func (v {{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, bool, error) {
+	func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, bool, error) {
 		if err:=v.err; err != nil {
 			return {{.Zero}}, false, v.err
 		}
@@ -59,8 +59,8 @@ type {{.TypeName}} struct {
 // Lazy sets a value as soon as it es executed.
 //
 // Make sure to call request.Execute() before using the value.
-func (v {{.TypeName}}) Lazy(value *{{.GoType}}) {
-	v.fetch.requested[v.key] = v
+func (v *{{.TypeName}}) Lazy(value *{{.GoType}}) {
+	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 	v.lazies = append(v.lazies, value)
 }
 
@@ -69,12 +69,12 @@ func (v {{.TypeName}}) Lazy(value *{{.GoType}}) {
 // This makes sure, that the value is in the cache.
 //
 // Make sure to call fetch.Execute().
-func (v {{.TypeName}}) Preload() {
-	v.fetch.requested[v.key] = v
+func (v *{{.TypeName}}) Preload() {
+	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 }
 
 // execute will be called from request.
-func (v {{.TypeName}}) execute(p []byte) error {
+func (v *{{.TypeName}}) execute(p []byte) error {
 	var value {{.GoType}}
 	if p == nil {
 		if v.required {

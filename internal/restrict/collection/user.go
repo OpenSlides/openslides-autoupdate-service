@@ -230,7 +230,7 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 // UserRequiredObject represents the reference from a user to other objects.
 type UserRequiredObject struct {
 	Name     string
-	ElemFunc func(int) dsfetch.ValueIntSlice
+	ElemFunc func(int) *dsfetch.ValueIntSlice
 	SeeFunc  FieldRestricter
 	OnUser   bool // Tells, if the relation is via meeting_user_id or user_id
 }
