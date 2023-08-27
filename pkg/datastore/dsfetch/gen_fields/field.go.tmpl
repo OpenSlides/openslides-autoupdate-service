@@ -1,10 +1,9 @@
 
 func (r *Fetch) {{.GoName}}({{.Collection}}ID int) *{{.ValueType}} {
-	key := dskey.Key{Collection: "{{.CollectionName}}", ID: {{.Collection}}ID, Field: "{{.FieldName}}" }
-	if v, ok := r.requested[key]; ok {
-		return v.(*{{.ValueType}})
+	key, err := dskey.FromParts("{{.CollectionName}}", {{.Collection}}ID, "{{.FieldName}}" )
+	if err != nil {
+		return  &{{.ValueType}}{err: err}
 	}
-	v := &{{.ValueType}}{fetch: r, collection: "{{.Collection}}", id: {{.Collection}}ID, field: "{{.FieldName}}" {{if .Required}},required:true{{end}} }
-	r.requested[key] = v
-	return v
+
+	return &{{.ValueType}}{fetch: r, key: key {{if .Required}},required:true{{end}} }
 }

@@ -11,15 +11,18 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/pprof"
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
 	"github.com/klauspost/compress/zstd"
 )
 
@@ -29,15 +32,32 @@ const (
 )
 
 // Run starts the http server.
-func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autoupdate.Autoupdate) error {
-	requestCount := metric.NewCurrentCounter("connection")
-	metric.Register(requestCount.Metric)
+func Run(
+	ctx context.Context,
+	addr string,
+	auth Authenticater,
+	autoupdate *autoupdate.Autoupdate,
+	history History,
+	redisConnection *redis.Redis,
+	saveIntercal time.Duration,
+	profileRoutes bool,
+) error {
+	var connectionCount *connectionCount
+	if redisConnection != nil {
+		connectionCount = newConnectionCount(ctx, redisConnection, saveIntercal)
+		metric.Register(connectionCount.Metric)
+	}
 
 	mux := http.NewServeMux()
 	HandleHealth(mux)
-	HandleAutoupdate(mux, auth, autoupdate, requestCount)
-	HandleHistoryInformation(mux, auth, autoupdate)
-	HandleRestrictFQIDs(mux, autoupdate)
+	HandleAutoupdate(mux, auth, autoupdate, history, connectionCount)
+	HandleInternalAutoupdate(mux, auth, history, autoupdate)
+	HandleShowConnectionCount(mux, autoupdate, auth, connectionCount)
+	HandleHistoryInformation(mux, auth, history)
+
+	if profileRoutes {
+		HandleProfile(mux)
+	}
 
 	srv := &http.Server{
 		Addr:        addr,
@@ -49,7 +69,7 @@ func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autou
 	wait := make(chan error)
 	go func() {
 		<-ctx.Done()
-		if err := srv.Shutdown(context.Background()); err != nil {
+		if err := srv.Shutdown(context.WithoutCancel(ctx)); err != nil {
 			// TODO EXTERNAL ERROR
 			wait <- fmt.Errorf("HTTP server shutdown: %w", err)
 			return
@@ -68,13 +88,11 @@ func Run(ctx context.Context, addr string, auth Authenticater, autoupdate *autou
 // Connecter returns an connect object.
 type Connecter interface {
 	Connect(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (autoupdate.DataProvider, error)
-	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder, position int) (map[dskey.Key][]byte, error)
+	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (map[dskey.Key][]byte, error)
 }
 
-// HandleAutoupdate builds the requested keys from the body of a request. The
-// body has to be in the format specified in the keysbuilder package.
-func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, counter *metric.CurrentCounter) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func autoupdateHandler(auth Authenticater, connecter Connecter, history History) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Cache-Control", "no-store, max-age=0")
 		ctx := r.Context()
@@ -130,14 +148,29 @@ func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecte
 		}
 
 		if r.URL.Query().Has("single") || position != 0 {
-			data, err := connecter.SingleData(ctx, uid, builder, position)
-			if err != nil {
-				handleErrorWithStatus(w, fmt.Errorf("getting single data: %w", err))
-				return
+			var data map[dskey.Key][]byte
+			switch position {
+			case 0:
+				d, err := connecter.SingleData(ctx, uid, builder)
+				if err != nil {
+					handleErrorWithStatus(w, fmt.Errorf("getting single data: %w", err))
+					return
+				}
+
+				data = d
+
+			default:
+				d, err := history.Data(ctx, uid, builder, position)
+				if err != nil {
+					handleErrorWithStatus(w, fmt.Errorf("getting history data: %w", err))
+					return
+				}
+				data = d
 			}
 
 			if err := writeData(w, data, compress); err != nil {
 				handleErrorWithoutStatus(w, err)
+				return
 			}
 			return
 		}
@@ -154,15 +187,36 @@ func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecte
 			return
 		}
 	})
+}
 
+// HandleAutoupdate builds the requested keys from the body of a request. The
+// body has to be in the format specified in the keysbuilder package.
+func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, history History, connectionCount *connectionCount) {
 	mux.Handle(
 		prefixPublic,
 		validRequest(
 			authMiddleware(
-				countMiddleware(
-					handler,
-					counter,
+				connectionCountMiddleware(
+					autoupdateHandler(auth, connecter, history),
+					auth,
+					connectionCount,
 				),
+				auth,
+			),
+		),
+	)
+}
+
+// HandleInternalAutoupdate is the same as the normal autoupdate route, but it
+// uses the user_id from an argument.
+//
+// /internal/autoupdate?user_id=23&single=1&k=user/1/username
+func HandleInternalAutoupdate(mux *http.ServeMux, auth Authenticater, history History, connecter Connecter) {
+	mux.Handle(
+		prefixInternal,
+		validRequest(
+			internalAuthMiddleware(
+				autoupdateHandler(auth, connecter, history),
 				auth,
 			),
 		),
@@ -193,6 +247,47 @@ func writeData(w io.Writer, data map[dskey.Key][]byte, compress bool) error {
 	}
 
 	return nil
+}
+
+// HandleShowConnectionCount adds a handler to show the result of the connection counter.
+func HandleShowConnectionCount(mux *http.ServeMux, autoupdate *autoupdate.Autoupdate, auth Authenticater, connectionCount *connectionCount) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if connectionCount == nil {
+			oserror.Handle(fmt.Errorf("Error connection count is not initialized"))
+			http.Error(w, "Counting not possible", 500)
+			return
+		}
+
+		ctx := r.Context()
+		uid := auth.FromContext(ctx)
+
+		allowed, err := autoupdate.CanSeeConnectionCount(ctx, uid)
+		if err != nil {
+			oserror.Handle(fmt.Errorf("Error checking count permission %w", err))
+			http.Error(w, "Counting not possible", 500)
+			return
+		}
+
+		if !allowed {
+			http.Error(w, "Connection counting not allowed", 400)
+			return
+		}
+
+		val, err := connectionCount.Show(ctx)
+		if err != nil {
+			oserror.Handle(fmt.Errorf("Error counting connection: %w", err))
+			http.Error(w, "Counting not possible", 500)
+			return
+		}
+
+		if err := json.NewEncoder(w).Encode(val); err != nil {
+			oserror.Handle(fmt.Errorf("Error decoding counter %w", err))
+			http.Error(w, "Counting not possible", 500)
+			return
+		}
+	})
+
+	mux.Handle(prefixPublic+"/connection_count", authMiddleware(handler, auth))
 }
 
 // HistoryInformationer is an object, that can write the history information for
@@ -244,53 +339,6 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 	return ctx.Err()
 }
 
-type restrictFQIDser interface {
-	RestrictFQIDs(ctx context.Context, uid int, fqids []string, requestedFields map[string][]string) (map[string]map[string][]byte, error)
-}
-
-// HandleRestrictFQIDs returns restricted objects for a list of fqids.
-func HandleRestrictFQIDs(mux *http.ServeMux, service restrictFQIDser) {
-	mux.HandleFunc(
-		prefixInternal+"/restrict_fqids",
-		func(w http.ResponseWriter, r *http.Request) {
-			var requestBody struct {
-				UserID int                 `json:"user_id"`
-				FQIDs  []string            `json:"fqids"`
-				Fields map[string][]string `json:"fields"`
-			}
-			if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-				handleErrorInternal(w, fmt.Errorf("decoding body"))
-				return
-			}
-
-			if requestBody.UserID == 0 {
-				handleErrorInternal(w, fmt.Errorf("no user_id provided. A json-body with the attributes 'user_id' and 'fqids' is expected"))
-				return
-			}
-
-			restricted, err := service.RestrictFQIDs(r.Context(), requestBody.UserID, requestBody.FQIDs, requestBody.Fields)
-			if err != nil {
-				handleErrorInternal(w, fmt.Errorf("restrictFQIDs: %w", err))
-				return
-			}
-
-			responseBody := make(map[string]map[string]json.RawMessage, len(restricted))
-			for fqid, data := range restricted {
-				converted := make(map[string]json.RawMessage, len(data))
-				for k, v := range data {
-					converted[k] = v
-				}
-				responseBody[fqid] = converted
-			}
-
-			if err := json.NewEncoder(w).Encode(responseBody); err != nil {
-				handleErrorInternal(w, fmt.Errorf("encode response body: %w", err))
-				return
-			}
-		},
-	)
-}
-
 // HandleHealth tells, if the service is running.
 func HandleHealth(mux *http.ServeMux) {
 	url := prefixPublic + "/health"
@@ -302,6 +350,16 @@ func HandleHealth(mux *http.ServeMux) {
 	mux.Handle(url, handler)
 }
 
+// HandleProfile adds routes for profiling.
+func HandleProfile(mux *http.ServeMux) {
+	mux.Handle(prefixPublic+"/debug/pprof/", http.HandlerFunc(pprof.Index))
+	mux.Handle(prefixPublic+"/debug/pprof/heap", pprof.Handler("heap"))
+	mux.Handle(prefixPublic+"/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+	mux.Handle(prefixPublic+"/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	mux.Handle(prefixPublic+"/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	mux.Handle(prefixPublic+"/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+}
+
 func authMiddleware(next http.Handler, auth Authenticater) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, err := auth.Authenticate(w, r)
@@ -309,6 +367,21 @@ func authMiddleware(next http.Handler, auth Authenticater) http.Handler {
 			handleErrorWithStatus(w, fmt.Errorf("authenticate request: %w", err))
 			return
 		}
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func internalAuthMiddleware(next http.Handler, auth Authenticater) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rawUserID := r.URL.Query().Get("user_id")
+		userID, err := strconv.Atoi(rawUserID)
+		if err != nil {
+			handleErrorInternal(w, fmt.Errorf("user_id has to be an int, not %s", rawUserID))
+			return
+		}
+
+		ctx := auth.AuthenticatedContext(r.Context(), userID)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -393,14 +466,19 @@ func validRequest(next http.Handler) http.Handler {
 	})
 }
 
-func countMiddleware(next http.Handler, counter *metric.CurrentCounter) http.Handler {
+func connectionCountMiddleware(next http.Handler, auth Authenticater, counter *connectionCount) http.Handler {
 	if counter == nil {
 		return next
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		counter.Add()
-		defer counter.Done()
+		ctx := r.Context()
+		uid := auth.FromContext(ctx)
+		counter.Add(uid)
+
+		defer func() {
+			counter.Done(uid)
+		}()
 
 		next.ServeHTTP(w, r)
 	})

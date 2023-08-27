@@ -146,7 +146,7 @@ func TestUser(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ds, _ := dsmock.NewMockDatastore(convertData(tt.data))
+			ds := dsmock.Stub(convertData(tt.data))
 			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
@@ -173,7 +173,7 @@ func TestUserWithoutMeeting(t *testing.T) {
 		"user/1/default_structure_level": `"Switzerland"`,
 	})
 
-	ds, _ := dsmock.NewMockDatastore(data)
+	ds := dsmock.Stub(data)
 	fetch := datastore.NewFetcher(ds)
 
 	p7on := &projector.Projection{
@@ -191,7 +191,7 @@ func TestUserWithError(t *testing.T) {
 		dskey.MustKey("user/1/id"): []byte(`1`),
 	}
 
-	ds, _ := dsmock.NewMockDatastore(data)
+	ds := dsmock.Stub(data)
 	fetch := datastore.NewFetcher(ds)
 
 	p7on := &projector.Projection{

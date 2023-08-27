@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Speaker handels restrictions of the collection speaker.
 //
-// The user can see a speaker if the user can see the linked list of speakers.
+// The user can see a speaker if he has list_of_speakers.can_see or if user_id is the request_user.
 //
 // Mode A: The user can see the speaker.
 type Speaker struct{}
@@ -39,15 +40,50 @@ func (s Speaker) Modes(mode string) FieldRestricter {
 }
 
 func (s Speaker) see(ctx context.Context, ds *dsfetch.Fetch, speakerIDs ...int) ([]int, error) {
-	return eachRelationField(ctx, ds.Speaker_ListOfSpeakersID, speakerIDs, func(losID int, ids []int) ([]int, error) {
-		see, err := Collection(ctx, ListOfSpeakers{}.Name()).Modes("A")(ctx, ds, losID)
+	return eachMeeting(ctx, ds, s, speakerIDs, func(meetingID int, ids []int) ([]int, error) {
+		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
-			return nil, fmt.Errorf("checking see of los %d: %w", losID, err)
+			return nil, fmt.Errorf("getting perms for meetind %d: %w", meetingID, err)
 		}
 
-		if len(see) == 1 {
+		if canSee := perms.Has(perm.ListOfSpeakersCanSee); canSee {
 			return ids, nil
 		}
-		return nil, nil
+
+		if canBeSpeaker := perms.Has(perm.ListOfSpeakersCanBeSpeaker); !canBeSpeaker {
+			return nil, nil
+		}
+
+		requestUser, err := perm.RequestUserFromContext(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting request user: %w", err)
+		}
+
+		meetingUserIDs := make([]int, len(ids))
+		for i, speakerID := range ids {
+			ds.Speaker_MeetingUserID(speakerID).Lazy(&meetingUserIDs[i])
+		}
+
+		if err := ds.Execute(ctx); err != nil {
+			return nil, fmt.Errorf("getting meeting-user ids of speakers: %w", err)
+		}
+
+		speakerUserIDs := make([]int, len(ids))
+		for i, muID := range meetingUserIDs {
+			ds.MeetingUser_UserID(muID).Lazy(&speakerUserIDs[i])
+		}
+
+		if err := ds.Execute(ctx); err != nil {
+			return nil, fmt.Errorf("getting user ids of meeting-user ids: %w", err)
+		}
+
+		var allowed []int
+		for i, uid := range speakerUserIDs {
+			if uid == requestUser {
+				allowed = append(allowed, ids[i])
+			}
+		}
+
+		return allowed, nil
 	})
 }

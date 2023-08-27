@@ -94,11 +94,24 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 
 		if tt.expect == nil {
 			// test for one value
-			got := len(allowedIDs) == 1
+			expect := tt.elementIDs[0]
 
-			if got != tt.expectOne {
-				t.Errorf("restriction mode returned %t, expected %t", got, tt.expectOne)
+			if tt.expectOne {
+				if len(allowedIDs) == 0 {
+					t.Errorf("restriction mode returned no element, expected %d", expect)
+					return
+				}
+
+				if got := allowedIDs[0]; got != expect {
+					t.Errorf("restriction mode returned %d, expected %d", got, expect)
+				}
+				return
 			}
+
+			if len(allowedIDs) != 0 {
+				t.Errorf("restriction mode returned %d, expected nothing", allowedIDs[0])
+			}
+
 			return
 		}
 

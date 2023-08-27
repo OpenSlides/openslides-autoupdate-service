@@ -26,4 +26,30 @@ func TestProjectorModeA(t *testing.T) {
 		false,
 		"projector/1/meeting_id: 30",
 	)
+
+	testCase(
+		"can see with internal",
+		t,
+		f,
+		false,
+		`
+		projector/1:
+			meeting_id: 30
+			is_internal: true
+		`,
+		withPerms(30, perm.ProjectorCanSee),
+	)
+
+	testCase(
+		"can manage with internal",
+		t,
+		f,
+		true,
+		`
+		projector/1:
+			meeting_id: 30
+			is_internal: true
+		`,
+		withPerms(30, perm.ProjectorCanManage),
+	)
 }

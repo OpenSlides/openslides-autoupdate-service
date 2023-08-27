@@ -107,15 +107,20 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 			}
 
 			if perms.Has(perm.ProjectorCanSee) {
-				p7onIDs := ds.Mediafile_ProjectionIDs(mediafileID).ErrorLater(ctx)
-				for _, p7onID := range p7onIDs {
-					if _, exist := ds.Projection_CurrentProjectorID(p7onID).ErrorLater(ctx); exist {
-						return true, nil
-					}
+				p7onIDs, err := ds.Mediafile_ProjectionIDs(mediafileID).Value(ctx)
+				if err != nil {
+					return false, fmt.Errorf("getting projection ids: %w", err)
 				}
 
-				if err := ds.Err(); err != nil {
-					return false, fmt.Errorf("checking projections: %w", err)
+				for _, p7onID := range p7onIDs {
+					_, exist, err := ds.Projection_CurrentProjectorID(p7onID).Value(ctx)
+					if err != nil {
+						return false, fmt.Errorf("getting current projector id: %w", err)
+					}
+
+					if exist {
+						return true, nil
+					}
 				}
 			}
 
@@ -124,20 +129,24 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 			}
 
 			if perms.Has(perm.MediafileCanSee) {
-				public := ds.Mediafile_IsPublic(mediafileID).ErrorLater(ctx)
+				public, err := ds.Mediafile_IsPublic(mediafileID).Value(ctx)
+				if err != nil {
+					return false, fmt.Errorf("getting is public: %w", err)
+				}
+
 				if public {
 					return true, nil
 				}
 
-				inheritedGroups := ds.Mediafile_InheritedAccessGroupIDs(mediafileID).ErrorLater(ctx)
+				inheritedGroups, err := ds.Mediafile_InheritedAccessGroupIDs(mediafileID).Value(ctx)
+				if err != nil {
+					return false, fmt.Errorf("getting inheritedGroups: %w", err)
+				}
+
 				for _, id := range inheritedGroups {
 					if perms.InGroup(id) {
 						return true, nil
 					}
-				}
-
-				if err := ds.Err(); err != nil {
-					return false, fmt.Errorf("checking can see conditions: %w", err)
 				}
 			}
 			return false, nil

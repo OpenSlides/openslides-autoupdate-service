@@ -14,7 +14,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
-var userNameKey = dskey.MustKey("user/1/name")
+var userNameKey = dskey.MustKey("user/1/username")
 
 func TestConnect(t *testing.T) {
 	next, _, _ := getConnection()
@@ -25,7 +25,7 @@ func TestConnect(t *testing.T) {
 	}
 
 	if value, ok := data[userNameKey]; !ok || string(value) != `"Hello World"` {
-		t.Errorf("next() returned %v, expected map[user/1/name:\"Hello World\"", data)
+		t.Errorf("next() returned %v, expected map[user/1/username:\"Hello World\"", data)
 	}
 }
 
@@ -75,23 +75,24 @@ func TestConnectionReadNewData(t *testing.T) {
 
 func TestConnectionEmptyData(t *testing.T) {
 	var (
-		doesNotExistKey = dskey.MustKey("doesnot/1/exist")
-		doesExistKey    = userNameKey
+		doesNotExistKey = dskey.MustKey("user/2/username")
+		doesExistKey    = dskey.MustKey("user/1/username")
 	)
 
-	shutdownCtx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds, bg := dsmock.NewMockDatastore(dsmock.YAMLData(`---
-		user/1/name: Hello World
+	ds := dsmock.NewFlow(dsmock.YAMLData(`---
+		user/1/username: Hello World
 	`))
-	go bg(shutdownCtx, oserror.Handle)
 
-	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
+	s, bg, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
+	go bg(ctx, oserror.Handle)
+
 	kb, _ := keysbuilder.FromKeys(doesExistKey.String(), doesNotExistKey.String())
 
 	t.Run("First response", func(t *testing.T) {
-		conn, err := s.Connect(shutdownCtx, 1, kb)
+		conn, err := s.Connect(ctx, 1, kb)
 		if err != nil {
 			t.Fatalf("creating conection: %v", err)
 		}
@@ -143,7 +144,7 @@ func TestConnectionEmptyData(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			conn, err := s.Connect(shutdownCtx, 1, kb)
+			conn, err := s.Connect(ctx, 1, kb)
 			if err != nil {
 				t.Fatalf("creating conection: %v", err)
 			}
@@ -197,7 +198,7 @@ func TestConnectionEmptyData(t *testing.T) {
 	}
 
 	t.Run("exit->not exist-> not exist", func(t *testing.T) {
-		conn, err := s.Connect(shutdownCtx, 1, kb)
+		conn, err := s.Connect(ctx, 1, kb)
 		if err != nil {
 			t.Fatalf("creating conection: %v", err)
 		}
@@ -232,29 +233,29 @@ func TestConnectionEmptyData(t *testing.T) {
 }
 
 func TestConntectionFilterOnlyOneKey(t *testing.T) {
-	shutdownCtx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	ds, bg := dsmock.NewMockDatastore(dsmock.YAMLData(`---
-	user/1/name: Hello World
+	ds := dsmock.NewFlow(dsmock.YAMLData(`---
+	user/1/username: Hello World
 	`))
-	go bg(shutdownCtx, oserror.Handle)
 
-	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
+	s, bg, _ := autoupdate.New(environment.ForTests{}, ds, RestrictAllowed)
+	go bg(ctx, oserror.Handle)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 
-	conn, err := s.Connect(shutdownCtx, 1, kb)
+	conn, err := s.Connect(ctx, 1, kb)
 	if err != nil {
 		t.Fatalf("creating conection: %v", err)
 	}
 	next, _ := conn()
 
-	if _, err := next(context.Background()); err != nil {
+	if _, err := next(ctx); err != nil {
 		t.Errorf("next(): %v", err)
 	}
 
 	ds.Send(map[dskey.Key][]byte{userNameKey: []byte(`"newname"`)})
-	data, err := next(context.Background())
+	data, err := next(ctx)
 	if err != nil {
 		t.Errorf("next(): %v", err)
 	}
@@ -264,7 +265,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	}
 
 	if _, ok := data[userNameKey]; !ok {
-		t.Errorf("Returned value does not have key `user/1/name`")
+		t.Errorf("Returned value does not have key `user/1/username`")
 	}
 
 	if got := string(data[userNameKey]); got != `"newname"` {
@@ -273,8 +274,8 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 }
 
 func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
-	ds, _ := dsmock.NewMockDatastore(dsmock.YAMLData(`---
-	user/1/name: Hello World
+	ds := dsmock.NewFlow(dsmock.YAMLData(`---
+	user/1/username: Hello World
 	`))
 
 	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictNotAllowed)
@@ -336,7 +337,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 // client anymore.
 //
 // The result is, that the client does not get an update, that the object was
-// deleted. Only be looking in the relation-list-field the client knows, that it
+// deleted. Only by looking in the relation-list-field the client knows, that it
 // should not be interested in the object anymore.
 //
 // See: https://github.com/OpenSlides/openslides-autoupdate-service/issues/321
@@ -344,15 +345,15 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore, bg := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	datastore := dsmock.NewFlow(dsmock.YAMLData(`---
 		organization/1/organization_tag_ids: [1,2]
 		organization_tag/1/id: 1
 		organization_tag/2/id: 2
-		user/1/name: Hello World
+		user/1/username: Hello World
 	`))
-	go bg(shutdownCtx, oserror.Handle)
 
-	s, _, _ := autoupdate.New(environment.ForTests{}, datastore, RestrictAllowed)
+	s, bg, _ := autoupdate.New(environment.ForTests{}, datastore, RestrictAllowed)
+	go bg(shutdownCtx, oserror.Handle)
 	kb, err := keysbuilder.FromJSON(strings.NewReader(`{
 		"collection":"organization",
 		"ids":[
@@ -415,15 +416,15 @@ func TestKeyRequestedAgain(t *testing.T) {
 	shutdownCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	datastore, bg := dsmock.NewMockDatastore(dsmock.YAMLData(`---
+	datastore := dsmock.NewFlow(dsmock.YAMLData(`---
 		organization/1/organization_tag_ids: [1,2]
 		organization_tag/1/id: 1
 		organization_tag/2/id: 2
-		user/1/name: Hello World
+		user/1/username: Hello World
 	`))
-	go bg(shutdownCtx, oserror.Handle)
 
-	s, _, _ := autoupdate.New(environment.ForTests{}, datastore, RestrictAllowed)
+	s, bg, _ := autoupdate.New(environment.ForTests{}, datastore, RestrictAllowed)
+	go bg(shutdownCtx, oserror.Handle)
 	kb, err := keysbuilder.FromJSON(strings.NewReader(`{
 		"collection":"organization",
 		"ids":[

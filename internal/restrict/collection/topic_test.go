@@ -37,6 +37,7 @@ func TestTopicModeA(t *testing.T) {
 			list_of_speakers_id: 404
 
 		agenda_item/3:
+			is_internal: true
 			meeting_id: 30
 			content_object_id: topic/1
 			internal: true

@@ -165,7 +165,42 @@ func TestMotionModeC(t *testing.T) {
 	// )
 
 	testCase(
-		"motion.can_see with two restrictions, both fulfilled",
+		"motion.can_see",
+		t,
+		f,
+		true,
+		`---
+		motion/1:
+			meeting_id: 30
+			state_id: 3
+
+		motion_state/3/id: 3
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"motion.can_see with restrict is_submitter",
+		t,
+		f,
+		true,
+		`---
+		motion/1:
+			meeting_id: 30
+			state_id: 3
+			submitter_ids: [4]
+
+		motion_state/3/restrictions:
+		- is_submitter
+
+		motion_submitter/4/meeting_user_id: 10
+		meeting_user/10/user_id: 1
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"motion.can_see with restrict is_submitter not submitter",
 		t,
 		f,
 		false,
@@ -174,23 +209,116 @@ func TestMotionModeC(t *testing.T) {
 			meeting_id: 30
 			state_id: 3
 			submitter_ids: [4]
-			title: foo
-			list_of_speakers_id: 404
-			sequential_number: 1
-		
-		motion_state/3:
-			restrictions:
-			- motion.can_manage
-			- is_submitter
-			weight: 0
+
+		motion_state/3/restrictions:
+		- is_submitter
+
+		motion_submitter/4/meeting_user_id: 20
+		meeting_user/20/user_id: 2
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"motion.can_see with restrict perm",
+		t,
+		f,
+		true,
+		`---
+		motion/1:
 			meeting_id: 30
-			name: foo
-			workflow_id: 404
+			state_id: 3
+
+		motion_state/3/restrictions:
+		- motion.can_manage
+		`,
+		withPerms(30, perm.MotionCanSee, perm.MotionCanManage),
+	)
 
 		motion_submitter/4:
 			meeting_user_id: 10
 			motion_id: 1
 			meeting_id: 30
+			state_id: 3
+
+		motion_state/3/restrictions:
+		- motion.can_manage
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"motion.can_see with two restrictions, non fullfield",
+		t,
+		f,
+		false,
+		`---
+		motion/1:
+			meeting_id: 30
+			state_id: 3
+
+		motion_state/3/restrictions:
+		- motion.can_manage
+		- is_submitter
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"motion.can_see with two restrictions, is_submitter fullfield",
+		t,
+		f,
+		true,
+		`---
+		motion/1:
+			meeting_id: 30
+			state_id: 3
+			submitter_ids: [4]
+
+		motion_state/3/restrictions:
+		- motion.can_manage
+		- is_submitter
+
+		motion_submitter/4/meeting_user_id: 10
+		meeting_user/10/user_id: 1
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"motion.can_see with two restrictions, motion.can_manage fullfield",
+		t,
+		f,
+		true,
+		`---
+		motion/1:
+			meeting_id: 30
+			state_id: 3
+
+		motion_state/3/restrictions:
+		- motion.can_manage
+		- is_submitter
+		`,
+		withPerms(30, perm.MotionCanManage),
+	)
+
+	testCase(
+		"motion.can_see with two restrictions, both fullfield",
+		t,
+		f,
+		true,
+		`---
+		motion/1:
+			meeting_id: 30
+			state_id: 3
+			submitter_ids: [4]
+
+		motion_state/3/restrictions:
+		- motion.can_manage
+		- is_submitter
+
+		motion_submitter/4/meeting_user_id: 10
+		meeting_user/10/user_id: 1
 		`,
 		withPerms(30, perm.MotionCanManage),
 	)
@@ -205,18 +333,19 @@ func TestMotionModeC(t *testing.T) {
 			meeting_id: 30
 			lead_motion_id: 2
 			state_id: 10
-		
+
 		motion/2:
 			meeting_id: 30
 			state_id: 20
 			submitter_ids: [4]
-		
+
 		motion_state/10/id: 10
 
 		motion_state/20/restrictions:
 			- is_submitter
 
-		motion_submitter/4/user_id: 404
+		motion_submitter/4/meeting_user_id: 400
+		meeting_user/400/user_id: 40
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)
@@ -231,18 +360,20 @@ func TestMotionModeC(t *testing.T) {
 			meeting_id: 30
 			lead_motion_id: 2
 			state_id: 10
-		
+
 		motion/2:
 			meeting_id: 30
 			state_id: 20
 			submitter_ids: [4]
-		
+
 		motion_state/10/id: 10
-		
+
 		motion_state/20/restrictions:
 			- is_submitter
 
-		motion_submitter/4/user_id: 1
+		motion_submitter/4/meeting_user_id: 10
+
+		meeting_user/10/user_id: 1
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)
@@ -257,7 +388,7 @@ func TestMotionModeC(t *testing.T) {
 			meeting_id: 30
 			lead_motion_id: 1
 			state_id: 10
-		
+
 		motion_state/10/id: 10
 		`,
 		withPerms(30, perm.MotionCanSee),
@@ -273,7 +404,7 @@ func TestMotionModeC(t *testing.T) {
 			meeting_id: 30
 			lead_motion_id: 1
 			state_id: 10
-		
+
 		motion_state/10/id: 10
 		`,
 	)
@@ -298,13 +429,14 @@ func TestMotionModeC(t *testing.T) {
 			meeting_id: 30
 			lead_motion_id: 1
 			state_id: 10
-		
+
 		motion_state/10/id: 10
 
 		motion_state/30/restrictions:
 			- is_submitter
 
-		motion_submitter/4/user_id: 1
+		motion_submitter/4/meeting_user_id: 10
+		meeting_user/10/user_id: 1
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)
@@ -335,7 +467,8 @@ func TestMotionModeC(t *testing.T) {
 		motion_state/30/restrictions:
 			- is_submitter
 
-		motion_submitter/4/user_id: 404
+		motion_submitter/4/meeting_user_id: 4040
+		meeting_user/4040/user_id: 404
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)

@@ -44,7 +44,7 @@ func TestProjectorCountdown(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ds, _ := dsmock.NewMockDatastore(tt.data)
+			ds := dsmock.Stub(tt.data)
 			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
@@ -81,7 +81,7 @@ func TestProjectorMessage(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ds, _ := dsmock.NewMockDatastore(tt.data)
+			ds := dsmock.Stub(tt.data)
 			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{

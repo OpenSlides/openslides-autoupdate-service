@@ -3,6 +3,7 @@ package slide
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 type dbListOfSpeakers struct {
@@ -32,10 +34,10 @@ func losFromMap(in map[string]json.RawMessage) (*dbListOfSpeakers, error) {
 }
 
 type dbSpeakerWork struct {
-	UserID    int `json:"user_id"`
-	Weight    int `json:"weight"`
-	BeginTime int `json:"begin_time"`
-	EndTime   int `json:"end_time"`
+	MeetingUserID int `json:"meeting_user_id"`
+	Weight        int `json:"weight"`
+	BeginTime     int `json:"begin_time"`
+	EndTime       int `json:"end_time"`
 }
 type dbSpeaker struct {
 	User         string         `json:"user"`
@@ -59,6 +61,10 @@ func speakerFromMap(in map[string]json.RawMessage) (*dbSpeaker, error) {
 	}
 	if err := json.Unmarshal(bs, &work); err != nil {
 		return nil, fmt.Errorf("decoding speaker work data: %w", err)
+	}
+
+	if work.MeetingUserID == 0 {
+		return nil, fmt.Errorf("meeting_user_id is 0")
 	}
 	return &speaker, nil
 }
@@ -178,21 +184,32 @@ func getLosID(ctx context.Context, ContentObjectID string, fetch *datastore.Fetc
 	}
 	referenceProjectorID = datastore.Int(ctx, fetch.FetchIfExist, "meeting/%d/reference_projector_id", meetingID)
 	referenceP7onIDs := datastore.Ints(ctx, fetch.FetchIfExist, "projector/%d/current_projection_ids", referenceProjectorID)
+	if err := fetch.Err(); err != nil {
+		return losID, referenceProjectorID, err
+	}
 
 	for _, pID := range referenceP7onIDs {
 		contentObjectID := datastore.String(ctx, fetch.FetchIfExist, "projection/%d/content_object_id", pID)
+		if err := fetch.Err(); err != nil {
+			return 0, 0, fmt.Errorf("fetching projection/%d/content_object_id: %w", pID, err)
+		}
+
 		if contentObjectID == "" {
 			continue
 		}
 		losID = datastore.Int(ctx, fetch.FetchIfExist, "%s/list_of_speakers_id", contentObjectID)
+		if err := fetch.Err(); err != nil {
+			var errInvalidKey dskey.InvalidKeyError
+			if !errors.As(err, &errInvalidKey) {
+				return 0, 0, fmt.Errorf("%s/content_object_id: %w", contentObjectID, err)
+			}
+		}
 
 		if losID != 0 {
 			break
 		}
 	}
-	if err := fetch.Err(); err != nil {
-		return losID, referenceProjectorID, err
-	}
+
 	return losID, referenceProjectorID, nil
 }
 
@@ -204,7 +221,7 @@ func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID 
 	}
 
 	fields := []string{
-		"user_id",
+		"meeting_user_id",
 		"begin_time",
 		"end_time",
 	}
@@ -212,19 +229,22 @@ func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID 
 	for _, id := range los.SpeakerIDs {
 		speaker, err := speakerFromMap(fetch.Object(ctx, fmt.Sprintf("speaker/%d", id), fields...))
 		if err != nil {
-			return "", "", fmt.Errorf("loading speaker: %w", err)
+			return "", "", fmt.Errorf("loading speaker %d: %w", id, err)
 		}
 
 		if speaker.SpeakerWork.BeginTime == 0 || (speaker.SpeakerWork.BeginTime != 0 && speaker.SpeakerWork.EndTime != 0) {
 			continue
 		}
 
-		user, err := NewUser(ctx, fetch, speaker.SpeakerWork.UserID, meetingID)
+		var userID int
+		fetch.FetchIfExist(ctx, &userID, "meeting_user/%d/user_id", speaker.SpeakerWork.MeetingUserID)
+		if err := fetch.Err(); err != nil {
+			return "", "", fmt.Errorf("getting user for meeting user %d: %w", speaker.SpeakerWork.MeetingUserID, err)
+		}
+
+		user, err := NewUser(ctx, fetch, userID, meetingID)
 		if err != nil {
 			return "", "", fmt.Errorf("getting newUser: %w", err)
-		}
-		if err := fetch.Err(); err != nil {
-			return "", "", err
 		}
 		return user.UserShortName(), user.UserStructureLevel(meetingID), nil
 	}
@@ -297,7 +317,7 @@ func renderListOfSpeakers(ctx context.Context, fetch *datastore.Fetcher, losFQID
 
 func getSpeakerLists(ctx context.Context, los *dbListOfSpeakers, meetingID int, fetch *datastore.Fetcher, speakersWaiting *[]dbSpeaker, speakersFinished *[]dbSpeaker) (*dbSpeaker, *int, error) {
 	fields := []string{
-		"user_id",
+		"meeting_user_id",
 		"speech_state",
 		"note",
 		"point_of_order",
@@ -314,7 +334,13 @@ func getSpeakerLists(ctx context.Context, los *dbListOfSpeakers, meetingID int, 
 			return nil, nil, fmt.Errorf("loading speaker: %w", err)
 		}
 
-		user, err := NewUser(ctx, fetch, speaker.SpeakerWork.UserID, meetingID)
+		var userID int
+		fetch.FetchIfExist(ctx, &userID, "meeting_user/%d/user_id", speaker.SpeakerWork.MeetingUserID)
+		if err := fetch.Err(); err != nil {
+			return nil, nil, fmt.Errorf("getting user for meeting user %d: %w", speaker.SpeakerWork.MeetingUserID, err)
+		}
+
+		user, err := NewUser(ctx, fetch, userID, meetingID)
 		if err != nil {
 			return nil, nil, fmt.Errorf("loading user: %w", err)
 		}
@@ -337,7 +363,7 @@ func getSpeakerLists(ctx context.Context, los *dbListOfSpeakers, meetingID int, 
 	// Sort ascending by weight
 	sort.Slice(*speakersWaiting, func(i, j int) bool {
 		if (*speakersWaiting)[i].SpeakerWork.Weight == (*speakersWaiting)[j].SpeakerWork.Weight {
-			return (*speakersWaiting)[i].SpeakerWork.UserID < (*speakersWaiting)[j].SpeakerWork.UserID
+			return (*speakersWaiting)[i].SpeakerWork.MeetingUserID < (*speakersWaiting)[j].SpeakerWork.MeetingUserID
 		}
 		return (*speakersWaiting)[i].SpeakerWork.Weight < (*speakersWaiting)[j].SpeakerWork.Weight
 	})

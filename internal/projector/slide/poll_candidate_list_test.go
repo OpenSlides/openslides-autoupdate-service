@@ -48,7 +48,7 @@ func TestPollCandidateList(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ds, _ := dsmock.NewMockDatastore(convertData(tt.data))
+			ds := dsmock.Stub(convertData(tt.data))
 			fetch := datastore.NewFetcher(ds)
 
 			bs, err := pollCandidateListTitler.GetTitleInformation(context.Background(), fetch, "poll_candidate_list/1", "1", 222)

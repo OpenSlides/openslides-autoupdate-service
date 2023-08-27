@@ -39,7 +39,7 @@ func TestRequestEmpty(t *testing.T) {
 		t.Fatalf("Execute returned: %v", err)
 	}
 
-	if got := counter.Value(); got != 0 {
+	if got := counter.Count(); got != 0 {
 		t.Errorf("Got %d requests, expected 0: %v", got, counter.Requests())
 	}
 }
@@ -60,6 +60,7 @@ func TestFetch_required_field_when_object_does_not_exist(t *testing.T) {
 }
 
 func TestFech_two_times_lazy(t *testing.T) {
+	ctx := context.Background()
 
 	ds := dsfetch.New(dsmock.Stub(dsmock.YAMLData(`---
 	user/1/username: max
@@ -69,8 +70,6 @@ func TestFech_two_times_lazy(t *testing.T) {
 	var username2 string
 	ds.User_Username(1).Lazy(&username1)
 	ds.User_Username(1).Lazy(&username2)
-
-	ctx := context.Background()
 
 	if err := ds.Execute(ctx); err != nil {
 		t.Fatalf("Execute: %v", err)
