@@ -273,7 +273,7 @@ func meetingPerm(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int
 	})
 }
 
-func eachRelationField(ctx context.Context, toField func(int) *dsfetch.ValueInt, ids []int, f func(id int, ids []int) ([]int, error)) ([]int, error) {
+func eachRelationField(ctx context.Context, toField func(int) dsfetch.ValueInt, ids []int, f func(id int, ids []int) ([]int, error)) ([]int, error) {
 	filteredIDs := make(map[int][]int)
 	for _, id := range ids {
 		fieldID, err := toField(id).Value(ctx)
@@ -300,7 +300,7 @@ func eachRelationField(ctx context.Context, toField func(int) *dsfetch.ValueInt,
 	return allAllowed, nil
 }
 
-func eachStringField(ctx context.Context, toField func(int) *dsfetch.ValueString, ids []int, f func(value string, ids []int) ([]int, error)) ([]int, error) {
+func eachStringField(ctx context.Context, toField func(int) dsfetch.ValueString, ids []int, f func(value string, ids []int) ([]int, error)) ([]int, error) {
 	filteredIDs := make(map[string][]int)
 	for _, id := range ids {
 		value, err := toField(id).Value(ctx)
@@ -326,7 +326,7 @@ func eachStringField(ctx context.Context, toField func(int) *dsfetch.ValueString
 // TODO: currently, this calls the function with the same collectionObject
 // (motion/5, motion/5), but it should bundle it by collection (motion/1,
 // motion/2).
-func eachContentObjectCollection(ctx context.Context, toField func(int) *dsfetch.ValueString, ids []int, f func(collection string, id int, ids []int) ([]int, error)) ([]int, error) {
+func eachContentObjectCollection(ctx context.Context, toField func(int) dsfetch.ValueString, ids []int, f func(collection string, id int, ids []int) ([]int, error)) ([]int, error) {
 	filteredIDs := make(map[string][]int)
 	for _, id := range ids {
 		contentObjectID, err := toField(id).Value(ctx)

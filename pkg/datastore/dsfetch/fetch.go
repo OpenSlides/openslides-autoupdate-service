@@ -5,27 +5,23 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 )
 
 //go:generate sh -c "go run gen_fields/main.go > fields_generated.go"
-
-// Getter is the same as datastore.Getter
-type Getter interface {
-	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
-}
 
 // Fetch provides functions to access the fields of the datastore.
 //
 // Fetch is not save for concurent use. One Fetch object AND its value can only be
 // used in one goroutine.
 type Fetch struct {
-	getter Getter
+	getter flow.Getter
 
 	requested map[dskey.Key]executer
 }
 
 // New initializes a Request object.
-func New(getter Getter) *Fetch {
+func New(getter flow.Getter) *Fetch {
 	r := Fetch{
 		getter:    getter,
 		requested: make(map[dskey.Key]executer),
@@ -33,23 +29,38 @@ func New(getter Getter) *Fetch {
 	return &r
 }
 
-// Execute loads all requested keys from the datastore.
-func (r *Fetch) Execute(ctx context.Context) error {
-	defer func() {
-		// Clear all requested fields in the end. Even if errors happened.
-		r.requested = make(map[dskey.Key]executer)
-	}()
+func (f *Fetch) getOneKey(ctx context.Context, key dskey.Key) ([]byte, error) {
+	idKey := key.IDField()
 
-	keys := make([]dskey.Key, 0, len(r.requested)*2)
-	for key := range r.requested {
-		keys = append(keys, key, key.IDField())
+	data, err := f.getter.Get(ctx, key, idKey)
+	if err != nil {
+		return nil, fmt.Errorf("fetching key: %w", err)
 	}
 
-	if len(keys) == 0 {
+	if data[idKey] == nil {
+		return nil, DoesNotExistError(key)
+	}
+
+	return data[key], nil
+}
+
+// Execute loads all requested keys from the datastore.
+func (f *Fetch) Execute(ctx context.Context) error {
+	if len(f.requested) == 0 {
 		return nil
 	}
 
-	data, err := r.getter.Get(ctx, keys...)
+	defer func() {
+		// Clear all requested fields in the end. Even if errors happened.
+		clear(f.requested)
+	}()
+
+	keys := make([]dskey.Key, 0, len(f.requested)*2)
+	for key := range f.requested {
+		keys = append(keys, key, key.IDField())
+	}
+
+	data, err := f.getter.Get(ctx, keys...)
 	if err != nil {
 		return fmt.Errorf("fetching all requested keys: %w", err)
 	}
@@ -59,12 +70,13 @@ func (r *Fetch) Execute(ctx context.Context) error {
 			return DoesNotExistError(key)
 		}
 
-		exec := r.requested[key]
+		exec := f.requested[key]
 		if exec == nil {
 			continue
 		}
+
 		if err := exec.execute(value); err != nil {
-			return fmt.Errorf("executing field %q: %w", key, err)
+			return fmt.Errorf("executing field %s: %w", key, err)
 		}
 	}
 
