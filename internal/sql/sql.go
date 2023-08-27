@@ -20,15 +20,15 @@ func Insert(data map[dskey.Key][]byte) string {
 	grouped := make(map[fqID]map[string][]byte)
 	for key, value := range data {
 		fqid := fqID{
-			collection: key.Collection,
-			id:         key.ID,
+			collection: key.Collection(),
+			id:         key.ID(),
 		}
 
 		if _, ok := grouped[fqid]; !ok {
 			grouped[fqid] = make(map[string][]byte)
 		}
 
-		grouped[fqid][key.Field] = value
+		grouped[fqid][key.Field()] = value
 	}
 
 	var statements []string

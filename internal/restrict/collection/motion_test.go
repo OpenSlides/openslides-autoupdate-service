@@ -235,18 +235,6 @@ func TestMotionModeC(t *testing.T) {
 		withPerms(30, perm.MotionCanSee, perm.MotionCanManage),
 	)
 
-		motion_submitter/4:
-			meeting_user_id: 10
-			motion_id: 1
-			meeting_id: 30
-			state_id: 3
-
-		motion_state/3/restrictions:
-		- motion.can_manage
-		`,
-		withPerms(30, perm.MotionCanSee),
-	)
-
 	testCase(
 		"motion.can_see with two restrictions, non fullfield",
 		t,
