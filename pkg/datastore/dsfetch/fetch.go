@@ -81,15 +81,6 @@ func (r *Fetch) Execute(ctx context.Context) error {
 	return nil
 }
 
-// Err returns an error from a previous call.
-//
-// Resets the error
-func (r *Fetch) Err() error {
-	err := r.err
-	r.err = nil
-	return err
-}
-
 type executer interface {
 	execute([]byte) error
 }

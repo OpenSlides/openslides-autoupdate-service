@@ -51,9 +51,6 @@ func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, motionSubmi
 		submitterToMotion[submitterID] = motionID
 		motionIDs.Add(motionID)
 	}
-	if err := ds.Err(); err != nil {
-		return nil, fmt.Errorf("getting motionIDs: %w", err)
-	}
 
 	allowedMotionIDs, err := Collection(ctx, "motion").Modes("C")(ctx, ds, motionIDs.List()...)
 	if err != nil {
