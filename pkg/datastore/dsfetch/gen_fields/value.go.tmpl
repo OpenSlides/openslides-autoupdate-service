@@ -1,14 +1,12 @@
-// {{.TypeName}} is a lazy value from the datastore.
+// {{.TypeName}} is a value from the datastore.
 type {{.TypeName}} struct {
-	key      dskey.Key
-	value    {{.GoType}}
-	required bool
-
-	executed bool
-	isNull   bool
 	err      error
 
+	key      dskey.Key
+	required bool
+
 	lazies []*{{.GoType}}
+	isNull   bool
 
 	fetch *Fetch
 }
@@ -20,15 +18,19 @@ type {{.TypeName}} struct {
 			return {{.Zero}}, v.err
 		}
 
-		if v.executed {
-			return v.value, nil
+		rawValue, err := v.fetch.getOneKey(ctx, v.key)
+		if err != nil {
+			return {{.Zero}}, err
 		}
 
-		if err := v.fetch.Execute(ctx); err != nil {
-			return {{.Zero}}, fmt.Errorf("executing request: %w", err)
+		var value {{.GoType}}
+		v.Lazy(&value)
+
+		if err := v.execute(rawValue); err != nil {
+			return {{.Zero}}, err
 		}
 
-		return v.value, nil
+		return value, nil
 	}
 {{else}}
 	// Value returns the value.
@@ -37,15 +39,19 @@ type {{.TypeName}} struct {
 			return {{.Zero}}, false, v.err
 		}
 
-		if v.executed {
-			return v.value, !v.isNull, nil
+		rawValue, err := v.fetch.getOneKey(ctx, v.key)
+		if err != nil {
+			return {{.Zero}}, false, err
 		}
 
-		if err := v.fetch.Execute(ctx); err != nil {
-			return {{.Zero}}, false, fmt.Errorf("executing request: %w", err)
+		var value {{.GoType}}
+		v.Lazy(&value)
+
+		if err := v.execute(rawValue); err != nil {
+			return {{.Zero}}, false, err
 		}
 
-		return v.value, !v.isNull, nil
+		return value, !v.isNull, nil
 	}
 {{end}}
 
@@ -54,62 +60,50 @@ type {{.TypeName}} struct {
 //
 // Make sure to call request.Execute() before using the value.
 func (v *{{.TypeName}}) Lazy(value *{{.GoType}}) {
+	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 	v.lazies = append(v.lazies, value)
+}
+
+// Preload fetches the value but does nothing with it.
+//
+// This makes sure, that the value is in the cache.
+//
+// Make sure to call fetch.Execute().
+func (v *{{.TypeName}}) Preload() {
+	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 }
 
 // execute will be called from request.
 func (v *{{.TypeName}}) execute(p []byte) error {
-	{{- if eq .TypeName  "ValueIDSlice"}}
-		var values []string
-		if p == nil {
-			if v.required {
-				return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
-			}
-			v.isNull = true
-		} else {
-			if err := json.Unmarshal(p, &values); err != nil {
+	var value {{.GoType}}
+	if p == nil {
+		if v.required {
+			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
+		}
+		v.isNull = true
+	} else {
+		{{- if eq .TypeName "ValueIntSlice"}}
+			r, err := fastjson.DecodeIntList(p)
+			if err != nil {
 				return fmt.Errorf("decoding value %q: %w", p, err)
 			}
-		}
-
-		for _, e := range values {
-			i, err := strconv.Atoi(e)
+			value = r
+		{{- else if eq .TypeName "ValueInt" }}
+			r, err := fastjson.DecodeInt(p)
 			if err != nil {
-				return fmt.Errorf("converting value %q: %w", e, err)
+				return fmt.Errorf("decoding value %q: %w", p, err)
 			}
-			v.value = append(v.value, i)
-		}
-	{{- else}}
-		if p == nil {
-			if v.required {
-				return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
+			value = r
+		{{- else }}
+			if err := json.Unmarshal(p, &value); err != nil {
+				return fmt.Errorf("decoding value %q: %w", p, err)
 			}
-			v.isNull = true
-		} else {
-			{{- if eq .TypeName "ValueIntSlice"}}
-				r, err := fastjson.DecodeIntList(p)
-				if err != nil {
-					return fmt.Errorf("decoding value %q: %w", p, err)
-				}
-				v.value = r
-			{{- else if eq .TypeName "ValueInt" }}
-				r, err := fastjson.DecodeInt(p)
-				if err != nil {
-					return fmt.Errorf("decoding value %q: %w", p, err)
-				}
-				v.value = r
-			{{- else }}
-				if err := json.Unmarshal(p, &v.value); err != nil {
-					return fmt.Errorf("decoding value %q: %w", p, err)
-				}
-			{{- end }}
-		}
-	{{- end}}
-
-	for i := 0; i < len(v.lazies); i++ {
-		*v.lazies[i] = v.value
+		{{- end }}
 	}
 
-	v.executed = true
+	for i := 0; i < len(v.lazies); i++ {
+		*v.lazies[i] = value
+	}
+
 	return nil
 }

@@ -2,12 +2,8 @@
 func (r *Fetch) {{.GoName}}({{.Collection}}ID int) *{{.ValueType}} {
 	key, err := dskey.FromParts("{{.CollectionName}}", {{.Collection}}ID, "{{.FieldName}}" )
 	if err != nil {
-		return  &{{.ValueType}}{fetch: r, err: err}
+		return  &{{.ValueType}}{err: err}
 	}
-	if v, ok := r.requested[key]; ok {
-		return v.(*{{.ValueType}})
-	}
-	v := &{{.ValueType}}{fetch: r, key: key {{if .Required}},required:true{{end}} }
-	r.requested[key] = v
-	return v
+
+	return &{{.ValueType}}{fetch: r, key: key {{if .Required}},required:true{{end}} }
 }
