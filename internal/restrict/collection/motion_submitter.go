@@ -43,7 +43,11 @@ func (m MotionSubmitter) see(ctx context.Context, ds *dsfetch.Fetch, motionSubmi
 	submitterToMotion := make(map[int]int, len(motionSubmitterIDs))
 	motionIDs := set.New[int]()
 	for _, submitterID := range motionSubmitterIDs {
-		motionID := ds.MotionSubmitter_MotionID(submitterID).ErrorLater(ctx)
+		motionID, err := ds.MotionSubmitter_MotionID(submitterID).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting motion id for submitter %d: %w", submitterID, err)
+		}
+
 		submitterToMotion[submitterID] = motionID
 		motionIDs.Add(motionID)
 	}

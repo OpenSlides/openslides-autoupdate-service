@@ -204,15 +204,26 @@ func (a *Autoupdate) skipWorkpool(ctx context.Context, userID int) (bool, error)
 	}
 
 	for _, muid := range meetingUserIDs {
-		groupIDs := ds.MeetingUser_GroupIDs(muid).ErrorLater(ctx)
-		for _, gid := range groupIDs {
-			if _, ok := ds.Group_AdminGroupForMeetingID(gid).ErrorLater(ctx); ok {
+		groupIDs, err := ds.MeetingUser_GroupIDs(muid).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting groupIDs of user: %w", err)
+		}
+
+		adminGroups := make([]int, len(groupIDs))
+		for i := 0; i < len(groupIDs); i++ {
+			ds.Group_AdminGroupForMeetingID(groupIDs[i]).Lazy(&adminGroups[i])
+		}
+
+		if err := ds.Execute(ctx); err != nil {
+			return false, fmt.Errorf("checking for admin groups: %w", err)
+		}
+
+		for isAdmin := range adminGroups {
+			if isAdmin > 0 {
 				return true, nil
 			}
 		}
-	}
-	if err := ds.Err(); err != nil {
-		return false, fmt.Errorf("check if user %d is a meeting admin: %w", userID, err)
+
 	}
 
 	return false, nil

@@ -60,48 +60,6 @@ func (v *{{.TypeName}}) Lazy(value *{{.GoType}}) {
 	v.lazies = append(v.lazies, value)
 }
 
-{{if not .MaybeType}}
-	// ErrorLater is like Value but does not return an error.
-	//
-	// If an error happs, it is saved internaly. Make sure to call request.Err() later to
-	// access it.
-	func (v *{{.TypeName}}) ErrorLater(ctx context.Context) {{.GoType}} {
-		if v.fetch.err != nil {
-			return {{.Zero}}
-		}
-
-		if v.executed {
-			return v.value
-		}
-
-		if err := v.fetch.Execute(ctx); err != nil {
-			return {{.Zero}}
-		}
-
-		return v.value
-	}
-{{else}}
-	// ErrorLater is like Value but does not return an error.
-	//
-	// If an error happs, it is saved internaly. Make sure to call request.Err() later to
-	// access it.
-	func (v *{{.TypeName}}) ErrorLater(ctx context.Context) ({{.GoType}}, bool) {
-		if v.fetch.err != nil {
-			return {{.Zero}}, false
-		}
-
-		if v.executed {
-			return v.value, !v.isNull
-		}
-
-		if err := v.fetch.Execute(ctx); err != nil {
-			return {{.Zero}}, false
-		}
-
-		return v.value, !v.isNull
-	}
-{{end}}
-
 // execute will be called from request.
 func (v *{{.TypeName}}) execute(p []byte) error {
 	{{- if eq .TypeName  "ValueIDSlice"}}

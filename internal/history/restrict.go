@@ -93,7 +93,11 @@ func (h restricter) canSeeKey(
 	}
 
 	if key.Collection() == "personal_note" {
-		personalNoteMeetingUserID := oldDS.PersonalNote_MeetingUserID(key.ID()).ErrorLater(ctx)
+		personalNoteMeetingUserID, err := oldDS.PersonalNote_MeetingUserID(key.ID()).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting personal note meeting user: %w", err)
+		}
+
 		personalNoteUserID, err := oldDS.MeetingUser_UserID(personalNoteMeetingUserID).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("getting personal note user: %w", err)

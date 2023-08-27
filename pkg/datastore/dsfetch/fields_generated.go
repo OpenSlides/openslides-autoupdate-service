@@ -52,26 +52,6 @@ func (v *ValueBool) Lazy(value *bool) {
 	v.lazies = append(v.lazies, value)
 }
 
-// ErrorLater is like Value but does not return an error.
-//
-// If an error happs, it is saved internaly. Make sure to call request.Err() later to
-// access it.
-func (v *ValueBool) ErrorLater(ctx context.Context) bool {
-	if v.fetch.err != nil {
-		return false
-	}
-
-	if v.executed {
-		return v.value
-	}
-
-	if err := v.fetch.Execute(ctx); err != nil {
-		return false
-	}
-
-	return v.value
-}
-
 // execute will be called from request.
 func (v *ValueBool) execute(p []byte) error {
 	if p == nil {
@@ -134,26 +114,6 @@ func (v *ValueFloat) Lazy(value *float32) {
 	v.lazies = append(v.lazies, value)
 }
 
-// ErrorLater is like Value but does not return an error.
-//
-// If an error happs, it is saved internaly. Make sure to call request.Err() later to
-// access it.
-func (v *ValueFloat) ErrorLater(ctx context.Context) float32 {
-	if v.fetch.err != nil {
-		return 0
-	}
-
-	if v.executed {
-		return v.value
-	}
-
-	if err := v.fetch.Execute(ctx); err != nil {
-		return 0
-	}
-
-	return v.value
-}
-
 // execute will be called from request.
 func (v *ValueFloat) execute(p []byte) error {
 	if p == nil {
@@ -214,26 +174,6 @@ func (v *ValueIDSlice) Value(ctx context.Context) ([]int, error) {
 // Make sure to call request.Execute() before using the value.
 func (v *ValueIDSlice) Lazy(value *[]int) {
 	v.lazies = append(v.lazies, value)
-}
-
-// ErrorLater is like Value but does not return an error.
-//
-// If an error happs, it is saved internaly. Make sure to call request.Err() later to
-// access it.
-func (v *ValueIDSlice) ErrorLater(ctx context.Context) []int {
-	if v.fetch.err != nil {
-		return nil
-	}
-
-	if v.executed {
-		return v.value
-	}
-
-	if err := v.fetch.Execute(ctx); err != nil {
-		return nil
-	}
-
-	return v.value
 }
 
 // execute will be called from request.
@@ -307,26 +247,6 @@ func (v *ValueInt) Lazy(value *int) {
 	v.lazies = append(v.lazies, value)
 }
 
-// ErrorLater is like Value but does not return an error.
-//
-// If an error happs, it is saved internaly. Make sure to call request.Err() later to
-// access it.
-func (v *ValueInt) ErrorLater(ctx context.Context) int {
-	if v.fetch.err != nil {
-		return 0
-	}
-
-	if v.executed {
-		return v.value
-	}
-
-	if err := v.fetch.Execute(ctx); err != nil {
-		return 0
-	}
-
-	return v.value
-}
-
 // execute will be called from request.
 func (v *ValueInt) execute(p []byte) error {
 	if p == nil {
@@ -389,26 +309,6 @@ func (v *ValueIntSlice) Value(ctx context.Context) ([]int, error) {
 // Make sure to call request.Execute() before using the value.
 func (v *ValueIntSlice) Lazy(value *[]int) {
 	v.lazies = append(v.lazies, value)
-}
-
-// ErrorLater is like Value but does not return an error.
-//
-// If an error happs, it is saved internaly. Make sure to call request.Err() later to
-// access it.
-func (v *ValueIntSlice) ErrorLater(ctx context.Context) []int {
-	if v.fetch.err != nil {
-		return nil
-	}
-
-	if v.executed {
-		return v.value
-	}
-
-	if err := v.fetch.Execute(ctx); err != nil {
-		return nil
-	}
-
-	return v.value
 }
 
 // execute will be called from request.
@@ -475,26 +375,6 @@ func (v *ValueJSON) Lazy(value *json.RawMessage) {
 	v.lazies = append(v.lazies, value)
 }
 
-// ErrorLater is like Value but does not return an error.
-//
-// If an error happs, it is saved internaly. Make sure to call request.Err() later to
-// access it.
-func (v *ValueJSON) ErrorLater(ctx context.Context) json.RawMessage {
-	if v.fetch.err != nil {
-		return nil
-	}
-
-	if v.executed {
-		return v.value
-	}
-
-	if err := v.fetch.Execute(ctx); err != nil {
-		return nil
-	}
-
-	return v.value
-}
-
 // execute will be called from request.
 func (v *ValueJSON) execute(p []byte) error {
 	if p == nil {
@@ -555,26 +435,6 @@ func (v *ValueMaybeInt) Value(ctx context.Context) (int, bool, error) {
 // Make sure to call request.Execute() before using the value.
 func (v *ValueMaybeInt) Lazy(value *int) {
 	v.lazies = append(v.lazies, value)
-}
-
-// ErrorLater is like Value but does not return an error.
-//
-// If an error happs, it is saved internaly. Make sure to call request.Err() later to
-// access it.
-func (v *ValueMaybeInt) ErrorLater(ctx context.Context) (int, bool) {
-	if v.fetch.err != nil {
-		return 0, false
-	}
-
-	if v.executed {
-		return v.value, !v.isNull
-	}
-
-	if err := v.fetch.Execute(ctx); err != nil {
-		return 0, false
-	}
-
-	return v.value, !v.isNull
 }
 
 // execute will be called from request.
@@ -639,26 +499,6 @@ func (v *ValueMaybeString) Lazy(value *string) {
 	v.lazies = append(v.lazies, value)
 }
 
-// ErrorLater is like Value but does not return an error.
-//
-// If an error happs, it is saved internaly. Make sure to call request.Err() later to
-// access it.
-func (v *ValueMaybeString) ErrorLater(ctx context.Context) (string, bool) {
-	if v.fetch.err != nil {
-		return "", false
-	}
-
-	if v.executed {
-		return v.value, !v.isNull
-	}
-
-	if err := v.fetch.Execute(ctx); err != nil {
-		return "", false
-	}
-
-	return v.value, !v.isNull
-}
-
 // execute will be called from request.
 func (v *ValueMaybeString) execute(p []byte) error {
 	if p == nil {
@@ -721,26 +561,6 @@ func (v *ValueString) Lazy(value *string) {
 	v.lazies = append(v.lazies, value)
 }
 
-// ErrorLater is like Value but does not return an error.
-//
-// If an error happs, it is saved internaly. Make sure to call request.Err() later to
-// access it.
-func (v *ValueString) ErrorLater(ctx context.Context) string {
-	if v.fetch.err != nil {
-		return ""
-	}
-
-	if v.executed {
-		return v.value
-	}
-
-	if err := v.fetch.Execute(ctx); err != nil {
-		return ""
-	}
-
-	return v.value
-}
-
 // execute will be called from request.
 func (v *ValueString) execute(p []byte) error {
 	if p == nil {
@@ -801,26 +621,6 @@ func (v *ValueStringSlice) Value(ctx context.Context) ([]string, error) {
 // Make sure to call request.Execute() before using the value.
 func (v *ValueStringSlice) Lazy(value *[]string) {
 	v.lazies = append(v.lazies, value)
-}
-
-// ErrorLater is like Value but does not return an error.
-//
-// If an error happs, it is saved internaly. Make sure to call request.Err() later to
-// access it.
-func (v *ValueStringSlice) ErrorLater(ctx context.Context) []string {
-	if v.fetch.err != nil {
-		return nil
-	}
-
-	if v.executed {
-		return v.value
-	}
-
-	if err := v.fetch.Execute(ctx); err != nil {
-		return nil
-	}
-
-	return v.value
 }
 
 // execute will be called from request.
