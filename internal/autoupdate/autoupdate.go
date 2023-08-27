@@ -308,10 +308,11 @@ func (a *Autoupdate) FilterConnectionCount(ctx context.Context, meetingIDs []int
 	userCount := 0
 	userIDs := make([][]int, len(meetingIDs))
 	for i := range meetingUserIDs {
+		userCount += len(meetingUserIDs[i])
+		userIDs[i] = make([]int, len(meetingUserIDs[i]))
 		for j, muID := range meetingUserIDs[i] {
 			ds.MeetingUser_UserID(muID).Lazy(&userIDs[i][j])
 		}
-		userCount += len(meetingUserIDs[i])
 	}
 
 	if err := ds.Execute(ctx); err != nil {
