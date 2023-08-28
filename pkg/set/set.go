@@ -8,7 +8,14 @@ type Set[T comparable] struct {
 
 // New initializes a new set.
 func New[T comparable](init ...T) Set[T] {
-	s := Set[T]{m: make(map[T]struct{})}
+	s := Set[T]{m: make(map[T]struct{}, len(init))}
+	s.Add(init...)
+	return s
+}
+
+// NewWithSize initializes a new set with a size
+func NewWithSize[T comparable](size int, init ...T) Set[T] {
+	s := Set[T]{m: make(map[T]struct{}, size)}
 	s.Add(init...)
 	return s
 }
