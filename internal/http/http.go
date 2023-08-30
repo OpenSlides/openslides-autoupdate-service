@@ -69,7 +69,7 @@ func Run(
 	wait := make(chan error)
 	go func() {
 		<-ctx.Done()
-		if err := srv.Shutdown(context.Background()); err != nil {
+		if err := srv.Shutdown(context.WithoutCancel(ctx)); err != nil {
 			// TODO EXTERNAL ERROR
 			wait <- fmt.Errorf("HTTP server shutdown: %w", err)
 			return
@@ -261,7 +261,7 @@ func HandleShowConnectionCount(mux *http.ServeMux, autoupdate *autoupdate.Autoup
 		ctx := r.Context()
 		uid := auth.FromContext(ctx)
 
-		allowed, err := autoupdate.CanSeeConnectionCount(ctx, uid)
+		allowed, meetingIDs, err := autoupdate.CanSeeConnectionCount(ctx, uid)
 		if err != nil {
 			oserror.Handle(fmt.Errorf("Error checking count permission %w", err))
 			http.Error(w, "Counting not possible", 500)
@@ -276,6 +276,12 @@ func HandleShowConnectionCount(mux *http.ServeMux, autoupdate *autoupdate.Autoup
 		val, err := connectionCount.Show(ctx)
 		if err != nil {
 			oserror.Handle(fmt.Errorf("Error counting connection: %w", err))
+			http.Error(w, "Counting not possible", 500)
+			return
+		}
+
+		if err := autoupdate.FilterConnectionCount(ctx, meetingIDs, val); err != nil {
+			oserror.Handle(fmt.Errorf("Error filtering connection count: %w", err))
 			http.Error(w, "Counting not possible", 500)
 			return
 		}

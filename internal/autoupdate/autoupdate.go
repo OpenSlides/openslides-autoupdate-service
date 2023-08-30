@@ -19,6 +19,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 	"github.com/ostcar/topic"
 )
 
@@ -204,32 +205,130 @@ func (a *Autoupdate) skipWorkpool(ctx context.Context, userID int) (bool, error)
 	}
 
 	for _, muid := range meetingUserIDs {
-		groupIDs := ds.MeetingUser_GroupIDs(muid).ErrorLater(ctx)
-		for _, gid := range groupIDs {
-			if _, ok := ds.Group_AdminGroupForMeetingID(gid).ErrorLater(ctx); ok {
+		groupIDs, err := ds.MeetingUser_GroupIDs(muid).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting groupIDs of user: %w", err)
+		}
+
+		adminGroups := make([]int, len(groupIDs))
+		for i := 0; i < len(groupIDs); i++ {
+			ds.Group_AdminGroupForMeetingID(groupIDs[i]).Lazy(&adminGroups[i])
+		}
+
+		if err := ds.Execute(ctx); err != nil {
+			return false, fmt.Errorf("checking for admin groups: %w", err)
+		}
+
+		for isAdmin := range adminGroups {
+			if isAdmin > 0 {
 				return true, nil
 			}
 		}
-	}
-	if err := ds.Err(); err != nil {
-		return false, fmt.Errorf("check if user %d is a meeting admin: %w", userID, err)
+
 	}
 
 	return false, nil
 }
 
-// CanSeeConnectionCount returns, if the user can see the connection counter.
-func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (bool, error) {
+// CanSeeConnectionCount returns, if the user can see the connection count.
+//
+// If the second value is not empty, the user is only allowed for meetings in that list.
+func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (bool, []int, error) {
 	if userID == 0 {
-		return false, nil
+		return false, nil, nil
 	}
 
 	ds := dsfetch.New(a.flow)
 
 	hasOML, err := perm.HasOrganizationManagementLevel(ctx, ds, userID, perm.OMLCanManageOrganization)
 	if err != nil {
-		return false, fmt.Errorf("getting organization management level: %w", err)
+		return false, nil, fmt.Errorf("getting organization management level: %w", err)
 	}
 
-	return hasOML, nil
+	if hasOML {
+		return true, nil, nil
+	}
+
+	meetingUserIDs, err := ds.User_MeetingUserIDs(userID).Value(ctx)
+	if err != nil {
+		return false, nil, fmt.Errorf("getting meeting_user objects: %w", err)
+	}
+
+	groupPerMeetingIDs := make([][]int, len(meetingUserIDs))
+	for i, muID := range meetingUserIDs {
+		ds.MeetingUser_GroupIDs(muID).Lazy(&groupPerMeetingIDs[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return false, nil, fmt.Errorf("getting all group ids: %w", err)
+	}
+
+	var groupIDs []int
+	for i := range groupPerMeetingIDs {
+		groupIDs = append(groupIDs, groupPerMeetingIDs[i]...)
+	}
+
+	isAdminGroup := make([]int, len(groupIDs))
+	for i, groupID := range groupIDs {
+		ds.Group_AdminGroupForMeetingID(groupID).Lazy(&isAdminGroup[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return false, nil, fmt.Errorf("getting admin flag of groups: %w", err)
+	}
+
+	var meetingAdmin []int
+	for _, meetingID := range isAdminGroup {
+		if meetingID > 0 {
+			meetingAdmin = append(meetingAdmin, meetingID)
+		}
+	}
+
+	return len(meetingAdmin) > 0, meetingAdmin, nil
+}
+
+// FilterConnectionCount removes users from the count where the user is not in
+// one of the given meetings.
+func (a *Autoupdate) FilterConnectionCount(ctx context.Context, meetingIDs []int, count map[int]int) error {
+	if len(meetingIDs) == 0 {
+		return nil
+	}
+
+	ds := dsfetch.New(a.flow)
+
+	meetingUserIDs := make([][]int, len(meetingIDs))
+	for i, meetingID := range meetingIDs {
+		ds.Meeting_MeetingUserIDs(meetingID).Lazy(&meetingUserIDs[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return fmt.Errorf("getting meeting user ids: %w", err)
+	}
+
+	userCount := 0
+	userIDs := make([][]int, len(meetingIDs))
+	for i := range meetingUserIDs {
+		userCount += len(meetingUserIDs[i])
+		userIDs[i] = make([]int, len(meetingUserIDs[i]))
+		for j, muID := range meetingUserIDs[i] {
+			ds.MeetingUser_UserID(muID).Lazy(&userIDs[i][j])
+		}
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return fmt.Errorf("getting user ids: %w", err)
+	}
+
+	userSet := set.NewWithSize[int](userCount)
+	for i := range userIDs {
+		userSet.Add(userIDs[i]...)
+	}
+
+	for userID := range count {
+		if !userSet.Has(userID) {
+			delete(count, userID)
+		}
+	}
+
+	return nil
 }

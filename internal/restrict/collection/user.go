@@ -374,15 +374,16 @@ func (User) modeE(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 		}
 
 		for _, committeeID := range commiteeIDs {
-			userIDs := ds.Committee_UserIDs(committeeID).ErrorLater(ctx)
+			userIDs, err := ds.Committee_UserIDs(committeeID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting users of committee: %w", err)
+			}
+
 			for _, uid := range userIDs {
 				if otherUserID == uid {
 					return true, nil
 				}
 			}
-		}
-		if err := ds.Err(); err != nil {
-			return false, fmt.Errorf("checking committee management level: %w", err)
 		}
 
 		otherUserMeetingUserIDs, err := ds.User_MeetingUserIDs(otherUserID).Value(ctx)
@@ -395,6 +396,7 @@ func (User) modeE(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 			if err != nil {
 				return false, fmt.Errorf("getting meeting ID: %w", err)
 			}
+
 			perms, err := perm.FromContext(ctx, meetingID)
 			if err != nil {
 				return false, fmt.Errorf("checking permissions of meeting %d: %w", meetingID, err)
@@ -403,9 +405,6 @@ func (User) modeE(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 			if perms.Has(perm.UserCanManage) {
 				return true, nil
 			}
-		}
-		if err := ds.Err(); err != nil {
-			return false, fmt.Errorf("checking manage in any meeting: %w", err)
 		}
 
 		return false, nil

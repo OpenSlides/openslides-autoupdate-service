@@ -77,9 +77,11 @@ func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, agendaIDs ...int
 		}
 
 		allowed, err := eachCondition(ids, func(agendaID int) (bool, error) {
-			isHidden := ds.AgendaItem_IsHidden(agendaID).ErrorLater(ctx)
-			isInternal := ds.AgendaItem_IsInternal(agendaID).ErrorLater(ctx)
-			if err := ds.Err(); err != nil {
+			var isHidden bool
+			var isInternal bool
+			ds.AgendaItem_IsHidden(agendaID).Lazy(&isHidden)
+			ds.AgendaItem_IsInternal(agendaID).Lazy(&isInternal)
+			if err := ds.Execute(ctx); err != nil {
 				return false, fmt.Errorf("fetching isHidden and isInternal: %w", err)
 			}
 

@@ -87,7 +87,6 @@ func genValueTypes(buf *bytes.Buffer) error {
 		"ValueJSON":        "json.RawMessage",
 		"ValueIntSlice":    "[]int",
 		"ValueStringSlice": "[]string",
-		"ValueIDSlice":     "[]int",
 	}
 
 	// Make sure the types are in the same order every time go generate runs.

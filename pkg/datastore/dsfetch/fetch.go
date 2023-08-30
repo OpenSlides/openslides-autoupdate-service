@@ -5,94 +5,84 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 )
 
 //go:generate sh -c "go run gen_fields/main.go > fields_generated.go"
-
-// Getter is the same as datastore.Getter
-type Getter interface {
-	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
-}
 
 // Fetch provides functions to access the fields of the datastore.
 //
 // Fetch is not save for concurent use. One Fetch object AND its value can only be
 // used in one goroutine.
 type Fetch struct {
-	getter Getter
-	err    error
+	getter flow.Getter
 
-	requested map[dskey.Key]executer
+	requested map[dskey.Key][]executer
 }
 
 // New initializes a Request object.
-func New(getter Getter) *Fetch {
+func New(getter flow.Getter) *Fetch {
 	r := Fetch{
 		getter:    getter,
-		requested: make(map[dskey.Key]executer),
+		requested: make(map[dskey.Key][]executer),
 	}
 	return &r
 }
 
+func (f *Fetch) getOneKey(ctx context.Context, key dskey.Key) ([]byte, error) {
+	idKey := key.IDField()
+
+	data, err := f.getter.Get(ctx, key, idKey)
+	if err != nil {
+		return nil, fmt.Errorf("fetching key: %w", err)
+	}
+
+	if data[idKey] == nil {
+		return nil, DoesNotExistError(key)
+	}
+
+	return data[key], nil
+}
+
 // Execute loads all requested keys from the datastore.
-func (r *Fetch) Execute(ctx context.Context) error {
-	if err := r.err; err != nil {
-		r.err = nil
-		return err
+func (f *Fetch) Execute(ctx context.Context) error {
+	if len(f.requested) == 0 {
+		return nil
 	}
 
 	defer func() {
 		// Clear all requested fields in the end. Even if errors happened.
-		r.requested = make(map[dskey.Key]executer)
+		clear(f.requested)
 	}()
 
-	keys := make([]dskey.Key, 0, len(r.requested)*2)
-	for key := range r.requested {
+	keys := make([]dskey.Key, 0, len(f.requested)*2)
+	for key := range f.requested {
 		keys = append(keys, key, key.IDField())
 	}
 
-	if len(keys) == 0 {
-		return nil
-	}
-
-	data, err := r.getter.Get(ctx, keys...)
+	data, err := f.getter.Get(ctx, keys...)
 	if err != nil {
-		r.err = fmt.Errorf("fetching all requested keys: %w", err)
-		return r.err
+		return fmt.Errorf("fetching all requested keys: %w", err)
 	}
 
 	for key, value := range data {
 		if data[key.IDField()] == nil {
-			r.err = DoesNotExistError(key)
-			return r.err
+			return DoesNotExistError(key)
 		}
 
-		exec := r.requested[key]
-		if exec == nil {
-			continue
-		}
-		if err := exec.execute(value); err != nil {
-			r.err = fmt.Errorf("executing field %q: %w", key, err)
-			return r.err
+		for _, exec := range f.requested[key] {
+			if err := exec.execute(value); err != nil {
+				return fmt.Errorf("executing field %s: %w", key, err)
+			}
 		}
 	}
 
-	r.err = nil
 	return nil
 }
 
-// Err returns an error from a previous call.
-//
-// Resets the error
-func (r *Fetch) Err() error {
-	err := r.err
-	r.err = nil
-	return err
-}
-
 // Get calls the getter the flow was created with.
-func (r *Fetch) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
-	return r.getter.Get(ctx, keys...)
+func (f *Fetch) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+	return f.getter.Get(ctx, keys...)
 }
 
 type executer interface {
