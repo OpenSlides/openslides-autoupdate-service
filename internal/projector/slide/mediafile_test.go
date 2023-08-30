@@ -20,7 +20,9 @@ func TestMediafile(t *testing.T) {
 	assert.NotNilf(t, mfSlide, "Slide with name `mediafile` not found.")
 
 	data := dsmock.YAMLData(`
-	mediafile/1/mimetype: application/pdf
+	mediafile/1:
+		mimetype: application/pdf
+		owner_id: meeting/1
     `)
 
 	for _, tt := range []struct {
@@ -33,7 +35,8 @@ func TestMediafile(t *testing.T) {
 			data,
 			`{
 				"id": 1,
-				"mimetype": "application/pdf"
+				"mimetype": "application/pdf",
+				"owner_id": "meeting/1"
 			}`,
 		},
 	} {

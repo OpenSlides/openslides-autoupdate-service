@@ -13,6 +13,7 @@ type dbMediafile struct {
 	ID       int    `json:"id"`
 	Title    string `json:"title"`
 	Mimetype string `json:"mimetype"`
+	OwnerID  string `json:"owner_id"`
 }
 
 func mediafileItemFromMap(in map[string]json.RawMessage) (*dbMediafile, error) {
@@ -31,7 +32,7 @@ func mediafileItemFromMap(in map[string]json.RawMessage) (*dbMediafile, error) {
 // Mediafile renders the mediafile slide.
 func Mediafile(store *projector.SlideStore) {
 	store.RegisterSliderFunc("mediafile", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
-		data := fetch.Object(ctx, p7on.ContentObjectID, "id", "mimetype")
+		data := fetch.Object(ctx, p7on.ContentObjectID, "id", "mimetype", "owner_id")
 		if err := fetch.Err(); err != nil {
 			return nil, err
 		}
@@ -39,7 +40,13 @@ func Mediafile(store *projector.SlideStore) {
 		if err != nil {
 			return nil, fmt.Errorf("get mediafile item from map: %w", err)
 		}
-		responseValue, err := json.Marshal(map[string]interface{}{"id": mediafile.ID, "mimetype": mediafile.Mimetype})
+		responseValue, err := json.Marshal(
+			map[string]interface{}{
+				"id":       mediafile.ID,
+				"mimetype": mediafile.Mimetype,
+				"owner_id": mediafile.OwnerID,
+			},
+		)
 		if err != nil {
 			return nil, fmt.Errorf("encoding response slide mediafile item: %w", err)
 		}
