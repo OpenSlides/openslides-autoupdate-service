@@ -172,7 +172,7 @@ func Motion(store *projector.SlideStore) {
 			"recommendation_extension_reference_ids",
 		}
 		if meeting.MotionsEnableTextOnProjector {
-			fetchFields = append(fetchFields, "text", "amendment_paragraph_$", "statute_paragraph_id")
+			fetchFields = append(fetchFields, "text", "amendment_paragraphs", "statute_paragraph_id")
 		}
 		if meeting.MotionsEnableReasonOnProjector {
 			fetchFields = append(fetchFields, "reason")
