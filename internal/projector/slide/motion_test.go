@@ -213,12 +213,7 @@ func TestMotion(t *testing.T) {
                 ],
                 "show_sidebox": true,
                 "line_length": 85,
-                "preamble": "The assembly may decide",
                 "line_numbering": "outside",
-                "amendment_paragraphs":{
-                    "1":"amendmentParagraph1",
-                    "2":"amendmentParagraph2"
-                },
                 "change_recommendations":[
                     {
                         "id": 1,

@@ -66,7 +66,7 @@ type amendmentsType struct {
 type leadMotionType struct {
 	Title  string `json:"title"`
 	Number string `json:"number"`
-	Text   string `json:"text"`
+	Text   string `json:"text,omitempty"`
 }
 type dbMotionWork struct {
 	MeetingID                                    int      `json:"meeting_id"`
@@ -89,7 +89,7 @@ type dbMotion struct {
 	Submitters                       []string                       `json:"submitters"`
 	ShowSidebox                      bool                           `json:"show_sidebox"`
 	LineLength                       int                            `json:"line_length"`
-	Preamble                         string                         `json:"preamble"`
+	Preamble                         string                         `json:"preamble,omitempty"`
 	LineNumbering                    string                         `json:"line_numbering"`
 	AmendmentParagraph               json.RawMessage                `json:"amendment_paragraphs,omitempty"`
 	LeadMotion                       *leadMotionType                `json:"lead_motion,omitempty"`
@@ -144,6 +144,10 @@ func Motion(store *projector.SlideStore) {
 			return nil, fmt.Errorf("getMeeting: %w", err)
 		}
 
+		if !meeting.MotionsEnableTextOnProjector {
+			meeting.MotionsPreamble = ""
+		}
+
 		var options struct {
 			Mode string `json:"mode"`
 		}
@@ -159,8 +163,6 @@ func Motion(store *projector.SlideStore) {
 			"number",
 			"meeting_id",
 			"lead_motion_id",
-			"statute_paragraph_id",
-			"amendment_paragraphs",
 			"change_recommendation_ids",
 			"amendment_ids",
 			"submitter_ids",
@@ -170,7 +172,7 @@ func Motion(store *projector.SlideStore) {
 			"recommendation_extension_reference_ids",
 		}
 		if meeting.MotionsEnableTextOnProjector {
-			fetchFields = append(fetchFields, "text")
+			fetchFields = append(fetchFields, "text", "amendment_paragraphs", "statute_paragraph_id")
 		}
 		if meeting.MotionsEnableReasonOnProjector {
 			fetchFields = append(fetchFields, "reason")
@@ -193,7 +195,7 @@ func Motion(store *projector.SlideStore) {
 			return nil, fmt.Errorf("fillSubmitters: %w", err)
 		}
 
-		if err := fillLeadMotion(ctx, fetch, motion); err != nil {
+		if err := fillLeadMotion(ctx, fetch, motion, meeting); err != nil {
 			return nil, fmt.Errorf("fillLeadMotion: %w", err)
 		}
 
@@ -283,11 +285,18 @@ func fillMotionFromMeeting(motion *dbMotion, meeting *dbMeeting) {
 	motion.LineNumbering = meeting.MotionsDefaultLineNumbering
 }
 
-func fillLeadMotion(ctx context.Context, fetch *datastore.Fetcher, motion *dbMotion) error {
+func fillLeadMotion(ctx context.Context, fetch *datastore.Fetcher, motion *dbMotion, meeting *dbMeeting) error {
 	if motion.MotionWork.LeadMotionID == 0 {
 		return nil
 	}
-	data := fetch.Object(ctx, fmt.Sprintf("motion/%d", motion.MotionWork.LeadMotionID), "title", "number", "text")
+	fields := []string{
+		"title",
+		"number",
+	}
+	if meeting.MotionsEnableTextOnProjector {
+		fields = append(fields, "text")
+	}
+	data := fetch.Object(ctx, fmt.Sprintf("motion/%d", motion.MotionWork.LeadMotionID), fields...)
 	bs, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("encoding LeadMotion data: %w", err)
