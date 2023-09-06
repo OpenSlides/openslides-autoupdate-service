@@ -54,7 +54,8 @@ func TestMeetingModeB(t *testing.T) {
 			group_ids: [7]
 			committee_id: 2
 		
-		group/7/user_ids: [1]
+		group/7/meeting_user_ids: [10]
+		meeting_user/10/user_id: 1
 		`,
 		withElementID(30),
 	)
@@ -66,7 +67,7 @@ func TestMeetingModeB(t *testing.T) {
 		true,
 		`---
 		meeting/30/committee_id: 4
-		user/1/committee_$can_manage_management_level: [4]
+		user/1/committee_management_ids: [4]
 		`,
 		withElementID(30),
 	)
@@ -78,7 +79,7 @@ func TestMeetingModeB(t *testing.T) {
 		false,
 		`---
 		meeting/30/committee_id: 4
-		user/1/committee_$can_manage_management_level: [8]
+		user/1/committee_management_ids: [8]
 		`,
 		withElementID(30),
 	)
@@ -90,7 +91,7 @@ func TestMeetingModeB(t *testing.T) {
 		false,
 		`---
 		meeting/30:
-			template_for_committee_id: 16
+			template_for_organization_id: 1
 			committee_id: 4
 		`,
 		withElementID(30),
@@ -105,7 +106,7 @@ func TestMeetingModeB(t *testing.T) {
 		meeting/30:
 			committee_id: 4
 			template_for_organization_id: 16
-		user/1/committee_$can_manage_management_level: [8]
+		user/1/committee_management_ids: [8]
 		`,
 		withElementID(30),
 	)

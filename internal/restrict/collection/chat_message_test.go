@@ -18,7 +18,8 @@ func TestChatMessageModeA(t *testing.T) {
 		`---
 		chat_message/1:
 			chat_group_id: 5
-			user_id: 20
+			meeting_user_id: 20
+		meeting_user/20/user_id: 25
 		chat_group/5/meeting_id: 30
 		meeting/10/id: 10
 		`,
@@ -51,8 +52,11 @@ func TestChatMessageModeA(t *testing.T) {
 			read_group_ids: [4]
 		
 		meeting/30/id: 30
-		user/1/group_$30_ids: [4]
 		group/4/id: 4
+
+		user/1/meeting_user_ids: [10]
+		meeting_user/10/group_ids: [4]
+		meeting_user/10/meeting_id: 30
 		`,
 	)
 
@@ -63,8 +67,9 @@ func TestChatMessageModeA(t *testing.T) {
 		true,
 		`---
 		chat_message/1:
-			user_id: 1
 			chat_group_id: 5
+			meeting_user_id: 20
+		meeting_user/20/user_id: 1
 
 		chat_group/5:
 			meeting_id: 30

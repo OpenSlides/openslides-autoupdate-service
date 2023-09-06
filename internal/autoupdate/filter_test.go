@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	myKey1 = dskey.MustKey("collection/1/field")
-	myKey2 = dskey.MustKey("collection/2/field")
+	myKey1 = dskey.MustKey("user/1/username")
+	myKey2 = dskey.MustKey("user/2/username")
 )
 
 func TestFilterFirstCall(t *testing.T) {

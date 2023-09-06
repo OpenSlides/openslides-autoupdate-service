@@ -97,6 +97,10 @@ func parseMessageBus(reply any) (string, map[dskey.Key][]byte, error) {
 			return
 		}
 
+		if string(v) == "null" {
+			v = nil
+		}
+
 		data[key] = v
 	}
 

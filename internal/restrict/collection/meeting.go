@@ -85,15 +85,28 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) 
 			return false, fmt.Errorf("getting group_ids: %w", err)
 		}
 
-		groupUserIDs := make([][]int, len(groupIDs))
+		groupMeetingUserIDs := make([][]int, len(groupIDs))
 		for i, gID := range groupIDs {
-			ds.Group_UserIDs(gID).Lazy(&groupUserIDs[i])
+			ds.Group_MeetingUserIDs(gID).Lazy(&groupMeetingUserIDs[i])
+		}
+		if err := ds.Execute(ctx); err != nil {
+			return false, fmt.Errorf("fetching meeting_user ids: %w", err)
+		}
+
+		groupUserIDList := make([][]int, len(groupMeetingUserIDs))
+		for i, muIDs := range groupMeetingUserIDs {
+			groupUserID := make([]int, len(muIDs))
+			for j, muID := range muIDs {
+				ds.MeetingUser_UserID(muID).Lazy(&groupUserID[j])
+			}
+			groupUserIDList[i] = groupUserID
+
 		}
 		if err := ds.Execute(ctx); err != nil {
 			return false, fmt.Errorf("fetching user ids: %w", err)
 		}
 
-		for _, userIDs := range groupUserIDs {
+		for _, userIDs := range groupUserIDList {
 			for _, userID := range userIDs {
 				if requestUser == userID {
 					return true, nil

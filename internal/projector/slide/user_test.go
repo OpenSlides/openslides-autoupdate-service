@@ -95,28 +95,31 @@ func TestUser(t *testing.T) {
 		{
 			"Title Firstname Lastname Username Level",
 			map[string]string{
-				"user/1/id":                   "1",
-				"user/1/username":             `"jonny123"`,
-				"user/1/title":                `"Dr."`,
-				"user/1/first_name":           `"Jonny"`,
-				"user/1/last_name":            `"Bo"`,
-				"user/1/structure_level_$":    `["222", "223"]`,
-				"user/1/structure_level_$222": `"Bern"`,
-				"user/1/structure_level_$223": `"Bern-South"`,
+				"user/1/id":                       "1",
+				"user/1/username":                 `"jonny123"`,
+				"user/1/title":                    `"Dr."`,
+				"user/1/first_name":               `"Jonny"`,
+				"user/1/last_name":                `"Bo"`,
+				"user/1/meeting_user_ids":         `[10,11]`,
+				"meeting_user/10/structure_level": `"Bern"`,
+				"meeting_user/10/meeting_id":      `222`,
+				"meeting_user/11/structure_level": `"Bern-South"`,
+				"meeting_user/11/meeting_id":      `223`,
 			},
 			`{"user":"Dr. Jonny Bo (Bern)"}`,
 		},
 		{
 			"Title Firstname Lastname Username Level DefaultLevel",
 			map[string]string{
-				"user/1/id":                      "1",
-				"user/1/username":                `"jonny123"`,
-				"user/1/title":                   `"Dr."`,
-				"user/1/first_name":              `"Jonny"`,
-				"user/1/last_name":               `"Bo"`,
-				"user/1/structure_level_$":       `["222"]`,
-				"user/1/structure_level_$222":    `"Bern"`,
-				"user/1/default_structure_level": `"Switzerland"`,
+				"user/1/id":                       "1",
+				"user/1/username":                 `"jonny123"`,
+				"user/1/title":                    `"Dr."`,
+				"user/1/first_name":               `"Jonny"`,
+				"user/1/last_name":                `"Bo"`,
+				"user/1/meeting_user_ids":         `[10]`,
+				"meeting_user/10/structure_level": `"Bern"`,
+				"meeting_user/10/meeting_id":      `222`,
+				"user/1/default_structure_level":  `"Switzerland"`,
 			},
 			`{"user":"Dr. Jonny Bo (Bern)"}`,
 		},
@@ -143,7 +146,7 @@ func TestUser(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ds, _ := dsmock.NewMockDatastore(convertData(tt.data))
+			ds := dsmock.Stub(convertData(tt.data))
 			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
@@ -170,7 +173,7 @@ func TestUserWithoutMeeting(t *testing.T) {
 		"user/1/default_structure_level": `"Switzerland"`,
 	})
 
-	ds, _ := dsmock.NewMockDatastore(data)
+	ds := dsmock.Stub(data)
 	fetch := datastore.NewFetcher(ds)
 
 	p7on := &projector.Projection{
@@ -188,7 +191,7 @@ func TestUserWithError(t *testing.T) {
 		dskey.MustKey("user/1/id"): []byte(`1`),
 	}
 
-	ds, _ := dsmock.NewMockDatastore(data)
+	ds := dsmock.Stub(data)
 	fetch := datastore.NewFetcher(ds)
 
 	p7on := &projector.Projection{

@@ -11,12 +11,12 @@ import (
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/history"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/http"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
 	"github.com/alecthomas/kong"
@@ -29,6 +29,7 @@ var (
 	envMetricInterval         = environment.NewVariable("METRIC_INTERVAL", "5m", "Time in how often the metrics are gathered. Zero disables the metrics.")
 	envMetricSaveInterval     = environment.NewVariable("METRIC_SAVE_INTERVAL", "5m", "Interval, how often the metric should be saved to redis. Redis will ignore entries, that are twice at old then the save interval.")
 	envDisableConnectionCount = environment.NewVariable("DISABLE_CONNECTION_COUNT", "false", "Do not count connections.")
+	envEnableProfileRoutes    = environment.NewVariable("ENABLE_PROFILE_ROUTES", "false", "Activate development routes for profiling.")
 )
 
 var cli struct {
@@ -134,25 +135,27 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	// Redis as message bus for datastore and logout events.
 	messageBus := redis.New(lookup)
 
-	// Datastore Service.
-	datastoreService, dsBackground, err := datastore.New(
-		lookup,
-		messageBus,
-		datastore.WithVoteCount(),
-		datastore.WithHistory(),
-		datastore.WithProjector(),
-	)
+	// Autoupdate data flow.
+	flow, flowBackground, err := autoupdate.NewFlow(lookup, messageBus)
 	if err != nil {
-		return nil, fmt.Errorf("init datastore: %w", err)
+		return nil, fmt.Errorf("init autoupdate data flow: %w", err)
 	}
-	backgroundTasks = append(backgroundTasks, dsBackground)
+	backgroundTasks = append(backgroundTasks, flowBackground)
+
+	historyService, err := history.New(lookup)
+	if err != nil {
+		return nil, fmt.Errorf("init history: %w", err)
+	}
 
 	// Auth Service.
-	authService, authBackground := auth.New(lookup, messageBus)
+	authService, authBackground, err := auth.New(lookup, messageBus)
+	if err != nil {
+		return nil, fmt.Errorf("init connection to auth: %w", err)
+	}
 	backgroundTasks = append(backgroundTasks, authBackground)
 
 	// Autoupdate Service.
-	auService, auBackground, err := autoupdate.New(lookup, datastoreService, restrict.Middleware)
+	auService, auBackground, err := autoupdate.New(lookup, flow, restrict.Middleware)
 	if err != nil {
 		return nil, fmt.Errorf("init autoupdate: %w", err)
 	}
@@ -182,6 +185,8 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 		metricStorage = nil
 	}
 
+	profileRoutes, _ := strconv.ParseBool(envEnableProfileRoutes.Value(lookup))
+
 	service := func(ctx context.Context) error {
 		for _, bg := range backgroundTasks {
 			go bg(ctx, oserror.Handle)
@@ -189,7 +194,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 
 		// Start http server.
 		fmt.Printf("Listen on %s\n", listenAddr)
-		return http.Run(ctx, listenAddr, authService, auService, metricStorage, metricSaveInterval)
+		return http.Run(ctx, listenAddr, authService, auService, historyService, metricStorage, metricSaveInterval, profileRoutes)
 	}
 
 	return service, nil

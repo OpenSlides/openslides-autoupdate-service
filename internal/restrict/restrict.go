@@ -15,17 +15,18 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/fastjson"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
-// Middleware can be used as a datastore.Getter that restrict the data for a
+// Middleware can be used as a flow.Getter that restrict the data for a
 // user.
 //
 // It also initializes a ctx that has to be used in the future getter calls.
-func Middleware(ctx context.Context, getter datastore.Getter, uid int) (context.Context, datastore.Getter) {
+func Middleware(ctx context.Context, getter flow.Getter, uid int) (context.Context, flow.Getter) {
 	ctx = contextWithCache(ctx, getter, uid)
 	return ctx, restricter{
 		getter: getter,
@@ -34,14 +35,14 @@ func Middleware(ctx context.Context, getter datastore.Getter, uid int) (context.
 }
 
 // contextWithCache adds some restrictor caches to the context.
-func contextWithCache(ctx context.Context, getter datastore.Getter, uid int) context.Context {
+func contextWithCache(ctx context.Context, getter flow.Getter, uid int) context.Context {
 	ctx = collection.ContextWithRestrictCache(ctx)
 	ctx = perm.ContextWithPermissionCache(ctx, getter, uid)
 	return ctx
 }
 
 type restricter struct {
-	getter datastore.Getter
+	getter flow.Getter
 	uid    int
 }
 
@@ -73,13 +74,13 @@ func (r restricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][
 
 // restrict changes the keys and values in data for the user with the given user
 // id.
-func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[dskey.Key][]byte) (map[string]timeCount, error) {
+func restrict(ctx context.Context, getter flow.Getter, uid int, data map[dskey.Key][]byte) (map[string]timeCount, error) {
 	ds := dsfetch.New(getter)
 
 	isSuperAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, uid, perm.OMLSuperadmin)
 	if err != nil {
 		var errDoesNotExist dsfetch.DoesNotExistError
-		if errors.As(err, &errDoesNotExist) || dskey.Key(errDoesNotExist).Collection == "user" {
+		if errors.As(err, &errDoesNotExist) || dskey.Key(errDoesNotExist).Collection() == "user" {
 			// TODO LAST ERROR
 			return nil, fmt.Errorf("request user %d does not exist", uid)
 		}
@@ -114,8 +115,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[ds
 	orderedCMs := sortRestrictModeIDs(restrictModeIDs)
 	allowedMods := make(map[collection.CM]set.Set[int])
 	for _, cm := range orderedCMs {
-		ids := restrictModeIDs[cm]
-		idsCount := ids.Len()
+		ids := restrictModeIDs[cm].List()
 		start := time.Now()
 
 		modeFunc, err := restrictModefunc(ctx, cm.Collection, cm.Mode)
@@ -123,17 +123,17 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[ds
 			return nil, fmt.Errorf("getting restiction mode for %s/%s: %w", cm.Collection, cm.Mode, err)
 		}
 
-		allowedIDs, err := modeFunc(ctx, ds, ids.List()...)
+		allowedIDs, err := modeFunc(ctx, ds, ids...)
 		if err != nil {
 			var errDoesNotExist dsfetch.DoesNotExistError
 			if !errors.As(err, &errDoesNotExist) {
-				return nil, fmt.Errorf("calling collection %s modefunc %s with ids %v: %w", cm.Collection, cm.Mode, ids.List(), err)
+				return nil, fmt.Errorf("calling collection %s modefunc %s with ids %v: %w", cm.Collection, cm.Mode, ids, err)
 			}
 		}
 		allowedMods[cm] = set.New(allowedIDs...)
 
 		duration := time.Since(start)
-		times[cm.Collection+"/"+cm.Mode] = timeCount{time: duration, count: idsCount}
+		times[cm.Collection+"/"+cm.Mode] = timeCount{time: duration, count: len(ids)}
 	}
 
 	// Remove restricted keys.
@@ -142,13 +142,13 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[ds
 			continue
 		}
 
-		restrictionMode, err := restrictModeName(key.Collection, key.Field)
+		restrictionMode, err := restrictModeName(key.Collection(), key.Field())
 		if err != nil {
 			return nil, fmt.Errorf("getting restriction Mode for %s: %w", key, err)
 		}
 
-		cm := collection.CM{Collection: key.Collection, Mode: restrictionMode}
-		if !allowedMods[cm].Has(key.ID) {
+		cm := collection.CM{Collection: key.Collection(), Mode: restrictionMode}
+		if !allowedMods[cm].Has(key.ID()) {
 			data[key] = nil
 			continue
 		}
@@ -166,7 +166,7 @@ func restrict(ctx context.Context, getter datastore.Getter, uid int, data map[ds
 	return times, nil
 }
 
-func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, data map[dskey.Key][]byte) error {
+func restrictSuperAdmin(ctx context.Context, getter flow.Getter, uid int, data map[dskey.Key][]byte) error {
 	ds := dsfetch.New(getter)
 
 	for key := range data {
@@ -174,7 +174,7 @@ func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, d
 			continue
 		}
 
-		restricter := collection.Collection(ctx, key.Collection)
+		restricter := collection.Collection(ctx, key.Collection())
 		if restricter == nil {
 			// Superadmins can see unknown collections.
 			continue
@@ -188,7 +188,7 @@ func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, d
 			continue
 		}
 
-		restrictionMode, err := restrictModeName(key.Collection, key.Field)
+		restrictionMode, err := restrictModeName(key.Collection(), key.Field())
 		if err != nil {
 			return fmt.Errorf("getting restriction Mode for %s: %w", key, err)
 		}
@@ -199,7 +199,7 @@ func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, d
 			continue
 		}
 
-		allowed, err := modefunc(ctx, ds, key.ID)
+		allowed, err := modefunc(ctx, ds, key.ID())
 		if err != nil {
 			return fmt.Errorf("calling mode func: %w", err)
 		}
@@ -213,16 +213,16 @@ func restrictSuperAdmin(ctx context.Context, getter datastore.Getter, uid int, d
 
 // groupKeysByCollection groups all the keys in data by there collection.
 func groupKeysByCollection(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]set.Set[int]) error {
-	restrictionMode, err := restrictModeName(key.Collection, key.Field)
+	restrictionMode, err := restrictModeName(key.Collection(), key.Field())
 	if err != nil {
 		return fmt.Errorf("getting restriction Mode for %s: %w", key, err)
 	}
 
-	cm := collection.CM{Collection: key.Collection, Mode: restrictionMode}
+	cm := collection.CM{Collection: key.Collection(), Mode: restrictionMode}
 	if restrictModeIDs[cm].IsNotInitialized() {
 		restrictModeIDs[cm] = set.New[int]()
 	}
-	restrictModeIDs[cm].Add(key.ID)
+	restrictModeIDs[cm].Add(key.ID())
 
 	if err := addRelationToRestrictModeIDs(key, value, restrictModeIDs); err != nil {
 		return fmt.Errorf("check %s for relation: %w", key, err)
@@ -232,9 +232,9 @@ func groupKeysByCollection(key dskey.Key, value []byte, restrictModeIDs map[coll
 }
 
 func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs map[collection.CM]set.Set[int]) error {
-	keyPrefix := templateKeyPrefix(key.CollectionField())
+	collectionField := key.CollectionField()
 
-	cm, id, ok, err := isRelation(keyPrefix, value)
+	cm, id, ok, err := isRelation(collectionField, value)
 	if err != nil {
 		return fmt.Errorf("checking for relation: %w", err)
 	}
@@ -247,7 +247,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 		return nil
 	}
 
-	cm, ids, ok, err := isRelationList(keyPrefix, value)
+	cm, ids, ok, err := isRelationList(collectionField, value)
 	if err != nil {
 		return fmt.Errorf("checking for relation-list: %w", err)
 	}
@@ -260,7 +260,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 		return nil
 	}
 
-	cm, id, ok, err = isGenericRelation(keyPrefix, value)
+	cm, id, ok, err = isGenericRelation(collectionField, value)
 	if err != nil {
 		return fmt.Errorf("checking for generic-relation: %w", err)
 	}
@@ -273,7 +273,7 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 		return nil
 	}
 
-	mcm, _, ok, err := isGenericRelationList(keyPrefix, value)
+	mcm, _, ok, err := isGenericRelationList(collectionField, value)
 	if err != nil {
 		return fmt.Errorf("checking for generic-relation-list: %w", err)
 	}
@@ -295,9 +295,9 @@ func addRelationToRestrictModeIDs(key dskey.Key, value []byte, restrictModeIDs m
 // The first return value is the new value. The second is, if the value was
 // manipulated.q
 func manipulateRelations(key dskey.Key, value []byte, allowedRestrictions map[collection.CM]set.Set[int]) ([]byte, bool, error) {
-	keyPrefix := templateKeyPrefix(key.CollectionField())
+	collectionField := key.CollectionField()
 
-	cm, id, ok, err := isRelation(keyPrefix, value)
+	cm, id, ok, err := isRelation(collectionField, value)
 	if err != nil {
 		return nil, false, fmt.Errorf("checking %s for relation: %w", key, err)
 	}
@@ -306,7 +306,7 @@ func manipulateRelations(key dskey.Key, value []byte, allowedRestrictions map[co
 		return nil, !allowedRestrictions[cm].Has(id), nil
 	}
 
-	cm, ids, ok, err := isRelationList(keyPrefix, value)
+	cm, ids, ok, err := isRelationList(collectionField, value)
 	if err != nil {
 		return nil, false, fmt.Errorf("checking %s for relation-list: %w", key, err)
 	}
@@ -329,7 +329,7 @@ func manipulateRelations(key dskey.Key, value []byte, allowedRestrictions map[co
 		return nil, false, nil
 	}
 
-	cm, id, ok, err = isGenericRelation(keyPrefix, value)
+	cm, id, ok, err = isGenericRelation(collectionField, value)
 	if err != nil {
 		return nil, false, fmt.Errorf("checking %s for generic-relation: %w", key, err)
 	}
@@ -338,7 +338,7 @@ func manipulateRelations(key dskey.Key, value []byte, allowedRestrictions map[co
 		return nil, !allowedRestrictions[cm].Has(id), nil
 	}
 
-	mcm, genericIDs, ok, err := isGenericRelationList(keyPrefix, value)
+	mcm, genericIDs, ok, err := isGenericRelationList(collectionField, value)
 	if err != nil {
 		return nil, false, fmt.Errorf("checking %s for generic-relation-list: %w", key, err)
 	}
@@ -365,15 +365,15 @@ func manipulateRelations(key dskey.Key, value []byte, allowedRestrictions map[co
 	return nil, false, nil
 }
 
-func isRelation(keyPrefix string, value []byte) (collection.CM, int, bool, error) {
-	toCollectionfield, ok := relationFields[keyPrefix]
+func isRelation(collectionField string, value []byte) (collection.CM, int, bool, error) {
+	toCollectionfield, ok := relationFields[collectionField]
 	if !ok {
 		return collection.CM{}, 0, false, nil
 	}
 
-	var id int
-	if err := json.Unmarshal(value, &id); err != nil {
-		return collection.CM{}, 0, false, fmt.Errorf("decoding %q (`%s`): %w", keyPrefix, value, err)
+	id, err := fastjson.DecodeInt(value)
+	if err != nil {
+		return collection.CM{}, 0, false, fmt.Errorf("decoding %q (`%s`): %w", collectionField, value, err)
 	}
 
 	coll, field, _ := strings.Cut(toCollectionfield, "/")
@@ -391,8 +391,8 @@ func isRelationList(keyPrefix string, value []byte) (collection.CM, []int, bool,
 		return collection.CM{}, nil, false, nil
 	}
 
-	var ids []int
-	if err := json.Unmarshal(value, &ids); err != nil {
+	ids, err := fastjson.DecodeIntList(value)
+	if err != nil {
 		return collection.CM{}, nil, false, fmt.Errorf("decoding value (size: %d): %w", len(value), err)
 	}
 
@@ -484,24 +484,12 @@ func genericKeyToCollectionMode(genericID string, toCollectionFieldMap map[strin
 //
 // This is a string like "A" or "B" or any other name of a restriction mode.
 func restrictModeName(collection, field string) (string, error) {
-	fieldMode, ok := restrictionModes[templateKeyPrefix(collection+"/"+field)]
+	fieldMode, ok := restrictionModes[collection+"/"+field]
 	if !ok {
 		// TODO LAST ERROR
 		return "", fmt.Errorf("fqfield %q is unknown, maybe run go generate ./... to fetch all fields from the models.yml", collection+"/"+field)
 	}
 	return fieldMode, nil
-}
-
-// templateKeyPrefix returns the index of the field list list. For template fields this is
-// the key without the replacement.
-func templateKeyPrefix(collectionField string) string {
-	i := strings.IndexByte(collectionField, '$')
-	if i < 0 || i == len(collectionField)-1 || collectionField[i+1] == '_' {
-		// Normal field or $ at the end or $_
-		return collectionField
-	}
-
-	return collectionField[:i+1]
 }
 
 // restrictModefunc returns the field restricter function to use.
@@ -587,10 +575,6 @@ var collectionOrder = map[string]int{
 	"list_of_speakers":             36,
 	"speaker":                      37,
 	"user":                         38,
+	"meeting_user":                 39,
 	"action_worker":                40,
-}
-
-// FieldsForCollection returns the list of fieldnames for an collection.
-func FieldsForCollection(collection string) []string {
-	return collectionFields[collection]
 }

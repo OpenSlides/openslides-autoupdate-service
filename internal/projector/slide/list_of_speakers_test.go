@@ -39,14 +39,14 @@ func TestListOfSpeakers(t *testing.T) {
 	speaker:
 		1:
 			# Waiting
-			user_id:        10
+			meeting_user_id:        100
 			speech_state:   contribution
 			note:           Seq2Waiting
 			point_of_order: false
 			weight:         10
 		2:
 			# Waiting
-			user_id:        11
+			meeting_user_id:        110
 			speech_state:   contribution
 			note:           Seq1Waiting
 			point_of_order: true
@@ -54,7 +54,7 @@ func TestListOfSpeakers(t *testing.T) {
 		
 		3:
 			# Current
-			user_id:        20
+			meeting_user_id:        200
 			speech_state:   pro
 			note:           SeqCurrent
 			point_of_order: false
@@ -64,7 +64,7 @@ func TestListOfSpeakers(t *testing.T) {
 		
 		4:
 			# Finished
-			user_id:        30
+			meeting_user_id:        300
 			speech_state:   contra
 			note:           Seq3Finished
 			point_of_order: true
@@ -74,7 +74,7 @@ func TestListOfSpeakers(t *testing.T) {
 			
 		5:
 			# Finished
-			user_id:        31
+			meeting_user_id:        310
 			speech_state:   contra
 			note:           Seq1Finished
 			point_of_order: true
@@ -83,7 +83,7 @@ func TestListOfSpeakers(t *testing.T) {
 			end_time:       32
 		6:
 			# Finished
-			user_id:        32
+			meeting_user_id:        320
 			speech_state:   contra
 			note:           Seq2Finished
 			point_of_order: true
@@ -91,6 +91,25 @@ func TestListOfSpeakers(t *testing.T) {
 			begin_time:     24
 			end_time:       28
 
+	meeting_user:
+		100:
+			user_id: 10
+		
+		110:
+			user_id: 11
+
+		200:
+			user_id: 20
+		
+		300:
+			user_id: 30
+
+		310:
+			user_id: 31
+		
+		320:
+			user_id: 32
+		
 	user:
 		10:
 			username: jonny123
@@ -192,7 +211,7 @@ func TestListOfSpeakers(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ds, _ := dsmock.NewMockDatastore(tt.data)
+			ds := dsmock.NewFlow(tt.data)
 			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
@@ -242,12 +261,13 @@ func getDataForCurrentList() map[dskey.Key][]byte {
 			speaker_ids: 		[8]
 
 		speaker/8:
-				user_id:        10
+				meeting_user_id:        100
 				speech_state:   pro
 				note:           Lonesome speaker
 				point_of_order: false
 				weight:         10
 		
+		meeting_user/100/user_id: 10
 		user/10/username: jonny123
 		agenda_item/1/item_number: ItemNr. MotionBlock1
 	`)
@@ -301,7 +321,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ds, _ := dsmock.NewMockDatastore(tt.data)
+			ds := dsmock.NewFlow(tt.data)
 			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
@@ -339,7 +359,11 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 			first_name: Don
 			last_name: Snyder
 			default_structure_level: GB
-			structure_level_$6: Dinner
+			meeting_user_ids: [100]
+		
+		meeting_user/100:
+			meeting_id: 6
+			structure_level: Dinner
 
 		projector/60:
 			chyron_background_color: green
@@ -379,7 +403,7 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ds, _ := dsmock.NewMockDatastore(tt.data)
+			ds := dsmock.NewFlow(tt.data)
 			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{

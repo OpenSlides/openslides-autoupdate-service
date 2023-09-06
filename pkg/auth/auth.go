@@ -30,8 +30,8 @@ var (
 	envAuthProtocol = environment.NewVariable("AUTH_PROTOCOL", "http", "Protocol of the auth service.")
 	envAuthFake     = environment.NewVariable("AUTH_FAKE", "false", "Use user id 1 for every request. Ignores all other auth environment variables.")
 
-	envAuthToken  = environment.NewSecretWithDefault("auth_token_key", DebugTokenKey, "Key to sign the JWT auth tocken.")
-	envAuthCookie = environment.NewSecretWithDefault("auth_cookie_key", DebugCookieKey, "Key to sign the JWT auth cookie.")
+	envAuthTokenFile  = environment.NewVariable("AUTH_TOKEN_KEY_FILE", "/run/secrets/auth_token_key", "Key to sign the JWT auth tocken.")
+	envAuthCookieFile = environment.NewVariable("AUTH_COOKIE_KEY_FILE", "/run/secrets/auth_cookie_key", "Key to sign the JWT auth cookie.")
 )
 
 // pruneTime defines how long a topic id will be valid. This should be higher
@@ -70,7 +70,7 @@ type Auth struct {
 //
 // Returns the initialized Auth objectand a function to be called in the
 // background.
-func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, func(context.Context, func(error))) {
+func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, func(context.Context, func(error)), error) {
 	url := fmt.Sprintf(
 		"%s://%s:%s",
 		envAuthProtocol.Value(lookup),
@@ -80,12 +80,22 @@ func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, fun
 
 	fake, _ := strconv.ParseBool(envAuthFake.Value(lookup))
 
+	authToken, err := environment.ReadSecretWithDefault(lookup, envAuthTokenFile, DebugTokenKey)
+	if err != nil {
+		return nil, nil, fmt.Errorf("reading auth token: %w", err)
+	}
+
+	cookieToken, err := environment.ReadSecretWithDefault(lookup, envAuthCookieFile, DebugCookieKey)
+	if err != nil {
+		return nil, nil, fmt.Errorf("reading cookie token: %w", err)
+	}
+
 	a := &Auth{
 		fake:             fake,
 		logedoutSessions: topic.New[string](),
 		authServiceURL:   url,
-		tokenKey:         envAuthToken.Value(lookup),
-		cookieKey:        envAuthCookie.Value(lookup),
+		tokenKey:         authToken,
+		cookieKey:        cookieToken,
 	}
 
 	// Make sure the topic is not empty
@@ -100,7 +110,7 @@ func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, fun
 		go a.pruneOldData(ctx)
 	}
 
-	return a, background
+	return a, background, nil
 }
 
 // Authenticate uses the headers from the given request to get the user id. The
@@ -110,7 +120,7 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 		return r.Context(), nil
 	}
 
-	ctx := context.WithValue(r.Context(), authenticateCalled, "yes")
+	ctx := r.Context()
 
 	p := new(payload)
 	if err := a.loadToken(w, r, p); err != nil {
@@ -118,12 +128,10 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 	}
 
 	if p.UserID == 0 {
-		// Empty token or anonymous token. No need to save anything in the
-		// context.
-		return ctx, nil
+		return a.AuthenticatedContext(ctx, 0), nil
 	}
 
-	_, sessionIDs, err := a.logedoutSessions.Receive(context.Background(), 0)
+	_, sessionIDs, err := a.logedoutSessions.Receive(ctx, 0)
 	if err != nil {
 		return nil, fmt.Errorf("getting already logged out sessions: %w", err)
 	}
@@ -133,7 +141,7 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 		}
 	}
 
-	ctx, cancelCtx := context.WithCancel(context.WithValue(ctx, userIDType, p.UserID))
+	ctx, cancelCtx := context.WithCancel(a.AuthenticatedContext(ctx, p.UserID))
 
 	go func() {
 		defer cancelCtx()
@@ -158,6 +166,13 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 	return ctx, nil
 }
 
+// AuthenticatedContext returns a new context that contains an userID.
+//
+// Should only used for internal URLs. All other URLs should use auth.Authenticate.
+func (a *Auth) AuthenticatedContext(ctx context.Context, userID int) context.Context {
+	return context.WithValue(ctx, userIDType, userID)
+}
+
 // FromContext returnes the user id from a context returned by Authenticate().
 //
 // If the user is an anonymous user 0 is returned.
@@ -168,14 +183,9 @@ func (a *Auth) FromContext(ctx context.Context) int {
 		return 1
 	}
 
-	initialized := ctx.Value(authenticateCalled)
-	if initialized == nil {
-		panic("call to auth.FromContext() without auth.Authenticate()")
-	}
-
 	v := ctx.Value(userIDType)
 	if v == nil {
-		return 0
+		panic("call to auth.FromContext() without auth.Authenticate()")
 	}
 
 	return v.(int)
@@ -331,8 +341,7 @@ func (a *Auth) refreshToken(ctx context.Context, token, cookie string) (string, 
 type authString string
 
 const (
-	userIDType         authString = "user_id"
-	authenticateCalled authString = "authenticate_called"
+	userIDType authString = "user_id"
 )
 
 type payload struct {

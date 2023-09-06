@@ -8,21 +8,16 @@ package autoupdate
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
-	"regexp"
 	"runtime"
 	"strconv"
-	"strings"
 	"time"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 	"github.com/ostcar/topic"
@@ -40,31 +35,18 @@ var (
 	envCacheReset      = environment.NewVariable("CACHE_RESET", "24h", "Time to reset the cache.")
 )
 
-// Datastore is the source for the data.
-type Datastore interface {
-	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
-	GetPosition(ctx context.Context, position int, keys ...dskey.Key) (map[dskey.Key][]byte, error)
-	RegisterChangeListener(f func(map[dskey.Key][]byte) error)
-	ResetCache()
-	RegisterCalculatedField(
-		field string,
-		f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error),
-	)
-	HistoryInformation(ctx context.Context, fqid string, w io.Writer) error
-}
-
 // KeysBuilder holds the keys that are requested by a user.
 type KeysBuilder interface {
-	Update(ctx context.Context, ds datastore.Getter) ([]dskey.Key, error)
+	Update(ctx context.Context, ds flow.Getter) ([]dskey.Key, error)
 }
 
 // RestrictMiddleware is a function that can restrict data.
-type RestrictMiddleware func(ctx context.Context, getter datastore.Getter, uid int) (context.Context, datastore.Getter)
+type RestrictMiddleware func(ctx context.Context, getter flow.Getter, uid int) (context.Context, flow.Getter)
 
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
 // with autoupdate.New().
 type Autoupdate struct {
-	datastore  Datastore
+	flow       flow.Flow
 	topic      *topic.Topic[dskey.Key]
 	restricter RestrictMiddleware
 	pool       *workPool
@@ -76,7 +58,7 @@ type Autoupdate struct {
 //
 // You should call `go a.PruneOldData()` and `go a.ResetCache()` after creating
 // the service.
-func New(lookup environment.Environmenter, ds Datastore, restricter RestrictMiddleware) (*Autoupdate, func(context.Context, func(error)), error) {
+func New(lookup environment.Environmenter, flow flow.Flow, restricter RestrictMiddleware) (*Autoupdate, func(context.Context, func(error)), error) {
 	workers, err := strconv.Atoi(envConcurentWorker.Value(lookup))
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid value for %s: %w", envConcurentWorker.Key, err)
@@ -92,27 +74,29 @@ func New(lookup environment.Environmenter, ds Datastore, restricter RestrictMidd
 	}
 
 	a := &Autoupdate{
-		datastore:  ds,
+		flow:       flow,
 		topic:      topic.New[dskey.Key](),
 		restricter: restricter,
 		pool:       newWorkPool(workers),
 		cacheReset: cacheResetTime,
 	}
 
-	// Update the topic when an data update is received.
-	a.datastore.RegisterChangeListener(func(data map[dskey.Key][]byte) error {
-		keys := make([]dskey.Key, 0, len(data))
-		for k := range data {
-			keys = append(keys, k)
-		}
-
-		a.topic.Publish(keys...)
-		return nil
-	})
-
 	background := func(ctx context.Context, errorHandler func(error)) {
 		go a.pruneOldData(ctx)
 		go a.resetCache(ctx)
+		go a.flow.Update(ctx, func(data map[dskey.Key][]byte, err error) {
+			if err != nil {
+				oserror.Handle(err)
+				// Continue. The update function can return an error and data.
+			}
+
+			keys := make([]dskey.Key, 0, len(data))
+			for k := range data {
+				keys = append(keys, k)
+			}
+
+			a.topic.Publish(keys...)
+		})
 	}
 
 	return a, background, nil
@@ -142,17 +126,8 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (D
 }
 
 // SingleData returns the data for the given keysbuilder without autoupdates.
-//
-// The attribute position can be used to get data from the history.
-func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder, position int) (map[dskey.Key][]byte, error) {
-	var restricter datastore.Getter
-
-	ctx, restricter = a.restricter(ctx, a.datastore, userID)
-
-	if position != 0 {
-		getter := datastore.NewGetPosition(a.datastore, position)
-		restricter = restrict.NewHistory(a.datastore, getter, userID)
-	}
+func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder) (map[dskey.Key][]byte, error) {
+	ctx, restricter := a.restricter(ctx, a.flow, userID)
 
 	keys, err := kb.Update(ctx, restricter)
 	if err != nil {
@@ -192,6 +167,14 @@ func (a *Autoupdate) pruneOldData(ctx context.Context) {
 // resetCache runs in the background and cleans the cache from time to time.
 // Blocks until the service is closed.
 func (a *Autoupdate) resetCache(ctx context.Context) {
+	type resetter interface {
+		ResetCache()
+	}
+	reset, ok := a.flow.(resetter)
+	if !ok {
+		return
+	}
+
 	tick := time.NewTicker(a.cacheReset)
 	defer tick.Stop()
 
@@ -200,125 +183,9 @@ func (a *Autoupdate) resetCache(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-tick.C:
-			a.datastore.ResetCache()
+			reset.ResetCache()
 		}
 	}
-}
-
-var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*`)
-
-// HistoryInformation writes the history information for an fqid.
-func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid string, w io.Writer) error {
-	if !reValidKeys.MatchString(fqid) {
-		// TODO Client Error
-		return invalidInputError{fmt.Sprintf("fqid %s is invalid", fqid)}
-	}
-
-	coll, rawID, _ := strings.Cut(fqid, "/")
-	id, _ := strconv.Atoi(rawID)
-
-	ds := dsfetch.New(a.datastore)
-
-	meetingID, hasMeeting, err := collection.Collection(ctx, coll).MeetingID(ctx, ds, id)
-	if err != nil {
-		var errNotExist dsfetch.DoesNotExistError
-		if errors.As(err, &errNotExist) {
-			// TODO Client Error
-			return notExistError{dskey.Key(errNotExist)}
-		}
-		return fmt.Errorf("getting meeting id for collection %s id %d: %w", coll, id, err)
-	}
-
-	if !hasMeeting {
-		hasOML, err := perm.HasOrganizationManagementLevel(ctx, ds, uid, perm.OMLCanManageOrganization)
-		if err != nil {
-			return fmt.Errorf("getting organization management level: %w", err)
-		}
-
-		if !hasOML {
-			// TODO Client Error
-			return permissionDeniedError{fmt.Errorf("you are not allowed to use history information on %s", fqid)}
-		}
-	} else {
-		p, err := perm.New(ctx, ds, uid, meetingID)
-		if err != nil {
-			return fmt.Errorf("getting meeting permissions: %w", err)
-		}
-
-		if !p.Has(perm.MeetingCanSeeHistory) {
-			// TODO Client Error
-			return permissionDeniedError{fmt.Errorf("you are not allowed to use history information on %s", fqid)}
-		}
-	}
-
-	if err := a.datastore.HistoryInformation(ctx, fqid, w); err != nil {
-		return fmt.Errorf("getting history information: %w", err)
-	}
-
-	fmt.Fprintln(w)
-
-	return nil
-}
-
-// RestrictFQIDs returns the full collections, restricted for the user for a
-// list of fqids.
-// In requestedFields one can specify which fields per collection should be
-// returned if not specified all available fields will be included.
-//
-// The return format is a map from fqid to an object as map from field to value.
-func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []string, requestedFields map[string][]string) (map[string]map[string][]byte, error) {
-	requestedFieldsMap := make(map[string]set.Set[string], len(requestedFields))
-	for col, val := range requestedFields {
-		requestedFieldsMap[col] = set.New(val...)
-	}
-
-	var keys []dskey.Key
-	for _, fqid := range fqids {
-		collection, rawID, found := strings.Cut(fqid, "/")
-		if !found {
-			return nil, fmt.Errorf("invalid fqid %s, expected one /", fqid)
-		}
-
-		id, err := strconv.Atoi(rawID)
-		if err != nil {
-			return nil, fmt.Errorf("invalid fqid %s, second part has to be an nummber", fqid)
-		}
-
-		fields := restrict.FieldsForCollection(collection)
-		if fields == nil {
-			return nil, fmt.Errorf("unknown collection in fqid %s", fqid)
-		}
-
-		for _, field := range fields {
-			if _, ok := requestedFields[collection]; !ok || requestedFieldsMap[collection].Has(field) {
-				key := dskey.Key{Collection: collection, ID: id, Field: field}
-				keys = append(keys, key)
-			}
-		}
-	}
-
-	ctx, restricter := a.restricter(ctx, a.datastore, userID)
-
-	values, err := restricter.Get(ctx, keys...)
-	if err != nil {
-		return nil, fmt.Errorf("getting data: %w", err)
-	}
-
-	result := make(map[string]map[string][]byte, len(fqids))
-	for key, value := range values {
-		fqid := key.FQID()
-		if _, ok := result[fqid]; !ok {
-			result[fqid] = make(map[string][]byte)
-		}
-
-		if value == nil {
-			continue
-		}
-
-		result[fqid][key.Field] = value
-	}
-
-	return result, nil
 }
 
 // skipWorkpool desides, if a connection is allowed to skip the workpool.
@@ -330,73 +197,138 @@ func (a *Autoupdate) skipWorkpool(ctx context.Context, userID int) (bool, error)
 		return false, nil
 	}
 
-	ds := dsfetch.New(a.datastore)
+	ds := dsfetch.New(a.flow)
 
-	meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
+	meetingUserIDs, err := ds.User_MeetingUserIDs(userID).Value(ctx)
+	if err != nil {
+		return false, fmt.Errorf("getting meeting_user objects: %w", err)
+	}
 
-	for _, mid := range meetingIDs {
-		gids := ds.User_GroupIDs(userID, mid).ErrorLater(ctx)
-		for _, gid := range gids {
-			if _, ok := ds.Group_AdminGroupForMeetingID(gid).ErrorLater(ctx); ok {
+	for _, muid := range meetingUserIDs {
+		groupIDs, err := ds.MeetingUser_GroupIDs(muid).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting groupIDs of user: %w", err)
+		}
+
+		adminGroups := make([]int, len(groupIDs))
+		for i := 0; i < len(groupIDs); i++ {
+			ds.Group_AdminGroupForMeetingID(groupIDs[i]).Lazy(&adminGroups[i])
+		}
+
+		if err := ds.Execute(ctx); err != nil {
+			return false, fmt.Errorf("checking for admin groups: %w", err)
+		}
+
+		for isAdmin := range adminGroups {
+			if isAdmin > 0 {
 				return true, nil
 			}
 		}
-	}
-	if err := ds.Err(); err != nil {
-		return false, fmt.Errorf("check if user %d is a meeting admin: %w", userID, err)
+
 	}
 
 	return false, nil
 }
 
-// CanSeeConnectionCount returns, if the user can see the connection counter.
-func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (bool, error) {
+// CanSeeConnectionCount returns, if the user can see the connection count.
+//
+// If the second value is not empty, the user is only allowed for meetings in that list.
+func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (bool, []int, error) {
 	if userID == 0 {
-		return false, nil
+		return false, nil, nil
 	}
 
-	ds := dsfetch.New(a.datastore)
+	ds := dsfetch.New(a.flow)
 
 	hasOML, err := perm.HasOrganizationManagementLevel(ctx, ds, userID, perm.OMLCanManageOrganization)
 	if err != nil {
-		return false, fmt.Errorf("getting organization management level: %w", err)
+		return false, nil, fmt.Errorf("getting organization management level: %w", err)
 	}
 
-	return hasOML, nil
+	if hasOML {
+		return true, nil, nil
+	}
+
+	meetingUserIDs, err := ds.User_MeetingUserIDs(userID).Value(ctx)
+	if err != nil {
+		return false, nil, fmt.Errorf("getting meeting_user objects: %w", err)
+	}
+
+	groupPerMeetingIDs := make([][]int, len(meetingUserIDs))
+	for i, muID := range meetingUserIDs {
+		ds.MeetingUser_GroupIDs(muID).Lazy(&groupPerMeetingIDs[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return false, nil, fmt.Errorf("getting all group ids: %w", err)
+	}
+
+	var groupIDs []int
+	for i := range groupPerMeetingIDs {
+		groupIDs = append(groupIDs, groupPerMeetingIDs[i]...)
+	}
+
+	isAdminGroup := make([]int, len(groupIDs))
+	for i, groupID := range groupIDs {
+		ds.Group_AdminGroupForMeetingID(groupID).Lazy(&isAdminGroup[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return false, nil, fmt.Errorf("getting admin flag of groups: %w", err)
+	}
+
+	var meetingAdmin []int
+	for _, meetingID := range isAdminGroup {
+		if meetingID > 0 {
+			meetingAdmin = append(meetingAdmin, meetingID)
+		}
+	}
+
+	return len(meetingAdmin) > 0, meetingAdmin, nil
 }
 
-type permissionDeniedError struct {
-	err error
-}
+// FilterConnectionCount removes users from the count where the user is not in
+// one of the given meetings.
+func (a *Autoupdate) FilterConnectionCount(ctx context.Context, meetingIDs []int, count map[int]int) error {
+	if len(meetingIDs) == 0 {
+		return nil
+	}
 
-func (e permissionDeniedError) Error() string {
-	return fmt.Sprintf("permissoin denied: %v", e.err)
-}
+	ds := dsfetch.New(a.flow)
 
-func (e permissionDeniedError) Type() string {
-	return "permission_denied"
-}
+	meetingUserIDs := make([][]int, len(meetingIDs))
+	for i, meetingID := range meetingIDs {
+		ds.Meeting_MeetingUserIDs(meetingID).Lazy(&meetingUserIDs[i])
+	}
 
-type notExistError struct {
-	key dskey.Key
-}
+	if err := ds.Execute(ctx); err != nil {
+		return fmt.Errorf("getting meeting user ids: %w", err)
+	}
 
-func (e notExistError) Error() string {
-	return fmt.Sprintf("%s does not exist", e.key)
-}
+	userCount := 0
+	userIDs := make([][]int, len(meetingIDs))
+	for i := range meetingUserIDs {
+		userCount += len(meetingUserIDs[i])
+		userIDs[i] = make([]int, len(meetingUserIDs[i]))
+		for j, muID := range meetingUserIDs[i] {
+			ds.MeetingUser_UserID(muID).Lazy(&userIDs[i][j])
+		}
+	}
 
-func (e notExistError) Type() string {
-	return "not_exist"
-}
+	if err := ds.Execute(ctx); err != nil {
+		return fmt.Errorf("getting user ids: %w", err)
+	}
 
-type invalidInputError struct {
-	msg string
-}
+	userSet := set.NewWithSize[int](userCount)
+	for i := range userIDs {
+		userSet.Add(userIDs[i]...)
+	}
 
-func (e invalidInputError) Error() string {
-	return e.msg
-}
+	for userID := range count {
+		if !userSet.Has(userID) {
+			delete(count, userID)
+		}
+	}
 
-func (e invalidInputError) Type() string {
-	return "invalid_input"
+	return nil
 }

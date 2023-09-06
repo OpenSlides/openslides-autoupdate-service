@@ -10,125 +10,228 @@ import (
 	"sync"
 	"time"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsrecorder"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 )
 
 const longCalculation = time.Second
 
-// Datastore gets values for keys and informs, if they change.
-type Datastore interface {
-	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
-	RegisterCalculatedField(field string, f func(ctx context.Context, key dskey.Key, changed map[dskey.Key][]byte) ([]byte, bool, error))
+// NewProjector initializes a new Projector.
+func NewProjector(ds flow.Flow, slides *SlideStore) *Projector {
+	return &Projector{
+		hotKeys: make(map[dskey.Key]map[dskey.Key]struct{}),
+		cache:   make(map[dskey.Key][]byte),
+
+		flow:   ds,
+		slides: slides,
+	}
 }
 
-// Register initializes a new projector.
-func Register(ds Datastore, slides *SlideStore) {
-	var hotKeysMu sync.RWMutex
-	hotKeys := map[dskey.Key]map[dskey.Key]struct{}{}
+// Projector is a Flow that adds the field projection/content
+//
+// When such a key is requested with Get, it gets calculated.
+//
+// When keys get updated via Update, that where needed to calculate a field, the
+// field is updated.
+//
+// Only projections with a current_projector_id get calculated. Fields from
+// other projections return nil. If current_projector_id get updated to nil/0,
+// then the field is removed from the cache.
+type Projector struct {
+	mu      sync.RWMutex
+	hotKeys map[dskey.Key]map[dskey.Key]struct{}
+	cache   map[dskey.Key][]byte
 
-	ds.RegisterCalculatedField("projection/content", func(ctx context.Context, fqfield dskey.Key, changed map[dskey.Key][]byte) (bs []byte, bsChanged bool, err error) {
-		var p7on *Projection
-		start := time.Now()
-		defer func() {
-			duration := time.Since(start)
-			if duration > longCalculation {
-				slide := "[unknown]"
-				if p7on != nil {
-					slide = fmt.Sprintf("content_object: %s, type: %s", p7on.ContentObjectID, p7on.Type)
-				}
+	flow   flow.Flow
+	slides *SlideStore
+}
 
-				log.Printf("Profile: Calculating fqfield %s with slide %s took %d ms", fqfield, slide, duration.Milliseconds())
-			}
-		}()
+// Reset clears the projector object.
+func (p *Projector) Reset() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.hotKeys = make(map[dskey.Key]map[dskey.Key]struct{})
+}
 
-		if changed != nil {
-			var needUpdate bool
+// Get is a Getter middleware that passes all keys though but calculates
+// projection/content keys.
+func (p *Projector) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+	normalKeys, contentKeys := splitKeys(keys)
 
-			hotKeysMu.RLock()
-			for k := range changed {
-				if _, ok := hotKeys[fqfield][k]; ok {
-					needUpdate = true
-					break
-				}
-			}
-			hotKeysMu.RUnlock()
+	values, err := p.flow.Get(ctx, normalKeys...)
+	if err != nil {
+		return nil, fmt.Errorf("get from flow: %w", err)
+	}
 
-			if !needUpdate {
-				return nil, false, nil
-			}
+	if len(contentKeys) == 0 {
+		return values, nil
+	}
+
+	p.mu.RLock()
+	var needCalc []dskey.Key
+	for _, k := range contentKeys {
+		v, ok := p.cache[k]
+		if !ok {
+			needCalc = append(needCalc, k)
+			continue
 		}
 
-		recorder := dsrecorder.New(ds)
-		fetch := datastore.NewFetcher(recorder)
+		values[k] = v
+	}
+	p.mu.RUnlock()
 
-		defer func() {
-			// At the end, save all requested keys to check later if one has
-			// changed.
-			hotKeysMu.Lock()
-			hotKeys[fqfield] = recorder.Keys()
-			hotKeysMu.Unlock()
-		}()
+	if len(needCalc) == 0 {
+		return values, nil
+	}
 
-		data := fetch.Object(
-			ctx,
-			fqfield.FQID(),
-			"id",
-			"type",
-			"content_object_id",
-			"meeting_id",
-			"options",
-			"current_projector_id",
-		)
-		if err := fetch.Err(); err != nil {
-			var errDoesNotExist datastore.DoesNotExistError
-			if errors.As(err, &errDoesNotExist) {
-				return nil, true, nil
-			}
-			return nil, false, fmt.Errorf("fetching projection %d from datastore: %w", fqfield.ID, err)
-		}
+	p.mu.Lock()
+	for _, k := range needCalc {
+		v := p.calculate(ctx, k)
+		p.cache[k] = v
+		values[k] = v
+	}
+	p.mu.Unlock()
 
-		p7on, err = p7onFromMap(data)
+	return values, nil
+}
+
+// Update updates projection/content keys.
+func (p *Projector) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+	p.flow.Update(ctx, func(data map[dskey.Key][]byte, err error) {
 		if err != nil {
-			return nil, false, fmt.Errorf("loading p7on: %w", err)
+			updateFn(nil, err)
+			return
 		}
 
-		if p7on.CurrentProjectorID == 0 {
-			return nil, true, nil
+		p.mu.Lock()
+		defer p.mu.Unlock()
+
+		needUpdate := p.needUpdate(data)
+
+		if len(needUpdate) == 0 {
+			updateFn(data, nil)
+			return
 		}
 
-		if p7on.ContentObjectID == "" {
-			// There are broken projections in the datastore. Ignore them.
-			log.Printf("Bug in Backend: The projection %d has an empty content_object_id", p7on.ID)
-			return nil, true, nil
+		for _, key := range needUpdate {
+			value := p.calculate(ctx, key)
+			data[key] = value
+			p.cache[key] = value
 		}
 
-		slideName, err := p7on.slideName()
-		if err != nil {
-			return nil, false, fmt.Errorf("getting slide name: %w", err)
-		}
-
-		slider := slides.GetSlider(slideName)
-		if slider == nil {
-			return nil, false, fmt.Errorf("unknown slide %s", slideName)
-		}
-
-		bs, err = slider.Slide(ctx, fetch, p7on)
-		if err != nil {
-			return nil, false, fmt.Errorf("calculating slide %s for p7on %v: %w", slideName, p7on, err)
-		}
-
-		if err := fetch.Err(); err != nil {
-			return nil, false, err
-		}
-
-		final, err := addCollection(bs, slideName)
-		if err != nil {
-			return nil, false, fmt.Errorf("adding name of collection %q to value %q: %w", slideName, bs, err)
-		}
-		return final, true, nil
+		updateFn(data, nil)
 	})
+}
+
+func (p *Projector) needUpdate(data map[dskey.Key][]byte) []dskey.Key {
+	var needUpdate []dskey.Key
+	for calculated := range p.hotKeys {
+		for key := range data {
+			if _, ok := p.hotKeys[calculated][key]; ok {
+				needUpdate = append(needUpdate, calculated)
+				break
+			}
+		}
+	}
+	return needUpdate
+}
+
+func splitKeys(keys []dskey.Key) ([]dskey.Key, []dskey.Key) {
+	var contentKeys []dskey.Key
+	normalKeys := make([]dskey.Key, 0, len(keys))
+	for _, k := range keys {
+		if !(k.Collection() == "projection" && k.Field() == "content") {
+			normalKeys = append(normalKeys, k)
+			continue
+		}
+
+		contentKeys = append(contentKeys, k)
+	}
+
+	return normalKeys, contentKeys
+}
+
+func (p *Projector) calculate(ctx context.Context, fqfield dskey.Key) []byte {
+	bs, err := p.calculateHelper(ctx, fqfield)
+	if err != nil {
+		oserror.Handle(fmt.Errorf("Error calculating key %s: %v", fqfield, err))
+		msg := fmt.Sprintf("calculating key %s", fqfield)
+		return []byte(fmt.Sprintf(`{"error": "%s"}`, msg))
+	}
+
+	return bs
+}
+
+func (p *Projector) calculateHelper(ctx context.Context, fqfield dskey.Key) ([]byte, error) {
+	recorder := dsrecorder.New(p.flow)
+	fetch := datastore.NewFetcher(recorder)
+
+	defer func() {
+		// At the end, save all requested keys to check later if one has
+		// changed.
+		p.hotKeys[fqfield] = recorder.Keys()
+	}()
+
+	data := fetch.Object(
+		ctx,
+		fqfield.FQID(),
+		"id",
+		"type",
+		"content_object_id",
+		"meeting_id",
+		"options",
+		"current_projector_id",
+	)
+	if err := fetch.Err(); err != nil {
+		var errDoesNotExist datastore.DoesNotExistError
+		if errors.As(err, &errDoesNotExist) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("fetching projection %d from datastore: %w", fqfield.ID(), err)
+	}
+
+	p7on, err := p7onFromMap(data)
+	if err != nil {
+		return nil, fmt.Errorf("loading p7on: %w", err)
+	}
+
+	if p7on.CurrentProjectorID == 0 {
+		return nil, nil
+	}
+
+	if p7on.ContentObjectID == "" {
+		// There are broken projections in the datastore. Ignore them.
+		log.Printf("Bug in Backend: The projection %d has an empty content_object_id", p7on.ID)
+		return nil, nil
+	}
+
+	slideName, err := p7on.slideName()
+	if err != nil {
+		return nil, fmt.Errorf("getting slide name: %w", err)
+	}
+
+	slider := p.slides.GetSlider(slideName)
+	if slider == nil {
+		return nil, fmt.Errorf("unknown slide %s", slideName)
+	}
+
+	bs, err := slider.Slide(ctx, fetch, p7on)
+	if err != nil {
+		return nil, fmt.Errorf("calculating slide %s for p7on %v: %w", slideName, p7on, err)
+	}
+
+	if err := fetch.Err(); err != nil {
+		return nil, err
+	}
+
+	final, err := addCollection(bs, slideName)
+	if err != nil {
+		return nil, fmt.Errorf("adding name of collection %q to value %q: %w", slideName, bs, err)
+	}
+	return final, nil
 }
 
 // addCollection adds the collection addribute to the given encoded json.
