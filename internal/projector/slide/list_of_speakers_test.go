@@ -407,10 +407,11 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
-				ID:              1,
-				ContentObjectID: "meeting/6",
-				Type:            "current_speaker_chyron",
-				MeetingID:       6,
+				ID:                 1,
+				ContentObjectID:    "meeting/6",
+				Type:               "current_speaker_chyron",
+				CurrentProjectorID: 60,
+				MeetingID:          6,
 			}
 
 			bs, err := slide.Slide(context.Background(), fetch, p7on)
