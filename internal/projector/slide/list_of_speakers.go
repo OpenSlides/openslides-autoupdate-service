@@ -123,7 +123,7 @@ func CurrentListOfSpeakers(store *projector.SlideStore) {
 // CurrentSpeakerChyron renders the current_speaker_chyron slide.
 func CurrentSpeakerChyron(store *projector.SlideStore) {
 	store.RegisterSliderFunc("current_speaker_chyron", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
-		losID, projectorID, err := getLosID(ctx, p7on.ContentObjectID, fetch)
+		losID, _, err := getLosID(ctx, p7on.ContentObjectID, fetch)
 		if err != nil {
 			return nil, fmt.Errorf("error in getLosID: %w", err)
 		}
@@ -133,6 +133,8 @@ func CurrentSpeakerChyron(store *projector.SlideStore) {
 		}
 
 		projector := &dbChyronProjector{}
+
+		projectorID := p7on.CurrentProjectorID
 		if projectorID > 0 {
 			data := fetch.Object(ctx, fmt.Sprintf("projector/%d", projectorID), "chyron_background_color", "chyron_font_color")
 			projector, err = chyronProjectorFromMap(data)
