@@ -53,7 +53,7 @@ type Projector struct {
 func (p *Projector) Reset() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.hotKeys = make(map[dskey.Key]map[dskey.Key]struct{})
+	p.cache = make(map[dskey.Key][]byte)
 }
 
 // Get is a Getter middleware that passes all keys though but calculates
