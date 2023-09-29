@@ -203,6 +203,27 @@ func TestKeys(t *testing.T) {
 			`organization_tag/1/tagged_ids: ["meeting/1","meeting/2"]`,
 			mustKeys("organization_tag/1/tagged_ids", "meeting/1/name", "meeting/2/name"),
 		},
+		{
+			"generic relation list with different fields",
+			`{
+				"ids": [2,1],
+				"collection": "tag",
+				"fields": {
+					"tagged_ids": {
+						"type": "generic-relation-list",
+						"fields": {
+							"title": null,
+							"description": null
+						}
+					}
+				}
+			}`,
+			`---
+			tag/1/tagged_ids: [assignment/20]
+			tag/2/tagged_ids: [motion/30]
+			`,
+			mustKeys("tag/1/tagged_ids", "tag/2/tagged_ids", "assignment/20/title", "assignment/20/description", "motion/30/title"),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			ds := dsmock.Stub(dsmock.YAMLData(tt.data))

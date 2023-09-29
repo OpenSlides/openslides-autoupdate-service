@@ -102,6 +102,9 @@ func (b *Builder) Update(ctx context.Context, getter flow.Getter) ([]dskey.Key, 
 	var neededKeys []dskey.Key
 	var neededDescriptions []keyDescription
 	for len(queue) > 0 {
+		neededKeys = neededKeys[:0]
+		neededDescriptions = neededDescriptions[:0]
+
 		// Get all keys and descriptions.
 		for _, kd := range queue {
 			keys = append(keys, kd.key)
@@ -123,7 +126,6 @@ func (b *Builder) Update(ctx context.Context, getter flow.Getter) ([]dskey.Key, 
 		if err != nil {
 			return nil, fmt.Errorf("load needed keys: %w", err)
 		}
-		neededKeys = neededKeys[:0]
 
 		for _, kd := range neededDescriptions {
 			// This are fields that do not exist or the user has not the
@@ -143,9 +145,6 @@ func (b *Builder) Update(ctx context.Context, getter flow.Getter) ([]dskey.Key, 
 				return nil, fmt.Errorf("appending keys for key %s: %w", kd.key, err)
 			}
 		}
-
-		// Clear processed.
-		neededDescriptions = neededDescriptions[:0]
 	}
 	return keys, nil
 }
