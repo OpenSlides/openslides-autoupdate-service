@@ -266,12 +266,6 @@ func (g *genericRelationField) appendKeys(key dskey.Key, value json.RawMessage, 
 		return nil, fmt.Errorf("invalid collection id: %s", fqID)
 	}
 
-	for fieldName := range g.fieldsMap.fields {
-		if !dskey.ValidateCollectionField(collection, fieldName) {
-			delete(g.fieldsMap.fields, fieldName)
-		}
-	}
-
 	return g.fieldsMap.appendKeys(collection, id, data)
 }
 
@@ -308,15 +302,9 @@ func (g *genericRelationListField) appendKeys(key dskey.Key, value json.RawMessa
 			return nil, fmt.Errorf("invalid collection id: %s", fqID)
 		}
 
-		for fieldName := range g.fieldsMap.fields {
-			if !dskey.ValidateCollectionField(collection, fieldName) {
-				delete(g.fieldsMap.fields, fieldName)
-			}
-		}
-
 		data, err = g.fieldsMap.appendKeys(collection, id, data)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("append keys on %s/%d: %w", collection, id, err)
 		}
 	}
 	return data, nil
@@ -400,7 +388,8 @@ func (f *fieldsMap) appendKeys(collection string, id int, data []keyDescription)
 	for field, description := range f.fields {
 		key, err := dskey.FromParts(collection, id, field)
 		if err != nil {
-			return nil, err
+			// Ignore invalid keys
+			continue
 		}
 		data = append(data, keyDescription{key: key, description: description})
 	}
