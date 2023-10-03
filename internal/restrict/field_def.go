@@ -453,6 +453,13 @@ var restrictionModes = map[string]string{
 	"group/write_chat_group_ids":                 "A",
 	"group/write_comment_section_ids":            "A",
 
+	// import_preview
+	"import_preview/created": "A",
+	"import_preview/id":      "A",
+	"import_preview/name":    "A",
+	"import_preview/result":  "A",
+	"import_preview/state":   "A",
+
 	// list_of_speakers
 	"list_of_speakers/closed":            "A",
 	"list_of_speakers/content_object_id": "A",
