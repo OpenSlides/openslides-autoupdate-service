@@ -6,7 +6,9 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // AgendaItem handels permission for the agenda.
@@ -29,10 +31,24 @@ func (a AgendaItem) Name() string {
 }
 
 // MeetingID returns the meetingID for the object.
-func (a AgendaItem) MeetingID(ctx context.Context, fetcher *dsfetch.Fetch, id int) (int, bool, error) {
-	mid, err := fetcher.AgendaItem_MeetingID(id).Value(ctx)
+func (a AgendaItem) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
+	mid, err := ds.AgendaItem_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting meeting id: %w", err)
+	}
+
+	if mid == 0 {
+		key, err := dskey.FromParts("agenda_item", id, "meeting_id")
+		if err != nil {
+			return 0, false, fmt.Errorf("building key for logging: %w", err)
+		}
+
+		value, err := ds.Get(ctx, key)
+		if err != nil {
+			return 0, false, fmt.Errorf("getting value from %s for logging: %w", key, err)
+		}
+
+		return 0, false, fmt.Errorf("agenda/%d/meeting_id == 0: %w", id, datastore.InvalidDataError{Key: key, Value: value[key]})
 	}
 	return mid, true, nil
 }
@@ -64,9 +80,11 @@ func (a AgendaItem) see(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs [
 
 		result := make([]attribute.Func, len(agendaIDs))
 		for i, agendaID := range agendaIDs {
-			isHidden := fetcher.AgendaItem_IsHidden(agendaID).ErrorLater(ctx)
-			isInternal := fetcher.AgendaItem_IsInternal(agendaID).ErrorLater(ctx)
-			if err := fetcher.Err(); err != nil {
+			var isHidden bool
+			var isInternal bool
+			fetcher.AgendaItem_IsHidden(agendaID).Lazy(&isHidden)
+			fetcher.AgendaItem_IsInternal(agendaID).Lazy(&isInternal)
+			if err := fetcher.Execute(ctx); err != nil {
 				return nil, fmt.Errorf("fetching isHidden and isInternal: %w", err)
 			}
 

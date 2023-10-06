@@ -80,7 +80,7 @@ func (m Meeting) see(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs []i
 			return nil, fmt.Errorf("getting committee id of meeting: %w", err)
 		}
 
-		committeeManagerIDs, err := fetcher.Committee_UserManagementLevel(committeeID, "can_manage").Value(ctx)
+		committeeManagerIDs, err := fetcher.Committee_ManagerIDs(committeeID).Value(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("getting user ids of committee managers: %w", err)
 		}
