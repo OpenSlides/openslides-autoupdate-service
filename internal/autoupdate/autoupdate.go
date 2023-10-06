@@ -20,6 +20,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 	"github.com/ostcar/topic"
 )
 
@@ -278,7 +279,7 @@ func (a *Autoupdate) FilterConnectionCount(ctx context.Context, meetingIDs []int
 		return nil
 	}
 
-	ds := dsfetch.New(a.flow)
+	ds := dsfetch.New(a.restricter)
 
 	meetingUserIDs := make([][]int, len(meetingIDs))
 	for i, meetingID := range meetingIDs {
