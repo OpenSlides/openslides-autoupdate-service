@@ -17,8 +17,7 @@ import (
 // Each value of the Cache has three states. Either it exists, it does not
 // exist, or it is pending. Pending means, that there is a current request to
 // the datastore. An existing key can have the value `nil` which means, that the
-// Cache knows, that the key does not exist in the datastore. Each value
-// []byte("null") is changed to nil.
+// Cache knows, that the key does not exist in the datastore.
 //
 // A new Cache instance has to be created with newCache().
 type Cache struct {
@@ -75,11 +74,9 @@ func (c *Cache) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byt
 	return got, nil
 }
 
-// fetchMissing loads the given keys with the set method. Does not update keys
-// that are already in the cache.
+// fetchMissing loads all keys, that are currently not in the cache.
 //
-// Possible Errors: context.Canceled or context.DeadlineExeeded or the return
-// value from the set func.
+// Possible Errors: context.Canceled or context.DeadlineExeeded.
 func (c *Cache) fetchMissing(ctx context.Context, keys []dskey.Key) error {
 	missingKeys := c.data.MarkPending(keys...)
 
@@ -91,7 +88,7 @@ func (c *Cache) fetchMissing(ctx context.Context, keys []dskey.Key) error {
 	// when the context is done. Other calls could also request it.
 	errChan := make(chan error, 1)
 	go func() {
-		data, err := c.flow.Get(ctx, missingKeys...)
+		data, err := c.flow.Get(context.WithoutCancel(ctx), missingKeys...)
 		if err != nil {
 			c.data.UnMarkPending(missingKeys...)
 			errChan <- fmt.Errorf("getting data from flow: %w", err)
@@ -102,15 +99,11 @@ func (c *Cache) fetchMissing(ctx context.Context, keys []dskey.Key) error {
 			// A getter has to return the same amount of values, as keys where
 			// requested. So this check should not be necessary. But there will
 			// be very strange behaviour, if the getter has a but.
+			c.data.UnMarkPending(missingKeys...)
 			errChan <- fmt.Errorf("got %d keys from getter, but requested %d", len(data), len(missingKeys))
 			return
 		}
 
-		for key, value := range data {
-			if string(value) == "null" {
-				data[key] = nil
-			}
-		}
 		c.data.SetIfPending(data)
 
 		errChan <- nil
@@ -138,12 +131,6 @@ func (c *Cache) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, 
 		if err != nil {
 			updateFn(nil, err)
 			return
-		}
-
-		for key, value := range data {
-			if string(value) == "null" {
-				data[key] = nil
-			}
 		}
 
 		c.data.SetIfPendingOrExists(data)

@@ -34,7 +34,7 @@ func TestTopicModeA(t *testing.T) {
 			agenda_item_id: 3
 
 		agenda_item/3:
-			internal: true
+			is_internal: true
 			meeting_id: 30
 		`,
 		withPerms(30, perm.AgendaItemCanSeeInternal),

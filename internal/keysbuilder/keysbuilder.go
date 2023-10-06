@@ -43,11 +43,11 @@ func FromKeys(rawKeys ...string) (*Builder, error) {
 
 	for _, key := range keys {
 		body := body{
-			ids:        []int{key.ID},
-			collection: key.Collection,
+			ids:        []int{key.ID()},
+			collection: key.Collection(),
 			fieldsMap: fieldsMap{
 				fields: map[string]fieldDescription{
-					key.Field: nil,
+					key.Field(): nil,
 				},
 			},
 		}
@@ -87,9 +87,13 @@ func (b *Builder) Update(ctx context.Context, getter flow.Getter) ([]dskey.Key, 
 	}
 
 	// Start with all keys from all the bodies.
+	var err error
 	queue := make([]keyDescription, 0, bodyFieldLen(b.bodies))
 	for _, body := range b.bodies {
-		queue = body.appendKeys(queue)
+		queue, err = body.appendKeys(queue)
+		if err != nil {
+			return nil, fmt.Errorf("building keys from bodys: %w", err)
+		}
 	}
 
 	var keys []dskey.Key
@@ -98,6 +102,9 @@ func (b *Builder) Update(ctx context.Context, getter flow.Getter) ([]dskey.Key, 
 	var neededKeys []dskey.Key
 	var neededDescriptions []keyDescription
 	for len(queue) > 0 {
+		neededKeys = neededKeys[:0]
+		neededDescriptions = neededDescriptions[:0]
+
 		// Get all keys and descriptions.
 		for _, kd := range queue {
 			keys = append(keys, kd.key)
@@ -119,7 +126,6 @@ func (b *Builder) Update(ctx context.Context, getter flow.Getter) ([]dskey.Key, 
 		if err != nil {
 			return nil, fmt.Errorf("load needed keys: %w", err)
 		}
-		neededKeys = neededKeys[:0]
 
 		for _, kd := range neededDescriptions {
 			// This are fields that do not exist or the user has not the
@@ -136,12 +142,9 @@ func (b *Builder) Update(ctx context.Context, getter flow.Getter) ([]dskey.Key, 
 					// value has wrong type.
 					return nil, ValueError{key: kd.key, gotType: invalidErr.Value, expectType: invalidErr.Type, err: err}
 				}
-				return nil, err
+				return nil, fmt.Errorf("appending keys for key %s: %w", kd.key, err)
 			}
 		}
-
-		// Clear processed.
-		neededDescriptions = neededDescriptions[:0]
 	}
 	return keys, nil
 }

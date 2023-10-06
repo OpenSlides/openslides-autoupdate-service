@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // AgendaItem handels permission for the agenda.
@@ -32,6 +34,20 @@ func (a AgendaItem) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (i
 	mid, err := ds.AgendaItem_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting meeting id: %w", err)
+	}
+
+	if mid == 0 {
+		key, err := dskey.FromParts("agenda_item", id, "meeting_id")
+		if err != nil {
+			return 0, false, fmt.Errorf("building key for logging: %w", err)
+		}
+
+		value, err := ds.Get(ctx, key)
+		if err != nil {
+			return 0, false, fmt.Errorf("getting value from %s for logging: %w", key, err)
+		}
+
+		return 0, false, fmt.Errorf("agenda/%d/meeting_id == 0: %w", id, datastore.InvalidDataError{Key: key, Value: value[key]})
 	}
 	return mid, true, nil
 }
@@ -61,9 +77,11 @@ func (a AgendaItem) see(ctx context.Context, ds *dsfetch.Fetch, agendaIDs ...int
 		}
 
 		allowed, err := eachCondition(ids, func(agendaID int) (bool, error) {
-			isHidden := ds.AgendaItem_IsHidden(agendaID).ErrorLater(ctx)
-			isInternal := ds.AgendaItem_IsInternal(agendaID).ErrorLater(ctx)
-			if err := ds.Err(); err != nil {
+			var isHidden bool
+			var isInternal bool
+			ds.AgendaItem_IsHidden(agendaID).Lazy(&isHidden)
+			ds.AgendaItem_IsInternal(agendaID).Lazy(&isInternal)
+			if err := ds.Execute(ctx); err != nil {
 				return false, fmt.Errorf("fetching isHidden and isInternal: %w", err)
 			}
 

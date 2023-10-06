@@ -39,7 +39,7 @@ func TestUpdate(t *testing.T) {
 		t.Fatalf("Creating test connection: %v", err)
 	}
 
-	if _, err := conn.Do("XADD", "ModifiedFields", "*", "user/1/name", "Hubert", "user/2/name", "Isolde"); err != nil {
+	if _, err := conn.Do("XADD", "ModifiedFields", "*", "user/1/username", "Hubert", "user/2/username", "Isolde"); err != nil {
 		t.Fatalf("Insert test data: %v", err)
 	}
 
@@ -48,8 +48,8 @@ func TestUpdate(t *testing.T) {
 	}
 
 	expect := map[dskey.Key][]byte{
-		dskey.MustKey("user/1/name"): []byte("Hubert"),
-		dskey.MustKey("user/2/name"): []byte("Isolde"),
+		dskey.MustKey("user/1/username"): []byte("Hubert"),
+		dskey.MustKey("user/2/username"): []byte("Isolde"),
 	}
 	if !reflect.DeepEqual(got, expect) {
 		t.Errorf("Update() returned %v, expected %v", got, expect)

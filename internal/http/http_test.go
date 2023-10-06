@@ -11,14 +11,13 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/history"
 	ahttp "github.com/OpenSlides/openslides-autoupdate-service/internal/http"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 var (
-	myKey1 = dskey.Key{Collection: "collection", ID: 1, Field: "field"}
-	myKey2 = dskey.Key{Collection: "collection", ID: 2, Field: "field"}
+	myKey1, _ = dskey.FromParts("user", 1, "username")
+	myKey2, _ = dskey.FromParts("user", 2, "username")
 )
 
 type connecterMock struct {
@@ -51,9 +50,9 @@ func TestKeysHandler(t *testing.T) {
 		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, historyMock{}, nil)
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil, nil)
 
-	req := httptest.NewRequest("GET", "/system/autoupdate?k=user/1/name,user/2/name", nil).WithContext(ctx)
+	req := httptest.NewRequest("GET", "/system/autoupdate?k=user/1/username,user/2/username", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 
@@ -63,7 +62,7 @@ func TestKeysHandler(t *testing.T) {
 		t.Errorf("Got status %q, expected %q", res.Status, http.StatusText(200))
 	}
 
-	expect := `{"collection/1/field":"bar"}` + "\n"
+	expect := `{"user/1/username":"bar"}` + "\n"
 	got, _ := io.ReadAll(res.Body)
 	if string(got) != expect {
 		t.Errorf("Got content `%s`, expected `%s`", got, expect)
@@ -87,12 +86,12 @@ func TestComplexHandler(t *testing.T) {
 		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, historyMock{}, nil)
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil, nil)
 
 	req := httptest.NewRequest(
 		"GET",
 		"/system/autoupdate",
-		strings.NewReader(`[{"ids":[1],"collection":"user","fields":{"name":null}}]`),
+		strings.NewReader(`[{"ids":[1],"collection":"user","fields":{"username":null}}]`),
 	).WithContext(ctx)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
@@ -103,7 +102,7 @@ func TestComplexHandler(t *testing.T) {
 		t.Errorf("Got status %s, expected %s", res.Status, http.StatusText(200))
 	}
 
-	expect := `{"collection/1/field":"bar"}` + "\n"
+	expect := `{"user/1/username":"bar"}` + "\n"
 	got, _ := io.ReadAll(res.Body)
 	if string(got) != expect {
 		t.Errorf("Got %s, expected %s", got, expect)
@@ -142,7 +141,7 @@ func TestErrors(t *testing.T) {
 		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, historyMock{}, nil)
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil, nil)
 
 	for _, tt := range []struct {
 		name    string
@@ -189,7 +188,7 @@ func TestErrors(t *testing.T) {
 			httptest.NewRequest(
 				"GET",
 				"/system/autoupdate",
-				strings.NewReader(`{"ids":[1],"collection":"foo","fields":{}}`),
+				strings.NewReader(`{"ids":[1],"collection":"user","fields":{}}`),
 			),
 			400,
 			`SyntaxError`,
@@ -200,7 +199,7 @@ func TestErrors(t *testing.T) {
 			httptest.NewRequest(
 				"GET",
 				"/system/autoupdate",
-				strings.NewReader(`[{"ids":["1"],"collection":"foo","fields":{}}]`),
+				strings.NewReader(`[{"ids":["1"],"collection":"user","fields":{}}]`),
 			),
 			400,
 			`SyntaxError`,
@@ -342,12 +341,6 @@ func (a fakeAuth) FromContext(ctx context.Context) int {
 	return int(a)
 }
 
-type historyMock struct{}
-
-func (h historyMock) HistoryInformation(ctx context.Context, uid int, fqid string, w io.Writer) error {
-	return nil
-}
-
-func (h historyMock) Data(ctx context.Context, userID int, kb history.KeysBuilder, position int) (map[dskey.Key][]byte, error) {
-	return nil, nil
+func (a fakeAuth) AuthenticatedContext(ctx context.Context, _ int) context.Context {
+	return ctx
 }

@@ -38,7 +38,7 @@ func TestProjectionFromContentObject(t *testing.T) {
 	ctx := context.Background()
 	flow := dsmock.NewFlow(dsmock.YAMLData(`---
 	projection/1:
-		content_object_id:    test_model/1
+		content_object_id:    user/1
 		current_projector_id: 1
 	`))
 	key := dskey.MustKey("projection/1/content")
@@ -49,7 +49,7 @@ func TestProjectionFromContentObject(t *testing.T) {
 		t.Fatalf("Get: %v", err)
 	}
 
-	expect := []byte(`{"collection":"test_model","value":"test_model"}` + "\n")
+	expect := []byte(`{"collection":"user","value":"user"}` + "\n")
 
 	if equal, explain := cmpJson(got[key], expect); !equal {
 		t.Errorf("got != expect: %s", explain)
@@ -60,7 +60,7 @@ func TestProjectionFromContentObjectIfNotOnProjector(t *testing.T) {
 	ctx := context.Background()
 	flow := dsmock.NewFlow(dsmock.YAMLData(`---
 	projection/1:
-		content_object_id:    test_model/1
+		content_object_id:    user/1
 		current_projector_id: null
 	`))
 	key := dskey.MustKey("projection/1/content")
@@ -177,7 +177,7 @@ func TestProjectionUpdateProjection(t *testing.T) {
 	flow.Send(dsmock.YAMLData(`---
 	projection/1:
 		type: null
-		content_object_id: test_model/1
+		content_object_id: user/1
 	`))
 	<-done
 
@@ -186,7 +186,7 @@ func TestProjectionUpdateProjection(t *testing.T) {
 		t.Fatalf("Second Get: %v", err)
 	}
 
-	expect := []byte(`{"collection":"test_model","value":"test_model"}` + "\n")
+	expect := []byte(`{"collection":"user","value":"user"}` + "\n")
 	if equal, expain := cmpJson(got[key], expect); !equal {
 		t.Errorf("got != expect: %s", expain)
 	}
@@ -235,7 +235,7 @@ func TestProjectionUpdateSlide(t *testing.T) {
 
 	flow := dsmock.NewFlow(dsmock.YAMLData(`---
 		projection/1:
-			type:                 test_model
+			type:                 user
 			content_object_id:    meeting/6
 			current_projector_id: 1
 	`))
@@ -252,7 +252,7 @@ func TestProjectionUpdateSlide(t *testing.T) {
 		t.Fatalf("Get: %v", err)
 	}
 
-	flow.Send(dsmock.YAMLData("test_model/1/field: new value"))
+	flow.Send(dsmock.YAMLData("user/1/username: new value"))
 	<-done
 
 	got, err := p.Get(ctx, key)
@@ -260,7 +260,7 @@ func TestProjectionUpdateSlide(t *testing.T) {
 		t.Errorf("second Get: %v", err)
 	}
 
-	expect := []byte(`{"collection":"test_model","value":"calculated with new value"}` + "\n")
+	expect := []byte(`{"collection":"user","value":"calculated with new value"}` + "\n")
 	if equal, expain := cmpJson(got[key], expect); !equal {
 		t.Errorf("got != expect: %s", expain)
 	}
@@ -272,7 +272,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 
 	flow := dsmock.NewFlow(dsmock.YAMLData(`---
 		projection/1:
-			type:                 test_model
+			type:                 user
 			content_object_id:    meeting/1
 			current_projector_id: 1
 	`))
@@ -289,7 +289,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 		t.Fatalf("Get: %v", err)
 	}
 
-	flow.Send(dsmock.YAMLData("some_other/1/field: new value"))
+	flow.Send(dsmock.YAMLData("group/1/name: new value"))
 	<-done
 
 	got, err := p.Get(ctx, key)
@@ -297,7 +297,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 		t.Errorf("second Get: %v", err)
 	}
 
-	expect := []byte(`{"collection":"test_model","value":"test_model"}` + "\n")
+	expect := []byte(`{"collection":"user","value":"user"}` + "\n")
 	if equal, expain := cmpJson(got[key], expect); !equal {
 		t.Errorf("got != expect: %s", expain)
 	}
@@ -318,11 +318,11 @@ func TestOnTwoProjections(t *testing.T) {
 	projection:
 		1:
 			content_object_id: meeting/1
-			type: test_model
+			type: user
 
 		2:
 			content_object_id: meeting/1
-			type: test_model
+			type: user
 	`))
 
 	p := projector.NewProjector(ds, testSlides())
@@ -355,11 +355,11 @@ func testSlides() *projector.SlideStore {
 		return []byte(`{"value":"abc"}`), nil
 	})
 
-	s.RegisterSliderFunc("test_model", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
+	s.RegisterSliderFunc("user", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
 		var field json.RawMessage
-		fetch.Fetch(ctx, &field, "test_model/1/field")
+		fetch.Fetch(ctx, &field, "user/1/username")
 		if field == nil {
-			return []byte(`{"value":"test_model"}`), nil
+			return []byte(`{"value":"user"}`), nil
 		}
 		return []byte(fmt.Sprintf(`{"value":"calculated with %s"}`, string(field[1:len(field)-1]))), nil
 	})

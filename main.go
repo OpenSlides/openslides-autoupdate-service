@@ -147,7 +147,10 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	}
 
 	// Auth Service.
-	authService, authBackground := auth.New(lookup, messageBus)
+	authService, authBackground, err := auth.New(lookup, messageBus)
+	if err != nil {
+		return nil, fmt.Errorf("init connection to auth: %w", err)
+	}
 	backgroundTasks = append(backgroundTasks, authBackground)
 
 	// Autoupdate Service.

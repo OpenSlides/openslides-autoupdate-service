@@ -97,6 +97,20 @@ func (pm *PendingMap) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key
 //
 // Possible Errors: context.Canceled or context.DeadlineExeeded
 func (pm *PendingMap) waitForPending(ctx context.Context, keys []dskey.Key) error {
+	hasPendingKey := false
+	pm.reading(func() error {
+		for _, key := range keys {
+			if _, ok := pm.pending[key]; ok {
+				hasPendingKey = true
+				return nil
+			}
+		}
+		return nil
+	})
+	if !hasPendingKey {
+		return nil
+	}
+
 	for _, k := range keys {
 		var pending chan struct{}
 		pm.reading(func() error {

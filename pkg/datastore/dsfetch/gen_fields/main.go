@@ -87,7 +87,6 @@ func genValueTypes(buf *bytes.Buffer) error {
 		"ValueJSON":        "json.RawMessage",
 		"ValueIntSlice":    "[]int",
 		"ValueStringSlice": "[]string",
-		"ValueIDSlice":     "[]int",
 	}
 
 	// Make sure the types are in the same order every time go generate runs.
@@ -195,19 +194,6 @@ func parse(r io.Reader) ([]field, error) {
 				f.SingleRelation = true
 			}
 
-			if strings.Contains(fieldName, "$") {
-				f.TemplateAttr = "replacement"
-				f.TemplateAttrType = "string"
-				f.TemplateFieldName = strings.Replace(fieldName, "$", "$%s", 1)
-				f.ValueType = valueType(modelField.Template.Fields.Type, true)
-
-				if modelField.Template.Replacement != "" {
-					f.TemplateAttr = modelField.Template.Replacement + "ID"
-					f.TemplateAttrType = "int"
-					f.TemplateFieldName = strings.Replace(fieldName, "$", "$%d", 1)
-				}
-			}
-
 			fields = append(fields, f)
 		}
 	}
@@ -221,16 +207,13 @@ func parse(r io.Reader) ([]field, error) {
 }
 
 type field struct {
-	GoName            string
-	ValueType         string
-	Collection        string
-	CollectionName    string
-	FieldName         string
-	TemplateFieldName string
-	TemplateAttr      string
-	TemplateAttrType  string
-	Required          bool
-	SingleRelation    bool
+	GoName         string
+	ValueType      string
+	Collection     string
+	CollectionName string
+	FieldName      string
+	Required       bool
+	SingleRelation bool
 }
 
 func goName(name string) string {

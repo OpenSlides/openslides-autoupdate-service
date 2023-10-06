@@ -97,7 +97,10 @@ func (r *restrictCache) Modes(mode string) FieldRestricter {
 		notFound := make([]int, 0, len(ids))
 		cachedAllowedIDs := make([]int, 0, len(ids))
 		for _, id := range ids {
-			key := dskey.Key{Collection: r.Name(), ID: id, Field: mode}
+			key, err := dskey.FromParts(r.Name(), id, mode)
+			if err != nil {
+				return nil, err
+			}
 
 			allowed, found := r.cache[key]
 			if !found {
@@ -116,18 +119,28 @@ func (r *restrictCache) Modes(mode string) FieldRestricter {
 
 		newAllowedIDs, err := r.Restricter.Modes(mode)(ctx, ds, notFound...)
 		if err != nil {
-			return nil, fmt.Errorf("calling restricter: %w", err)
+			idsString := "with same ids"
+			if len(notFound) != len(ids) {
+				idsString = fmt.Sprintf("with ids %v", notFound)
+			}
+			return nil, fmt.Errorf("calling restricter %s: %w", idsString, err)
 		}
 
 		// Add all not Found keys to the cache as not allowed.
 		for _, id := range notFound {
-			key := dskey.Key{Collection: r.Name(), ID: id, Field: mode}
+			key, err := dskey.FromParts(r.Name(), id, mode)
+			if err != nil {
+				return nil, err
+			}
 			r.cache[key] = false
 		}
 
 		// Set all new allowed ids to the cache as true.
 		for _, id := range newAllowedIDs {
-			key := dskey.Key{Collection: r.Name(), ID: id, Field: mode}
+			key, err := dskey.FromParts(r.Name(), id, mode)
+			if err != nil {
+				return nil, err
+			}
 			r.cache[key] = true
 		}
 
@@ -157,8 +170,10 @@ var collectionMap = map[string]Restricter{
 	ChatMessage{}.Name():                ChatMessage{},
 	Committee{}.Name():                  Committee{},
 	Group{}.Name():                      Group{},
+	ImportPreview{}.Name():              ImportPreview{},
 	Mediafile{}.Name():                  Mediafile{},
 	Meeting{}.Name():                    Meeting{},
+	MeetingUser{}.Name():                MeetingUser{},
 	Motion{}.Name():                     Motion{},
 	MotionBlock{}.Name():                MotionBlock{},
 	MotionCategory{}.Name():             MotionCategory{},
@@ -196,7 +211,6 @@ func Collection(ctx context.Context, collection string) Restricter {
 		return Unknown{collection}
 	}
 
-	// TODO: Fixme for superadmin. It needs the restrict superadmin method
 	return withRestrictCache(ctx, r)
 }
 

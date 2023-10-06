@@ -63,7 +63,9 @@ func TestMotionCommentSectionModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		user/1/group_$30_ids: [2]
+		user/1/meeting_user_ids: [10]
+		meeting_user/10/group_ids: [2]
+
 		group/2/id: 2
 
 		motion_comment_section/1:
@@ -79,7 +81,10 @@ func TestMotionCommentSectionModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		user/1/group_$30_ids: [2]
+		user/1/meeting_user_ids: [10]
+		meeting_user/10:
+			group_ids: [2]
+			meeting_id: 30
 		group/2/id: 2
 
 		motion_comment_section/1:

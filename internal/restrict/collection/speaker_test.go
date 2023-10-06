@@ -55,7 +55,9 @@ func TestSpeakerModeA(t *testing.T) {
 		speaker/1:
 			list_of_speakers_id: 15
 			meeting_id: 30
-			user_id: 404
+			meeting_user_id: 4040
+		
+		meeting_user/4040/user_id: 404
 
 		list_of_speakers/15:
 			id: 15
@@ -75,8 +77,10 @@ func TestSpeakerModeA(t *testing.T) {
 		`---
 		speaker/1:
 			list_of_speakers_id: 15
-			user_id: 1
+			meeting_user_id: 10
 			meeting_id: 30
+
+		meeting_user/10/user_id: 1
 
 		list_of_speakers/15:
 			id: 15
