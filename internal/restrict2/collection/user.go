@@ -7,6 +7,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // User handels the restrictions for the user collection.
@@ -94,35 +95,35 @@ func (u User) SuperAdmin(mode string) FieldRestricter {
 	return Allways
 }
 
-// TODO: this is not good.
 func (u User) see(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
 	userManager := attribute.FuncGlobalLevel(perm.OMLCanManageUsers)
 
-	inCommitteList := make([][]int, len(userIDs))
+	inCommitteeList := make([][]int, len(userIDs))
 	inMeetingList := make([][]int, len(userIDs))
 	for i, userID := range userIDs {
-		fetcher.User_CommitteeIDs(userID).Lazy(&inCommitteList[i])
+		fetcher.User_CommitteeIDs(userID).Lazy(&inCommitteeList[i])
 		fetcher.User_MeetingIDs(userID).Lazy(&inMeetingList[i])
 	}
 
 	if err := fetcher.Execute(ctx); err != nil {
-		return nil, fmt.Errorf("fetching user data: %w", err)
+		return nil, fmt.Errorf("fetching in committee and in meeting for every requested user: %w", err)
+	}
+
+	committeeIDs := set.New[int]() // IDs of all committees where the requested users are part of
+	for _, cids := range inCommitteeList {
+		committeeIDs.Add(cids...)
+	}
+
+	committeeManagers, err := fetchCommitteeManagers(ctx, fetcher, committeeIDs.List())
+	if err != nil {
+		return nil, fmt.Errorf("calculating committee managers: %w", err)
 	}
 
 	result := make([]attribute.Func, len(userIDs))
 	for i, userID := range userIDs {
-		committeeManagerList := make([][]int, len(inCommitteList[i]))
-		for j, committeeID := range inCommitteList[i] {
-			fetcher.Committee_UserManagementLevel(committeeID, "can_manage").Lazy(&committeeManagerList[j])
-		}
-
-		if err := fetcher.Execute(ctx); err != nil {
-			return nil, fmt.Errorf("fetching committee manager for all committees of user %d: %w", userID, err)
-		}
-
-		var committeeManagers []int
-		for _, l := range committeeManagerList {
-			committeeManagers = append(committeeManagers, l...)
+		var usersCommitteeManagers []int
+		for _, committeeID := range inCommitteeList[i] {
+			usersCommitteeManagers = append(usersCommitteeManagers, committeeManagers[committeeID]...)
 		}
 
 		var canSeeGroups []int
@@ -138,10 +139,10 @@ func (u User) see(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([
 		result[i] = attribute.FuncOr(
 			attribute.FuncUserIDs([]int{userID}),
 			userManager,
-			attribute.FuncUserIDs(committeeManagers),
+			attribute.FuncUserIDs(usersCommitteeManagers),
 			attribute.FuncInGroup(canSeeGroups),
-			// TODO There exists a meeting where Y has the CML can_manage for the meeting's committee X is in meeting/user_ids.
-			// ...
+			// TODO: There exists a meeting where Y has the CML can_manage for the meeting's committee X is in meeting/user_ids.
+			// TODO: There is a related object...
 		)
 	}
 	return result, nil
@@ -150,9 +151,9 @@ func (u User) see(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([
 // UserRequiredObject represents the reference from a user to other objects.
 type UserRequiredObject struct {
 	Name     string
-	TmplFunc func(int) *dsfetch.ValueIDSlice
-	ElemFunc func(int, int) *dsfetch.ValueIntSlice
+	ElemFunc func(int) *dsfetch.ValueIntSlice
 	SeeFunc  FieldRestricter
+	OnUser   bool // Tells, if the relation is via meeting_user_id or user_id
 }
 
 // RequiredObjects returns all references to other objects from the user.
@@ -160,65 +161,65 @@ func (User) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []UserRequir
 	return []UserRequiredObject{
 		{
 			"motion submitter",
-			ds.User_SubmittedMotionIDsTmpl,
-			ds.User_SubmittedMotionIDs,
-			Collection(ctx, "motion_submitter").Modes("A"),
+			ds.MeetingUser_MotionSubmitterIDs,
+			Collection(ctx, MotionSubmitter{}.Name()).Modes("A"),
+			false,
 		},
 
 		{
 			"motion supporter",
-			ds.User_SupportedMotionIDsTmpl,
-			ds.User_SupportedMotionIDs,
+			ds.MeetingUser_SupportedMotionIDs,
 			Collection(ctx, Motion{}.Name()).Modes("C"),
+			false,
 		},
 
 		// {
 		// 	"option",
-		// 	ds.User_OptionIDsTmpl,
 		// 	ds.User_OptionIDs,
 		// 	Collection(ctx, Option{}.Name()).Modes("A"),
+		// 	true,
 		// },
 
 		// {
 		// 	"assignment candidate",
-		// 	ds.User_AssignmentCandidateIDsTmpl,
-		// 	ds.User_AssignmentCandidateIDs,
+		// 	ds.MeetingUser_AssignmentCandidateIDs,
 		// 	Collection(ctx, AssignmentCandidate{}.Name()).Modes("A"),
+		// 	false,
 		// },
 
 		// {
 		// 	"speaker",
-		// 	ds.User_SpeakerIDsTmpl,
-		// 	ds.User_SpeakerIDs,
+		// 	ds.MeetingUser_SpeakerIDs,
 		// 	Collection(ctx, Speaker{}.Name()).Modes("A"),
+		// 	false,
 		// },
 
 		// {
 		// 	"poll voted",
-		// 	ds.User_PollVotedIDsTmpl,
 		// 	ds.User_PollVotedIDs,
 		// 	Collection(ctx, Poll{}.Name()).Modes("A"),
+		// 	true,
 		// },
 
 		// {
 		// 	"vote user",
-		// 	ds.User_VoteIDsTmpl,
 		// 	ds.User_VoteIDs,
 		// 	Collection(ctx, Vote{}.Name()).Modes("A"),
+		// 	true,
 		// },
 
 		// {
 		// 	"vote delegated user",
-		// 	ds.User_VoteDelegatedVoteIDsTmpl,
-		// 	ds.User_VoteDelegatedVoteIDs,
+		// 	ds.MeetingUser_VoteDelegationsFromIDs,
 		// 	Collection(ctx, Vote{}.Name()).Modes("A"),
+		// 	false,
 		// },
 
 		// {
 		// 	"chat messages",
-		// 	ds.User_ChatMessageIDsTmpl,
-		// 	ds.User_ChatMessageIDs,
+		// 	ds.MeetingUser_ChatMessageIDs,
 		// 	Collection(ctx, ChatMessage{}.Name()).Modes("A"),
+		// 	false,
 		// },
 	}
 }
@@ -266,10 +267,10 @@ func (u User) modeD(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 func (u User) modeE(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
 	userManager := attribute.FuncGlobalLevel(perm.OMLCanManageUsers)
 
-	inCommitteList := make([][]int, len(userIDs))
+	inCommitteeList := make([][]int, len(userIDs))
 	inMeetingList := make([][]int, len(userIDs))
 	for i, userID := range userIDs {
-		fetcher.User_CommitteeIDs(userID).Lazy(&inCommitteList[i])
+		fetcher.User_CommitteeIDs(userID).Lazy(&inCommitteeList[i])
 		fetcher.User_MeetingIDs(userID).Lazy(&inMeetingList[i])
 	}
 
@@ -277,20 +278,21 @@ func (u User) modeE(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 		return nil, fmt.Errorf("fetching user data: %w", err)
 	}
 
+	committeeIDs := set.New[int]() // IDs of all committees where the requested users are part of
+	for _, cids := range inCommitteeList {
+		committeeIDs.Add(cids...)
+	}
+
+	committeeManagers, err := fetchCommitteeManagers(ctx, fetcher, committeeIDs.List())
+	if err != nil {
+		return nil, fmt.Errorf("calculating committee managers: %w", err)
+	}
+
 	result := make([]attribute.Func, len(userIDs))
 	for i, userID := range userIDs {
-		committeeManagerList := make([][]int, len(inCommitteList[i]))
-		for j, committeeID := range inCommitteList[i] {
-			fetcher.Committee_UserManagementLevel(committeeID, "can_manage").Lazy(&committeeManagerList[j])
-		}
-
-		if err := fetcher.Execute(ctx); err != nil {
-			return nil, fmt.Errorf("fetching committee manager for all committees of user %d: %w", userID, err)
-		}
-
-		var committeeManagers []int
-		for _, l := range committeeManagerList {
-			committeeManagers = append(committeeManagers, l...)
+		var usersCommitteeManagers []int
+		for _, committeeID := range inCommitteeList[i] {
+			usersCommitteeManagers = append(usersCommitteeManagers, committeeManagers[committeeID]...)
 		}
 
 		var canSeeGroups []int
@@ -306,7 +308,7 @@ func (u User) modeE(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 		result[i] = attribute.FuncOr(
 			attribute.FuncUserIDs([]int{userID}),
 			userManager,
-			attribute.FuncUserIDs(committeeManagers),
+			attribute.FuncUserIDs(usersCommitteeManagers),
 			attribute.FuncInGroup(canSeeGroups),
 		)
 	}
@@ -356,4 +358,24 @@ func (u User) modeH(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 		)
 	}
 	return result, nil
+}
+
+// fetchCommitteeManagers returns for a list of committeeIDs the userIDs of its
+// managers.
+func fetchCommitteeManagers(ctx context.Context, fetcher *dsfetch.Fetch, committeeIDs []int) (map[int][]int, error) {
+	managers := make([][]int, len(committeeIDs))
+	for i, committeeID := range committeeIDs {
+		fetcher.Committee_ManagerIDs(committeeID).Lazy(&managers[i])
+	}
+
+	if err := fetcher.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("getting committee manager ids: %w", err)
+	}
+
+	out := make(map[int][]int, len(committeeIDs))
+	for i, userIDs := range managers {
+		out[committeeIDs[i]] = userIDs
+	}
+
+	return out, nil
 }

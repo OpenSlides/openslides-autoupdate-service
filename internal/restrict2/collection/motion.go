@@ -257,11 +257,23 @@ func submitterFunc(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int)
 		return nil, fmt.Errorf("getting submitter ids: %w", err)
 	}
 
-	userIDsList := make([][]int, len(motionIDs))
+	meetingUserIDsList := make([][]int, len(motionIDs))
 	for i, submitterIDs := range submitterIDsList {
-		userIDsList[i] = make([]int, len(submitterIDs))
+		meetingUserIDsList[i] = make([]int, len(submitterIDs))
 		for j, submitterID := range submitterIDs {
-			fetcher.MotionSubmitter_UserID(submitterID).Lazy(&userIDsList[i][j])
+			fetcher.MotionSubmitter_MeetingUserID(submitterID).Lazy(&meetingUserIDsList[i][j])
+		}
+	}
+
+	if err := fetcher.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("getting meeting user ids: %w", err)
+	}
+
+	userIDsList := make([][]int, len(motionIDs))
+	for i, meetingUserIDs := range meetingUserIDsList {
+		userIDsList[i] = make([]int, len(meetingUserIDs))
+		for j, meetingUserID := range meetingUserIDs {
+			fetcher.MeetingUser_UserID(meetingUserID).Lazy(&userIDsList[i][j])
 		}
 	}
 
