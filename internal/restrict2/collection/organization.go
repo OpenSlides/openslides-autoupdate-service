@@ -43,5 +43,5 @@ func (o Organization) Modes(mode string) FieldRestricter {
 }
 
 func (o Organization) modeC(ctx context.Context, fetcher *dsfetch.Fetch, organizationIDs []int) ([]attribute.Func, error) {
-	return attributeFuncList(len(organizationIDs), attribute.FuncGlobalLevel(perm.OMLCanManageOrganization)), nil
+	return attributeFuncList(len(organizationIDs), attribute.FuncGlobalLevel(perm.OMLCanManageUsers)), nil
 }

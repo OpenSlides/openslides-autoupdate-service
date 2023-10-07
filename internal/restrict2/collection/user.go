@@ -86,15 +86,6 @@ func (u User) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-// SuperAdmin restricts the super admin.
-func (u User) SuperAdmin(mode string) FieldRestricter {
-	// TODO: When to call me????
-	if mode == "G" {
-		return never
-	}
-	return Allways
-}
-
 func (u User) see(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
 	userManager := attribute.FuncGlobalLevel(perm.OMLCanManageUsers)
 
@@ -320,22 +311,6 @@ func (u User) modeF(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 	return attributeFuncList(len(userIDs), userManager), nil
 }
 
-// higherOrgaManagement returns true if request equal or higher  then
-// request.
-//
-// An empty string is a valid organization management level for this function
-// that has the lowest value.
-func higherOrgaManagement(level perm.OrganizationManagementLevel) perm.OrganizationManagementLevel {
-	switch level {
-	case perm.OMLNone:
-		return perm.OMLCanManageUsers
-	case perm.OMLCanManageUsers:
-		return perm.OMLCanManageOrganization
-	default:
-		return perm.OMLSuperadmin
-	}
-}
-
 func (u User) modeH(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
 	userOrgaLevel := make([]string, len(userIDs))
 	for i, userID := range userIDs {
@@ -353,7 +328,7 @@ func (u User) modeH(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 
 	for i := range userIDs {
 		result[i] = attribute.FuncAnd(
-			attribute.FuncGlobalLevel(higherOrgaManagement(perm.OrganizationManagementLevel(userOrgaLevel[i]))),
+			attribute.FuncGlobalLevel(perm.OrganizationManagementLevel(userOrgaLevel[i])),
 			result[i],
 		)
 	}

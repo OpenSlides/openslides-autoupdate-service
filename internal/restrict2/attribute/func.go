@@ -2,15 +2,7 @@ package attribute
 
 import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
-
-type UserAttributes struct {
-	UserID            int
-	GroupIDs          set.Set[int]
-	OrgaLevel         perm.OrganizationManagementLevel
-	IsCommitteManager bool
-}
 
 type Func func(user UserAttributes) bool
 
@@ -43,10 +35,10 @@ func FuncGlobalLevel(oml perm.OrganizationManagementLevel) Func {
 			return true
 
 		case perm.OMLCanManageOrganization:
-			return user.OrgaLevel == perm.OMLCanManageOrganization || user.OrgaLevel == perm.OMLCanManageUsers
+			return oml == perm.OMLCanManageOrganization || oml == perm.OMLCanManageUsers
 
 		case perm.OMLCanManageUsers:
-			return user.OrgaLevel == perm.OMLCanManageUsers
+			return oml == perm.OMLCanManageUsers
 
 		default:
 			return false

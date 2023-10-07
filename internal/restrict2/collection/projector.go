@@ -58,8 +58,8 @@ func (p Projector) see(ctx context.Context, fetcher *dsfetch.Fetch, projectorIDs
 			return nil, fmt.Errorf("getting group map: %w", err)
 		}
 
-		forInternal := attribute.FuncInGroup(groupMap[perm.ProjectorCanSee])
-		forPublic := attribute.FuncInGroup(groupMap[perm.ProjectorCanManage])
+		forInternal := attribute.FuncInGroup(groupMap[perm.ProjectorCanManage])
+		forPublic := attribute.FuncInGroup(groupMap[perm.ProjectorCanSee])
 
 		result := make([]attribute.Func, len(projectorIDs))
 		for i := range projectorIDs {

@@ -118,4 +118,4 @@ func (i InvalidKeyError) Type() string {
 }
 
 // UpdateKey is a key used by the restricter to signal, that keys where recalculated.
-var UpdateKey = MustKey("update/1/meta")
+var UpdateKey = MustKey("_meta/1/update")

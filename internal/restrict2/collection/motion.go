@@ -7,6 +7,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // Motion handels restrictions of the collection motion.
@@ -117,52 +118,49 @@ func (m Motion) see(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int
 	})
 }
 
-// leadMotionIndex create for each element in motionIDs a list of it self + its
-// lead motionID and its lead motionID and so on.
-func leadMotionIndex(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int) ([][]int, error) {
-	result := make([][]int, len(motionIDs))
+// leadMotionIndex creates an index from a motionID to its lead motion id. It
+// also contains pairs for each found lead motion id.
+//
+// So each value in the index can also be found in the keys.
+//
+// motions without a lead motion are added with value 0
+func leadMotionIndex(ctx context.Context, ds *dsfetch.Fetch, motionIDs []int) (map[int]int, error) {
+	index := make(map[int]int, len(motionIDs))
 
-	// Add the motionID as first element
-	for i, motionID := range motionIDs {
-		result[i] = []int{motionID}
-	}
-
-	finished := make([]bool, len(motionIDs))
-	var finishedCount int
-	for finishedCount < len(motionIDs) {
-		leadMotionID := make([]int, len(motionIDs))
+	for len(motionIDs) > 0 {
+		leadMotionIDs := make([]int, len(motionIDs))
 		for i, motionID := range motionIDs {
-			if finished[i] {
-				continue
-			}
-
-			fetcher.Motion_LeadMotionID(motionID).Lazy(&leadMotionID[i])
+			ds.Motion_LeadMotionID(motionID).Lazy(&leadMotionIDs[i])
 		}
 
-		if err := fetcher.Execute(ctx); err != nil {
+		if err := ds.Execute(ctx); err != nil {
 			return nil, fmt.Errorf("fetching lead motion ids: %w", err)
 		}
 
-		for i := range motionIDs {
-			if !finished[i] && leadMotionID[i] == 0 {
-				finished[i] = true
-				finishedCount++
+		var nextMotionIDs []int
+		for i := range leadMotionIDs {
+
+			if _, ok := index[motionIDs[i]]; ok {
 				continue
 			}
 
-			result[i] = append(result[i], leadMotionID[i])
+			index[motionIDs[i]] = leadMotionIDs[i]
+
+			if leadMotionIDs[i] != 0 {
+				nextMotionIDs = append(nextMotionIDs, leadMotionIDs[i])
+			}
 		}
+		motionIDs = nextMotionIDs
 	}
 
-	return result, nil
+	return index, nil
 }
 
 // filterCanSeeLeadMotion calls the given function by adding the lead motions to
 // the motionIDs list.
 //
-// It only returns motions, where the user can also see the lead motion. This is
-// done recursive, so for a lead_motion that also has a lead motion, the user
-// must see all of them.
+// The returned attributes require, that the user can see the motion and its
+// leed motion. If this leed motion has also a leed motion, then this goes on.
 func filterCanSeeLeadMotion(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int, fn func([]int) ([]attribute.Func, error)) ([]attribute.Func, error) {
 	index, err := leadMotionIndex(ctx, fetcher, motionIDs)
 	if err != nil {
@@ -171,32 +169,29 @@ func filterCanSeeLeadMotion(ctx context.Context, fetcher *dsfetch.Fetch, motionI
 
 	// TODO: add a shortcut if no requested motion has a lead motion
 
-	allMotionIDs := make([]int, 0, len(motionIDs))
-	relatedIdxFrom := make([]int, len(motionIDs))
-	relatedIdxTo := make([]int, len(motionIDs))
-	for i := range motionIDs {
-		relatedIdxFrom[i] = len(allMotionIDs)
-		allMotionIDs = append(allMotionIDs, index[i]...)
-		relatedIdxTo[i] = len(allMotionIDs)
+	allMotionIDs := make([]int, 0, len(index))
+	motionIDIdx := make(map[int]int, len(index)) // Index from motionID to index in allMotionIDs
+	for motionID := range index {
+		motionIDIdx[motionID] = len(allMotionIDs)
+		allMotionIDs = append(allMotionIDs, motionID)
 	}
 
-	attrFunc, err := fn(allMotionIDs)
+	attrFuncs, err := fn(allMotionIDs)
 	if err != nil {
 		return nil, fmt.Errorf("checking motions with lead motions: %w", err)
 	}
 
 	result := make([]attribute.Func, len(motionIDs))
-	for i := range motionIDs {
-		size := relatedIdxTo[i] - relatedIdxFrom[i]
-
-		funcList := make([]attribute.Func, size)
-		for j := 0; j < size; j++ {
-			funcList[j] = attrFunc[relatedIdxFrom[i]+j]
+	for i, motionID := range motionIDs {
+		var funcs []attribute.Func
+		seen := set.New[int]()
+		for motionID != 0 && !seen.Has(motionID) {
+			funcs = append(funcs, attrFuncs[motionIDIdx[motionID]])
+			seen.Add(motionID)
+			motionID = index[motionID]
 		}
-
-		result[i] = attribute.FuncAnd(funcList...)
+		result[i] = attribute.FuncAnd(funcs...)
 	}
-
 	return result, nil
 }
 

@@ -2,13 +2,15 @@ package perm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
 // GroupByPerm returns a list of groupIDs from permission. Includes groups that
-// derivit that perm.
+// deviate that perm.
 func GroupByPerm(ctx context.Context, ds *dsfetch.Fetch, meetingID int) (map[TPermission][]int, error) {
 	var groupIDs []int
 	ds.Meeting_GroupIDs(meetingID).Lazy(&groupIDs)
@@ -17,6 +19,13 @@ func GroupByPerm(ctx context.Context, ds *dsfetch.Fetch, meetingID int) (map[TPe
 	ds.Meeting_AdminGroupID(meetingID).Lazy(&adminGroup)
 
 	if err := ds.Execute(ctx); err != nil {
+		var errDoesNotExist dsfetch.DoesNotExistError
+		if errors.As(err, &errDoesNotExist) {
+			key := dskey.Key(errDoesNotExist)
+			if key.Collection() == "meeting" && key.ID() == meetingID {
+				return nil, nil
+			}
+		}
 		return nil, fmt.Errorf("getting groupIDs and admin group of meeting %d: %w", meetingID, err)
 	}
 

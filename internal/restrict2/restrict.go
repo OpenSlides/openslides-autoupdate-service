@@ -250,7 +250,7 @@ func (r *userRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.
 	// Check the permissions from here
 
 	// startUser := time.Now()
-	user, err := buildUserAttributes(ctx, r.getter, r.userID)
+	user, err := attribute.NewUserAttributes(ctx, r.getter, r.userID)
 	if err != nil {
 		return nil, fmt.Errorf("calculate user permission: %w", err)
 	}
@@ -314,46 +314,4 @@ func (r *userRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.
 	// log.Printf("old restricter for %d keys took: %s", len(oldKeys), time.Since(startOld))
 
 	return data, nil
-}
-
-func buildUserAttributes(ctx context.Context, getter flow.Getter, userID int) (attribute.UserAttributes, error) {
-	var zero attribute.UserAttributes
-	fetcher := dsfetch.New(getter)
-
-	if userID == 0 {
-		return zero, nil
-	}
-
-	var meetingUserIDs []int
-	var globalLevelStr string
-	var committeeAsManager []int
-	fetcher.User_OrganizationManagementLevel(userID).Lazy(&globalLevelStr)
-	fetcher.User_MeetingUserIDs(userID).Lazy(&meetingUserIDs)
-	fetcher.User_CommitteeManagementIDs(userID).Lazy(&committeeAsManager)
-
-	if err := fetcher.Execute(ctx); err != nil {
-		return zero, fmt.Errorf("getting meeting ids,  global and committee level for user %d: %w", userID, err)
-	}
-
-	groupIDList := make([][]int, len(meetingUserIDs))
-	for i, muid := range meetingUserIDs {
-		fetcher.MeetingUser_GroupIDs(muid).Lazy(&groupIDList[i])
-	}
-
-	if err := fetcher.Execute(ctx); err != nil {
-		return zero, fmt.Errorf("getting group IDs %d: %w", userID, err)
-	}
-
-	// TODO: Test if a sorted slice would be faster.
-	groupIDs := set.New[int]()
-	for _, idList := range groupIDList {
-		groupIDs.Add(idList...)
-	}
-
-	return attribute.UserAttributes{
-		UserID:            userID,
-		GroupIDs:          groupIDs,
-		OrgaLevel:         perm.OrganizationManagementLevel(globalLevelStr),
-		IsCommitteManager: len(committeeAsManager) > 0,
-	}, nil
 }
