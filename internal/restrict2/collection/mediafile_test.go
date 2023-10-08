@@ -3,8 +3,8 @@ package collection_test
 import (
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
 )
 
 func TestMediafileModeA(t *testing.T) {
@@ -18,6 +18,7 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/1:
 			owner_id: meeting/7
+			is_public: false
 
 		meeting/7:
 			id: 7
@@ -33,6 +34,7 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/1:
 			owner_id: organization/1
+			is_public: false
 		`,
 	)
 
@@ -44,6 +46,7 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/1:
 			owner_id: organization/1
+			is_public: false
 		`,
 		withRequestUser(0),
 	)
@@ -54,16 +57,20 @@ func TestMediafileModeA(t *testing.T) {
 		m.Modes("A"),
 		true,
 		`---
-		mediafile/1/owner_id: meeting/7
+		mediafile/1:
+			owner_id: meeting/7
+			is_public: false
 		meeting/7:
 			admin_group_id: 8
 			committee_id: 70
 		committee/70/id: 70
 
-
 		user/1/meeting_user_ids: [10]
-		meeting_user/10/group_ids: [8]
+		meeting_user/10:
+			group_ids: [8]
+			user_id: 1
 		meeting_user/10/meeting_id: 7
+		group/8/meeting_user_ids: [10]
 		`,
 	)
 
@@ -75,7 +82,8 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/3:
 			owner_id: meeting/7
-		
+			is_public: false
+
 		meeting/7/group_ids: [2]
 		group/2/meeting_user_ids: [10]
 		meeting_user/10/user_id: 1
@@ -91,10 +99,12 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/3:
 			owner_id: meeting/7
-
+			used_as_logo_projector_main_in_meeting_id: 5
+			is_public: false
 		meeting/7:
-			id: 7
-			committee_id: 404
+			committee_id: 5
+			enable_anonymous: false
+		committee/5/id: 5
 		`,
 		withElementID(3),
 	)
@@ -108,11 +118,11 @@ func TestMediafileModeA(t *testing.T) {
 		mediafile/3:
 			owner_id: meeting/7
 			used_as_logo_projector_main_in_meeting_id: 5
+			is_public: false
 		meeting/7:
-			group_ids: [2]
 			committee_id: 5
-		group/2/meeting_user_ids: [10]
-		meeting_user/10/user_id: 1
+			enable_anonymous: true
+		committee/5/id: 5
 		`,
 		withElementID(3),
 	)
@@ -126,6 +136,7 @@ func TestMediafileModeA(t *testing.T) {
 		mediafile/1:
 			owner_id: meeting/7
 			projection_ids: [4]
+			is_public: false
 		projection/4/current_projector_id: 5
 
 		meeting/7/committee_id: 404
@@ -142,6 +153,7 @@ func TestMediafileModeA(t *testing.T) {
 		mediafile/1:
 			owner_id: meeting/7
 			projection_ids: [4]
+			is_public: false
 		
 		meeting/7:
 			id: 7
@@ -160,6 +172,7 @@ func TestMediafileModeA(t *testing.T) {
 		mediafile/1:
 			owner_id: meeting/7
 			projection_ids: [4]
+			is_public: false
 
 		meeting/7:
 			id: 7
@@ -178,6 +191,7 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/1:
 			owner_id: meeting/7
+			is_public: false
 
 		meeting/7:
 			id: 7
@@ -270,6 +284,7 @@ func TestMediafileModeA(t *testing.T) {
 		mediafile/1:
 			owner_id: meeting/7
 			inherited_access_group_ids: [3]
+			is_public: false
 
 		meeting/7:
 			id: 7

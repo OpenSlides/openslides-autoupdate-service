@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // Topic handels the restrictions for the topic collection.
@@ -39,33 +39,20 @@ func (t Topic) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (t Topic) see(ctx context.Context, ds *dsfetch.Fetch, topicIDs ...int) ([]int, error) {
+func (t Topic) see(ctx context.Context, fetcher *dsfetch.Fetch, topicIDs []int) ([]attribute.Func, error) {
 	agendaIDs := make([]int, len(topicIDs))
 	for i, tid := range topicIDs {
-		ds.Topic_AgendaItemID(tid).Lazy(&agendaIDs[i])
+		fetcher.Topic_AgendaItemID(tid).Lazy(&agendaIDs[i])
 	}
 
-	if err := ds.Execute(ctx); err != nil {
+	if err := fetcher.Execute(ctx); err != nil {
 		return nil, fmt.Errorf("getting agenda ids: %w", err)
 	}
 
-	allowedAgendaIDs, err := Collection(ctx, AgendaItem{}.Name()).Modes("A")(ctx, ds, agendaIDs...)
+	agendaAttrFuncs, err := Collection(ctx, AgendaItem{}.Name()).Modes("A")(ctx, fetcher, agendaIDs)
 	if err != nil {
 		return nil, fmt.Errorf("checking agenda permission: %w", err)
 	}
 
-	if len(allowedAgendaIDs) == len(topicIDs) {
-		return topicIDs, nil
-	}
-
-	allowedAgendaSet := set.New(allowedAgendaIDs...)
-
-	var allowed []int
-	for i, tid := range topicIDs {
-		if allowedAgendaSet.Has(agendaIDs[i]) {
-			allowed = append(allowed, tid)
-		}
-	}
-
-	return allowed, nil
+	return agendaAttrFuncs, nil
 }

@@ -3,8 +3,8 @@ package collection_test
 import (
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
 )
 
 func TestMeetingUserModeA(t *testing.T) {
@@ -72,7 +72,8 @@ func TestMeetingUserModeA(t *testing.T) {
 		user/2/committee_ids: [5]
 		user/1:
 			committee_management_ids: [5]
-		committee/5/user_ids: [2]
+		committee/5:
+			manager_ids: [1]
 		meeting_user/20/user_id: 2
 		`,
 		withRequestUser(1),
@@ -101,7 +102,9 @@ func TestMeetingUserModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		user/2/meeting_user_ids: [20]
+		user/2:
+			meeting_user_ids: [20]
+			meeting_ids: [5]
 		meeting_user/20/meeting_id: 5
 		meeting_user/20/user_id: 2
 		`,

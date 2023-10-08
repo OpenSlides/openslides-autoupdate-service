@@ -3,7 +3,7 @@ package collection_test
 import (
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
 )
 
 func TestTagModeA(t *testing.T) {
@@ -32,6 +32,7 @@ func TestTagModeA(t *testing.T) {
 		meeting/5:
 			enable_anonymous: false
 			committee_id: 300
+		committee/300/id: 300
 		`,
 	)
 }

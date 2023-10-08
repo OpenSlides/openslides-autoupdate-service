@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -16,13 +17,12 @@ import (
 //
 // The user can see a mediafile of a meeting if any of:
 //
-//	The user is an admin of the meeting.
+//	The user has mediafile.can_manage.
 //	The user can see the meeting and used_as_logo_*_in_meeting_id or used_as_font_*_in_meeting_id is not empty.
 //	The user has projector.can_see and there exists a mediafile/projection_ids with projection/current_projector_id set.
-//	The user has mediafile.can_manage.
 //	The user has mediafile.can_see and either:
 //	    mediafile/is_public is true, or
-//	    The user has groups in common with meeting/inherited_access_group_ids.
+//	    The user has groups in common with mediafile/inherited_access_group_ids.
 //
 // Mode A: The user can see the mediafile.
 type Mediafile struct{}
@@ -67,91 +67,88 @@ func (m Mediafile) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...int) ([]int, error) {
-	requestUser, err := perm.RequestUserFromContext(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getting request user: %w", err)
+func (m Mediafile) see(ctx context.Context, fetcher *dsfetch.Fetch, mediafileIDs []int) ([]attribute.Func, error) {
+	ownerIDs := make([]string, len(mediafileIDs))
+	projectionIDs := make([][]int, len(mediafileIDs))
+	isPublic := make([]bool, len(mediafileIDs))
+	inheritedAccessGroupIDs := make([][]int, len(mediafileIDs))
+	for i, mediafileID := range mediafileIDs {
+		fetcher.Mediafile_ProjectionIDs(mediafileID).Lazy(&projectionIDs[i])
+		fetcher.Mediafile_OwnerID(mediafileID).Lazy(&ownerIDs[i])
+		fetcher.Mediafile_IsPublic(mediafileID).Lazy(&isPublic[i])
+		fetcher.Mediafile_InheritedAccessGroupIDs(mediafileID).Lazy(&inheritedAccessGroupIDs[i])
 	}
 
-	return eachContentObjectCollection(ctx, ds.Mediafile_OwnerID, mediafileIDs, func(collection string, ownerID int, ids []int) ([]int, error) {
-		// ownerID can be a meetingID or the organizationID
+	if err := fetcher.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("fetching mediafile data: %w", err)
+	}
+
+	out := make([]attribute.Func, len(mediafileIDs))
+	for i, mediafileID := range mediafileIDs {
+		collection, rawMeetingID, found := strings.Cut(ownerIDs[i], "/")
+		if !found {
+			return nil, fmt.Errorf("invalid generic relation")
+		}
+
 		if collection == "organization" {
-			if requestUser != 0 {
-				return ids, nil
-			}
-			return nil, nil
+			out[i] = attribute.FuncLoggedIn
+			continue
 		}
 
-		perms, err := perm.FromContext(ctx, ownerID)
+		meetingID, err := strconv.Atoi(rawMeetingID)
 		if err != nil {
-			return nil, fmt.Errorf("getting perms for meeting %d: %w", ownerID, err)
+			return nil, fmt.Errorf("invalid id in generic relation")
 		}
 
-		if perms.IsAdmin() {
-			return ids, nil
-		}
-
-		canSeeMeeting, err := Collection(ctx, Meeting{}.Name()).Modes("B")(ctx, ds, ownerID)
+		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID)
 		if err != nil {
-			return nil, fmt.Errorf("can see meeting %d: %w", ownerID, err)
+			return nil, fmt.Errorf("getting group map: %w", err)
 		}
 
-		return eachCondition(ids, func(mediafileID int) (bool, error) {
-			logoOrFont, err := usedAsLogoOrFont(ctx, ds, mediafileID)
+		var attrFuncs []attribute.Func
+
+		attrFuncs = append(attrFuncs, attribute.FuncInGroup(groupMap[perm.MediafileCanManage]))
+
+		isLogoOrFont, err := usedAsLogoOrFont(ctx, fetcher, mediafileID)
+		if err != nil {
+			return nil, fmt.Errorf("check for logo or font: %w", err)
+		}
+
+		if isLogoOrFont {
+			canSeeMeeting, err := Collection(ctx, "meeting").Modes("B")(ctx, fetcher, []int{meetingID})
 			if err != nil {
-				return false, err
+				return nil, fmt.Errorf("checking meeting can see: %w", err)
+			}
+			attrFuncs = append(attrFuncs, canSeeMeeting[0])
+		}
+
+		for _, p7onID := range projectionIDs[i] {
+			_, exist, err := fetcher.Projection_CurrentProjectorID(p7onID).Value(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("getting current projector id: %w", err)
 			}
 
-			if len(canSeeMeeting) == 1 && logoOrFont {
-				return true, nil
+			if exist {
+				attrFuncs = append(attrFuncs, attribute.FuncInGroup(groupMap[perm.ProjectorCanSee]))
+				break
 			}
+		}
 
-			if perms.Has(perm.ProjectorCanSee) {
-				p7onIDs, err := ds.Mediafile_ProjectionIDs(mediafileID).Value(ctx)
-				if err != nil {
-					return false, fmt.Errorf("getting projection ids: %w", err)
-				}
+		if isPublic[i] {
+			attrFuncs = append(attrFuncs, attribute.FuncInGroup(groupMap[perm.MediafileCanSee]))
+		} else {
+			attrFuncs = append(
+				attrFuncs,
+				attribute.FuncAnd(
+					attribute.FuncInGroup(groupMap[perm.MediafileCanSee]),
+					attribute.FuncInGroup(inheritedAccessGroupIDs[i]),
+				),
+			)
+		}
 
-				for _, p7onID := range p7onIDs {
-					_, exist, err := ds.Projection_CurrentProjectorID(p7onID).Value(ctx)
-					if err != nil {
-						return false, fmt.Errorf("getting current projector id: %w", err)
-					}
-
-					if exist {
-						return true, nil
-					}
-				}
-			}
-
-			if perms.Has(perm.MediafileCanManage) {
-				return true, nil
-			}
-
-			if perms.Has(perm.MediafileCanSee) {
-				public, err := ds.Mediafile_IsPublic(mediafileID).Value(ctx)
-				if err != nil {
-					return false, fmt.Errorf("getting is public: %w", err)
-				}
-
-				if public {
-					return true, nil
-				}
-
-				inheritedGroups, err := ds.Mediafile_InheritedAccessGroupIDs(mediafileID).Value(ctx)
-				if err != nil {
-					return false, fmt.Errorf("getting inheritedGroups: %w", err)
-				}
-
-				for _, id := range inheritedGroups {
-					if perms.InGroup(id) {
-						return true, nil
-					}
-				}
-			}
-			return false, nil
-		})
-	})
+		out[i] = attribute.FuncOr(attrFuncs...)
+	}
+	return out, nil
 }
 
 func usedAsLogoOrFont(ctx context.Context, ds *dsfetch.Fetch, mediafileID int) (bool, error) {

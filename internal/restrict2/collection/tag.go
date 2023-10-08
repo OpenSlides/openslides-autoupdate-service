@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -38,15 +39,13 @@ func (t Tag) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (t Tag) see(ctx context.Context, ds *dsfetch.Fetch, tagIDs ...int) ([]int, error) {
-	return eachMeeting(ctx, ds, t, tagIDs, func(meetingID int, ids []int) ([]int, error) {
-		canSee, err := Collection(ctx, Meeting{}.Name()).Modes("B")(ctx, ds, meetingID)
+func (t Tag) see(ctx context.Context, fetcher *dsfetch.Fetch, tagIDs []int) ([]attribute.Func, error) {
+	return byMeeting(ctx, fetcher, t, tagIDs, func(meetingID int, tagIDs []int) ([]attribute.Func, error) {
+		attrFuncs, err := Collection(ctx, Meeting{}.Name()).Modes("B")(ctx, fetcher, []int{meetingID})
 		if err != nil {
 			return nil, fmt.Errorf("checking meeting can see: %w", err)
 		}
-		if len(canSee) == 1 {
-			return ids, nil
-		}
-		return nil, nil
+
+		return attributeFuncList(len(tagIDs), attrFuncs[0]), nil
 	})
 }
