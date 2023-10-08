@@ -172,7 +172,6 @@ var collectionMap = map[string]Restricter{
 	MotionCategory{}.Name():             MotionCategory{},
 	MotionChangeRecommendation{}.Name(): MotionChangeRecommendation{},
 	MotionStatuteParagraph{}.Name():     MotionStatuteParagraph{},
-	MotionComment{}.Name():              MotionComment{},
 	MotionCommentSection{}.Name():       MotionCommentSection{},
 	MotionWorkflow{}.Name():             MotionWorkflow{},
 	Option{}.Name():                     Option{},
