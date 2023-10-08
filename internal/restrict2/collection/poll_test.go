@@ -3,8 +3,8 @@ package collection_test
 import (
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
 )
 
 func TestPollModeA(t *testing.T) {
@@ -148,6 +148,7 @@ func TestPollModeB(t *testing.T) {
 		poll/1:
 			content_object_id: motion/2
 			state: published
+			meeting_id: 30
 		
 		motion/2:
 			meeting_id: 30
@@ -185,6 +186,7 @@ func TestPollModeB(t *testing.T) {
 		poll/1:
 			content_object_id: motion/1
 			state: finished
+			meeting_id: 30
 		
 		motion/1:
 			meeting_id: 30
@@ -201,6 +203,7 @@ func TestPollModeB(t *testing.T) {
 		poll/1:
 			content_object_id: motion/1
 			state: finished
+			meeting_id: 30
 		
 		motion/1:
 			meeting_id: 30
@@ -216,6 +219,7 @@ func TestPollModeB(t *testing.T) {
 		poll/1:
 			content_object_id: assignment/1
 			state: finished
+			meeting_id: 30
 		
 		assignment/1:
 			meeting_id: 30
@@ -232,6 +236,7 @@ func TestPollModeB(t *testing.T) {
 		poll/1:
 			content_object_id: assignment/1
 			state: finished
+			meeting_id: 30
 		
 		assignment/1:
 			meeting_id: 30
@@ -421,12 +426,15 @@ func TestPollModeD(t *testing.T) {
 		false,
 		`---
 		poll/1:
-			content_object_id: motion/1
+			content_object_id: motion/2
 			state: published
 			meeting_id: 30
 		
-		motion/1:
+		motion/2:
 			meeting_id: 30
+			state_id: 3
+		
+		motion_state/3/id: 3
 		`,
 	)
 

@@ -177,8 +177,6 @@ var collectionMap = map[string]Restricter{
 	Option{}.Name():                     Option{},
 	OrganizationTag{}.Name():            OrganizationTag{},
 	PersonalNote{}.Name():               PersonalNote{},
-	PointOfOrderCategory{}.Name():       PointOfOrderCategory{},
-	Poll{}.Name():                       Poll{},
 	PollCandidate{}.Name():              PollCandidate{},
 	PollCandidateList{}.Name():          PollCandidateList{},
 	Projection{}.Name():                 Projection{},

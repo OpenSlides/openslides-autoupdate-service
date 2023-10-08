@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -38,6 +39,6 @@ func (a Assignment) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a Assignment) see(ctx context.Context, ds *dsfetch.Fetch, assignmentIDs ...int) ([]int, error) {
-	return meetingPerm(ctx, ds, a, assignmentIDs, perm.AssignmentCanSee)
+func (a Assignment) see(ctx context.Context, fetcher *dsfetch.Fetch, assignmentIDs []int) ([]attribute.Func, error) {
+	return meetingPerm(ctx, fetcher, a, assignmentIDs, perm.AssignmentCanSee)
 }

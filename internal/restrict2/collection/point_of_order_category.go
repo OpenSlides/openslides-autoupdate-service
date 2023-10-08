@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -38,17 +39,14 @@ func (p PointOfOrderCategory) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (p PointOfOrderCategory) see(ctx context.Context, ds *dsfetch.Fetch, pointOfOrderCategoryIDs ...int) ([]int, error) {
-	return eachMeeting(ctx, ds, p, pointOfOrderCategoryIDs, func(meetingID int, ids []int) ([]int, error) {
-		allowed, err := Collection(ctx, Meeting{}.Name()).Modes("B")(ctx, ds, meetingID)
+func (p PointOfOrderCategory) see(ctx context.Context, fetcher *dsfetch.Fetch, pointOfOrderCategoryIDs []int) ([]attribute.Func, error) {
+	// TODO: It would be faster to call Collection().Mode(B) with all meeting IDs at once.
+	return byMeeting(ctx, fetcher, p, pointOfOrderCategoryIDs, func(meetingID int, ids []int) ([]attribute.Func, error) {
+		meetingAttr, err := Collection(ctx, "meeting").Modes("B")(ctx, fetcher, []int{meetingID})
 		if err != nil {
-			return nil, fmt.Errorf("check can see of meeting %d: %w", meetingID, err)
+			return nil, fmt.Errorf("checking motion.see: %w", err)
 		}
 
-		if len(allowed) == 0 {
-			return nil, nil
-		}
-
-		return ids, err
+		return attributeFuncList(len(ids), meetingAttr[0]), nil
 	})
 }
