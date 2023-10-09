@@ -348,7 +348,7 @@ func (u User) modeF(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 func (u User) modeH(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
 	userOrgaLevel := make([]string, len(userIDs))
 	for i, id := range userIDs {
-		if id != 0 {
+		if id == 0 {
 			continue
 		}
 		fetcher.User_OrganizationManagementLevel(id).Lazy(&userOrgaLevel[i])
@@ -364,7 +364,7 @@ func (u User) modeH(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 	}
 
 	for i, id := range userIDs {
-		if id != 0 {
+		if id == 0 {
 			continue
 		}
 		result[i] = attribute.FuncAnd(

@@ -10,6 +10,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
+// CollectionMap is an index from collection name to its restricter.
 var CollectionMap = map[string]Restricter{
 	// ActionWorker{}.Name():               ActionWorker{},
 	AgendaItem{}.Name():          AgendaItem{},
@@ -143,61 +144,49 @@ func withRestrictCache(ctx context.Context, sub Restricter) Restricter {
 	}
 }
 
-// func (r *restrictCache) Modes(mode string) FieldRestricter {
-// 	return func(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]attribute.Func, error) {
-// 		notFound := make([]int, 0, len(ids))
-// 		foundAttr := make([]attribute.Func, 0, len(ids))
-// 		for _, id := range ids {
-// 			key, err := dskey.FromParts(r.Name(), id, mode)
-// 			if err != nil {
-// 				return nil, err
-// 			}
+func (r *restrictCache) Modes(mode string) FieldRestricter {
+	return func(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]attribute.Func, error) {
+		notFoundIDs := make([]int, len(ids))
+		attrList := make([]attribute.Func, len(ids))
+		foundAll := true
+		for i, id := range ids {
+			key, err := dskey.FromParts(r.Name(), id, mode)
+			if err != nil {
+				return nil, err
+			}
 
-// 			attrFunc, found := r.cache[key]
-// 			if !found {
-// 				notFound = append(notFound, id)
-// 				continue
-// 			}
+			attrFunc, found := r.cache[key]
+			if !found {
+				notFoundIDs[i] = id
+				foundAll = false
+				continue
+			}
 
-// 			foundAttr = append(foundAttr, attrFunc)
+			attrList[i] = attrFunc
+		}
 
-// 		}
+		if foundAll {
+			return attrList, nil
+		}
 
-// 		if len(notFound) == 0 {
-// 			return foundAttr, nil
-// 		}
+		newAttrList, err := r.Restricter.Modes(mode)(ctx, fetcher, notFoundIDs)
+		if err != nil {
+			idsString := "with same ids"
+			if len(notFoundIDs) != len(ids) {
+				idsString = fmt.Sprintf("with ids %v", notFoundIDs)
+			}
+			return nil, fmt.Errorf("calling restricter %s: %w", idsString, err)
+		}
 
-// 		// TODO: An index is required Or allow 0 as ID and fill array with empty 0. Tihs sounds better
-// 		newAllowedIDs, err := r.Restricter.Modes(mode)(ctx, fetcher, notFound)
-// 		if err != nil {
-// 			idsString := "with same ids"
-// 			if len(notFound) != len(ids) {
-// 				idsString = fmt.Sprintf("with ids %v", notFound)
-// 			}
-// 			return nil, fmt.Errorf("calling restricter %s: %w", idsString, err)
-// 		}
+		for i := range ids {
+			if newAttrList[i] != nil {
+				attrList[i] = newAttrList[i]
+			}
+		}
 
-// 		// Add all not Found keys to the cache as not allowed.
-// 		for _, id := range notFound {
-// 			key, err := dskey.FromParts(r.Name(), id, mode)
-// 			if err != nil {
-// 				return nil, err
-// 			}
-// 			r.cache[key] = false
-// 		}
-
-// 		// Set all new allowed ids to the cache as true.
-// 		for _, id := range newAllowedIDs {
-// 			key, err := dskey.FromParts(r.Name(), id, mode)
-// 			if err != nil {
-// 				return nil, err
-// 			}
-// 			r.cache[key] = true
-// 		}
-
-// 		return append(cachedAllowedIDs, newAllowedIDs...), nil
-// 	}
-// }
+		return attrList, nil
+	}
+}
 
 // Restricter returns a fieldRestricter for a restriction_mode.
 //

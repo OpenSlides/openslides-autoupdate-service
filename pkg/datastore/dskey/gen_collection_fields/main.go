@@ -72,11 +72,18 @@ func parse(r io.Reader) ([]collectionField, error) {
 		}
 	}
 
-	// Add a meta field for the restricter.
-	result = append(result, collectionField{
-		Collection: "_meta",
-		Field:      "update",
-	})
+	// Add internal fields that are required by the restricter.
+	result = append(
+		result,
+		collectionField{
+			Collection: "_meta",
+			Field:      "update",
+		},
+		collectionField{
+			Collection: "poll",
+			Field:      "MANAGE",
+		},
+	)
 
 	// TODO: Save mode fields in own datastructure
 	for _, cf := range modefields.List() {
