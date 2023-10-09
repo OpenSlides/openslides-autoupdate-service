@@ -129,7 +129,7 @@ func (r *Restricter) precalculate(ctx context.Context, collectionModes []dskey.K
 	}
 
 	for name, collectionModes := range byCollection {
-		restricter := collection.Collection(ctx, name)
+		restricter := collection.FromName(ctx, name)
 
 		byMode := make(map[string][]int)
 		for _, collectionMode := range collectionModes {

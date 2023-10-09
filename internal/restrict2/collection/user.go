@@ -153,14 +153,14 @@ func (User) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []UserRequir
 		{
 			"motion submitter",
 			ds.MeetingUser_MotionSubmitterIDs,
-			Collection(ctx, MotionSubmitter{}.Name()).Modes("A"),
+			Collection(ctx, MotionSubmitter{}).Modes("A"),
 			false,
 		},
 
 		{
 			"motion supporter",
 			ds.MeetingUser_SupportedMotionIDs,
-			Collection(ctx, Motion{}.Name()).Modes("C"),
+			Collection(ctx, Motion{}).Modes("C"),
 			false,
 		},
 
@@ -321,7 +321,7 @@ func (u User) modeH(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 		return nil, fmt.Errorf("fetching orga levels: %w", err)
 	}
 
-	result, err := Collection(ctx, "user").Modes("D")(ctx, fetcher, userIDs)
+	result, err := Collection(ctx, u).Modes("D")(ctx, fetcher, userIDs)
 	if err != nil {
 		return nil, fmt.Errorf("check like D: %w", err)
 	}

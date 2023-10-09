@@ -172,7 +172,6 @@ var collectionMap = map[string]Restricter{
 	MotionStatuteParagraph{}.Name():     MotionStatuteParagraph{},
 	MotionCommentSection{}.Name():       MotionCommentSection{},
 	MotionWorkflow{}.Name():             MotionWorkflow{},
-	Option{}.Name():                     Option{},
 	OrganizationTag{}.Name():            OrganizationTag{},
 	PersonalNote{}.Name():               PersonalNote{},
 	PollCandidate{}.Name():              PollCandidate{},

@@ -102,7 +102,7 @@ func (m MotionComment) see(ctx context.Context, fetcher *dsfetch.Fetch, motionCo
 		return nil, fmt.Errorf("fetching user from meeting user: %w", err)
 	}
 
-	canSeeMotion, err := canSeeRelatedCollection(ctx, fetcher, fetcher.MotionComment_MotionID, Collection(ctx, "motion").Modes("C"), motionCommentIDs)
+	canSeeMotion, err := canSeeRelatedCollection(ctx, fetcher, fetcher.MotionComment_MotionID, Collection(ctx, Motion{}).Modes("C"), motionCommentIDs)
 	if err != nil {
 		return nil, fmt.Errorf("checking motion can see: %w", err)
 	}

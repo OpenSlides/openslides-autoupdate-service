@@ -40,5 +40,5 @@ func (t Tag) Modes(mode string) FieldRestricter {
 }
 
 func (t Tag) see(ctx context.Context, fetcher *dsfetch.Fetch, tagIDs []int) ([]attribute.Func, error) {
-	return canSeeRelatedCollection(ctx, fetcher, fetcher.Tag_MeetingID, Collection(ctx, Meeting{}.Name()).Modes("B"), tagIDs)
+	return canSeeRelatedCollection(ctx, fetcher, fetcher.Tag_MeetingID, Collection(ctx, Meeting{}).Modes("B"), tagIDs)
 }

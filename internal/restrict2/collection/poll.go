@@ -98,11 +98,11 @@ func (p Poll) see(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int) ([
 		var mode FieldRestricter
 		switch collection {
 		case "motion":
-			mode = Collection(ctx, "motion").Modes("C")
+			mode = Collection(ctx, Motion{}).Modes("C")
 		case "assignment":
-			mode = Collection(ctx, "assignment").Modes("A")
+			mode = Collection(ctx, Assignment{}).Modes("A")
 		case "topic":
-			mode = Collection(ctx, "topic").Modes("A")
+			mode = Collection(ctx, Topic{}).Modes("A")
 		default:
 			return nil, fmt.Errorf("invalid collection %s", collection)
 		}
@@ -175,14 +175,14 @@ func (p Poll) modeB(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int) 
 	for i, pollID := range pollIDs {
 		switch state[i] {
 		case "published":
-			af, err := Collection(ctx, p.Name()).Modes("A")(ctx, fetcher, []int{pollID})
+			af, err := Collection(ctx, p).Modes("A")(ctx, fetcher, []int{pollID})
 			if err != nil {
 				return nil, fmt.Errorf("checking poll.see: %w", err)
 			}
 			out[i] = af[0]
 
 		case "finished":
-			af, err := Collection(ctx, p.Name()).Modes("MANAGE")(ctx, fetcher, []int{pollID})
+			af, err := Collection(ctx, p).Modes("MANAGE")(ctx, fetcher, []int{pollID})
 			if err != nil {
 				return nil, fmt.Errorf("checking poll.see: %w", err)
 			}
@@ -219,7 +219,7 @@ func (p Poll) modeC(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int) 
 			return nil, fmt.Errorf("getting group map: %w", err)
 		}
 
-		canManage, err := Collection(ctx, p.Name()).Modes("MANAGE")(ctx, fetcher, []int{pollID})
+		canManage, err := Collection(ctx, p).Modes("MANAGE")(ctx, fetcher, []int{pollID})
 		if err != nil {
 			return nil, fmt.Errorf("checking poll.see: %w", err)
 		}
@@ -254,7 +254,7 @@ func (p Poll) modeD(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int) 
 	for i, pollID := range pollIDs {
 		switch state[i] {
 		case "published":
-			af, err := Collection(ctx, p.Name()).Modes("A")(ctx, fetcher, []int{pollID})
+			af, err := Collection(ctx, p).Modes("A")(ctx, fetcher, []int{pollID})
 			if err != nil {
 				return nil, fmt.Errorf("checking poll.see: %w", err)
 			}
@@ -266,7 +266,7 @@ func (p Poll) modeD(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int) 
 				return nil, fmt.Errorf("getting group map: %w", err)
 			}
 
-			canManage, err := Collection(ctx, p.Name()).Modes("MANAGE")(ctx, fetcher, []int{pollID})
+			canManage, err := Collection(ctx, p).Modes("MANAGE")(ctx, fetcher, []int{pollID})
 			if err != nil {
 				return nil, fmt.Errorf("checking poll.see: %w", err)
 			}

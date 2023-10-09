@@ -54,7 +54,7 @@ func (m MeetingUser) Modes(mode string) FieldRestricter {
 }
 
 func (m MeetingUser) see(ctx context.Context, fetcher *dsfetch.Fetch, meetingUserIDs []int) ([]attribute.Func, error) {
-	return canSeeRelatedCollection(ctx, fetcher, fetcher.MeetingUser_UserID, Collection(ctx, "user").Modes("A"), meetingUserIDs)
+	return canSeeRelatedCollection(ctx, fetcher, fetcher.MeetingUser_UserID, Collection(ctx, User{}).Modes("A"), meetingUserIDs)
 }
 
 func (MeetingUser) modeB(ctx context.Context, fetcher *dsfetch.Fetch, meetingUserIDs []int) ([]attribute.Func, error) {

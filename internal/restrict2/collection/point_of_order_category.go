@@ -40,5 +40,5 @@ func (p PointOfOrderCategory) Modes(mode string) FieldRestricter {
 }
 
 func (p PointOfOrderCategory) see(ctx context.Context, fetcher *dsfetch.Fetch, pointOfOrderCategoryIDs []int) ([]attribute.Func, error) {
-	return canSeeRelatedCollection(ctx, fetcher, fetcher.PointOfOrderCategory_MeetingID, Collection(ctx, Meeting{}.Name()).Modes("B"), pointOfOrderCategoryIDs)
+	return canSeeRelatedCollection(ctx, fetcher, fetcher.PointOfOrderCategory_MeetingID, Collection(ctx, Meeting{}).Modes("B"), pointOfOrderCategoryIDs)
 }

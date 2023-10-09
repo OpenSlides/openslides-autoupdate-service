@@ -40,5 +40,5 @@ func (m MotionSubmitter) Modes(mode string) FieldRestricter {
 }
 
 func (m MotionSubmitter) see(ctx context.Context, fetcher *dsfetch.Fetch, motionSubmitterIDs []int) ([]attribute.Func, error) {
-	return canSeeRelatedCollection(ctx, fetcher, fetcher.MotionSubmitter_MotionID, Collection(ctx, Motion{}.Name()).Modes("C"), motionSubmitterIDs)
+	return canSeeRelatedCollection(ctx, fetcher, fetcher.MotionSubmitter_MotionID, Collection(ctx, Motion{}).Modes("C"), motionSubmitterIDs)
 }

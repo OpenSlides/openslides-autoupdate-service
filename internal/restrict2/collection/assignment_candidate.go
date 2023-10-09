@@ -40,5 +40,5 @@ func (a AssignmentCandidate) Modes(mode string) FieldRestricter {
 }
 
 func (a AssignmentCandidate) see(ctx context.Context, fetcher *dsfetch.Fetch, assignmentCandidateIDs []int) ([]attribute.Func, error) {
-	return canSeeRelatedCollection(ctx, fetcher, fetcher.AssignmentCandidate_AssignmentID, Collection(ctx, "assignment").Modes("A"), assignmentCandidateIDs)
+	return canSeeRelatedCollection(ctx, fetcher, fetcher.AssignmentCandidate_AssignmentID, Collection(ctx, Assignment{}).Modes("A"), assignmentCandidateIDs)
 }

@@ -33,8 +33,8 @@ var collectionMap = map[string]Restricter{
 	MotionCommentSection{}.Name(): MotionCommentSection{},
 	MotionSubmitter{}.Name():      MotionSubmitter{},
 	MotionWorkflow{}.Name():       MotionWorkflow{},
-	// Option{}.Name():                     Option{},
-	Organization{}.Name(): Organization{},
+	Option{}.Name():               Option{},
+	Organization{}.Name():         Organization{},
 	// OrganizationTag{}.Name():            OrganizationTag{},
 	// PersonalNote{}.Name():               PersonalNote{},
 	PointOfOrderCategory{}.Name(): PointOfOrderCategory{},
@@ -53,11 +53,22 @@ var collectionMap = map[string]Restricter{
 	// Vote{}.Name():                       Vote{},
 }
 
-// Collection returns the restricter for a collection
-func Collection(ctx context.Context, collection string) Restricter {
-	r, ok := collectionMap[collection]
+// FromName returns a restricter for a collection from its name.
+func FromName(ctx context.Context, name string) Restricter {
+	r, ok := collectionMap[name]
 	if !ok {
-		return Unknown{collection}
+		return Unknown{name}
+	}
+
+	// TODO: Fixme for superadmin. It needs the restrict superadmin method
+	return withRestrictCache(ctx, r)
+}
+
+// Collection returns the restricter for a collection
+func Collection(ctx context.Context, collection Restricter) Restricter {
+	r, ok := collectionMap[collection.Name()]
+	if !ok {
+		panic(fmt.Sprintf("collection %s is not in collection.collectionMap", collection.Name()))
 	}
 
 	// TODO: Fixme for superadmin. It needs the restrict superadmin method

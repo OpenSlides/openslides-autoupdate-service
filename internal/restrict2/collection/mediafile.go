@@ -115,7 +115,7 @@ func (m Mediafile) see(ctx context.Context, fetcher *dsfetch.Fetch, mediafileIDs
 		}
 
 		if isLogoOrFont {
-			canSeeMeeting, err := Collection(ctx, "meeting").Modes("B")(ctx, fetcher, []int{meetingID})
+			canSeeMeeting, err := Collection(ctx, Meeting{}).Modes("B")(ctx, fetcher, []int{meetingID})
 			if err != nil {
 				return nil, fmt.Errorf("checking meeting can see: %w", err)
 			}

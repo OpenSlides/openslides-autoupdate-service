@@ -219,7 +219,7 @@ func (m Motion) modeA(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []i
 		relatedIdxTo[i] = len(allMotionIDs)
 	}
 
-	attrFunc, err := Collection(ctx, m.Name()).Modes("C")(ctx, fetcher, allMotionIDs)
+	attrFunc, err := Collection(ctx, m).Modes("C")(ctx, fetcher, allMotionIDs)
 	if err != nil {
 		return nil, fmt.Errorf("see motion: %w", err)
 	}

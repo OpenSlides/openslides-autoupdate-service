@@ -40,5 +40,5 @@ func (t Topic) Modes(mode string) FieldRestricter {
 }
 
 func (t Topic) see(ctx context.Context, fetcher *dsfetch.Fetch, topicIDs []int) ([]attribute.Func, error) {
-	return canSeeRelatedCollection(ctx, fetcher, fetcher.Topic_AgendaItemID, Collection(ctx, AgendaItem{}.Name()).Modes("A"), topicIDs)
+	return canSeeRelatedCollection(ctx, fetcher, fetcher.Topic_AgendaItemID, Collection(ctx, AgendaItem{}).Modes("A"), topicIDs)
 }
