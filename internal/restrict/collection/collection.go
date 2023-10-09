@@ -161,20 +161,11 @@ func (r *restrictCache) SuperAdmin(mode string) FieldRestricter {
 }
 
 var collectionMap = map[string]Restricter{
-	Committee{}.Name():                  Committee{},
-	ImportPreview{}.Name():              ImportPreview{},
-	MotionBlock{}.Name():                MotionBlock{},
-	MotionCategory{}.Name():             MotionCategory{},
-	MotionChangeRecommendation{}.Name(): MotionChangeRecommendation{},
-	MotionStatuteParagraph{}.Name():     MotionStatuteParagraph{},
-	MotionCommentSection{}.Name():       MotionCommentSection{},
-	MotionWorkflow{}.Name():             MotionWorkflow{},
-	OrganizationTag{}.Name():            OrganizationTag{},
-	PersonalNote{}.Name():               PersonalNote{},
-	Projection{}.Name():                 Projection{},
-	ProjectorCountdown{}.Name():         ProjectorCountdown{},
-	ProjectorMessage{}.Name():           ProjectorMessage{},
-	Speaker{}.Name():                    Speaker{},
+	PersonalNote{}.Name():       PersonalNote{},
+	Projection{}.Name():         Projection{},
+	ProjectorCountdown{}.Name(): ProjectorCountdown{},
+	ProjectorMessage{}.Name():   ProjectorMessage{},
+	Speaker{}.Name():            Speaker{},
 }
 
 // Collection returns the restricter for a collection

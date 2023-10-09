@@ -3,10 +3,11 @@ package collection_test
 import (
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
 )
 
 func TestCommitteeModeA(t *testing.T) {
+	t.Parallel()
 	var c collection.Committee
 
 	testCase(
@@ -40,6 +41,7 @@ func TestCommitteeModeA(t *testing.T) {
 }
 
 func TestCommitteeModeB(t *testing.T) {
+	t.Parallel()
 	var c collection.Committee
 
 	testCase(
@@ -48,9 +50,10 @@ func TestCommitteeModeB(t *testing.T) {
 		c.Modes("B"),
 		false,
 		`---
-		committee/5/id: 5
+		committee/5/manager_ids: [404]
 		user/1/organization_management_level: can_manage_users
 		`,
+		withElementID(5),
 	)
 
 	testCase(
@@ -59,9 +62,10 @@ func TestCommitteeModeB(t *testing.T) {
 		c.Modes("B"),
 		true,
 		`---
-		committee/5/id: 5
+		committee/5/manager_ids: [404]
 		user/1/organization_management_level: can_manage_organization
 		`,
+		withElementID(5),
 	)
 
 	testCase(
@@ -70,9 +74,7 @@ func TestCommitteeModeB(t *testing.T) {
 		c.Modes("B"),
 		true,
 		`---
-		committee/5/id: 5
-		user/1:
-			committee_management_ids: [5]
+		committee/5/manager_ids: [1]
 		`,
 		withElementID(5),
 	)

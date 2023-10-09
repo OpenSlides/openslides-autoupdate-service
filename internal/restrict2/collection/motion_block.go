@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -42,33 +43,39 @@ func (m MotionBlock) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (m MotionBlock) see(ctx context.Context, ds *dsfetch.Fetch, motionBlockIDs ...int) ([]int, error) {
-	return eachMeeting(ctx, ds, m, motionBlockIDs, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := perm.FromContext(ctx, meetingID)
+func (m MotionBlock) see(ctx context.Context, fetcher *dsfetch.Fetch, motionBlockIDs []int) ([]attribute.Func, error) {
+	meetingID := make([]int, len(motionBlockIDs))
+	internal := make([]bool, len(motionBlockIDs))
+	for i, id := range motionBlockIDs {
+		if id == 0 {
+			continue
+		}
+		fetcher.MotionBlock_MeetingID(id).Lazy(&meetingID[i])
+		fetcher.MotionBlock_Internal(id).Lazy(&internal[i])
+	}
+
+	if err := fetcher.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("fetching motion block data: %w", err)
+	}
+
+	attr := make([]attribute.Func, len(motionBlockIDs))
+	for i, id := range motionBlockIDs {
+		if id == 0 {
+			continue
+		}
+
+		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID[i])
 		if err != nil {
-			return nil, fmt.Errorf("getting permissions: %w", err)
+			return nil, fmt.Errorf("getting group map: %w", err)
 		}
 
-		if perms.Has(perm.MotionCanManage) {
-			return ids, nil
+		canPerm := perm.MotionCanSee
+		if internal[i] {
+			canPerm = perm.MotionCanManage
 		}
 
-		if !perms.Has(perm.MotionCanSee) {
-			return nil, nil
-		}
+		attr[i] = attribute.FuncInGroup(groupMap[canPerm])
 
-		allowed, err := eachCondition(ids, func(motionBlockID int) (bool, error) {
-			internal, err := ds.MotionBlock_Internal(motionBlockID).Value(ctx)
-			if err != nil {
-				return false, fmt.Errorf("getting internal: %w", err)
-			}
-
-			return !internal, nil
-		})
-		if err != nil {
-			return nil, fmt.Errorf("checking internal state: %w", err)
-		}
-
-		return allowed, nil
-	})
+	}
+	return attr, nil
 }
