@@ -3,11 +3,12 @@ package collection_test
 import (
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
 )
 
 func TestChatMessageModeA(t *testing.T) {
+	t.Parallel()
 	var c collection.ChatMessage
 
 	testCase(
@@ -20,7 +21,10 @@ func TestChatMessageModeA(t *testing.T) {
 			chat_group_id: 5
 			meeting_user_id: 20
 		meeting_user/20/user_id: 25
-		chat_group/5/meeting_id: 30
+		chat_group/5:
+			meeting_id: 30
+			read_group_ids: []
+			write_group_ids: []
 		meeting/10/id: 10
 		`,
 	)
@@ -31,9 +35,14 @@ func TestChatMessageModeA(t *testing.T) {
 		c.Modes("A"),
 		true,
 		`---
-		chat_message/1/chat_group_id: 5
+		chat_message/1:
+			chat_group_id: 5
+			meeting_user_id: 404
+		meeting_user/404/user_id: 44
 		chat_group/5:
 			meeting_id: 30
+			read_group_ids: []
+			write_group_ids: []
 		
 		meeting/30/id: 30
 		`,
@@ -46,7 +55,10 @@ func TestChatMessageModeA(t *testing.T) {
 		c.Modes("A"),
 		true,
 		`---
-		chat_message/1/chat_group_id: 5
+		chat_message/1:
+			chat_group_id: 5
+			meeting_user_id: 404
+		meeting_user/404/user_id: 44
 		chat_group/5:
 			meeting_id: 30
 			read_group_ids: [4]

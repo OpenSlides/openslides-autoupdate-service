@@ -3,11 +3,12 @@ package collection_test
 import (
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
 )
 
 func TestChatGroupModeA(t *testing.T) {
+	t.Parallel()
 	var c collection.ChatGroup
 
 	testCase(

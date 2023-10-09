@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -42,41 +43,40 @@ func (c ChatGroup) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, chatGroupIDs ...int) ([]int, error) {
-	return eachMeeting(ctx, ds, c, chatGroupIDs, func(meetingID int, ids []int) ([]int, error) {
-		perms, err := perm.FromContext(ctx, meetingID)
+func (c ChatGroup) see(ctx context.Context, fetcher *dsfetch.Fetch, chatGroupIDs []int) ([]attribute.Func, error) {
+	readGroupIDs := make([][]int, len(chatGroupIDs))
+	writeGroupIDs := make([][]int, len(chatGroupIDs))
+	meetingID := make([]int, len(chatGroupIDs))
+	for i, id := range chatGroupIDs {
+		if id == 0 {
+			continue
+		}
+		fetcher.ChatGroup_MeetingID(id).Lazy(&meetingID[i])
+		fetcher.ChatGroup_ReadGroupIDs(id).Lazy(&readGroupIDs[i])
+		fetcher.ChatGroup_WriteGroupIDs(id).Lazy(&writeGroupIDs[i])
+	}
+
+	if err := fetcher.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("fetching chat group data: %w", err)
+	}
+
+	attr := make([]attribute.Func, len(chatGroupIDs))
+	for i, id := range chatGroupIDs {
+		if id == 0 {
+			continue
+		}
+		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID[i])
 		if err != nil {
-			return nil, fmt.Errorf("getting permissions: %w", err)
+			return nil, fmt.Errorf("getting group map: %w", err)
 		}
 
-		if perms.Has(perm.ChatCanManage) {
-			return ids, nil
-		}
+		attr[i] = attribute.FuncOr(
+			attribute.FuncInGroup(groupMap[perm.ChatCanManage]),
+			attribute.FuncInGroup(readGroupIDs[i]),
+			attribute.FuncInGroup(writeGroupIDs[i]),
+		)
 
-		allowed, err := eachCondition(ids, func(chatGroupID int) (bool, error) {
-			readGroups, err := ds.ChatGroup_ReadGroupIDs(chatGroupID).Value(ctx)
-			if err != nil {
-				return false, fmt.Errorf("getting chat read group ids: %w", err)
-			}
+	}
 
-			writeGroups, err := ds.ChatGroup_WriteGroupIDs(chatGroupID).Value(ctx)
-			if err != nil {
-				return false, fmt.Errorf("getting chat read group ids: %w", err)
-			}
-
-			allGroups := append(readGroups, writeGroups...)
-
-			for _, gid := range allGroups {
-				if perms.InGroup(gid) {
-					return true, nil
-				}
-			}
-			return false, nil
-		})
-		if err != nil {
-			return nil, fmt.Errorf("checking if user is in read or write group: %w", err)
-		}
-
-		return allowed, nil
-	})
+	return attr, nil
 }

@@ -12,13 +12,13 @@ import (
 
 // CollectionMap is an index from collection name to its restricter.
 var CollectionMap = map[string]Restricter{
-	// ActionWorker{}.Name():               ActionWorker{},
+	ActionWorker{}.Name():        ActionWorker{},
 	AgendaItem{}.Name():          AgendaItem{},
 	Assignment{}.Name():          Assignment{},
 	AssignmentCandidate{}.Name(): AssignmentCandidate{},
 	ListOfSpeakers{}.Name():      ListOfSpeakers{},
-	// ChatGroup{}.Name():                  ChatGroup{},
-	// ChatMessage{}.Name():                ChatMessage{},
+	ChatGroup{}.Name():           ChatGroup{},
+	ChatMessage{}.Name():         ChatMessage{},
 	// Committee{}.Name():                  Committee{},
 	Group{}.Name():       Group{},
 	Mediafile{}.Name():   Mediafile{},
