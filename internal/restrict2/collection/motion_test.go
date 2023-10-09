@@ -8,6 +8,7 @@ import (
 )
 
 func TestMotionModeC(t *testing.T) {
+	t.Parallel()
 	f := collection.Motion{}.Modes("C")
 
 	testCase(
@@ -339,6 +340,7 @@ func TestMotionModeC(t *testing.T) {
 }
 
 func TestMotionModeA(t *testing.T) {
+	t.Parallel()
 	f := collection.Motion{}.Modes("A")
 
 	testCase(
@@ -483,6 +485,7 @@ func TestMotionModeA(t *testing.T) {
 }
 
 func TestMotionModeD(t *testing.T) {
+	t.Parallel()
 	f := collection.Motion{}.Modes("D")
 
 	testCase(

@@ -8,6 +8,7 @@ import (
 )
 
 func TestAssignmentModeB(t *testing.T) {
+	t.Parallel()
 	var a collection.Assignment
 
 	testCase(

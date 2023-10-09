@@ -8,6 +8,7 @@ import (
 )
 
 func TestMotionWorkflowModeA(t *testing.T) {
+	t.Parallel()
 	f := collection.MotionWorkflow{}.Modes("A")
 
 	testCase(

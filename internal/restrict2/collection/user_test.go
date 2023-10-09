@@ -8,6 +8,7 @@ import (
 )
 
 func TestUserModeA(t *testing.T) {
+	t.Parallel()
 	f := collection.User{}.Modes("A")
 
 	testCase(
@@ -354,6 +355,7 @@ func TestUserModeA(t *testing.T) {
 }
 
 func TestUserModeD(t *testing.T) {
+	t.Parallel()
 	var u collection.User
 
 	testCase(
@@ -407,6 +409,7 @@ func TestUserModeD(t *testing.T) {
 }
 
 func TestUserModeE(t *testing.T) {
+	t.Parallel()
 	var u collection.User
 
 	testCase(
@@ -512,6 +515,7 @@ func TestUserModeE(t *testing.T) {
 }
 
 func TestUserModeF(t *testing.T) {
+	t.Parallel()
 	var u collection.User
 	mode := u.Modes("F")
 
@@ -549,6 +553,7 @@ func TestUserModeF(t *testing.T) {
 }
 
 func TestUserModeG(t *testing.T) {
+	t.Parallel()
 	var u collection.User
 
 	testCase(
@@ -595,6 +600,7 @@ func TestUserModeG(t *testing.T) {
 }
 
 func TestUserModeH(t *testing.T) {
+	t.Parallel()
 	var u collection.User
 
 	testCase(

@@ -8,6 +8,7 @@ import (
 )
 
 func TestTopicModeA(t *testing.T) {
+	t.Parallel()
 	f := collection.Topic{}.Modes("A")
 
 	testCase(

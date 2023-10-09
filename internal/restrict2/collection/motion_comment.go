@@ -102,6 +102,11 @@ func (m MotionComment) see(ctx context.Context, fetcher *dsfetch.Fetch, motionCo
 		return nil, fmt.Errorf("fetching user from meeting user: %w", err)
 	}
 
+	canSeeMotion, err := canSeeRelatedCollection(ctx, fetcher, fetcher.MotionComment_MotionID, Collection(ctx, "motion").Modes("C"), motionCommentIDs)
+	if err != nil {
+		return nil, fmt.Errorf("checking motion can see: %w", err)
+	}
+
 	out := make([]attribute.Func, len(motionCommentIDs))
 	for i := range motionCommentIDs {
 		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID[i])
@@ -112,12 +117,12 @@ func (m MotionComment) see(ctx context.Context, fetcher *dsfetch.Fetch, motionCo
 		var funcs attribute.Func
 		if submitterCanWrite[i] {
 			funcs = attribute.FuncAnd(
-				attribute.FuncInGroup(groupMap[perm.MotionCanSee]),
+				canSeeMotion[i],
 				attribute.FuncUserIDs(submitterUserIDs[i]),
 			)
 		} else {
 			funcs = attribute.FuncAnd(
-				attribute.FuncInGroup(groupMap[perm.MotionCanSee]),
+				canSeeMotion[i],
 				attribute.FuncOr(
 					attribute.FuncInGroup(readGroupIDs[i]),
 					attribute.FuncInGroup(writeGroupIDs[i]),

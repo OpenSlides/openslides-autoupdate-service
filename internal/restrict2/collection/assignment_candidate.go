@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -38,17 +39,6 @@ func (a AssignmentCandidate) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a AssignmentCandidate) see(ctx context.Context, ds *dsfetch.Fetch, assignmentCandidateIDs ...int) ([]int, error) {
-	return eachRelationField(ctx, ds.AssignmentCandidate_AssignmentID, assignmentCandidateIDs, func(assignmentID int, ids []int) ([]int, error) {
-		canSeeAssignment, err := Collection(ctx, Assignment{}.Name()).Modes("A")(ctx, ds, assignmentID)
-		if err != nil {
-			return nil, fmt.Errorf("can see assignment: %w", err)
-		}
-
-		if len(canSeeAssignment) == 1 {
-			return ids, nil
-		}
-
-		return nil, nil
-	})
+func (a AssignmentCandidate) see(ctx context.Context, fetcher *dsfetch.Fetch, assignmentCandidateIDs []int) ([]attribute.Func, error) {
+	return canSeeRelatedCollection(ctx, fetcher, fetcher.AssignmentCandidate_AssignmentID, Collection(ctx, "assignment").Modes("A"), assignmentCandidateIDs)
 }

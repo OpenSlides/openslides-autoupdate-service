@@ -7,6 +7,7 @@ import (
 )
 
 func TestPointOfOrderCategoryModeA(t *testing.T) {
+	t.Parallel()
 	var p collection.PointOfOrderCategory
 
 	testCase(

@@ -7,6 +7,7 @@ import (
 )
 
 func TestThemeModeA(t *testing.T) {
+	t.Parallel()
 	f := collection.Theme{}.Modes("A")
 
 	testCase(

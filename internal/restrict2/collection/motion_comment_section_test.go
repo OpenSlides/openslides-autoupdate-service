@@ -8,6 +8,7 @@ import (
 )
 
 func TestMotionCommentSectionModeA(t *testing.T) {
+	t.Parallel()
 	f := collection.MotionCommentSection{}.Modes("A")
 
 	testCase(

@@ -14,6 +14,7 @@ import (
 )
 
 func TestAgendaModeA(t *testing.T) {
+	t.Parallel()
 	var a collection.AgendaItem
 
 	testCase(
@@ -121,6 +122,7 @@ func TestAgendaModeA(t *testing.T) {
 }
 
 func TestAgendaModeB(t *testing.T) {
+	t.Parallel()
 	var a collection.AgendaItem
 	ds := `---
 	agenda_item/1/meeting_id: 30
@@ -145,6 +147,7 @@ func TestAgendaModeB(t *testing.T) {
 }
 
 func TestAgendaModeC(t *testing.T) {
+	t.Parallel()
 	var a collection.AgendaItem
 	ds := `---
 	agenda_item/1/meeting_id: 30
@@ -187,6 +190,7 @@ func TestAgendaModeC(t *testing.T) {
 }
 
 func TestAgendaItemMeetingID_0_returns_an_InvalidData_error(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fetcher := dsfetch.New(dsmock.Stub(dsmock.YAMLData(`---
 	agenda_item/1/meeting_id: 0

@@ -40,12 +40,5 @@ func (t Tag) Modes(mode string) FieldRestricter {
 }
 
 func (t Tag) see(ctx context.Context, fetcher *dsfetch.Fetch, tagIDs []int) ([]attribute.Func, error) {
-	return byMeeting(ctx, fetcher, t, tagIDs, func(meetingID int, tagIDs []int) ([]attribute.Func, error) {
-		attrFuncs, err := Collection(ctx, Meeting{}.Name()).Modes("B")(ctx, fetcher, []int{meetingID})
-		if err != nil {
-			return nil, fmt.Errorf("checking meeting can see: %w", err)
-		}
-
-		return attributeFuncList(len(tagIDs), attrFuncs[0]), nil
-	})
+	return canSeeRelatedCollection(ctx, fetcher, fetcher.Tag_MeetingID, Collection(ctx, Meeting{}.Name()).Modes("B"), tagIDs)
 }

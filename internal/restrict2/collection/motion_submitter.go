@@ -40,13 +40,5 @@ func (m MotionSubmitter) Modes(mode string) FieldRestricter {
 }
 
 func (m MotionSubmitter) see(ctx context.Context, fetcher *dsfetch.Fetch, motionSubmitterIDs []int) ([]attribute.Func, error) {
-	// TODO: It would be faster to call Collection().Mode(C) with all motionIDs at once.
-	return byRelationField(ctx, fetcher.MotionSubmitter_MotionID, motionSubmitterIDs, func(motionID int, motionSubmitterIDs []int) ([]attribute.Func, error) {
-		motionAttr, err := Collection(ctx, "motion").Modes("C")(ctx, fetcher, []int{motionID})
-		if err != nil {
-			return nil, fmt.Errorf("checking motion.see: %w", err)
-		}
-
-		return attributeFuncList(len(motionSubmitterIDs), motionAttr[0]), nil
-	})
+	return canSeeRelatedCollection(ctx, fetcher, fetcher.MotionSubmitter_MotionID, Collection(ctx, Motion{}.Name()).Modes("C"), motionSubmitterIDs)
 }

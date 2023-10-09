@@ -40,13 +40,5 @@ func (p PointOfOrderCategory) Modes(mode string) FieldRestricter {
 }
 
 func (p PointOfOrderCategory) see(ctx context.Context, fetcher *dsfetch.Fetch, pointOfOrderCategoryIDs []int) ([]attribute.Func, error) {
-	// TODO: It would be faster to call Collection().Mode(B) with all meeting IDs at once.
-	return byMeeting(ctx, fetcher, p, pointOfOrderCategoryIDs, func(meetingID int, ids []int) ([]attribute.Func, error) {
-		meetingAttr, err := Collection(ctx, "meeting").Modes("B")(ctx, fetcher, []int{meetingID})
-		if err != nil {
-			return nil, fmt.Errorf("checking motion.see: %w", err)
-		}
-
-		return attributeFuncList(len(ids), meetingAttr[0]), nil
-	})
+	return canSeeRelatedCollection(ctx, fetcher, fetcher.PointOfOrderCategory_MeetingID, Collection(ctx, Meeting{}.Name()).Modes("B"), pointOfOrderCategoryIDs)
 }

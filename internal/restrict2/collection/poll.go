@@ -94,6 +94,7 @@ func (p Poll) see(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int) ([
 			return nil, fmt.Errorf("invalid id part of content object id: %w", err)
 		}
 
+		// TODO: Try to group by collection and call all at the same time
 		var mode FieldRestricter
 		switch collection {
 		case "motion":

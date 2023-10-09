@@ -8,6 +8,7 @@ import (
 )
 
 func TestMotionSubmitterModeA(t *testing.T) {
+	t.Parallel()
 	f := collection.MotionSubmitter{}.Modes("A")
 
 	testCase(

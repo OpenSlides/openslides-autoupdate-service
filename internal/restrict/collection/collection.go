@@ -162,8 +162,6 @@ func (r *restrictCache) SuperAdmin(mode string) FieldRestricter {
 
 var collectionMap = map[string]Restricter{
 	ActionWorker{}.Name():               ActionWorker{},
-	Assignment{}.Name():                 Assignment{},
-	AssignmentCandidate{}.Name():        AssignmentCandidate{},
 	ChatGroup{}.Name():                  ChatGroup{},
 	ChatMessage{}.Name():                ChatMessage{},
 	Committee{}.Name():                  Committee{},

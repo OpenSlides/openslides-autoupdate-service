@@ -8,6 +8,7 @@ import (
 )
 
 func TestProjectorModeA(t *testing.T) {
+	t.Parallel()
 	f := collection.Projector{}.Modes("A")
 
 	testCase(

@@ -7,6 +7,7 @@ import (
 )
 
 func TestOrganizationModeA(t *testing.T) {
+	t.Parallel()
 	f := collection.Organization{}.Modes("A")
 
 	testCase(
@@ -19,6 +20,7 @@ func TestOrganizationModeA(t *testing.T) {
 }
 
 func TestOrganizationModeB(t *testing.T) {
+	t.Parallel()
 	f := collection.Organization{}.Modes("B")
 
 	testCase(
@@ -41,6 +43,7 @@ func TestOrganizationModeB(t *testing.T) {
 }
 
 func TestOrganizationModeC(t *testing.T) {
+	t.Parallel()
 	f := collection.Organization{}.Modes("C")
 
 	testCase(

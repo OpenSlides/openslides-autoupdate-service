@@ -8,6 +8,7 @@ import (
 )
 
 func TestMediafileModeA(t *testing.T) {
+	t.Parallel()
 	var m collection.Mediafile
 
 	testCase(

@@ -12,10 +12,10 @@ import (
 
 var collectionMap = map[string]Restricter{
 	// ActionWorker{}.Name():               ActionWorker{},
-	AgendaItem{}.Name(): AgendaItem{},
-	Assignment{}.Name(): Assignment{},
-	// AssignmentCandidate{}.Name():        AssignmentCandidate{},
-	ListOfSpeakers{}.Name(): ListOfSpeakers{},
+	AgendaItem{}.Name():          AgendaItem{},
+	Assignment{}.Name():          Assignment{},
+	AssignmentCandidate{}.Name(): AssignmentCandidate{},
+	ListOfSpeakers{}.Name():      ListOfSpeakers{},
 	// ChatGroup{}.Name():                  ChatGroup{},
 	// ChatMessage{}.Name():                ChatMessage{},
 	// Committee{}.Name():                  Committee{},
@@ -244,6 +244,19 @@ func byRelationField(ctx context.Context, toField func(int) *dsfetch.ValueInt, i
 	}
 
 	return result, nil
+}
+
+func canSeeRelatedCollection(ctx context.Context, fetcher *dsfetch.Fetch, toField func(int) *dsfetch.ValueInt, mode FieldRestricter, ids []int) ([]attribute.Func, error) {
+	relationIDs := make([]int, len(ids))
+	for i, id := range ids {
+		toField(id).Lazy(&relationIDs[i])
+	}
+
+	if err := fetcher.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("fetching related objects: %w", err)
+	}
+
+	return mode(ctx, fetcher, relationIDs)
 }
 
 func attributeFuncList(len int, attr attribute.Func) []attribute.Func {

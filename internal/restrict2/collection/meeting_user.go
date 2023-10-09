@@ -54,27 +54,7 @@ func (m MeetingUser) Modes(mode string) FieldRestricter {
 }
 
 func (m MeetingUser) see(ctx context.Context, fetcher *dsfetch.Fetch, meetingUserIDs []int) ([]attribute.Func, error) {
-	userIDs := make([]int, len(meetingUserIDs))
-	for i, meetingUserID := range meetingUserIDs {
-		fetcher.MeetingUser_UserID(meetingUserID).Lazy(&userIDs[i])
-	}
-
-	if err := fetcher.Execute(ctx); err != nil {
-		return nil, fmt.Errorf("fetching user ids: %w", err)
-	}
-
-	out := make([]attribute.Func, len(meetingUserIDs))
-	for i := range meetingUserIDs {
-		// TODO: Group by user
-		userAttr, err := Collection(ctx, User{}.Name()).Modes("A")(ctx, fetcher, []int{userIDs[i]})
-		if err != nil {
-			return nil, fmt.Errorf("checking user: %w", err)
-		}
-
-		out[i] = userAttr[0]
-	}
-
-	return out, nil
+	return canSeeRelatedCollection(ctx, fetcher, fetcher.MeetingUser_UserID, Collection(ctx, "user").Modes("A"), meetingUserIDs)
 }
 
 func (MeetingUser) modeB(ctx context.Context, fetcher *dsfetch.Fetch, meetingUserIDs []int) ([]attribute.Func, error) {

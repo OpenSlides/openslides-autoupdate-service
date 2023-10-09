@@ -8,6 +8,7 @@ import (
 )
 
 func TestMeetingModeA(t *testing.T) {
+	t.Parallel()
 	var m collection.Meeting
 
 	testCase(
@@ -20,6 +21,7 @@ func TestMeetingModeA(t *testing.T) {
 }
 
 func TestMeetingModeB(t *testing.T) {
+	t.Parallel()
 	var m collection.Meeting
 
 	testCase(
@@ -149,6 +151,7 @@ func TestMeetingModeB(t *testing.T) {
 }
 
 func TestMeetingModeC(t *testing.T) {
+	t.Parallel()
 	var m collection.Meeting
 
 	testCase(
@@ -172,6 +175,7 @@ func TestMeetingModeC(t *testing.T) {
 }
 
 func TestMeetingModeD(t *testing.T) {
+	t.Parallel()
 	var m collection.Meeting
 
 	testCase(

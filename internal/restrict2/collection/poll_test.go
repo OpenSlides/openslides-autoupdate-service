@@ -8,6 +8,7 @@ import (
 )
 
 func TestPollModeA(t *testing.T) {
+	t.Parallel()
 	f := collection.Poll{}.Modes("A")
 
 	testCase(
@@ -137,6 +138,7 @@ func TestPollModeA(t *testing.T) {
 }
 
 func TestPollModeB(t *testing.T) {
+	t.Parallel()
 	f := collection.Poll{}.Modes("B")
 
 	testCase(
@@ -289,6 +291,7 @@ func TestPollModeB(t *testing.T) {
 }
 
 func TestPollModeC(t *testing.T) {
+	t.Parallel()
 	f := collection.Poll{}.Modes("C")
 
 	testCase(
@@ -397,6 +400,7 @@ func TestPollModeC(t *testing.T) {
 }
 
 func TestPollModeD(t *testing.T) {
+	t.Parallel()
 	f := collection.Poll{}.Modes("D")
 
 	testCase(

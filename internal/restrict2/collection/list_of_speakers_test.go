@@ -8,6 +8,7 @@ import (
 )
 
 func TestListOfSpeakersModeA(t *testing.T) {
+	t.Parallel()
 	f := collection.ListOfSpeakers{}.Modes("A")
 
 	testCase(

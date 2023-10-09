@@ -8,6 +8,7 @@ import (
 )
 
 func TestMotionStateModeA(t *testing.T) {
+	t.Parallel()
 	f := collection.MotionState{}.Modes("A")
 
 	testCase(

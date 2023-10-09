@@ -8,6 +8,7 @@ import (
 )
 
 func TestMeetingUserModeA(t *testing.T) {
+	t.Parallel()
 	f := collection.MeetingUser{}.Modes("A")
 
 	testCase(
@@ -115,6 +116,7 @@ func TestMeetingUserModeA(t *testing.T) {
 }
 
 func TestMeetingUserModeB(t *testing.T) {
+	t.Parallel()
 	f := collection.MeetingUser{}.Modes("B")
 
 	testCase(
@@ -143,6 +145,7 @@ func TestMeetingUserModeB(t *testing.T) {
 }
 
 func TestMeetingUserModeD(t *testing.T) {
+	t.Parallel()
 	f := collection.MeetingUser{}.Modes("D")
 
 	testCase(

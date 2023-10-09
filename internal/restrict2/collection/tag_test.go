@@ -7,6 +7,7 @@ import (
 )
 
 func TestTagModeA(t *testing.T) {
+	t.Parallel()
 	f := collection.Tag{}.Modes("A")
 
 	testCase(

@@ -7,6 +7,7 @@ import (
 )
 
 func TestGroupModeA(t *testing.T) {
+	t.Parallel()
 	var g collection.Group
 
 	testCase(

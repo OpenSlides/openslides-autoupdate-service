@@ -77,6 +77,7 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 	t.Helper()
 
 	t.Run(tt.name, func(t *testing.T) {
+		t.Parallel()
 		t.Helper()
 		getter := dsmock.Stub(tt.data)
 		fetcher := dsfetch.New(getter)

@@ -10,7 +10,7 @@ import (
 
 // Topic handels the restrictions for the topic collection.
 //
-// The user can see a topic, if the user can see the linked topic.
+// The user can see a topic, if the user can see the linked agenda_item.
 //
 // Mode A: The user can see the topic.
 type Topic struct{}
@@ -40,19 +40,5 @@ func (t Topic) Modes(mode string) FieldRestricter {
 }
 
 func (t Topic) see(ctx context.Context, fetcher *dsfetch.Fetch, topicIDs []int) ([]attribute.Func, error) {
-	agendaIDs := make([]int, len(topicIDs))
-	for i, tid := range topicIDs {
-		fetcher.Topic_AgendaItemID(tid).Lazy(&agendaIDs[i])
-	}
-
-	if err := fetcher.Execute(ctx); err != nil {
-		return nil, fmt.Errorf("getting agenda ids: %w", err)
-	}
-
-	agendaAttrFuncs, err := Collection(ctx, AgendaItem{}.Name()).Modes("A")(ctx, fetcher, agendaIDs)
-	if err != nil {
-		return nil, fmt.Errorf("checking agenda permission: %w", err)
-	}
-
-	return agendaAttrFuncs, nil
+	return canSeeRelatedCollection(ctx, fetcher, fetcher.Topic_AgendaItemID, Collection(ctx, AgendaItem{}.Name()).Modes("A"), topicIDs)
 }
