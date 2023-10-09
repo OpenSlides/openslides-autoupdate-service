@@ -73,7 +73,7 @@ func (m Motion) see(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int
 				}
 
 				if len(restrictions) == 0 {
-					return attributeFuncList(len(motionIDs), attrMotionCanSee), nil
+					return attributeFuncList(motionIDs, attrMotionCanSee), nil
 				}
 
 				var hasIsSubmitterRestriction bool
@@ -91,7 +91,7 @@ func (m Motion) see(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int
 						attrMotionCanSee,
 						attribute.FuncOr(attribute.FuncInGroup(restrictGroups)),
 					)
-					return attributeFuncList(len(motionIDs), attr), nil
+					return attributeFuncList(motionIDs, attr), nil
 				}
 
 				motionAttr, err := submitterFunc(ctx, fetcher, motionIDs)
@@ -100,7 +100,11 @@ func (m Motion) see(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int
 				}
 
 				result := make([]attribute.Func, len(motionIDs))
-				for i := range motionIDs {
+				for i, id := range motionIDs {
+					if id == 0 {
+						continue
+					}
+
 					isSubmitter := motionAttr[i]
 
 					result[i] = attribute.FuncAnd(
@@ -129,8 +133,12 @@ func leadMotionIndex(ctx context.Context, ds *dsfetch.Fetch, motionIDs []int) (m
 
 	for len(motionIDs) > 0 {
 		leadMotionIDs := make([]int, len(motionIDs))
-		for i, motionID := range motionIDs {
-			ds.Motion_LeadMotionID(motionID).Lazy(&leadMotionIDs[i])
+		for i, id := range motionIDs {
+			if id == 0 {
+				continue
+			}
+
+			ds.Motion_LeadMotionID(id).Lazy(&leadMotionIDs[i])
 		}
 
 		if err := ds.Execute(ctx); err != nil {
@@ -182,13 +190,17 @@ func filterCanSeeLeadMotion(ctx context.Context, fetcher *dsfetch.Fetch, motionI
 	}
 
 	result := make([]attribute.Func, len(motionIDs))
-	for i, motionID := range motionIDs {
+	for i, id := range motionIDs {
+		if id == 0 {
+			continue
+		}
+
 		var funcs []attribute.Func
 		seen := set.New[int]()
-		for motionID != 0 && !seen.Has(motionID) {
-			funcs = append(funcs, attrFuncs[motionIDIdx[motionID]])
-			seen.Add(motionID)
-			motionID = index[motionID]
+		for id != 0 && !seen.Has(id) {
+			funcs = append(funcs, attrFuncs[motionIDIdx[id]])
+			seen.Add(id)
+			id = index[id]
 		}
 		result[i] = attribute.FuncAnd(funcs...)
 	}
@@ -199,9 +211,13 @@ func (m Motion) modeA(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []i
 	originIDs := make([][]int, len(motionIDs))
 	derivedIDs := make([][]int, len(motionIDs))
 
-	for i, motionID := range motionIDs {
-		fetcher.Motion_AllOriginIDs(motionID).Lazy(&originIDs[i])
-		fetcher.Motion_AllDerivedMotionIDs(motionID).Lazy(&derivedIDs[i])
+	for i, id := range motionIDs {
+		if id == 0 {
+			continue
+		}
+
+		fetcher.Motion_AllOriginIDs(id).Lazy(&originIDs[i])
+		fetcher.Motion_AllDerivedMotionIDs(id).Lazy(&derivedIDs[i])
 	}
 
 	if err := fetcher.Execute(ctx); err != nil {
@@ -211,9 +227,13 @@ func (m Motion) modeA(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []i
 	relatedIdxFrom := make([]int, len(motionIDs))
 	relatedIdxTo := make([]int, len(motionIDs))
 	var allMotionIDs []int
-	for i, motionID := range motionIDs {
-		allMotionIDs = append(allMotionIDs, motionID)
-		relatedIDs := append([]int{motionID}, append(originIDs[i], derivedIDs[i]...)...)
+	for i, id := range motionIDs {
+		if id == 0 {
+			continue
+		}
+
+		allMotionIDs = append(allMotionIDs, id)
+		relatedIDs := append([]int{id}, append(originIDs[i], derivedIDs[i]...)...)
 		relatedIdxFrom[i] = len(allMotionIDs)
 		allMotionIDs = append(allMotionIDs, relatedIDs...)
 		relatedIdxTo[i] = len(allMotionIDs)
@@ -225,7 +245,11 @@ func (m Motion) modeA(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []i
 	}
 
 	result := make([]attribute.Func, len(motionIDs))
-	for i := range motionIDs {
+	for i, id := range motionIDs {
+		if id == 0 {
+			continue
+		}
+
 		size := relatedIdxTo[i] - relatedIdxFrom[i]
 
 		funcList := make([]attribute.Func, size)
@@ -244,7 +268,11 @@ func (m Motion) modeA(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []i
 // motion.
 func submitterFunc(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int) ([]attribute.Func, error) {
 	submitterIDsList := make([][]int, len(motionIDs))
-	for i := range motionIDs {
+	for i, id := range motionIDs {
+		if id == 0 {
+			continue
+		}
+
 		fetcher.Motion_SubmitterIDs(motionIDs[i]).Lazy(&submitterIDsList[i])
 	}
 

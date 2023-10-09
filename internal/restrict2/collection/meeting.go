@@ -57,8 +57,12 @@ func (m Meeting) see(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs []i
 	orgaManger := attribute.FuncGlobalLevel(perm.OMLCanManageOrganization)
 
 	result := make([]attribute.Func, len(meetingIDs))
-	for i, meetingID := range meetingIDs {
-		enableAnonymous, err := fetcher.Meeting_EnableAnonymous(meetingID).Value(ctx)
+	for i, id := range meetingIDs {
+		if id == 0 {
+			continue
+		}
+
+		enableAnonymous, err := fetcher.Meeting_EnableAnonymous(id).Value(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("checking enabled anonymous: %w", err)
 		}
@@ -68,14 +72,14 @@ func (m Meeting) see(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs []i
 			continue
 		}
 
-		groupIDs, err := fetcher.Meeting_GroupIDs(meetingID).Value(ctx)
+		groupIDs, err := fetcher.Meeting_GroupIDs(id).Value(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("getting group_ids: %w", err)
 		}
 
 		inMeeting := attribute.FuncInGroup(groupIDs)
 
-		committeeID, err := fetcher.Meeting_CommitteeID(meetingID).Value(ctx)
+		committeeID, err := fetcher.Meeting_CommitteeID(id).Value(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("getting committee id of meeting: %w", err)
 		}
@@ -87,7 +91,7 @@ func (m Meeting) see(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs []i
 
 		committeeManager := attribute.FuncUserIDs(committeeManagerIDs)
 
-		_, isTemplateMeeting, err := fetcher.Meeting_TemplateForOrganizationID(meetingID).Value(ctx)
+		_, isTemplateMeeting, err := fetcher.Meeting_TemplateForOrganizationID(id).Value(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("getting template meeting: %w", err)
 		}
@@ -111,6 +115,10 @@ func (m Meeting) see(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs []i
 func (m Meeting) modeC(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs []int) ([]attribute.Func, error) {
 	result := make([]attribute.Func, len(meetingIDs))
 	for i, id := range meetingIDs {
+		if id == 0 {
+			continue
+		}
+
 		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, id)
 		if err != nil {
 			return nil, fmt.Errorf("getting group map: %w", err)
@@ -124,6 +132,10 @@ func (m Meeting) modeC(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs [
 func (m Meeting) modeD(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs []int) ([]attribute.Func, error) {
 	result := make([]attribute.Func, len(meetingIDs))
 	for i, id := range meetingIDs {
+		if id == 0 {
+			continue
+		}
+
 		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, id)
 		if err != nil {
 			return nil, fmt.Errorf("getting group map: %w", err)

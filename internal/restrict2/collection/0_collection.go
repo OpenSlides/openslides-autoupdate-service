@@ -10,7 +10,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
-var collectionMap = map[string]Restricter{
+var CollectionMap = map[string]Restricter{
 	// ActionWorker{}.Name():               ActionWorker{},
 	AgendaItem{}.Name():          AgendaItem{},
 	Assignment{}.Name():          Assignment{},
@@ -55,7 +55,7 @@ var collectionMap = map[string]Restricter{
 
 // FromName returns a restricter for a collection from its name.
 func FromName(ctx context.Context, name string) Restricter {
-	r, ok := collectionMap[name]
+	r, ok := CollectionMap[name]
 	if !ok {
 		return Unknown{name}
 	}
@@ -66,7 +66,7 @@ func FromName(ctx context.Context, name string) Restricter {
 
 // Collection returns the restricter for a collection
 func Collection(ctx context.Context, collection Restricter) Restricter {
-	r, ok := collectionMap[collection.Name()]
+	r, ok := CollectionMap[collection.Name()]
 	if !ok {
 		panic(fmt.Sprintf("collection %s is not in collection.collectionMap", collection.Name()))
 	}
@@ -97,11 +97,11 @@ func (u Unknown) Name() string {
 
 // Allways is a restricter func that just returns true.
 func Allways(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]attribute.Func, error) {
-	return attributeFuncList(len(ids), attribute.FuncAllow), nil
+	return attributeFuncList(ids, attribute.FuncAllow), nil
 }
 
 func loggedIn(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]attribute.Func, error) {
-	return attributeFuncList(len(ids), attribute.FuncLoggedIn), nil
+	return attributeFuncList(ids, attribute.FuncLoggedIn), nil
 }
 
 func never(ctx context.Context, ds *dsfetch.Fetch, ids []int) ([]attribute.Func, error) {
@@ -113,7 +113,7 @@ func never(ctx context.Context, ds *dsfetch.Fetch, ids []int) ([]attribute.Func,
 }
 
 type restrictCache struct {
-	cache map[dskey.Key]bool
+	cache map[dskey.Key]attribute.Func
 	Restricter
 }
 
@@ -123,18 +123,18 @@ var contextKey contextKeyType = "restrict cache"
 
 // ContextWithRestrictCache returns a context with restrict cache.
 func ContextWithRestrictCache(ctx context.Context) context.Context {
-	return context.WithValue(ctx, contextKey, make(map[dskey.Key]bool))
+	return context.WithValue(ctx, contextKey, make(map[dskey.Key]attribute.Func))
 }
 
 func withRestrictCache(ctx context.Context, sub Restricter) Restricter {
 	v := ctx.Value(contextKey)
 	if v == nil {
-		return sub
+		panic("collection cache not initialized")
 	}
 
-	cache, ok := v.(map[dskey.Key]bool)
+	cache, ok := v.(map[dskey.Key]attribute.Func)
 	if !ok {
-		return sub
+		panic("collection cache is broken")
 	}
 
 	return &restrictCache{
@@ -142,6 +142,62 @@ func withRestrictCache(ctx context.Context, sub Restricter) Restricter {
 		Restricter: sub,
 	}
 }
+
+// func (r *restrictCache) Modes(mode string) FieldRestricter {
+// 	return func(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]attribute.Func, error) {
+// 		notFound := make([]int, 0, len(ids))
+// 		foundAttr := make([]attribute.Func, 0, len(ids))
+// 		for _, id := range ids {
+// 			key, err := dskey.FromParts(r.Name(), id, mode)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+
+// 			attrFunc, found := r.cache[key]
+// 			if !found {
+// 				notFound = append(notFound, id)
+// 				continue
+// 			}
+
+// 			foundAttr = append(foundAttr, attrFunc)
+
+// 		}
+
+// 		if len(notFound) == 0 {
+// 			return foundAttr, nil
+// 		}
+
+// 		// TODO: An index is required Or allow 0 as ID and fill array with empty 0. Tihs sounds better
+// 		newAllowedIDs, err := r.Restricter.Modes(mode)(ctx, fetcher, notFound)
+// 		if err != nil {
+// 			idsString := "with same ids"
+// 			if len(notFound) != len(ids) {
+// 				idsString = fmt.Sprintf("with ids %v", notFound)
+// 			}
+// 			return nil, fmt.Errorf("calling restricter %s: %w", idsString, err)
+// 		}
+
+// 		// Add all not Found keys to the cache as not allowed.
+// 		for _, id := range notFound {
+// 			key, err := dskey.FromParts(r.Name(), id, mode)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			r.cache[key] = false
+// 		}
+
+// 		// Set all new allowed ids to the cache as true.
+// 		for _, id := range newAllowedIDs {
+// 			key, err := dskey.FromParts(r.Name(), id, mode)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			r.cache[key] = true
+// 		}
+
+// 		return append(cachedAllowedIDs, newAllowedIDs...), nil
+// 	}
+// }
 
 // Restricter returns a fieldRestricter for a restriction_mode.
 //
@@ -158,6 +214,8 @@ type Restricter interface {
 }
 
 // FieldRestricter is a function to restrict fields of a collection.
+//
+// The ids can contain 0. In this case, the coresponding attribute.Func has to be nil
 type FieldRestricter func(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]attribute.Func, error)
 
 func meetingPerm(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, ids []int, permission perm.TPermission) ([]attribute.Func, error) {
@@ -173,7 +231,10 @@ func meetingPerm(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, ids 
 		)
 
 		result := make([]attribute.Func, len(ids))
-		for i := range ids {
+		for i, id := range ids {
+			if id == 0 {
+				continue
+			}
 			result[i] = attr
 		}
 		return result, nil
@@ -182,9 +243,12 @@ func meetingPerm(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, ids 
 
 func byMeeting(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, ids []int, fn func(meetingID int, ids []int) ([]attribute.Func, error)) ([]attribute.Func, error) {
 	meetingToIDs := make(map[int][]int)
-	idxToMeeting := make([]int, len(ids))
-	idxToMeetingIdx := make([]int, len(ids))
+
 	for i, id := range ids {
+		if id == 0 {
+			continue
+		}
+
 		meetingID, hasMeeting, err := r.MeetingID(ctx, fetcher, id)
 		if err != nil {
 			return nil, fmt.Errorf("getting meeting id of element %d: %w", id, err)
@@ -194,36 +258,34 @@ func byMeeting(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, ids []
 			return nil, fmt.Errorf("element with id %d has no meeting", id)
 		}
 
-		idxToMeeting[i] = meetingID
-		idxToMeetingIdx[i] = len(meetingToIDs[meetingID])
-		meetingToIDs[meetingID] = append(meetingToIDs[meetingID], id)
+		if meetingToIDs[meetingID] == nil {
+			meetingToIDs[meetingID] = make([]int, len(ids))
+		}
+
+		meetingToIDs[meetingID][i] = id
 	}
 
-	resultList := make(map[int][]attribute.Func, len(meetingToIDs))
+	resultList := make([]attribute.Func, len(ids))
 	for meetingID, ids := range meetingToIDs {
-		result, err := fn(meetingID, ids)
+		attrList, err := fn(meetingID, ids)
 		if err != nil {
 			return nil, fmt.Errorf("restricting for meeting %d: %w", meetingID, err)
 		}
-		resultList[meetingID] = append(resultList[meetingID], result...)
-	}
 
-	result := make([]attribute.Func, len(ids))
-	for i := range ids {
-		meetingID := idxToMeeting[i]
-		resultIdx := idxToMeetingIdx[i]
-		result[i] = resultList[meetingID][resultIdx]
+		for i, attr := range attrList {
+			if attr == nil {
+				continue
+			}
+			resultList[i] = attr
+		}
 	}
-
-	return result, nil
+	return resultList, nil
 }
 
 // TODO: byRelationField and byMeeting are very simular. Maybe write an abstract
 // function that takes a filter function.
 func byRelationField(ctx context.Context, toField func(int) *dsfetch.ValueInt, ids []int, fn func(relationID int, ids []int) ([]attribute.Func, error)) ([]attribute.Func, error) {
 	filteredIDs := make(map[int][]int)
-	idxToFiltered := make([]int, len(ids))
-	idxToFilteredIdx := make([]int, len(ids))
 	for i, id := range ids {
 		fieldID, err := toField(id).Value(ctx)
 		if err != nil {
@@ -233,33 +295,37 @@ func byRelationField(ctx context.Context, toField func(int) *dsfetch.ValueInt, i
 			return nil, fmt.Errorf("element with id %d has no relation", id)
 		}
 
-		idxToFiltered[i] = fieldID
-		idxToFilteredIdx[i] = len(filteredIDs[fieldID])
-		filteredIDs[fieldID] = append(filteredIDs[fieldID], id)
-	}
-
-	resultList := make(map[int][]attribute.Func, len(filteredIDs))
-	for meetingID, ids := range filteredIDs {
-		result, err := fn(meetingID, ids)
-		if err != nil {
-			return nil, fmt.Errorf("restricting for meeting %d: %w", meetingID, err)
+		if filteredIDs[fieldID] == nil {
+			filteredIDs[fieldID] = make([]int, len(ids))
 		}
-		resultList[meetingID] = append(resultList[meetingID], result...)
+
+		filteredIDs[fieldID][i] = id
 	}
 
-	result := make([]attribute.Func, len(ids))
-	for i := range ids {
-		meetingID := idxToFiltered[i]
-		resultIdx := idxToFilteredIdx[i]
-		result[i] = resultList[meetingID][resultIdx]
+	resultList := make([]attribute.Func, len(ids))
+	for fieldID, ids := range filteredIDs {
+		attrList, err := fn(fieldID, ids)
+		if err != nil {
+			return nil, fmt.Errorf("restricting for field %d: %w", fieldID, err)
+		}
+
+		for i, attr := range attrList {
+			if attr == nil {
+				continue
+			}
+			resultList[i] = attr
+		}
 	}
 
-	return result, nil
+	return resultList, nil
 }
 
 func canSeeRelatedCollection(ctx context.Context, fetcher *dsfetch.Fetch, toField func(int) *dsfetch.ValueInt, mode FieldRestricter, ids []int) ([]attribute.Func, error) {
 	relationIDs := make([]int, len(ids))
 	for i, id := range ids {
+		if id == 0 {
+			continue
+		}
 		toField(id).Lazy(&relationIDs[i])
 	}
 
@@ -270,9 +336,12 @@ func canSeeRelatedCollection(ctx context.Context, fetcher *dsfetch.Fetch, toFiel
 	return mode(ctx, fetcher, relationIDs)
 }
 
-func attributeFuncList(len int, attr attribute.Func) []attribute.Func {
-	result := make([]attribute.Func, len)
-	for i := 0; i < len; i++ {
+func attributeFuncList(ids []int, attr attribute.Func) []attribute.Func {
+	result := make([]attribute.Func, len(ids))
+	for i, id := range ids {
+		if id == 0 {
+			continue
+		}
 		result[i] = attr
 	}
 

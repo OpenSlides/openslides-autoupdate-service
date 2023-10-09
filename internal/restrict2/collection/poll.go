@@ -75,6 +75,10 @@ func (p Poll) Modes(mode string) FieldRestricter {
 func (p Poll) see(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int) ([]attribute.Func, error) {
 	contentObect := make([]string, len(pollIDs))
 	for i, id := range pollIDs {
+		if id == 0 {
+			continue
+		}
+
 		fetcher.Poll_ContentObjectID(id).Lazy(&contentObect[i])
 	}
 
@@ -83,7 +87,11 @@ func (p Poll) see(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int) ([
 	}
 
 	out := make([]attribute.Func, len(pollIDs))
-	for i := range pollIDs {
+	for i, id := range pollIDs {
+		if id == 0 {
+			continue
+		}
+
 		collection, rawContentID, found := strings.Cut(contentObect[i], "/")
 		if !found {
 			return nil, fmt.Errorf("invalid content object id: %s", contentObect[i])
@@ -122,6 +130,10 @@ func (p Poll) manage(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int)
 	contentObect := make([]string, len(pollIDs))
 	meetingID := make([]int, len(pollIDs))
 	for i, id := range pollIDs {
+		if id == 0 {
+			continue
+		}
+
 		fetcher.Poll_ContentObjectID(id).Lazy(&contentObect[i])
 		fetcher.Poll_MeetingID(id).Lazy(&meetingID[i])
 	}
@@ -131,7 +143,11 @@ func (p Poll) manage(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int)
 	}
 
 	out := make([]attribute.Func, len(pollIDs))
-	for i := range pollIDs {
+	for i, id := range pollIDs {
+		if id == 0 {
+			continue
+		}
+
 		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID[i])
 		if err != nil {
 			return nil, fmt.Errorf("getting group map: %w", err)
@@ -163,6 +179,10 @@ func (p Poll) manage(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int)
 func (p Poll) modeB(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int) ([]attribute.Func, error) {
 	state := make([]string, len(pollIDs))
 	for i, id := range pollIDs {
+		if id == 0 {
+			continue
+		}
+
 		fetcher.Poll_State(id).Lazy(&state[i])
 	}
 
@@ -172,17 +192,21 @@ func (p Poll) modeB(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int) 
 
 	out := make([]attribute.Func, len(pollIDs))
 	// TODO: try to group this
-	for i, pollID := range pollIDs {
+	for i, id := range pollIDs {
+		if id == 0 {
+			continue
+		}
+
 		switch state[i] {
 		case "published":
-			af, err := Collection(ctx, p).Modes("A")(ctx, fetcher, []int{pollID})
+			af, err := Collection(ctx, p).Modes("A")(ctx, fetcher, []int{id})
 			if err != nil {
 				return nil, fmt.Errorf("checking poll.see: %w", err)
 			}
 			out[i] = af[0]
 
 		case "finished":
-			af, err := Collection(ctx, p).Modes("MANAGE")(ctx, fetcher, []int{pollID})
+			af, err := Collection(ctx, p).Modes("MANAGE")(ctx, fetcher, []int{id})
 			if err != nil {
 				return nil, fmt.Errorf("checking poll.see: %w", err)
 			}
@@ -199,6 +223,10 @@ func (p Poll) modeC(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int) 
 	state := make([]string, len(pollIDs))
 	meetingID := make([]int, len(pollIDs))
 	for i, id := range pollIDs {
+		if id == 0 {
+			continue
+		}
+
 		fetcher.Poll_State(id).Lazy(&state[i])
 		fetcher.Poll_MeetingID(id).Lazy(&meetingID[i])
 	}
@@ -208,7 +236,11 @@ func (p Poll) modeC(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int) 
 	}
 
 	out := make([]attribute.Func, len(pollIDs))
-	for i, pollID := range pollIDs {
+	for i, id := range pollIDs {
+		if id == 0 {
+			continue
+		}
+
 		if state[i] != "started" {
 			out[i] = attribute.FuncNotAllowed
 			continue
@@ -219,7 +251,7 @@ func (p Poll) modeC(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int) 
 			return nil, fmt.Errorf("getting group map: %w", err)
 		}
 
-		canManage, err := Collection(ctx, p).Modes("MANAGE")(ctx, fetcher, []int{pollID})
+		canManage, err := Collection(ctx, p).Modes("MANAGE")(ctx, fetcher, []int{id})
 		if err != nil {
 			return nil, fmt.Errorf("checking poll.see: %w", err)
 		}
@@ -241,6 +273,10 @@ func (p Poll) modeD(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int) 
 	state := make([]string, len(pollIDs))
 	meetingID := make([]int, len(pollIDs))
 	for i, id := range pollIDs {
+		if id == 0 {
+			continue
+		}
+
 		fetcher.Poll_State(id).Lazy(&state[i])
 		fetcher.Poll_MeetingID(id).Lazy(&meetingID[i])
 	}
@@ -251,10 +287,14 @@ func (p Poll) modeD(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int) 
 
 	out := make([]attribute.Func, len(pollIDs))
 	// TODO: try to group this
-	for i, pollID := range pollIDs {
+	for i, id := range pollIDs {
+		if id == 0 {
+			continue
+		}
+
 		switch state[i] {
 		case "published":
-			af, err := Collection(ctx, p).Modes("A")(ctx, fetcher, []int{pollID})
+			af, err := Collection(ctx, p).Modes("A")(ctx, fetcher, []int{id})
 			if err != nil {
 				return nil, fmt.Errorf("checking poll.see: %w", err)
 			}
@@ -266,7 +306,7 @@ func (p Poll) modeD(ctx context.Context, fetcher *dsfetch.Fetch, pollIDs []int) 
 				return nil, fmt.Errorf("getting group map: %w", err)
 			}
 
-			canManage, err := Collection(ctx, p).Modes("MANAGE")(ctx, fetcher, []int{pollID})
+			canManage, err := Collection(ctx, p).Modes("MANAGE")(ctx, fetcher, []int{id})
 			if err != nil {
 				return nil, fmt.Errorf("checking poll.see: %w", err)
 			}

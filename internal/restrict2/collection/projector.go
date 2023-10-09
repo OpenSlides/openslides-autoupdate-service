@@ -46,6 +46,10 @@ func (p Projector) see(ctx context.Context, fetcher *dsfetch.Fetch, projectorIDs
 	return byMeeting(ctx, fetcher, p, projectorIDs, func(meetingID int, projectorIDs []int) ([]attribute.Func, error) {
 		internal := make([]bool, len(projectorIDs))
 		for i, id := range projectorIDs {
+			if id == 0 {
+				continue
+			}
+
 			fetcher.Projector_IsInternal(id).Lazy(&internal[i])
 		}
 
@@ -62,7 +66,11 @@ func (p Projector) see(ctx context.Context, fetcher *dsfetch.Fetch, projectorIDs
 		forPublic := attribute.FuncInGroup(groupMap[perm.ProjectorCanSee])
 
 		result := make([]attribute.Func, len(projectorIDs))
-		for i := range projectorIDs {
+		for i, id := range projectorIDs {
+			if id == 0 {
+				continue
+			}
+
 			if internal[i] {
 				result[i] = forInternal
 				continue

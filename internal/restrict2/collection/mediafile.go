@@ -73,6 +73,10 @@ func (m Mediafile) see(ctx context.Context, fetcher *dsfetch.Fetch, mediafileIDs
 	isPublic := make([]bool, len(mediafileIDs))
 	inheritedAccessGroupIDs := make([][]int, len(mediafileIDs))
 	for i, mediafileID := range mediafileIDs {
+		if mediafileID == 0 {
+			continue
+		}
+
 		fetcher.Mediafile_ProjectionIDs(mediafileID).Lazy(&projectionIDs[i])
 		fetcher.Mediafile_OwnerID(mediafileID).Lazy(&ownerIDs[i])
 		fetcher.Mediafile_IsPublic(mediafileID).Lazy(&isPublic[i])
@@ -85,6 +89,10 @@ func (m Mediafile) see(ctx context.Context, fetcher *dsfetch.Fetch, mediafileIDs
 
 	out := make([]attribute.Func, len(mediafileIDs))
 	for i, mediafileID := range mediafileIDs {
+		if mediafileID == 0 {
+			continue
+		}
+
 		collection, rawMeetingID, found := strings.Cut(ownerIDs[i], "/")
 		if !found {
 			return nil, fmt.Errorf("invalid generic relation")

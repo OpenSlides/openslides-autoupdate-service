@@ -53,6 +53,10 @@ func (m MotionCommentSection) see(ctx context.Context, fetcher *dsfetch.Fetch, m
 	submitterCanWrite := make([]bool, len(motionCommentSectionIDs))
 	meetingID := make([]int, len(motionCommentSectionIDs))
 	for i, id := range motionCommentSectionIDs {
+		if id == 0 {
+			continue
+		}
+
 		fetcher.MotionCommentSection_ReadGroupIDs(id).Lazy(&readGroupIDs[i])
 		fetcher.MotionCommentSection_WriteGroupIDs(id).Lazy(&writeGroupIDs[i])
 		fetcher.MotionCommentSection_SubmitterCanWrite(id).Lazy(&submitterCanWrite[i])
@@ -64,7 +68,11 @@ func (m MotionCommentSection) see(ctx context.Context, fetcher *dsfetch.Fetch, m
 	}
 
 	out := make([]attribute.Func, len(motionCommentSectionIDs))
-	for i := range motionCommentSectionIDs {
+	for i, id := range motionCommentSectionIDs {
+		if id == 0 {
+			continue
+		}
+
 		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID[i])
 		if err != nil {
 			return nil, fmt.Errorf("getting group map: %w", err)
@@ -88,36 +96,4 @@ func (m MotionCommentSection) see(ctx context.Context, fetcher *dsfetch.Fetch, m
 	}
 
 	return out, nil
-}
-
-// SeeAs checks if the request user can see a comment section. Returns 1 the
-// user can be seen the object because of a read or write group. Returns 2 if
-// the user can see the object because of the submitter rule.
-func (m MotionCommentSection) seeAs(ctx context.Context, ds *dsfetch.Fetch, perms *perm.Permission, motionCommentSectionID int) (int, error) {
-	readGroups, err := ds.MotionCommentSection_ReadGroupIDs(motionCommentSectionID).Value(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("getting read_groups: %w", err)
-	}
-
-	writeGroups, err := ds.MotionCommentSection_WriteGroupIDs(motionCommentSectionID).Value(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("getting write_groups: %w", err)
-	}
-
-	for _, gid := range append(readGroups, writeGroups...) {
-		if perms.InGroup(gid) {
-			return 1, nil
-		}
-	}
-
-	submitterCanWrite, err := ds.MotionCommentSection_SubmitterCanWrite(motionCommentSectionID).Value(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("getting submitter_can_write: %w", err)
-	}
-
-	if submitterCanWrite {
-		return 2, nil
-	}
-
-	return 0, nil
 }

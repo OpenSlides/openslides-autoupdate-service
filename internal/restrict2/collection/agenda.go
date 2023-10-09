@@ -80,6 +80,10 @@ func (a AgendaItem) see(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs [
 
 		result := make([]attribute.Func, len(agendaIDs))
 		for i, agendaID := range agendaIDs {
+			if agendaID == 0 {
+				continue
+			}
+
 			var isHidden bool
 			var isInternal bool
 			fetcher.AgendaItem_IsHidden(agendaID).Lazy(&isHidden)

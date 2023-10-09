@@ -59,8 +59,11 @@ func (m MeetingUser) see(ctx context.Context, fetcher *dsfetch.Fetch, meetingUse
 
 func (MeetingUser) modeB(ctx context.Context, fetcher *dsfetch.Fetch, meetingUserIDs []int) ([]attribute.Func, error) {
 	userIDs := make([]int, len(meetingUserIDs))
-	for i, meetingUserID := range meetingUserIDs {
-		fetcher.MeetingUser_UserID(meetingUserID).Lazy(&userIDs[i])
+	for i, id := range meetingUserIDs {
+		if id == 0 {
+			continue
+		}
+		fetcher.MeetingUser_UserID(id).Lazy(&userIDs[i])
 	}
 
 	if err := fetcher.Execute(ctx); err != nil {
@@ -68,7 +71,10 @@ func (MeetingUser) modeB(ctx context.Context, fetcher *dsfetch.Fetch, meetingUse
 	}
 
 	out := make([]attribute.Func, len(meetingUserIDs))
-	for i := range meetingUserIDs {
+	for i, id := range meetingUserIDs {
+		if id == 0 {
+			continue
+		}
 		out[i] = attribute.FuncUserIDs([]int{userIDs[i]})
 	}
 

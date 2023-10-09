@@ -53,6 +53,10 @@ func (m MotionComment) see(ctx context.Context, fetcher *dsfetch.Fetch, motionCo
 	commentSectionID := make([]int, len(motionCommentIDs))
 	motionID := make([]int, len(motionCommentIDs))
 	for i, id := range motionCommentIDs {
+		if id == 0 {
+			continue
+		}
+
 		fetcher.MotionComment_MeetingID(id).Lazy(&meetingID[i])
 		fetcher.MotionComment_MotionID(id).Lazy(&motionID[i])
 		fetcher.MotionComment_SectionID(id).Lazy(&commentSectionID[i])
@@ -66,7 +70,11 @@ func (m MotionComment) see(ctx context.Context, fetcher *dsfetch.Fetch, motionCo
 	writeGroupIDs := make([][]int, len(motionCommentIDs))
 	submitterCanWrite := make([]bool, len(motionCommentIDs))
 	submitterIDs := make([][]int, len(motionCommentIDs))
-	for i := range motionCommentIDs {
+	for i, id := range motionCommentIDs {
+		if id == 0 {
+			continue
+		}
+
 		fetcher.MotionCommentSection_ReadGroupIDs(commentSectionID[i]).Lazy(&readGroupIDs[i])
 		fetcher.MotionCommentSection_WriteGroupIDs(commentSectionID[i]).Lazy(&writeGroupIDs[i])
 		fetcher.MotionCommentSection_SubmitterCanWrite(commentSectionID[i]).Lazy(&submitterCanWrite[i])
@@ -79,7 +87,11 @@ func (m MotionComment) see(ctx context.Context, fetcher *dsfetch.Fetch, motionCo
 	}
 
 	submitterMeetingUserIDs := make([][]int, len(motionCommentIDs))
-	for i := range motionCommentIDs {
+	for i, id := range motionCommentIDs {
+		if id == 0 {
+			continue
+		}
+
 		submitterMeetingUserIDs[i] = make([]int, len(submitterIDs[i]))
 		for j := range submitterMeetingUserIDs[i] {
 			fetcher.MotionSubmitter_MeetingUserID(submitterIDs[i][j]).Lazy(&submitterMeetingUserIDs[i][j])
@@ -108,7 +120,11 @@ func (m MotionComment) see(ctx context.Context, fetcher *dsfetch.Fetch, motionCo
 	}
 
 	out := make([]attribute.Func, len(motionCommentIDs))
-	for i := range motionCommentIDs {
+	for i, id := range motionCommentIDs {
+		if id == 0 {
+			continue
+		}
+
 		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID[i])
 		if err != nil {
 			return nil, fmt.Errorf("getting group map: %w", err)

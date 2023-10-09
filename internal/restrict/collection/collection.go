@@ -178,7 +178,6 @@ var collectionMap = map[string]Restricter{
 	ProjectorCountdown{}.Name():         ProjectorCountdown{},
 	ProjectorMessage{}.Name():           ProjectorMessage{},
 	Speaker{}.Name():                    Speaker{},
-	Vote{}.Name():                       Vote{},
 }
 
 // Collection returns the restricter for a collection

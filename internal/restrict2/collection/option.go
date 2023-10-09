@@ -57,6 +57,10 @@ func (o Option) see(ctx context.Context, fetcher *dsfetch.Fetch, optionIDs []int
 func (o Option) modeB(ctx context.Context, fetcher *dsfetch.Fetch, optionIDs []int) ([]attribute.Func, error) {
 	pollIDList := make([]int, len(optionIDs))
 	for i, id := range optionIDs {
+		if id == 0 {
+			continue
+		}
+
 		fetcher.Option_PollID(id).Lazy(&pollIDList[i])
 	}
 
@@ -78,8 +82,12 @@ func (o Option) modeB(ctx context.Context, fetcher *dsfetch.Fetch, optionIDs []i
 	}
 
 	pollState := make([]string, len(optionIDs))
-	for i, pollID := range pollIDList {
-		fetcher.Poll_State(pollID).Lazy(&pollState[i])
+	for i, id := range pollIDList {
+		if id == 0 {
+			continue
+		}
+
+		fetcher.Poll_State(id).Lazy(&pollState[i])
 	}
 
 	if err := fetcher.Execute(ctx); err != nil {
@@ -87,7 +95,11 @@ func (o Option) modeB(ctx context.Context, fetcher *dsfetch.Fetch, optionIDs []i
 	}
 
 	attrFuncs := make([]attribute.Func, len(optionIDs))
-	for i := range optionIDs {
+	for i, id := range optionIDs {
+		if id == 0 {
+			continue
+		}
+
 		attrFuncs[i] = managePollAttr[i]
 		switch pollState[i] {
 		case "published":
@@ -104,6 +116,10 @@ func fetchPollIDs(ctx context.Context, fetcher *dsfetch.Fetch, optionIDs []int) 
 	optionPollIDs := make([]int, len(optionIDs))
 	usedAsGlobal := make([]int, len(optionIDs))
 	for i, id := range optionIDs {
+		if id == 0 {
+			continue
+		}
+
 		fetcher.Option_PollID(id).Lazy(&optionPollIDs[i])
 		fetcher.Option_UsedAsGlobalOptionInPollID(id).Lazy(&usedAsGlobal[i])
 	}
@@ -113,7 +129,11 @@ func fetchPollIDs(ctx context.Context, fetcher *dsfetch.Fetch, optionIDs []int) 
 	}
 
 	pollIDs := make([]int, len(optionIDs))
-	for i := range optionIDs {
+	for i, id := range optionIDs {
+		if id == 0 {
+			continue
+		}
+
 		if optionPollIDs[i] != 0 {
 			pollIDs[i] = optionPollIDs[i]
 			continue

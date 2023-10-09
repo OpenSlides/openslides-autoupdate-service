@@ -82,6 +82,7 @@ func (tt testData) test(t *testing.T, f collection.FieldRestricter) {
 		getter := dsmock.Stub(tt.data)
 		fetcher := dsfetch.New(getter)
 		ctx := perm.ContextWithGroupMap(context.Background())
+		ctx = collection.ContextWithRestrictCache(ctx)
 
 		attrFuncs, err := f(ctx, fetcher, tt.elementIDs)
 		if err != nil {

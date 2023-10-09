@@ -52,6 +52,6 @@ func (los ListOfSpeakers) see(ctx context.Context, fetcher *dsfetch.Fetch, losID
 			attribute.FuncInGroup(groupMap[perm.ListOfSpeakersCanBeSpeaker]),
 		)
 
-		return attributeFuncList(len(ids), attrFn), nil
+		return attributeFuncList(ids, attrFn), nil
 	})
 }

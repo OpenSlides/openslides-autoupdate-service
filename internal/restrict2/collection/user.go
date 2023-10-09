@@ -91,9 +91,13 @@ func (u User) see(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([
 
 	inCommitteeList := make([][]int, len(userIDs))
 	inMeetingList := make([][]int, len(userIDs))
-	for i, userID := range userIDs {
-		fetcher.User_CommitteeIDs(userID).Lazy(&inCommitteeList[i])
-		fetcher.User_MeetingIDs(userID).Lazy(&inMeetingList[i])
+	for i, id := range userIDs {
+		if id == 0 {
+			continue
+		}
+
+		fetcher.User_CommitteeIDs(id).Lazy(&inCommitteeList[i])
+		fetcher.User_MeetingIDs(id).Lazy(&inMeetingList[i])
 	}
 
 	if err := fetcher.Execute(ctx); err != nil {
@@ -102,6 +106,10 @@ func (u User) see(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([
 
 	committeeIDs := set.New[int]() // IDs of all committees where the requested users are part of
 	for _, cids := range inCommitteeList {
+		if cids == nil {
+			continue
+		}
+
 		committeeIDs.Add(cids...)
 	}
 
@@ -112,6 +120,10 @@ func (u User) see(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([
 
 	result := make([]attribute.Func, len(userIDs))
 	for i, userID := range userIDs {
+		if userID == 0 {
+			continue
+		}
+
 		var usersCommitteeManagers []int
 		for _, committeeID := range inCommitteeList[i] {
 			usersCommitteeManagers = append(usersCommitteeManagers, committeeManagers[committeeID]...)
@@ -217,8 +229,11 @@ func (User) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []UserRequir
 
 func (u User) modeB(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
 	result := make([]attribute.Func, len(userIDs))
-	for i, userID := range userIDs {
-		result[i] = attribute.FuncUserIDs([]int{userID})
+	for i, id := range userIDs {
+		if id == 0 {
+			continue
+		}
+		result[i] = attribute.FuncUserIDs([]int{id})
 	}
 	return result, nil
 }
@@ -227,8 +242,12 @@ func (u User) modeD(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 	userManager := attribute.FuncGlobalLevel(perm.OMLCanManageUsers)
 
 	inMeetingList := make([][]int, len(userIDs))
-	for i, userID := range userIDs {
-		fetcher.User_MeetingIDs(userID).Lazy(&inMeetingList[i])
+	for i, id := range userIDs {
+		if id == 0 {
+			continue
+		}
+
+		fetcher.User_MeetingIDs(id).Lazy(&inMeetingList[i])
 	}
 
 	if err := fetcher.Execute(ctx); err != nil {
@@ -237,6 +256,10 @@ func (u User) modeD(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 
 	result := make([]attribute.Func, len(userIDs))
 	for i, userID := range userIDs {
+		if userID == 0 {
+			continue
+		}
+
 		var canSeeGroups []int
 		for _, meetingID := range inMeetingList[i] {
 			groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID)
@@ -260,9 +283,13 @@ func (u User) modeE(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 
 	inCommitteeList := make([][]int, len(userIDs))
 	inMeetingList := make([][]int, len(userIDs))
-	for i, userID := range userIDs {
-		fetcher.User_CommitteeIDs(userID).Lazy(&inCommitteeList[i])
-		fetcher.User_MeetingIDs(userID).Lazy(&inMeetingList[i])
+	for i, id := range userIDs {
+		if id == 0 {
+			continue
+		}
+
+		fetcher.User_CommitteeIDs(id).Lazy(&inCommitteeList[i])
+		fetcher.User_MeetingIDs(id).Lazy(&inMeetingList[i])
 	}
 
 	if err := fetcher.Execute(ctx); err != nil {
@@ -271,6 +298,9 @@ func (u User) modeE(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 
 	committeeIDs := set.New[int]() // IDs of all committees where the requested users are part of
 	for _, cids := range inCommitteeList {
+		if cids == nil {
+			continue
+		}
 		committeeIDs.Add(cids...)
 	}
 
@@ -281,6 +311,10 @@ func (u User) modeE(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 
 	result := make([]attribute.Func, len(userIDs))
 	for i, userID := range userIDs {
+		if userID == 0 {
+			continue
+		}
+
 		var usersCommitteeManagers []int
 		for _, committeeID := range inCommitteeList[i] {
 			usersCommitteeManagers = append(usersCommitteeManagers, committeeManagers[committeeID]...)
@@ -308,13 +342,16 @@ func (u User) modeE(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 
 func (u User) modeF(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
 	userManager := attribute.FuncGlobalLevel(perm.OMLCanManageUsers)
-	return attributeFuncList(len(userIDs), userManager), nil
+	return attributeFuncList(userIDs, userManager), nil
 }
 
 func (u User) modeH(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
 	userOrgaLevel := make([]string, len(userIDs))
-	for i, userID := range userIDs {
-		fetcher.User_OrganizationManagementLevel(userID).Lazy(&userOrgaLevel[i])
+	for i, id := range userIDs {
+		if id != 0 {
+			continue
+		}
+		fetcher.User_OrganizationManagementLevel(id).Lazy(&userOrgaLevel[i])
 	}
 
 	if err := fetcher.Execute(ctx); err != nil {
@@ -326,7 +363,10 @@ func (u User) modeH(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 		return nil, fmt.Errorf("check like D: %w", err)
 	}
 
-	for i := range userIDs {
+	for i, id := range userIDs {
+		if id != 0 {
+			continue
+		}
 		result[i] = attribute.FuncAnd(
 			attribute.FuncGlobalLevel(perm.OrganizationManagementLevel(userOrgaLevel[i])),
 			result[i],
