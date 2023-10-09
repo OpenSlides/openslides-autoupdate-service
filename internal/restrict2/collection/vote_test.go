@@ -8,6 +8,7 @@ import (
 )
 
 func TestVoteModeA(t *testing.T) {
+	t.Parallel()
 	f := collection.Vote{}.Modes("A")
 
 	testCase(
@@ -19,7 +20,6 @@ func TestVoteModeA(t *testing.T) {
 		vote/1:
 			option_id: 2
 			user_id: 5
-			delegated_user_id: 6
 		option/2/poll_id: 3
 		poll/3:
 			meeting_id: 30
@@ -38,11 +38,11 @@ func TestVoteModeA(t *testing.T) {
 		vote/1:
 			option_id: 2
 			user_id: 5
-			delegated_user_id: 6
 		option/2/poll_id: 3
 		poll/3:
 			meeting_id: 30
 			state: published
+			content_object_id: topic/404
 		`,
 	)
 
@@ -55,7 +55,6 @@ func TestVoteModeA(t *testing.T) {
 		vote/1:
 			option_id: 2
 			user_id: 5
-			delegated_user_id: 6
 		option/2/poll_id: 3
 		poll/3:
 			meeting_id: 30
@@ -74,7 +73,6 @@ func TestVoteModeA(t *testing.T) {
 		vote/1:
 			option_id: 2
 			user_id: 5
-			delegated_user_id: 6
 		option/2/poll_id: 3
 		poll/3:
 			meeting_id: 30
@@ -92,7 +90,6 @@ func TestVoteModeA(t *testing.T) {
 		`---
 		vote/1:
 			option_id: 2
-			user_id: 5
 			delegated_user_id: 6
 		option/2/poll_id: 3
 		poll/3:
@@ -105,6 +102,7 @@ func TestVoteModeA(t *testing.T) {
 }
 
 func TestVoteModeB(t *testing.T) {
+	t.Parallel()
 	f := collection.Vote{}.Modes("B")
 
 	testCase(
@@ -113,9 +111,13 @@ func TestVoteModeB(t *testing.T) {
 		f,
 		false,
 		`---
-		vote/1/option_id: 2
+		vote/1:
+			option_id: 2
+			user_id: 404
 		option/2/poll_id: 3
-		poll/3/meeting_id: 30
+		poll/3:
+			meeting_id: 30
+			content_object_id: topic/404
 		`,
 	)
 
@@ -145,7 +147,9 @@ func TestVoteModeB(t *testing.T) {
 		f,
 		true,
 		`---
-		vote/1/option_id: 2
+		vote/1:
+			option_id: 2
+			user_id: 404
 		option/2/poll_id: 3
 		poll/3:
 			meeting_id: 30
