@@ -3,11 +3,12 @@ package collection_test
 import (
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
 )
 
 func TestPollCandidateListModeA(t *testing.T) {
+	t.Parallel()
 	mode := collection.PollCandidateList{}.Modes("A")
 
 	testCase(
