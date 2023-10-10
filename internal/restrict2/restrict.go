@@ -1,5 +1,7 @@
 package restrict
 
+//go:generate  sh -c "go run gen_field_def/main.go > field_def.go"
+
 import (
 	"context"
 	"errors"
@@ -8,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	oldRestrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
@@ -26,9 +27,6 @@ type Restricter struct {
 	mu         sync.RWMutex
 	attributes map[dskey.Key]attribute.Func
 	hotKeys    set.Set[dskey.Key]
-
-	// TODO: Remove me
-	implementedCollections set.Set[string]
 }
 
 // New initializes a restricter
@@ -37,21 +35,6 @@ func New(flow flow.Flow) *Restricter {
 		flow:       flow,
 		attributes: make(map[dskey.Key]attribute.Func),
 		hotKeys:    set.New[dskey.Key](),
-
-		implementedCollections: set.New(
-			"agenda_item",
-			"group",
-			"motion",
-			"motion_submitter",
-			"list_of_speakers",
-			"meeting",
-			"motion_state",
-			"motion_workflow",
-			"organization",
-			"projector",
-			"user",
-			"theme",
-		),
 	}
 }
 
@@ -107,12 +90,10 @@ func (r *Restricter) ForUser(ctx context.Context, userID int) (context.Context, 
 
 	ctx = perm.ContextWithGroupMap(ctx)
 
-	ctx, todoOldRestricter := oldRestrict.Middleware(ctx, recorder, userID)
 	return ctx, &userRestricter{
-		todoOldRestricter: todoOldRestricter,
-		userID:            userID,
-		restricter:        r,
-		getter:            recorder,
+		userID:     userID,
+		restricter: r,
+		getter:     recorder,
 	}, recorder
 }
 
@@ -220,10 +201,9 @@ func (r *Restricter) calculatedAttributes(ctx context.Context, keys []dskey.Key)
 
 // userRestricter is a getter specific for an userID.
 type userRestricter struct {
-	todoOldRestricter flow.Getter
-	userID            int
-	restricter        *Restricter
-	getter            flow.Getter
+	userID     int
+	restricter *Restricter
+	getter     flow.Getter
 }
 
 func (r *userRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
@@ -271,14 +251,8 @@ func (r *userRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.
 	// log.Printf("getting mode funcs took: %s", time.Since(startModeKeys))
 
 	// startRestrict := time.Now()
-	var oldKeys []dskey.Key // TODO: Remove me. This is only necessary for old restrict
 
 	for i, key := range keys {
-		if !r.restricter.implementedCollections.Has(key.Collection()) {
-			oldKeys = append(oldKeys, key)
-			continue
-		}
-
 		attrFunc := attrFuncs[i]
 		if attrFunc == nil {
 			log.Printf("attrFunc for key %s, collection field %s, is nil", key, key.CollectionField())
@@ -293,25 +267,6 @@ func (r *userRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.
 		// TODO: relation fields
 	}
 	// log.Printf("precalculated restrict %d keys took: %s", len(keys), time.Since(startRestrict))
-
-	// coundOld := make(map[string]int)
-	// for _, key := range oldKeys {
-	// 	coundOld[key.Collection]++
-	// }
-	// fmt.Println(coundOld)
-
-	// startOld := time.Now()
-	if len(oldKeys) > 0 {
-		oldData, err := r.todoOldRestricter.Get(ctx, oldKeys...)
-		if err != nil {
-			return nil, fmt.Errorf("old restricter: %w", err)
-		}
-
-		for k, v := range oldData {
-			data[k] = v
-		}
-	}
-	// log.Printf("old restricter for %d keys took: %s", len(oldKeys), time.Since(startOld))
 
 	return data, nil
 }

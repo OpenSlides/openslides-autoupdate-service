@@ -111,6 +111,8 @@ func never(ctx context.Context, ds *dsfetch.Fetch, ids []int) ([]attribute.Func,
 	return result, nil
 }
 
+// restrictCache caches the result of a restricter call to a later call to a
+// Collection with same ids do not be calculated again.
 type restrictCache struct {
 	cache map[dskey.Key]attribute.Func
 	Restricter
@@ -148,6 +150,10 @@ func (r *restrictCache) Modes(mode string) FieldRestricter {
 		attrList := make([]attribute.Func, len(ids))
 		foundAll := true
 		for i, id := range ids {
+			if id == 0 {
+				continue
+			}
+
 			key, err := dskey.FromParts(r.Name(), id, mode)
 			if err != nil {
 				return nil, err
@@ -176,7 +182,10 @@ func (r *restrictCache) Modes(mode string) FieldRestricter {
 			return nil, fmt.Errorf("calling restricter %s: %w", idsString, err)
 		}
 
-		for i := range ids {
+		for i, id := range ids {
+			if id == 0 {
+				continue
+			}
 			if newAttrList[i] != nil {
 				attrList[i] = newAttrList[i]
 			}

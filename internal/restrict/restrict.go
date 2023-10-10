@@ -1,7 +1,5 @@
 package restrict
 
-//go:generate  sh -c "go run gen_field_def/main.go > field_def.go"
-
 import (
 	"context"
 	"encoding/json"
@@ -13,7 +11,6 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"

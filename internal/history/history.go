@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
@@ -59,7 +59,7 @@ func (h History) HistoryInformation(ctx context.Context, uid int, fqid string, w
 
 	ds := dsfetch.New(h.source)
 
-	meetingID, hasMeeting, err := collection.Collection(ctx, coll).MeetingID(ctx, ds, id)
+	meetingID, hasMeeting, err := collection.FromName(ctx, coll).MeetingID(ctx, ds, id)
 	if err != nil {
 		var errNotExist dsfetch.DoesNotExistError
 		if errors.As(err, &errNotExist) {
