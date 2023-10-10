@@ -10,8 +10,8 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
 
-// CollectionMap is an index from collection name to its restricter.
-var CollectionMap = map[string]Restricter{
+// collectionMap is an index from collection name to its restricter.
+var collectionMap = map[string]Restricter{
 	ActionWorker{}.Name():               ActionWorker{},
 	AgendaItem{}.Name():                 AgendaItem{},
 	Assignment{}.Name():                 Assignment{},
@@ -37,27 +37,27 @@ var CollectionMap = map[string]Restricter{
 	MotionWorkflow{}.Name():             MotionWorkflow{},
 	Option{}.Name():                     Option{},
 	Organization{}.Name():               Organization{},
-	// OrganizationTag{}.Name():            OrganizationTag{},
-	// PersonalNote{}.Name():               PersonalNote{},
-	PointOfOrderCategory{}.Name(): PointOfOrderCategory{},
-	Poll{}.Name():                 Poll{},
-	PollCandidate{}.Name():        PollCandidate{},
-	PollCandidateList{}.Name():    PollCandidateList{},
-	// Projection{}.Name():                 Projection{},
-	Projector{}.Name(): Projector{},
-	// ProjectorCountdown{}.Name():         ProjectorCountdown{},
-	// ProjectorMessage{}.Name():           ProjectorMessage{},
-	// Speaker{}.Name():                    Speaker{},
-	Tag{}.Name():   Tag{},
-	Theme{}.Name(): Theme{},
-	Topic{}.Name(): Topic{},
-	User{}.Name():  User{},
-	Vote{}.Name():  Vote{},
+	OrganizationTag{}.Name():            OrganizationTag{},
+	PersonalNote{}.Name():               PersonalNote{},
+	PointOfOrderCategory{}.Name():       PointOfOrderCategory{},
+	Poll{}.Name():                       Poll{},
+	PollCandidate{}.Name():              PollCandidate{},
+	PollCandidateList{}.Name():          PollCandidateList{},
+	Projection{}.Name():                 Projection{},
+	Projector{}.Name():                  Projector{},
+	ProjectorCountdown{}.Name():         ProjectorCountdown{},
+	ProjectorMessage{}.Name():           ProjectorMessage{},
+	Speaker{}.Name():                    Speaker{},
+	Tag{}.Name():                        Tag{},
+	Theme{}.Name():                      Theme{},
+	Topic{}.Name():                      Topic{},
+	User{}.Name():                       User{},
+	Vote{}.Name():                       Vote{},
 }
 
 // FromName returns a restricter for a collection from its name.
 func FromName(ctx context.Context, name string) Restricter {
-	r, ok := CollectionMap[name]
+	r, ok := collectionMap[name]
 	if !ok {
 		return Unknown{name}
 	}
@@ -68,7 +68,7 @@ func FromName(ctx context.Context, name string) Restricter {
 
 // Collection returns the restricter for a collection
 func Collection(ctx context.Context, collection Restricter) Restricter {
-	r, ok := CollectionMap[collection.Name()]
+	r, ok := collectionMap[collection.Name()]
 	if !ok {
 		panic(fmt.Sprintf("collection %s is not in collection.collectionMap", collection.Name()))
 	}

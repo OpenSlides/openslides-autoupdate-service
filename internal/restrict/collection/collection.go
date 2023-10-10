@@ -160,13 +160,7 @@ func (r *restrictCache) SuperAdmin(mode string) FieldRestricter {
 	return nil
 }
 
-var collectionMap = map[string]Restricter{
-	PersonalNote{}.Name():       PersonalNote{},
-	Projection{}.Name():         Projection{},
-	ProjectorCountdown{}.Name(): ProjectorCountdown{},
-	ProjectorMessage{}.Name():   ProjectorMessage{},
-	Speaker{}.Name():            Speaker{},
-}
+var collectionMap = map[string]Restricter{}
 
 // Collection returns the restricter for a collection
 func Collection(ctx context.Context, collection string) Restricter {

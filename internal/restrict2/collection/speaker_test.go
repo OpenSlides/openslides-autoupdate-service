@@ -3,11 +3,12 @@ package collection_test
 import (
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
 )
 
 func TestSpeakerModeA(t *testing.T) {
+	t.Parallel()
 	f := collection.Speaker{}.Modes("A")
 
 	testCase(
@@ -19,6 +20,9 @@ func TestSpeakerModeA(t *testing.T) {
 		speaker/1:
 			list_of_speakers_id: 15
 			meeting_id: 30
+			meeting_user_id: 404
+		
+		meeting_user/404/user_id: 44
 
 		list_of_speakers/15:
 			id: 15
@@ -35,6 +39,9 @@ func TestSpeakerModeA(t *testing.T) {
 		speaker/1:
 			list_of_speakers_id: 15
 			meeting_id: 30
+			meeting_user_id: 404
+		
+		meeting_user/404/user_id: 44
 
 		list_of_speakers/15:
 			id: 15
