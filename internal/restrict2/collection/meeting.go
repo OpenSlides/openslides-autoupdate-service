@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -42,7 +42,7 @@ func (m Meeting) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int,
 func (m Meeting) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return Allways
+		return allways
 	case "B":
 		return m.see
 	case "C":
@@ -54,7 +54,7 @@ func (m Meeting) Modes(mode string) FieldRestricter {
 }
 
 func (m Meeting) see(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs []int) ([]attribute.Func, error) {
-	orgaManger := attribute.FuncGlobalLevel(perm.OMLCanManageOrganization)
+	orgaManger := attribute.FuncOrgaLevel(perm.OMLCanManageOrganization)
 
 	result := make([]attribute.Func, len(meetingIDs))
 	for i, id := range meetingIDs {
@@ -68,7 +68,7 @@ func (m Meeting) see(ctx context.Context, fetcher *dsfetch.Fetch, meetingIDs []i
 		}
 
 		if enableAnonymous {
-			result[i] = attribute.FuncAllow
+			result[i] = attribute.FuncAllowed
 			continue
 		}
 

@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
+// UserAttributes are some values from a user.
 type UserAttributes struct {
 	UserID            int
 	GroupIDs          set.Set[int]
@@ -17,6 +18,7 @@ type UserAttributes struct {
 	IsCommitteManager bool
 }
 
+// NewUserAttributes initializes a UserAttributes object.
 func NewUserAttributes(ctx context.Context, getter flow.Getter, userID int) (UserAttributes, error) {
 	var zero UserAttributes
 	fetcher := dsfetch.New(getter)

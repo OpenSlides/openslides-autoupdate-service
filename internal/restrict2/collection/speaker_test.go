@@ -3,8 +3,8 @@ package collection_test
 import (
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 )
 
 func TestSpeakerModeA(t *testing.T) {

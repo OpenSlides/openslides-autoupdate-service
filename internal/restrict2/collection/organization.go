@@ -3,8 +3,8 @@ package collection
 import (
 	"context"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -33,7 +33,7 @@ func (o Organization) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) 
 func (o Organization) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return Allways
+		return allways
 	case "B":
 		return loggedIn
 	case "C":
@@ -43,5 +43,5 @@ func (o Organization) Modes(mode string) FieldRestricter {
 }
 
 func (o Organization) modeC(ctx context.Context, fetcher *dsfetch.Fetch, organizationIDs []int) ([]attribute.Func, error) {
-	return attributeFuncList(organizationIDs, attribute.FuncGlobalLevel(perm.OMLCanManageUsers)), nil
+	return attributeFuncList(organizationIDs, attribute.FuncOrgaLevel(perm.OMLCanManageUsers)), nil
 }

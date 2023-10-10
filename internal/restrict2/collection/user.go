@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
@@ -87,7 +87,7 @@ func (u User) Modes(mode string) FieldRestricter {
 }
 
 func (u User) see(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
-	userManager := attribute.FuncGlobalLevel(perm.OMLCanManageUsers)
+	userManager := attribute.FuncOrgaLevel(perm.OMLCanManageUsers)
 
 	inCommitteeList := make([][]int, len(userIDs))
 	inMeetingList := make([][]int, len(userIDs))
@@ -239,7 +239,7 @@ func (u User) modeB(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 }
 
 func (u User) modeD(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
-	userManager := attribute.FuncGlobalLevel(perm.OMLCanManageUsers)
+	userManager := attribute.FuncOrgaLevel(perm.OMLCanManageUsers)
 
 	inMeetingList := make([][]int, len(userIDs))
 	for i, id := range userIDs {
@@ -279,7 +279,7 @@ func (u User) modeD(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 }
 
 func (u User) modeE(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
-	userManager := attribute.FuncGlobalLevel(perm.OMLCanManageUsers)
+	userManager := attribute.FuncOrgaLevel(perm.OMLCanManageUsers)
 
 	inCommitteeList := make([][]int, len(userIDs))
 	inMeetingList := make([][]int, len(userIDs))
@@ -341,7 +341,7 @@ func (u User) modeE(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 }
 
 func (u User) modeF(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
-	userManager := attribute.FuncGlobalLevel(perm.OMLCanManageUsers)
+	userManager := attribute.FuncOrgaLevel(perm.OMLCanManageUsers)
 	return attributeFuncList(userIDs, userManager), nil
 }
 
@@ -368,7 +368,7 @@ func (u User) modeH(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) 
 			continue
 		}
 		result[i] = attribute.FuncAnd(
-			attribute.FuncGlobalLevel(perm.OrganizationManagementLevel(userOrgaLevel[i])),
+			attribute.FuncOrgaLevel(perm.OrganizationManagementLevel(userOrgaLevel[i])),
 			result[i],
 		)
 	}

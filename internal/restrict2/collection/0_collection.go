@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 )
@@ -62,7 +62,6 @@ func FromName(ctx context.Context, name string) Restricter {
 		return Unknown{name}
 	}
 
-	// TODO: Fixme for superadmin. It needs the restrict superadmin method
 	return withRestrictCache(ctx, r)
 }
 
@@ -73,7 +72,6 @@ func Collection(ctx context.Context, collection Restricter) Restricter {
 		panic(fmt.Sprintf("collection %s is not in collection.collectionMap", collection.Name()))
 	}
 
-	// TODO: Fixme for superadmin. It needs the restrict superadmin method
 	return withRestrictCache(ctx, r)
 }
 
@@ -97,9 +95,8 @@ func (u Unknown) Name() string {
 	return u.name
 }
 
-// Allways is a restricter func that just returns true.
-func Allways(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]attribute.Func, error) {
-	return attributeFuncList(ids, attribute.FuncAllow), nil
+func allways(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]attribute.Func, error) {
+	return attributeFuncList(ids, attribute.FuncAllowed), nil
 }
 
 func loggedIn(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]attribute.Func, error) {
@@ -216,7 +213,7 @@ func meetingPerm(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, ids 
 		}
 
 		attr := attribute.FuncOr(
-			attribute.FuncGlobalLevel(perm.OMLSuperadmin),
+			attribute.FuncOrgaLevel(perm.OMLSuperadmin),
 			attribute.FuncInGroup(groupMap[permission]),
 		)
 

@@ -99,7 +99,7 @@ func (v Vote) see(ctx context.Context, fetcher *dsfetch.Fetch, voteIDs []int) ([
 		}
 
 		if stateList[i] == "published" {
-			attr[i] = attribute.FuncAllow
+			attr[i] = attribute.FuncAllowed
 			continue
 		}
 

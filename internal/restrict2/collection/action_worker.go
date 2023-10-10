@@ -23,7 +23,7 @@ func (a ActionWorker) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) 
 func (a ActionWorker) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return Allways
+		return allways
 	}
 	return nil
 }

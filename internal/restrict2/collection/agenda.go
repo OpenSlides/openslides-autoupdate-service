@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
@@ -73,7 +73,7 @@ func (a AgendaItem) see(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs [
 			return nil, fmt.Errorf("getting group map: %w", err)
 		}
 
-		attrSuperadmin := attribute.FuncGlobalLevel(perm.OMLSuperadmin)
+		attrSuperadmin := attribute.FuncOrgaLevel(perm.OMLSuperadmin)
 		attrCanManage := attribute.FuncInGroup(groupMap[perm.AgendaItemCanManage])
 		attrCanSeeInternal := attribute.FuncInGroup(groupMap[perm.AgendaItemCanSeeInternal])
 		attrCanSee := attribute.FuncInGroup(groupMap[perm.AgendaItemCanSee])

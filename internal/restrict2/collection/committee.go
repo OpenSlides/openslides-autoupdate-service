@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -54,7 +54,7 @@ func (c Committee) see(ctx context.Context, fetcher *dsfetch.Fetch, committeeIDs
 		return nil, fmt.Errorf("fetching committee data: %w", err)
 	}
 
-	oml := attribute.FuncGlobalLevel(perm.OMLCanManageUsers)
+	oml := attribute.FuncOrgaLevel(perm.OMLCanManageUsers)
 
 	attr := make([]attribute.Func, len(committeeIDs))
 	for i, id := range committeeIDs {
@@ -84,7 +84,7 @@ func (c Committee) modeB(ctx context.Context, fetcher *dsfetch.Fetch, committeeI
 		return nil, fmt.Errorf("fetching committee data: %w", err)
 	}
 
-	oml := attribute.FuncGlobalLevel(perm.OMLCanManageOrganization)
+	oml := attribute.FuncOrgaLevel(perm.OMLCanManageOrganization)
 
 	attr := make([]attribute.Func, len(committeeIDs))
 	for i, id := range committeeIDs {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/attribute"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
@@ -82,7 +82,7 @@ func (MeetingUser) modeB(ctx context.Context, fetcher *dsfetch.Fetch, meetingUse
 }
 
 func (m MeetingUser) modeD(ctx context.Context, fetcher *dsfetch.Fetch, meetingUserIDs []int) ([]attribute.Func, error) {
-	oml := attribute.FuncGlobalLevel(perm.OMLCanManageUsers)
+	oml := attribute.FuncOrgaLevel(perm.OMLCanManageUsers)
 
 	canManageUser, err := meetingPerm(ctx, fetcher, m, meetingUserIDs, perm.UserCanManage)
 	if err != nil {
