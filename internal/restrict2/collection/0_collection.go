@@ -114,7 +114,7 @@ func never(ctx context.Context, ds *dsfetch.Fetch, ids []int) ([]attribute.Func,
 // restrictCache caches the result of a restricter call to a later call to a
 // Collection with same ids do not be calculated again.
 type restrictCache struct {
-	cache map[dskey.Key]attribute.Func
+	cache map[dskey.CollectionMode]attribute.Func
 	Restricter
 }
 
@@ -124,7 +124,7 @@ var contextKey contextKeyType = "restrict cache"
 
 // ContextWithRestrictCache returns a context with restrict cache.
 func ContextWithRestrictCache(ctx context.Context) context.Context {
-	return context.WithValue(ctx, contextKey, make(map[dskey.Key]attribute.Func))
+	return context.WithValue(ctx, contextKey, make(map[dskey.CollectionMode]attribute.Func))
 }
 
 func withRestrictCache(ctx context.Context, sub Restricter) Restricter {
@@ -133,7 +133,7 @@ func withRestrictCache(ctx context.Context, sub Restricter) Restricter {
 		panic("collection cache not initialized")
 	}
 
-	cache, ok := v.(map[dskey.Key]attribute.Func)
+	cache, ok := v.(map[dskey.CollectionMode]attribute.Func)
 	if !ok {
 		panic("collection cache is broken")
 	}
@@ -154,7 +154,7 @@ func (r *restrictCache) Modes(mode string) FieldRestricter {
 				continue
 			}
 
-			key, err := dskey.FromParts(r.Name(), id, mode)
+			key, err := dskey.CollectionModeFromParts(r.Name(), id, mode)
 			if err != nil {
 				return nil, err
 			}

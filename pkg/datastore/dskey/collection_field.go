@@ -7,6 +7,11 @@ type collectionField struct {
 	field      string
 }
 
+type collectionMode struct {
+	collection string
+	field      string
+}
+
 //go:generate  sh -c "go run gen_collection_fields/main.go > gen_collection_fields.go"
 
 func splitUInt64(i uint64) (int, int) {

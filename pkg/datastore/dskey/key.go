@@ -32,7 +32,6 @@ func FromString(format string, a ...any) (Key, error) {
 
 // FromParts create a key from collection, id an field.
 func FromParts(collection string, id int, field string) (Key, error) {
-	// TODO: Use a separate function with different namespace for mode-keys
 	cfID := collectionFieldToID(collection + "/" + field)
 	if cfID == -1 {
 		return 0, InvalidKeyError{fmt.Sprintf("%s/%d/%s", collection, id, field)}
@@ -95,6 +94,13 @@ func (k Key) IDField() Key {
 	idCfID := collectionFieldToID(k.Collection() + "/id")
 
 	return Key(joinInt(idCfID, k.ID()))
+}
+
+// CollectionMode returns the collection_mode for a key.
+func (k Key) CollectionMode() CollectionMode {
+	cfIdx, id := splitUInt64(uint64(k))
+	cmIdx := collectionFieldToMode[cfIdx]
+	return CollectionMode(joinInt(cmIdx, id))
 }
 
 // MarshalJSON converts the key to a json string.

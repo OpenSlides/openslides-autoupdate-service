@@ -25,7 +25,7 @@ type Restricter struct {
 	flow flow.Flow
 
 	mu         sync.RWMutex
-	attributes map[dskey.Key]attribute.Func
+	attributes map[dskey.CollectionMode]attribute.Func
 	hotKeys    set.Set[dskey.Key]
 }
 
@@ -33,7 +33,7 @@ type Restricter struct {
 func New(flow flow.Flow) *Restricter {
 	return &Restricter{
 		flow:       flow,
-		attributes: make(map[dskey.Key]attribute.Func),
+		attributes: make(map[dskey.CollectionMode]attribute.Func),
 		hotKeys:    set.New[dskey.Key](),
 	}
 }
@@ -63,7 +63,7 @@ func (r *Restricter) Update(ctx context.Context, updateFn func(map[dskey.Key][]b
 		defer r.mu.Unlock()
 
 		start := time.Now()
-		calculatedKeys := make([]dskey.Key, 0, len(r.attributes))
+		calculatedKeys := make([]dskey.CollectionMode, 0, len(r.attributes))
 		for k := range r.attributes {
 			calculatedKeys = append(calculatedKeys, k)
 		}
@@ -78,6 +78,109 @@ func (r *Restricter) Update(ctx context.Context, updateFn func(map[dskey.Key][]b
 
 		updateFn(data, err)
 	})
+}
+
+// precalculate calculates the attributes for modes.
+//
+// Has to be called with a locked r.mu
+func (r *Restricter) precalculate(ctx context.Context, collectionModes []dskey.CollectionMode) error {
+	recorder := dsrecorder.New(r.flow)
+	fetcher := dsfetch.New(recorder)
+
+	byCollection := make(map[string][]dskey.CollectionMode)
+	for _, collectionMode := range collectionModes {
+		byCollection[collectionMode.Collection()] = append(byCollection[collectionMode.Collection()], collectionMode)
+	}
+
+	for name, collectionModes := range byCollection {
+		restricter := collection.FromName(ctx, name)
+
+		byMode := make(map[string][]int)
+		for _, collectionMode := range collectionModes {
+			mode := collectionMode.Mode()
+			byMode[mode] = append(byMode[mode], collectionMode.ID())
+		}
+
+		for mode, ids := range byMode {
+			modefunc := restricter.Modes(mode)
+			if modefunc == nil {
+				// TODO: Maybe log something, that there is a key without a modfunc (hast to be done when all restricters are implemented)
+				continue
+			}
+
+			attrFunc, err := modefunc(ctx, fetcher, ids)
+			if err != nil {
+				return fmt.Errorf("precalculate %s/%s: %w", name, mode, err)
+			}
+
+			for i, id := range ids {
+				// TODO do not use FromPArts but use the original object
+				attr, err := dskey.CollectionModeFromParts(name, id, mode)
+				if err != nil {
+					return fmt.Errorf("invalid key: %w", err)
+				}
+				r.attributes[attr] = attrFunc[i]
+			}
+		}
+	}
+
+	r.hotKeys.Merge(recorder.Keys())
+
+	return nil
+}
+
+// missingKeys returns keys, that are not in the attributes.
+//
+// Has to be called with a read lock or write lock on r.mu.
+func (r *Restricter) missingModKeys(modes []dskey.CollectionMode) []dskey.CollectionMode {
+	missing := make([]dskey.CollectionMode, 0, len(modes))
+	for _, key := range modes {
+		if _, ok := r.attributes[key]; !ok {
+			missing = append(missing, key)
+		}
+	}
+	return missing
+}
+
+func (r *Restricter) precalcMissing(ctx context.Context, modes []dskey.CollectionMode) error {
+	r.mu.RLock()
+	missingKeys := r.missingModKeys(modes)
+	r.mu.RUnlock()
+
+	if len(missingKeys) == 0 {
+		return nil
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	// This has to be done again with a write lock. Only the write lock makes
+	// sure, that there was no call to Update() in between.
+	missingKeys = r.missingModKeys(modes)
+	if len(missingKeys) == 0 {
+		return nil
+	}
+
+	if err := r.precalculate(ctx, missingKeys); err != nil {
+		return fmt.Errorf("restricter precalculate: %w", err)
+	}
+
+	return nil
+}
+
+func (r *Restricter) calculatedAttributes(ctx context.Context, keys []dskey.CollectionMode) ([]attribute.Func, error) {
+	if err := r.precalcMissing(ctx, keys); err != nil {
+		return nil, fmt.Errorf("precalculate missing: %w", err)
+	}
+
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	result := make([]attribute.Func, len(keys))
+	for i, key := range keys {
+		result[i] = r.attributes[key]
+	}
+
+	return result, nil
 }
 
 // ForUser returns a getter that returns restricted data for an user id.
@@ -97,108 +200,6 @@ func (r *Restricter) ForUser(ctx context.Context, userID int) (context.Context, 
 	}, recorder
 }
 
-// precalculate calculates the attributes for modes.
-//
-// Has to be called with a locked r.mu
-func (r *Restricter) precalculate(ctx context.Context, collectionModes []dskey.Key) error {
-	recorder := dsrecorder.New(r.flow)
-	fetcher := dsfetch.New(recorder)
-
-	byCollection := make(map[string][]dskey.Key)
-	for _, collectionMode := range collectionModes {
-		byCollection[collectionMode.Collection()] = append(byCollection[collectionMode.Collection()], collectionMode)
-	}
-
-	for name, collectionModes := range byCollection {
-		restricter := collection.FromName(ctx, name)
-
-		byMode := make(map[string][]int)
-		for _, collectionMode := range collectionModes {
-			mode := collectionMode.Field()
-			byMode[mode] = append(byMode[mode], collectionMode.ID())
-		}
-
-		for mode, ids := range byMode {
-			modefunc := restricter.Modes(mode)
-			if modefunc == nil {
-				// TODO: Maybe log something, that there is a key without a modfunc (hast to be done when all restricters are implemented)
-				continue
-			}
-
-			attrFunc, err := modefunc(ctx, fetcher, ids)
-			if err != nil {
-				return fmt.Errorf("precalculate %s/%s: %w", name, mode, err)
-			}
-
-			for i, id := range ids {
-				attr, err := dskey.FromParts(name, id, mode)
-				if err != nil {
-					return fmt.Errorf("invalid key: %w", err)
-				}
-				r.attributes[attr] = attrFunc[i]
-			}
-		}
-	}
-
-	r.hotKeys.Merge(recorder.Keys())
-
-	return nil
-}
-
-// missingKeys returns keys, that are not in the attributes.
-//
-// Has to be called with a read lock or write lock on r.mu.
-func (r *Restricter) missingModKeys(keys []dskey.Key) []dskey.Key {
-	missing := make([]dskey.Key, 0, len(keys))
-	for _, key := range keys {
-		if _, ok := r.attributes[key]; !ok {
-			missing = append(missing, key)
-		}
-	}
-	return missing
-}
-
-func (r *Restricter) precalcMissing(ctx context.Context, keys []dskey.Key) error {
-	r.mu.RLock()
-	missingKeys := r.missingModKeys(keys)
-	r.mu.RUnlock()
-
-	if len(missingKeys) == 0 {
-		return nil
-	}
-
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	// This has to be done again with a write lock. Only the write lock makes
-	// sure, that there was no call to Update() in between.
-	missingKeys = r.missingModKeys(keys)
-	if len(missingKeys) == 0 {
-		return nil
-	}
-
-	if err := r.precalculate(ctx, missingKeys); err != nil {
-		return fmt.Errorf("restricter precalculate: %w", err)
-	}
-
-	return nil
-}
-
-func (r *Restricter) calculatedAttributes(ctx context.Context, keys []dskey.Key) ([]attribute.Func, error) {
-	if err := r.precalcMissing(ctx, keys); err != nil {
-		return nil, fmt.Errorf("precalculate missing: %w", err)
-	}
-
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	result := make([]attribute.Func, len(keys))
-	for i, key := range keys {
-		result[i] = r.attributes[key]
-	}
-
-	return result, nil
-}
-
 // userRestricter is a getter specific for an userID.
 type userRestricter struct {
 	userID     int
@@ -213,13 +214,13 @@ func (r *userRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.
 	// }()
 
 	// startIndexing := time.Now()
-	modeKeys := make([]dskey.Key, len(keys))
+	modeKeys := make([]dskey.CollectionMode, len(keys))
 	for i, key := range keys {
 		// TODO: This would be faster with a autogenerated switch statement.
 		// Or when there was a key.Mode() method with an autogenerated value
 		mode := restrictionModes[key.CollectionField()]
 
-		modeKey, err := dskey.FromParts(key.Collection(), key.ID(), mode)
+		modeKey, err := dskey.CollectionModeFromParts(key.Collection(), key.ID(), mode)
 		if err != nil {
 			return nil, fmt.Errorf("invalid modekey: %w", err)
 		}

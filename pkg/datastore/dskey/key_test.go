@@ -189,3 +189,25 @@ func TestIDField(t *testing.T) {
 		})
 	}
 }
+
+func TestCollectionFieldToMode(t *testing.T) {
+	for _, tt := range []struct {
+		key    string
+		expect string
+	}{
+		{"user/1/username", "user/1/A"},
+		{"user/12/username", "user/12/A"},
+		{"motion/12/title", "motion/12/C"},
+	} {
+		t.Run(tt.key, func(t *testing.T) {
+			key, err := dskey.FromString(tt.key)
+			if err != nil {
+				t.Fatalf("Key is not valid: %v", err)
+			}
+
+			if got := key.CollectionMode().String(); got != tt.expect {
+				t.Errorf("got %s, expected %s", got, tt.expect)
+			}
+		})
+	}
+}
