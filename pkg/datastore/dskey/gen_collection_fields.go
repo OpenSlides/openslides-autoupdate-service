@@ -2379,209 +2379,9 @@ func collectionFieldToID(cf string) int {
 	}
 }
 
-var collectionModeFields = [...]collectionMode{
-	{"invalid", "mode"},
-	{"action_worker", "A"},
-	{"agenda_item", "A"},
-	{"agenda_item", "B"},
-	{"agenda_item", "C"},
-	{"assignment", "A"},
-	{"assignment_candidate", "A"},
-	{"chat_group", "A"},
-	{"chat_message", "A"},
-	{"committee", "A"},
-	{"committee", "B"},
-	{"group", "A"},
-	{"import_preview", "A"},
-	{"list_of_speakers", "A"},
-	{"mediafile", "A"},
-	{"meeting", "A"},
-	{"meeting", "B"},
-	{"meeting", "C"},
-	{"meeting_user", "A"},
-	{"meeting_user", "B"},
-	{"meeting_user", "D"},
-	{"motion", "A"},
-	{"motion", "C"},
-	{"motion", "D"},
-	{"motion_block", "A"},
-	{"motion_category", "A"},
-	{"motion_change_recommendation", "A"},
-	{"motion_comment", "A"},
-	{"motion_comment_section", "A"},
-	{"motion_state", "A"},
-	{"motion_statute_paragraph", "A"},
-	{"motion_submitter", "A"},
-	{"motion_workflow", "A"},
-	{"option", "A"},
-	{"option", "B"},
-	{"organization", "A"},
-	{"organization", "B"},
-	{"organization", "C"},
-	{"organization_tag", "A"},
-	{"personal_note", "A"},
-	{"point_of_order_category", "A"},
-	{"poll", "A"},
-	{"poll", "B"},
-	{"poll", "C"},
-	{"poll", "D"},
-	{"poll", "MANAGE"},
-	{"poll_candidate", "A"},
-	{"poll_candidate_list", "A"},
-	{"projection", "A"},
-	{"projector", "A"},
-	{"projector_countdown", "A"},
-	{"projector_message", "A"},
-	{"speaker", "A"},
-	{"tag", "A"},
-	{"theme", "A"},
-	{"topic", "A"},
-	{"user", "A"},
-	{"user", "D"},
-	{"user", "E"},
-	{"user", "F"},
-	{"user", "G"},
-	{"user", "H"},
-	{"vote", "A"},
-	{"vote", "B"},
-}
-
-func collectionModeToID(cf string) int {
-	switch cf {
-	case "action_worker/A":
-		return 1
-	case "agenda_item/A":
-		return 2
-	case "agenda_item/B":
-		return 3
-	case "agenda_item/C":
-		return 4
-	case "assignment/A":
-		return 5
-	case "assignment_candidate/A":
-		return 6
-	case "chat_group/A":
-		return 7
-	case "chat_message/A":
-		return 8
-	case "committee/A":
-		return 9
-	case "committee/B":
-		return 10
-	case "group/A":
-		return 11
-	case "import_preview/A":
-		return 12
-	case "list_of_speakers/A":
-		return 13
-	case "mediafile/A":
-		return 14
-	case "meeting/A":
-		return 15
-	case "meeting/B":
-		return 16
-	case "meeting/C":
-		return 17
-	case "meeting_user/A":
-		return 18
-	case "meeting_user/B":
-		return 19
-	case "meeting_user/D":
-		return 20
-	case "motion/A":
-		return 21
-	case "motion/C":
-		return 22
-	case "motion/D":
-		return 23
-	case "motion_block/A":
-		return 24
-	case "motion_category/A":
-		return 25
-	case "motion_change_recommendation/A":
-		return 26
-	case "motion_comment/A":
-		return 27
-	case "motion_comment_section/A":
-		return 28
-	case "motion_state/A":
-		return 29
-	case "motion_statute_paragraph/A":
-		return 30
-	case "motion_submitter/A":
-		return 31
-	case "motion_workflow/A":
-		return 32
-	case "option/A":
-		return 33
-	case "option/B":
-		return 34
-	case "organization/A":
-		return 35
-	case "organization/B":
-		return 36
-	case "organization/C":
-		return 37
-	case "organization_tag/A":
-		return 38
-	case "personal_note/A":
-		return 39
-	case "point_of_order_category/A":
-		return 40
-	case "poll/A":
-		return 41
-	case "poll/B":
-		return 42
-	case "poll/C":
-		return 43
-	case "poll/D":
-		return 44
-	case "poll/MANAGE":
-		return 45
-	case "poll_candidate/A":
-		return 46
-	case "poll_candidate_list/A":
-		return 47
-	case "projection/A":
-		return 48
-	case "projector/A":
-		return 49
-	case "projector_countdown/A":
-		return 50
-	case "projector_message/A":
-		return 51
-	case "speaker/A":
-		return 52
-	case "tag/A":
-		return 53
-	case "theme/A":
-		return 54
-	case "topic/A":
-		return 55
-	case "user/A":
-		return 56
-	case "user/D":
-		return 57
-	case "user/E":
-		return 58
-	case "user/F":
-		return 59
-	case "user/G":
-		return 60
-	case "user/H":
-		return 61
-	case "vote/A":
-		return 62
-	case "vote/B":
-		return 63
-	default:
-		return -1
-	}
-}
-
 var collectionFieldToMode = [...]int{
-	-1,
-	-1,
+	0,
+	0,
 	1,
 	1,
 	1,
@@ -3384,7 +3184,7 @@ var relationType = [...]Relation{
 	RelationList,
 	RelationNone,
 	RelationNone,
-	RelationGenericSignle,
+	RelationGenericSingle,
 	RelationNone,
 	RelationNone,
 	RelationNone,
@@ -3470,7 +3270,7 @@ var relationType = [...]Relation{
 	RelationNone,
 	RelationNone,
 	RelationNone,
-	RelationGenericSignle,
+	RelationGenericSingle,
 	RelationNone,
 	RelationSingle,
 	RelationList,
@@ -3488,7 +3288,7 @@ var relationType = [...]Relation{
 	RelationNone,
 	RelationSingle,
 	RelationNone,
-	RelationGenericSignle,
+	RelationGenericSingle,
 	RelationSingle,
 	RelationNone,
 	RelationList,
@@ -3882,7 +3682,7 @@ var relationType = [...]Relation{
 	RelationNone,
 	RelationList,
 	RelationNone,
-	RelationGenericSignle,
+	RelationGenericSingle,
 	RelationNone,
 	RelationSingle,
 	RelationNone,
@@ -3931,7 +3731,7 @@ var relationType = [...]Relation{
 	RelationNone,
 	RelationSingle,
 	RelationGenericList,
-	RelationGenericSignle,
+	RelationGenericSingle,
 	RelationNone,
 	RelationSingle,
 	RelationSingle,
@@ -3943,7 +3743,7 @@ var relationType = [...]Relation{
 	RelationList,
 	RelationNone,
 	RelationNone,
-	RelationGenericSignle,
+	RelationGenericSingle,
 	RelationNone,
 	RelationNone,
 	RelationNone,
@@ -3984,7 +3784,7 @@ var relationType = [...]Relation{
 	RelationSingle,
 	RelationList,
 	RelationNone,
-	RelationGenericSignle,
+	RelationGenericSingle,
 	RelationSingle,
 	RelationSingle,
 	RelationNone,
@@ -4163,4 +3963,997 @@ var relationType = [...]Relation{
 	RelationNone,
 	RelationNone,
 	RelationNone,
+}
+
+var relationTo = [...]int{
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	19,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	140,
+	8,
+	611,
+	688,
+	0,
+	0,
+	11,
+	104,
+	40,
+	0,
+	0,
+	0,
+	97,
+	155,
+	0,
+	0,
+	0,
+	570,
+	611,
+	0,
+	688,
+	0,
+	26,
+	0,
+	154,
+	354,
+	0,
+	52,
+	0,
+	168,
+	0,
+	82,
+	0,
+	89,
+	45,
+	0,
+	0,
+	0,
+	169,
+	355,
+	182,
+	0,
+	0,
+	69,
+	759,
+	0,
+	751,
+	170,
+	0,
+	521,
+	557,
+	61,
+	750,
+	137,
+	181,
+	0,
+	0,
+	103,
+	110,
+	220,
+	357,
+	0,
+	0,
+	574,
+	49,
+	458,
+	160,
+	264,
+	316,
+	335,
+	0,
+	51,
+	462,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	238,
+	611,
+	0,
+	677,
+	75,
+	0,
+	116,
+	0,
+	0,
+	0,
+	0,
+	76,
+	0,
+	0,
+	97,
+	0,
+	0,
+	105,
+	0,
+	611,
+	0,
+	0,
+	211,
+	212,
+	213,
+	214,
+	215,
+	216,
+	217,
+	218,
+	245,
+	246,
+	247,
+	248,
+	249,
+	250,
+	251,
+	252,
+	71,
+	0,
+	0,
+	18,
+	0,
+	0,
+	0,
+	0,
+	0,
+	615,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	42,
+	31,
+	0,
+	0,
+	0,
+	0,
+	84,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	47,
+	56,
+	65,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	72,
+	58,
+	644,
+	645,
+	646,
+	647,
+	648,
+	649,
+	650,
+	651,
+	652,
+	653,
+	654,
+	655,
+	656,
+	657,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	121,
+	122,
+	123,
+	124,
+	125,
+	126,
+	127,
+	128,
+	394,
+	77,
+	0,
+	0,
+	519,
+	520,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	668,
+	0,
+	0,
+	0,
+	0,
+	99,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	129,
+	130,
+	131,
+	132,
+	133,
+	134,
+	135,
+	136,
+	115,
+	359,
+	423,
+	431,
+	443,
+	451,
+	456,
+	388,
+	0,
+	0,
+	0,
+	85,
+	0,
+	0,
+	470,
+	488,
+	495,
+	504,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	499,
+	0,
+	0,
+	500,
+	501,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	511,
+	557,
+	560,
+	565,
+	0,
+	0,
+	602,
+	607,
+	669,
+	0,
+	0,
+	86,
+	0,
+	0,
+	0,
+	584,
+	0,
+	765,
+	611,
+	0,
+	664,
+	0,
+	634,
+	671,
+	658,
+	678,
+	0,
+	686,
+	543,
+	743,
+	87,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	784,
+	0,
+	0,
+	0,
+	43,
+	57,
+	0,
+	78,
+	0,
+	254,
+	496,
+	0,
+	561,
+	679,
+	0,
+	414,
+	770,
+	368,
+	367,
+	0,
+	11,
+	372,
+	371,
+	386,
+	0,
+	104,
+	424,
+	432,
+	0,
+	444,
+	452,
+	0,
+	393,
+	0,
+	0,
+	0,
+	373,
+	97,
+	260,
+	0,
+	0,
+	0,
+	509,
+	382,
+	219,
+	558,
+	570,
+	611,
+	0,
+	0,
+	0,
+	473,
+	400,
+	410,
+	0,
+	406,
+	405,
+	0,
+	0,
+	0,
+	0,
+	472,
+	489,
+	497,
+	365,
+	688,
+	0,
+	0,
+	0,
+	11,
+	0,
+	0,
+	97,
+	255,
+	376,
+	611,
+	0,
+	0,
+	434,
+	0,
+	0,
+	256,
+	377,
+	0,
+	428,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	257,
+	379,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	258,
+	380,
+	454,
+	453,
+	0,
+	259,
+	0,
+	83,
+	0,
+	0,
+	0,
+	90,
+	0,
+	0,
+	0,
+	0,
+	0,
+	502,
+	0,
+	267,
+	0,
+	411,
+	401,
+	0,
+	476,
+	475,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	484,
+	483,
+	0,
+	507,
+	0,
+	268,
+	412,
+	0,
+	0,
+	0,
+	0,
+	0,
+	269,
+	360,
+	413,
+	0,
+	278,
+	281,
+	282,
+	468,
+	0,
+	270,
+	0,
+	0,
+	486,
+	0,
+	0,
+	0,
+	305,
+	0,
+	587,
+	0,
+	578,
+	785,
+	0,
+	0,
+	223,
+	224,
+	67,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	115,
+	0,
+	556,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	333,
+	723,
+	708,
+	0,
+	772,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	534,
+	0,
+	0,
+	0,
+	307,
+	362,
+	0,
+	0,
+	0,
+	308,
+	0,
+	682,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	81,
+	0,
+	0,
+	0,
+	515,
+	0,
+	0,
+	0,
+	0,
+	0,
+	320,
+	0,
+	0,
+	513,
+	0,
+	611,
+	0,
+	0,
+	0,
+	0,
+	0,
+	776,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	311,
+	609,
+	775,
+	0,
+	0,
+	312,
+	509,
+	603,
+	0,
+	0,
+	627,
+	631,
+	0,
+	146,
+	0,
+	636,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	612,
+	0,
+	0,
+	0,
+	613,
+	0,
+	0,
+	327,
+	0,
+	617,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	183,
+	184,
+	185,
+	186,
+	187,
+	188,
+	189,
+	190,
+	191,
+	192,
+	193,
+	194,
+	195,
+	196,
+	329,
+	0,
+	0,
+	0,
+	0,
+	0,
+	325,
+	611,
+	0,
+	0,
+	233,
+	313,
+	0,
+	328,
+	0,
+	611,
+	0,
+	0,
+	0,
+	102,
+	330,
+	363,
+	0,
+	0,
+	567,
+	0,
+	0,
+	0,
+	332,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	545,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	544,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	11,
+	104,
+	0,
+	97,
+	334,
+	570,
+	611,
+	0,
+	0,
+	0,
+	0,
+	70,
+	64,
+	0,
+	0,
+	0,
+	0,
+	782,
+	0,
+	0,
+	62,
+	0,
+	0,
+	0,
+	0,
+	0,
+	322,
+	0,
+	0,
+	0,
+	0,
+	366,
+	509,
+	547,
+	0,
+	0,
+	604,
+	595,
+	0,
+	0,
+	0,
+	0,
+	786,
+	756,
+	0,
+	350,
+	516,
+	781,
+	0,
+	0,
+	0,
+}
+
+var collectionModeFields = [...]collectionMode{
+	{"invalid", "mode"},
+	{"action_worker", "A"},
+	{"agenda_item", "A"},
+	{"agenda_item", "B"},
+	{"agenda_item", "C"},
+	{"assignment", "A"},
+	{"assignment_candidate", "A"},
+	{"chat_group", "A"},
+	{"chat_message", "A"},
+	{"committee", "A"},
+	{"committee", "B"},
+	{"group", "A"},
+	{"import_preview", "A"},
+	{"list_of_speakers", "A"},
+	{"mediafile", "A"},
+	{"meeting", "A"},
+	{"meeting", "B"},
+	{"meeting", "C"},
+	{"meeting_user", "A"},
+	{"meeting_user", "B"},
+	{"meeting_user", "D"},
+	{"motion", "A"},
+	{"motion", "C"},
+	{"motion", "D"},
+	{"motion_block", "A"},
+	{"motion_category", "A"},
+	{"motion_change_recommendation", "A"},
+	{"motion_comment", "A"},
+	{"motion_comment_section", "A"},
+	{"motion_state", "A"},
+	{"motion_statute_paragraph", "A"},
+	{"motion_submitter", "A"},
+	{"motion_workflow", "A"},
+	{"option", "A"},
+	{"option", "B"},
+	{"organization", "A"},
+	{"organization", "B"},
+	{"organization", "C"},
+	{"organization_tag", "A"},
+	{"personal_note", "A"},
+	{"point_of_order_category", "A"},
+	{"poll", "A"},
+	{"poll", "B"},
+	{"poll", "C"},
+	{"poll", "D"},
+	{"poll", "MANAGE"},
+	{"poll_candidate", "A"},
+	{"poll_candidate_list", "A"},
+	{"projection", "A"},
+	{"projector", "A"},
+	{"projector_countdown", "A"},
+	{"projector_message", "A"},
+	{"speaker", "A"},
+	{"tag", "A"},
+	{"theme", "A"},
+	{"topic", "A"},
+	{"user", "A"},
+	{"user", "D"},
+	{"user", "E"},
+	{"user", "F"},
+	{"user", "G"},
+	{"user", "H"},
+	{"vote", "A"},
+	{"vote", "B"},
+}
+
+func collectionModeToID(cf string) int {
+	switch cf {
+	case "action_worker/A":
+		return 1
+	case "agenda_item/A":
+		return 2
+	case "agenda_item/B":
+		return 3
+	case "agenda_item/C":
+		return 4
+	case "assignment/A":
+		return 5
+	case "assignment_candidate/A":
+		return 6
+	case "chat_group/A":
+		return 7
+	case "chat_message/A":
+		return 8
+	case "committee/A":
+		return 9
+	case "committee/B":
+		return 10
+	case "group/A":
+		return 11
+	case "import_preview/A":
+		return 12
+	case "list_of_speakers/A":
+		return 13
+	case "mediafile/A":
+		return 14
+	case "meeting/A":
+		return 15
+	case "meeting/B":
+		return 16
+	case "meeting/C":
+		return 17
+	case "meeting_user/A":
+		return 18
+	case "meeting_user/B":
+		return 19
+	case "meeting_user/D":
+		return 20
+	case "motion/A":
+		return 21
+	case "motion/C":
+		return 22
+	case "motion/D":
+		return 23
+	case "motion_block/A":
+		return 24
+	case "motion_category/A":
+		return 25
+	case "motion_change_recommendation/A":
+		return 26
+	case "motion_comment/A":
+		return 27
+	case "motion_comment_section/A":
+		return 28
+	case "motion_state/A":
+		return 29
+	case "motion_statute_paragraph/A":
+		return 30
+	case "motion_submitter/A":
+		return 31
+	case "motion_workflow/A":
+		return 32
+	case "option/A":
+		return 33
+	case "option/B":
+		return 34
+	case "organization/A":
+		return 35
+	case "organization/B":
+		return 36
+	case "organization/C":
+		return 37
+	case "organization_tag/A":
+		return 38
+	case "personal_note/A":
+		return 39
+	case "point_of_order_category/A":
+		return 40
+	case "poll/A":
+		return 41
+	case "poll/B":
+		return 42
+	case "poll/C":
+		return 43
+	case "poll/D":
+		return 44
+	case "poll/MANAGE":
+		return 45
+	case "poll_candidate/A":
+		return 46
+	case "poll_candidate_list/A":
+		return 47
+	case "projection/A":
+		return 48
+	case "projector/A":
+		return 49
+	case "projector_countdown/A":
+		return 50
+	case "projector_message/A":
+		return 51
+	case "speaker/A":
+		return 52
+	case "tag/A":
+		return 53
+	case "theme/A":
+		return 54
+	case "topic/A":
+		return 55
+	case "user/A":
+		return 56
+	case "user/D":
+		return 57
+	case "user/E":
+		return 58
+	case "user/F":
+		return 59
+	case "user/G":
+		return 60
+	case "user/H":
+		return 61
+	case "vote/A":
+		return 62
+	case "vote/B":
+		return 63
+	default:
+		return -1
+	}
 }

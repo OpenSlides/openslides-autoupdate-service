@@ -8,6 +8,6 @@ const (
 	RelationNone Relation = iota
 	RelationSingle
 	RelationList
-	RelationGenericSignle
+	RelationGenericSingle
 	RelationGenericList
 )

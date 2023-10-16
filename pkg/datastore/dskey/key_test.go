@@ -233,3 +233,26 @@ func TestRelationType(t *testing.T) {
 		})
 	}
 }
+
+func TestRelationTo(t *testing.T) {
+	for _, tt := range []struct {
+		key    string
+		id     int
+		expect dskey.Key
+	}{
+		{"user/1/username", 1, dskey.Key(0)},
+		{"user/1/committee_ids", 30, dskey.MustKey("committee/30/user_ids")},
+		{"user/1/organization_id", 500, dskey.MustKey("organization/500/user_ids")},
+	} {
+		t.Run(tt.key, func(t *testing.T) {
+			key, err := dskey.FromString(tt.key)
+			if err != nil {
+				t.Fatalf("Key is not valid: %v", err)
+			}
+
+			if got := key.RelationTo(tt.id); got != tt.expect {
+				t.Errorf("got %s, expected %s", got, tt.expect)
+			}
+		})
+	}
+}

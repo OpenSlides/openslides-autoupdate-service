@@ -109,6 +109,18 @@ func (k Key) RelationType() Relation {
 	return relationType[cfIdx]
 }
 
+// RelationTo tells, what kind of relation a key has.
+//
+// Returns invalid key if key has no relation or is a generic relation.
+func (k Key) RelationTo(id int) Key {
+	cfIdx, _ := splitUInt64(uint64(k))
+	relatedIdx := relationTo[cfIdx]
+	if relatedIdx == 0 {
+		return Key(0)
+	}
+	return Key(joinInt(relatedIdx, id))
+}
+
 // MarshalJSON converts the key to a json string.
 func (k Key) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + k.String() + `"`), nil

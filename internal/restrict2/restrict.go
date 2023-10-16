@@ -4,9 +4,11 @@ package restrict
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"slices"
 	"sync"
 	"time"
 
@@ -17,6 +19,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsrecorder"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/fastjson"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
@@ -246,20 +249,85 @@ func (r *userRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.
 	// startRestrict := time.Now()
 
 	for i, key := range keys {
-		attrFunc := attrFuncs[i]
-		if attrFunc == nil {
-			log.Printf("attrFunc for key %s, collection field %s, is nil", key, key.CollectionField())
+		checkAndRemove(data, key, attrFuncs[i], user)
+
+		if key.RelationType() == dskey.RelationNone {
 			continue
 		}
 
-		if !attrFunc(user) {
-			data[key] = nil
-			continue
+		switch key.RelationType() {
+		case dskey.RelationSingle:
+			id, err := fastjson.DecodeInt(data[key])
+			if err != nil {
+				return nil, fmt.Errorf("invalid value in %s, expected id: %w", key, err)
+			}
+
+			relationMode := key.RelationTo(id).CollectionMode()
+
+			attrFuncs, err := r.restricter.calculatedAttributes(ctx, []dskey.CollectionMode{relationMode})
+			if err != nil {
+				return nil, fmt.Errorf("get precalculated functions: %w", err)
+			}
+
+			checkAndRemove(data, key, attrFuncs[0], user)
+
+		case dskey.RelationList:
+			ids, err := fastjson.DecodeIntList(data[key])
+			if err != nil {
+				return nil, fmt.Errorf("invalid value in %s, expected list of ids: %w", key, err)
+			}
+
+			relationModes := make([]dskey.CollectionMode, len(ids))
+			for i, id := range ids {
+				relationModes[i] = key.RelationTo(id).CollectionMode()
+			}
+
+			attrFuncs, err := r.restricter.calculatedAttributes(ctx, relationModes)
+			if err != nil {
+				return nil, fmt.Errorf("get precalculated functions for relation list key %s: %w", key, err)
+			}
+
+			var removedOne bool
+			for i := range ids {
+				if attrFuncs[i] == nil || !attrFuncs[i](user) {
+					if attrFuncs[i] == nil {
+						log.Printf("attrFunc for key %s, collection field %s, is nil", key, key.CollectionField())
+					}
+					slices.Delete(ids, i, i+1)
+					removedOne = true
+					continue
+				}
+			}
+
+			if removedOne {
+				newValue, err := json.Marshal(ids)
+				if err != nil {
+					return nil, fmt.Errorf("marshal new value for key %s: %w", key, err)
+				}
+				data[key] = newValue
+			}
+
+		case dskey.RelationGenericSingle:
+			// TODO
+		case dskey.RelationGenericList:
+			// TODO
 		}
 
-		// TODO: relation fields
 	}
 	// log.Printf("precalculated restrict %d keys took: %s", len(keys), time.Since(startRestrict))
 
 	return data, nil
+}
+
+func checkAndRemove(data map[dskey.Key][]byte, key dskey.Key, attrFunc attribute.Func, user attribute.UserAttributes) {
+	if attrFunc == nil {
+		log.Printf("attrFunc for key %s, collection field %s, is nil", key, key.CollectionField())
+		data[key] = nil
+		return
+	}
+
+	if !attrFunc(user) {
+		data[key] = nil
+		return
+	}
 }
