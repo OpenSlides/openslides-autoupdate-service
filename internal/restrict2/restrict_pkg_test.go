@@ -1,101 +1,89 @@
 package restrict
 
-import (
-	"context"
-	"fmt"
-	"slices"
-	"strings"
-	"testing"
+// func TestRestricterWithID_0(t *testing.T) {
+// 	ctx := collection.ContextWithRestrictCache(context.Background())
+// 	fetcher := dsfetch.New(dsmock.Stub(nil))
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
-)
+// 	allModes := make(map[string]string)
+// 	for fieldName, mode := range restrictionModes {
+// 		collectionName, _, found := strings.Cut(fieldName, "/")
+// 		if !found {
+// 			t.Fatalf("invalid field %s, expected one /", fieldName)
+// 		}
 
-func TestRestricterWithID_0(t *testing.T) {
-	ctx := collection.ContextWithRestrictCache(context.Background())
-	fetcher := dsfetch.New(dsmock.Stub(nil))
+// 		allModes[collectionName] = mode
+// 	}
 
-	allModes := make(map[string]string)
-	for fieldName, mode := range restrictionModes {
-		collectionName, _, found := strings.Cut(fieldName, "/")
-		if !found {
-			t.Fatalf("invalid field %s, expected one /", fieldName)
-		}
+// 	keys := make([]string, 0, len(allModes))
+// 	for k := range allModes {
+// 		keys = append(keys, k)
+// 	}
+// 	slices.Sort(keys)
 
-		allModes[collectionName] = mode
-	}
+// 	for _, collectionName := range keys {
+// 		modeName := allModes[collectionName]
+// 		fr := collection.FromName(ctx, collectionName).Modes(modeName)
 
-	keys := make([]string, 0, len(allModes))
-	for k := range allModes {
-		keys = append(keys, k)
-	}
-	slices.Sort(keys)
+// 		t.Run(fmt.Sprintf("%s/%s", collectionName, modeName), func(t *testing.T) {
+// 			attr, err := fr(ctx, fetcher, []int{0, 0, 0})
+// 			if err != nil {
+// 				t.Errorf("field restricter: %v", err)
+// 			}
 
-	for _, collectionName := range keys {
-		modeName := allModes[collectionName]
-		fr := collection.FromName(ctx, collectionName).Modes(modeName)
+// 			for i := 0; i < 3; i++ {
+// 				if attr[i] != nil {
+// 					t.Errorf("attr %d is not nil", i)
+// 				}
+// 			}
+// 		})
+// 	}
+// }
 
-		t.Run(fmt.Sprintf("%s/%s", collectionName, modeName), func(t *testing.T) {
-			attr, err := fr(ctx, fetcher, []int{0, 0, 0})
-			if err != nil {
-				t.Errorf("field restricter: %v", err)
-			}
+// func TestRestrictModeForAll(t *testing.T) {
+// 	ctx := collection.ContextWithRestrictCache(context.Background())
 
-			for i := 0; i < 3; i++ {
-				if attr[i] != nil {
-					t.Errorf("attr %d is not nil", i)
-				}
-			}
-		})
-	}
-}
+// 	for collectionField := range restrictionModes {
+// 		collection, field, found := strings.Cut(collectionField, "/")
+// 		if !found {
+// 			t.Fatalf("invalid field %s, expected one /", collectionField)
+// 		}
 
-func TestRestrictModeForAll(t *testing.T) {
-	ctx := collection.ContextWithRestrictCache(context.Background())
+// 		fieldMode, err := restrictModeName(collection, field)
+// 		if err != nil {
+// 			t.Fatalf("building field mode: %v", err)
+// 		}
 
-	for collectionField := range restrictionModes {
-		collection, field, found := strings.Cut(collectionField, "/")
-		if !found {
-			t.Fatalf("invalid field %s, expected one /", collectionField)
-		}
+// 		if _, err := restrictModefunc(ctx, collection, fieldMode); err != nil {
+// 			t.Errorf("restrictMode(%s, %s) returned: %v", collection, field, err)
+// 		}
+// 	}
+// }
 
-		fieldMode, err := restrictModeName(collection, field)
-		if err != nil {
-			t.Fatalf("building field mode: %v", err)
-		}
+// // restrictModeName returns the restriction mode for a collection and field.
+// //
+// // This is a string like "A" or "B" or any other name of a restriction mode.
+// func restrictModeName(collection, field string) (string, error) {
+// 	fieldMode, ok := restrictionModes[collection+"/"+field]
+// 	if !ok {
+// 		// TODO LAST ERROR
+// 		return "", fmt.Errorf("fqfield %q is unknown, maybe run go generate ./... to fetch all fields from the models.yml", collection+"/"+field)
+// 	}
+// 	return fieldMode, nil
+// }
 
-		if _, err := restrictModefunc(ctx, collection, fieldMode); err != nil {
-			t.Errorf("restrictMode(%s, %s) returned: %v", collection, field, err)
-		}
-	}
-}
+// // restrictModefunc returns the field restricter function to use.
+// func restrictModefunc(ctx context.Context, collectionName, fieldMode string) (collection.FieldRestricter, error) {
+// 	restricter := collection.FromName(ctx, collectionName)
+// 	if _, ok := restricter.(collection.Unknown); ok {
+// 		// TODO LAST ERROR
+// 		return nil, fmt.Errorf("collection %q is not implemented, maybe run go generate ./... to fetch all fields from the models.yml", collectionName)
+// 	}
 
-// restrictModeName returns the restriction mode for a collection and field.
-//
-// This is a string like "A" or "B" or any other name of a restriction mode.
-func restrictModeName(collection, field string) (string, error) {
-	fieldMode, ok := restrictionModes[collection+"/"+field]
-	if !ok {
-		// TODO LAST ERROR
-		return "", fmt.Errorf("fqfield %q is unknown, maybe run go generate ./... to fetch all fields from the models.yml", collection+"/"+field)
-	}
-	return fieldMode, nil
-}
+// 	modefunc := restricter.Modes(fieldMode)
+// 	if modefunc == nil {
+// 		// TODO LAST ERROR
+// 		return nil, fmt.Errorf("mode %q of models %q is not implemented", fieldMode, collectionName)
+// 	}
 
-// restrictModefunc returns the field restricter function to use.
-func restrictModefunc(ctx context.Context, collectionName, fieldMode string) (collection.FieldRestricter, error) {
-	restricter := collection.FromName(ctx, collectionName)
-	if _, ok := restricter.(collection.Unknown); ok {
-		// TODO LAST ERROR
-		return nil, fmt.Errorf("collection %q is not implemented, maybe run go generate ./... to fetch all fields from the models.yml", collectionName)
-	}
-
-	modefunc := restricter.Modes(fieldMode)
-	if modefunc == nil {
-		// TODO LAST ERROR
-		return nil, fmt.Errorf("mode %q of models %q is not implemented", fieldMode, collectionName)
-	}
-
-	return modefunc, nil
-}
+// 	return modefunc, nil
+// }

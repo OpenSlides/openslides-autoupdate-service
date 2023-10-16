@@ -103,6 +103,12 @@ func (k Key) CollectionMode() CollectionMode {
 	return CollectionMode(joinInt(cmIdx, id))
 }
 
+// RelationType tells, what kind of relation a key has.
+func (k Key) RelationType() Relation {
+	cfIdx, _ := splitUInt64(uint64(k))
+	return relationType[cfIdx]
+}
+
 // MarshalJSON converts the key to a json string.
 func (k Key) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + k.String() + `"`), nil

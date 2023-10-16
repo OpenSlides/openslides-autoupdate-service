@@ -23,12 +23,12 @@ func main() {
 	}
 	defer r.Close()
 
-	collectionFields, collectionModes, cf2cm, err := parse(r)
+	p, err := parse(r)
 	if err != nil {
 		log.Fatalf("Can not parse model definition: %v", err)
 	}
 
-	if err := writeFile(os.Stdout, collectionFields, collectionModes, cf2cm); err != nil {
+	if err := writeFile(os.Stdout, p); err != nil {
 		log.Fatalf("Can not write result: %v", err)
 	}
 }
@@ -49,16 +49,26 @@ type collectionField struct {
 	Field      string
 }
 
-func parse(r io.Reader) ([]collectionField, []collectionField, []int, error) {
+type parseResult struct {
+	collectionFields      []collectionField
+	collectionModes       []collectionField
+	collectionFieldToMode []int
+	relationType          []int
+}
+
+func parse(r io.Reader) (parseResult, error) {
 	inData, err := models.Unmarshal(r)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("unmarshalling models.yml: %w", err)
+		return parseResult{}, fmt.Errorf("unmarshalling models.yml: %w", err)
 	}
 
 	var cfs []collectionField
 
 	modefields := set.New[collectionField]()
 	fieldToMode := make(map[collectionField]collectionField)
+	fieldRelationType := make(map[collectionField]int)
+	fieldRelationTo := make(map[collectionField]collectionField)
+	fieldRelationGenericTo := make(map[collectionField][]collectionField)
 
 	for collection, collInfo := range inData {
 		for field, fieldInfo := range collInfo.Fields {
@@ -75,6 +85,44 @@ func parse(r io.Reader) ([]collectionField, []collectionField, []int, error) {
 
 			modefields.Add(cm)
 			fieldToMode[cf] = cm
+
+			relation := fieldInfo.Relation()
+
+			if relation == nil {
+				continue
+			}
+
+			switch v := relation.(type) {
+			case *models.AttributeRelation:
+				fieldRelationTo[cf] = collectionField{
+					Collection: v.ToCollections()[0].Collection,
+					Field:      v.ToCollections()[0].ToField.Name,
+				}
+
+				if relation.List() {
+					fieldRelationType[cf] = 2
+				} else {
+					fieldRelationType[cf] = 1
+				}
+
+			case *models.AttributeGenericRelation:
+				tocfs := make([]collectionField, len(v.ToCollections()))
+				for i, toField := range v.ToCollections() {
+					tocfs[i].Collection = toField.Collection
+					tocfs[i].Field = toField.ToField.Name
+				}
+				fieldRelationGenericTo[cf] = tocfs
+
+				if relation.List() {
+					fieldRelationType[cf] = 4
+				} else {
+					fieldRelationType[cf] = 3
+				}
+
+			default:
+				return parseResult{}, fmt.Errorf("unknown type %t for field.Relation", v)
+			}
+
 		}
 	}
 
@@ -100,15 +148,23 @@ func parse(r io.Reader) ([]collectionField, []collectionField, []int, error) {
 	})
 
 	cf2cm := make([]int, len(cfs))
+	rt := make([]int, len(cfs))
 	for i, cf := range cfs {
 		idx := slices.Index(mfs, fieldToMode[cf])
 		if idx == -1 {
-			return nil, nil, nil, fmt.Errorf("can not find mode for %s", cf)
+			return parseResult{}, fmt.Errorf("can not find mode for %s", cf)
 		}
 		cf2cm[i] = idx + 1
+
+		rt[i] = fieldRelationType[cf]
 	}
 
-	return cfs, mfs, cf2cm, nil
+	return parseResult{
+		collectionFields:      cfs,
+		collectionModes:       mfs,
+		collectionFieldToMode: cf2cm,
+		relationType:          rt,
+	}, nil
 }
 
 const tpl = `// Code generated with models.yml DO NOT EDIT.
@@ -160,9 +216,27 @@ var collectionFieldToMode = [...]int{
 		{{$idx}},
 	{{- end}}
 }
+
+var relationType = [...]Relation{
+	RelationNone,
+	RelationNone,
+	{{- range $type := .RelationType}}
+		{{- if eq $type 0}}
+			RelationNone,
+		{{- else if eq $type 1}}
+			RelationSingle,
+		{{- else if eq $type 2}}
+			RelationList,
+		{{- else if eq $type 3}}
+			RelationGenericSignle,
+		{{- else if eq $type 4}}
+			RelationGenericList,
+		{{- end}}
+	{{- end}}
+}
 `
 
-func writeFile(w io.Writer, collectionFields []collectionField, collectionModes []collectionField, cf2cm []int) error {
+func writeFile(w io.Writer, p parseResult) error {
 	t := template.New("t").Funcs(template.FuncMap{
 		"add1": func(num int) int {
 			return num + 1
@@ -183,10 +257,12 @@ func writeFile(w io.Writer, collectionFields []collectionField, collectionModes 
 		CollectionFields []collectionField
 		CollectionModes  []collectionField
 		ModeIndex        []int
+		RelationType     []int
 	}{
-		CollectionFields: collectionFields,
-		CollectionModes:  collectionModes,
-		ModeIndex:        cf2cm,
+		CollectionFields: p.collectionFields,
+		CollectionModes:  p.collectionModes,
+		ModeIndex:        p.collectionFieldToMode,
+		RelationType:     p.relationType,
 	}
 
 	if err := t.Execute(buf, templateData); err != nil {

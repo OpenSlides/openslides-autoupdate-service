@@ -211,3 +211,25 @@ func TestCollectionFieldToMode(t *testing.T) {
 		})
 	}
 }
+
+func TestRelationType(t *testing.T) {
+	for _, tt := range []struct {
+		key    string
+		expect dskey.Relation
+	}{
+		{"user/1/username", dskey.RelationNone},
+		{"user/12/committee_ids", dskey.RelationList},
+		{"user/12/organization_id", dskey.RelationSingle},
+	} {
+		t.Run(tt.key, func(t *testing.T) {
+			key, err := dskey.FromString(tt.key)
+			if err != nil {
+				t.Fatalf("Key is not valid: %v", err)
+			}
+
+			if got := key.RelationType(); got != tt.expect {
+				t.Errorf("got %d, expected %d", got, tt.expect)
+			}
+		})
+	}
+}
