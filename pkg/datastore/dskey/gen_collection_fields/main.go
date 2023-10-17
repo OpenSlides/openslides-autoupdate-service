@@ -55,6 +55,7 @@ type parseResult struct {
 	collectionFieldToMode []int
 	relationType          []int
 	relationTo            []int
+	relationGenericTo     []map[string]int
 }
 
 func parse(r io.Reader) (parseResult, error) {
@@ -69,6 +70,7 @@ func parse(r io.Reader) (parseResult, error) {
 	fieldToMode := make(map[collectionField]collectionField)
 	fieldRelationType := make(map[collectionField]int)
 	fieldRelationTo := make(map[collectionField]collectionField)
+	fieldGenericRelationTo := make(map[collectionField]map[string]collectionField)
 
 	for collection, collInfo := range inData {
 		for field, fieldInfo := range collInfo.Fields {
@@ -94,7 +96,6 @@ func parse(r io.Reader) (parseResult, error) {
 
 			switch v := relation.(type) {
 			case *models.AttributeRelation:
-
 				fieldRelationTo[cf] = collectionField{
 					Collection: v.ToCollections()[0].Collection,
 					Field:      v.ToCollections()[0].ToField.Name,
@@ -107,6 +108,15 @@ func parse(r io.Reader) (parseResult, error) {
 				}
 
 			case *models.AttributeGenericRelation:
+				fieldGenericRelationTo[cf] = make(map[string]collectionField)
+
+				for _, x := range v.ToCollections() {
+					fieldGenericRelationTo[cf][x.Collection] = collectionField{
+						Collection: x.Collection,
+						Field:      x.ToField.Name,
+					}
+				}
+
 				if relation.List() {
 					fieldRelationType[cf] = 4
 				} else {
@@ -144,6 +154,7 @@ func parse(r io.Reader) (parseResult, error) {
 	cf2cm := make([]int, len(cfs))
 	rt := make([]int, len(cfs))
 	r2 := make([]int, len(cfs))
+	r2generic := make([]map[string]int, len(cfs))
 	for i, cf := range cfs {
 		idx := slices.Index(mfs, fieldToMode[cf])
 		if idx == -1 {
@@ -157,6 +168,14 @@ func parse(r io.Reader) (parseResult, error) {
 		if idx != -1 {
 			r2[i] = idx + 2
 		}
+
+		r2genericItem := make(map[string]int, len(fieldGenericRelationTo[cf]))
+		for collection, relationCf := range fieldGenericRelationTo[cf] {
+			idx = slices.Index(cfs, relationCf)
+			r2genericItem[collection] = idx + 2
+		}
+		r2generic[i] = r2genericItem
+
 	}
 
 	return parseResult{
@@ -165,6 +184,7 @@ func parse(r io.Reader) (parseResult, error) {
 		collectionFieldToMode: cf2cm,
 		relationType:          rt,
 		relationTo:            r2,
+		relationGenericTo:     r2generic,
 	}, nil
 }
 
@@ -226,6 +246,18 @@ var relationTo = [...]int{
 	{{- end}}
 }
 
+var relationGenericTo = [...]map[string]int{
+	nil,
+	nil,
+	{{- range $item := .RelationGenericTo}}
+		{{- if not $item}}
+			nil,
+		{{- else}}
+			{ {{range $collection, $idx := $item}} "{{$collection}}": {{$idx}} ,{{end}} },
+		{{- end}}
+	{{- end}}
+}
+
 var collectionModeFields = [...]collectionMode{
 	{"invalid", "mode"},
 	{{- range $cf := .CollectionModes}}
@@ -263,17 +295,19 @@ func writeFile(w io.Writer, p parseResult) error {
 	buf := new(bytes.Buffer)
 
 	templateData := struct {
-		CollectionFields []collectionField
-		CollectionModes  []collectionField
-		ModeIndex        []int
-		RelationType     []int
-		RelationTo       []int
+		CollectionFields  []collectionField
+		CollectionModes   []collectionField
+		ModeIndex         []int
+		RelationType      []int
+		RelationTo        []int
+		RelationGenericTo []map[string]int
 	}{
-		CollectionFields: p.collectionFields,
-		CollectionModes:  p.collectionModes,
-		ModeIndex:        p.collectionFieldToMode,
-		RelationType:     p.relationType,
-		RelationTo:       p.relationTo,
+		CollectionFields:  p.collectionFields,
+		CollectionModes:   p.collectionModes,
+		ModeIndex:         p.collectionFieldToMode,
+		RelationType:      p.relationType,
+		RelationTo:        p.relationTo,
+		RelationGenericTo: p.relationGenericTo,
 	}
 
 	if err := t.Execute(buf, templateData); err != nil {

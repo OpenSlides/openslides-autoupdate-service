@@ -250,8 +250,33 @@ func TestRelationTo(t *testing.T) {
 				t.Fatalf("Key is not valid: %v", err)
 			}
 
-			if got := key.RelationTo(tt.id); got != tt.expect {
+			if got, _ := key.RelationTo(tt.id); got != tt.expect {
 				t.Errorf("got %s, expected %s", got, tt.expect)
+			}
+		})
+	}
+}
+
+func TestRelationGenericTo(t *testing.T) {
+	for _, tt := range []struct {
+		key        string
+		collection string
+		id         int
+		expect     dskey.Key
+	}{
+		{"user/1/username", "topic", 1, dskey.Key(0)},
+		{"tag/1/tagged_ids", "topic", 30, dskey.Key(0)},
+		{"tag/1/tagged_ids", "agenda_item", 500, dskey.MustKey("agenda_item/500/tag_ids")},
+		{"personal_note/1/content_object_id", "motion", 23, dskey.MustKey("motion/23/personal_note_ids")},
+	} {
+		t.Run(tt.key, func(t *testing.T) {
+			key, err := dskey.FromString(tt.key)
+			if err != nil {
+				t.Fatalf("Key is not valid: %v", err)
+			}
+
+			if got, err := key.RelationGenericTo(tt.collection, tt.id); got != tt.expect {
+				t.Errorf("got %s, expected %s: %v", got, tt.expect, err)
 			}
 		})
 	}

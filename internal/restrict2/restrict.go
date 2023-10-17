@@ -8,7 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"slices"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -249,9 +250,11 @@ func (r *userRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.
 	// startRestrict := time.Now()
 
 	for i, key := range keys {
-		checkAndRemove(data, key, attrFuncs[i], user)
+		if checkAndRemove(data, key, attrFuncs[i], user) {
+			continue
+		}
 
-		if key.RelationType() == dskey.RelationNone {
+		if key.RelationType() == dskey.RelationNone || data[key] == nil {
 			continue
 		}
 
@@ -259,12 +262,33 @@ func (r *userRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.
 		case dskey.RelationSingle:
 			id, err := fastjson.DecodeInt(data[key])
 			if err != nil {
-				return nil, fmt.Errorf("invalid value in %s, expected id: %w", key, err)
+				return nil, fmt.Errorf("relation: invalid value in %s, expected id: %w", key, err)
 			}
 
-			relationMode := key.RelationTo(id).CollectionMode()
+			relatedKey, err := key.RelationTo(id)
+			if err != nil {
+				return nil, fmt.Errorf("get relation from key %s: %w", key, err)
+			}
 
-			attrFuncs, err := r.restricter.calculatedAttributes(ctx, []dskey.CollectionMode{relationMode})
+			attrFuncs, err := r.restricter.calculatedAttributes(ctx, []dskey.CollectionMode{relatedKey.CollectionMode()})
+			if err != nil {
+				return nil, fmt.Errorf("get precalculated functions: %w", err)
+			}
+
+			checkAndRemove(data, key, attrFuncs[0], user)
+
+		case dskey.RelationGenericSingle:
+			collection, id, err := parseGenericValue(data[key])
+			if err != nil {
+				return nil, fmt.Errorf("parse generic relation value %s: %w", key, err)
+			}
+
+			relatedKey, err := key.RelationGenericTo(collection, id)
+			if err != nil {
+				return nil, fmt.Errorf("get related mode from generic value in %s: %w", key, err)
+			}
+
+			attrFuncs, err := r.restricter.calculatedAttributes(ctx, []dskey.CollectionMode{relatedKey.CollectionMode()})
 			if err != nil {
 				return nil, fmt.Errorf("get precalculated functions: %w", err)
 			}
@@ -274,12 +298,16 @@ func (r *userRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.
 		case dskey.RelationList:
 			ids, err := fastjson.DecodeIntList(data[key])
 			if err != nil {
-				return nil, fmt.Errorf("invalid value in %s, expected list of ids: %w", key, err)
+				return nil, fmt.Errorf("relation-list: invalid value in %s: `%s`, expected list of ids: %w", key, data[key], err)
 			}
 
 			relationModes := make([]dskey.CollectionMode, len(ids))
 			for i, id := range ids {
-				relationModes[i] = key.RelationTo(id).CollectionMode()
+				relatedKey, err := key.RelationTo(id)
+				if err != nil {
+					return nil, fmt.Errorf("get relation from key %s: %w", key, err)
+				}
+				relationModes[i] = relatedKey.CollectionMode()
 			}
 
 			attrFuncs, err := r.restricter.calculatedAttributes(ctx, relationModes)
@@ -287,30 +315,75 @@ func (r *userRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.
 				return nil, fmt.Errorf("get precalculated functions for relation list key %s: %w", key, err)
 			}
 
-			var removedOne bool
+			newList := make([]int, 0, len(ids))
 			for i := range ids {
 				if attrFuncs[i] == nil || !attrFuncs[i](user) {
 					if attrFuncs[i] == nil {
 						log.Printf("attrFunc for key %s, collection field %s, is nil", key, key.CollectionField())
 					}
-					slices.Delete(ids, i, i+1)
-					removedOne = true
 					continue
 				}
+				newList = append(newList, ids[i])
 			}
 
-			if removedOne {
-				newValue, err := json.Marshal(ids)
-				if err != nil {
-					return nil, fmt.Errorf("marshal new value for key %s: %w", key, err)
-				}
-				data[key] = newValue
+			if len(newList) == len(ids) {
+				continue
 			}
 
-		case dskey.RelationGenericSingle:
-			// TODO
+			newValue, err := json.Marshal(newList)
+			if err != nil {
+				return nil, fmt.Errorf("marshal new value for key %s: %w", key, err)
+			}
+			data[key] = newValue
+
 		case dskey.RelationGenericList:
-			// TODO
+			var listValue []json.RawMessage
+			if err := json.Unmarshal(data[key], &listValue); err != nil {
+				return nil, fmt.Errorf("generic-relation-list: invalid value in %s: `%s`, expected list: %w", key, data[key], err)
+			}
+
+			relationModes := make([]dskey.CollectionMode, len(listValue))
+			for i, contentObectID := range listValue {
+				collection, id, err := parseGenericValue(contentObectID)
+				if err != nil {
+					return nil, fmt.Errorf("parse generic relation value %s: %w", key, err)
+				}
+
+				relatedKey, err := key.RelationGenericTo(collection, id)
+				if err != nil {
+					log.Printf("WARNING: key %s has value %s, but collection %s is not a possible relation for that key", key, data[key], collection)
+					// TODO: Do not return but remove value
+					return nil, fmt.Errorf("invalid data")
+
+				}
+				relationModes[i] = relatedKey.CollectionMode()
+			}
+
+			attrFuncs, err := r.restricter.calculatedAttributes(ctx, relationModes)
+			if err != nil {
+				return nil, fmt.Errorf("get precalculated functions for relation list key %s: %w", key, err)
+			}
+
+			newList := make([]json.RawMessage, 0, len(listValue))
+			for i := range listValue {
+				if attrFuncs[i] == nil || !attrFuncs[i](user) {
+					if attrFuncs[i] == nil {
+						log.Printf("attrFunc for key %s, collection field %s, is nil", key, key.CollectionField())
+					}
+					continue
+				}
+				newList = append(newList, listValue[i])
+			}
+
+			if len(newList) == len(listValue) {
+				continue
+			}
+
+			newValue, err := json.Marshal(newList)
+			if err != nil {
+				return nil, fmt.Errorf("marshal new value for key %s: %w", key, err)
+			}
+			data[key] = newValue
 		}
 
 	}
@@ -319,15 +392,33 @@ func (r *userRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.
 	return data, nil
 }
 
-func checkAndRemove(data map[dskey.Key][]byte, key dskey.Key, attrFunc attribute.Func, user attribute.UserAttributes) {
-	if attrFunc == nil {
-		log.Printf("attrFunc for key %s, collection field %s, is nil", key, key.CollectionField())
+func checkAndRemove(data map[dskey.Key][]byte, key dskey.Key, attrFunc attribute.Func, user attribute.UserAttributes) bool {
+	if attrFunc == nil || !attrFunc(user) {
+		if attrFunc == nil {
+			log.Printf("attrFunc for key %s, collection field %s, is nil", key, key.CollectionField())
+		}
 		data[key] = nil
-		return
+		return true
 	}
 
-	if !attrFunc(user) {
-		data[key] = nil
-		return
+	return false
+}
+
+func parseGenericValue(v []byte) (string, int, error) {
+	var genericID string
+	if err := json.Unmarshal(v, &genericID); err != nil {
+		return "", 0, fmt.Errorf("decoding value: %w", err)
 	}
+
+	collection, rawID, found := strings.Cut(genericID, "/")
+	if !found {
+		return "", 0, fmt.Errorf("invalid generic value. No /")
+	}
+
+	id, err := strconv.Atoi(rawID)
+	if err != nil {
+		return "", 0, fmt.Errorf("invalid generic value. Second part is no int: %w", err)
+	}
+
+	return collection, id, nil
 }

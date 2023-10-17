@@ -109,16 +109,30 @@ func (k Key) RelationType() Relation {
 	return relationType[cfIdx]
 }
 
-// RelationTo tells, what kind of relation a key has.
+// RelationTo returns the key where the relation goes.
 //
 // Returns invalid key if key has no relation or is a generic relation.
-func (k Key) RelationTo(id int) Key {
+func (k Key) RelationTo(id int) (Key, error) {
 	cfIdx, _ := splitUInt64(uint64(k))
 	relatedIdx := relationTo[cfIdx]
 	if relatedIdx == 0 {
-		return Key(0)
+		return 0, fmt.Errorf("%s is not a relation", k)
 	}
-	return Key(joinInt(relatedIdx, id))
+	return Key(joinInt(relatedIdx, id)), nil
+}
+
+// RelationGenericTo returns the key, where the relation goes.
+func (k Key) RelationGenericTo(collection string, id int) (Key, error) {
+	cfIdx, _ := splitUInt64(uint64(k))
+	item := relationGenericTo[cfIdx]
+	if item == nil {
+		return 0, fmt.Errorf("%s is not a generic relation", k)
+	}
+	relatedIdx, ok := item[collection]
+	if !ok {
+		return 0, fmt.Errorf("%s has no relation to %s", k, collection)
+	}
+	return Key(joinInt(relatedIdx, id)), nil
 }
 
 // MarshalJSON converts the key to a json string.
