@@ -65,6 +65,7 @@ func (r *Restricter) Update(ctx context.Context, updateFn func(map[dskey.Key][]b
 
 		r.mu.Lock()
 		defer r.mu.Unlock()
+		ctx = collection.ContextWithRestrictCache(ctx)
 
 		start := time.Now()
 		calculatedKeys := make([]dskey.CollectionMode, 0, len(r.attributes))
@@ -212,10 +213,10 @@ type userRestricter struct {
 }
 
 func (r *userRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
-	// start := time.Now()
-	// defer func() {
-	// 	log.Printf("full restrict %d keys took: %s", len(keys), time.Since(start))
-	// }()
+	start := time.Now()
+	defer func() {
+		log.Printf("full restrict %d keys took: %s", len(keys), time.Since(start))
+	}()
 
 	// startIndexing := time.Now()
 	modeKeys := make([]dskey.CollectionMode, len(keys))

@@ -15,6 +15,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
 	restrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
@@ -120,6 +121,7 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (D
 
 // SingleData returns the data for the given keysbuilder without autoupdates.
 func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder) (map[dskey.Key][]byte, error) {
+	ctx = collection.ContextWithRestrictCache(ctx)
 	ctx, restricter, _ := a.restricter.ForUser(ctx, userID)
 
 	keys, err := kb.Update(ctx, restricter)
