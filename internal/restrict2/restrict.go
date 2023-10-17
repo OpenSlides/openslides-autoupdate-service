@@ -218,43 +218,42 @@ func (r *userRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.
 		log.Printf("full restrict %d keys took: %s", len(keys), time.Since(start))
 	}()
 
-	// startIndexing := time.Now()
+	startIndexing := time.Now()
 	modeKeys := make([]dskey.CollectionMode, len(keys))
 	for i := range keys {
 		modeKeys[i] = keys[i].CollectionMode()
 	}
-	// log.Printf("building mod keys took: %s", time.Since(startIndexing))
+	log.Printf("building mod keys took: %s", time.Since(startIndexing))
 
-	// Check the permissions from here
-
-	// startUser := time.Now()
+	startUser := time.Now()
 	user, err := attribute.NewUserAttributes(ctx, r.getter, r.userID)
 	if err != nil {
 		return nil, fmt.Errorf("calculate user permission: %w", err)
 	}
-	// log.Printf("building user took: %s", time.Since(startUser))
+	log.Printf("building user took: %s", time.Since(startUser))
 
-	// startData := time.Now()
+	startData := time.Now()
 	data, err := r.getter.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("fetch full data: %w", err)
 	}
-	// log.Printf("fetching %d keys took: %s", len(keys), time.Since(startData))
+	log.Printf("fetching %d keys took: %s", len(keys), time.Since(startData))
 
-	// startModeKeys := time.Now()
+	startModeKeys := time.Now()
 	attrFuncs, err := r.restricter.calculatedAttributes(ctx, modeKeys)
 	if err != nil {
 		return nil, fmt.Errorf("get precalculated functions: %w", err)
 	}
-	// log.Printf("getting mode funcs took: %s", time.Since(startModeKeys))
+	log.Printf("getting mode funcs took: %s", time.Since(startModeKeys))
 
-	// startRestrict := time.Now()
-
+	startRestrict := time.Now()
 	for i, key := range keys {
-		if checkAndRemove(data, key, attrFuncs[i], user) {
-			continue
-		}
+		checkAndRemove(data, key, attrFuncs[i], user)
+	}
+	log.Printf("precalculated restrict %d keys took: %s", len(keys), time.Since(startRestrict))
 
+	startRelation := time.Now()
+	for _, key := range keys {
 		if key.RelationType() == dskey.RelationNone || data[key] == nil {
 			continue
 		}
@@ -388,7 +387,7 @@ func (r *userRestricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.
 		}
 
 	}
-	// log.Printf("precalculated restrict %d keys took: %s", len(keys), time.Since(startRestrict))
+	log.Printf("modify relations %d keys took: %s", len(keys), time.Since(startRelation))
 
 	return data, nil
 }
