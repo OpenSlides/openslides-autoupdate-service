@@ -6755,13 +6755,13 @@ func (r *Fetch) Speaker_MeetingID(speakerID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) Speaker_MeetingUserID(speakerID int) *ValueInt {
+func (r *Fetch) Speaker_MeetingUserID(speakerID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("speaker", speakerID, "meeting_user_id")
 	if err != nil {
-		return &ValueInt{err: err}
+		return &ValueMaybeInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Speaker_Note(speakerID int) *ValueString {
