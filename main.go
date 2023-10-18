@@ -29,7 +29,6 @@ var (
 	envMetricInterval         = environment.NewVariable("METRIC_INTERVAL", "5m", "Time in how often the metrics are gathered. Zero disables the metrics.")
 	envMetricSaveInterval     = environment.NewVariable("METRIC_SAVE_INTERVAL", "5m", "Interval, how often the metric should be saved to redis. Redis will ignore entries, that are twice at old then the save interval.")
 	envDisableConnectionCount = environment.NewVariable("DISABLE_CONNECTION_COUNT", "false", "Do not count connections.")
-	envEnableProfileRoutes    = environment.NewVariable("ENABLE_PROFILE_ROUTES", "false", "Activate development routes for profiling.")
 )
 
 var cli struct {
@@ -185,8 +184,6 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 		metricStorage = nil
 	}
 
-	profileRoutes, _ := strconv.ParseBool(envEnableProfileRoutes.Value(lookup))
-
 	service := func(ctx context.Context) error {
 		for _, bg := range backgroundTasks {
 			go bg(ctx, oserror.Handle)
@@ -194,7 +191,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 
 		// Start http server.
 		fmt.Printf("Listen on %s\n", listenAddr)
-		return http.Run(ctx, listenAddr, authService, auService, historyService, metricStorage, metricSaveInterval, profileRoutes)
+		return http.Run(ctx, listenAddr, authService, auService, historyService, metricStorage, metricSaveInterval)
 	}
 
 	return service, nil

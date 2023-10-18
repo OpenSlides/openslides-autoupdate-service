@@ -170,6 +170,7 @@ var collectionMap = map[string]Restricter{
 	ChatMessage{}.Name():                ChatMessage{},
 	Committee{}.Name():                  Committee{},
 	Group{}.Name():                      Group{},
+	ImportPreview{}.Name():              ImportPreview{},
 	Mediafile{}.Name():                  Mediafile{},
 	Meeting{}.Name():                    Meeting{},
 	MeetingUser{}.Name():                MeetingUser{},

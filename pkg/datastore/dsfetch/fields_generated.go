@@ -1463,6 +1463,51 @@ func (r *Fetch) Group_WriteCommentSectionIDs(groupID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
+func (r *Fetch) ImportPreview_Created(importPreviewID int) *ValueInt {
+	key, err := dskey.FromParts("import_preview", importPreviewID, "created")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) ImportPreview_ID(importPreviewID int) *ValueInt {
+	key, err := dskey.FromParts("import_preview", importPreviewID, "id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key}
+}
+
+func (r *Fetch) ImportPreview_Name(importPreviewID int) *ValueString {
+	key, err := dskey.FromParts("import_preview", importPreviewID, "name")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) ImportPreview_Result(importPreviewID int) *ValueJSON {
+	key, err := dskey.FromParts("import_preview", importPreviewID, "result")
+	if err != nil {
+		return &ValueJSON{err: err}
+	}
+
+	return &ValueJSON{fetch: r, key: key}
+}
+
+func (r *Fetch) ImportPreview_State(importPreviewID int) *ValueString {
+	key, err := dskey.FromParts("import_preview", importPreviewID, "state")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key, required: true}
+}
+
 func (r *Fetch) ListOfSpeakers_Closed(listOfSpeakersID int) *ValueBool {
 	key, err := dskey.FromParts("list_of_speakers", listOfSpeakersID, "closed")
 	if err != nil {

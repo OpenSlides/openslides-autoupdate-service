@@ -577,4 +577,5 @@ var collectionOrder = map[string]int{
 	"user":                         38,
 	"meeting_user":                 39,
 	"action_worker":                40,
+	"import_preview":               41,
 }
