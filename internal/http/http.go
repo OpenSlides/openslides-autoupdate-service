@@ -24,6 +24,9 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
 	"github.com/klauspost/compress/zstd"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -57,7 +60,7 @@ func Run(
 
 	srv := &http.Server{
 		Addr:        addr,
-		Handler:     mux,
+		Handler:     otelhttp.NewHandler(mux, "http"),
 		BaseContext: func(net.Listener) context.Context { return ctx },
 	}
 
@@ -92,6 +95,8 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, history History)
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Cache-Control", "no-store, max-age=0")
 		ctx := r.Context()
+		span := trace.SpanFromContext(ctx)
+		span.SetName("autoupdate request")
 
 		defer r.Body.Close()
 		uid := auth.FromContext(r.Context())
@@ -108,12 +113,7 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, history History)
 			fmt.Fprintln(w, "Invalid body")
 			return
 		}
-
-		compactedBody := new(bytes.Buffer)
-		if err := json.Compact(compactedBody, body); err == nil {
-			// Ignore error, it will be handled in the keysbuilder function.
-			ctx = oserror.ContextWithBody(ctx, string(body))
-		}
+		span.SetAttributes(attribute.String("body", string(body)))
 
 		bodyBuilder, err := keysbuilder.ManyFromJSON(bytes.NewReader(body))
 		if err != nil {
@@ -132,6 +132,7 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, history History)
 				return
 			}
 			position = p
+			span.SetAttributes(attribute.Bool("history", true))
 		}
 
 		if r.URL.Query().Has("profile_restrict") {
@@ -142,8 +143,11 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, history History)
 		if r.URL.Query().Has("compress") {
 			compress = true
 		}
+		span.SetAttributes(attribute.Bool("compress", compress))
 
 		if r.URL.Query().Has("single") || position != 0 {
+			span.SetAttributes(attribute.Bool("single", true))
+
 			var data map[dskey.Key][]byte
 			switch position {
 			case 0:
@@ -164,21 +168,14 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, history History)
 				data = d
 			}
 
-			if err := writeData(w, data, compress); err != nil {
+			if err := writeData(ctx, w, data, compress); err != nil {
 				handleErrorWithoutStatus(w, err)
 				return
 			}
 			return
 		}
 
-		var wr io.Writer = w
-		if r.URL.Query().Has("skip_first") {
-			// TODO: This will not compress the first data. For the performance
-			// tool this does not matter.
-			wr = newSkipFirst(w)
-		}
-
-		if err := sendMessages(ctx, wr, uid, builder, connecter, compress); err != nil {
+		if err := sendMessages(ctx, w, uid, builder, connecter, compress); err != nil {
 			handleErrorWithoutStatus(w, err)
 			return
 		}
@@ -219,11 +216,19 @@ func HandleInternalAutoupdate(mux *http.ServeMux, auth Authenticater, history Hi
 	)
 }
 
-func writeData(w io.Writer, data map[dskey.Key][]byte, compress bool) error {
+func writeData(ctx context.Context, w io.Writer, data map[dskey.Key][]byte, compress bool) error {
 	converted := make(map[string]json.RawMessage, len(data))
 	for k, v := range data {
 		converted[k.String()] = v
 	}
+
+	asJSON, err := json.Marshal(converted)
+	if err != nil {
+		return fmt.Errorf("encode data: %w", err)
+	}
+
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.String("data", string(asJSON)))
 
 	if compress {
 		defer fmt.Fprintln(w)
@@ -238,8 +243,8 @@ func writeData(w io.Writer, data map[dskey.Key][]byte, compress bool) error {
 		w = zstdEncoder
 	}
 
-	if err := json.NewEncoder(w).Encode(converted); err != nil {
-		return fmt.Errorf("encode data: %w", err)
+	if _, err := w.Write(asJSON); err != nil {
+		return fmt.Errorf("write data: %w", err)
 	}
 
 	return nil
@@ -320,23 +325,28 @@ func HandleHistoryInformation(mux *http.ServeMux, auth Authenticater, hi History
 }
 
 func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool) error {
+	span := trace.SpanFromContext(ctx)
+
 	next, err := connecter.Connect(ctx, uid, kb)
 	if err != nil {
 		return fmt.Errorf("getting connection: %w", err)
 	}
 
 	for f, ok := next(); ok; f, ok = next() {
+
 		// This blocks, until there is new data. It also unblocks, when the
 		// client context is done.
 		data, err := f(ctx)
 		if err != nil {
 			return fmt.Errorf("getting next message: %w", err)
 		}
+		ctx, span := span.TracerProvider().Tracer("autoupdate").Start(ctx, "next message")
 
-		if err := writeData(w, data, compress); err != nil {
+		if err := writeData(ctx, w, data, compress); err != nil {
 			return fmt.Errorf("write data: %w", err)
 		}
 		w.(http.Flusher).Flush()
+		span.End()
 	}
 	return ctx.Err()
 }

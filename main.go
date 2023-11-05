@@ -20,6 +20,12 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
 	"github.com/alecthomas/kong"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 )
 
 //go:generate  sh -c "go run main.go build-doc > environment.md"
@@ -185,6 +191,10 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	}
 
 	service := func(ctx context.Context) error {
+		if err := initOpenTelemetry(ctx); err != nil {
+			return fmt.Errorf("init OpenTelementry: %w", err)
+		}
+
 		for _, bg := range backgroundTasks {
 			go bg(ctx, oserror.Handle)
 		}
@@ -195,4 +205,45 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	}
 
 	return service, nil
+}
+
+func initOpenTelemetry(ctx context.Context) error {
+	otelAgentAddr, ok := os.LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if !ok {
+		otelAgentAddr = "collector:4318"
+	}
+
+	traceClient := otlptracehttp.NewClient(
+		otlptracehttp.WithInsecure(),
+		otlptracehttp.WithEndpoint(otelAgentAddr),
+	)
+
+	traceExporter, err := otlptrace.New(ctx, traceClient)
+	if err != nil {
+		return fmt.Errorf("creating connection to collector: %w", err)
+	}
+
+	res, err := resource.New(ctx,
+		resource.WithFromEnv(),
+		resource.WithProcess(),
+		resource.WithTelemetrySDK(),
+		resource.WithHost(),
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String("autoupdate"),
+		),
+	)
+	if err != nil {
+		return fmt.Errorf("creating otlp resouce: %w", err)
+	}
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(traceExporter),
+		sdktrace.WithResource(res),
+	)
+
+	otel.SetTracerProvider(tp)
+
+	// TODO Shutdown
+
+	return nil
 }
