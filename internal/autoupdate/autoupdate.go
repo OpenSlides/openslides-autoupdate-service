@@ -47,7 +47,7 @@ type RestrictMiddleware func(ctx context.Context, getter flow.Getter, uid int) (
 // with autoupdate.New().
 type Autoupdate struct {
 	flow       flow.Flow
-	topic      *topic.Topic[dskey.Key]
+	topic      *topic.Topic[dskey.MetaKey]
 	restricter RestrictMiddleware
 	pool       *workPool
 
@@ -75,7 +75,7 @@ func New(lookup environment.Environmenter, flow flow.Flow, restricter RestrictMi
 
 	a := &Autoupdate{
 		flow:       flow,
-		topic:      topic.New[dskey.Key](),
+		topic:      topic.New[dskey.MetaKey](),
 		restricter: restricter,
 		pool:       newWorkPool(workers),
 		cacheReset: cacheResetTime,
@@ -84,13 +84,13 @@ func New(lookup environment.Environmenter, flow flow.Flow, restricter RestrictMi
 	background := func(ctx context.Context, errorHandler func(error)) {
 		go a.pruneOldData(ctx)
 		go a.resetCache(ctx)
-		go a.flow.Update(ctx, func(data map[dskey.Key][]byte, err error) {
+		go a.flow.Update(ctx, func(data map[dskey.MetaKey][]byte, err error) {
 			if err != nil {
 				oserror.Handle(err)
 				// Continue. The update function can return an error and data.
 			}
 
-			keys := make([]dskey.Key, 0, len(data))
+			keys := make([]dskey.MetaKey, 0, len(data))
 			for k := range data {
 				keys = append(keys, k)
 			}
@@ -103,7 +103,7 @@ func New(lookup environment.Environmenter, flow flow.Flow, restricter RestrictMi
 }
 
 // DataProvider is a function that returns the next data for a user.
-type DataProvider func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool)
+type DataProvider func() (func(ctx context.Context) (map[dskey.Key][]byte, []string, error), bool)
 
 // Connect has to be called by a client to register to the service. The method
 // returns a Connection object, that can be used to receive the data.

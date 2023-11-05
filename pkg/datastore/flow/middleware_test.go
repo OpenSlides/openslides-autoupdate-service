@@ -40,8 +40,8 @@ func (m *add100Middleware) Get(ctx context.Context, keys ...dskey.Key) (map[dske
 	return values, nil
 }
 
-func (m *add100Middleware) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
-	m.sub.Update(ctx, func(values map[dskey.Key][]byte, err error) {
+func (m *add100Middleware) Update(ctx context.Context, updateFn func(map[dskey.MetaKey][]byte, error)) {
+	m.sub.Update(ctx, func(values map[dskey.MetaKey][]byte, err error) {
 		for k, v := range values {
 			values[k] = add100(v)
 		}
@@ -76,7 +76,7 @@ func TestMiddleware(t *testing.T) {
 		errCh := make(chan error, 1)
 		go middleware.Update(
 			updateCtx,
-			func(got map[dskey.Key][]byte, err error) {
+			func(got map[dskey.MetaKey][]byte, err error) {
 				if err != nil {
 					errCh <- fmt.Errorf("update: %v", err)
 					return

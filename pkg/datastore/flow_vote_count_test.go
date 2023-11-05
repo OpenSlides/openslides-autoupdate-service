@@ -152,7 +152,7 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 		ctxTimeout, cancel := context.WithTimeout(ctx, time.Millisecond)
 		defer cancel()
 
-		flow.Update(ctxTimeout, func(map[dskey.Key][]byte, error) {
+		flow.Update(ctxTimeout, func(map[dskey.MetaKey][]byte, error) {
 			t.Fatalf("Update was called")
 		})
 	})
@@ -268,7 +268,7 @@ func TestReconnectWhenDeletedBetween(t *testing.T) {
 	msg <- `{"1":23}`
 
 	received, cancel := context.WithCancel(ctx)
-	go flow.Update(ctx, func(map[dskey.Key][]byte, error) {
+	go flow.Update(ctx, func(map[dskey.MetaKey][]byte, error) {
 		cancel()
 	})
 
@@ -324,16 +324,16 @@ func waitForResponse(ctx context.Context, flow *datastore.FlowVoteCount, fn func
 }
 
 // updateResult returns the return values from flow.Update after the given function is processed.
-func updateResult(ctx context.Context, flow *datastore.FlowVoteCount, fn func()) (map[dskey.Key][]byte, error) {
+func updateResult(ctx context.Context, flow *datastore.FlowVoteCount, fn func()) (map[dskey.MetaKey][]byte, error) {
 	type dataErr struct {
-		data map[dskey.Key][]byte
+		data map[dskey.MetaKey][]byte
 		err  error
 	}
 
 	myCtx, cancel := context.WithCancel(ctx)
 
 	got := dataErr{}
-	go flow.Update(myCtx, func(v map[dskey.Key][]byte, err error) {
+	go flow.Update(myCtx, func(v map[dskey.MetaKey][]byte, err error) {
 		got = dataErr{v, err}
 		cancel()
 	})

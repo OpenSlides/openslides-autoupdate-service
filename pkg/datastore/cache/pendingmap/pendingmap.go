@@ -202,11 +202,16 @@ func (pm *PendingMap) UnMarkPending(keys ...dskey.Key) {
 // SetIfPendingOrExists updates values, but only if the key already exists or is pending.
 //
 // If the key is pending, it is unmarked and all listeners are informed.
-func (pm *PendingMap) SetIfPendingOrExists(data map[dskey.Key][]byte) {
+func (pm *PendingMap) SetIfPendingOrExists(data map[dskey.MetaKey][]byte) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
-	for key, value := range data {
+	for metaKey, value := range data {
+		key, ok := metaKey.Key()
+		if !ok {
+			continue
+		}
+
 		pending := pm.pending[key]
 		_, exists := pm.data[key]
 

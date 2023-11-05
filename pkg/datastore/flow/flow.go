@@ -14,7 +14,7 @@ type Getter interface {
 // Updater is a blocking function. It expects a callback. The callback is
 // called, when there is new data.
 type Updater interface {
-	Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error))
+	Update(ctx context.Context, updateFn func(map[dskey.MetaKey][]byte, error))
 }
 
 // Flow combines a Getter with an Updater.

@@ -13,7 +13,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
-func getConnection() (func(context.Context) (map[dskey.Key][]byte, error), *dsmock.Flow, func(context.Context, func(error))) {
+func getConnection() (func(context.Context) (map[dskey.Key][]byte, []string, error), *dsmock.Flow, func(context.Context, func(error))) {
 	datastore := dsmock.NewFlow(dsmock.YAMLData(`---
 	user/1/username: Hello World
 	`))

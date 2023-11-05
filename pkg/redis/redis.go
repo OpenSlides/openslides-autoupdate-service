@@ -78,7 +78,7 @@ func (r *Redis) Wait(ctx context.Context) error {
 }
 
 // Update implements the Flow interface.
-func (r *Redis) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+func (r *Redis) Update(ctx context.Context, updateFn func(map[dskey.MetaKey][]byte, error)) {
 	id := "$"
 
 	for ctx.Err() == nil {
@@ -93,7 +93,7 @@ func (r *Redis) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, 
 	}
 }
 
-func (r *Redis) singleUpdate(ctx context.Context, id string) (string, map[dskey.Key][]byte, error) {
+func (r *Redis) singleUpdate(ctx context.Context, id string) (string, map[dskey.MetaKey][]byte, error) {
 	conn := r.pool.Get()
 	defer conn.Close()
 

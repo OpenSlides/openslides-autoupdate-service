@@ -19,7 +19,7 @@ var userNameKey = dskey.MustKey("user/1/username")
 func TestConnect(t *testing.T) {
 	next, _, _ := getConnection()
 
-	data, err := next(context.Background())
+	data, _, err := next(context.Background())
 	if err != nil {
 		t.Errorf("next(): %v", err)
 	}
@@ -33,12 +33,12 @@ func TestConnectionAfterDisconnect(t *testing.T) {
 	next, _, _ := getConnection()
 	ctx, disconnect := context.WithCancel(context.Background())
 
-	if _, err := next(ctx); err != nil {
+	if _, _, err := next(ctx); err != nil {
 		t.Errorf("next() returned an error: %v", err)
 	}
 
 	disconnect()
-	data, err := next(ctx)
+	data, _, err := next(ctx)
 	if !errors.Is(err, context.Canceled) {
 		t.Errorf("next() returned error %v, expected context.Canceled", err)
 	}
@@ -54,12 +54,12 @@ func TestConnectionReadNewData(t *testing.T) {
 	next, ds, bg := getConnection()
 	go bg(shutdownCtx, oserror.Handle)
 
-	if _, err := next(context.Background()); err != nil {
+	if _, _, err := next(context.Background()); err != nil {
 		t.Errorf("next(): %v", err)
 	}
 
 	ds.Send(map[dskey.Key][]byte{userNameKey: []byte(`"new value"`)})
-	data, err := next(context.Background())
+	data, _, err := next(context.Background())
 	if err != nil {
 		t.Errorf("next(): %v", err)
 	}
@@ -98,7 +98,7 @@ func TestConnectionEmptyData(t *testing.T) {
 		}
 		next, _ := conn()
 
-		data, err := next(context.Background())
+		data, _, err := next(context.Background())
 		if err != nil {
 			t.Fatalf("next(): %v", err)
 		}
@@ -150,7 +150,7 @@ func TestConnectionEmptyData(t *testing.T) {
 			}
 			next, _ := conn()
 
-			if _, err := next(context.Background()); err != nil {
+			if _, _, err := next(context.Background()); err != nil {
 				t.Errorf("next(): %v", err)
 			}
 
@@ -158,7 +158,7 @@ func TestConnectionEmptyData(t *testing.T) {
 
 			var data map[dskey.Key][]byte
 			isBlocking := blocking(func() {
-				data, err = next(context.Background())
+				data, _, err = next(context.Background())
 			})
 
 			if err != nil {
@@ -204,7 +204,7 @@ func TestConnectionEmptyData(t *testing.T) {
 		}
 		next, _ := conn()
 
-		if _, err := next(context.Background()); err != nil {
+		if _, _, err := next(context.Background()); err != nil {
 			t.Errorf("next() returned an error: %v", err)
 		}
 
@@ -219,7 +219,7 @@ func TestConnectionEmptyData(t *testing.T) {
 		ds.Send(map[dskey.Key][]byte{doesExistKey: nil})
 
 		isBlocking := blocking(func() {
-			_, err = next(context.Background())
+			_, _, err = next(context.Background())
 		})
 
 		if err != nil {
@@ -250,12 +250,12 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	}
 	next, _ := conn()
 
-	if _, err := next(ctx); err != nil {
+	if _, _, err := next(ctx); err != nil {
 		t.Errorf("next(): %v", err)
 	}
 
 	ds.Send(map[dskey.Key][]byte{userNameKey: []byte(`"newname"`)})
-	data, err := next(ctx)
+	data, _, err := next(ctx)
 	if err != nil {
 		t.Errorf("next(): %v", err)
 	}
@@ -291,7 +291,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 		var data map[dskey.Key][]byte
 		var err error
 		isBlocked := blocking(func() {
-			data, err = next(context.Background())
+			data, _, err = next(context.Background())
 		})
 		if err != nil {
 			t.Fatalf("next(): %v", err)
@@ -310,7 +310,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 		var data map[dskey.Key][]byte
 		var err error
 		isBlocked := blocking(func() {
-			data, err = next(context.Background())
+			data, _, err = next(context.Background())
 		})
 		if err != nil {
 			t.Fatalf("next(): %v", err)
@@ -379,7 +379,7 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 	}
 	next, _ := conn()
 
-	if _, err := next(shutdownCtx); err != nil {
+	if _, _, err := next(shutdownCtx); err != nil {
 		t.Fatalf("Getting first data: %v", err)
 	}
 
@@ -388,7 +388,7 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 		organization/1/organization_tag_ids: [1]
 	`))
 
-	secondData, err := next(shutdownCtx)
+	secondData, _, err := next(shutdownCtx)
 	if err != nil {
 		t.Fatalf("Getting second data: %v", err)
 	}
@@ -451,7 +451,7 @@ func TestKeyRequestedAgain(t *testing.T) {
 	next, _ := conn()
 
 	// Receive the initial data
-	if _, err := next(shutdownCtx); err != nil {
+	if _, _, err := next(shutdownCtx); err != nil {
 		t.Fatalf("Getting first data: %v", err)
 	}
 
@@ -459,7 +459,7 @@ func TestKeyRequestedAgain(t *testing.T) {
 		organization/1/organization_tag_ids: [1]
 	`))
 
-	if _, err := next(shutdownCtx); err != nil {
+	if _, _, err := next(shutdownCtx); err != nil {
 		t.Fatalf("Getting second data: %v", err)
 	}
 
@@ -468,7 +468,7 @@ func TestKeyRequestedAgain(t *testing.T) {
 	`))
 
 	// Receive the third data
-	testData, err := next(shutdownCtx)
+	testData, _, err := next(shutdownCtx)
 	if err != nil {
 		t.Fatalf("Getting second data: %v", err)
 	}

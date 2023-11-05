@@ -61,14 +61,19 @@ func (s *Flow) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte
 }
 
 // Update blocks until new data is received via the Send method.
-func (s *Flow) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+func (s *Flow) Update(ctx context.Context, updateFn func(map[dskey.MetaKey][]byte, error)) {
 	if updateFn == nil {
-		updateFn = func(map[dskey.Key][]byte, error) {}
+		updateFn = func(map[dskey.MetaKey][]byte, error) {}
 	}
 	for {
 		select {
 		case newValues := <-s.ch:
-			updateFn(newValues, nil)
+			converted := make(map[dskey.MetaKey][]byte, len(newValues))
+			for k, v := range newValues {
+				converted[dskey.MetaFromKey(k)] = v
+			}
+
+			updateFn(converted, nil)
 			continue
 
 		case <-ctx.Done():

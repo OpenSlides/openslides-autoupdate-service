@@ -336,11 +336,21 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 
 		// This blocks, until there is new data. It also unblocks, when the
 		// client context is done.
-		data, err := f(ctx)
+		data, linkedSpan, err := f(ctx)
 		if err != nil {
 			return fmt.Errorf("getting next message: %w", err)
 		}
-		ctx, span := span.TracerProvider().Tracer("autoupdate").Start(ctx, "next message")
+
+		links := make([]trace.Link, len(linkedSpan))
+		for i, linked := range linkedSpan {
+			links[i], err = convertLinkedSpan(linked)
+			if err != nil {
+				oserror.Handle(err)
+				continue
+			}
+		}
+
+		ctx, span := span.TracerProvider().Tracer("autoupdate").Start(ctx, "next message", trace.WithLinks(links...))
 
 		if err := writeData(ctx, w, data, compress); err != nil {
 			return fmt.Errorf("write data: %w", err)
@@ -349,6 +359,39 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 		span.End()
 	}
 	return ctx.Err()
+}
+
+func convertLinkedSpan(spanData string) (trace.Link, error) {
+	fmt.Printf("spanData: %s\n", spanData)
+	parts := strings.Split(spanData, ":")
+	if len(parts) != 3 {
+		return trace.Link{}, fmt.Errorf("invalid span data, has %d parts, expected 3", len(parts))
+	}
+
+	fmt.Printf("parts: %v\n", parts)
+
+	var traceID trace.TraceID
+	copy(traceID[:], parts[0])
+
+	var spanID trace.SpanID
+	copy(spanID[:], parts[1])
+
+	flags, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return trace.Link{}, fmt.Errorf("invalid span data. Third part is not a number: %w", err)
+	}
+
+	spanContext := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    traceID,
+		SpanID:     spanID,
+		TraceFlags: trace.TraceFlags(flags),
+		Remote:     true,
+	})
+	fmt.Printf("traceID: %s, spanID: %s, flags: %d\n", traceID, spanID, flags)
+
+	return trace.Link{
+		SpanContext: spanContext,
+	}, nil
 }
 
 // HandleHealth tells, if the service is running.
