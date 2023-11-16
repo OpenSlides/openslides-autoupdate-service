@@ -62,6 +62,7 @@ func TestMotion(t *testing.T) {
             number: Lead Motion 111
             text: <p>Lead Motion Text HTML</p>
             agenda_item_id: 2
+            start_line_number: 24
         3:
             title: Amendment3 title
             number: Amendment3 123
@@ -403,6 +404,7 @@ func TestMotion(t *testing.T) {
                     "title":"Lead Motion Title",
                     "number":"Lead Motion 111",
                     "text":"<p>Lead Motion Text HTML</p>"
+                    "start_line_number": 24
                 },
                 "base_statute":{
                     "title":"MotionStatuteParagraph1 title",
