@@ -56,6 +56,7 @@ func TestMotion(t *testing.T) {
             recommendation_extension_reference_ids: ["motion/9", "motion/10"]
             meeting_id: 1
             agenda_item_id: 1
+            start_line_number: 24
         2:
             title: Lead Motion Title
             number: Lead Motion 111
@@ -213,6 +214,7 @@ func TestMotion(t *testing.T) {
                 ],
                 "show_sidebox": true,
                 "line_length": 85,
+                "start_line_number": 24,
                 "line_numbering": "outside",
                 "change_recommendations":[
                     {

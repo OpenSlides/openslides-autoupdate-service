@@ -104,6 +104,7 @@ type dbMotion struct {
 	Text                             string                         `json:"text,omitempty"`
 	Reason                           string                         `json:"reason,omitempty"`
 	ModifiedFinalVersion             string                         `json:"modified_final_version,omitempty"`
+	StartLineNumber                  int                            `json:"start_line_number,omitempty"`
 	MotionWork                       *dbMotionWork                  `json:",omitempty"`
 }
 
@@ -170,6 +171,7 @@ func Motion(store *projector.SlideStore) {
 			"recommendation_id",
 			"recommendation_extension",
 			"recommendation_extension_reference_ids",
+			"start_line_number",
 		}
 		if meeting.MotionsEnableTextOnProjector {
 			fetchFields = append(fetchFields, "text", "amendment_paragraphs", "statute_paragraph_id")
