@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -24,6 +25,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
 	"github.com/klauspost/compress/zstd"
+	"nhooyr.io/websocket"
 )
 
 const (
@@ -89,8 +91,6 @@ type Connecter interface {
 
 func autoupdateHandler(auth Authenticater, connecter Connecter, history History) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/octet-stream")
-		w.Header().Set("Cache-Control", "no-store, max-age=0")
 		ctx := r.Context()
 
 		defer r.Body.Close()
@@ -144,45 +144,53 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, history History)
 		}
 
 		if r.URL.Query().Has("single") || position != 0 {
-			var data map[dskey.Key][]byte
-			switch position {
-			case 0:
-				d, err := connecter.SingleData(ctx, uid, builder)
-				if err != nil {
-					handleErrorWithStatus(w, fmt.Errorf("getting single data: %w", err))
-					return
-				}
+			handleSingle(ctx, uid, w, r, position, connecter, builder, history, compress)
+			return
+		}
 
-				data = d
-
-			default:
-				d, err := history.Data(ctx, uid, builder, position)
-				if err != nil {
-					handleErrorWithStatus(w, fmt.Errorf("getting history data: %w", err))
-					return
-				}
-				data = d
-			}
-
-			if err := writeData(w, data, compress); err != nil {
+		if r.URL.Query().Has("websocket") {
+			if err := sendMessagesWebsocket(ctx, w, r, uid, builder, connecter, compress); err != nil {
 				handleErrorWithoutStatus(w, err)
 				return
 			}
 			return
 		}
 
-		var wr io.Writer = w
-		if r.URL.Query().Has("skip_first") {
-			// TODO: This will not compress the first data. For the performance
-			// tool this does not matter.
-			wr = newSkipFirst(w)
-		}
-
-		if err := sendMessages(ctx, wr, uid, builder, connecter, compress); err != nil {
+		if err := sendMessages(ctx, w, uid, builder, connecter, compress); err != nil {
 			handleErrorWithoutStatus(w, err)
 			return
 		}
 	})
+}
+
+func handleSingle(ctx context.Context, uid int, w http.ResponseWriter, r *http.Request, position int, connecter Connecter, builder *keysbuilder.Builder, history History, compress bool) {
+	w.Header().Set("Cache-Control", "no-store, max-age=0")
+
+	var data map[dskey.Key][]byte
+	switch position {
+	case 0:
+		d, err := connecter.SingleData(ctx, uid, builder)
+		if err != nil {
+			handleErrorWithStatus(w, fmt.Errorf("getting single data: %w", err))
+			return
+		}
+
+		data = d
+
+	default:
+		d, err := history.Data(ctx, uid, builder, position)
+		if err != nil {
+			handleErrorWithStatus(w, fmt.Errorf("getting history data: %w", err))
+			return
+		}
+		data = d
+	}
+
+	if err := writeData(w, data, compress); err != nil {
+		handleErrorWithoutStatus(w, err)
+		return
+	}
+	return
 }
 
 // HandleAutoupdate builds the requested keys from the body of a request. The
@@ -225,9 +233,10 @@ func writeData(w io.Writer, data map[dskey.Key][]byte, compress bool) error {
 		converted[k.String()] = v
 	}
 
+	var wr io.Writer = w
 	if compress {
-		defer fmt.Fprintln(w)
-		base64Encoder := base64.NewEncoder(base64.RawStdEncoding, w)
+		defer fmt.Fprintln(wr)
+		base64Encoder := base64.NewEncoder(base64.RawStdEncoding, wr)
 		defer base64Encoder.Close()
 
 		zstdEncoder, err := zstd.NewWriter(base64Encoder)
@@ -235,10 +244,10 @@ func writeData(w io.Writer, data map[dskey.Key][]byte, compress bool) error {
 			return fmt.Errorf("create encoder: %w", err)
 		}
 		defer zstdEncoder.Close()
-		w = zstdEncoder
+		wr = zstdEncoder
 	}
 
-	if err := json.NewEncoder(w).Encode(converted); err != nil {
+	if err := json.NewEncoder(wr).Encode(converted); err != nil {
 		return fmt.Errorf("encode data: %w", err)
 	}
 
@@ -319,7 +328,10 @@ func HandleHistoryInformation(mux *http.ServeMux, auth Authenticater, hi History
 	mux.Handle(prefixPublic+"/history_information", authMiddleware(handler, auth))
 }
 
-func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool) error {
+func sendMessages(ctx context.Context, w http.ResponseWriter, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool) error {
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Cache-Control", "no-store, max-age=0")
+
 	next, err := connecter.Connect(ctx, uid, kb)
 	if err != nil {
 		return fmt.Errorf("getting connection: %w", err)
@@ -337,6 +349,44 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 			return fmt.Errorf("write data: %w", err)
 		}
 		w.(http.Flusher).Flush()
+	}
+	return ctx.Err()
+}
+
+func sendMessagesWebsocket(ctx context.Context, w http.ResponseWriter, r *http.Request, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool) error {
+	c, err := websocket.Accept(w, r, nil)
+	if err != nil {
+		return fmt.Errorf("accept websocket: %w", err)
+	}
+	defer c.CloseNow()
+
+	next, err := connecter.Connect(ctx, uid, kb)
+	if err != nil {
+		return fmt.Errorf("getting connection: %w", err)
+	}
+
+	for f, ok := next(); ok; f, ok = next() {
+		// This blocks, until there is new data. It also unblocks, when the
+		// client context is done.
+		data, err := f(ctx)
+		if err != nil {
+			return fmt.Errorf("getting next message: %w", err)
+		}
+
+		if err := c.Write(r.Context(), websocket.MessageText, []byte(fmt.Sprintf(`<div id="websocket">Websocket works: %d.</div>`, rand.Intn(1000)))); err != nil {
+			return fmt.Errorf("write data: %w", err)
+		}
+
+		wr, err := c.Writer(ctx, websocket.MessageText)
+		if err != nil {
+			return fmt.Errorf("create writer: %w", err)
+		}
+
+		if err := writeData(wr, data, compress); err != nil {
+			wr.Close()
+			return fmt.Errorf("write data: %w", err)
+		}
+		wr.Close()
 	}
 	return ctx.Err()
 }
