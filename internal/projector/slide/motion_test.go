@@ -403,7 +403,7 @@ func TestMotion(t *testing.T) {
                 "lead_motion":{
                     "title":"Lead Motion Title",
                     "number":"Lead Motion 111",
-                    "text":"<p>Lead Motion Text HTML</p>"
+                    "text":"<p>Lead Motion Text HTML</p>",
                     "start_line_number": 24
                 },
                 "base_statute":{
