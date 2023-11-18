@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -143,16 +142,16 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, history History)
 			compress = true
 		}
 
-		if r.URL.Query().Has("single") || position != 0 {
-			handleSingle(ctx, uid, w, r, position, connecter, builder, history, compress)
-			return
-		}
-
-		if r.URL.Query().Has("websocket") {
+		if r.Header.Get("upgrade") != "" {
 			if err := sendMessagesWebsocket(ctx, w, r, uid, builder, connecter, compress); err != nil {
 				handleErrorWithoutStatus(w, err)
 				return
 			}
+			return
+		}
+
+		if r.URL.Query().Has("single") || position != 0 {
+			handleSingle(ctx, uid, w, r, position, connecter, builder, history, compress)
 			return
 		}
 
@@ -353,12 +352,24 @@ func sendMessages(ctx context.Context, w http.ResponseWriter, uid int, kb autoup
 	return ctx.Err()
 }
 
-func sendMessagesWebsocket(ctx context.Context, w http.ResponseWriter, r *http.Request, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool) error {
-	c, err := websocket.Accept(w, r, nil)
+func sendMessagesWebsocket(ctx context.Context, w http.ResponseWriter, r *http.Request, uid int, kb *keysbuilder.Builder, connecter Connecter, compress bool) error {
+	conn, err := websocket.Accept(w, r, nil)
 	if err != nil {
 		return fmt.Errorf("accept websocket: %w", err)
 	}
-	defer c.CloseNow()
+	defer conn.CloseNow()
+
+	_, reader, err := conn.Reader(ctx)
+	if err != nil {
+		return fmt.Errorf("reading first message")
+	}
+
+	newKB, err := keysbuilder.ManyFromJSON(reader)
+	if err != nil {
+		return fmt.Errorf("parsing websocket body: %w", err)
+	}
+
+	kb = keysbuilder.FromBuilders(kb, newKB)
 
 	next, err := connecter.Connect(ctx, uid, kb)
 	if err != nil {
@@ -373,11 +384,7 @@ func sendMessagesWebsocket(ctx context.Context, w http.ResponseWriter, r *http.R
 			return fmt.Errorf("getting next message: %w", err)
 		}
 
-		if err := c.Write(r.Context(), websocket.MessageText, []byte(fmt.Sprintf(`<div id="websocket">Websocket works: %d.</div>`, rand.Intn(1000)))); err != nil {
-			return fmt.Errorf("write data: %w", err)
-		}
-
-		wr, err := c.Writer(ctx, websocket.MessageText)
+		wr, err := conn.Writer(ctx, websocket.MessageText)
 		if err != nil {
 			return fmt.Errorf("create writer: %w", err)
 		}
