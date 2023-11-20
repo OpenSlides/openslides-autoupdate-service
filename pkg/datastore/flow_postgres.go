@@ -2,12 +2,14 @@ package datastore
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -25,8 +27,7 @@ var (
 
 // FlowPostgres uses postgres to get the connections.
 type FlowPostgres struct {
-	pool    *pgxpool.Pool
-	updater flow.Updater
+	pool *pgxpool.Pool
 }
 
 // encodePostgresConfig encodes a string to be used in the postgres key value style.
@@ -41,7 +42,7 @@ func encodePostgresConfig(s string) string {
 // NewFlowPostgres initializes a SourcePostgres.
 //
 // TODO: This should be unexported, but there is an import cycle in the tests.
-func NewFlowPostgres(lookup environment.Environmenter, updater flow.Updater) (*FlowPostgres, error) {
+func NewFlowPostgres(lookup environment.Environmenter) (*FlowPostgres, error) {
 	password, err := environment.ReadSecret(lookup, envPostgresPasswordFile)
 	if err != nil {
 		return nil, fmt.Errorf("reading postgres password: %w", err)
@@ -68,7 +69,7 @@ func NewFlowPostgres(lookup environment.Environmenter, updater flow.Updater) (*F
 		return nil, fmt.Errorf("creating connection pool: %w", err)
 	}
 
-	flow := FlowPostgres{pool: pool, updater: updater}
+	flow := FlowPostgres{pool: pool}
 
 	return &flow, nil
 }
@@ -144,7 +145,93 @@ func (p *FlowPostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Ke
 
 // Update calls the updater.
 func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
-	p.updater.Update(ctx, updateFn)
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	id, err := p.maxMessageBusID(ctx)
+	if err != nil {
+		updateFn(nil, fmt.Errorf("get max id (fallback with id=0): %w", err))
+	}
+
+	for {
+		select {
+		case <-ticker.C: // TODO: Use listen instead of ticker for event.
+			newID, data, err := p.readMessageBus(ctx, id)
+			if err != nil {
+				updateFn(nil, fmt.Errorf("read from message bus: %w", err))
+				continue
+			}
+
+			id = newID
+			updateFn(data, nil)
+
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (p *FlowPostgres) maxMessageBusID(ctx context.Context) (int, error) {
+	row := p.pool.QueryRow(ctx, `SELECT MAX(id) FROM message_bus`)
+
+	var id int
+	if err := row.Scan(&id); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("query for id: %w", err)
+	}
+
+	return id, nil
+}
+
+func (p *FlowPostgres) readMessageBus(ctx context.Context, fromID int) (int, map[dskey.Key][]byte, error) {
+	rows, err := p.pool.Query(ctx, `SELECT id, message FROM message_bus where id > $1`, fromID)
+	if err != nil {
+		return 0, nil, fmt.Errorf("query message bus: %w", err)
+	}
+
+	newID := fromID
+	data := make(map[dskey.Key][]byte)
+	for rows.Next() {
+		var message []byte
+		if err := rows.Scan(&newID, &message); err != nil {
+			return 0, nil, fmt.Errorf("scan row: %w", err)
+		}
+
+		if err := parseMessageBus(data, message); err != nil {
+			return 0, nil, fmt.Errorf("parse message: %w", err)
+		}
+	}
+	if rows.Err() != nil {
+		return 0, nil, fmt.Errorf("parsing rows: %w", err)
+	}
+
+	return newID, data, nil
+}
+
+func parseMessageBus(data map[dskey.Key][]byte, message []byte) error {
+	var rawData map[string]string
+	if err := json.Unmarshal(message, &rawData); err != nil {
+		return fmt.Errorf("decode message: %w", err)
+	}
+
+	for k, v := range rawData {
+		key, err := dskey.FromString(k)
+		if err != nil {
+			// ignore invalid keys.
+			continue
+		}
+
+		value := []byte(v)
+		if v == "null" {
+			value = nil
+		}
+
+		data[key] = []byte(value)
+	}
+
+	return nil
 }
 
 func prepareQuery(keys []dskey.Key) (uniqueFieldsStr string, fieldIndex map[string]int, uniqueFQID []string) {

@@ -80,7 +80,7 @@ func TestSourcePostgresGetSomeData(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			source, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env), nil)
+			source, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
 			if err != nil {
 				t.Fatalf("NewSource(): %v", err)
 			}
@@ -129,7 +129,7 @@ func TestBigQuery(t *testing.T) {
 	}
 	defer tp.Close()
 
-	source, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env), nil)
+	source, err := datastore.NewFlowPostgres(environment.ForTests(tp.Env))
 	if err != nil {
 		t.Fatalf("NewSource(): %v", err)
 	}
