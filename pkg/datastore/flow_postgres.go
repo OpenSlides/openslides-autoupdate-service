@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
@@ -145,17 +144,16 @@ func (p *FlowPostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Ke
 
 // Update calls the updater.
 func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-
 	id, err := p.maxMessageBusID(ctx)
 	if err != nil {
 		updateFn(nil, fmt.Errorf("get max id (fallback with id=0): %w", err))
 	}
 
+	messageBusEvent := p.messageBusEvents(ctx)
+
 	for {
 		select {
-		case <-ticker.C: // TODO: Use listen instead of ticker for event.
+		case <-messageBusEvent:
 			newID, data, err := p.readMessageBus(ctx, id)
 			if err != nil {
 				updateFn(nil, fmt.Errorf("read from message bus: %w", err))
@@ -169,6 +167,38 @@ func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][
 			return
 		}
 	}
+}
+
+func (p *FlowPostgres) messageBusEvents(ctx context.Context) <-chan struct{} {
+	ch := make(chan struct{}, 1)
+	go func() {
+		pConn, err := p.pool.Acquire(ctx)
+		if err != nil {
+			close(ch)
+			return
+		}
+		defer pConn.Release()
+		conn := pConn.Conn()
+
+		if _, err := pConn.Exec(ctx, "LISTEN message_bus"); err != nil {
+			close(ch)
+			return
+		}
+
+		for {
+			if _, err := conn.WaitForNotification(ctx); err != nil {
+				close(ch)
+				return
+			}
+
+			select {
+			case ch <- struct{}{}:
+			case <-ctx.Done():
+			}
+		}
+	}()
+
+	return ch
 }
 
 func (p *FlowPostgres) maxMessageBusID(ctx context.Context) (int, error) {
