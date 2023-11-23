@@ -64,9 +64,10 @@ type amendmentsType struct {
 	MergeAmendmentIntoDiff  string                         `json:"merge_amendment_into_diff"`
 }
 type leadMotionType struct {
-	Title  string `json:"title"`
-	Number string `json:"number"`
-	Text   string `json:"text,omitempty"`
+	Title           string `json:"title"`
+	Number          string `json:"number"`
+	Text            string `json:"text,omitempty"`
+	StartLineNumber int    `json:"start_line_number,omitempty"`
 }
 type dbMotionWork struct {
 	MeetingID                                    int      `json:"meeting_id"`
@@ -104,6 +105,7 @@ type dbMotion struct {
 	Text                             string                         `json:"text,omitempty"`
 	Reason                           string                         `json:"reason,omitempty"`
 	ModifiedFinalVersion             string                         `json:"modified_final_version,omitempty"`
+	StartLineNumber                  int                            `json:"start_line_number,omitempty"`
 	MotionWork                       *dbMotionWork                  `json:",omitempty"`
 }
 
@@ -170,6 +172,7 @@ func Motion(store *projector.SlideStore) {
 			"recommendation_id",
 			"recommendation_extension",
 			"recommendation_extension_reference_ids",
+			"start_line_number",
 		}
 		if meeting.MotionsEnableTextOnProjector {
 			fetchFields = append(fetchFields, "text", "amendment_paragraphs", "statute_paragraph_id")
@@ -292,6 +295,7 @@ func fillLeadMotion(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 	fields := []string{
 		"title",
 		"number",
+		"start_line_number",
 	}
 	if meeting.MotionsEnableTextOnProjector {
 		fields = append(fields, "text")
