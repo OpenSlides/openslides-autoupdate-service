@@ -2855,7 +2855,7 @@ func (r *Fetch) Meeting_Language(meetingID int) *ValueString {
 		return &ValueString{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key}
+	return &ValueString{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersAmountLastOnProjector(meetingID int) *ValueInt {
