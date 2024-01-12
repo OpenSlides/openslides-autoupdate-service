@@ -63,9 +63,6 @@ func speakerFromMap(in map[string]json.RawMessage) (*dbSpeaker, error) {
 		return nil, fmt.Errorf("decoding speaker work data: %w", err)
 	}
 
-	if work.MeetingUserID == 0 {
-		return nil, fmt.Errorf("meeting_user_id is 0")
-	}
 	return &speaker, nil
 }
 
@@ -242,17 +239,20 @@ func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID 
 			continue
 		}
 
-		var userID int
-		fetch.FetchIfExist(ctx, &userID, "meeting_user/%d/user_id", speaker.SpeakerWork.MeetingUserID)
-		if err := fetch.Err(); err != nil {
-			return "", "", fmt.Errorf("getting user for meeting user %d: %w", speaker.SpeakerWork.MeetingUserID, err)
-		}
+		if speaker.SpeakerWork.MeetingUserID != 0 {
+			var userID int
+			fetch.FetchIfExist(ctx, &userID, "meeting_user/%d/user_id", speaker.SpeakerWork.MeetingUserID)
+			if err := fetch.Err(); err != nil {
+				return "", "", fmt.Errorf("getting user for meeting user %d: %w", speaker.SpeakerWork.MeetingUserID, err)
+			}
 
-		user, err := NewUser(ctx, fetch, userID, meetingID)
-		if err != nil {
-			return "", "", fmt.Errorf("getting newUser: %w", err)
+			user, err := NewUser(ctx, fetch, userID, meetingID)
+			if err != nil {
+				return "", "", fmt.Errorf("getting newUser: %w", err)
+			}
+			return user.UserShortName(), user.UserStructureLevel(meetingID), nil
 		}
-		return user.UserShortName(), user.UserStructureLevel(meetingID), nil
+		return "", "", nil
 	}
 
 	return shortName, structureLevel, nil
@@ -340,18 +340,20 @@ func getSpeakerLists(ctx context.Context, los *dbListOfSpeakers, meetingID int, 
 			return nil, nil, fmt.Errorf("loading speaker: %w", err)
 		}
 
-		var userID int
-		fetch.FetchIfExist(ctx, &userID, "meeting_user/%d/user_id", speaker.SpeakerWork.MeetingUserID)
-		if err := fetch.Err(); err != nil {
-			return nil, nil, fmt.Errorf("getting user for meeting user %d: %w", speaker.SpeakerWork.MeetingUserID, err)
-		}
+		if speaker.SpeakerWork.MeetingUserID != 0 {
+			var userID int
+			fetch.FetchIfExist(ctx, &userID, "meeting_user/%d/user_id", speaker.SpeakerWork.MeetingUserID)
+			if err := fetch.Err(); err != nil {
+				return nil, nil, fmt.Errorf("getting user for meeting user %d: %w", speaker.SpeakerWork.MeetingUserID, err)
+			}
 
-		user, err := NewUser(ctx, fetch, userID, meetingID)
-		if err != nil {
-			return nil, nil, fmt.Errorf("loading user: %w", err)
-		}
+			user, err := NewUser(ctx, fetch, userID, meetingID)
+			if err != nil {
+				return nil, nil, fmt.Errorf("loading user: %w", err)
+			}
 
-		speaker.User = user.UserRepresentation(meetingID)
+			speaker.User = user.UserRepresentation(meetingID)
+		}
 
 		if speaker.SpeakerWork.BeginTime == 0 && speaker.SpeakerWork.EndTime == 0 {
 			*speakersWaiting = append(*speakersWaiting, *speaker)
