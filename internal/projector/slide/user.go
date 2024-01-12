@@ -18,7 +18,6 @@ type DbUser struct {
 	FirstName    string `json:"first_name"`
 	LastName     string `json:"last_name"`
 	Level        string `json:"structure_level"`
-	DefaultLevel string `json:"default_structure_level"`
 }
 
 // NewUser gets the user from datastore and return the user as DbUser struct
@@ -31,7 +30,6 @@ func NewUser(ctx context.Context, fetch *datastore.Fetcher, id, meetingID int) (
 		"first_name",
 		"last_name",
 		"meeting_user_ids",
-		"default_structure_level",
 	}
 
 	data := fetch.Object(ctx, fmt.Sprintf("user/%d", id), fields...)
@@ -73,10 +71,23 @@ func NewUser(ctx context.Context, fetch *datastore.Fetcher, id, meetingID int) (
 			continue
 		}
 
-		fetch.Fetch(ctx, &u.Level, "meeting_user/%d/structure_level", id)
+		var structureLevelIds []int
+		fetch.FetchIfExist(ctx, &structureLevelIds, "meeting_user/%d/structure_level_ids", id)
 		if err := fetch.Err(); err != nil {
 			return nil, fmt.Errorf("get structure level of meeting_user %d: %w", id, err)
 		}
+
+		var structureLevels []string
+		for _, sid := range structureLevelIds {
+			var level string
+			fetch.Fetch(ctx, &level, "structure_level/%d/name", sid)
+			if err := fetch.Err(); err != nil {
+				return nil, fmt.Errorf("get structure level %d: %w", sid, err)
+			}
+			structureLevels = append(structureLevels, level)
+		}
+
+		u.Level = strings.Join(structureLevels, ",")
 		break
 	}
 
@@ -98,9 +109,6 @@ func (u *DbUser) UserRepresentation(meetingID int) string {
 // It is assumed that the Level-field in DbUser-struct contains the
 // meeting dependent level.
 func (u *DbUser) UserStructureLevel(meetingID int) string {
-	if u.Level == "" {
-		return u.DefaultLevel
-	}
 	return u.Level
 }
 
