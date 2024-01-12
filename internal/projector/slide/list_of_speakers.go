@@ -251,23 +251,23 @@ func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID 
 				return "", "", fmt.Errorf("getting newUser: %w", err)
 			}
 
-			var structureLevelListOfSpeakersId int
-			fetch.FetchIfExist(ctx, &structureLevelListOfSpeakersId, "speaker/%d/structure_level_list_of_speakers_id", id)
+			var structureLevelListOfSpeakersID int
+			fetch.FetchIfExist(ctx, &structureLevelListOfSpeakersID, "speaker/%d/structure_level_list_of_speakers_id", id)
 			if err := fetch.Err(); err != nil {
 				return "", "", fmt.Errorf("getting structure level for speaker %d: %w", id, err)
 			}
 
 			structureLevelName := ""
-			if structureLevelListOfSpeakersId != 0 {
-				var structureLevelId int
-				fetch.FetchIfExist(ctx, &structureLevelId, "structure_level_list_of_speakers/%d/structure_level_id", structureLevelListOfSpeakersId)
+			if structureLevelListOfSpeakersID != 0 {
+				var structureLevelID int
+				fetch.FetchIfExist(ctx, &structureLevelID, "structure_level_list_of_speakers/%d/structure_level_id", structureLevelListOfSpeakersID)
 				if err := fetch.Err(); err != nil {
-					return "", "", fmt.Errorf("getting structure level for structure_level_list_of_speakers %d: %w", structureLevelListOfSpeakersId, err)
+					return "", "", fmt.Errorf("getting structure level for structure_level_list_of_speakers %d: %w", structureLevelListOfSpeakersID, err)
 				}
 
-				fetch.Fetch(ctx, &structureLevelName, "structure_level/%d/name", structureLevelId)
+				fetch.Fetch(ctx, &structureLevelName, "structure_level/%d/name", structureLevelID)
 				if err := fetch.Err(); err != nil {
-					return "", "", fmt.Errorf("getting name for structure level name %d: %w", structureLevelId, err)
+					return "", "", fmt.Errorf("getting name for structure level name %d: %w", structureLevelID, err)
 				}
 			}
 
