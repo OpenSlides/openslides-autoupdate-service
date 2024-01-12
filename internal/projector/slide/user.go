@@ -87,7 +87,7 @@ func NewUser(ctx context.Context, fetch *datastore.Fetcher, id, meetingID int) (
 			structureLevels = append(structureLevels, level)
 		}
 
-		u.Level = strings.Join(structureLevels, ",")
+		u.Level = strings.Join(structureLevels, ", ")
 		break
 	}
 
