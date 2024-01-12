@@ -13,11 +13,11 @@ import (
 
 // DbUser is the class with methods to get needed User Informations
 type DbUser struct {
-	Username     string `json:"username"`
-	Title        string `json:"title"`
-	FirstName    string `json:"first_name"`
-	LastName     string `json:"last_name"`
-	Level        string `json:"structure_level"`
+	Username  string `json:"username"`
+	Title     string `json:"title"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Level     string `json:"structure_level"`
 }
 
 // NewUser gets the user from datastore and return the user as DbUser struct

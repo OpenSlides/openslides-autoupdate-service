@@ -95,19 +95,19 @@ func TestUser(t *testing.T) {
 		{
 			"Title Firstname Lastname Username DefaultLevel",
 			map[string]string{
-				"user/1/id":                      "1",
-				"user/1/username":                `"jonny123"`,
-				"user/1/title":                   `"Dr."`,
-				"user/1/first_name":              `"Jonny"`,
-				"user/1/last_name":               `"Bo"`,
+				"user/1/id":         "1",
+				"user/1/username":   `"jonny123"`,
+				"user/1/title":      `"Dr."`,
+				"user/1/first_name": `"Jonny"`,
+				"user/1/last_name":  `"Bo"`,
 			},
 			`{"user":"Dr. Jonny Bo"}`,
 		},
 		{
 			"Username DefaultLevel",
 			map[string]string{
-				"user/1/id":                      "1",
-				"user/1/username":                `"jonny123"`,
+				"user/1/id":       "1",
+				"user/1/username": `"jonny123"`,
 			},
 			`{"user":"jonny123"}`,
 		},
@@ -132,11 +132,11 @@ func TestUserWithoutMeeting(t *testing.T) {
 	userSlide := setup(t)
 
 	data := convertData(map[string]string{
-		"user/1/id":                      "1",
-		"user/1/username":                `"jonny123"`,
-		"user/1/title":                   `"Dr."`,
-		"user/1/first_name":              `"Jonny"`,
-		"user/1/last_name":               `"Bo"`,
+		"user/1/id":         "1",
+		"user/1/username":   `"jonny123"`,
+		"user/1/title":      `"Dr."`,
+		"user/1/first_name": `"Jonny"`,
+		"user/1/last_name":  `"Bo"`,
 	})
 
 	ds := dsmock.Stub(data)
