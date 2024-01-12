@@ -363,7 +363,7 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 		
 		meeting_user/100:
 			meeting_id: 6
-			structure_level_ids: [4]
+			structure_level_ids: [4,8]
 
 		projector/60:
 			chyron_background_color: green
@@ -372,7 +372,10 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 		structure_level/4:
 			name: "Level"
 
-		structure_level_list_of_speakers/4:
+		structure_level/8:
+			name: "Foo"
+
+		structure_level_list_of_speakers/7:
 			meeting_id: 6
 			structure_level_id: 4
 			speaker_ids: [8]

@@ -250,7 +250,28 @@ func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID 
 			if err != nil {
 				return "", "", fmt.Errorf("getting newUser: %w", err)
 			}
-			return user.UserShortName(), user.UserStructureLevel(meetingID), nil
+
+			var structureLevelListOfSpeakersId int
+			fetch.FetchIfExist(ctx, &structureLevelListOfSpeakersId, "speaker/%d/structure_level_list_of_speakers_id", id)
+			if err := fetch.Err(); err != nil {
+				return "", "", fmt.Errorf("getting structure level for speaker %d: %w", id, err)
+			}
+
+			structureLevelName := ""
+			if structureLevelListOfSpeakersId != 0 {
+				var structureLevelId int
+				fetch.FetchIfExist(ctx, &structureLevelId, "structure_level_list_of_speakers/%d/structure_level_id", structureLevelListOfSpeakersId)
+				if err := fetch.Err(); err != nil {
+					return "", "", fmt.Errorf("getting structure level for structure_level_list_of_speakers %d: %w", structureLevelListOfSpeakersId, err)
+				}
+
+				fetch.Fetch(ctx, &structureLevelName, "structure_level/%d/name", structureLevelId)
+				if err := fetch.Err(); err != nil {
+					return "", "", fmt.Errorf("getting name for structure level name %d: %w", structureLevelId, err)
+				}
+			}
+
+			return user.UserShortName(), structureLevelName, nil
 		}
 		return "", "", nil
 	}
