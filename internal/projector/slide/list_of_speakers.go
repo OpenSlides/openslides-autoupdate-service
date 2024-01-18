@@ -289,17 +289,51 @@ func CurrentStructureLevelList(store *projector.SlideStore) {
 // CurrentSpeakingStructureLevel renders the current_speaking_structure_level slide.
 func CurrentSpeakingStructureLevel(store *projector.SlideStore) {
 	store.RegisterSliderFunc("current_speaking_structure_level", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
-		out := struct {
-			Test string `json:"test"`
-		}{
-			"",
+		losID, _, err := getLosID(ctx, p7on.ContentObjectID, fetch)
+		if err != nil {
+			return nil, fmt.Errorf("error in getLosID: %w", err)
 		}
 
-		responseValue, err := json.Marshal(out)
-		if err != nil {
-			return nil, fmt.Errorf("encoding response slide current_speaker_chyron: %w", err)
+		var structureLevelListOfSpeakersIds []int
+		fetch.Fetch(ctx, &structureLevelListOfSpeakersIds, "list_of_speakers/%d/structure_level_list_of_speakers_ids", losID)
+		if err := fetch.Err(); err != nil {
+			return nil, fmt.Errorf("getting structure_level_list_of_speakers_ids for list of speakers %d: %w", losID, err)
 		}
-		return responseValue, nil
+
+		for _, slsID := range structureLevelListOfSpeakersIds {
+			slsData := fetch.Object(ctx, fmt.Sprintf("structure_level_list_of_speakers/%d", slsID), "structure_level_id", "remaining_time", "current_start_time")
+			sls, err := structureLevelListOfSpeakersFromMap(slsData)
+			if err != nil {
+				return nil, fmt.Errorf("parsing structure level los %d for list of speakers %d: %w", slsID, losID, err)
+			}
+
+			// Skip non speaking structure levels
+			if sls.CurrentStartTime == 0 {
+				continue
+			}
+
+			slData := fetch.Object(ctx, fmt.Sprintf("structure_level/%d", sls.StructureLevelID), "name", "color")
+			sl, err := structureLevelFromMap(slData)
+			if err != nil {
+				return nil, fmt.Errorf("parsing structure level %d for list of speakers %d: %w", sls.StructureLevelID, losID, err)
+			}
+
+			out := structureLevelRepr{
+				ID:               sls.StructureLevelID,
+				Name:             sl.Name,
+				Color:            sl.Color,
+				RemainingTime:    sls.RemainingTime,
+				CurrentStartTime: sls.CurrentStartTime,
+			}
+
+			responseValue, err := json.Marshal(out)
+			if err != nil {
+				return nil, fmt.Errorf("encoding response slide current_speaker_chyron: %w", err)
+			}
+			return responseValue, nil
+		}
+
+		return []byte("{}"), nil
 	})
 }
 
