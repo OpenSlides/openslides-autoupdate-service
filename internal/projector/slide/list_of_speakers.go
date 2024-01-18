@@ -175,6 +175,40 @@ func CurrentSpeakerChyron(store *projector.SlideStore) {
 	})
 }
 
+// CurrentStructureLevelList renders the current_structure_level_list slide.
+func CurrentStructureLevelList(store *projector.SlideStore) {
+	store.RegisterSliderFunc("current_structure_level_list", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
+		out := struct {
+			Test string `json:"test"`
+		}{
+			"",
+		}
+
+		responseValue, err := json.Marshal(out)
+		if err != nil {
+			return nil, fmt.Errorf("encoding response slide current_speaker_chyron: %w", err)
+		}
+		return responseValue, nil
+	})
+}
+
+// CurrentSpeakingStructureLevel renders the current_speaking_structure_level slide.
+func CurrentSpeakingStructureLevel(store *projector.SlideStore) {
+	store.RegisterSliderFunc("current_speaking_structure_level", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
+		out := struct {
+			Test string `json:"test"`
+		}{
+			"",
+		}
+
+		responseValue, err := json.Marshal(out)
+		if err != nil {
+			return nil, fmt.Errorf("encoding response slide current_speaker_chyron: %w", err)
+		}
+		return responseValue, nil
+	})
+}
+
 // getLosID determines the losID and first current_projection of the reference_projector.
 func getLosID(ctx context.Context, ContentObjectID string, fetch *datastore.Fetcher) (losID int, referenceProjectorID int, err error) {
 	parts := strings.Split(ContentObjectID, "/")
