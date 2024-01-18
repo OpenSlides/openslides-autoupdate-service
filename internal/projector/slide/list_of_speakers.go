@@ -175,13 +175,95 @@ func CurrentSpeakerChyron(store *projector.SlideStore) {
 	})
 }
 
+type dbStructureLevel struct {
+	Name  string `json:"name"`
+	Color string `json:"color"`
+}
+
+func structureLevelFromMap(in map[string]json.RawMessage) (*dbStructureLevel, error) {
+	bs, err := json.Marshal(in)
+	if err != nil {
+		return nil, fmt.Errorf("encoding motion data: %w", err)
+	}
+
+	var m dbStructureLevel
+	if err := json.Unmarshal(bs, &m); err != nil {
+		return nil, fmt.Errorf("decoding motion: %w", err)
+	}
+	return &m, nil
+}
+
+type dbStructureLevelListOfSpeakers struct {
+	StructureLevelID int `json:"structure_level_id"`
+	RemainingTime    int `json:"remaining_time"`
+	CurrentStartTime int `json:"current_start_time"`
+}
+
+func structureLevelListOfSpeakersFromMap(in map[string]json.RawMessage) (*dbStructureLevelListOfSpeakers, error) {
+	bs, err := json.Marshal(in)
+	if err != nil {
+		return nil, fmt.Errorf("encoding motion data: %w", err)
+	}
+
+	var m dbStructureLevelListOfSpeakers
+	if err := json.Unmarshal(bs, &m); err != nil {
+		return nil, fmt.Errorf("decoding motion: %w", err)
+	}
+	return &m, nil
+}
+
+type structureLevelRepr struct {
+	ID               int    `json:"id"`
+	Name             string `json:"name"`
+	Color            string `json:"color"`
+	RemainingTime    int    `json:"remaining_time"`
+	CurrentStartTime int    `json:"current_start_time"`
+}
+
 // CurrentStructureLevelList renders the current_structure_level_list slide.
 func CurrentStructureLevelList(store *projector.SlideStore) {
 	store.RegisterSliderFunc("current_structure_level_list", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
+		losID, _, err := getLosID(ctx, p7on.ContentObjectID, fetch)
+		if err != nil {
+			return nil, fmt.Errorf("error in getLosID: %w", err)
+		}
+
+		var structureLevelListOfSpeakersIds []int
+		fetch.Fetch(ctx, &structureLevelListOfSpeakersIds, "list_of_speakers/%d/structure_level_list_of_speakers_ids", losID)
+		if err := fetch.Err(); err != nil {
+			return nil, fmt.Errorf("getting structure_level_list_of_speakers_ids for list of speakers %d: %w", losID, err)
+		}
+
+		structureLevels := []structureLevelRepr{}
+		for _, slsID := range structureLevelListOfSpeakersIds {
+			slsData := fetch.Object(ctx, fmt.Sprintf("structure_level_list_of_speakers/%d", slsID), "structure_level_id", "remaining_time", "current_start_time")
+			sls, err := structureLevelListOfSpeakersFromMap(slsData)
+			if err != nil {
+				return nil, fmt.Errorf("parsing structure level los %d for list of speakers %d: %w", slsID, losID, err)
+			}
+
+			slData := fetch.Object(ctx, fmt.Sprintf("structure_level/%d", sls.StructureLevelID), "name", "color")
+			sl, err := structureLevelFromMap(slData)
+			if err != nil {
+				return nil, fmt.Errorf("parsing structure level %d for list of speakers %d: %w", sls.StructureLevelID, losID, err)
+			}
+
+			structureLevel := structureLevelRepr{
+				ID:               sls.StructureLevelID,
+				Name:             sl.Name,
+				Color:            sl.Color,
+				RemainingTime:    sls.RemainingTime,
+				CurrentStartTime: sls.CurrentStartTime,
+			}
+			structureLevels = append(structureLevels, structureLevel)
+		}
+
 		out := struct {
-			Test string `json:"test"`
+			Title           string               `json:"title"`
+			StructureLevels []structureLevelRepr `json:"structure_levels"`
 		}{
-			"",
+			"Test",
+			structureLevels,
 		}
 
 		responseValue, err := json.Marshal(out)
