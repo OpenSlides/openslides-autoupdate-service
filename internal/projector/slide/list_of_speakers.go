@@ -228,6 +228,18 @@ func CurrentStructureLevelList(store *projector.SlideStore) {
 			return nil, fmt.Errorf("error in getLosID: %w", err)
 		}
 
+		var losContentObject string
+		fetch.Fetch(ctx, &losContentObject, "list_of_speakers/%d/content_object_id", losID)
+		if err := fetch.Err(); err != nil {
+			return nil, fmt.Errorf("getting content object for list of speakers %d: %w", losID, err)
+		}
+
+		var title string
+		fetch.Fetch(ctx, &title, "%s/%s", losContentObject, "title")
+		if err := fetch.Err(); err != nil {
+			return nil, fmt.Errorf("getting title for list of speakers content object %s: %w", losContentObject, err)
+		}
+
 		var structureLevelListOfSpeakersIds []int
 		fetch.Fetch(ctx, &structureLevelListOfSpeakersIds, "list_of_speakers/%d/structure_level_list_of_speakers_ids", losID)
 		if err := fetch.Err(); err != nil {
@@ -262,7 +274,7 @@ func CurrentStructureLevelList(store *projector.SlideStore) {
 			Title           string               `json:"title"`
 			StructureLevels []structureLevelRepr `json:"structure_levels"`
 		}{
-			"Test",
+			title,
 			structureLevels,
 		}
 
