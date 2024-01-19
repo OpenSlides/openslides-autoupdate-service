@@ -43,7 +43,7 @@ func (s Speaker) see(ctx context.Context, ds *dsfetch.Fetch, speakerIDs ...int) 
 	return eachMeeting(ctx, ds, s, speakerIDs, func(meetingID int, ids []int) ([]int, error) {
 		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
-			return nil, fmt.Errorf("getting perms for meetind %d: %w", meetingID, err)
+			return nil, fmt.Errorf("getting perms for meeting %d: %w", meetingID, err)
 		}
 
 		if canSee := perms.Has(perm.ListOfSpeakersCanSee); canSee {
