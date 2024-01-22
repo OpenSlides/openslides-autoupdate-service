@@ -175,6 +175,168 @@ func CurrentSpeakerChyron(store *projector.SlideStore) {
 	})
 }
 
+type dbStructureLevel struct {
+	Name  string `json:"name"`
+	Color string `json:"color"`
+}
+
+func structureLevelFromMap(in map[string]json.RawMessage) (*dbStructureLevel, error) {
+	bs, err := json.Marshal(in)
+	if err != nil {
+		return nil, fmt.Errorf("encoding motion data: %w", err)
+	}
+
+	var m dbStructureLevel
+	if err := json.Unmarshal(bs, &m); err != nil {
+		return nil, fmt.Errorf("decoding motion: %w", err)
+	}
+	return &m, nil
+}
+
+type dbStructureLevelListOfSpeakers struct {
+	StructureLevelID int `json:"structure_level_id"`
+	RemainingTime    int `json:"remaining_time"`
+	CurrentStartTime int `json:"current_start_time"`
+}
+
+func structureLevelListOfSpeakersFromMap(in map[string]json.RawMessage) (*dbStructureLevelListOfSpeakers, error) {
+	bs, err := json.Marshal(in)
+	if err != nil {
+		return nil, fmt.Errorf("encoding motion data: %w", err)
+	}
+
+	var m dbStructureLevelListOfSpeakers
+	if err := json.Unmarshal(bs, &m); err != nil {
+		return nil, fmt.Errorf("decoding motion: %w", err)
+	}
+	return &m, nil
+}
+
+type structureLevelRepr struct {
+	ID               int    `json:"id"`
+	Name             string `json:"name"`
+	Color            string `json:"color"`
+	RemainingTime    int    `json:"remaining_time"`
+	CurrentStartTime int    `json:"current_start_time"`
+}
+
+// CurrentStructureLevelList renders the current_structure_level_list slide.
+func CurrentStructureLevelList(store *projector.SlideStore) {
+	store.RegisterSliderFunc("current_structure_level_list", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
+		losID, _, err := getLosID(ctx, p7on.ContentObjectID, fetch)
+		if err != nil {
+			return nil, fmt.Errorf("error in getLosID: %w", err)
+		}
+
+		var losContentObject string
+		fetch.Fetch(ctx, &losContentObject, "list_of_speakers/%d/content_object_id", losID)
+		if err := fetch.Err(); err != nil {
+			return nil, fmt.Errorf("getting content object for list of speakers %d: %w", losID, err)
+		}
+
+		var title string
+		fetch.Fetch(ctx, &title, "%s/%s", losContentObject, "title")
+		if err := fetch.Err(); err != nil {
+			return nil, fmt.Errorf("getting title for list of speakers content object %s: %w", losContentObject, err)
+		}
+
+		var structureLevelListOfSpeakersIds []int
+		fetch.Fetch(ctx, &structureLevelListOfSpeakersIds, "list_of_speakers/%d/structure_level_list_of_speakers_ids", losID)
+		if err := fetch.Err(); err != nil {
+			return nil, fmt.Errorf("getting structure_level_list_of_speakers_ids for list of speakers %d: %w", losID, err)
+		}
+
+		structureLevels := []structureLevelRepr{}
+		for _, slsID := range structureLevelListOfSpeakersIds {
+			slsData := fetch.Object(ctx, fmt.Sprintf("structure_level_list_of_speakers/%d", slsID), "structure_level_id", "remaining_time", "current_start_time")
+			sls, err := structureLevelListOfSpeakersFromMap(slsData)
+			if err != nil {
+				return nil, fmt.Errorf("parsing structure level los %d for list of speakers %d: %w", slsID, losID, err)
+			}
+
+			slData := fetch.Object(ctx, fmt.Sprintf("structure_level/%d", sls.StructureLevelID), "name", "color")
+			sl, err := structureLevelFromMap(slData)
+			if err != nil {
+				return nil, fmt.Errorf("parsing structure level %d for list of speakers %d: %w", sls.StructureLevelID, losID, err)
+			}
+
+			structureLevel := structureLevelRepr{
+				ID:               sls.StructureLevelID,
+				Name:             sl.Name,
+				Color:            sl.Color,
+				RemainingTime:    sls.RemainingTime,
+				CurrentStartTime: sls.CurrentStartTime,
+			}
+			structureLevels = append(structureLevels, structureLevel)
+		}
+
+		out := struct {
+			Title           string               `json:"title"`
+			StructureLevels []structureLevelRepr `json:"structure_levels"`
+		}{
+			title,
+			structureLevels,
+		}
+
+		responseValue, err := json.Marshal(out)
+		if err != nil {
+			return nil, fmt.Errorf("encoding response slide current_speaker_chyron: %w", err)
+		}
+		return responseValue, nil
+	})
+}
+
+// CurrentSpeakingStructureLevel renders the current_speaking_structure_level slide.
+func CurrentSpeakingStructureLevel(store *projector.SlideStore) {
+	store.RegisterSliderFunc("current_speaking_structure_level", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
+		losID, _, err := getLosID(ctx, p7on.ContentObjectID, fetch)
+		if err != nil {
+			return nil, fmt.Errorf("error in getLosID: %w", err)
+		}
+
+		var structureLevelListOfSpeakersIds []int
+		fetch.Fetch(ctx, &structureLevelListOfSpeakersIds, "list_of_speakers/%d/structure_level_list_of_speakers_ids", losID)
+		if err := fetch.Err(); err != nil {
+			return nil, fmt.Errorf("getting structure_level_list_of_speakers_ids for list of speakers %d: %w", losID, err)
+		}
+
+		for _, slsID := range structureLevelListOfSpeakersIds {
+			slsData := fetch.Object(ctx, fmt.Sprintf("structure_level_list_of_speakers/%d", slsID), "structure_level_id", "remaining_time", "current_start_time")
+			sls, err := structureLevelListOfSpeakersFromMap(slsData)
+			if err != nil {
+				return nil, fmt.Errorf("parsing structure level los %d for list of speakers %d: %w", slsID, losID, err)
+			}
+
+			// Skip non speaking structure levels
+			if sls.CurrentStartTime == 0 {
+				continue
+			}
+
+			slData := fetch.Object(ctx, fmt.Sprintf("structure_level/%d", sls.StructureLevelID), "name", "color")
+			sl, err := structureLevelFromMap(slData)
+			if err != nil {
+				return nil, fmt.Errorf("parsing structure level %d for list of speakers %d: %w", sls.StructureLevelID, losID, err)
+			}
+
+			out := structureLevelRepr{
+				ID:               sls.StructureLevelID,
+				Name:             sl.Name,
+				Color:            sl.Color,
+				RemainingTime:    sls.RemainingTime,
+				CurrentStartTime: sls.CurrentStartTime,
+			}
+
+			responseValue, err := json.Marshal(out)
+			if err != nil {
+				return nil, fmt.Errorf("encoding response slide current_speaker_chyron: %w", err)
+			}
+			return responseValue, nil
+		}
+
+		return []byte("{}"), nil
+	})
+}
+
 // getLosID determines the losID and first current_projection of the reference_projector.
 func getLosID(ctx context.Context, ContentObjectID string, fetch *datastore.Fetcher) (losID int, referenceProjectorID int, err error) {
 	parts := strings.Split(ContentObjectID, "/")
