@@ -865,6 +865,7 @@ var restrictionModes = map[string]string{
 	"motion_state/css_class":                           "A",
 	"motion_state/first_state_of_workflow_id":          "A",
 	"motion_state/id":                                  "A",
+	"motion_state/is_internal_recommendation":          "A",
 	"motion_state/meeting_id":                          "A",
 	"motion_state/merge_amendment_into_final":          "A",
 	"motion_state/motion_ids":                          "A",
