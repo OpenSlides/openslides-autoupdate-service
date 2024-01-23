@@ -4469,6 +4469,15 @@ func (r *Fetch) MotionState_ID(motionStateID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
+func (r *Fetch) MotionState_IsInternalRecommendation(motionStateID int) *ValueBool {
+	key, err := dskey.FromParts("motion_state", motionStateID, "is_internal_recommendation")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) MotionState_MeetingID(motionStateID int) *ValueInt {
 	key, err := dskey.FromParts("motion_state", motionStateID, "meeting_id")
 	if err != nil {
