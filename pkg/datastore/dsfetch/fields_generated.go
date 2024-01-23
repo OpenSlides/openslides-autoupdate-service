@@ -1913,6 +1913,15 @@ func (r *Fetch) MeetingUser_Comment(meetingUserID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
+func (r *Fetch) MeetingUser_EditorForMotionIDs(meetingUserID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting_user", meetingUserID, "editor_for_motion_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
 func (r *Fetch) MeetingUser_GroupIDs(meetingUserID int) *ValueIntSlice {
 	key, err := dskey.FromParts("meeting_user", meetingUserID, "group_ids")
 	if err != nil {
@@ -2028,6 +2037,15 @@ func (r *Fetch) MeetingUser_VoteWeight(meetingUserID int) *ValueString {
 	}
 
 	return &ValueString{fetch: r, key: key}
+}
+
+func (r *Fetch) MeetingUser_WorkingGroupSpeakerForMotionIDs(meetingUserID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting_user", meetingUserID, "working_group_speaker_for_motion_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_AdminGroupID(meetingID int) *ValueMaybeInt {
@@ -3344,6 +3362,15 @@ func (r *Fetch) Meeting_MotionsDefaultWorkflowID(meetingID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
+func (r *Fetch) Meeting_MotionsEnableEditor(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "motions_enable_editor")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_MotionsEnableReasonOnProjector(meetingID int) *ValueBool {
 	key, err := dskey.FromParts("meeting", meetingID, "motions_enable_reason_on_projector")
 	if err != nil {
@@ -3373,6 +3400,15 @@ func (r *Fetch) Meeting_MotionsEnableSideboxOnProjector(meetingID int) *ValueBoo
 
 func (r *Fetch) Meeting_MotionsEnableTextOnProjector(meetingID int) *ValueBool {
 	key, err := dskey.FromParts("meeting", meetingID, "motions_enable_text_on_projector")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_MotionsEnableWorkingGroupSpeaker(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "motions_enable_working_group_speaker")
 	if err != nil {
 		return &ValueBool{err: err}
 	}
@@ -4892,6 +4928,15 @@ func (r *Fetch) Motion_DerivedMotionIDs(motionID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
+func (r *Fetch) Motion_EditorID(motionID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("motion", motionID, "editor_id")
+	if err != nil {
+		return &ValueMaybeInt{err: err}
+	}
+
+	return &ValueMaybeInt{fetch: r, key: key}
+}
+
 func (r *Fetch) Motion_Forwarded(motionID int) *ValueInt {
 	key, err := dskey.FromParts("motion", motionID, "forwarded")
 	if err != nil {
@@ -5214,6 +5259,15 @@ func (r *Fetch) Motion_WorkflowTimestamp(motionID int) *ValueInt {
 	}
 
 	return &ValueInt{fetch: r, key: key}
+}
+
+func (r *Fetch) Motion_WorkingGroupSpeakerID(motionID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("motion", motionID, "working_group_speaker_id")
+	if err != nil {
+		return &ValueMaybeInt{err: err}
+	}
+
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Option_Abstain(optionID int) *ValueString {
