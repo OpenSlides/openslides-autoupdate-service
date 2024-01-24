@@ -1123,6 +1123,7 @@ var restrictionModes = map[string]string{
 	"speaker/speech_state":                        "A",
 	"speaker/structure_level_list_of_speakers_id": "A",
 	"speaker/total_pause":                         "A",
+	"speaker/unpause_time":                        "A",
 	"speaker/weight":                              "A",
 
 	// structure_level
@@ -1130,9 +1131,9 @@ var restrictionModes = map[string]string{
 	"structure_level/default_time":                         "A",
 	"structure_level/id":                                   "A",
 	"structure_level/meeting_id":                           "A",
+	"structure_level/meeting_user_ids":                     "A",
 	"structure_level/name":                                 "A",
-	"structure_level/meeting_user_ids":                     "B",
-	"structure_level/structure_level_list_of_speakers_ids": "B",
+	"structure_level/structure_level_list_of_speakers_ids": "A",
 
 	// structure_level_list_of_speakers
 	"structure_level_list_of_speakers/additional_time":     "A",

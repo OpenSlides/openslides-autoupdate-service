@@ -6890,6 +6890,15 @@ func (r *Fetch) Speaker_TotalPause(speakerID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
+func (r *Fetch) Speaker_UnpauseTime(speakerID int) *ValueInt {
+	key, err := dskey.FromParts("speaker", speakerID, "unpause_time")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key}
+}
+
 func (r *Fetch) Speaker_Weight(speakerID int) *ValueInt {
 	key, err := dskey.FromParts("speaker", speakerID, "weight")
 	if err != nil {
@@ -6899,13 +6908,13 @@ func (r *Fetch) Speaker_Weight(speakerID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) StructureLevelListOfSpeakers_AdditionalTime(structureLevelListOfSpeakersID int) *ValueInt {
+func (r *Fetch) StructureLevelListOfSpeakers_AdditionalTime(structureLevelListOfSpeakersID int) *ValueFloat {
 	key, err := dskey.FromParts("structure_level_list_of_speakers", structureLevelListOfSpeakersID, "additional_time")
 	if err != nil {
-		return &ValueInt{err: err}
+		return &ValueFloat{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key}
+	return &ValueFloat{fetch: r, key: key}
 }
 
 func (r *Fetch) StructureLevelListOfSpeakers_CurrentStartTime(structureLevelListOfSpeakersID int) *ValueInt {
@@ -6953,13 +6962,13 @@ func (r *Fetch) StructureLevelListOfSpeakers_MeetingID(structureLevelListOfSpeak
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) StructureLevelListOfSpeakers_RemainingTime(structureLevelListOfSpeakersID int) *ValueInt {
+func (r *Fetch) StructureLevelListOfSpeakers_RemainingTime(structureLevelListOfSpeakersID int) *ValueFloat {
 	key, err := dskey.FromParts("structure_level_list_of_speakers", structureLevelListOfSpeakersID, "remaining_time")
 	if err != nil {
-		return &ValueInt{err: err}
+		return &ValueFloat{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueFloat{fetch: r, key: key, required: true}
 }
 
 func (r *Fetch) StructureLevelListOfSpeakers_SpeakerIDs(structureLevelListOfSpeakersID int) *ValueIntSlice {
