@@ -747,9 +747,9 @@ var collectionFields = [...]collectionField{
 	{"speaker", "speech_state"},
 	{"speaker", "structure_level_list_of_speakers_id"},
 	{"speaker", "total_pause"},
+	{"speaker", "unpause_time"},
 	{"speaker", "weight"},
 	{"structure_level", "A"},
-	{"structure_level", "B"},
 	{"structure_level", "color"},
 	{"structure_level", "default_time"},
 	{"structure_level", "id"},
@@ -2374,11 +2374,11 @@ func collectionFieldToID(cf string) int {
 		return 743
 	case "speaker/total_pause":
 		return 744
-	case "speaker/weight":
+	case "speaker/unpause_time":
 		return 745
-	case "structure_level/A":
+	case "speaker/weight":
 		return 746
-	case "structure_level/B":
+	case "structure_level/A":
 		return 747
 	case "structure_level/color":
 		return 748
