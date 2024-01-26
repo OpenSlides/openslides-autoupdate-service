@@ -38,7 +38,6 @@ type dbSpeakerWork struct {
 	Weight                         int `json:"weight"`
 	BeginTime                      int `json:"begin_time"`
 	EndTime                        int `json:"end_time"`
-	PauseTime                      int `json:"pause_time"`
 	StructureLevelListOfSpeakersID int `json:"structure_level_list_of_speakers_id"`
 }
 type dbSpeaker struct {
@@ -384,7 +383,6 @@ func getStructureLevelData(ctx context.Context, fetch *datastore.Fetcher, losID 
 	fields := []string{
 		"begin_time",
 		"end_time",
-		"pause_time",
 		"speech_state",
 		"structure_level_list_of_speakers_id",
 	}
