@@ -4469,6 +4469,15 @@ func (r *Fetch) MotionState_ID(motionStateID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
+func (r *Fetch) MotionState_IsInternalRecommendation(motionStateID int) *ValueBool {
+	key, err := dskey.FromParts("motion_state", motionStateID, "is_internal_recommendation")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) MotionState_MeetingID(motionStateID int) *ValueInt {
 	key, err := dskey.FromParts("motion_state", motionStateID, "meeting_id")
 	if err != nil {
@@ -4955,6 +4964,15 @@ func (r *Fetch) Motion_ID(motionID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
+func (r *Fetch) Motion_IDenticalMotionIDs(motionID int) *ValueIntSlice {
+	key, err := dskey.FromParts("motion", motionID, "identical_motion_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
 func (r *Fetch) Motion_LastModified(motionID int) *ValueInt {
 	key, err := dskey.FromParts("motion", motionID, "last_modified")
 	if err != nil {
@@ -5236,6 +5254,15 @@ func (r *Fetch) Motion_TagIDs(motionID int) *ValueIntSlice {
 
 func (r *Fetch) Motion_Text(motionID int) *ValueString {
 	key, err := dskey.FromParts("motion", motionID, "text")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
+func (r *Fetch) Motion_TextHash(motionID int) *ValueString {
+	key, err := dskey.FromParts("motion", motionID, "text_hash")
 	if err != nil {
 		return &ValueString{err: err}
 	}
