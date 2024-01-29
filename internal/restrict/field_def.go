@@ -273,7 +273,6 @@ var relationListFields = map[string]string{
 	"motion/change_recommendation_ids":                         "motion_change_recommendation/motion_id",
 	"motion/comment_ids":                                       "motion_comment/motion_id",
 	"motion/derived_motion_ids":                                "motion/origin_id",
-	"motion/identical_motion_ids":                              "motion/identical_motion_ids",
 	"motion/option_ids":                                        "option/content_object_id",
 	"motion/personal_note_ids":                                 "personal_note/content_object_id",
 	"motion/poll_ids":                                          "poll/content_object_id",
@@ -772,7 +771,6 @@ var restrictionModes = map[string]string{
 	"motion/change_recommendation_ids":              "C",
 	"motion/comment_ids":                            "C",
 	"motion/created":                                "C",
-	"motion/identical_motion_ids":                   "C",
 	"motion/last_modified":                          "C",
 	"motion/lead_motion_id":                         "C",
 	"motion/list_of_speakers_id":                    "C",
@@ -804,7 +802,6 @@ var restrictionModes = map[string]string{
 	"motion/title":                                             "C",
 	"motion/workflow_timestamp":                                "C",
 	"motion/number_value":                                      "D",
-	"motion/text_hash":                                         "D",
 
 	// motion_block
 	"motion_block/agenda_item_id":      "A",
