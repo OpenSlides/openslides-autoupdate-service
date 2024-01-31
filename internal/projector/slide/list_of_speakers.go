@@ -195,9 +195,12 @@ func structureLevelFromMap(in map[string]json.RawMessage) (*dbStructureLevel, er
 }
 
 type dbStructureLevelListOfSpeakers struct {
-	StructureLevelID int `json:"structure_level_id"`
-	RemainingTime    int `json:"remaining_time"`
-	CurrentStartTime int `json:"current_start_time"`
+	SpeakerIDs       []int `json:"speaker_ids"`
+	StructureLevelID int   `json:"structure_level_id"`
+	InitialTime      int   `json:"initial_time"`
+	RemainingTime    int   `json:"remaining_time"`
+	AdditionalTime   int   `json:"additional_time"`
+	CurrentStartTime int   `json:"current_start_time"`
 }
 
 func structureLevelListOfSpeakersFromMap(in map[string]json.RawMessage) (*dbStructureLevelListOfSpeakers, error) {
@@ -249,6 +252,15 @@ func CurrentStructureLevelList(store *projector.SlideStore) {
 
 		structureLevels := []structureLevelRepr{}
 		for _, slsID := range structureLevelListOfSpeakersIds {
+			hasSpeaker, err := structureLevelHasSpeaker(ctx, fetch, slsID)
+			if err != nil {
+				return nil, fmt.Errorf("checking speakers structure level los %d for list of speakers %d: %w", slsID, losID, err)
+			}
+
+			if !hasSpeaker {
+				continue
+			}
+
 			slsData := fetch.Object(ctx, fmt.Sprintf("structure_level_list_of_speakers/%d", slsID), "structure_level_id", "remaining_time", "current_start_time")
 			sls, err := structureLevelListOfSpeakersFromMap(slsData)
 			if err != nil {
@@ -330,6 +342,33 @@ func CurrentSpeakingStructureLevel(store *projector.SlideStore) {
 
 		return []byte("{}"), nil
 	})
+}
+
+func structureLevelHasSpeaker(ctx context.Context, fetch *datastore.Fetcher, structureLevelLosID int) (spoken bool, err error) {
+	data := fetch.Object(ctx, fmt.Sprintf("structure_level_list_of_speakers/%d", structureLevelLosID), "speaker_ids", "initial_time", "additional_time", "remaining_time", "current_start_time")
+	sllos, err := structureLevelListOfSpeakersFromMap(data)
+	if err != nil {
+		return false, fmt.Errorf("loading structure level list of speakers: %w", err)
+	}
+
+	if sllos.InitialTime+sllos.AdditionalTime != sllos.RemainingTime || sllos.CurrentStartTime != 0 {
+		return true, nil
+	}
+
+	for _, id := range sllos.SpeakerIDs {
+		speechState := datastore.String(ctx, fetch.FetchIfExist, "speaker/%d/speech_state", id)
+		if err := fetch.Err(); err != nil {
+			return false, fmt.Errorf("Error loading speach state %d %w", id, err)
+		}
+
+		if speechState == "interposed_question" || speechState == "intervention" {
+			continue
+		}
+
+		return true, nil
+	}
+
+	return false, nil
 }
 
 // getLosID determines the losID and first current_projection of the reference_projector.
