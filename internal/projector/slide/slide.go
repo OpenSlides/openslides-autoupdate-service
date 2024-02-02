@@ -14,6 +14,7 @@ func Slides() *projector.SlideStore {
 	CurrentSpeakerChyron(s)
 	CurrentSpeakingStructureLevel(s)
 	CurrentStructureLevelList(s)
+	Game(s)
 	Mediafile(s)
 	Motion(s)
 	MotionBlock(s)
