@@ -22,6 +22,8 @@ import (
 //
 // Mode A: The user can see the motion or can see a referenced motion in motion/all_origin_ids and motion/all_derived_motion_ids.
 //
+// Mode B: The user has the permission motion.can_manage in the motion's meeting.
+//
 // Mode C: The user can see the motion.
 //
 // Mode D: Never published to any user.
@@ -47,6 +49,8 @@ func (m Motion) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
 		return m.modeA
+	case "B":
+		return m.modeB
 	case "C":
 		return m.see
 	case "D":
@@ -113,6 +117,10 @@ func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, motionIDs ...int) ([
 			})
 		})
 	})
+}
+
+func (m Motion) modeB(ctx context.Context, ds *dsfetch.Fetch, motionIDs ...int) ([]int, error) {
+	return meetingPerm(ctx, ds, m, motionIDs, perm.MotionCanManage)
 }
 
 // leadMotionIndex creates an index from a motionID to its lead motion id. It
@@ -208,14 +216,27 @@ func filterCanSeeLeadMotion(ctx context.Context, ds *dsfetch.Fetch, motionIDs []
 }
 
 func isSubmitter(ctx context.Context, ds *dsfetch.Fetch, uid int, motionID int) (bool, error) {
-	for _, submitterID := range ds.Motion_SubmitterIDs(motionID).ErrorLater(ctx) {
-		if ds.MotionSubmitter_UserID(submitterID).ErrorLater(ctx) == uid {
+	submitterIDs, err := ds.Motion_SubmitterIDs(motionID).Value(ctx)
+	if err != nil {
+		return false, fmt.Errorf("getting submitter ids: %w", err)
+	}
+
+	for _, submitterID := range submitterIDs {
+		meetingUser, err := ds.MotionSubmitter_MeetingUserID(submitterID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting meeting_user for submitter %d: %w", submitterID, err)
+		}
+
+		submitter, err := ds.MeetingUser_UserID(meetingUser).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting user id for submitter %d: %w", submitterID, err)
+		}
+
+		if submitter == uid {
 			return true, nil
 		}
 	}
-	if err := ds.Err(); err != nil {
-		return false, fmt.Errorf("getting submitter: %w", err)
-	}
+
 	return false, nil
 }
 
@@ -233,10 +254,14 @@ func (m Motion) modeA(ctx context.Context, ds *dsfetch.Fetch, motionIDs ...int) 
 	notAllowed.Remove(allowed...)
 
 	allowed2, err := eachCondition(notAllowed.List(), func(motionID int) (bool, error) {
-		allOriginIDs := ds.Motion_AllOriginIDs(motionID).ErrorLater(ctx)
-		allDerivedMotionIDs := ds.Motion_AllDerivedMotionIDs(motionID).ErrorLater(ctx)
-		if err := ds.Err(); err != nil {
-			return false, fmt.Errorf("getting origin and derived motions: %w", err)
+		allOriginIDs, err := ds.Motion_AllOriginIDs(motionID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting all origin ids: %w", err)
+		}
+
+		allDerivedMotionIDs, err := ds.Motion_AllDerivedMotionIDs(motionID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting all derived ids: %w", err)
 		}
 
 		motionIDs := make(map[int]struct{}, len(allOriginIDs)+len(allDerivedMotionIDs))

@@ -43,7 +43,7 @@ func (s Speaker) see(ctx context.Context, ds *dsfetch.Fetch, speakerIDs ...int) 
 	return eachMeeting(ctx, ds, s, speakerIDs, func(meetingID int, ids []int) ([]int, error) {
 		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
-			return nil, fmt.Errorf("getting perms for meetind %d: %w", meetingID, err)
+			return nil, fmt.Errorf("getting perms for meeting %d: %w", meetingID, err)
 		}
 
 		if canSee := perms.Has(perm.ListOfSpeakersCanSee); canSee {
@@ -59,13 +59,22 @@ func (s Speaker) see(ctx context.Context, ds *dsfetch.Fetch, speakerIDs ...int) 
 			return nil, fmt.Errorf("getting request user: %w", err)
 		}
 
-		speakerUserIDs := make([]int, len(ids))
+		meetingUserIDs := make([]int, len(ids))
 		for i, speakerID := range ids {
-			ds.Speaker_UserID(speakerID).Lazy(&speakerUserIDs[i])
+			ds.Speaker_MeetingUserID(speakerID).Lazy(&meetingUserIDs[i])
 		}
 
 		if err := ds.Execute(ctx); err != nil {
-			return nil, fmt.Errorf("getting user ids of speakers: %w", err)
+			return nil, fmt.Errorf("getting meeting-user ids of speakers: %w", err)
+		}
+
+		speakerUserIDs := make([]int, len(ids))
+		for i, muID := range meetingUserIDs {
+			ds.MeetingUser_UserID(muID).Lazy(&speakerUserIDs[i])
+		}
+
+		if err := ds.Execute(ctx); err != nil {
+			return nil, fmt.Errorf("getting user ids of meeting-user ids: %w", err)
 		}
 
 		var allowed []int

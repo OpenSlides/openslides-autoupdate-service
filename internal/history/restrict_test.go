@@ -23,7 +23,7 @@ func TestHistoryGetter(t *testing.T) {
 			`---
 			user/1/id: 1`,
 			``,
-			"user/1/name",
+			"user/1/username",
 			false,
 		},
 		{
@@ -31,7 +31,7 @@ func TestHistoryGetter(t *testing.T) {
 			`---
 			user/1/organization_management_level: can_manage_organization`,
 			``,
-			"user/1/name",
+			"user/1/username",
 			true,
 		},
 		{
@@ -39,7 +39,7 @@ func TestHistoryGetter(t *testing.T) {
 			`---
 			user/1/organization_management_level: can_manage_users`,
 			``,
-			"user/1/name",
+			"user/1/username",
 			false,
 		},
 		{
@@ -55,7 +55,8 @@ func TestHistoryGetter(t *testing.T) {
 			`---
 			user/1/organization_management_level: can_manage_organization`,
 			`---
-			personal_note/5/user_id: 1
+			personal_note/5/meeting_user_id: 23
+			meeting_user/23/user_id: 1
 			`,
 			"personal_note/5/note",
 			true,
@@ -65,7 +66,8 @@ func TestHistoryGetter(t *testing.T) {
 			`---
 			user/1/organization_management_level: can_manage_organization`,
 			`---
-			personal_note/5/user_id: 2
+			personal_note/5/meeting_user_id: 23
+			meeting_user/23/user_id: 2
 			`,
 			"personal_note/5/note",
 			false,
@@ -92,8 +94,12 @@ func TestHistoryGetter(t *testing.T) {
 			"meeting object history permission",
 			`---
 			user/1:
-				group_$2_ids: [3]
+				meeting_user_ids: [10]
 				meeting_ids: [2]
+			meeting_user/10:
+				user_id: 1
+				meeting_id: 2
+				group_ids: [3]
 			group/3/permissions: ["meeting.can_see_history"]
 			meeting/2/admin_group_id: 3
 
@@ -106,8 +112,11 @@ func TestHistoryGetter(t *testing.T) {
 			"meeting object wrong meeting",
 			`---
 			user/1:
-				group_$2_ids: [3]
 				meeting_ids: [2]
+				meeting_user_ids: [10]
+			meeting_user/10:
+				group_ids: [3]
+				meeting_id: 2
 			group/3/permissions: ["meeting.can_see_history"]
 			meeting/2/admin_group_id: 3
 			`,
@@ -119,8 +128,11 @@ func TestHistoryGetter(t *testing.T) {
 			"theme",
 			`---
 			user/1:
-				group_$2_ids: [3]
+				meeting_user_ids: [10]
 				meeting_ids: [2]
+			meeting_user/10:
+				group_ids: [3]
+				meeting_id: 2
 			group/3/permissions: ["meeting.can_see_history"]
 			meeting/2/admin_group_id: 3
 			`,
@@ -132,8 +144,11 @@ func TestHistoryGetter(t *testing.T) {
 			"committee",
 			`---
 			user/1:
-				group_$2_ids: [3]
+				meeting_user_ids: [10]
 				meeting_ids: [2]
+			meeting_user/10:
+				group_ids: [3]
+				meeting_id: 2
 			group/3/permissions: ["meeting.can_see_history"]
 			meeting/2/admin_group_id: 3
 			`,
@@ -142,33 +157,28 @@ func TestHistoryGetter(t *testing.T) {
 			false,
 		},
 		{
-			"user is motion submitter",
+			"user in old meeting",
 			`---
 			user/1:
-				group_$2_ids: [3]
+				meeting_user_ids: [10]
 				meeting_ids: [2]
+			meeting_user/10:
+				group_ids: [3]
+				meeting_id: 2
 			group/3/permissions: ["meeting.can_see_history"]
 			meeting/2/admin_group_id: 3
 			`,
 			`---
+			meeting_user/500:
+				user_id: 50
+				meeting_id: 2
+
 			user/50:
-				submitted_motion_$_ids: ["2"]
+				username: hans
+				meeting_user_ids: [500]
 			`,
 			"user/50/username",
 			true,
-		},
-		{
-			"unknown collection",
-			`---
-			user/1:
-				group_$2_ids: [3]
-				meeting_ids: [2]
-			group/3/permissions: ["meeting.can_see_history"]
-			meeting/2/admin_group_id: 3
-			`,
-			``,
-			"unknown/50/name",
-			false,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

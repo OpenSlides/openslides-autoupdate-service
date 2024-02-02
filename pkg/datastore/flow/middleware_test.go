@@ -52,9 +52,9 @@ func (m *add100Middleware) Update(ctx context.Context, updateFn func(map[dskey.K
 func TestMiddleware(t *testing.T) {
 	ctx := context.Background()
 	subFlow := newMockFlow(dsmock.YAMLData(`---
-	user/1/likes: 5
+	motion/1/start_line_number: 5
 	`))
-	likesKey := dskey.MustKey("user/1/likes")
+	likesKey := dskey.MustKey("motion/1/start_line_number")
 
 	middleware := add100Middleware{subFlow}
 

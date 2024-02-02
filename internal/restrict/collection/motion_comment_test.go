@@ -31,7 +31,6 @@ func TestMotionCommentModeA(t *testing.T) {
 			read_group_ids: [2]
 			meeting_id: 30
 		
-		user/1/group_$30_ids: [2]
 		group/2/id: 2
 		meeting/30/id: 30
 		`,
@@ -58,7 +57,6 @@ func TestMotionCommentModeA(t *testing.T) {
 			read_group_ids: []
 			meeting_id: 30
 		
-		user/1/group_$30_ids: [2]
 		group/2/id: 2
 		`,
 		withPerms(30, perm.MotionCanSee),
@@ -87,9 +85,9 @@ func TestMotionCommentModeA(t *testing.T) {
 			read_group_ids: [2]
 			meeting_id: 30
 
-		motion_submitter/4/user_id: 2
+		motion_submitter/4/meeting_user_id: 20
+		meeting_user/20/user_id: 2
 		
-		user/1/group_$30_ids: [2]
 		group/2/id: 2
 		`,
 		withPerms(30, perm.MotionCanSee),
@@ -116,7 +114,7 @@ func TestMotionCommentModeA(t *testing.T) {
 			meeting_id: 30
 			read_group_ids: [2]
 		
-		user/1/group_$30_ids: [2]
+		meeting_user/10/group_ids: [2]
 		group/2/id: 2
 		`,
 		withPerms(30, perm.MotionCanSee),
@@ -143,7 +141,7 @@ func TestMotionCommentModeA(t *testing.T) {
 			meeting_id: 30
 			write_group_ids: [2]
 		
-		user/1/group_$30_ids: [2]
+		meeting_user/10/group_ids: [2]
 		group/2/id: 2
 		`,
 		withPerms(30, perm.MotionCanSee),
@@ -190,7 +188,9 @@ func TestMotionCommentModeA(t *testing.T) {
 			submitter_ids: [13]
 
 		motion_submitter/13:
-			user_id: 1
+			meeting_user_id: 10
+		
+		meeting_user/10/user_id: 1
 		
 		motion_state/3/id: 3
 

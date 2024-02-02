@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"sort"
-	"strings"
 	"text/template"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/models"
@@ -80,11 +79,7 @@ func parse(r io.Reader) (td templateData, err error) {
 	for modelName, model := range inData {
 		for fieldName, field := range model.Fields {
 			collectionField := fmt.Sprintf("%s/%s", modelName, fieldName)
-			reducedKey := reduceKey(collectionField)
 			td.Restrictions[modelName] = append(td.Restrictions[modelName], restriction{Collection: modelName, Field: fieldName, Mode: field.RestrictionMode()})
-			if reducedKey != collectionField {
-				td.Restrictions[modelName] = append(td.Restrictions[modelName], restriction{Collection: modelName, Field: reduceKey(fieldName), Mode: field.RestrictionMode()})
-			}
 
 			relation := field.Relation()
 
@@ -96,9 +91,9 @@ func parse(r io.Reader) (td templateData, err error) {
 			case *models.AttributeRelation:
 				to := v.ToCollections()[0].Collection + "/" + v.ToCollections()[0].ToField.Name
 				if relation.List() {
-					td.RelationList[reducedKey] = to
+					td.RelationList[collectionField] = to
 				} else {
-					td.Relation[reducedKey] = to
+					td.Relation[collectionField] = to
 				}
 
 			case *models.AttributeGenericRelation:
@@ -107,9 +102,9 @@ func parse(r io.Reader) (td templateData, err error) {
 					fields[toField.Collection] = toField.ToField.Name
 				}
 				if relation.List() {
-					td.GenericRelationList[reducedKey] = fields
+					td.GenericRelationList[collectionField] = fields
 				} else {
-					td.GenericRelation[reducedKey] = fields
+					td.GenericRelation[collectionField] = fields
 				}
 
 			default:
@@ -127,17 +122,6 @@ func parse(r io.Reader) (td templateData, err error) {
 	}
 
 	return td, nil
-}
-
-// reduceKey returns key for normal keys and the prefix for template keys.
-func reduceKey(key string) string {
-	i := strings.IndexByte(key, '$')
-	if i < 0 || i == len(key)-1 {
-		// Normal field or $ at the end
-		return key
-	}
-
-	return key[:i+1]
 }
 
 const tpl = `// Code generated with models.yml DO NOT EDIT.
@@ -175,13 +159,6 @@ var restrictionModes = map[string]string{
 			"{{$field.CollectionField}}": "{{$field.Mode}}",
 		{{- end}}
 	{{end}}
-}
-
-// collectionFields is an index from a collection name to all of its fieldnames.
-var collectionFields = map[string][]string{
-	{{- range $modelName, $model := .Restrictions}}
-		"{{$modelName}}": { {{range $field := $model}}"{{$field.Field}}", {{end}} },
-	{{- end}}
 }
 `
 

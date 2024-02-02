@@ -59,6 +59,8 @@ func TestCombine(t *testing.T) {
 	t.Run("update user", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
+		defer userFlow.ClearUpdate()
+		defer groupFlow.ClearUpdate()
 
 		errCh := make(chan error, 1)
 		go combined.Update(
@@ -72,6 +74,7 @@ func TestCombine(t *testing.T) {
 				expect := map[dskey.Key][]byte{userKey: []byte(`"new name"`)}
 				if !reflect.DeepEqual(got, expect) {
 					errCh <- fmt.Errorf("Got %v, expected %v", got, expect)
+					return
 				}
 
 				errCh <- nil
@@ -89,6 +92,8 @@ func TestCombine(t *testing.T) {
 	t.Run("update group", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
+		defer userFlow.ClearUpdate()
+		defer groupFlow.ClearUpdate()
 
 		errCh := make(chan error, 1)
 		go combined.Update(
@@ -102,6 +107,7 @@ func TestCombine(t *testing.T) {
 				expect := map[dskey.Key][]byte{groupKey: []byte(`"new name"`)}
 				if !reflect.DeepEqual(got, expect) {
 					errCh <- fmt.Errorf("Got %v, expected %v", got, expect)
+					return
 				}
 
 				errCh <- nil

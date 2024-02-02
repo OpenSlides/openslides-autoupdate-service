@@ -40,7 +40,7 @@ func (s *VoteDecryptPubKey) Get(ctx context.Context, keys ...dskey.Key) (map[dsk
 	for _, key := range keys {
 		out[key] = nil
 
-		if key.Collection != "organization" || key.Field != "vote_decrypt_public_main_key" {
+		if key.Collection() != "organization" || key.Field() != "vote_decrypt_public_main_key" {
 			continue
 		}
 

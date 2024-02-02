@@ -16,11 +16,11 @@ import (
 const maxFieldsOnQuery = 1_500
 
 var (
-	envPostgresHost     = environment.NewVariable("DATASTORE_DATABASE_HOST", "localhost", "Postgres Host.")
-	envPostgresPort     = environment.NewVariable("DATASTORE_DATABASE_PORT", "5432", "Postgres Post.")
-	envPostgresUser     = environment.NewVariable("DATASTORE_DATABASE_USER", "openslides", "Postgres User.")
-	envPostgresDatabase = environment.NewVariable("DATASTORE_DATABASE_NAME", "openslides", "Postgres Database.")
-	envPostgresPassword = environment.NewSecret("postgres_password", "Postgres Password.")
+	envPostgresHost         = environment.NewVariable("DATABASE_HOST", "localhost", "Postgres Host.")
+	envPostgresPort         = environment.NewVariable("DATABASE_PORT", "5432", "Postgres Post.")
+	envPostgresDatabase     = environment.NewVariable("DATABASE_NAME", "openslides", "Postgres User.")
+	envPostgresUser         = environment.NewVariable("DATABASE_USER", "openslides", "Postgres Database.")
+	envPostgresPasswordFile = environment.NewVariable("DATABASE_PASSWORD_FILE", "/run/secrets/postgres_password", "Postgres Password.")
 )
 
 // FlowPostgres uses postgres to get the connections.
@@ -42,10 +42,15 @@ func encodePostgresConfig(s string) string {
 //
 // TODO: This should be unexported, but there is an import cycle in the tests.
 func NewFlowPostgres(lookup environment.Environmenter, updater flow.Updater) (*FlowPostgres, error) {
+	password, err := environment.ReadSecret(lookup, envPostgresPasswordFile)
+	if err != nil {
+		return nil, fmt.Errorf("reading postgres password: %w", err)
+	}
+
 	addr := fmt.Sprintf(
 		`user='%s' password='%s' host='%s' port='%s' dbname='%s'`,
 		encodePostgresConfig(envPostgresUser.Value(lookup)),
-		encodePostgresConfig(envPostgresPassword.Value(lookup)),
+		encodePostgresConfig(password),
 		encodePostgresConfig(envPostgresHost.Value(lookup)),
 		encodePostgresConfig(envPostgresPort.Value(lookup)),
 		encodePostgresConfig(envPostgresDatabase.Value(lookup)),
@@ -121,11 +126,16 @@ func (p *FlowPostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Ke
 		var value []byte
 		element, ok := table[k.FQID()]
 		if ok {
-			idx, ok := fieldIndex[k.Field]
+			idx, ok := fieldIndex[k.Field()]
 			if ok {
 				value = element[idx]
 			}
 		}
+
+		if string(value) == "null" {
+			value = nil
+		}
+
 		values[k] = value
 	}
 
@@ -141,7 +151,7 @@ func prepareQuery(keys []dskey.Key) (uniqueFieldsStr string, fieldIndex map[stri
 	uniqueFQIDSet := make(map[string]struct{})
 	uniqueFieldsSet := make(map[string]struct{})
 	for _, k := range keys {
-		uniqueFieldsSet[k.Field] = struct{}{}
+		uniqueFieldsSet[k.Field()] = struct{}{}
 		uniqueFQIDSet[k.FQID()] = struct{}{}
 	}
 
@@ -164,7 +174,7 @@ func prepareQuery(keys []dskey.Key) (uniqueFieldsStr string, fieldIndex map[stri
 // maximum of different fields.
 func splitFieldKeys(keys []dskey.Key) [][]dskey.Key {
 	sort.Slice(keys, func(i, j int) bool {
-		return keys[i].Field < keys[j].Field
+		return keys[i].Field() < keys[j].Field()
 	})
 
 	var out [][]dskey.Key
@@ -174,7 +184,7 @@ func splitFieldKeys(keys []dskey.Key) [][]dskey.Key {
 	for _, k := range keys {
 		nextList = append(nextList, k)
 
-		if k.Field != lastField {
+		if k.Field() != lastField {
 			keyCount++
 			if keyCount >= maxFieldsOnQuery {
 				out = append(out, nextList)
@@ -182,7 +192,7 @@ func splitFieldKeys(keys []dskey.Key) [][]dskey.Key {
 				keyCount = 0
 			}
 		}
-		lastField = k.Field
+		lastField = k.Field()
 	}
 	out = append(out, nextList)
 

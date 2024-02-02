@@ -58,21 +58,21 @@ type amendmentsType struct {
 	ID                      int                            `json:"id"`
 	Title                   string                         `json:"title"`
 	Number                  string                         `json:"number"`
-	AmendmentParagraphs     map[string]string              `json:"amendment_paragraphs"`
+	AmendmentParagraph      json.RawMessage                `json:"amendment_paragraphs"`
 	ChangeRecommendations   []dbMotionChangeRecommendation `json:"change_recommendations"`
 	MergeAmendmentIntoFinal string                         `json:"merge_amendment_into_final"`
 	MergeAmendmentIntoDiff  string                         `json:"merge_amendment_into_diff"`
 }
 type leadMotionType struct {
-	Title  string `json:"title"`
-	Number string `json:"number"`
-	Text   string `json:"text"`
+	Title           string `json:"title"`
+	Number          string `json:"number"`
+	Text            string `json:"text,omitempty"`
+	StartLineNumber int    `json:"start_line_number,omitempty"`
 }
 type dbMotionWork struct {
 	MeetingID                                    int      `json:"meeting_id"`
 	LeadMotionID                                 int      `json:"lead_motion_id"`
 	StatuteParagraphID                           int      `json:"statute_paragraph_id"`
-	AmendmentParagraph                           []string `json:"amendment_paragraph_$"`
 	ChangeRecommendationIDS                      []int    `json:"change_recommendation_ids"`
 	AmendmentIDS                                 []int    `json:"amendment_ids"`
 	SubmitterIDS                                 []int    `json:"submitter_ids"`
@@ -90,9 +90,9 @@ type dbMotion struct {
 	Submitters                       []string                       `json:"submitters"`
 	ShowSidebox                      bool                           `json:"show_sidebox"`
 	LineLength                       int                            `json:"line_length"`
-	Preamble                         string                         `json:"preamble"`
+	Preamble                         string                         `json:"preamble,omitempty"`
 	LineNumbering                    string                         `json:"line_numbering"`
-	AmendmentParagraphs              map[string]string              `json:"amendment_paragraphs,omitempty"`
+	AmendmentParagraph               json.RawMessage                `json:"amendment_paragraphs,omitempty"`
 	LeadMotion                       *leadMotionType                `json:"lead_motion,omitempty"`
 	BaseStatute                      *dbMotionStatuteParagraph      `json:"base_statute,omitempty"`
 	ChangeRecommendations            []dbMotionChangeRecommendation `json:"change_recommendations"`
@@ -105,6 +105,7 @@ type dbMotion struct {
 	Text                             string                         `json:"text,omitempty"`
 	Reason                           string                         `json:"reason,omitempty"`
 	ModifiedFinalVersion             string                         `json:"modified_final_version,omitempty"`
+	StartLineNumber                  int                            `json:"start_line_number,omitempty"`
 	MotionWork                       *dbMotionWork                  `json:",omitempty"`
 }
 
@@ -145,6 +146,10 @@ func Motion(store *projector.SlideStore) {
 			return nil, fmt.Errorf("getMeeting: %w", err)
 		}
 
+		if !meeting.MotionsEnableTextOnProjector {
+			meeting.MotionsPreamble = ""
+		}
+
 		var options struct {
 			Mode string `json:"mode"`
 		}
@@ -160,8 +165,6 @@ func Motion(store *projector.SlideStore) {
 			"number",
 			"meeting_id",
 			"lead_motion_id",
-			"statute_paragraph_id",
-			"amendment_paragraph_$",
 			"change_recommendation_ids",
 			"amendment_ids",
 			"submitter_ids",
@@ -169,9 +172,10 @@ func Motion(store *projector.SlideStore) {
 			"recommendation_id",
 			"recommendation_extension",
 			"recommendation_extension_reference_ids",
+			"start_line_number",
 		}
 		if meeting.MotionsEnableTextOnProjector {
-			fetchFields = append(fetchFields, "text")
+			fetchFields = append(fetchFields, "text", "amendment_paragraphs", "statute_paragraph_id")
 		}
 		if meeting.MotionsEnableReasonOnProjector {
 			fetchFields = append(fetchFields, "reason")
@@ -189,25 +193,24 @@ func Motion(store *projector.SlideStore) {
 		motion.RecommendationExtension = "" // will be (re-)filled conditionally
 
 		fillMotionFromMeeting(motion, meeting)
-		fillAmendmentParagraphs(ctx, fetch, motion)
-		err = fillSubmitters(ctx, fetch, motion)
-		if err != nil {
+
+		if err := fillSubmitters(ctx, fetch, motion); err != nil {
 			return nil, fmt.Errorf("fillSubmitters: %w", err)
 		}
-		err = fillLeadMotion(ctx, fetch, motion)
-		if err != nil {
+
+		if err := fillLeadMotion(ctx, fetch, motion, meeting); err != nil {
 			return nil, fmt.Errorf("fillLeadMotion: %w", err)
 		}
-		err = fillBaseStatute(ctx, fetch, motion)
-		if err != nil {
+
+		if err := fillBaseStatute(ctx, fetch, motion); err != nil {
 			return nil, fmt.Errorf("fillBaseStatute: %w", err)
 		}
-		err = fillChangeRecommendations(ctx, fetch, motion)
-		if err != nil {
+
+		if err := fillChangeRecommendations(ctx, fetch, motion); err != nil {
 			return nil, fmt.Errorf("fillChangeRecommendations: %w", err)
 		}
-		err = fillAmendments(ctx, fetch, motion)
-		if err != nil {
+
+		if err := fillAmendments(ctx, fetch, motion); err != nil {
 			return nil, fmt.Errorf("fillAmendments: %w", err)
 		}
 
@@ -285,21 +288,19 @@ func fillMotionFromMeeting(motion *dbMotion, meeting *dbMeeting) {
 	motion.LineNumbering = meeting.MotionsDefaultLineNumbering
 }
 
-func fillAmendmentParagraphs(ctx context.Context, fetch *datastore.Fetcher, motion *dbMotion) {
-	if len(motion.MotionWork.AmendmentParagraph) > 0 {
-		motion.AmendmentParagraphs = make(map[string]string, len(motion.MotionWork.AmendmentParagraph))
-		for _, nr := range motion.MotionWork.AmendmentParagraph {
-			text := datastore.String(ctx, fetch.FetchIfExist, "motion/%d/amendment_paragraph_$%s", motion.ID, nr)
-			motion.AmendmentParagraphs[nr] = text
-		}
-	}
-}
-
-func fillLeadMotion(ctx context.Context, fetch *datastore.Fetcher, motion *dbMotion) error {
+func fillLeadMotion(ctx context.Context, fetch *datastore.Fetcher, motion *dbMotion, meeting *dbMeeting) error {
 	if motion.MotionWork.LeadMotionID == 0 {
 		return nil
 	}
-	data := fetch.Object(ctx, fmt.Sprintf("motion/%d", motion.MotionWork.LeadMotionID), "title", "number", "text")
+	fields := []string{
+		"title",
+		"number",
+		"start_line_number",
+	}
+	if meeting.MotionsEnableTextOnProjector {
+		fields = append(fields, "text")
+	}
+	data := fetch.Object(ctx, fmt.Sprintf("motion/%d", motion.MotionWork.LeadMotionID), fields...)
 	bs, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("encoding LeadMotion data: %w", err)
@@ -418,17 +419,18 @@ func fillRecommendationLabelEtc(ctx context.Context, fetch *datastore.Fetcher, t
 
 func fillSubmitters(ctx context.Context, fetch *datastore.Fetcher, motion *dbMotion) error {
 	type submitterSort struct {
-		UserID int `json:"user_id"`
-		Weight int `json:"weight"`
+		MeetingUserID int `json:"meeting_user_id"`
+		Weight        int `json:"weight"`
 	}
 	var submitterToSort []*submitterSort
 
 	for _, id := range motion.MotionWork.SubmitterIDS {
-		data := fetch.Object(ctx, fmt.Sprintf("motion_submitter/%d", id), "user_id", "weight")
+		data := fetch.Object(ctx, fmt.Sprintf("motion_submitter/%d", id), "meeting_user_id", "weight")
 		bs, err := json.Marshal(data)
 		if err != nil {
 			return fmt.Errorf("encoding MotionSubmitter data: %w", err)
 		}
+
 		var su submitterSort
 		if err := json.Unmarshal(bs, &su); err != nil {
 			return fmt.Errorf("decoding MotionSubmitter data: %w", err)
@@ -438,13 +440,19 @@ func fillSubmitters(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 
 	sort.Slice(submitterToSort, func(i, j int) bool {
 		if submitterToSort[i].Weight == submitterToSort[j].Weight {
-			return submitterToSort[i].UserID < submitterToSort[j].UserID
+			return submitterToSort[i].MeetingUserID < submitterToSort[j].MeetingUserID
 		}
 		return submitterToSort[i].Weight < submitterToSort[j].Weight
 	})
 
 	for _, sortedSub := range submitterToSort {
-		user, err := NewUser(ctx, fetch, sortedSub.UserID, motion.MotionWork.MeetingID)
+		var userID int
+		fetch.Fetch(ctx, &userID, "meeting_user/%d/user_id", sortedSub.MeetingUserID)
+		if err := fetch.Err(); err != nil {
+			return fmt.Errorf("getting user for meeting user %d: %w", sortedSub.MeetingUserID, err)
+		}
+
+		user, err := NewUser(ctx, fetch, userID, motion.MotionWork.MeetingID)
 		if err != nil {
 			return fmt.Errorf("getting new user id: %w", err)
 		}
@@ -459,7 +467,7 @@ func fillAmendments(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 		"title",
 		"number",
 		"meeting_id",
-		"amendment_paragraph_$",
+		"amendment_paragraphs",
 		"state_id",
 		"recommendation_id",
 		"change_recommendation_ids",
@@ -471,8 +479,6 @@ func fillAmendments(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 			return fmt.Errorf("motionFromMap: %w", err)
 		}
 
-		fillAmendmentParagraphs(ctx, fetch, motionAmend)
-
 		if err := fillChangeRecommendations(ctx, fetch, motionAmend); err != nil {
 			return fmt.Errorf("fill change recommendations: %w", err)
 		}
@@ -481,7 +487,7 @@ func fillAmendments(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 		amendment.ID = id
 		amendment.Title = motionAmend.Title
 		amendment.Number = motionAmend.Number
-		amendment.AmendmentParagraphs = motionAmend.AmendmentParagraphs
+		amendment.AmendmentParagraph = motionAmend.AmendmentParagraph
 		amendment.ChangeRecommendations = motionAmend.ChangeRecommendations
 
 		maif := datastore.String(ctx, fetch.FetchIfExist, "motion_state/%d/merge_amendment_into_final", motionAmend.MotionWork.StateID)

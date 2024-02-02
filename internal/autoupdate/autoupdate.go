@@ -11,11 +11,9 @@ import (
 	"fmt"
 	"runtime"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
@@ -190,67 +188,6 @@ func (a *Autoupdate) resetCache(ctx context.Context) {
 	}
 }
 
-// RestrictFQIDs returns the full collections, restricted for the user for a
-// list of fqids.
-// In requestedFields one can specify which fields per collection should be
-// returned if not specified all available fields will be included.
-//
-// The return format is a map from fqid to an object as map from field to value.
-func (a *Autoupdate) RestrictFQIDs(ctx context.Context, userID int, fqids []string, requestedFields map[string][]string) (map[string]map[string][]byte, error) {
-	requestedFieldsMap := make(map[string]set.Set[string], len(requestedFields))
-	for col, val := range requestedFields {
-		requestedFieldsMap[col] = set.New(val...)
-	}
-
-	var keys []dskey.Key
-	for _, fqid := range fqids {
-		collection, rawID, found := strings.Cut(fqid, "/")
-		if !found {
-			return nil, fmt.Errorf("invalid fqid %s, expected one /", fqid)
-		}
-
-		id, err := strconv.Atoi(rawID)
-		if err != nil {
-			return nil, fmt.Errorf("invalid fqid %s, second part has to be an nummber", fqid)
-		}
-
-		fields := restrict.FieldsForCollection(collection)
-		if fields == nil {
-			return nil, fmt.Errorf("unknown collection in fqid %s", fqid)
-		}
-
-		for _, field := range fields {
-			if _, ok := requestedFields[collection]; !ok || requestedFieldsMap[collection].Has(field) {
-				key := dskey.Key{Collection: collection, ID: id, Field: field}
-				keys = append(keys, key)
-			}
-		}
-	}
-
-	ctx, restricter := a.restricter(ctx, a.flow, userID)
-
-	values, err := restricter.Get(ctx, keys...)
-	if err != nil {
-		return nil, fmt.Errorf("getting data: %w", err)
-	}
-
-	result := make(map[string]map[string][]byte, len(fqids))
-	for key, value := range values {
-		fqid := key.FQID()
-		if _, ok := result[fqid]; !ok {
-			result[fqid] = make(map[string][]byte)
-		}
-
-		if value == nil {
-			continue
-		}
-
-		result[fqid][key.Field] = value
-	}
-
-	return result, nil
-}
-
 // skipWorkpool desides, if a connection is allowed to skip the workpool.
 //
 // The current implementation returns true, if the user is a meeting admin in
@@ -262,35 +199,136 @@ func (a *Autoupdate) skipWorkpool(ctx context.Context, userID int) (bool, error)
 
 	ds := dsfetch.New(a.flow)
 
-	meetingIDs := ds.User_GroupIDsTmpl(userID).ErrorLater(ctx)
+	meetingUserIDs, err := ds.User_MeetingUserIDs(userID).Value(ctx)
+	if err != nil {
+		return false, fmt.Errorf("getting meeting_user objects: %w", err)
+	}
 
-	for _, mid := range meetingIDs {
-		gids := ds.User_GroupIDs(userID, mid).ErrorLater(ctx)
-		for _, gid := range gids {
-			if _, ok := ds.Group_AdminGroupForMeetingID(gid).ErrorLater(ctx); ok {
+	for _, muid := range meetingUserIDs {
+		groupIDs, err := ds.MeetingUser_GroupIDs(muid).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting groupIDs of user: %w", err)
+		}
+
+		adminGroups := make([]int, len(groupIDs))
+		for i := 0; i < len(groupIDs); i++ {
+			ds.Group_AdminGroupForMeetingID(groupIDs[i]).Lazy(&adminGroups[i])
+		}
+
+		if err := ds.Execute(ctx); err != nil {
+			return false, fmt.Errorf("checking for admin groups: %w", err)
+		}
+
+		for isAdmin := range adminGroups {
+			if isAdmin > 0 {
 				return true, nil
 			}
 		}
-	}
-	if err := ds.Err(); err != nil {
-		return false, fmt.Errorf("check if user %d is a meeting admin: %w", userID, err)
+
 	}
 
 	return false, nil
 }
 
-// CanSeeConnectionCount returns, if the user can see the connection counter.
-func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (bool, error) {
+// CanSeeConnectionCount returns, if the user can see the connection count.
+//
+// If the second value is not empty, the user is only allowed for meetings in that list.
+func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (bool, []int, error) {
 	if userID == 0 {
-		return false, nil
+		return false, nil, nil
 	}
 
 	ds := dsfetch.New(a.flow)
 
 	hasOML, err := perm.HasOrganizationManagementLevel(ctx, ds, userID, perm.OMLCanManageOrganization)
 	if err != nil {
-		return false, fmt.Errorf("getting organization management level: %w", err)
+		return false, nil, fmt.Errorf("getting organization management level: %w", err)
 	}
 
-	return hasOML, nil
+	if hasOML {
+		return true, nil, nil
+	}
+
+	meetingUserIDs, err := ds.User_MeetingUserIDs(userID).Value(ctx)
+	if err != nil {
+		return false, nil, fmt.Errorf("getting meeting_user objects: %w", err)
+	}
+
+	groupPerMeetingIDs := make([][]int, len(meetingUserIDs))
+	for i, muID := range meetingUserIDs {
+		ds.MeetingUser_GroupIDs(muID).Lazy(&groupPerMeetingIDs[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return false, nil, fmt.Errorf("getting all group ids: %w", err)
+	}
+
+	var groupIDs []int
+	for i := range groupPerMeetingIDs {
+		groupIDs = append(groupIDs, groupPerMeetingIDs[i]...)
+	}
+
+	isAdminGroup := make([]int, len(groupIDs))
+	for i, groupID := range groupIDs {
+		ds.Group_AdminGroupForMeetingID(groupID).Lazy(&isAdminGroup[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return false, nil, fmt.Errorf("getting admin flag of groups: %w", err)
+	}
+
+	var meetingAdmin []int
+	for _, meetingID := range isAdminGroup {
+		if meetingID > 0 {
+			meetingAdmin = append(meetingAdmin, meetingID)
+		}
+	}
+
+	return len(meetingAdmin) > 0, meetingAdmin, nil
+}
+
+// FilterConnectionCount removes users from the count where the user is not in
+// one of the given meetings.
+func (a *Autoupdate) FilterConnectionCount(ctx context.Context, meetingIDs []int, count map[int]int) error {
+	if len(meetingIDs) == 0 {
+		return nil
+	}
+
+	ds := dsfetch.New(a.flow)
+
+	meetingUserIDs := make([][]int, len(meetingIDs))
+	for i, meetingID := range meetingIDs {
+		ds.Meeting_MeetingUserIDs(meetingID).Lazy(&meetingUserIDs[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return fmt.Errorf("getting meeting user ids: %w", err)
+	}
+
+	userCount := 0
+	userIDs := make([][]int, len(meetingIDs))
+	for i := range meetingUserIDs {
+		userCount += len(meetingUserIDs[i])
+		userIDs[i] = make([]int, len(meetingUserIDs[i]))
+		for j, muID := range meetingUserIDs[i] {
+			ds.MeetingUser_UserID(muID).Lazy(&userIDs[i][j])
+		}
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return fmt.Errorf("getting user ids: %w", err)
+	}
+
+	userSet := set.NewWithSize[int](userCount)
+	for i := range userIDs {
+		userSet.Add(userIDs[i]...)
+	}
+
+	for userID := range count {
+		if !userSet.Has(userID) {
+			delete(count, userID)
+		}
+	}
+
+	return nil
 }
