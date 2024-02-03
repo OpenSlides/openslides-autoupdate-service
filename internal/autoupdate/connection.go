@@ -2,11 +2,20 @@ package autoupdate
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/binary"
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsrecorder"
 )
+
+// Connection holds the connection to data and has the ability to return the next.
+type Connection interface {
+	Next() (func(context.Context) (map[dskey.Key][]byte, error), bool)
+	HashState() string
+	SetHashState(hashes string) error
+}
 
 // connection holds the state of a client. It has to be created by colling
 // Connect() on a autoupdate.Service instance.
@@ -94,6 +103,35 @@ func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, error)
 	}, true
 }
 
+// HashState returns the current state for the connection.
+func (c *connection) HashState() string {
+	buf := make([]byte, len(c.filter.history)*16)
+	for key, hash := range c.filter.history {
+		binary.AppendUvarint(buf, uint64(key))
+		binary.AppendUvarint(buf, hash)
+	}
+	return base64.StdEncoding.EncodeToString(buf)
+}
+
+// SetHashState sets the state of the hashes.
+func (c *connection) SetHashState(hashes string) error {
+	data, err := base64.StdEncoding.DecodeString(hashes)
+	if err != nil {
+		return fmt.Errorf("decode hashes: %w", err)
+	}
+
+	c.filter.history = make(map[dskey.Key]uint64, len(data)/16)
+	for len(data) >= 16 {
+		key, size := binary.Uvarint(data)
+		data = data[size:]
+		value, size := binary.Uvarint(data)
+		data = data[size:]
+		c.filter.history[dskey.Key(key)] = value
+	}
+
+	return nil
+}
+
 // updatedData returns all values from the datastore.getter.
 func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, error) {
 	if !c.skipWorkpool {
@@ -121,20 +159,4 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 	c.filter.filter(data)
 
 	return data, nil
-}
-
-// notInSlice returns elements that are in slice a but not in b.
-func notInSlice(a, b []dskey.Key) []dskey.Key {
-	bSet := make(map[dskey.Key]struct{}, len(b))
-	for _, k := range b {
-		bSet[k] = struct{}{}
-	}
-
-	var missing []dskey.Key
-	for _, k := range a {
-		if _, ok := bSet[k]; !ok {
-			missing = append(missing, k)
-		}
-	}
-	return missing
 }

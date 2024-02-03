@@ -1,21 +1,11 @@
 package autoupdate
 
 import (
-	"hash/maphash"
-
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/zeebo/xxh3"
 )
 
-func createHash(hasher *maphash.Hash, value []byte) uint64 {
-	hasher.Reset()
-
-	// This can not return any error.
-	_, _ = hasher.Write(value)
-	return hasher.Sum64()
-}
-
 type filter struct {
-	hasher  maphash.Hash
 	history map[dskey.Key]uint64
 }
 
@@ -43,7 +33,7 @@ func (f *filter) filter(data map[dskey.Key][]byte) {
 			continue
 		}
 
-		newHash := createHash(&f.hasher, value)
+		newHash := xxh3.Hash(value)
 		if oldHash, inHistory := f.history[key]; inHistory && newHash == oldHash {
 			delete(data, key)
 			continue

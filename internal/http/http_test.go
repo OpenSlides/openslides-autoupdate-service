@@ -20,12 +20,28 @@ var (
 	myKey2, _ = dskey.FromParts("user", 2, "username")
 )
 
-type connecterMock struct {
-	f autoupdate.DataProvider
+type nexterMock struct {
+	f func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool)
 }
 
-func (c *connecterMock) Connect(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (autoupdate.DataProvider, error) {
-	return c.f, nil
+func (n *nexterMock) Next() (func(context.Context) (map[dskey.Key][]byte, error), bool) {
+	return n.f()
+}
+
+func (n *nexterMock) HashState() string {
+	return "not implemented"
+}
+
+func (n *nexterMock) SetHashState(hashes string) error {
+	return fmt.Errorf("not implemented")
+}
+
+type connecterMock struct {
+	f func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool)
+}
+
+func (c *connecterMock) Connect(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (autoupdate.Connection, error) {
+	return &nexterMock{f: c.f}, nil
 }
 
 func (c *connecterMock) SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (map[dskey.Key][]byte, error) {

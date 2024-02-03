@@ -102,14 +102,11 @@ func New(lookup environment.Environmenter, flow flow.Flow, restricter RestrictMi
 	return a, background, nil
 }
 
-// DataProvider is a function that returns the next data for a user.
-type DataProvider func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool)
-
 // Connect has to be called by a client to register to the service. The method
 // returns a Connection object, that can be used to receive the data.
 //
 // There is no need to "close" the returned DataProvider.
-func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (DataProvider, error) {
+func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (Connection, error) {
 	skipWorkpool, err := a.skipWorkpool(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("check if workpool should be used: %w", err)
@@ -122,7 +119,7 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (D
 		skipWorkpool: skipWorkpool,
 	}
 
-	return c.Next, nil
+	return c, nil
 }
 
 // SingleData returns the data for the given keysbuilder without autoupdates.
