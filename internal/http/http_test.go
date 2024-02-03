@@ -28,12 +28,8 @@ func (n *nexterMock) Next() (func(context.Context) (map[dskey.Key][]byte, error)
 	return n.f()
 }
 
-func (n *nexterMock) HashState() string {
-	return "not implemented"
-}
-
-func (n *nexterMock) SetHashState(hashes string) error {
-	return fmt.Errorf("not implemented")
+func (n *nexterMock) NextWithFilter(context.Context, string) (map[dskey.Key][]byte, string, error) {
+	return nil, "", fmt.Errorf("Not Implemented")
 }
 
 type connecterMock struct {

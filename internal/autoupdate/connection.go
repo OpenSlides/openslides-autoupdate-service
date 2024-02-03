@@ -2,8 +2,6 @@ package autoupdate
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/binary"
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
@@ -13,8 +11,7 @@ import (
 // Connection holds the connection to data and has the ability to return the next.
 type Connection interface {
 	Next() (func(context.Context) (map[dskey.Key][]byte, error), bool)
-	HashState() string
-	SetHashState(hashes string) error
+	NextWithFilter(ctx context.Context, filterHashes string) (map[dskey.Key][]byte, string, error)
 }
 
 // connection holds the state of a client. It has to be created by colling
@@ -103,33 +100,32 @@ func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, error)
 	}, true
 }
 
-// HashState returns the current state for the connection.
-func (c *connection) HashState() string {
-	buf := make([]byte, len(c.filter.history)*16)
-	for key, hash := range c.filter.history {
-		binary.AppendUvarint(buf, uint64(key))
-		binary.AppendUvarint(buf, hash)
-	}
-	return base64.StdEncoding.EncodeToString(buf)
-}
+func (c *connection) NextWithFilter(ctx context.Context, filterHashes string) (map[dskey.Key][]byte, string, error) {
+	c.tid = c.autoupdate.topic.LastID()
 
-// SetHashState sets the state of the hashes.
-func (c *connection) SetHashState(hashes string) error {
-	data, err := base64.StdEncoding.DecodeString(hashes)
+	if err := c.filter.setHashState(filterHashes); err != nil {
+		return nil, "", fmt.Errorf("set history state: %w", err)
+	}
+
+	data, err := c.updatedData(ctx)
 	if err != nil {
-		return fmt.Errorf("decode hashes: %w", err)
+		return nil, "", fmt.Errorf("creating first time data: %w", err)
 	}
 
-	c.filter.history = make(map[dskey.Key]uint64, len(data)/16)
-	for len(data) >= 16 {
-		key, size := binary.Uvarint(data)
-		data = data[size:]
-		value, size := binary.Uvarint(data)
-		data = data[size:]
-		c.filter.history[dskey.Key(key)] = value
+	if len(data) == 0 {
+		fn, _ := c.Next()
+		dd, err := fn(ctx)
+		if err != nil {
+			return nil, "", fmt.Errorf("getting new data: %w", err)
+		}
+		data = dd
 	}
 
-	return nil
+	hashes, err := c.filter.hashState()
+	if err != nil {
+		return nil, "", fmt.Errorf("create new hashes: %w", err)
+	}
+	return data, hashes, nil
 }
 
 // updatedData returns all values from the datastore.getter.

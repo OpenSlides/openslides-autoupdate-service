@@ -106,6 +106,10 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, history History)
 		}
 
 		body, hashes, isLongPolling, err := parseBody(r)
+		if err != nil {
+			handleErrorWithStatus(w, fmt.Errorf("parse Body: %w", err))
+			return
+		}
 
 		bodyBuilder, err := keysbuilder.ManyFromJSON(bytes.NewReader(body))
 		if err != nil {
@@ -365,12 +369,9 @@ func handleLongpolling(ctx context.Context, w io.Writer, uid int, kb autoupdate.
 		return fmt.Errorf("getting connection: %w", err)
 	}
 
-	conn.SetHashState(hashes)
-
-	fn, _ := conn.Next()
-	data, err := fn(ctx)
+	data, newHashes, err := conn.NextWithFilter(ctx, hashes)
 	if err != nil {
-		return fmt.Errorf("getting next message: %w", err)
+		return fmt.Errorf("getting data: %w", err)
 	}
 
 	mp := multipart.NewWriter(w)
@@ -388,7 +389,7 @@ func handleLongpolling(ctx context.Context, w io.Writer, uid int, kb autoupdate.
 		return fmt.Errorf("creating hashes part: %w", err)
 	}
 
-	if _, err := hashWriter.Write([]byte(hashes)); err != nil {
+	if _, err := hashWriter.Write([]byte(newHashes)); err != nil {
 		return fmt.Errorf("writing hashes: %w", err)
 	}
 
