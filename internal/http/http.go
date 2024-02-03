@@ -190,18 +190,19 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, history History)
 }
 
 func parseBody(r *http.Request) ([]byte, string, bool, error) {
-	mediaType, params, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	contentType := r.Header.Get("Content-Type")
+
+	if contentType == "" {
+		return parseBodyNormal(r)
+	}
+
+	mediaType, params, err := mime.ParseMediaType(contentType)
 	if err != nil {
 		return nil, "", false, fmt.Errorf("parsing multipart: %w", err)
 	}
 
 	if !strings.HasPrefix(mediaType, "multipart/") {
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			return nil, "", false, fmt.Errorf("invalid body: %w", err)
-		}
-
-		return body, "", r.URL.Query().Has("longpolling"), nil
+		return parseBodyNormal(r)
 	}
 
 	mr := multipart.NewReader(r.Body, params["boundary"])
@@ -227,6 +228,15 @@ func parseBody(r *http.Request) ([]byte, string, bool, error) {
 	}
 
 	return body, string(longPollinHashes), true, nil
+}
+
+func parseBodyNormal(r *http.Request) ([]byte, string, bool, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, "", false, fmt.Errorf("invalid body: %w", err)
+	}
+
+	return body, "", r.URL.Query().Has("longpolling"), nil
 }
 
 // HandleAutoupdate builds the requested keys from the body of a request. The
