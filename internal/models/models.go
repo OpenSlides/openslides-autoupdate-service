@@ -1,56 +1,13 @@
 package models
 
 import (
-	"bufio"
 	_ "embed" // needed for embeding
 	"fmt"
 	"io"
-	"log"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 )
-
-//go:embed models-version
-var version string
-
-func getVersion() string {
-	scanner := bufio.NewScanner(strings.NewReader(version))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, "//") || line == "" {
-			continue
-		}
-		return line
-	}
-	if err := scanner.Err(); err != nil {
-		log.Printf("invalid version %s", err)
-		return "invalid"
-	}
-	return "no-value"
-}
-
-const (
-	repo            = "https://raw.githubusercontent.com/OpenSlides/openslides-backend/"
-	modelsPath      = "/global/meta/models.yml"
-	exampleDataPath = "/global/data/example-data.json"
-	permissionPath  = "/global/meta/permission.yml"
-)
-
-// URLModelsYML return the url to the models.yml.
-func URLModelsYML() string {
-	return repo + getVersion() + modelsPath
-}
-
-// URLExampleData returns the url to the example-data file.
-func URLExampleData() string {
-	return repo + getVersion() + exampleDataPath
-}
-
-// URLPermission returns the url to the example-data file.
-func URLPermission() string {
-	return repo + getVersion() + permissionPath
-}
 
 // Unmarshal parses the content of models.yml to a datastruct.q
 func Unmarshal(r io.Reader) (map[string]Model, error) {
