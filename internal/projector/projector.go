@@ -100,8 +100,8 @@ func (p *Projector) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][
 }
 
 // Update updates projection/content keys.
-func (p *Projector) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
-	p.flow.Update(ctx, func(data map[dskey.Key][]byte, err error) {
+func (p *Projector) Update(ctx context.Context, updateFn func(map[dskey.MetaKey][]byte, error)) {
+	p.flow.Update(ctx, func(data map[dskey.MetaKey][]byte, err error) {
 		if err != nil {
 			updateFn(nil, err)
 			return
@@ -119,7 +119,7 @@ func (p *Projector) Update(ctx context.Context, updateFn func(map[dskey.Key][]by
 
 		for _, key := range needUpdate {
 			value := p.calculate(ctx, key)
-			data[key] = value
+			data[dskey.MetaFromKey(key)] = value
 			p.cache[key] = value
 		}
 
@@ -127,10 +127,15 @@ func (p *Projector) Update(ctx context.Context, updateFn func(map[dskey.Key][]by
 	})
 }
 
-func (p *Projector) needUpdate(data map[dskey.Key][]byte) []dskey.Key {
+func (p *Projector) needUpdate(data map[dskey.MetaKey][]byte) []dskey.Key {
 	var needUpdate []dskey.Key
 	for calculated := range p.hotKeys {
-		for key := range data {
+		for metaKey := range data {
+			key, ok := metaKey.Key()
+			if !ok {
+				continue
+			}
+
 			if _, ok := p.hotKeys[calculated][key]; ok {
 				needUpdate = append(needUpdate, calculated)
 				break

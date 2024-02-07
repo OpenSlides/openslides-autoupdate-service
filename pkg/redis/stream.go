@@ -88,20 +88,22 @@ func onlyStream(reply any, only string, f func(k, v []byte)) (string, error) {
 	return "", fmt.Errorf("stream not found")
 }
 
-func parseMessageBus(reply any) (string, map[dskey.Key][]byte, error) {
-	data := make(map[dskey.Key][]byte)
+func parseMessageBus(reply any) (string, map[dskey.MetaKey][]byte, error) {
+	data := make(map[dskey.MetaKey][]byte)
 	databuilder := func(k, v []byte) {
+		var metaKey dskey.MetaKey
 		key, err := dskey.FromString(string(k))
-		if err != nil {
-			// Ignore invalid keys
-			return
+		if err == nil {
+			metaKey = dskey.MetaFromKey(key)
+		} else {
+			metaKey = dskey.MetaFromStr(fmt.Sprintf("%s:%s", k, v))
 		}
 
 		if string(v) == "null" {
 			v = nil
 		}
 
-		data[key] = v
+		data[metaKey] = v
 	}
 
 	lastID, err := onlyStream(reply, fieldChangedTopic, databuilder)

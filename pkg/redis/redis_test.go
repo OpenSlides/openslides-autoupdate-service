@@ -23,8 +23,8 @@ func TestUpdate(t *testing.T) {
 	r.Wait(ctx)
 
 	done := make(chan error)
-	var got map[dskey.Key][]byte
-	go r.Update(ctx, func(data map[dskey.Key][]byte, err error) {
+	var got map[dskey.MetaKey][]byte
+	go r.Update(ctx, func(data map[dskey.MetaKey][]byte, err error) {
 		if err != nil {
 			done <- fmt.Errorf("Update() returned an unexpected error %w", err)
 		}

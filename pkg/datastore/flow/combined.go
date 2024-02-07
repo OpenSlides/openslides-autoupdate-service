@@ -68,7 +68,7 @@ func (c *combined) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]
 	return result, nil
 }
 
-func (c *combined) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+func (c *combined) Update(ctx context.Context, updateFn func(map[dskey.MetaKey][]byte, error)) {
 	cancelCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

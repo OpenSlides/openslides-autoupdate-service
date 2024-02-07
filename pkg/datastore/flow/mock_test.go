@@ -17,7 +17,7 @@ type mockFlow struct {
 	err  error
 
 	mu         sync.Mutex
-	updateFn   func(map[dskey.Key][]byte, error)
+	updateFn   func(map[dskey.MetaKey][]byte, error)
 	registerCh chan struct{}
 }
 
@@ -40,7 +40,7 @@ func (m *mockFlow) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]
 	return r, m.err
 }
 
-func (m *mockFlow) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+func (m *mockFlow) Update(ctx context.Context, updateFn func(map[dskey.MetaKey][]byte, error)) {
 	m.mu.Lock()
 	m.updateFn = updateFn
 	close(m.registerCh)
@@ -70,8 +70,13 @@ func (m *mockFlow) SendUpdate(data map[dskey.Key][]byte, err error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	converted := make(map[dskey.MetaKey][]byte, len(data))
+	for k, v := range data {
+		converted[dskey.MetaFromKey(k)] = v
+	}
+
 	if fn := m.updateFn; fn != nil {
-		fn(data, err)
+		fn(converted, err)
 	}
 }
 
@@ -99,7 +104,7 @@ func TestFlowMock(t *testing.T) {
 	errCh := make(chan error, 1)
 	go flw.Update(
 		updateCtx,
-		func(got map[dskey.Key][]byte, err error) {
+		func(got map[dskey.MetaKey][]byte, err error) {
 			if err != nil {
 				errCh <- fmt.Errorf("update: %v", err)
 				return

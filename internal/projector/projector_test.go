@@ -165,7 +165,7 @@ func TestProjectionUpdateProjection(t *testing.T) {
 	p := projector.NewProjector(flow, testSlides())
 
 	done := make(chan struct{})
-	go p.Update(ctx, func(map[dskey.Key][]byte, error) {
+	go p.Update(ctx, func(map[dskey.MetaKey][]byte, error) {
 		close(done)
 	})
 
@@ -206,7 +206,7 @@ func TestProjectionUpdateProjectionMetaData(t *testing.T) {
 	p := projector.NewProjector(flow, testSlides())
 
 	done := make(chan struct{})
-	go p.Update(ctx, func(map[dskey.Key][]byte, error) {
+	go p.Update(ctx, func(map[dskey.MetaKey][]byte, error) {
 		close(done)
 	})
 
@@ -243,7 +243,7 @@ func TestProjectionUpdateSlide(t *testing.T) {
 	p := projector.NewProjector(flow, testSlides())
 
 	done := make(chan struct{})
-	go p.Update(ctx, func(map[dskey.Key][]byte, error) {
+	go p.Update(ctx, func(map[dskey.MetaKey][]byte, error) {
 		close(done)
 	})
 
@@ -280,7 +280,7 @@ func TestProjectionUpdateOtherKey(t *testing.T) {
 	p := projector.NewProjector(flow, testSlides())
 
 	done := make(chan struct{})
-	go p.Update(ctx, func(map[dskey.Key][]byte, error) {
+	go p.Update(ctx, func(map[dskey.MetaKey][]byte, error) {
 		close(done)
 	})
 

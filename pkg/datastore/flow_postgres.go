@@ -143,7 +143,7 @@ func (p *FlowPostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Ke
 }
 
 // Update calls the updater.
-func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+func (p *FlowPostgres) Update(ctx context.Context, updateFn func(map[dskey.MetaKey][]byte, error)) {
 	p.updater.Update(ctx, updateFn)
 }
 

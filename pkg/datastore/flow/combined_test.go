@@ -65,7 +65,7 @@ func TestCombine(t *testing.T) {
 		errCh := make(chan error, 1)
 		go combined.Update(
 			ctx,
-			func(got map[dskey.Key][]byte, err error) {
+			func(got map[dskey.MetaKey][]byte, err error) {
 				if err != nil {
 					errCh <- fmt.Errorf("Update: %v", err)
 					return
@@ -98,7 +98,7 @@ func TestCombine(t *testing.T) {
 		errCh := make(chan error, 1)
 		go combined.Update(
 			ctx,
-			func(got map[dskey.Key][]byte, err error) {
+			func(got map[dskey.MetaKey][]byte, err error) {
 				if err != nil {
 					errCh <- fmt.Errorf("Update: %v", err)
 					return

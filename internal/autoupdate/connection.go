@@ -3,6 +3,7 @@ package autoupdate
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsrecorder"
@@ -51,16 +52,16 @@ type connection struct {
 //
 // On every other call, it blocks until there is new data. In this case, the map
 // is never empty.
-func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, error), bool) {
-	return func(ctx context.Context) (map[dskey.Key][]byte, error) {
+func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, []string, error), bool) {
+	return func(ctx context.Context) (map[dskey.Key][]byte, []string, error) {
 		if c.filter.empty() {
 			c.tid = c.autoupdate.topic.LastID()
 			data, err := c.updatedData(ctx)
 			if err != nil {
-				return nil, fmt.Errorf("creating first time data: %w", err)
+				return nil, nil, fmt.Errorf("creating first time data: %w", err)
 			}
 
-			return data, nil
+			return data, nil, nil
 		}
 
 		for {
@@ -68,26 +69,39 @@ func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, error)
 			tid, changedKeys, err := c.autoupdate.topic.Receive(ctx, c.tid)
 			if err != nil {
 				// TODO EXTERMAL ERROR
-				return nil, fmt.Errorf("get updated keys: %w", err)
+				return nil, nil, fmt.Errorf("get updated keys: %w", err)
 			}
 			c.tid = tid
 
 			foundKey := false
-			for _, key := range changedKeys {
+			var linkedSpans []string
+			for _, metaKey := range changedKeys {
+				key, meta, isKey := metaKey.KeyStr()
+				if !isKey {
+					key, value, found := strings.Cut(meta, ":")
+					if !found {
+						continue
+					}
+
+					if key == "__otel_data" {
+						linkedSpans = append(linkedSpans, value)
+					}
+					continue
+				}
+
 				if _, ok := c.hotkeys[key]; ok {
 					foundKey = true
-					break
 				}
 			}
 
 			if foundKey {
 				data, err := c.updatedData(ctx)
 				if err != nil {
-					return nil, fmt.Errorf("creating later data: %w", err)
+					return nil, nil, fmt.Errorf("creating later data: %w", err)
 				}
 
 				if len(data) > 0 {
-					return data, nil
+					return data, linkedSpans, nil
 				}
 			}
 		}

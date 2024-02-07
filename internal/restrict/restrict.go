@@ -20,6 +20,8 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/fastjson"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // Middleware can be used as a flow.Getter that restrict the data for a
@@ -46,8 +48,14 @@ type restricter struct {
 	uid    int
 }
 
+var tracer = otel.GetTracerProvider().Tracer("autoupdate")
+
 // Get returns restricted data.
 func (r restricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error) {
+	ctx, span := tracer.Start(ctx, "restricter")
+	defer span.End()
+	span.SetAttributes(attribute.Int("Keys", len(keys)))
+
 	data, err := r.getter.Get(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("getting data: %w", err)

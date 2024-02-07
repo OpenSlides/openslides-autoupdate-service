@@ -154,7 +154,7 @@ func (s *FlowVoteCount) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.K
 }
 
 // Update has to be called frequently. It blocks, until there is new data.
-func (s *FlowVoteCount) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
+func (s *FlowVoteCount) Update(ctx context.Context, updateFn func(map[dskey.MetaKey][]byte, error)) {
 	for {
 		var data map[int]int
 		select {
@@ -164,7 +164,7 @@ func (s *FlowVoteCount) Update(ctx context.Context, updateFn func(map[dskey.Key]
 		case data = <-s.update:
 		}
 
-		out := make(map[dskey.Key][]byte, len(data))
+		out := make(map[dskey.MetaKey][]byte, len(data))
 		for pollID, count := range data {
 			bs := []byte(strconv.Itoa(count))
 			if count == 0 {
@@ -175,7 +175,7 @@ func (s *FlowVoteCount) Update(ctx context.Context, updateFn func(map[dskey.Key]
 				updateFn(out, err)
 				return
 			}
-			out[key] = bs
+			out[dskey.MetaFromKey(key)] = bs
 		}
 
 		updateFn(out, nil)
