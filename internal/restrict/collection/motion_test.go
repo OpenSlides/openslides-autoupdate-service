@@ -479,6 +479,35 @@ func TestMotionModeA(t *testing.T) {
 	)
 }
 
+func TestMotionModeB(t *testing.T) {
+	f := collection.Motion{}.Modes("B")
+
+	testCase(
+		"no permissions",
+		t,
+		f,
+		false,
+		`---
+		motion/1:
+			id: 1
+			meeting_id: 30
+		`,
+	)
+
+	testCase(
+		"motion.can_manage",
+		t,
+		f,
+		true,
+		`---
+		motion/1:
+			meeting_id: 30
+			editor_id: 3
+		`,
+		withPerms(30, perm.MotionCanManage),
+	)
+}
+
 func TestMotionModeD(t *testing.T) {
 	f := collection.Motion{}.Modes("D")
 
