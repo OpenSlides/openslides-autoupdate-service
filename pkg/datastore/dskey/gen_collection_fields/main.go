@@ -32,7 +32,7 @@ func main() {
 }
 
 func openModelYML() (io.ReadCloser, error) {
-	return os.Open("../../../meta/meta/models.yml")
+	return os.Open("../../../meta/models.yml")
 }
 
 type collectionField struct {

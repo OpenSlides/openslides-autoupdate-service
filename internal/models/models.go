@@ -18,7 +18,7 @@ func Unmarshal(r io.Reader) (map[string]Model, error) {
 	return m, nil
 }
 
-// Model replresents one model from models.yml.
+// Model represents one model from models.yml.
 type Model struct {
 	Fields map[string]*Field
 }

@@ -39,7 +39,7 @@ func run() error {
 }
 
 func openPermissionYML() (io.ReadCloser, error) {
-	return os.Open("../../../meta/meta/permission.yml")
+	return os.Open("../../../meta/permission.yml")
 }
 
 type permFile map[string]permission
