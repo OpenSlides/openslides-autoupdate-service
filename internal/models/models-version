@@ -1,8 +1,0 @@
-// Git-tag to use for the models.yml file for code generation.
-//
-// Can be the name of a branch like "master" or the name of a tag like
-// "v1.0.1" or a commit id.
-//
-// After chaning this value call `go generate ./...` to update the generated
-// files.
-feature/los-extension
