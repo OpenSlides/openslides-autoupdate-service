@@ -502,7 +502,7 @@ func TestMotionModeB(t *testing.T) {
 		`---
 		motion/1:
 			meeting_id: 30
-			editor_id: 3
+			editor_ids: [3]
 		`,
 		withPerms(30, perm.MotionCanManage),
 	)
