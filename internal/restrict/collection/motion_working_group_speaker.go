@@ -35,8 +35,6 @@ func (m MotionWorkingGroupSpeaker) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
 		return m.see
-	case "B":
-		return never // TODO: Remove me after the fix in the backend
 	}
 	return nil
 }

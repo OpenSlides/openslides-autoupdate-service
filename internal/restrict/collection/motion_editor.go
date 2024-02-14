@@ -16,12 +16,12 @@ import (
 type MotionEditor struct{}
 
 // Name returns the collection name.
-func (e MotionEditor) Name() string {
+func (m MotionEditor) Name() string {
 	return "motion_editor"
 }
 
 // MeetingID returns the meetingID for the object.
-func (e MotionEditor) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
+func (m MotionEditor) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.MotionEditor_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("get meeting id: %w", err)
@@ -31,16 +31,14 @@ func (e MotionEditor) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) 
 }
 
 // Modes returns the restrictions modes for the meeting collection.
-func (e MotionEditor) Modes(mode string) FieldRestricter {
+func (m MotionEditor) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return e.see
-	case "B":
-		return never // TODO: Remove me after the fix in the backend
+		return m.see
 	}
 	return nil
 }
 
-func (e MotionEditor) see(ctx context.Context, ds *dsfetch.Fetch, motionEditorIDs ...int) ([]int, error) {
-	return meetingPerm(ctx, ds, e, motionEditorIDs, perm.MotionCanSee)
+func (m MotionEditor) see(ctx context.Context, ds *dsfetch.Fetch, motionEditorIDs ...int) ([]int, error) {
+	return meetingPerm(ctx, ds, m, motionEditorIDs, perm.MotionCanSee)
 }
