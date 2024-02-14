@@ -16,12 +16,12 @@ import (
 type MotionWorkingGroupSpeaker struct{}
 
 // Name returns the collection name.
-func (e MotionWorkingGroupSpeaker) Name() string {
+func (m MotionWorkingGroupSpeaker) Name() string {
 	return "motion_working_group_speaker"
 }
 
 // MeetingID returns the meetingID for the object.
-func (s MotionWorkingGroupSpeaker) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
+func (m MotionWorkingGroupSpeaker) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	meetingID, err := ds.MotionWorkingGroupSpeaker_MeetingID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("get meeting id: %w", err)
@@ -31,16 +31,16 @@ func (s MotionWorkingGroupSpeaker) MeetingID(ctx context.Context, ds *dsfetch.Fe
 }
 
 // Modes returns the restrictions modes for the meeting collection.
-func (s MotionWorkingGroupSpeaker) Modes(mode string) FieldRestricter {
+func (m MotionWorkingGroupSpeaker) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return s.see
+		return m.see
 	case "B":
 		return never // TODO: Remove me after the fix in the backend
 	}
 	return nil
 }
 
-func (s MotionWorkingGroupSpeaker) see(ctx context.Context, ds *dsfetch.Fetch, motionWorkingGroupSpeakerIDs ...int) ([]int, error) {
-	return meetingPerm(ctx, ds, s, motionWorkingGroupSpeakerIDs, perm.MotionCanSee)
+func (m MotionWorkingGroupSpeaker) see(ctx context.Context, ds *dsfetch.Fetch, motionWorkingGroupSpeakerIDs ...int) ([]int, error) {
+	return meetingPerm(ctx, ds, m, motionWorkingGroupSpeakerIDs, perm.MotionCanSee)
 }
