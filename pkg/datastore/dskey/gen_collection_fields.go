@@ -515,7 +515,7 @@ var collectionFields = [...]collectionField{
 	{"motion_state", "css_class"},
 	{"motion_state", "first_state_of_workflow_id"},
 	{"motion_state", "id"},
-	{"motion_state", "is_internal_recommendation"},
+	{"motion_state", "is_internal"},
 	{"motion_state", "meeting_id"},
 	{"motion_state", "merge_amendment_into_final"},
 	{"motion_state", "motion_ids"},
@@ -1918,7 +1918,7 @@ func collectionFieldToID(cf string) int {
 		return 511
 	case "motion_state/id":
 		return 512
-	case "motion_state/is_internal_recommendation":
+	case "motion_state/is_internal":
 		return 513
 	case "motion_state/meeting_id":
 		return 514

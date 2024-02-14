@@ -4532,8 +4532,8 @@ func (r *Fetch) MotionState_ID(motionStateID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) MotionState_IsInternalRecommendation(motionStateID int) *ValueBool {
-	key, err := dskey.FromParts("motion_state", motionStateID, "is_internal_recommendation")
+func (r *Fetch) MotionState_IsInternal(motionStateID int) *ValueBool {
+	key, err := dskey.FromParts("motion_state", motionStateID, "is_internal")
 	if err != nil {
 		return &ValueBool{err: err}
 	}
