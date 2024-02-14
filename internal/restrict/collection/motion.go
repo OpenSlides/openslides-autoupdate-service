@@ -27,6 +27,8 @@ import (
 // Mode C: The user can see the motion.
 //
 // Mode D: Never published to any user.
+//
+// Mode E: If is_internal is set the user needs the permission motion.can_manage otherwise same as Mode C
 type Motion struct{}
 
 // Name returns the collection name.
@@ -55,6 +57,8 @@ func (m Motion) Modes(mode string) FieldRestricter {
 		return m.see
 	case "D":
 		return never
+	case "E":
+		return m.modeE
 	}
 	return nil
 }
@@ -296,4 +300,36 @@ func (m Motion) modeA(ctx context.Context, ds *dsfetch.Fetch, motionIDs ...int) 
 	}
 
 	return append(allowed, allowed2...), nil
+}
+
+func (m Motion) modeE(ctx context.Context, ds *dsfetch.Fetch, motionIDs ...int) ([]int, error) {
+	allowed, err := m.see(ctx, ds, motionIDs...)
+	if err != nil {
+		return nil, fmt.Errorf("see motion: %w", err)
+	}
+
+	return eachMeeting(ctx, ds, m, allowed, func(meetingID int, ids []int) ([]int, error) {
+		perms, err := perm.FromContext(ctx, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting permissions: %w", err)
+		}
+
+		if perms.Has(perm.MotionCanManage) {
+			return ids, nil
+		}
+
+		return eachCondition(ids, func(motionID int) (bool, error) {
+			motionStateID, err := ds.Motion_StateID(motionID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting motionStateID: %w", err)
+			}
+
+			isInternal, err := ds.MotionState_IsInternal(motionStateID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting motion state isInternal: %w", err)
+			}
+
+			return !isInternal, nil
+		})
+	})
 }
