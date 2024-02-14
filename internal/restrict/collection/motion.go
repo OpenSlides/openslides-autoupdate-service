@@ -28,7 +28,7 @@ import (
 //
 // Mode D: Never published to any user.
 //
-// Mode E: If is_internal is set the user needs the permission motion.can_manage otherwise same as Mode C
+// Mode E: If the motion states is_internal is true the user needs the permission motion.can_manage_metadata otherwise same as Mode C
 type Motion struct{}
 
 // Name returns the collection name.
@@ -314,7 +314,7 @@ func (m Motion) modeE(ctx context.Context, ds *dsfetch.Fetch, motionIDs ...int) 
 			return nil, fmt.Errorf("getting permissions: %w", err)
 		}
 
-		if perms.Has(perm.MotionCanManage) {
+		if perms.Has(perm.MotionCanManageMetadata) {
 			return ids, nil
 		}
 

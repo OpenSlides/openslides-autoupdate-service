@@ -554,7 +554,7 @@ func TestMotionModeE(t *testing.T) {
 	)
 
 	testCase(
-		"motion.can_manage",
+		"motion.can_manage_metadata",
 		t,
 		f,
 		true,
@@ -565,6 +565,6 @@ func TestMotionModeE(t *testing.T) {
 
 		motion_state/3/is_internal: true
 		`,
-		withPerms(30, perm.MotionCanManage),
+		withPerms(30, perm.MotionCanManageMetadata),
 	)
 }
