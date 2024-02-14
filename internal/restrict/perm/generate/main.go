@@ -6,13 +6,11 @@ import (
 	"go/format"
 	"io"
 	"log"
-	"net/http"
 	"os"
 	"sort"
 	"strings"
 	"text/template"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/models"
 	"gopkg.in/yaml.v3"
 )
 
@@ -23,7 +21,7 @@ func main() {
 }
 
 func run() error {
-	f, err := loadPermissions()
+	f, err := openPermissionYML()
 	if err != nil {
 		return fmt.Errorf("open permissions file: %w", err)
 	}
@@ -40,15 +38,8 @@ func run() error {
 	return nil
 }
 
-func loadPermissions() (io.ReadCloser, error) {
-	r, err := http.Get(models.URLPermission())
-	if err != nil {
-		return nil, fmt.Errorf("request defition: %w", err)
-	}
-	if r.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request returned status %s", r.Status)
-	}
-	return r.Body, nil
+func openPermissionYML() (io.ReadCloser, error) {
+	return os.Open("../../../meta/permission.yml")
 }
 
 type permFile map[string]permission

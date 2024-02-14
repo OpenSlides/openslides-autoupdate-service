@@ -186,6 +186,49 @@ func TestAgendaModeC(t *testing.T) {
 	)
 }
 
+func TestAgendaModeD(t *testing.T) {
+	var a collection.AgendaItem
+	mode := a.Modes("D")
+	ds := `---
+	agenda_item/1/meeting_id: 30
+	`
+
+	testCase(
+		"Can see internal",
+		t,
+		mode,
+		false,
+		ds,
+		withPerms(30, perm.AgendaItemCanSeeInternal),
+	)
+
+	testCase(
+		"Can see",
+		t,
+		mode,
+		false,
+		ds,
+		withPerms(30, perm.AgendaItemCanSee),
+	)
+
+	testCase(
+		"Can manage",
+		t,
+		mode,
+		false,
+		ds,
+		withPerms(30, perm.AgendaItemCanManage),
+	)
+
+	testCase(
+		"No perm",
+		t,
+		mode,
+		false,
+		ds,
+	)
+}
+
 func TestAgendaItemMeetingID_0_returns_an_InvalidData_error(t *testing.T) {
 	ctx := context.Background()
 	fetcher := dsfetch.New(dsmock.Stub(dsmock.YAMLData(`---

@@ -6,15 +6,15 @@ require (
 	github.com/alecthomas/kong v0.8.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/gomodule/redigo v1.8.9
-	github.com/jackc/pgx/v5 v5.5.2
-	github.com/klauspost/compress v1.17.5
+	github.com/jackc/pgx/v5 v5.5.3
+	github.com/klauspost/compress v1.17.6
 	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/ostcar/topic v0.4.1
 	github.com/stretchr/testify v1.8.4
 	github.com/zeebo/xxh3 v1.0.2
 	golang.org/x/sync v0.6.0
-	golang.org/x/sys v0.16.0
+	golang.org/x/sys v0.17.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
