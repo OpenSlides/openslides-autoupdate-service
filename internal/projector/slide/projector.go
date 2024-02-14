@@ -14,6 +14,7 @@ type dbProjectorCountdown struct {
 	Description   string          `json:"description"`
 	Running       bool            `json:"running"`
 	CountdownTime json.RawMessage `json:"countdown_time"`
+	DefaultTime   json.RawMessage `json:"default_time"`
 	MeetingID     int             `json:"meeting_id"`
 }
 
@@ -51,7 +52,7 @@ func projectorMessageFromMap(in map[string]json.RawMessage) (*dbProjectorMessage
 // ProjectorCountdown renders the projector_countdown slide.
 func ProjectorCountdown(store *projector.SlideStore) {
 	store.RegisterSliderFunc("projector_countdown", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
-		data := fetch.Object(ctx, p7on.ContentObjectID, "id", "description", "running", "countdown_time", "meeting_id")
+		data := fetch.Object(ctx, p7on.ContentObjectID, "id", "description", "running", "default_time", "countdown_time", "meeting_id")
 		pc, err := projectorCountdownFromMap(data)
 		if err != nil {
 			return nil, fmt.Errorf("get projector countdown from map: %w", err)
@@ -61,7 +62,7 @@ func ProjectorCountdown(store *projector.SlideStore) {
 			return nil, err
 		}
 
-		responseValue, err := json.Marshal(map[string]interface{}{"description": pc.Description, "running": pc.Running, "countdown_time": pc.CountdownTime, "warning_time": pcwarningTime})
+		responseValue, err := json.Marshal(map[string]interface{}{"description": pc.Description, "running": pc.Running, "default_time": pc.DefaultTime, "countdown_time": pc.CountdownTime, "warning_time": pcwarningTime})
 		if err != nil {
 			return nil, fmt.Errorf("encoding response for projector countdown slide: %w", err)
 		}
