@@ -495,16 +495,16 @@ func TestMotionModeB(t *testing.T) {
 	)
 
 	testCase(
-		"motion.can_manage",
+		"motion.can_manage_metadata",
 		t,
 		f,
 		true,
 		`---
 		motion/1:
 			meeting_id: 30
-			editor_id: 3
+			editor_ids: [3]
 		`,
-		withPerms(30, perm.MotionCanManage),
+		withPerms(30, perm.MotionCanManageMetadata),
 	)
 }
 
