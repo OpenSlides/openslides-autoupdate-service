@@ -10,7 +10,7 @@ import (
 
 // MotionEditor handels restrictions of the collection motion_editor.
 //
-// The user can see a motion_editor level if he has `motion.can_see`
+// The user can see a motion_editor if he has `motion.can_manage_metadata`
 //
 // Mode A: The user can see the motion editor.
 type MotionEditor struct{}
@@ -40,5 +40,5 @@ func (m MotionEditor) Modes(mode string) FieldRestricter {
 }
 
 func (m MotionEditor) see(ctx context.Context, ds *dsfetch.Fetch, motionEditorIDs ...int) ([]int, error) {
-	return meetingPerm(ctx, ds, m, motionEditorIDs, perm.MotionCanSee)
+	return meetingPerm(ctx, ds, m, motionEditorIDs, perm.MotionCanManageMetadata)
 }

@@ -10,7 +10,7 @@ import (
 
 // MotionWorkingGroupSpeaker handels restrictions of the collection motion_working_group_speaker.
 //
-// The user can see a motion_working_group_speaker level if he has `motion.can_see`
+// The user can see a motion_working_group_speaker if he has `motion.can_manage_metadata`
 //
 // Mode A: The user can see the motion working group speaker.
 type MotionWorkingGroupSpeaker struct{}
@@ -40,5 +40,5 @@ func (m MotionWorkingGroupSpeaker) Modes(mode string) FieldRestricter {
 }
 
 func (m MotionWorkingGroupSpeaker) see(ctx context.Context, ds *dsfetch.Fetch, motionWorkingGroupSpeakerIDs ...int) ([]int, error) {
-	return meetingPerm(ctx, ds, m, motionWorkingGroupSpeakerIDs, perm.MotionCanSee)
+	return meetingPerm(ctx, ds, m, motionWorkingGroupSpeakerIDs, perm.MotionCanManageMetadata)
 }

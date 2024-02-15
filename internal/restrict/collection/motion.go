@@ -22,7 +22,7 @@ import (
 //
 // Mode A: The user can see the motion or can see a referenced motion in motion/all_origin_ids and motion/all_derived_motion_ids.
 //
-// Mode B: The user has the permission motion.can_manage in the motion's meeting.
+// Mode B: The user has the permission motion.can_manage_metadata in the motion's meeting.
 //
 // Mode C: The user can see the motion.
 //
@@ -120,7 +120,7 @@ func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, motionIDs ...int) ([
 }
 
 func (m Motion) modeB(ctx context.Context, ds *dsfetch.Fetch, motionIDs ...int) ([]int, error) {
-	return meetingPerm(ctx, ds, m, motionIDs, perm.MotionCanManage)
+	return meetingPerm(ctx, ds, m, motionIDs, perm.MotionCanManageMetadata)
 }
 
 // leadMotionIndex creates an index from a motionID to its lead motion id. It
