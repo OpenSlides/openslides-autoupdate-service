@@ -812,7 +812,6 @@ var restrictionModes = map[string]string{
 	"motion/reason":                                 "C",
 	"motion/recommendation_extension":               "C",
 	"motion/recommendation_extension_reference_ids": "C",
-	"motion/recommendation_id":                      "C",
 	"motion/referenced_in_motion_recommendation_extension_ids": "C",
 	"motion/referenced_in_motion_state_extension_ids":          "C",
 	"motion/sequential_number":                                 "C",
@@ -831,6 +830,7 @@ var restrictionModes = map[string]string{
 	"motion/title":                                             "C",
 	"motion/workflow_timestamp":                                "C",
 	"motion/number_value":                                      "D",
+	"motion/recommendation_id":                                 "E",
 
 	// motion_block
 	"motion_block/agenda_item_id":      "A",
@@ -901,7 +901,7 @@ var restrictionModes = map[string]string{
 	"motion_state/css_class":                           "A",
 	"motion_state/first_state_of_workflow_id":          "A",
 	"motion_state/id":                                  "A",
-	"motion_state/is_internal_recommendation":          "A",
+	"motion_state/is_internal":                         "A",
 	"motion_state/meeting_id":                          "A",
 	"motion_state/merge_amendment_into_final":          "A",
 	"motion_state/motion_ids":                          "A",
