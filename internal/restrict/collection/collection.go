@@ -161,47 +161,51 @@ func (r *restrictCache) SuperAdmin(mode string) FieldRestricter {
 }
 
 var collectionMap = map[string]Restricter{
-	ActionWorker{}.Name():               ActionWorker{},
-	AgendaItem{}.Name():                 AgendaItem{},
-	Assignment{}.Name():                 Assignment{},
-	AssignmentCandidate{}.Name():        AssignmentCandidate{},
-	ListOfSpeakers{}.Name():             ListOfSpeakers{},
-	ChatGroup{}.Name():                  ChatGroup{},
-	ChatMessage{}.Name():                ChatMessage{},
-	Committee{}.Name():                  Committee{},
-	Group{}.Name():                      Group{},
-	ImportPreview{}.Name():              ImportPreview{},
-	Mediafile{}.Name():                  Mediafile{},
-	Meeting{}.Name():                    Meeting{},
-	MeetingUser{}.Name():                MeetingUser{},
-	Motion{}.Name():                     Motion{},
-	MotionBlock{}.Name():                MotionBlock{},
-	MotionCategory{}.Name():             MotionCategory{},
-	MotionChangeRecommendation{}.Name(): MotionChangeRecommendation{},
-	MotionState{}.Name():                MotionState{},
-	MotionStatuteParagraph{}.Name():     MotionStatuteParagraph{},
-	MotionComment{}.Name():              MotionComment{},
-	MotionCommentSection{}.Name():       MotionCommentSection{},
-	MotionSubmitter{}.Name():            MotionSubmitter{},
-	MotionWorkflow{}.Name():             MotionWorkflow{},
-	Option{}.Name():                     Option{},
-	Organization{}.Name():               Organization{},
-	OrganizationTag{}.Name():            OrganizationTag{},
-	PersonalNote{}.Name():               PersonalNote{},
-	PointOfOrderCategory{}.Name():       PointOfOrderCategory{},
-	Poll{}.Name():                       Poll{},
-	PollCandidate{}.Name():              PollCandidate{},
-	PollCandidateList{}.Name():          PollCandidateList{},
-	Projection{}.Name():                 Projection{},
-	Projector{}.Name():                  Projector{},
-	ProjectorCountdown{}.Name():         ProjectorCountdown{},
-	ProjectorMessage{}.Name():           ProjectorMessage{},
-	Speaker{}.Name():                    Speaker{},
-	Tag{}.Name():                        Tag{},
-	Theme{}.Name():                      Theme{},
-	Topic{}.Name():                      Topic{},
-	User{}.Name():                       User{},
-	Vote{}.Name():                       Vote{},
+	ActionWorker{}.Name():                 ActionWorker{},
+	AgendaItem{}.Name():                   AgendaItem{},
+	Assignment{}.Name():                   Assignment{},
+	AssignmentCandidate{}.Name():          AssignmentCandidate{},
+	ListOfSpeakers{}.Name():               ListOfSpeakers{},
+	ChatGroup{}.Name():                    ChatGroup{},
+	ChatMessage{}.Name():                  ChatMessage{},
+	Committee{}.Name():                    Committee{},
+	Group{}.Name():                        Group{},
+	ImportPreview{}.Name():                ImportPreview{},
+	Mediafile{}.Name():                    Mediafile{},
+	Meeting{}.Name():                      Meeting{},
+	MeetingUser{}.Name():                  MeetingUser{},
+	Motion{}.Name():                       Motion{},
+	MotionBlock{}.Name():                  MotionBlock{},
+	MotionCategory{}.Name():               MotionCategory{},
+	MotionChangeRecommendation{}.Name():   MotionChangeRecommendation{},
+	MotionEditor{}.Name():                 MotionEditor{},
+	MotionState{}.Name():                  MotionState{},
+	MotionStatuteParagraph{}.Name():       MotionStatuteParagraph{},
+	MotionComment{}.Name():                MotionComment{},
+	MotionCommentSection{}.Name():         MotionCommentSection{},
+	MotionSubmitter{}.Name():              MotionSubmitter{},
+	MotionWorkflow{}.Name():               MotionWorkflow{},
+	MotionWorkingGroupSpeaker{}.Name():    MotionWorkingGroupSpeaker{},
+	Option{}.Name():                       Option{},
+	Organization{}.Name():                 Organization{},
+	OrganizationTag{}.Name():              OrganizationTag{},
+	PersonalNote{}.Name():                 PersonalNote{},
+	PointOfOrderCategory{}.Name():         PointOfOrderCategory{},
+	Poll{}.Name():                         Poll{},
+	PollCandidate{}.Name():                PollCandidate{},
+	PollCandidateList{}.Name():            PollCandidateList{},
+	Projection{}.Name():                   Projection{},
+	Projector{}.Name():                    Projector{},
+	ProjectorCountdown{}.Name():           ProjectorCountdown{},
+	ProjectorMessage{}.Name():             ProjectorMessage{},
+	Speaker{}.Name():                      Speaker{},
+	StructureLevel{}.Name():               StructureLevel{},
+	StructureLevelListOfSpeakers{}.Name(): StructureLevelListOfSpeakers{},
+	Tag{}.Name():                          Tag{},
+	Theme{}.Name():                        Theme{},
+	Topic{}.Name():                        Topic{},
+	User{}.Name():                         User{},
+	Vote{}.Name():                         Vote{},
 }
 
 // Collection returns the restricter for a collection
@@ -264,15 +268,17 @@ func eachMeeting(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int
 	return allAllowed, nil
 }
 
-func meetingPerm(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int, permission perm.TPermission) ([]int, error) {
+func meetingPerm(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int, permission ...perm.TPermission) ([]int, error) {
 	return eachMeeting(ctx, ds, r, ids, func(meetingID int, ids []int) ([]int, error) {
 		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting permission: %w", err)
 		}
 
-		if perms.Has(permission) {
-			return ids, nil
+		for _, perm := range permission {
+			if perms.Has(perm) {
+				return ids, nil
+			}
 		}
 		return nil, nil
 	})

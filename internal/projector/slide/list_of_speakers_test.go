@@ -353,21 +353,32 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 	for k, v := range dsmock.YAMLData(`
 		speaker/8/begin_time: 100
 		speaker/8/end_time: 0
+		speaker/8/structure_level_list_of_speakers_id: 7
 
 		user/10:
 			title: Admiral
 			first_name: Don
 			last_name: Snyder
-			default_structure_level: GB
 			meeting_user_ids: [100]
 		
 		meeting_user/100:
 			meeting_id: 6
-			structure_level: Dinner
+			structure_level_ids: [4,8]
 
 		projector/60:
 			chyron_background_color: green
 			chyron_font_color: red
+
+		structure_level/4:
+			name: "Level"
+
+		structure_level/8:
+			name: "Foo"
+
+		structure_level_list_of_speakers/7:
+			meeting_id: 6
+			structure_level_id: 4
+			speaker_ids: [8]
 	`) {
 		data[k] = v
 	}
@@ -384,7 +395,7 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 				"background_color": "green",
 				"font_color": "red",
 				"current_speaker_name": "Admiral Don Snyder",
-				"current_speaker_level": "Dinner"
+				"current_speaker_level": "Level"
 			}
 			`,
 		},
