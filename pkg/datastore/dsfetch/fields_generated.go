@@ -2894,6 +2894,15 @@ func (r *Fetch) Meeting_Language(meetingID int) *ValueString {
 	return &ValueString{fetch: r, key: key, required: true}
 }
 
+func (r *Fetch) Meeting_ListOfSpeakersAllowMultipleSpeakers(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "list_of_speakers_allow_multiple_speakers")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_ListOfSpeakersAmountLastOnProjector(meetingID int) *ValueInt {
 	key, err := dskey.FromParts("meeting", meetingID, "list_of_speakers_amount_last_on_projector")
 	if err != nil {
@@ -2910,6 +2919,15 @@ func (r *Fetch) Meeting_ListOfSpeakersAmountNextOnProjector(meetingID int) *Valu
 	}
 
 	return &ValueInt{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_ListOfSpeakersCanCreatePointOfOrderForOthers(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "list_of_speakers_can_create_point_of_order_for_others")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_ListOfSpeakersCanSetContributionSelf(meetingID int) *ValueBool {
