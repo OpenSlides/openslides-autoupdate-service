@@ -14,7 +14,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
-	"net/textproto"
 	"strconv"
 	"strings"
 	"syscall"
@@ -175,7 +174,7 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, history History)
 		}
 
 		if isLongPolling {
-			if err := handleLongpolling(ctx, wr, uid, builder, connecter, compress, hashes); err != nil {
+			if err := handleLongpolling(ctx, w, uid, builder, connecter, compress, hashes); err != nil {
 				handleErrorWithoutStatus(w, err)
 				return
 			}
@@ -373,7 +372,7 @@ func HandleHistoryInformation(mux *http.ServeMux, auth Authenticater, hi History
 	mux.Handle(prefixPublic+"/history_information", authMiddleware(handler, auth))
 }
 
-func handleLongpolling(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool, hashes string) error {
+func handleLongpolling(ctx context.Context, w http.ResponseWriter, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool, hashes string) error {
 	conn, err := connecter.Connect(ctx, uid, kb)
 	if err != nil {
 		return fmt.Errorf("getting connection: %w", err)
@@ -385,7 +384,8 @@ func handleLongpolling(ctx context.Context, w io.Writer, uid int, kb autoupdate.
 	}
 
 	mp := multipart.NewWriter(w)
-	dataWriter, err := mp.CreatePart(textproto.MIMEHeader{})
+	w.Header().Set("Content-Type", mp.FormDataContentType())
+	dataWriter, err := mp.CreateFormField("data")
 	if err != nil {
 		return fmt.Errorf("creating data part: %w", err)
 	}
@@ -394,7 +394,7 @@ func handleLongpolling(ctx context.Context, w io.Writer, uid int, kb autoupdate.
 		return fmt.Errorf("write data: %w", err)
 	}
 
-	hashWriter, err := mp.CreatePart(textproto.MIMEHeader{})
+	hashWriter, err := mp.CreateFormField("hash")
 	if err != nil {
 		return fmt.Errorf("creating hashes part: %w", err)
 	}
