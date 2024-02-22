@@ -1,11 +1,11 @@
 module github.com/OpenSlides/openslides-autoupdate-service
 
-go 1.21
+go 1.22
 
 require (
 	github.com/alecthomas/kong v0.8.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
-	github.com/gomodule/redigo v1.8.9
+	github.com/gomodule/redigo v1.9.1
 	github.com/jackc/pgx/v5 v5.5.3
 	github.com/klauspost/compress v1.17.6
 	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1
@@ -33,7 +33,7 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/imdario/mergo v0.3.15 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
+	github.com/jackc/pgservicefile v0.0.0-20231201235250-de7065d80cb9 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/kr/text v0.1.0 // indirect
@@ -50,7 +50,7 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
-	golang.org/x/crypto v0.17.0 // indirect
+	golang.org/x/crypto v0.19.0 // indirect
 	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
