@@ -34,20 +34,18 @@ func TestMotionChangeRecommendationModeA(t *testing.T) {
 	)
 
 	testCase(
-		"can see not internal",
+		"can manage metadata",
 		t,
 		f,
 		true,
 		`---
-		motion_change_recommendation/1:
-			meeting_id: 30
-			internal: false
+		motion_change_recommendation/1/meeting_id: 30
 		`,
-		withPerms(30, perm.MotionCanSee),
+		withPerms(30, perm.MotionCanManageMetadata),
 	)
 
 	testCase(
-		"can see internal",
+		"can see internal change_recommendation",
 		t,
 		f,
 		false,
@@ -55,6 +53,53 @@ func TestMotionChangeRecommendationModeA(t *testing.T) {
 		motion_change_recommendation/1:
 			meeting_id: 30
 			internal: true
+			motion_id: 15
+
+		motion/15:
+			state_id: 10
+
+		motion_state/10:
+			is_internal: false
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"can see internal motion state",
+		t,
+		f,
+		false,
+		`---
+		motion_change_recommendation/1:
+			meeting_id: 30
+			internal: false
+			motion_id: 15
+
+		motion/15:
+			state_id: 10
+		
+		motion_state/10:
+			is_internal: true
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"can see not internal motion state and not internal change recommendation",
+		t,
+		f,
+		true,
+		`---
+		motion_change_recommendation/1:
+			meeting_id: 30
+			internal: false
+			motion_id: 15
+
+		motion/15:
+			state_id: 10
+		
+		motion_state/10:
+			is_internal: false
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)
