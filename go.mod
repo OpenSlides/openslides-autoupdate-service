@@ -5,7 +5,7 @@ go 1.22
 require (
 	github.com/alecthomas/kong v0.8.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
-	github.com/gomodule/redigo v1.9.1
+	github.com/gomodule/redigo v1.9.2
 	github.com/jackc/pgx/v5 v5.5.3
 	github.com/klauspost/compress v1.17.7
 	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1
