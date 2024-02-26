@@ -351,6 +351,364 @@ func TestUserModeA(t *testing.T) {
 	)
 }
 
+func TestUserModeB(t *testing.T) {
+	f := collection.User{}.Modes("B")
+
+	testCase(
+		"No perms",
+		t,
+		f,
+		false,
+		`user/2/id: 2`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"With anonymous",
+		t,
+		f,
+		false,
+		`user/2/id: 2`,
+		withRequestUser(0),
+		withElementID(2),
+	)
+
+	testCase(
+		"Request user",
+		t,
+		f,
+		true,
+		`user/2/id: 2`,
+		withRequestUser(1),
+		withElementID(1),
+	)
+
+	testCase(
+		"Can manage users",
+		t,
+		f,
+		true,
+		`---
+		user/2/id: 2
+		user/1/organization_management_level: can_manage_users
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"Committee Manager",
+		t,
+		f,
+		true,
+		`---
+		user/2/committee_ids: [5]
+		user/1:
+			committee_management_ids: [5]
+		committee/5/user_ids: [2]
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"Committee Manager user not in it",
+		t,
+		f,
+		false,
+		`---
+		user/2/committee_ids: [5]
+		user/1:
+			committee_management_ids: [5]
+		committee/5/user_ids: []
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"user.can_see in meeting",
+		t,
+		f,
+		false,
+		`---
+		user/2/meeting_user_ids: [20]
+		meeting_user/20/meeting_id: 5
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(5, perm.UserCanSee),
+	)
+
+	testCase(
+		"user.can_see_personal_data in meeting",
+		t,
+		f,
+		true,
+		`---
+		user/2/meeting_user_ids: [20]
+		meeting_user/20/meeting_id: 5
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(5, perm.UserCanSeePersonalData),
+	)
+
+	testCase(
+		"user.can_see not in meeting",
+		t,
+		f,
+		false,
+		`---
+		user/2/meeting_user_ids: []
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(5, perm.UserCanSee),
+	)
+
+	testCase(
+		"committee can manage",
+		t,
+		f,
+		true,
+		`---
+		user/1:
+			committee_management_ids: [7]
+		committee/7/user_ids: [2]
+
+		meeting/5/committee_id: 7
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"committee can manage user not in meeting",
+		t,
+		f,
+		false,
+		`---
+		user/2/meeting_user_ids: []
+		meeting/5/committee_id: 7
+		user/1:
+			committee_management_ids: [7]
+		committee/7/id: 7
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"Vote delegated to",
+		t,
+		f,
+		false,
+		`---
+		user/1/meeting_user_ids: [10]
+		user/2/id: 2
+
+		meeting_user:
+			10:
+				vote_delegated_to_id: 20
+				user_id: 1
+			20:
+				user_id: 2
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"Vote delegated from",
+		t,
+		f,
+		false,
+		`---
+		user/1/meeting_user_ids: [10]
+		user/2/id: 2
+
+		meeting_user:
+			10:
+				vote_delegations_from_ids: [20]
+				user_id: 1
+			20:
+				user_id: 2
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"motion submitter",
+		t,
+		f,
+		false,
+		`---
+		user/1/meeting_user_ids: [10]
+		user/2/meeting_user_ids: [20]
+
+		meeting_user/10:
+			meeting_id: 30
+		meeting_user/20:
+			motion_submitter_ids: [4]
+			meeting_id: 30
+		
+		motion_submitter/4:
+			motion_id: 7
+		
+		motion/7:
+			meeting_id: 30
+			state_id: 5
+		
+		motion_state/5/id: 5
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"motion supporter",
+		t,
+		f,
+		false,
+		`---
+		user/1/meeting_user_ids: [10]
+		user/2/meeting_user_ids: [20]
+
+		meeting_user/10:
+			meeting_id: 30
+		meeting_user/20:
+			supported_motion_ids: [7]
+			meeting_id: 30
+		
+		motion/7:
+			meeting_id: 30
+			state_id: 5
+		
+		motion_state/5/id: 5
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"assignment candidate",
+		t,
+		f,
+		false,
+		`---
+		user/1/meeting_user_ids: [10]
+		user/2/meeting_user_ids: [20]
+
+		meeting_user/10:
+			meeting_id: 30
+		meeting_user/20:
+			assignment_candidate_ids: [4]
+			meeting_id: 30
+		
+		assignment_candidate/4/assignment_id: 5
+		assignment/5/meeting_id: 30
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(30, perm.AssignmentCanSee),
+	)
+
+	testCase(
+		"speaker",
+		t,
+		f,
+		false,
+		`---
+		user/1/meeting_user_ids: [10]
+		user/2/meeting_user_ids: [20]
+
+		meeting_user/10:
+			meeting_id: 30
+		meeting_user/20:
+			speaker_ids: [4]
+			meeting_id: 30
+		
+		speaker/4:
+			list_of_speakers_id: 5
+			meeting_id: 30
+
+		list_of_speakers/5:
+			meeting_id: 30
+			content_object_id: topic/10
+
+		topic/10/meeting_id: 30
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(30, perm.ListOfSpeakersCanSee, perm.AgendaItemCanSee),
+	)
+
+	testCase(
+		"vote delegated ids",
+		t,
+		f,
+		false,
+		`---
+		user/1/meeting_user_ids: [10]
+		user/2/meeting_user_ids: [20]
+
+		meeting_user/10:
+			meeting_id: 30
+		meeting_user/20:
+			vote_delegations_from_ids: [4]
+			meeting_id: 30
+		
+		vote/4/option_id: 5
+		option/5/poll_id: 6
+		poll/6:
+			state: published
+			meeting_id: 30
+
+		meeting/30/enable_anonymous: true
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"chat messages",
+		t,
+		f,
+		false,
+		`---
+		user/1/meeting_user_ids: [10]
+		user/2/meeting_user_ids: [20]
+
+		meeting_user/10:
+			meeting_id: 30
+		meeting_user/20:
+			chat_message_ids: [4]
+			meeting_id: 30
+
+		meeting_user/10/group_ids: [5]
+		
+		meeting/30/id: 30
+		
+		chat_message/4:
+			meeting_user_id: 20
+			chat_group_id: 3
+		
+		chat_group/3:
+			read_group_ids: [5]
+			meeting_id: 30
+
+		group/5/id: 5
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+}
+
 func TestUserModeD(t *testing.T) {
 	var u collection.User
 

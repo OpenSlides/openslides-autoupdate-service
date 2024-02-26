@@ -862,6 +862,7 @@ var collectionFields = [...]collectionField{
 	{"topic", "text"},
 	{"topic", "title"},
 	{"user", "A"},
+	{"user", "B"},
 	{"user", "D"},
 	{"user", "E"},
 	{"user", "F"},
@@ -2631,100 +2632,102 @@ func collectionFieldToID(cf string) int {
 		return 858
 	case "user/A":
 		return 859
-	case "user/D":
+	case "user/B":
 		return 860
-	case "user/E":
+	case "user/D":
 		return 861
-	case "user/F":
+	case "user/E":
 		return 862
-	case "user/G":
+	case "user/F":
 		return 863
-	case "user/H":
+	case "user/G":
 		return 864
-	case "user/can_change_own_password":
+	case "user/H":
 		return 865
-	case "user/committee_ids":
+	case "user/can_change_own_password":
 		return 866
-	case "user/committee_management_ids":
+	case "user/committee_ids":
 		return 867
-	case "user/default_number":
+	case "user/committee_management_ids":
 		return 868
-	case "user/default_password":
+	case "user/default_number":
 		return 869
-	case "user/default_vote_weight":
+	case "user/default_password":
 		return 870
-	case "user/delegated_vote_ids":
+	case "user/default_vote_weight":
 		return 871
-	case "user/email":
+	case "user/delegated_vote_ids":
 		return 872
-	case "user/first_name":
+	case "user/email":
 		return 873
-	case "user/forwarding_committee_ids":
+	case "user/first_name":
 		return 874
-	case "user/gender":
+	case "user/forwarding_committee_ids":
 		return 875
-	case "user/id":
+	case "user/gender":
 		return 876
-	case "user/is_active":
+	case "user/id":
 		return 877
-	case "user/is_demo_user":
+	case "user/is_active":
 		return 878
-	case "user/is_physical_person":
+	case "user/is_demo_user":
 		return 879
-	case "user/is_present_in_meeting_ids":
+	case "user/is_physical_person":
 		return 880
-	case "user/last_email_sent":
+	case "user/is_present_in_meeting_ids":
 		return 881
-	case "user/last_login":
+	case "user/last_email_sent":
 		return 882
-	case "user/last_name":
+	case "user/last_login":
 		return 883
-	case "user/meeting_ids":
+	case "user/last_name":
 		return 884
-	case "user/meeting_user_ids":
+	case "user/meeting_ids":
 		return 885
-	case "user/option_ids":
+	case "user/meeting_user_ids":
 		return 886
-	case "user/organization_id":
+	case "user/option_ids":
 		return 887
-	case "user/organization_management_level":
+	case "user/organization_id":
 		return 888
-	case "user/password":
+	case "user/organization_management_level":
 		return 889
-	case "user/poll_candidate_ids":
+	case "user/password":
 		return 890
-	case "user/poll_voted_ids":
+	case "user/poll_candidate_ids":
 		return 891
-	case "user/pronoun":
+	case "user/poll_voted_ids":
 		return 892
-	case "user/saml_id":
+	case "user/pronoun":
 		return 893
-	case "user/title":
+	case "user/saml_id":
 		return 894
-	case "user/username":
+	case "user/title":
 		return 895
-	case "user/vote_ids":
+	case "user/username":
 		return 896
-	case "vote/A":
+	case "user/vote_ids":
 		return 897
-	case "vote/B":
+	case "vote/A":
 		return 898
-	case "vote/delegated_user_id":
+	case "vote/B":
 		return 899
-	case "vote/id":
+	case "vote/delegated_user_id":
 		return 900
-	case "vote/meeting_id":
+	case "vote/id":
 		return 901
-	case "vote/option_id":
+	case "vote/meeting_id":
 		return 902
-	case "vote/user_id":
+	case "vote/option_id":
 		return 903
-	case "vote/user_token":
+	case "vote/user_id":
 		return 904
-	case "vote/value":
+	case "vote/user_token":
 		return 905
-	case "vote/weight":
+	case "vote/value":
 		return 906
+	case "vote/weight":
+		return 907
 	default:
 		return -1
 	}
