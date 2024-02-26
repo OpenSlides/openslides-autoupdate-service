@@ -37,7 +37,6 @@ import (
 //	Y==X
 //	Y has the OML can_manage_users or higher.
 //	There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
-//	There exists a meeting where Y has the CML can_manage for the meeting's committee X is in meeting/user_ids.
 //	X is in a group of a meeting where Y has user.can_see_personal_data.
 //
 // Mode D: Y can see these fields if at least one condition is true:
