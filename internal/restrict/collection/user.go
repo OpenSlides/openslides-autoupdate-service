@@ -19,7 +19,6 @@ import (
 //	Y has the OML can_manage_users or higher.
 //	There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
 //	X is in a group of a meeting where Y has user.can_see.
-//	There exists a meeting where Y has the CML can_manage for the meeting's committee X is in meeting/user_ids.
 //	There is a related object:
 //	    There exists a motion which Y can see and X is a submitter/supporter.
 //	    There exists an option which Y can see and X is the linked content object.
