@@ -1257,7 +1257,6 @@ var restrictionModes = map[string]string{
 	"topic/title":               "A",
 
 	// user
-	"user/default_number":                "A",
 	"user/default_vote_weight":           "A",
 	"user/delegated_vote_ids":            "A",
 	"user/first_name":                    "A",
@@ -1277,12 +1276,12 @@ var restrictionModes = map[string]string{
 	"user/title":                         "A",
 	"user/username":                      "A",
 	"user/vote_ids":                      "A",
-	"user/email":                         "B",
 	"user/can_change_own_password":       "D",
 	"user/is_active":                     "D",
 	"user/last_email_sent":               "D",
 	"user/committee_ids":                 "E",
 	"user/committee_management_ids":      "E",
+	"user/email":                         "E",
 	"user/forwarding_committee_ids":      "E",
 	"user/meeting_ids":                   "E",
 	"user/organization_management_level": "E",

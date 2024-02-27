@@ -862,7 +862,6 @@ var collectionFields = [...]collectionField{
 	{"topic", "text"},
 	{"topic", "title"},
 	{"user", "A"},
-	{"user", "B"},
 	{"user", "D"},
 	{"user", "E"},
 	{"user", "F"},
@@ -871,7 +870,6 @@ var collectionFields = [...]collectionField{
 	{"user", "can_change_own_password"},
 	{"user", "committee_ids"},
 	{"user", "committee_management_ids"},
-	{"user", "default_number"},
 	{"user", "default_password"},
 	{"user", "default_vote_weight"},
 	{"user", "delegated_vote_ids"},
@@ -2632,102 +2630,98 @@ func collectionFieldToID(cf string) int {
 		return 858
 	case "user/A":
 		return 859
-	case "user/B":
-		return 860
 	case "user/D":
-		return 861
+		return 860
 	case "user/E":
-		return 862
+		return 861
 	case "user/F":
-		return 863
+		return 862
 	case "user/G":
-		return 864
+		return 863
 	case "user/H":
-		return 865
+		return 864
 	case "user/can_change_own_password":
-		return 866
+		return 865
 	case "user/committee_ids":
-		return 867
+		return 866
 	case "user/committee_management_ids":
-		return 868
-	case "user/default_number":
-		return 869
+		return 867
 	case "user/default_password":
-		return 870
+		return 868
 	case "user/default_vote_weight":
-		return 871
+		return 869
 	case "user/delegated_vote_ids":
-		return 872
+		return 870
 	case "user/email":
-		return 873
+		return 871
 	case "user/first_name":
-		return 874
+		return 872
 	case "user/forwarding_committee_ids":
-		return 875
+		return 873
 	case "user/gender":
-		return 876
+		return 874
 	case "user/id":
-		return 877
+		return 875
 	case "user/is_active":
-		return 878
+		return 876
 	case "user/is_demo_user":
-		return 879
+		return 877
 	case "user/is_physical_person":
-		return 880
+		return 878
 	case "user/is_present_in_meeting_ids":
-		return 881
+		return 879
 	case "user/last_email_sent":
-		return 882
+		return 880
 	case "user/last_login":
-		return 883
+		return 881
 	case "user/last_name":
-		return 884
+		return 882
 	case "user/meeting_ids":
-		return 885
+		return 883
 	case "user/meeting_user_ids":
-		return 886
+		return 884
 	case "user/option_ids":
-		return 887
+		return 885
 	case "user/organization_id":
-		return 888
+		return 886
 	case "user/organization_management_level":
-		return 889
+		return 887
 	case "user/password":
-		return 890
+		return 888
 	case "user/poll_candidate_ids":
-		return 891
+		return 889
 	case "user/poll_voted_ids":
-		return 892
+		return 890
 	case "user/pronoun":
-		return 893
+		return 891
 	case "user/saml_id":
-		return 894
+		return 892
 	case "user/title":
-		return 895
+		return 893
 	case "user/username":
-		return 896
+		return 894
 	case "user/vote_ids":
-		return 897
+		return 895
 	case "vote/A":
-		return 898
+		return 896
 	case "vote/B":
-		return 899
+		return 897
 	case "vote/delegated_user_id":
-		return 900
+		return 898
 	case "vote/id":
-		return 901
+		return 899
 	case "vote/meeting_id":
-		return 902
+		return 900
 	case "vote/option_id":
-		return 903
+		return 901
 	case "vote/user_id":
-		return 904
+		return 902
 	case "vote/user_token":
-		return 905
+		return 903
 	case "vote/value":
-		return 906
+		return 904
 	case "vote/weight":
-		return 907
+		return 905
 	default:
 		return -1
 	}

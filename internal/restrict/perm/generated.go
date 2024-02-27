@@ -39,8 +39,6 @@ const (
 	UserCanManage                     TPermission = "user.can_manage"
 	UserCanManagePresence             TPermission = "user.can_manage_presence"
 	UserCanSee                        TPermission = "user.can_see"
-	UserCanSeeSensitiveData           TPermission = "user.can_see_sensitive_data"
-	UserCanUpdate                     TPermission = "user.can_update"
 )
 
 var derivatePerms = map[TPermission][]TPermission{
@@ -78,9 +76,7 @@ var derivatePerms = map[TPermission][]TPermission{
 	"projector.can_manage":                   {"projector.can_see"},
 	"projector.can_see":                      {},
 	"tag.can_manage":                         {},
-	"user.can_manage":                        {"user.can_manage_presence", "user.can_see", "user.can_see", "user.can_see_sensitive_data", "user.can_update"},
+	"user.can_manage":                        {"user.can_manage_presence", "user.can_see"},
 	"user.can_manage_presence":               {"user.can_see"},
 	"user.can_see":                           {},
-	"user.can_see_sensitive_data":            {"user.can_see"},
-	"user.can_update":                        {"user.can_see", "user.can_see_sensitive_data"},
 }
