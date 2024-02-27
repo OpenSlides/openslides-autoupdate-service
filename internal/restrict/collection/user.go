@@ -36,7 +36,7 @@ import (
 //	Y==X
 //	Y has the OML can_manage_users or higher.
 //	There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
-//	X is in a group of a meeting where Y has user.can_see_personal_data.
+//	X is in a group of a meeting where Y has user.can_see_sensitive_data.
 //
 // Mode D: Y can see these fields if at least one condition is true:
 //
@@ -353,7 +353,7 @@ func (u User) modeB(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]i
 		}
 
 		// Check if the user is in a meeting, where the request user can
-		// user.can_see_personal_data.
+		// user.can_see_sensitive_data.
 		otherUserMeetingUserIDs, err := ds.User_MeetingUserIDs(otherUserID).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("fetch meeting ids from requested user %d: %w", otherUserID, err)
@@ -370,7 +370,7 @@ func (u User) modeB(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]i
 				return false, fmt.Errorf("checking permissions of meeting %d: %w", meetingID, err)
 			}
 
-			if perms.Has(perm.UserCanSeePersonalData) {
+			if perms.Has(perm.UserCanSeeSensitiveData) {
 				return true, nil
 			}
 		}

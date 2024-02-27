@@ -442,7 +442,7 @@ func TestUserModeB(t *testing.T) {
 	)
 
 	testCase(
-		"user.can_see_personal_data in meeting",
+		"user.can_see_sensitive_data in meeting",
 		t,
 		f,
 		true,
@@ -452,7 +452,7 @@ func TestUserModeB(t *testing.T) {
 		`,
 		withRequestUser(1),
 		withElementID(2),
-		withPerms(5, perm.UserCanSeePersonalData),
+		withPerms(5, perm.UserCanSeeSensitiveData),
 	)
 
 	testCase(
