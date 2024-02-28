@@ -1257,7 +1257,6 @@ var restrictionModes = map[string]string{
 	"topic/title":               "A",
 
 	// user
-	"user/default_number":                "A",
 	"user/default_vote_weight":           "A",
 	"user/delegated_vote_ids":            "A",
 	"user/first_name":                    "A",
