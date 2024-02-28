@@ -7862,15 +7862,6 @@ func (r *Fetch) User_CommitteeManagementIDs(userID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) User_DefaultNumber(userID int) *ValueString {
-	key, err := dskey.FromParts("user", userID, "default_number")
-	if err != nil {
-		return &ValueString{err: err}
-	}
-
-	return &ValueString{fetch: r, key: key}
-}
-
 func (r *Fetch) User_DefaultPassword(userID int) *ValueString {
 	key, err := dskey.FromParts("user", userID, "default_password")
 	if err != nil {
