@@ -5009,6 +5009,15 @@ func (r *Fetch) MotionWorkingGroupSpeaker_Weight(motionWorkingGroupSpeakerID int
 	return &ValueInt{fetch: r, key: key}
 }
 
+func (r *Fetch) Motion_AdditionalSubmitter(motionID int) *ValueString {
+	key, err := dskey.FromParts("motion", motionID, "additional_submitter")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
 func (r *Fetch) Motion_AgendaItemID(motionID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("motion", motionID, "agenda_item_id")
 	if err != nil {
