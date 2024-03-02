@@ -32,7 +32,6 @@ func FromString(format string, a ...any) (Key, error) {
 
 // FromParts create a key from collection, id an field.
 func FromParts(collection string, id int, field string) (Key, error) {
-	// TODO: Use a separate function with different namespace for mode-keys
 	cfID := collectionFieldToID(collection + "/" + field)
 	if cfID == -1 {
 		return 0, InvalidKeyError{fmt.Sprintf("%s/%d/%s", collection, id, field)}
@@ -97,6 +96,45 @@ func (k Key) IDField() Key {
 	return Key(joinInt(idCfID, k.ID()))
 }
 
+// CollectionMode returns the collection_mode for a key.
+func (k Key) CollectionMode() CollectionMode {
+	cfIdx, id := splitUInt64(uint64(k))
+	cmIdx := collectionFieldToMode[cfIdx]
+	return CollectionMode(joinInt(cmIdx, id))
+}
+
+// RelationType tells, what kind of relation a key has.
+func (k Key) RelationType() Relation {
+	cfIdx, _ := splitUInt64(uint64(k))
+	return relationType[cfIdx]
+}
+
+// RelationTo returns the key where the relation goes.
+//
+// Returns invalid key if key has no relation or is a generic relation.
+func (k Key) RelationTo(id int) (Key, error) {
+	cfIdx, _ := splitUInt64(uint64(k))
+	relatedIdx := relationTo[cfIdx]
+	if relatedIdx == 0 {
+		return 0, fmt.Errorf("%s is not a relation", k)
+	}
+	return Key(joinInt(relatedIdx, id)), nil
+}
+
+// RelationGenericTo returns the key, where the relation goes.
+func (k Key) RelationGenericTo(collection string, id int) (Key, error) {
+	cfIdx, _ := splitUInt64(uint64(k))
+	item := relationGenericTo[cfIdx]
+	if item == nil {
+		return 0, fmt.Errorf("%s is not a generic relation", k)
+	}
+	relatedIdx, ok := item[collection]
+	if !ok {
+		return 0, fmt.Errorf("%s has no relation to %s", k, collection)
+	}
+	return Key(joinInt(relatedIdx, id)), nil
+}
+
 // MarshalJSON converts the key to a json string.
 func (k Key) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + k.String() + `"`), nil
@@ -116,3 +154,6 @@ func (i InvalidKeyError) Error() string {
 func (i InvalidKeyError) Type() string {
 	return "invalid"
 }
+
+// UpdateKey is a key used by the restricter to signal, that keys where recalculated.
+var UpdateKey = MustKey("_meta/1/update")

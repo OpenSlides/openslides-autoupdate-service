@@ -14,7 +14,9 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	restrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
@@ -46,19 +48,13 @@ type RestrictMiddleware func(ctx context.Context, getter flow.Getter, uid int) (
 // Autoupdate holds the state of the autoupdate service. It has to be initialized
 // with autoupdate.New().
 type Autoupdate struct {
-	flow       flow.Flow
 	topic      *topic.Topic[dskey.Key]
-	restricter RestrictMiddleware
+	restricter *restrict.Restricter
 	pool       *workPool
-
-	cacheReset time.Duration
 }
 
 // New creates a new autoupdate service.
-//
-// You should call `go a.PruneOldData()` and `go a.ResetCache()` after creating
-// the service.
-func New(lookup environment.Environmenter, flow flow.Flow, restricter RestrictMiddleware) (*Autoupdate, func(context.Context, func(error)), error) {
+func New(lookup environment.Environmenter, restricter *restrict.Restricter) (*Autoupdate, func(context.Context, func(error)), error) {
 	workers, err := strconv.Atoi(envConcurentWorker.Value(lookup))
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid value for %s: %w", envConcurentWorker.Key, err)
@@ -74,17 +70,15 @@ func New(lookup environment.Environmenter, flow flow.Flow, restricter RestrictMi
 	}
 
 	a := &Autoupdate{
-		flow:       flow,
 		topic:      topic.New[dskey.Key](),
 		restricter: restricter,
 		pool:       newWorkPool(workers),
-		cacheReset: cacheResetTime,
 	}
 
 	background := func(ctx context.Context, errorHandler func(error)) {
 		go a.pruneOldData(ctx)
-		go a.resetCache(ctx)
-		go a.flow.Update(ctx, func(data map[dskey.Key][]byte, err error) {
+		go a.resetCache(ctx, cacheResetTime)
+		go a.restricter.Update(ctx, func(data map[dskey.Key][]byte, err error) {
 			if err != nil {
 				oserror.Handle(err)
 				// Continue. The update function can return an error and data.
@@ -127,7 +121,8 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (D
 
 // SingleData returns the data for the given keysbuilder without autoupdates.
 func (a *Autoupdate) SingleData(ctx context.Context, userID int, kb KeysBuilder) (map[dskey.Key][]byte, error) {
-	ctx, restricter := a.restricter(ctx, a.flow, userID)
+	ctx = collection.ContextWithRestrictCache(ctx)
+	ctx, restricter, _ := a.restricter.ForUser(ctx, userID)
 
 	keys, err := kb.Update(ctx, restricter)
 	if err != nil {
@@ -166,16 +161,8 @@ func (a *Autoupdate) pruneOldData(ctx context.Context) {
 
 // resetCache runs in the background and cleans the cache from time to time.
 // Blocks until the service is closed.
-func (a *Autoupdate) resetCache(ctx context.Context) {
-	type resetter interface {
-		ResetCache()
-	}
-	reset, ok := a.flow.(resetter)
-	if !ok {
-		return
-	}
-
-	tick := time.NewTicker(a.cacheReset)
+func (a *Autoupdate) resetCache(ctx context.Context, d time.Duration) {
+	tick := time.NewTicker(d)
 	defer tick.Stop()
 
 	for {
@@ -183,7 +170,7 @@ func (a *Autoupdate) resetCache(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-tick.C:
-			reset.ResetCache()
+			// TODO: Reinitialize the flow backend
 		}
 	}
 }
@@ -197,7 +184,7 @@ func (a *Autoupdate) skipWorkpool(ctx context.Context, userID int) (bool, error)
 		return false, nil
 	}
 
-	ds := dsfetch.New(a.flow)
+	ds := dsfetch.New(a.restricter)
 
 	meetingUserIDs, err := ds.User_MeetingUserIDs(userID).Value(ctx)
 	if err != nil {
@@ -238,7 +225,7 @@ func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (boo
 		return false, nil, nil
 	}
 
-	ds := dsfetch.New(a.flow)
+	ds := dsfetch.New(a.restricter)
 
 	hasOML, err := perm.HasOrganizationManagementLevel(ctx, ds, userID, perm.OMLCanManageOrganization)
 	if err != nil {
@@ -294,7 +281,7 @@ func (a *Autoupdate) FilterConnectionCount(ctx context.Context, meetingIDs []int
 		return nil
 	}
 
-	ds := dsfetch.New(a.flow)
+	ds := dsfetch.New(a.restricter)
 
 	meetingUserIDs := make([][]int, len(meetingIDs))
 	for i, meetingID := range meetingIDs {

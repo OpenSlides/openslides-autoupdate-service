@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
@@ -118,7 +118,7 @@ func (h restricter) canSeeKey(
 		return false, nil
 	}
 
-	meetingID, hasMeeting, err := collection.Collection(ctx, key.Collection()).MeetingID(ctx, oldDS, key.ID())
+	meetingID, hasMeeting, err := collection.FromName(ctx, key.Collection()).MeetingID(ctx, oldDS, key.ID())
 	if err != nil {
 		return false, fmt.Errorf("getting meeting id: %w", err)
 	}

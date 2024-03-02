@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict2/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsrecorder"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // connection holds the state of a client. It has to be created by colling
@@ -17,7 +18,7 @@ type connection struct {
 	tid          uint64
 	filter       filter
 	skipWorkpool bool
-	hotkeys      map[dskey.Key]struct{}
+	hotkeys      set.Set[dskey.Key]
 }
 
 // Next returns a function to fetch the next data.
@@ -74,7 +75,11 @@ func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, error)
 
 			foundKey := false
 			for _, key := range changedKeys {
-				if _, ok := c.hotkeys[key]; ok {
+				// a key is in filter.history, if it was sent to the user
+				// a key is updateKey, if the global restricter recalculated the data
+				// a key is in hotkeys, if if was fetched by the the user restricter fetched it. This is for the user attributs and all full data
+				// TODO: If hotkeys contains all keys from fullData, why is the check against the history necessary?
+				if _, inHistory := c.filter.history[key]; inHistory || key == dskey.UpdateKey || c.hotkeys.Has(key) {
 					foundKey = true
 					break
 				}
@@ -104,8 +109,8 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 		defer done()
 	}
 
-	recorder := dsrecorder.New(c.autoupdate.flow)
-	ctx, restricter := c.autoupdate.restricter(ctx, recorder, c.uid)
+	ctx = collection.ContextWithRestrictCache(ctx)
+	ctx, restricter, recorder := c.autoupdate.restricter.ForUser(ctx, c.uid)
 
 	keys, err := c.kb.Update(ctx, restricter)
 	if err != nil {
@@ -116,6 +121,7 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 	if err != nil {
 		return nil, fmt.Errorf("get restricted data: %w", err)
 	}
+
 	c.hotkeys = recorder.Keys()
 
 	c.filter.filter(data)
