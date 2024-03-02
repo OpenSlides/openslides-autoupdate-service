@@ -1,88 +1,44 @@
-{{if not .MaybeType}}
-	// {{.TypeName}} is a value from the datastore.
-	type {{.TypeName}} struct {
-		err      error
+// {{.TypeName}} is a value from the datastore.
+type {{.TypeName}} struct {
+	err      error
 
-		key      dskey.Key
-		required bool
+	key      dskey.Key
+	required bool
 
-		lazies []*{{.GoType}}
+	lazies []*{{.GoType}}
 
-		fetch *Fetch
+	fetch *Fetch
+}
+
+// Value returns the value.
+func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, error) {
+	var zero {{.GoType}}
+	if err:=v.err; err != nil {
+		return zero, v.err
 	}
 
-	// Value returns the value.
-	func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, error) {
-		if err:=v.err; err != nil {
-			return {{.Zero}}, v.err
-		}
-
-		rawValue, err := v.fetch.getOneKey(ctx, v.key)
-		if err != nil {
-			return {{.Zero}}, err
-		}
-
-		var value {{.GoType}}
-		v.Lazy(&value)
-
-		if err := v.execute(rawValue); err != nil {
-			return {{.Zero}}, err
-		}
-
-		return value, nil
+	rawValue, err := v.fetch.getOneKey(ctx, v.key)
+	if err != nil {
+		return zero, err
 	}
 
-	// Lazy sets a value as soon as it es executed.
-	//
-	// Make sure to call request.Execute() before using the value.
-	func (v *{{.TypeName}}) Lazy(value *{{.GoType}}) {
-		v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-		v.lazies = append(v.lazies, value)
-	}
-{{else}}
-	// {{.TypeName}} is a value from the datastore.
-	type {{.TypeName}} struct {
-		err      error
+	var value {{.GoType}}
+	v.Lazy(&value)
 
-		key      dskey.Key
-		required bool
-
-		lazies []*Maybe[{{.GoType}}]
-
-		fetch *Fetch
+	if err := v.execute(rawValue); err != nil {
+		return zero, err
 	}
 
-	// Value returns the value.
-	func (v *{{.TypeName}}) Value(ctx context.Context) (Maybe[{{.GoType}}], error) {
-		var zero Maybe[{{.GoType}}]
-		if err:=v.err; err != nil {
-			return zero, v.err
-		}
+	return value, nil
+}
 
-		rawValue, err := v.fetch.getOneKey(ctx, v.key)
-		if err != nil {
-			return zero, err
-		}
-
-		var value Maybe[{{.GoType}}]
-		v.Lazy(&value)
-
-		if err := v.execute(rawValue); err != nil {
-			return zero, err
-		}
-
-		return value, nil
-	}
-
-	// Lazy sets a value as soon as it es executed.
-	//
-	// Make sure to call request.Execute() before using the value.
-	func (v *{{.TypeName}}) Lazy(value *Maybe[{{.GoType}}]) {
-		v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-		v.lazies = append(v.lazies, value)
-	}
-{{end}}
-
+// Lazy sets a value as soon as it es executed.
+//
+// Make sure to call request.Execute() before using the value.
+func (v *{{.TypeName}}) Lazy(value *{{.GoType}}) {
+	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
+	v.lazies = append(v.lazies, value)
+}
 
 // Preload fetches the value but does nothing with it.
 //
@@ -95,11 +51,7 @@ func (v *{{.TypeName}}) Preload() {
 
 // execute will be called from request.
 func (v *{{.TypeName}}) execute(p []byte) error {
-	{{- if not .MaybeType}}
-		var value {{.GoType}}
-	{{- else }}
-		var value Maybe[{{.GoType}}]
-	{{- end }}
+	var value {{.GoType}}
 	if p == nil {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
