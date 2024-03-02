@@ -862,6 +862,7 @@ var collectionFields = [...]collectionField{
 	{"topic", "text"},
 	{"topic", "title"},
 	{"user", "A"},
+	{"user", "B"},
 	{"user", "D"},
 	{"user", "E"},
 	{"user", "F"},
@@ -870,7 +871,6 @@ var collectionFields = [...]collectionField{
 	{"user", "can_change_own_password"},
 	{"user", "committee_ids"},
 	{"user", "committee_management_ids"},
-	{"user", "default_number"},
 	{"user", "default_password"},
 	{"user", "default_vote_weight"},
 	{"user", "delegated_vote_ids"},
@@ -2631,23 +2631,23 @@ func collectionFieldToID(cf string) int {
 		return 858
 	case "user/A":
 		return 859
-	case "user/D":
+	case "user/B":
 		return 860
-	case "user/E":
+	case "user/D":
 		return 861
-	case "user/F":
+	case "user/E":
 		return 862
-	case "user/G":
+	case "user/F":
 		return 863
-	case "user/H":
+	case "user/G":
 		return 864
-	case "user/can_change_own_password":
+	case "user/H":
 		return 865
-	case "user/committee_ids":
+	case "user/can_change_own_password":
 		return 866
-	case "user/committee_management_ids":
+	case "user/committee_ids":
 		return 867
-	case "user/default_number":
+	case "user/committee_management_ids":
 		return 868
 	case "user/default_password":
 		return 869

@@ -12,8 +12,10 @@ import (
 //
 // The user can see a motion change recommendation if any of:
 //
-//	The user has motion.can_manage.
-//	The user has motion.can_see and the motion change recommendation has internal set to false.
+//	The user has motion.can_manage_metadata.
+//	The user has motion.can_see AND
+//		motion_change_recommendation.internal is set to false AND
+//		motion_change_recommendation.motion_id.state_id.is_internal is set to false.
 //
 // Mode A: The user can see the motion change recommendation.
 type MotionChangeRecommendation struct{}
@@ -49,7 +51,7 @@ func (m MotionChangeRecommendation) see(ctx context.Context, ds *dsfetch.Fetch, 
 			return nil, fmt.Errorf("getting permissions: %w", err)
 		}
 
-		if perms.Has(perm.MotionCanManage) {
+		if perms.Has(perm.MotionCanManageMetadata) {
 			return ids, nil
 		}
 
@@ -58,12 +60,31 @@ func (m MotionChangeRecommendation) see(ctx context.Context, ds *dsfetch.Fetch, 
 		}
 
 		allowed, err := eachCondition(ids, func(motionChangeRecommendationID int) (bool, error) {
-			internal, err := ds.MotionChangeRecommendation_Internal(motionChangeRecommendationID).Value(ctx)
+			internalChangeRecommendation, err := ds.MotionChangeRecommendation_Internal(motionChangeRecommendationID).Value(ctx)
 			if err != nil {
 				return false, fmt.Errorf("getting internal: %w", err)
 			}
 
-			return !internal, nil
+			if internalChangeRecommendation {
+				return false, nil
+			}
+
+			motionID, err := ds.MotionChangeRecommendation_MotionID(motionChangeRecommendationID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting motion_id: %w", err)
+			}
+
+			stateID, err := ds.Motion_StateID(motionID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting state id: %w", err)
+			}
+
+			internalState, err := ds.MotionState_IsInternal(stateID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting state internal: %w", err)
+			}
+
+			return !internalState, nil
 		})
 		if err != nil {
 			return nil, fmt.Errorf("checking internal state: %w", err)
