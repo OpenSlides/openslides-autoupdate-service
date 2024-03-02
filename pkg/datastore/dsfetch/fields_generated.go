@@ -18,7 +18,6 @@ type ValueBool struct {
 	required bool
 
 	lazies []*bool
-	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
@@ -68,7 +67,6 @@ func (v *ValueBool) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &value); err != nil {
 			return fmt.Errorf("decoding value %q: %w", p, err)
@@ -90,7 +88,6 @@ type ValueFloat struct {
 	required bool
 
 	lazies []*float32
-	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
@@ -140,7 +137,6 @@ func (v *ValueFloat) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &value); err != nil {
 			return fmt.Errorf("decoding value %q: %w", p, err)
@@ -162,7 +158,6 @@ type ValueInt struct {
 	required bool
 
 	lazies []*int
-	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
@@ -212,7 +207,6 @@ func (v *ValueInt) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		r, err := fastjson.DecodeInt(p)
 		if err != nil {
@@ -236,7 +230,6 @@ type ValueIntSlice struct {
 	required bool
 
 	lazies []*[]int
-	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
@@ -286,7 +279,6 @@ func (v *ValueIntSlice) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		r, err := fastjson.DecodeIntList(p)
 		if err != nil {
@@ -310,7 +302,6 @@ type ValueJSON struct {
 	required bool
 
 	lazies []*json.RawMessage
-	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
@@ -360,7 +351,6 @@ func (v *ValueJSON) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &value); err != nil {
 			return fmt.Errorf("decoding value %q: %w", p, err)
@@ -382,7 +372,6 @@ type ValueMaybeInt struct {
 	required bool
 
 	lazies []*Maybe[int]
-	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
@@ -434,7 +423,6 @@ func (v *ValueMaybeInt) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &value); err != nil {
 			return fmt.Errorf("decoding value %q: %w", p, err)
@@ -456,7 +444,6 @@ type ValueMaybeString struct {
 	required bool
 
 	lazies []*Maybe[string]
-	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
@@ -508,7 +495,6 @@ func (v *ValueMaybeString) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &value); err != nil {
 			return fmt.Errorf("decoding value %q: %w", p, err)
@@ -530,7 +516,6 @@ type ValueString struct {
 	required bool
 
 	lazies []*string
-	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
@@ -580,7 +565,6 @@ func (v *ValueString) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &value); err != nil {
 			return fmt.Errorf("decoding value %q: %w", p, err)
@@ -602,7 +586,6 @@ type ValueStringSlice struct {
 	required bool
 
 	lazies []*[]string
-	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
@@ -652,7 +635,6 @@ func (v *ValueStringSlice) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &value); err != nil {
 			return fmt.Errorf("decoding value %q: %w", p, err)

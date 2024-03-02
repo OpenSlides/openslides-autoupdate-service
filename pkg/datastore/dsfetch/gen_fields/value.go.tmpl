@@ -7,7 +7,6 @@
 		required bool
 
 		lazies []*{{.GoType}}
-		isNull   bool // TODO: Can this be removed?
 
 		fetch *Fetch
 	}
@@ -49,7 +48,6 @@
 		required bool
 
 		lazies []*Maybe[{{.GoType}}]
-		isNull   bool // TODO: Can this be removed?
 
 		fetch *Fetch
 	}
@@ -107,7 +105,6 @@ func (v *{{.TypeName}}) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		{{- if eq .TypeName "ValueIntSlice"}}
 			r, err := fastjson.DecodeIntList(p)
