@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
-	"gopkg.in/yaml.v3"
+	"github.com/goccy/go-yaml"
 )
 
 // YAMLData creates key values from a yaml object.
@@ -29,13 +29,13 @@ func YAMLData(input string) map[dskey.Key][]byte {
 		parts := strings.Split(dbKey, "/")
 		switch len(parts) {
 		case 1:
-			map1, ok := dbValue.(map[interface{}]interface{})
+			map1, ok := dbValue.(map[string]interface{})
 			if !ok {
 				panic(fmt.Errorf("invalid type in db key %s: %T", dbKey, dbValue))
 			}
 			for rawID, rawObject := range map1 {
-				id, ok := rawID.(int)
-				if !ok {
+				id, err := strconv.Atoi(rawID)
+				if err != nil {
 					panic(fmt.Errorf("invalid id type: got %T expected int", rawID))
 				}
 				field, ok := rawObject.(map[string]interface{})
