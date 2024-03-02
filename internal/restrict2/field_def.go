@@ -98,6 +98,9 @@ var relationFields = map[string]string{
 	"motion_comment/motion_id":                                                       "motion/comment_ids",
 	"motion_comment/section_id":                                                      "motion_comment_section/comment_ids",
 	"motion_comment_section/meeting_id":                                              "meeting/motion_comment_section_ids",
+	"motion_editor/meeting_id":                                                       "meeting/motion_editor_ids",
+	"motion_editor/meeting_user_id":                                                  "meeting_user/motion_editor_ids",
+	"motion_editor/motion_id":                                                        "motion/editor_ids",
 	"motion_state/first_state_of_workflow_id":                                        "motion_workflow/first_state_id",
 	"motion_state/meeting_id":                                                        "meeting/motion_state_ids",
 	"motion_state/submitter_withdraw_state_id":                                       "motion_state/submitter_withdraw_back_ids",
@@ -111,6 +114,9 @@ var relationFields = map[string]string{
 	"motion_workflow/default_workflow_meeting_id":                                    "meeting/motions_default_workflow_id",
 	"motion_workflow/first_state_id":                                                 "motion_state/first_state_of_workflow_id",
 	"motion_workflow/meeting_id":                                                     "meeting/motion_workflow_ids",
+	"motion_working_group_speaker/meeting_id":                                        "meeting/motion_working_group_speaker_ids",
+	"motion_working_group_speaker/meeting_user_id":                                   "meeting_user/motion_working_group_speaker_ids",
+	"motion_working_group_speaker/motion_id":                                         "motion/working_group_speaker_ids",
 	"option/meeting_id":                                                              "meeting/option_ids",
 	"option/poll_id":                                                                 "poll/option_ids",
 	"option/used_as_global_option_in_poll_id":                                        "poll/global_option_id",
@@ -154,6 +160,11 @@ var relationFields = map[string]string{
 	"speaker/meeting_id":                                                             "meeting/speaker_ids",
 	"speaker/meeting_user_id":                                                        "meeting_user/speaker_ids",
 	"speaker/point_of_order_category_id":                                             "point_of_order_category/speaker_ids",
+	"speaker/structure_level_list_of_speakers_id":                                    "structure_level_list_of_speakers/speaker_ids",
+	"structure_level/meeting_id":                                                     "meeting/structure_level_ids",
+	"structure_level_list_of_speakers/list_of_speakers_id":                           "list_of_speakers/structure_level_list_of_speakers_ids",
+	"structure_level_list_of_speakers/meeting_id":                                    "meeting/structure_level_list_of_speakers_ids",
+	"structure_level_list_of_speakers/structure_level_id":                            "structure_level/structure_level_list_of_speakers_ids",
 	"tag/meeting_id":                                                                 "meeting/tag_ids",
 	"theme/organization_id":                                                          "organization/theme_ids",
 	"theme/theme_for_organization_id":                                                "organization/theme_id",
@@ -195,6 +206,7 @@ var relationListFields = map[string]string{
 	"group/write_comment_section_ids":                          "motion_comment_section/write_group_ids",
 	"list_of_speakers/projection_ids":                          "projection/content_object_id",
 	"list_of_speakers/speaker_ids":                             "speaker/list_of_speakers_id",
+	"list_of_speakers/structure_level_list_of_speakers_ids":    "structure_level_list_of_speakers/list_of_speakers_id",
 	"mediafile/access_group_ids":                               "group/mediafile_access_group_ids",
 	"mediafile/child_ids":                                      "mediafile/parent_id",
 	"mediafile/inherited_access_group_ids":                     "group/mediafile_inherited_access_group_ids",
@@ -230,12 +242,14 @@ var relationListFields = map[string]string{
 	"meeting/motion_change_recommendation_ids":                 "motion_change_recommendation/meeting_id",
 	"meeting/motion_comment_ids":                               "motion_comment/meeting_id",
 	"meeting/motion_comment_section_ids":                       "motion_comment_section/meeting_id",
+	"meeting/motion_editor_ids":                                "motion_editor/meeting_id",
 	"meeting/motion_ids":                                       "motion/meeting_id",
 	"meeting/motion_poll_default_group_ids":                    "group/used_as_motion_poll_default_id",
 	"meeting/motion_state_ids":                                 "motion_state/meeting_id",
 	"meeting/motion_statute_paragraph_ids":                     "motion_statute_paragraph/meeting_id",
 	"meeting/motion_submitter_ids":                             "motion_submitter/meeting_id",
 	"meeting/motion_workflow_ids":                              "motion_workflow/meeting_id",
+	"meeting/motion_working_group_speaker_ids":                 "motion_working_group_speaker/meeting_id",
 	"meeting/option_ids":                                       "option/meeting_id",
 	"meeting/organization_tag_ids":                             "organization_tag/tagged_ids",
 	"meeting/personal_note_ids":                                "personal_note/meeting_id",
@@ -250,6 +264,8 @@ var relationListFields = map[string]string{
 	"meeting/projector_ids":                                    "projector/meeting_id",
 	"meeting/projector_message_ids":                            "projector_message/meeting_id",
 	"meeting/speaker_ids":                                      "speaker/meeting_id",
+	"meeting/structure_level_ids":                              "structure_level/meeting_id",
+	"meeting/structure_level_list_of_speakers_ids":             "structure_level_list_of_speakers/meeting_id",
 	"meeting/tag_ids":                                          "tag/meeting_id",
 	"meeting/topic_ids":                                        "topic/meeting_id",
 	"meeting/topic_poll_default_group_ids":                     "group/used_as_topic_poll_default_id",
@@ -257,9 +273,12 @@ var relationListFields = map[string]string{
 	"meeting_user/assignment_candidate_ids":                    "assignment_candidate/meeting_user_id",
 	"meeting_user/chat_message_ids":                            "chat_message/meeting_user_id",
 	"meeting_user/group_ids":                                   "group/meeting_user_ids",
+	"meeting_user/motion_editor_ids":                           "motion_editor/meeting_user_id",
 	"meeting_user/motion_submitter_ids":                        "motion_submitter/meeting_user_id",
+	"meeting_user/motion_working_group_speaker_ids":            "motion_working_group_speaker/meeting_user_id",
 	"meeting_user/personal_note_ids":                           "personal_note/meeting_user_id",
 	"meeting_user/speaker_ids":                                 "speaker/meeting_user_id",
+	"meeting_user/structure_level_ids":                         "structure_level/meeting_user_ids",
 	"meeting_user/supported_motion_ids":                        "motion/supporter_meeting_user_ids",
 	"meeting_user/vote_delegations_from_ids":                   "meeting_user/vote_delegated_to_id",
 	"motion/all_derived_motion_ids":                            "motion/all_origin_ids",
@@ -269,6 +288,8 @@ var relationListFields = map[string]string{
 	"motion/change_recommendation_ids":                         "motion_change_recommendation/motion_id",
 	"motion/comment_ids":                                       "motion_comment/motion_id",
 	"motion/derived_motion_ids":                                "motion/origin_id",
+	"motion/editor_ids":                                        "motion_editor/motion_id",
+	"motion/identical_motion_ids":                              "motion/identical_motion_ids",
 	"motion/option_ids":                                        "option/content_object_id",
 	"motion/personal_note_ids":                                 "personal_note/content_object_id",
 	"motion/poll_ids":                                          "poll/content_object_id",
@@ -279,6 +300,7 @@ var relationListFields = map[string]string{
 	"motion/submitter_ids":                                     "motion_submitter/motion_id",
 	"motion/supporter_meeting_user_ids":                        "meeting_user/supported_motion_ids",
 	"motion/tag_ids":                                           "tag/tagged_ids",
+	"motion/working_group_speaker_ids":                         "motion_working_group_speaker/motion_id",
 	"motion_block/motion_ids":                                  "motion/block_id",
 	"motion_block/projection_ids":                              "projection/content_object_id",
 	"motion_category/child_ids":                                "motion_category/parent_id",
@@ -313,6 +335,9 @@ var relationListFields = map[string]string{
 	"projector/preview_projection_ids":                         "projection/preview_projector_id",
 	"projector_countdown/projection_ids":                       "projection/content_object_id",
 	"projector_message/projection_ids":                         "projection/content_object_id",
+	"structure_level/meeting_user_ids":                         "meeting_user/structure_level_ids",
+	"structure_level/structure_level_list_of_speakers_ids":     "structure_level_list_of_speakers/structure_level_id",
+	"structure_level_list_of_speakers/speaker_ids":             "speaker/structure_level_list_of_speakers_id",
 	"topic/attachment_ids":                                     "mediafile/attachment_ids",
 	"topic/poll_ids":                                           "poll/content_object_id",
 	"topic/projection_ids":                                     "projection/content_object_id",
@@ -398,6 +423,8 @@ var genericRelationListFields = map[string]map[string]string{
 // 			"agenda_item/duration": "B",
 //
 // 			"agenda_item/comment": "C",
+//
+// 			"agenda_item/moderator_notes": "D",
 //
 //
 // 		// assignment
@@ -580,6 +607,8 @@ var genericRelationListFields = map[string]map[string]string{
 // 			"list_of_speakers/sequential_number": "A",
 //
 // 			"list_of_speakers/speaker_ids": "A",
+//
+// 			"list_of_speakers/structure_level_list_of_speakers_ids": "A",
 //
 //
 // 		// mediafile
@@ -811,9 +840,13 @@ var genericRelationListFields = map[string]map[string]string{
 //
 // 			"meeting/jitsi_room_password": "B",
 //
+// 			"meeting/list_of_speakers_allow_multiple_speakers": "B",
+//
 // 			"meeting/list_of_speakers_amount_last_on_projector": "B",
 //
 // 			"meeting/list_of_speakers_amount_next_on_projector": "B",
+//
+// 			"meeting/list_of_speakers_can_create_point_of_order_for_others": "B",
 //
 // 			"meeting/list_of_speakers_can_set_contribution_self": "B",
 //
@@ -822,6 +855,10 @@ var genericRelationListFields = map[string]map[string]string{
 // 			"meeting/list_of_speakers_countdown_id": "B",
 //
 // 			"meeting/list_of_speakers_couple_countdown": "B",
+//
+// 			"meeting/list_of_speakers_default_structure_level_time": "B",
+//
+// 			"meeting/list_of_speakers_enable_interposed_question": "B",
 //
 // 			"meeting/list_of_speakers_enable_point_of_order_categories": "B",
 //
@@ -832,6 +869,8 @@ var genericRelationListFields = map[string]map[string]string{
 // 			"meeting/list_of_speakers_ids": "B",
 //
 // 			"meeting/list_of_speakers_initially_closed": "B",
+//
+// 			"meeting/list_of_speakers_intervention_time": "B",
 //
 // 			"meeting/list_of_speakers_present_users_only": "B",
 //
@@ -873,6 +912,8 @@ var genericRelationListFields = map[string]map[string]string{
 //
 // 			"meeting/motion_comment_section_ids": "B",
 //
+// 			"meeting/motion_editor_ids": "B",
+//
 // 			"meeting/motion_poll_ballot_paper_number": "B",
 //
 // 			"meeting/motion_poll_ballot_paper_selection": "B",
@@ -892,6 +933,8 @@ var genericRelationListFields = map[string]map[string]string{
 // 			"meeting/motion_submitter_ids": "B",
 //
 // 			"meeting/motion_workflow_ids": "B",
+//
+// 			"meeting/motion_working_group_speaker_ids": "B",
 //
 // 			"meeting/motions_amendments_enabled": "B",
 //
@@ -917,6 +960,8 @@ var genericRelationListFields = map[string]map[string]string{
 //
 // 			"meeting/motions_default_workflow_id": "B",
 //
+// 			"meeting/motions_enable_editor": "B",
+//
 // 			"meeting/motions_enable_reason_on_projector": "B",
 //
 // 			"meeting/motions_enable_recommendation_on_projector": "B",
@@ -924,6 +969,8 @@ var genericRelationListFields = map[string]map[string]string{
 // 			"meeting/motions_enable_sidebox_on_projector": "B",
 //
 // 			"meeting/motions_enable_text_on_projector": "B",
+//
+// 			"meeting/motions_enable_working_group_speaker": "B",
 //
 // 			"meeting/motions_export_follow_recommendation": "B",
 //
@@ -1012,6 +1059,10 @@ var genericRelationListFields = map[string]map[string]string{
 // 			"meeting/speaker_ids": "B",
 //
 // 			"meeting/start_time": "B",
+//
+// 			"meeting/structure_level_ids": "B",
+//
+// 			"meeting/structure_level_list_of_speakers_ids": "B",
 //
 // 			"meeting/tag_ids": "B",
 //
@@ -1102,13 +1153,17 @@ var genericRelationListFields = map[string]map[string]string{
 //
 // 			"meeting_user/meeting_id": "A",
 //
+// 			"meeting_user/motion_editor_ids": "A",
+//
 // 			"meeting_user/motion_submitter_ids": "A",
+//
+// 			"meeting_user/motion_working_group_speaker_ids": "A",
 //
 // 			"meeting_user/number": "A",
 //
 // 			"meeting_user/speaker_ids": "A",
 //
-// 			"meeting_user/structure_level": "A",
+// 			"meeting_user/structure_level_ids": "A",
 //
 // 			"meeting_user/supported_motion_ids": "A",
 //
@@ -1143,6 +1198,10 @@ var genericRelationListFields = map[string]map[string]string{
 //
 // 			"motion/origin_meeting_id": "A",
 //
+// 			"motion/editor_ids": "B",
+//
+// 			"motion/working_group_speaker_ids": "B",
+//
 // 			"motion/agenda_item_id": "C",
 //
 // 			"motion/amendment_ids": "C",
@@ -1162,6 +1221,8 @@ var genericRelationListFields = map[string]map[string]string{
 // 			"motion/comment_ids": "C",
 //
 // 			"motion/created": "C",
+//
+// 			"motion/identical_motion_ids": "C",
 //
 // 			"motion/last_modified": "C",
 //
@@ -1186,8 +1247,6 @@ var genericRelationListFields = map[string]map[string]string{
 // 			"motion/recommendation_extension": "C",
 //
 // 			"motion/recommendation_extension_reference_ids": "C",
-//
-// 			"motion/recommendation_id": "C",
 //
 // 			"motion/referenced_in_motion_recommendation_extension_ids": "C",
 //
@@ -1224,6 +1283,10 @@ var genericRelationListFields = map[string]map[string]string{
 // 			"motion/workflow_timestamp": "C",
 //
 // 			"motion/number_value": "D",
+//
+// 			"motion/text_hash": "D",
+//
+// 			"motion/recommendation_id": "E",
 //
 //
 // 		// motion_block
@@ -1329,6 +1392,19 @@ var genericRelationListFields = map[string]map[string]string{
 // 			"motion_comment_section/write_group_ids": "A",
 //
 //
+// 		// motion_editor
+//
+// 			"motion_editor/id": "A",
+//
+// 			"motion_editor/meeting_id": "A",
+//
+// 			"motion_editor/meeting_user_id": "A",
+//
+// 			"motion_editor/motion_id": "A",
+//
+// 			"motion_editor/weight": "A",
+//
+//
 // 		// motion_state
 //
 // 			"motion_state/allow_create_poll": "A",
@@ -1344,6 +1420,8 @@ var genericRelationListFields = map[string]map[string]string{
 // 			"motion_state/first_state_of_workflow_id": "A",
 //
 // 			"motion_state/id": "A",
+//
+// 			"motion_state/is_internal": "A",
 //
 // 			"motion_state/meeting_id": "A",
 //
@@ -1429,6 +1507,19 @@ var genericRelationListFields = map[string]map[string]string{
 // 			"motion_workflow/sequential_number": "A",
 //
 // 			"motion_workflow/state_ids": "A",
+//
+//
+// 		// motion_working_group_speaker
+//
+// 			"motion_working_group_speaker/id": "A",
+//
+// 			"motion_working_group_speaker/meeting_id": "A",
+//
+// 			"motion_working_group_speaker/meeting_user_id": "A",
+//
+// 			"motion_working_group_speaker/motion_id": "A",
+//
+// 			"motion_working_group_speaker/weight": "A",
 //
 //
 // 		// option
@@ -1815,13 +1906,59 @@ var genericRelationListFields = map[string]map[string]string{
 //
 // 			"speaker/note": "A",
 //
+// 			"speaker/pause_time": "A",
+//
 // 			"speaker/point_of_order": "A",
 //
 // 			"speaker/point_of_order_category_id": "A",
 //
 // 			"speaker/speech_state": "A",
 //
+// 			"speaker/structure_level_list_of_speakers_id": "A",
+//
+// 			"speaker/total_pause": "A",
+//
+// 			"speaker/unpause_time": "A",
+//
 // 			"speaker/weight": "A",
+//
+//
+// 		// structure_level
+//
+// 			"structure_level/color": "A",
+//
+// 			"structure_level/default_time": "A",
+//
+// 			"structure_level/id": "A",
+//
+// 			"structure_level/meeting_id": "A",
+//
+// 			"structure_level/meeting_user_ids": "A",
+//
+// 			"structure_level/name": "A",
+//
+// 			"structure_level/structure_level_list_of_speakers_ids": "A",
+//
+//
+// 		// structure_level_list_of_speakers
+//
+// 			"structure_level_list_of_speakers/additional_time": "A",
+//
+// 			"structure_level_list_of_speakers/current_start_time": "A",
+//
+// 			"structure_level_list_of_speakers/id": "A",
+//
+// 			"structure_level_list_of_speakers/initial_time": "A",
+//
+// 			"structure_level_list_of_speakers/list_of_speakers_id": "A",
+//
+// 			"structure_level_list_of_speakers/meeting_id": "A",
+//
+// 			"structure_level_list_of_speakers/remaining_time": "A",
+//
+// 			"structure_level_list_of_speakers/speaker_ids": "A",
+//
+// 			"structure_level_list_of_speakers/structure_level_id": "A",
 //
 //
 // 		// tag
@@ -1963,10 +2100,6 @@ var genericRelationListFields = map[string]map[string]string{
 //
 // 		// user
 //
-// 			"user/default_number": "A",
-//
-// 			"user/default_structure_level": "A",
-//
 // 			"user/default_vote_weight": "A",
 //
 // 			"user/delegated_vote_ids": "A",
@@ -2005,6 +2138,8 @@ var genericRelationListFields = map[string]map[string]string{
 //
 // 			"user/vote_ids": "A",
 //
+// 			"user/email": "B",
+//
 // 			"user/can_change_own_password": "D",
 //
 // 			"user/is_active": "D",
@@ -2014,8 +2149,6 @@ var genericRelationListFields = map[string]map[string]string{
 // 			"user/committee_ids": "E",
 //
 // 			"user/committee_management_ids": "E",
-//
-// 			"user/email": "E",
 //
 // 			"user/forwarding_committee_ids": "E",
 //
@@ -2057,7 +2190,7 @@ var genericRelationListFields = map[string]map[string]string{
 //
 // 		"action_worker": { "created", "id", "name", "result", "state", "timestamp",  },
 //
-// 		"agenda_item": { "child_ids", "closed", "content_object_id", "id", "is_hidden", "is_internal", "item_number", "level", "meeting_id", "parent_id", "projection_ids", "tag_ids", "type", "weight", "duration", "comment",  },
+// 		"agenda_item": { "child_ids", "closed", "content_object_id", "id", "is_hidden", "is_internal", "item_number", "level", "meeting_id", "parent_id", "projection_ids", "tag_ids", "type", "weight", "duration", "comment", "moderator_notes",  },
 //
 // 		"assignment": { "agenda_item_id", "attachment_ids", "candidate_ids", "default_poll_description", "description", "id", "list_of_speakers_id", "meeting_id", "number_poll_candidates", "open_posts", "phase", "poll_ids", "projection_ids", "sequential_number", "tag_ids", "title",  },
 //
@@ -2073,15 +2206,15 @@ var genericRelationListFields = map[string]map[string]string{
 //
 // 		"import_preview": { "created", "id", "name", "result", "state",  },
 //
-// 		"list_of_speakers": { "closed", "content_object_id", "id", "meeting_id", "projection_ids", "sequential_number", "speaker_ids",  },
+// 		"list_of_speakers": { "closed", "content_object_id", "id", "meeting_id", "projection_ids", "sequential_number", "speaker_ids", "structure_level_list_of_speakers_ids",  },
 //
 // 		"mediafile": { "access_group_ids", "attachment_ids", "child_ids", "create_timestamp", "filename", "filesize", "id", "inherited_access_group_ids", "is_directory", "is_public", "list_of_speakers_id", "mimetype", "owner_id", "parent_id", "pdf_information", "projection_ids", "title", "token", "used_as_font_bold_in_meeting_id", "used_as_font_bold_italic_in_meeting_id", "used_as_font_chyron_speaker_name_in_meeting_id", "used_as_font_italic_in_meeting_id", "used_as_font_monospace_in_meeting_id", "used_as_font_projector_h1_in_meeting_id", "used_as_font_projector_h2_in_meeting_id", "used_as_font_regular_in_meeting_id", "used_as_logo_pdf_ballot_paper_in_meeting_id", "used_as_logo_pdf_footer_l_in_meeting_id", "used_as_logo_pdf_footer_r_in_meeting_id", "used_as_logo_pdf_header_l_in_meeting_id", "used_as_logo_pdf_header_r_in_meeting_id", "used_as_logo_projector_header_in_meeting_id", "used_as_logo_projector_main_in_meeting_id", "used_as_logo_web_header_in_meeting_id",  },
 //
-// 		"meeting": { "enable_anonymous", "external_id", "forwarded_motion_ids", "id", "is_active_in_organization_id", "is_archived_in_organization_id", "language", "motion_ids", "name", "admin_group_id", "agenda_enable_numbering", "agenda_item_creation", "agenda_item_ids", "agenda_new_items_default_visibility", "agenda_number_prefix", "agenda_numeral_system", "agenda_show_internal_items_on_projector", "agenda_show_subtitles", "all_projection_ids", "assignment_candidate_ids", "assignment_ids", "assignment_poll_add_candidates_to_list_of_speakers", "assignment_poll_ballot_paper_number", "assignment_poll_ballot_paper_selection", "assignment_poll_default_backend", "assignment_poll_default_group_ids", "assignment_poll_default_method", "assignment_poll_default_onehundred_percent_base", "assignment_poll_default_type", "assignment_poll_enable_max_votes_per_option", "assignment_poll_sort_poll_result_by_votes", "assignments_export_preamble", "assignments_export_title", "chat_group_ids", "chat_message_ids", "committee_id", "custom_translations", "default_group_id", "default_meeting_for_committee_id", "default_projector_agenda_item_list_ids", "default_projector_amendment_ids", "default_projector_assignment_ids", "default_projector_assignment_poll_ids", "default_projector_countdown_ids", "default_projector_current_list_of_speakers_ids", "default_projector_list_of_speakers_ids", "default_projector_mediafile_ids", "default_projector_message_ids", "default_projector_motion_block_ids", "default_projector_motion_ids", "default_projector_motion_poll_ids", "default_projector_poll_ids", "default_projector_topic_ids", "description", "end_time", "export_csv_encoding", "export_csv_separator", "export_pdf_fontsize", "export_pdf_line_height", "export_pdf_page_margin_bottom", "export_pdf_page_margin_left", "export_pdf_page_margin_right", "export_pdf_page_margin_top", "export_pdf_pagenumber_alignment", "export_pdf_pagesize", "font_bold_id", "font_bold_italic_id", "font_chyron_speaker_name_id", "font_italic_id", "font_monospace_id", "font_projector_h1_id", "font_projector_h2_id", "font_regular_id", "group_ids", "imported_at", "jitsi_domain", "jitsi_room_name", "jitsi_room_password", "list_of_speakers_amount_last_on_projector", "list_of_speakers_amount_next_on_projector", "list_of_speakers_can_set_contribution_self", "list_of_speakers_closing_disables_point_of_order", "list_of_speakers_countdown_id", "list_of_speakers_couple_countdown", "list_of_speakers_enable_point_of_order_categories", "list_of_speakers_enable_point_of_order_speakers", "list_of_speakers_enable_pro_contra_speech", "list_of_speakers_ids", "list_of_speakers_initially_closed", "list_of_speakers_present_users_only", "list_of_speakers_show_amount_of_speakers_on_slide", "list_of_speakers_show_first_contribution", "list_of_speakers_speaker_note_for_everyone", "location", "logo_pdf_ballot_paper_id", "logo_pdf_footer_l_id", "logo_pdf_footer_r_id", "logo_pdf_header_l_id", "logo_pdf_header_r_id", "logo_projector_header_id", "logo_projector_main_id", "logo_web_header_id", "mediafile_ids", "meeting_user_ids", "motion_block_ids", "motion_category_ids", "motion_change_recommendation_ids", "motion_comment_ids", "motion_comment_section_ids", "motion_poll_ballot_paper_number", "motion_poll_ballot_paper_selection", "motion_poll_default_backend", "motion_poll_default_group_ids", "motion_poll_default_onehundred_percent_base", "motion_poll_default_type", "motion_state_ids", "motion_statute_paragraph_ids", "motion_submitter_ids", "motion_workflow_ids", "motions_amendments_enabled", "motions_amendments_in_main_list", "motions_amendments_multiple_paragraphs", "motions_amendments_of_amendments", "motions_amendments_prefix", "motions_amendments_text_mode", "motions_block_slide_columns", "motions_default_amendment_workflow_id", "motions_default_line_numbering", "motions_default_sorting", "motions_default_statute_amendment_workflow_id", "motions_default_workflow_id", "motions_enable_reason_on_projector", "motions_enable_recommendation_on_projector", "motions_enable_sidebox_on_projector", "motions_enable_text_on_projector", "motions_export_follow_recommendation", "motions_export_preamble", "motions_export_submitter_recommendation", "motions_export_title", "motions_line_length", "motions_number_min_digits", "motions_number_type", "motions_number_with_blank", "motions_preamble", "motions_reason_required", "motions_recommendation_text_mode", "motions_recommendations_by", "motions_show_referring_motions", "motions_show_sequential_number", "motions_statute_recommendations_by", "motions_statutes_enabled", "motions_supporters_min_amount", "option_ids", "organization_tag_ids", "personal_note_ids", "point_of_order_category_ids", "poll_ballot_paper_number", "poll_ballot_paper_selection", "poll_candidate_ids", "poll_candidate_list_ids", "poll_countdown_id", "poll_couple_countdown", "poll_default_backend", "poll_default_group_ids", "poll_default_method", "poll_default_onehundred_percent_base", "poll_default_type", "poll_ids", "poll_sort_poll_result_by_votes", "present_user_ids", "projection_ids", "projector_countdown_default_time", "projector_countdown_ids", "projector_countdown_warning_time", "projector_ids", "projector_message_ids", "reference_projector_id", "speaker_ids", "start_time", "tag_ids", "template_for_organization_id", "topic_ids", "topic_poll_default_group_ids", "user_ids", "users_allow_self_set_present", "users_email_body", "users_email_replyto", "users_email_sender", "users_email_subject", "users_enable_presence_view", "users_enable_vote_delegations", "users_enable_vote_weight", "users_pdf_welcometext", "users_pdf_welcometitle", "users_pdf_wlan_encryption", "users_pdf_wlan_password", "users_pdf_wlan_ssid", "vote_ids", "applause_enable", "applause_max_amount", "applause_min_amount", "applause_particle_image_url", "applause_show_level", "applause_timeout", "applause_type", "conference_auto_connect", "conference_auto_connect_next_speakers", "conference_enable_helpdesk", "conference_los_restriction", "conference_open_microphone", "conference_open_video", "conference_show", "conference_stream_poster_url", "conference_stream_url", "welcome_text", "welcome_title",  },
+// 		"meeting": { "enable_anonymous", "external_id", "forwarded_motion_ids", "id", "is_active_in_organization_id", "is_archived_in_organization_id", "language", "motion_ids", "name", "admin_group_id", "agenda_enable_numbering", "agenda_item_creation", "agenda_item_ids", "agenda_new_items_default_visibility", "agenda_number_prefix", "agenda_numeral_system", "agenda_show_internal_items_on_projector", "agenda_show_subtitles", "all_projection_ids", "assignment_candidate_ids", "assignment_ids", "assignment_poll_add_candidates_to_list_of_speakers", "assignment_poll_ballot_paper_number", "assignment_poll_ballot_paper_selection", "assignment_poll_default_backend", "assignment_poll_default_group_ids", "assignment_poll_default_method", "assignment_poll_default_onehundred_percent_base", "assignment_poll_default_type", "assignment_poll_enable_max_votes_per_option", "assignment_poll_sort_poll_result_by_votes", "assignments_export_preamble", "assignments_export_title", "chat_group_ids", "chat_message_ids", "committee_id", "custom_translations", "default_group_id", "default_meeting_for_committee_id", "default_projector_agenda_item_list_ids", "default_projector_amendment_ids", "default_projector_assignment_ids", "default_projector_assignment_poll_ids", "default_projector_countdown_ids", "default_projector_current_list_of_speakers_ids", "default_projector_list_of_speakers_ids", "default_projector_mediafile_ids", "default_projector_message_ids", "default_projector_motion_block_ids", "default_projector_motion_ids", "default_projector_motion_poll_ids", "default_projector_poll_ids", "default_projector_topic_ids", "description", "end_time", "export_csv_encoding", "export_csv_separator", "export_pdf_fontsize", "export_pdf_line_height", "export_pdf_page_margin_bottom", "export_pdf_page_margin_left", "export_pdf_page_margin_right", "export_pdf_page_margin_top", "export_pdf_pagenumber_alignment", "export_pdf_pagesize", "font_bold_id", "font_bold_italic_id", "font_chyron_speaker_name_id", "font_italic_id", "font_monospace_id", "font_projector_h1_id", "font_projector_h2_id", "font_regular_id", "group_ids", "imported_at", "jitsi_domain", "jitsi_room_name", "jitsi_room_password", "list_of_speakers_allow_multiple_speakers", "list_of_speakers_amount_last_on_projector", "list_of_speakers_amount_next_on_projector", "list_of_speakers_can_create_point_of_order_for_others", "list_of_speakers_can_set_contribution_self", "list_of_speakers_closing_disables_point_of_order", "list_of_speakers_countdown_id", "list_of_speakers_couple_countdown", "list_of_speakers_default_structure_level_time", "list_of_speakers_enable_interposed_question", "list_of_speakers_enable_point_of_order_categories", "list_of_speakers_enable_point_of_order_speakers", "list_of_speakers_enable_pro_contra_speech", "list_of_speakers_ids", "list_of_speakers_initially_closed", "list_of_speakers_intervention_time", "list_of_speakers_present_users_only", "list_of_speakers_show_amount_of_speakers_on_slide", "list_of_speakers_show_first_contribution", "list_of_speakers_speaker_note_for_everyone", "location", "logo_pdf_ballot_paper_id", "logo_pdf_footer_l_id", "logo_pdf_footer_r_id", "logo_pdf_header_l_id", "logo_pdf_header_r_id", "logo_projector_header_id", "logo_projector_main_id", "logo_web_header_id", "mediafile_ids", "meeting_user_ids", "motion_block_ids", "motion_category_ids", "motion_change_recommendation_ids", "motion_comment_ids", "motion_comment_section_ids", "motion_editor_ids", "motion_poll_ballot_paper_number", "motion_poll_ballot_paper_selection", "motion_poll_default_backend", "motion_poll_default_group_ids", "motion_poll_default_onehundred_percent_base", "motion_poll_default_type", "motion_state_ids", "motion_statute_paragraph_ids", "motion_submitter_ids", "motion_workflow_ids", "motion_working_group_speaker_ids", "motions_amendments_enabled", "motions_amendments_in_main_list", "motions_amendments_multiple_paragraphs", "motions_amendments_of_amendments", "motions_amendments_prefix", "motions_amendments_text_mode", "motions_block_slide_columns", "motions_default_amendment_workflow_id", "motions_default_line_numbering", "motions_default_sorting", "motions_default_statute_amendment_workflow_id", "motions_default_workflow_id", "motions_enable_editor", "motions_enable_reason_on_projector", "motions_enable_recommendation_on_projector", "motions_enable_sidebox_on_projector", "motions_enable_text_on_projector", "motions_enable_working_group_speaker", "motions_export_follow_recommendation", "motions_export_preamble", "motions_export_submitter_recommendation", "motions_export_title", "motions_line_length", "motions_number_min_digits", "motions_number_type", "motions_number_with_blank", "motions_preamble", "motions_reason_required", "motions_recommendation_text_mode", "motions_recommendations_by", "motions_show_referring_motions", "motions_show_sequential_number", "motions_statute_recommendations_by", "motions_statutes_enabled", "motions_supporters_min_amount", "option_ids", "organization_tag_ids", "personal_note_ids", "point_of_order_category_ids", "poll_ballot_paper_number", "poll_ballot_paper_selection", "poll_candidate_ids", "poll_candidate_list_ids", "poll_countdown_id", "poll_couple_countdown", "poll_default_backend", "poll_default_group_ids", "poll_default_method", "poll_default_onehundred_percent_base", "poll_default_type", "poll_ids", "poll_sort_poll_result_by_votes", "present_user_ids", "projection_ids", "projector_countdown_default_time", "projector_countdown_ids", "projector_countdown_warning_time", "projector_ids", "projector_message_ids", "reference_projector_id", "speaker_ids", "start_time", "structure_level_ids", "structure_level_list_of_speakers_ids", "tag_ids", "template_for_organization_id", "topic_ids", "topic_poll_default_group_ids", "user_ids", "users_allow_self_set_present", "users_email_body", "users_email_replyto", "users_email_sender", "users_email_subject", "users_enable_presence_view", "users_enable_vote_delegations", "users_enable_vote_weight", "users_pdf_welcometext", "users_pdf_welcometitle", "users_pdf_wlan_encryption", "users_pdf_wlan_password", "users_pdf_wlan_ssid", "vote_ids", "applause_enable", "applause_max_amount", "applause_min_amount", "applause_particle_image_url", "applause_show_level", "applause_timeout", "applause_type", "conference_auto_connect", "conference_auto_connect_next_speakers", "conference_enable_helpdesk", "conference_los_restriction", "conference_open_microphone", "conference_open_video", "conference_show", "conference_stream_poster_url", "conference_stream_url", "welcome_text", "welcome_title",  },
 //
-// 		"meeting_user": { "about_me", "assignment_candidate_ids", "chat_message_ids", "group_ids", "id", "meeting_id", "motion_submitter_ids", "number", "speaker_ids", "structure_level", "supported_motion_ids", "user_id", "vote_delegated_to_id", "vote_delegations_from_ids", "vote_weight", "personal_note_ids", "comment",  },
+// 		"meeting_user": { "about_me", "assignment_candidate_ids", "chat_message_ids", "group_ids", "id", "meeting_id", "motion_editor_ids", "motion_submitter_ids", "motion_working_group_speaker_ids", "number", "speaker_ids", "structure_level_ids", "supported_motion_ids", "user_id", "vote_delegated_to_id", "vote_delegations_from_ids", "vote_weight", "personal_note_ids", "comment",  },
 //
-// 		"motion": { "all_derived_motion_ids", "all_origin_ids", "derived_motion_ids", "forwarded", "id", "meeting_id", "origin_id", "origin_meeting_id", "agenda_item_id", "amendment_ids", "amendment_paragraphs", "attachment_ids", "block_id", "category_id", "category_weight", "change_recommendation_ids", "comment_ids", "created", "last_modified", "lead_motion_id", "list_of_speakers_id", "modified_final_version", "number", "option_ids", "personal_note_ids", "poll_ids", "projection_ids", "reason", "recommendation_extension", "recommendation_extension_reference_ids", "recommendation_id", "referenced_in_motion_recommendation_extension_ids", "referenced_in_motion_state_extension_ids", "sequential_number", "sort_child_ids", "sort_parent_id", "sort_weight", "start_line_number", "state_extension", "state_extension_reference_ids", "state_id", "statute_paragraph_id", "submitter_ids", "supporter_meeting_user_ids", "tag_ids", "text", "title", "workflow_timestamp", "number_value",  },
+// 		"motion": { "all_derived_motion_ids", "all_origin_ids", "derived_motion_ids", "forwarded", "id", "meeting_id", "origin_id", "origin_meeting_id", "editor_ids", "working_group_speaker_ids", "agenda_item_id", "amendment_ids", "amendment_paragraphs", "attachment_ids", "block_id", "category_id", "category_weight", "change_recommendation_ids", "comment_ids", "created", "identical_motion_ids", "last_modified", "lead_motion_id", "list_of_speakers_id", "modified_final_version", "number", "option_ids", "personal_note_ids", "poll_ids", "projection_ids", "reason", "recommendation_extension", "recommendation_extension_reference_ids", "referenced_in_motion_recommendation_extension_ids", "referenced_in_motion_state_extension_ids", "sequential_number", "sort_child_ids", "sort_parent_id", "sort_weight", "start_line_number", "state_extension", "state_extension_reference_ids", "state_id", "statute_paragraph_id", "submitter_ids", "supporter_meeting_user_ids", "tag_ids", "text", "title", "workflow_timestamp", "number_value", "text_hash", "recommendation_id",  },
 //
 // 		"motion_block": { "agenda_item_id", "id", "internal", "list_of_speakers_id", "meeting_id", "motion_ids", "projection_ids", "sequential_number", "title",  },
 //
@@ -2093,13 +2226,17 @@ var genericRelationListFields = map[string]map[string]string{
 //
 // 		"motion_comment_section": { "comment_ids", "id", "meeting_id", "name", "read_group_ids", "sequential_number", "submitter_can_write", "weight", "write_group_ids",  },
 //
-// 		"motion_state": { "allow_create_poll", "allow_motion_forwarding", "allow_submitter_edit", "allow_support", "css_class", "first_state_of_workflow_id", "id", "meeting_id", "merge_amendment_into_final", "motion_ids", "motion_recommendation_ids", "name", "next_state_ids", "previous_state_ids", "recommendation_label", "restrictions", "set_number", "set_workflow_timestamp", "show_recommendation_extension_field", "show_state_extension_field", "submitter_withdraw_back_ids", "submitter_withdraw_state_id", "weight", "workflow_id",  },
+// 		"motion_editor": { "id", "meeting_id", "meeting_user_id", "motion_id", "weight",  },
+//
+// 		"motion_state": { "allow_create_poll", "allow_motion_forwarding", "allow_submitter_edit", "allow_support", "css_class", "first_state_of_workflow_id", "id", "is_internal", "meeting_id", "merge_amendment_into_final", "motion_ids", "motion_recommendation_ids", "name", "next_state_ids", "previous_state_ids", "recommendation_label", "restrictions", "set_number", "set_workflow_timestamp", "show_recommendation_extension_field", "show_state_extension_field", "submitter_withdraw_back_ids", "submitter_withdraw_state_id", "weight", "workflow_id",  },
 //
 // 		"motion_statute_paragraph": { "id", "meeting_id", "motion_ids", "sequential_number", "text", "title", "weight",  },
 //
 // 		"motion_submitter": { "id", "meeting_id", "meeting_user_id", "motion_id", "weight",  },
 //
 // 		"motion_workflow": { "default_amendment_workflow_meeting_id", "default_statute_amendment_workflow_meeting_id", "default_workflow_meeting_id", "first_state_id", "id", "meeting_id", "name", "sequential_number", "state_ids",  },
+//
+// 		"motion_working_group_speaker": { "id", "meeting_id", "meeting_user_id", "motion_id", "weight",  },
 //
 // 		"option": { "content_object_id", "id", "meeting_id", "poll_id", "text", "used_as_global_option_in_poll_id", "vote_ids", "weight", "abstain", "no", "yes",  },
 //
@@ -2125,7 +2262,11 @@ var genericRelationListFields = map[string]map[string]string{
 //
 // 		"projector_message": { "id", "meeting_id", "message", "projection_ids",  },
 //
-// 		"speaker": { "begin_time", "end_time", "id", "list_of_speakers_id", "meeting_id", "meeting_user_id", "note", "point_of_order", "point_of_order_category_id", "speech_state", "weight",  },
+// 		"speaker": { "begin_time", "end_time", "id", "list_of_speakers_id", "meeting_id", "meeting_user_id", "note", "pause_time", "point_of_order", "point_of_order_category_id", "speech_state", "structure_level_list_of_speakers_id", "total_pause", "unpause_time", "weight",  },
+//
+// 		"structure_level": { "color", "default_time", "id", "meeting_id", "meeting_user_ids", "name", "structure_level_list_of_speakers_ids",  },
+//
+// 		"structure_level_list_of_speakers": { "additional_time", "current_start_time", "id", "initial_time", "list_of_speakers_id", "meeting_id", "remaining_time", "speaker_ids", "structure_level_id",  },
 //
 // 		"tag": { "id", "meeting_id", "name", "tagged_ids",  },
 //
@@ -2133,7 +2274,7 @@ var genericRelationListFields = map[string]map[string]string{
 //
 // 		"topic": { "agenda_item_id", "attachment_ids", "id", "list_of_speakers_id", "meeting_id", "poll_ids", "projection_ids", "sequential_number", "text", "title",  },
 //
-// 		"user": { "default_number", "default_structure_level", "default_vote_weight", "delegated_vote_ids", "first_name", "gender", "id", "is_demo_user", "is_physical_person", "is_present_in_meeting_ids", "last_login", "last_name", "meeting_user_ids", "option_ids", "poll_candidate_ids", "poll_voted_ids", "pronoun", "saml_id", "title", "username", "vote_ids", "can_change_own_password", "is_active", "last_email_sent", "committee_ids", "committee_management_ids", "email", "forwarding_committee_ids", "meeting_ids", "organization_management_level", "organization_id", "password", "default_password",  },
+// 		"user": { "default_vote_weight", "delegated_vote_ids", "first_name", "gender", "id", "is_demo_user", "is_physical_person", "is_present_in_meeting_ids", "last_login", "last_name", "meeting_user_ids", "option_ids", "poll_candidate_ids", "poll_voted_ids", "pronoun", "saml_id", "title", "username", "vote_ids", "email", "can_change_own_password", "is_active", "last_email_sent", "committee_ids", "committee_management_ids", "forwarding_committee_ids", "meeting_ids", "organization_management_level", "organization_id", "password", "default_password",  },
 //
 // 		"vote": { "delegated_user_id", "id", "meeting_id", "option_id", "user_id", "value", "weight", "user_token",  },
 //

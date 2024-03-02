@@ -47,17 +47,43 @@ func (m MotionChangeRecommendation) Modes(mode string) FieldRestricter {
 
 func (m MotionChangeRecommendation) see(ctx context.Context, fetcher *dsfetch.Fetch, motionChangeRecommendationIDs []int) ([]attribute.Func, error) {
 	meetingID := make([]int, len(motionChangeRecommendationIDs))
-	internal := make([]bool, len(motionChangeRecommendationIDs))
+	recommendationInternal := make([]bool, len(motionChangeRecommendationIDs))
+	motionID := make([]int, len(motionChangeRecommendationIDs))
 	for i, id := range motionChangeRecommendationIDs {
 		if id == 0 {
 			continue
 		}
 		fetcher.MotionChangeRecommendation_MeetingID(id).Lazy(&meetingID[i])
-		fetcher.MotionChangeRecommendation_Internal(id).Lazy(&internal[i])
+		fetcher.MotionChangeRecommendation_Internal(id).Lazy(&recommendationInternal[i])
+		fetcher.MotionChangeRecommendation_MotionID(id).Lazy(&motionID[i])
 	}
 
 	if err := fetcher.Execute(ctx); err != nil {
 		return nil, fmt.Errorf("fetching motion block data: %w", err)
+	}
+
+	motionStateID := make([]int, len(motionChangeRecommendationIDs))
+	for i, id := range motionID {
+		if id == 0 {
+			continue
+		}
+		fetcher.Motion_StateID(id).Lazy(&motionStateID[i])
+	}
+
+	if err := fetcher.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("fetching motion state ids: %w", err)
+	}
+
+	motionStateInternal := make([]bool, len(motionChangeRecommendationIDs))
+	for i, id := range motionStateID {
+		if id == 0 {
+			continue
+		}
+		fetcher.MotionState_IsInternal(id).Lazy(&motionStateInternal[i])
+	}
+
+	if err := fetcher.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("fetching motion state internal: %w", err)
 	}
 
 	attr := make([]attribute.Func, len(motionChangeRecommendationIDs))
@@ -72,8 +98,8 @@ func (m MotionChangeRecommendation) see(ctx context.Context, fetcher *dsfetch.Fe
 		}
 
 		canPerm := perm.MotionCanSee
-		if internal[i] {
-			canPerm = perm.MotionCanManage
+		if recommendationInternal[i] || motionStateInternal[i] {
+			canPerm = perm.MotionCanManageMetadata
 		}
 
 		attr[i] = attribute.FuncInGroup(groupMap[canPerm])

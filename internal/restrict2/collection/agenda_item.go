@@ -121,6 +121,6 @@ func (a AgendaItem) modeC(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs
 	return meetingPerm(ctx, fetcher, a, agendaIDs, perm.AgendaItemCanManage)
 }
 
-func (a AgendaItem) modeD(ctx context.Context, ds *dsfetch.Fetch, agendaIDs ...int) ([]int, error) {
-	return meetingPerm(ctx, ds, a, agendaIDs, perm.AgendaItemCanSeeModeratorNotes)
+func (a AgendaItem) modeD(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs []int) ([]attribute.Func, error) {
+	return meetingPerm(ctx, fetcher, a, agendaIDs, perm.AgendaItemCanSeeModeratorNotes)
 }

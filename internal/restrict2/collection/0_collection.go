@@ -214,16 +214,19 @@ type Restricter interface {
 // The ids can contain 0. In this case, the coresponding attribute.Func has to be nil
 type FieldRestricter func(ctx context.Context, fetcher *dsfetch.Fetch, ids []int) ([]attribute.Func, error)
 
-func meetingPerm(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, ids []int, permission perm.TPermission) ([]attribute.Func, error) {
+func meetingPerm(ctx context.Context, fetcher *dsfetch.Fetch, r Restricter, ids []int, permission ...perm.TPermission) ([]attribute.Func, error) {
 	return byMeeting(ctx, fetcher, r, ids, func(meetingID int, ids []int) ([]attribute.Func, error) {
 		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting group map: %w", err)
 		}
 
+		attributePerms := make([]attribute.Func, len(permission))
+		for i, p := range permission {
+			attributePerms[i] = attribute.FuncInGroup(groupMap[p])
+		}
 		attr := attribute.FuncOr(
-			attribute.FuncOrgaLevel(perm.OMLSuperadmin),
-			attribute.FuncInGroup(groupMap[permission]),
+			attributePerms...,
 		)
 
 		result := make([]attribute.Func, len(ids))

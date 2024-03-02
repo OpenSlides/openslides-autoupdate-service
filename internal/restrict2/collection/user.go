@@ -20,7 +20,6 @@ import (
 //	Y has the OML can_manage_users or higher.
 //	There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
 //	X is in a group of a meeting where Y has user.can_see.
-//	There exists a meeting where Y has the CML can_manage for the meeting's committee X is in meeting/user_ids.
 //	There is a related object:
 //	    There exists a motion which Y can see and X is a submitter/supporter.
 //	    There exists an option which Y can see and X is the linked content object.
@@ -33,7 +32,12 @@ import (
 //
 // Mode A: Y can see X.
 //
-// Mode B: Y==X.
+// Mode B:
+//
+//	Y==X
+//	Y has the OML can_manage_users or higher.
+//	There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
+//	X is in a group of a meeting where Y has user.can_see_sensitive_data.
 //
 // Mode D: Y can see these fields if at least one condition is true:
 //
@@ -144,7 +148,6 @@ func (u User) see(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([
 			userManager,
 			attribute.FuncUserIDs(usersCommitteeManagers),
 			attribute.FuncInGroup(canSeeGroups),
-			// TODO: There exists a meeting where Y has the CML can_manage for the meeting's committee X is in meeting/user_ids.
 			// TODO: There is a related object...
 		)
 	}
@@ -228,12 +231,64 @@ func (User) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []UserRequir
 }
 
 func (u User) modeB(ctx context.Context, fetcher *dsfetch.Fetch, userIDs []int) ([]attribute.Func, error) {
-	result := make([]attribute.Func, len(userIDs))
+	userManager := attribute.FuncOrgaLevel(perm.OMLCanManageUsers)
+
+	inCommitteeList := make([][]int, len(userIDs))
+	inMeetingList := make([][]int, len(userIDs))
 	for i, id := range userIDs {
 		if id == 0 {
 			continue
 		}
-		result[i] = attribute.FuncUserIDs([]int{id})
+
+		fetcher.User_CommitteeIDs(id).Lazy(&inCommitteeList[i])
+		fetcher.User_MeetingIDs(id).Lazy(&inMeetingList[i])
+	}
+
+	if err := fetcher.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("fetching in committee and in meeting for every requested user: %w", err)
+	}
+
+	committeeIDs := set.New[int]() // IDs of all committees where the requested users are part of
+	for _, cids := range inCommitteeList {
+		if cids == nil {
+			continue
+		}
+
+		committeeIDs.Add(cids...)
+	}
+
+	committeeManagers, err := fetchCommitteeManagers(ctx, fetcher, committeeIDs.List())
+	if err != nil {
+		return nil, fmt.Errorf("calculating committee managers: %w", err)
+	}
+
+	result := make([]attribute.Func, len(userIDs))
+	for i, userID := range userIDs {
+		if userID == 0 {
+			continue
+		}
+
+		var usersCommitteeManagers []int
+		for _, committeeID := range inCommitteeList[i] {
+			usersCommitteeManagers = append(usersCommitteeManagers, committeeManagers[committeeID]...)
+		}
+
+		var canSeeGroups []int
+		for _, meetingID := range inMeetingList[i] {
+			groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID)
+			if err != nil {
+				return nil, fmt.Errorf("group map for user %d in meeting %d: %w", userID, meetingID, err)
+			}
+
+			canSeeGroups = append(canSeeGroups, groupMap[perm.UserCanSeeSensitiveData]...)
+		}
+
+		result[i] = attribute.FuncOr(
+			attribute.FuncUserIDs([]int{userID}),
+			userManager,
+			attribute.FuncUserIDs(usersCommitteeManagers),
+			attribute.FuncInGroup(canSeeGroups),
+		)
 	}
 	return result, nil
 }

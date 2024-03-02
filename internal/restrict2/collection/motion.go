@@ -22,9 +22,13 @@ import (
 //
 // Mode A: The user can see the motion or can see a referenced motion in motion/all_origin_ids and motion/all_derived_motion_ids.
 //
+// Mode B: The user has the permission motion.can_manage_metadata in the motion's meeting.
+//
 // Mode C: The user can see the motion.
 //
 // Mode D: Never published to any user.
+//
+// Mode E: If the motion states is_internal is true the user needs the permission motion.can_manage_metadata otherwise same as Mode C
 type Motion struct{}
 
 // Name returns the collection name.
@@ -47,10 +51,14 @@ func (m Motion) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
 		return m.modeA
+	case "B":
+		return m.modeB
 	case "C":
 		return m.see
 	case "D":
 		return never
+	case "E":
+		return m.modeE
 	}
 	return nil
 }
@@ -309,4 +317,46 @@ func submitterFunc(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int)
 		out[i] = attribute.FuncUserIDs(userIDs)
 	}
 	return out, nil
+}
+
+func (m Motion) modeB(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int) ([]attribute.Func, error) {
+	return meetingPerm(ctx, fetcher, m, motionIDs, perm.MotionCanManageMetadata)
+}
+
+func (m Motion) modeE(ctx context.Context, fetcher *dsfetch.Fetch, motionIDs []int) ([]attribute.Func, error) {
+	attrFunc, err := Collection(ctx, m).Modes("C")(ctx, fetcher, motionIDs)
+	if err != nil {
+		return nil, fmt.Errorf("see motion: %w", err)
+	}
+
+	return byMeeting(ctx, fetcher, m, motionIDs, func(meetingID int, motionIDs []int) ([]attribute.Func, error) {
+		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting group map: %w", err)
+		}
+
+		result := make([]attribute.Func, len(motionIDs))
+		for i, motionID := range motionIDs {
+			if motionID == 0 {
+				continue
+			}
+
+			motionStateID, err := fetcher.Motion_StateID(motionID).Value(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("getting motionStateID: %w", err)
+			}
+
+			isInternal, err := fetcher.MotionState_IsInternal(motionStateID).Value(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("getting motion state isInternal: %w", err)
+			}
+
+			if isInternal {
+				result[i] = attribute.FuncInGroup(groupMap[perm.MotionCanManageMetadata])
+				continue
+			}
+			result[i] = attrFunc[i]
+		}
+		return result, nil
+	})
 }

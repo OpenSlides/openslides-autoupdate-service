@@ -20,18 +20,14 @@ func TestMotionChangeRecommendationModeA(t *testing.T) {
 		motion_change_recommendation/1:
 			id: 1
 			meeting_id: 30
-		`,
-	)
+			motion_id: 15
 
-	testCase(
-		"can manage",
-		t,
-		f,
-		true,
-		`---
-		motion_change_recommendation/1/meeting_id: 30
+		motion/15:
+			state_id: 10
+
+		motion_state/10:
+			is_internal: false
 		`,
-		withPerms(30, perm.MotionCanManage),
 	)
 
 	testCase(
@@ -40,7 +36,16 @@ func TestMotionChangeRecommendationModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		motion_change_recommendation/1/meeting_id: 30
+		motion_change_recommendation/1:
+			meeting_id: 30
+			internal: true
+			motion_id: 15
+
+		motion/15:
+			state_id: 10
+
+		motion_state/10:
+			is_internal: true
 		`,
 		withPerms(30, perm.MotionCanManageMetadata),
 	)
