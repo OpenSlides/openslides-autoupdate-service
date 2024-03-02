@@ -138,13 +138,13 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 
 		for _, meetingUserID := range meetingUserIDs {
 			// Getting users where the request users delegated his vote to.
-			delegatedToMeetingUserID, found, err := ds.MeetingUser_VoteDelegatedToID(meetingUserID).Value(ctx)
+			delegatedToMeetingUserID, err := ds.MeetingUser_VoteDelegatedToID(meetingUserID).Value(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("getting 'vote delegated to' for meeting_user %d: %w", meetingUserID, err)
 			}
 
-			if found {
-				delegatedUser, err := ds.MeetingUser_UserID(delegatedToMeetingUserID).Value(ctx)
+			if id, ok := delegatedToMeetingUserID.Value(); ok {
+				delegatedUser, err := ds.MeetingUser_UserID(id).Value(ctx)
 				if err != nil {
 					return nil, fmt.Errorf("getting delegated user: %w", err)
 				}

@@ -113,12 +113,12 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 				}
 
 				for _, p7onID := range p7onIDs {
-					_, exist, err := ds.Projection_CurrentProjectorID(p7onID).Value(ctx)
+					value, err := ds.Projection_CurrentProjectorID(p7onID).Value(ctx)
 					if err != nil {
 						return false, fmt.Errorf("getting current projector id: %w", err)
 					}
 
-					if exist {
+					if !value.Null() {
 						return true, nil
 					}
 				}

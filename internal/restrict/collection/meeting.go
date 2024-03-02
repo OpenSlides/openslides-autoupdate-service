@@ -128,7 +128,7 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) 
 			return true, nil
 		}
 
-		_, isTemplateMeeting, err := ds.Meeting_TemplateForOrganizationID(meetingID).Value(ctx)
+		templateForOrganizationID, err := ds.Meeting_TemplateForOrganizationID(meetingID).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("getting template meeting: %w", err)
 		}
@@ -138,7 +138,7 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) 
 			return false, fmt.Errorf("getting meetings with cml can manage: %w", err)
 		}
 
-		if isTemplateMeeting && len(cmlMeetings) > 0 {
+		if !templateForOrganizationID.Null() && len(cmlMeetings) > 0 {
 			return true, nil
 		}
 
