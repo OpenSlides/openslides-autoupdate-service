@@ -44,7 +44,7 @@ func (los ListOfSpeakers) see(ctx context.Context, fetcher *dsfetch.Fetch, losID
 	return byMeeting(ctx, fetcher, los, losIDs, func(meetingID int, ids []int) ([]attribute.Func, error) {
 		groupMap, err := perm.GroupMapFromContext(ctx, fetcher, meetingID)
 		if err != nil {
-			return nil, fmt.Errorf("getting group map: %w", err)
+			return nil, fmt.Errorf("getting perms for meeting %d: %w", meetingID, err)
 		}
 
 		attrFn := attribute.FuncOr(

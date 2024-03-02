@@ -13,8 +13,10 @@ import (
 //
 // The user can see a motion change recommendation if any of:
 //
-//	The user has motion.can_manage.
-//	The user has motion.can_see and the motion change recommendation has internal set to false.
+//	The user has motion.can_manage_metadata.
+//	The user has motion.can_see AND
+//		motion_change_recommendation.internal is set to false AND
+//		motion_change_recommendation.motion_id.state_id.is_internal is set to false.
 //
 // Mode A: The user can see the motion change recommendation.
 type MotionChangeRecommendation struct{}

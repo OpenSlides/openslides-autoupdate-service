@@ -23,6 +23,8 @@ import (
 // Mode B: The user has agenda_item.can_see_internal.
 //
 // Mode C: The user has agenda_item.can_manage.
+//
+// Mode D: The user has agenda_item.can_see_notes
 type AgendaItem struct{}
 
 // Name returns the collection name.
@@ -62,6 +64,8 @@ func (a AgendaItem) Modes(mode string) FieldRestricter {
 		return a.modeB
 	case "C":
 		return a.modeC
+	case "D":
+		return a.modeD
 	}
 	return nil
 }
@@ -115,4 +119,8 @@ func (a AgendaItem) modeB(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs
 
 func (a AgendaItem) modeC(ctx context.Context, fetcher *dsfetch.Fetch, agendaIDs []int) ([]attribute.Func, error) {
 	return meetingPerm(ctx, fetcher, a, agendaIDs, perm.AgendaItemCanManage)
+}
+
+func (a AgendaItem) modeD(ctx context.Context, ds *dsfetch.Fetch, agendaIDs ...int) ([]int, error) {
+	return meetingPerm(ctx, ds, a, agendaIDs, perm.AgendaItemCanSeeModeratorNotes)
 }

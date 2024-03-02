@@ -1,56 +1,13 @@
 package models
 
 import (
-	"bufio"
 	_ "embed" // needed for embeding
 	"fmt"
 	"io"
-	"log"
 	"strings"
 
-	"gopkg.in/yaml.v3"
+	"github.com/goccy/go-yaml"
 )
-
-//go:embed models-version
-var version string
-
-func getVersion() string {
-	scanner := bufio.NewScanner(strings.NewReader(version))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, "//") || line == "" {
-			continue
-		}
-		return line
-	}
-	if err := scanner.Err(); err != nil {
-		log.Printf("invalid version %s", err)
-		return "invalid"
-	}
-	return "no-value"
-}
-
-const (
-	repo            = "https://raw.githubusercontent.com/OpenSlides/openslides-backend/"
-	modelsPath      = "/global/meta/models.yml"
-	exampleDataPath = "/global/data/example-data.json"
-	permissionPath  = "/global/meta/permission.yml"
-)
-
-// URLModelsYML return the url to the models.yml.
-func URLModelsYML() string {
-	return repo + getVersion() + modelsPath
-}
-
-// URLExampleData returns the url to the example-data file.
-func URLExampleData() string {
-	return repo + getVersion() + exampleDataPath
-}
-
-// URLPermission returns the url to the example-data file.
-func URLPermission() string {
-	return repo + getVersion() + permissionPath
-}
 
 // Unmarshal parses the content of models.yml to a datastruct.q
 func Unmarshal(r io.Reader) (map[string]Model, error) {
@@ -61,14 +18,14 @@ func Unmarshal(r io.Reader) (map[string]Model, error) {
 	return m, nil
 }
 
-// Model replresents one model from models.yml.
+// Model represents one model from models.yml.
 type Model struct {
 	Fields map[string]*Field
 }
 
 // UnmarshalYAML decodes a yaml model to models.Model.
-func (m *Model) UnmarshalYAML(node *yaml.Node) error {
-	return node.Decode(&m.Fields)
+func (m *Model) UnmarshalYAML(node []byte) error {
+	return yaml.Unmarshal(node, &m.Fields)
 }
 
 // Field of a model.
@@ -95,13 +52,13 @@ func (f *Field) RestrictionMode() string {
 }
 
 // UnmarshalYAML decodes a model attribute from yaml.
-func (f *Field) UnmarshalYAML(value *yaml.Node) error {
+func (f *Field) UnmarshalYAML(node []byte) error {
 	var typer struct {
 		Type            string `yaml:"type"`
 		RestrictionMode string `yaml:"restriction_mode"`
 		Required        bool   `yaml:"required"`
 	}
-	if err := value.Decode(&typer); err != nil {
+	if err := yaml.Unmarshal(node, &typer); err != nil {
 		return fmt.Errorf("field object without type: %w", err)
 	}
 
@@ -117,8 +74,8 @@ func (f *Field) UnmarshalYAML(value *yaml.Node) error {
 
 	case "relation":
 		var relation AttributeRelation
-		if err := value.Decode(&relation); err != nil {
-			return fmt.Errorf("invalid object of type %s at line %d object: %w", typer.Type, value.Line, err)
+		if err := yaml.Unmarshal(node, &relation); err != nil {
+			return fmt.Errorf("invalid object of type %s: %w", typer.Type, err)
 		}
 		relation.list = list
 		f.relation = &relation
@@ -129,8 +86,8 @@ func (f *Field) UnmarshalYAML(value *yaml.Node) error {
 
 	case "generic-relation":
 		var relation AttributeGenericRelation
-		if err := value.Decode(&relation); err != nil {
-			return fmt.Errorf("invalid object of type %s at line %d object: %w", typer.Type, value.Line, err)
+		if err := yaml.Unmarshal(node, &relation); err != nil {
+			return fmt.Errorf("invalid object of type %s object: %w", typer.Type, err)
 		}
 		relation.list = list
 		f.relation = &relation
@@ -152,12 +109,12 @@ type ToCollectionField struct {
 }
 
 // UnmarshalYAML decodes the models.yml to a To object.
-func (t *ToCollectionField) UnmarshalYAML(value *yaml.Node) error {
+func (t *ToCollectionField) UnmarshalYAML(node []byte) error {
 	var s string
-	if err := value.Decode(&s); err == nil {
+	if err := yaml.Unmarshal(node, &s); err == nil {
 		cf := strings.Split(s, "/")
 		if len(cf) != 2 {
-			return fmt.Errorf("invalid value of `to` in line %d, expected one `/`: %s", value.Line, s)
+			return fmt.Errorf("invalid value of `to`, expected one `/`: %s", s)
 		}
 		t.Collection = cf[0]
 		t.ToField.Name = cf[1]
@@ -168,8 +125,8 @@ func (t *ToCollectionField) UnmarshalYAML(value *yaml.Node) error {
 		Collection string  `yaml:"collection"`
 		Field      ToField `yaml:"field"`
 	}
-	if err := value.Decode(&d); err != nil {
-		return fmt.Errorf("decoding to collection field at line %d: %w", value.Line, err)
+	if err := yaml.Unmarshal(node, &d); err != nil {
+		return fmt.Errorf("decoding to collection field: %w", err)
 	}
 	t.Collection = d.Collection
 	t.ToField = d.Field
@@ -183,9 +140,9 @@ type ToField struct {
 }
 
 // UnmarshalYAML decodes the models.yml to a ToField object.
-func (t *ToField) UnmarshalYAML(value *yaml.Node) error {
+func (t *ToField) UnmarshalYAML(node []byte) error {
 	var s string
-	if err := value.Decode(&s); err == nil {
+	if err := yaml.Unmarshal(node, &s); err == nil {
 		t.Name = s
 		t.Type = "normal"
 		return nil
@@ -195,8 +152,8 @@ func (t *ToField) UnmarshalYAML(value *yaml.Node) error {
 		Name string `yaml:"name"`
 		Type string `yaml:"type"`
 	}
-	if err := value.Decode(&d); err != nil {
-		return fmt.Errorf("decoding to field at line %d: %w", value.Line, err)
+	if err := yaml.Unmarshal(node, &d); err != nil {
+		return fmt.Errorf("decoding to field: %w", err)
 	}
 	t.Name = d.Name
 	t.Type = d.Type
@@ -226,20 +183,20 @@ type To struct {
 }
 
 // UnmarshalYAML decodes the models.yml to a To object.
-func (t *To) UnmarshalYAML(value *yaml.Node) error {
+func (t *To) UnmarshalYAML(node []byte) error {
 	var s string
-	if err := value.Decode(&s); err == nil {
+	if err := yaml.Unmarshal(node, &s); err == nil {
 		cf := strings.Split(s, "/")
 		if len(cf) != 2 {
-			return fmt.Errorf("invalid value of `to` in line %d, expected one `/`: %s", value.Line, s)
+			return fmt.Errorf("invalid value of `to`, expected one `/`: %s", s)
 		}
 		t.CollectionField.Collection = cf[0]
 		t.CollectionField.ToField.Name = cf[1]
 		return nil
 	}
 
-	if err := value.Decode(&(t.CollectionField)); err != nil {
-		return fmt.Errorf("decoding to field at line %d: %w", value.Line, err)
+	if err := yaml.Unmarshal(node, &(t.CollectionField)); err != nil {
+		return fmt.Errorf("decoding to field: %w", err)
 	}
 	return nil
 }
@@ -266,12 +223,12 @@ type ToGeneric struct {
 }
 
 // UnmarshalYAML unmarshalls data to a ToGeneric object.
-func (t *ToGeneric) UnmarshalYAML(value *yaml.Node) error {
+func (t *ToGeneric) UnmarshalYAML(node []byte) error {
 	var d struct {
 		Collections []string `yaml:"collections"`
 		Field       ToField  `yaml:"field"`
 	}
-	if err := value.Decode(&d); err == nil {
+	if err := yaml.Unmarshal(node, &d); err == nil {
 		t.CollectionFields = make([]ToCollectionField, len(d.Collections))
 		for i, collection := range d.Collections {
 			t.CollectionFields[i].Collection = collection
@@ -281,14 +238,14 @@ func (t *ToGeneric) UnmarshalYAML(value *yaml.Node) error {
 	}
 
 	var e []string
-	if err := value.Decode(&e); err != nil {
-		return fmt.Errorf("decoding to generic field at line %d: %w", value.Line, err)
+	if err := yaml.Unmarshal(node, &e); err != nil {
+		return fmt.Errorf("decoding to generic field: %w", err)
 	}
 	t.CollectionFields = make([]ToCollectionField, len(e))
 	for i, collectionfield := range e {
 		cf := strings.Split(collectionfield, "/")
 		if len(cf) != 2 {
-			return fmt.Errorf("invalid value of `to` in line %d, expected one `/`: %s", value.Line, collectionfield)
+			return fmt.Errorf("invalid value of `to`, expected one `/`: %s", collectionfield)
 		}
 		t.CollectionFields[i].Collection = cf[0]
 		t.CollectionFields[i].ToField.Name = cf[1]

@@ -8,7 +8,6 @@ import (
 	"go/format"
 	"io"
 	"log"
-	"net/http"
 	"os"
 	"sort"
 	"strings"
@@ -18,7 +17,7 @@ import (
 )
 
 func main() {
-	r, err := loadDefition()
+	r, err := openModelYML()
 	if err != nil {
 		log.Fatalf("Can not load models defition: %v", err)
 	}
@@ -34,15 +33,8 @@ func main() {
 	}
 }
 
-func loadDefition() (io.ReadCloser, error) {
-	r, err := http.Get(models.URLModelsYML())
-	if err != nil {
-		return nil, fmt.Errorf("request defition: %w", err)
-	}
-	if r.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request returned status %s", r.Status)
-	}
-	return r.Body, nil
+func openModelYML() (io.ReadCloser, error) {
+	return os.Open("../../meta/models.yml")
 }
 
 type restriction struct {
