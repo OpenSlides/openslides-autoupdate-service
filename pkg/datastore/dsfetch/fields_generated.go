@@ -377,26 +377,25 @@ type ValueMaybeInt struct {
 }
 
 // Value returns the value.
-func (v *ValueMaybeInt) Value(ctx context.Context) (int, bool, error) {
+func (v *ValueMaybeInt) Value(ctx context.Context) (Maybe[int], error) {
+	var zero Maybe[int]
 	if err := v.err; err != nil {
-		return 0, false, v.err
+		return zero, v.err
 	}
 
 	rawValue, err := v.fetch.getOneKey(ctx, v.key)
 	if err != nil {
-		return 0, false, err
+		return zero, err
 	}
 
 	var value Maybe[int]
 	v.Lazy(&value)
 
 	if err := v.execute(rawValue); err != nil {
-		return 0, false, err
+		return zero, err
 	}
 
-	// TODO: Return the Maybe type instead.
-	gotValue, gotHasValue := value.Value()
-	return gotValue, gotHasValue, nil
+	return value, nil
 }
 
 // Lazy sets a value as soon as it es executed.
@@ -449,26 +448,25 @@ type ValueMaybeString struct {
 }
 
 // Value returns the value.
-func (v *ValueMaybeString) Value(ctx context.Context) (string, bool, error) {
+func (v *ValueMaybeString) Value(ctx context.Context) (Maybe[string], error) {
+	var zero Maybe[string]
 	if err := v.err; err != nil {
-		return "", false, v.err
+		return zero, v.err
 	}
 
 	rawValue, err := v.fetch.getOneKey(ctx, v.key)
 	if err != nil {
-		return "", false, err
+		return zero, err
 	}
 
 	var value Maybe[string]
 	v.Lazy(&value)
 
 	if err := v.execute(rawValue); err != nil {
-		return "", false, err
+		return zero, err
 	}
 
-	// TODO: Return the Maybe type instead.
-	gotValue, gotHasValue := value.Value()
-	return gotValue, gotHasValue, nil
+	return value, nil
 }
 
 // Lazy sets a value as soon as it es executed.

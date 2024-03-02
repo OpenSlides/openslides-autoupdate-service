@@ -53,26 +53,25 @@
 	}
 
 	// Value returns the value.
-	func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, bool, error) {
+	func (v *{{.TypeName}}) Value(ctx context.Context) (Maybe[{{.GoType}}], error) {
+		var zero Maybe[{{.GoType}}]
 		if err:=v.err; err != nil {
-			return {{.Zero}}, false, v.err
+			return zero, v.err
 		}
 
 		rawValue, err := v.fetch.getOneKey(ctx, v.key)
 		if err != nil {
-			return {{.Zero}}, false, err
+			return zero, err
 		}
 
 		var value Maybe[{{.GoType}}]
 		v.Lazy(&value)
 
 		if err := v.execute(rawValue); err != nil {
-			return {{.Zero}}, false, err
+			return zero, err
 		}
 
-		// TODO: Return the Maybe type instead.
-		gotValue, gotHasValue := value.Value()
-		return gotValue, gotHasValue, nil
+		return value, nil
 	}
 
 	// Lazy sets a value as soon as it es executed.
