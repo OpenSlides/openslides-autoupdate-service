@@ -18,7 +18,7 @@ type ValueBool struct {
 	required bool
 
 	lazies []*bool
-	isNull bool
+	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
@@ -90,7 +90,7 @@ type ValueFloat struct {
 	required bool
 
 	lazies []*float32
-	isNull bool
+	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
@@ -162,7 +162,7 @@ type ValueInt struct {
 	required bool
 
 	lazies []*int
-	isNull bool
+	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
@@ -236,7 +236,7 @@ type ValueIntSlice struct {
 	required bool
 
 	lazies []*[]int
-	isNull bool
+	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
@@ -310,7 +310,7 @@ type ValueJSON struct {
 	required bool
 
 	lazies []*json.RawMessage
-	isNull bool
+	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
@@ -381,8 +381,8 @@ type ValueMaybeInt struct {
 	key      dskey.Key
 	required bool
 
-	lazies []*int
-	isNull bool
+	lazies []*Maybe[int]
+	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
@@ -398,20 +398,22 @@ func (v *ValueMaybeInt) Value(ctx context.Context) (int, bool, error) {
 		return 0, false, err
 	}
 
-	var value int
+	var value Maybe[int]
 	v.Lazy(&value)
 
 	if err := v.execute(rawValue); err != nil {
 		return 0, false, err
 	}
 
-	return value, !v.isNull, nil
+	// TODO: Return the Maybe type instead.
+	gotValue, gotHasValue := value.Value()
+	return gotValue, gotHasValue, nil
 }
 
 // Lazy sets a value as soon as it es executed.
 //
 // Make sure to call request.Execute() before using the value.
-func (v *ValueMaybeInt) Lazy(value *int) {
+func (v *ValueMaybeInt) Lazy(value *Maybe[int]) {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 	v.lazies = append(v.lazies, value)
 }
@@ -427,7 +429,7 @@ func (v *ValueMaybeInt) Preload() {
 
 // execute will be called from request.
 func (v *ValueMaybeInt) execute(p []byte) error {
-	var value int
+	var value Maybe[int]
 	if p == nil {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
@@ -453,8 +455,8 @@ type ValueMaybeString struct {
 	key      dskey.Key
 	required bool
 
-	lazies []*string
-	isNull bool
+	lazies []*Maybe[string]
+	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
@@ -470,20 +472,22 @@ func (v *ValueMaybeString) Value(ctx context.Context) (string, bool, error) {
 		return "", false, err
 	}
 
-	var value string
+	var value Maybe[string]
 	v.Lazy(&value)
 
 	if err := v.execute(rawValue); err != nil {
 		return "", false, err
 	}
 
-	return value, !v.isNull, nil
+	// TODO: Return the Maybe type instead.
+	gotValue, gotHasValue := value.Value()
+	return gotValue, gotHasValue, nil
 }
 
 // Lazy sets a value as soon as it es executed.
 //
 // Make sure to call request.Execute() before using the value.
-func (v *ValueMaybeString) Lazy(value *string) {
+func (v *ValueMaybeString) Lazy(value *Maybe[string]) {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 	v.lazies = append(v.lazies, value)
 }
@@ -499,7 +503,7 @@ func (v *ValueMaybeString) Preload() {
 
 // execute will be called from request.
 func (v *ValueMaybeString) execute(p []byte) error {
-	var value string
+	var value Maybe[string]
 	if p == nil {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
@@ -526,7 +530,7 @@ type ValueString struct {
 	required bool
 
 	lazies []*string
-	isNull bool
+	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
@@ -598,7 +602,7 @@ type ValueStringSlice struct {
 	required bool
 
 	lazies []*[]string
-	isNull bool
+	isNull bool // TODO: Can this be removed?
 
 	fetch *Fetch
 }
