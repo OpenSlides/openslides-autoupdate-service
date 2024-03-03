@@ -354,12 +354,11 @@ func HandleHealth(mux *http.ServeMux) {
 
 // HandleProfile adds routes for profiling.
 func HandleProfile(mux *http.ServeMux) {
-	mux.Handle(prefixInternal+"/debug/pprof/", http.HandlerFunc(pprof.Index))
-	mux.Handle(prefixInternal+"/debug/pprof/heap", pprof.Handler("heap"))
-	mux.Handle(prefixInternal+"/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-	mux.Handle(prefixInternal+"/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
-	mux.Handle(prefixInternal+"/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-	mux.Handle(prefixInternal+"/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 }
 
 func authMiddleware(next http.Handler, auth Authenticater) http.Handler {
