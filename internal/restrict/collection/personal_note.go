@@ -48,6 +48,10 @@ func (p PersonalNote) see(ctx context.Context, ds *dsfetch.Fetch, personalNoteID
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
+	if requestUser == 0 {
+		return nil, nil
+	}
+
 	meetingUserIDs, err := ds.User_MeetingUserIDs(requestUser).Value(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting meeting users: %w", err)

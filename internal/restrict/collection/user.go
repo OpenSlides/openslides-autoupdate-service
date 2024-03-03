@@ -535,6 +535,10 @@ func (u User) modeH(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]i
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
+	if requestUser == 0 {
+		return nil, nil
+	}
+
 	ownOrgaManagementLevel, err := ds.User_OrganizationManagementLevel(requestUser).Value(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting own managament: %w", err)
