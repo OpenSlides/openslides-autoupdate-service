@@ -1057,4 +1057,14 @@ func TestUserModeH(t *testing.T) {
 		withElementID(2),
 		withPerms(5, perm.UserCanManage),
 	)
+
+	testCase(
+		"As anonymous",
+		t,
+		u.Modes("H"),
+		false,
+		`user/2/id: 2`,
+		withRequestUser(0),
+		withElementID(2),
+	)
 }
