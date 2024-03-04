@@ -10,6 +10,19 @@ func TestPersonalNoteModeA(t *testing.T) {
 	var p collection.PersonalNote
 
 	testCase(
+		"as anonymous",
+		t,
+		p.Modes("A"),
+		false,
+		`---
+		personal_note/1/meeting_user_id: 5
+		meeting_user/5/user_id: 1
+		user/1/meeting_user_ids: [5]
+		`,
+		withRequestUser(0),
+	)
+
+	testCase(
 		"own note",
 		t,
 		p.Modes("A"),
