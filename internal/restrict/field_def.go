@@ -793,6 +793,7 @@ var restrictionModes = map[string]string{
 	"motion/origin_meeting_id":                      "A",
 	"motion/editor_ids":                             "B",
 	"motion/working_group_speaker_ids":              "B",
+	"motion/additional_submitter":                   "C",
 	"motion/agenda_item_id":                         "C",
 	"motion/amendment_ids":                          "C",
 	"motion/amendment_paragraphs":                   "C",
