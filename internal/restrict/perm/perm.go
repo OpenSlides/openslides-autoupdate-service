@@ -102,12 +102,13 @@ func newAnonymous(ctx context.Context, ds *dsfetch.Fetch, meetingID int) (*Permi
 }
 
 func isAdmin(ctx context.Context, ds *dsfetch.Fetch, meetingID int, groupIDs []int) (bool, error) {
-	adminGroupID, exist, err := ds.Meeting_AdminGroupID(meetingID).Value(ctx)
+	maybeAdminGroupID, err := ds.Meeting_AdminGroupID(meetingID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("check for admin group: %w", err)
 	}
 
-	if !exist {
+	adminGroupID, ok := maybeAdminGroupID.Value()
+	if !ok {
 		return false, nil
 	}
 

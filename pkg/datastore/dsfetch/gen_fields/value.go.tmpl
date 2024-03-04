@@ -6,55 +6,31 @@ type {{.TypeName}} struct {
 	required bool
 
 	lazies []*{{.GoType}}
-	isNull   bool
 
 	fetch *Fetch
 }
 
-{{if not .MaybeType}}
-	// Value returns the value.
-	func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, error) {
-		if err:=v.err; err != nil {
-			return {{.Zero}}, v.err
-		}
-
-		rawValue, err := v.fetch.getOneKey(ctx, v.key)
-		if err != nil {
-			return {{.Zero}}, err
-		}
-
-		var value {{.GoType}}
-		v.Lazy(&value)
-
-		if err := v.execute(rawValue); err != nil {
-			return {{.Zero}}, err
-		}
-
-		return value, nil
+// Value returns the value.
+func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, error) {
+	var zero {{.GoType}}
+	if err:=v.err; err != nil {
+		return zero, v.err
 	}
-{{else}}
-	// Value returns the value.
-	func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, bool, error) {
-		if err:=v.err; err != nil {
-			return {{.Zero}}, false, v.err
-		}
 
-		rawValue, err := v.fetch.getOneKey(ctx, v.key)
-		if err != nil {
-			return {{.Zero}}, false, err
-		}
-
-		var value {{.GoType}}
-		v.Lazy(&value)
-
-		if err := v.execute(rawValue); err != nil {
-			return {{.Zero}}, false, err
-		}
-
-		return value, !v.isNull, nil
+	rawValue, err := v.fetch.getOneKey(ctx, v.key)
+	if err != nil {
+		return zero, err
 	}
-{{end}}
 
+	var value {{.GoType}}
+	v.Lazy(&value)
+
+	if err := v.execute(rawValue); err != nil {
+		return zero, err
+	}
+
+	return value, nil
+}
 
 // Lazy sets a value as soon as it es executed.
 //
@@ -80,7 +56,6 @@ func (v *{{.TypeName}}) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		{{- if eq .TypeName "ValueIntSlice"}}
 			r, err := fastjson.DecodeIntList(p)

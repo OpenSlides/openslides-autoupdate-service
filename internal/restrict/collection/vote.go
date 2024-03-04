@@ -87,21 +87,21 @@ func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int
 			return true, nil
 		}
 
-		voteUser, exist, err := ds.Vote_UserID(voteID).Value(ctx)
+		voteUser, err := ds.Vote_UserID(voteID).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("getting vote user: %w", err)
 		}
 
-		if exist && voteUser == requestUser {
+		if v, ok := voteUser.Value(); ok && v == requestUser {
 			return true, nil
 		}
 
-		delegatedUser, exist, err := ds.Vote_DelegatedUserID(voteID).Value(ctx)
+		delegatedUser, err := ds.Vote_DelegatedUserID(voteID).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("getting delegated user: %w", err)
 		}
 
-		if exist && delegatedUser == requestUser {
+		if v, ok := delegatedUser.Value(); ok && v == requestUser {
 			return true, nil
 		}
 
