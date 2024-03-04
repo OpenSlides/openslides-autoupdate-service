@@ -95,22 +95,22 @@ func (o Option) modeB(ctx context.Context, ds *dsfetch.Fetch, optionIDs ...int) 
 }
 
 func pollID(ctx context.Context, ds *dsfetch.Fetch, optionID int) (int, error) {
-	pollID, exist, err := ds.Option_PollID(optionID).Value(ctx)
+	pollID, err := ds.Option_PollID(optionID).Value(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("getting poll id from field poll_id: %w", err)
 	}
 
-	if exist {
-		return pollID, nil
+	if id, ok := pollID.Value(); ok {
+		return id, nil
 	}
 
-	pollID, exist, err = ds.Option_UsedAsGlobalOptionInPollID(optionID).Value(ctx)
+	pollID, err = ds.Option_UsedAsGlobalOptionInPollID(optionID).Value(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("getting used as global option id in poll id: %w", err)
 	}
 
-	if exist {
-		return pollID, nil
+	if id, ok := pollID.Value(); ok {
+		return id, nil
 	}
 
 	// TODO LAST ERROR

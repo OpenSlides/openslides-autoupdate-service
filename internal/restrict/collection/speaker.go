@@ -59,7 +59,7 @@ func (s Speaker) see(ctx context.Context, ds *dsfetch.Fetch, speakerIDs ...int) 
 			return nil, fmt.Errorf("getting request user: %w", err)
 		}
 
-		meetingUserIDs := make([]int, len(ids))
+		meetingUserIDs := make([]dsfetch.Maybe[int], len(ids))
 		for i, speakerID := range ids {
 			ds.Speaker_MeetingUserID(speakerID).Lazy(&meetingUserIDs[i])
 		}
@@ -70,7 +70,10 @@ func (s Speaker) see(ctx context.Context, ds *dsfetch.Fetch, speakerIDs ...int) 
 
 		speakerUserIDs := make([]int, len(ids))
 		for i, muID := range meetingUserIDs {
-			ds.MeetingUser_UserID(muID).Lazy(&speakerUserIDs[i])
+			speakerUserIDs[i] = -1
+			if id, ok := muID.Value(); ok {
+				ds.MeetingUser_UserID(id).Lazy(&speakerUserIDs[i])
+			}
 		}
 
 		if err := ds.Execute(ctx); err != nil {
