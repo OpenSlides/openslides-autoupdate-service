@@ -479,6 +479,35 @@ func TestMotionModeA(t *testing.T) {
 	)
 }
 
+func TestMotionModeB(t *testing.T) {
+	f := collection.Motion{}.Modes("B")
+
+	testCase(
+		"no permissions",
+		t,
+		f,
+		false,
+		`---
+		motion/1:
+			id: 1
+			meeting_id: 30
+		`,
+	)
+
+	testCase(
+		"motion.can_manage_metadata",
+		t,
+		f,
+		true,
+		`---
+		motion/1:
+			meeting_id: 30
+			editor_ids: [3]
+		`,
+		withPerms(30, perm.MotionCanManageMetadata),
+	)
+}
+
 func TestMotionModeD(t *testing.T) {
 	f := collection.Motion{}.Modes("D")
 
@@ -488,5 +517,54 @@ func TestMotionModeD(t *testing.T) {
 		f,
 		false,
 		`motion/1/id: 1`,
+	)
+}
+
+func TestMotionModeE(t *testing.T) {
+	f := collection.Motion{}.Modes("E")
+
+	testCase(
+		"no permissions",
+		t,
+		f,
+		false,
+		`---
+		motion/1:
+			meeting_id: 30
+			state_id: 3
+
+		motion_state/3/is_internal: true
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"is_internal false",
+		t,
+		f,
+		true,
+		`---
+		motion/1:
+			meeting_id: 30
+			state_id: 3
+
+		motion_state/3/is_internal: false
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"motion.can_manage_metadata",
+		t,
+		f,
+		true,
+		`---
+		motion/1:
+			meeting_id: 30
+			state_id: 3
+
+		motion_state/3/is_internal: true
+		`,
+		withPerms(30, perm.MotionCanManageMetadata),
 	)
 }
