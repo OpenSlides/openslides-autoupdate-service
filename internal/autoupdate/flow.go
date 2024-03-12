@@ -38,10 +38,15 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater) (*Flow, 
 	}
 
 	vote := datastore.NewFlowVoteCount(lookup)
+	// TODO: Merge the two vote flows into one
+	vote2 := datastore.NewVoteDecryptPubKeySource(lookup)
 
 	combined := flow.Combine(
 		postgres,
-		map[string]flow.Flow{"poll/vote_count": vote},
+		map[string]flow.Flow{
+			"poll/vote_count": vote,
+			"organization/vote_decrypt_public_main_key": vote2,
+		},
 	)
 
 	cache := cache.New(combined)
