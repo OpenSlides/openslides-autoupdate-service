@@ -3002,6 +3002,15 @@ func (r *Fetch) Meeting_ListOfSpeakersEnableProContraSpeech(meetingID int) *Valu
 	return &ValueBool{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_ListOfSpeakersHideSecondaryContributionsCount(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "list_of_speakers_hide_secondary_contributions_count")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_ListOfSpeakersIDs(meetingID int) *ValueIntSlice {
 	key, err := dskey.FromParts("meeting", meetingID, "list_of_speakers_ids")
 	if err != nil {

@@ -624,6 +624,7 @@ var restrictionModes = map[string]string{
 	"meeting/list_of_speakers_enable_point_of_order_categories":     "B",
 	"meeting/list_of_speakers_enable_point_of_order_speakers":       "B",
 	"meeting/list_of_speakers_enable_pro_contra_speech":             "B",
+	"meeting/list_of_speakers_hide_secondary_contributions_count":   "B",
 	"meeting/list_of_speakers_ids":                                  "B",
 	"meeting/list_of_speakers_initially_closed":                     "B",
 	"meeting/list_of_speakers_intervention_time":                    "B",
