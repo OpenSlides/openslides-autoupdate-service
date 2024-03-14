@@ -263,7 +263,7 @@ var collectionFields = [...]collectionField{
 	{"meeting", "list_of_speakers_enable_point_of_order_categories"},
 	{"meeting", "list_of_speakers_enable_point_of_order_speakers"},
 	{"meeting", "list_of_speakers_enable_pro_contra_speech"},
-	{"meeting", "list_of_speakers_hide_secondary_contributions_count"},
+	{"meeting", "list_of_speakers_hide_contribution_count"},
 	{"meeting", "list_of_speakers_ids"},
 	{"meeting", "list_of_speakers_initially_closed"},
 	{"meeting", "list_of_speakers_intervention_time"},
@@ -1435,7 +1435,7 @@ func collectionFieldToID(cf string) int {
 		return 259
 	case "meeting/list_of_speakers_enable_pro_contra_speech":
 		return 260
-	case "meeting/list_of_speakers_hide_secondary_contributions_count":
+	case "meeting/list_of_speakers_hide_contribution_count":
 		return 261
 	case "meeting/list_of_speakers_ids":
 		return 262
