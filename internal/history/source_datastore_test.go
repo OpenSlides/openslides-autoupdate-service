@@ -12,8 +12,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/environment"
 )
 
 func parseURL(raw string) (host, port, protocol string) {

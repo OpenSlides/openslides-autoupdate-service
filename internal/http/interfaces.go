@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/history"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
 )
 
 // Authenticater gives an user id for an request. Returns 0 for anonymous.

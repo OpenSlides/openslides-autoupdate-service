@@ -3,7 +3,7 @@ package history
 import (
 	"context"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
 )
 
 // getPositioner is like a Getter but also taks a position

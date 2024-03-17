@@ -14,11 +14,11 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/history"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/http"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/auth"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/redis"
+	"github.com/OpenSlides/openslides-go/auth"
+	"github.com/OpenSlides/openslides-go/environment"
+	"github.com/OpenSlides/openslides-go/oserror"
+	"github.com/OpenSlides/openslides-go/redis"
+	"github.com/OpenSlides/openslides-go/restrict"
 	"github.com/alecthomas/kong"
 )
 

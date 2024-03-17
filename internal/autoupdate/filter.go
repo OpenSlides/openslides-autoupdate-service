@@ -3,7 +3,7 @@ package autoupdate
 import (
 	"hash/maphash"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
 )
 
 func createHash(hasher *maphash.Hash, value []byte) uint64 {
