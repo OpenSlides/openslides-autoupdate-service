@@ -267,9 +267,3 @@ instance.
 ## Configuration
 
 The service is configurated with environment variables. See [all environment varialbes](environment.md).
-
-
-## Update models.yml
-
-To use a new models.yml update the meta repository in `meta`.
-Afterwards call `go generate ./...` to update the generated files.
