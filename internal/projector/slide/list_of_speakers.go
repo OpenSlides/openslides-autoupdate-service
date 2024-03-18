@@ -36,7 +36,6 @@ func losFromMap(in map[string]json.RawMessage) (*dbListOfSpeakers, error) {
 type dbSpeakerWork struct {
 	MeetingUserID                  int `json:"meeting_user_id"`
 	Weight                         int `json:"weight"`
-	BeginTime                      int `json:"begin_time"`
 	EndTime                        int `json:"end_time"`
 	StructureLevelListOfSpeakersID int `json:"structure_level_list_of_speakers_id"`
 }
@@ -44,6 +43,8 @@ type dbSpeaker struct {
 	User         string         `json:"user"`
 	SpeechState  string         `json:"speech_state"`
 	Note         string         `json:"note"`
+	BeginTime    int            `json:"begin_time,omitempty"`
+	PauseTime    int            `json:"pause_time,omitempty"`
 	PointOfOrder bool           `json:"point_of_order"`
 	SpeakerWork  *dbSpeakerWork `json:",omitempty"`
 }
@@ -432,7 +433,7 @@ func getStructureLevelData(ctx context.Context, fetch *datastore.Fetcher, losID 
 			return 0, fmt.Errorf("loading speaker %d: %w", id, err)
 		}
 
-		if speaker.SpeakerWork.BeginTime == 0 || (speaker.SpeakerWork.BeginTime != 0 && speaker.SpeakerWork.EndTime != 0) || speaker.SpeechState == "interposed_question" || speaker.SpeakerWork.StructureLevelListOfSpeakersID == 0 {
+		if speaker.BeginTime == 0 || (speaker.BeginTime != 0 && speaker.SpeakerWork.EndTime != 0) || speaker.SpeechState == "interposed_question" || speaker.SpeakerWork.StructureLevelListOfSpeakersID == 0 {
 			continue
 		}
 
@@ -452,6 +453,7 @@ func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID 
 	fields := []string{
 		"meeting_user_id",
 		"begin_time",
+		"pause_time",
 		"end_time",
 	}
 
@@ -461,7 +463,7 @@ func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID 
 			return "", "", fmt.Errorf("loading speaker %d: %w", id, err)
 		}
 
-		if speaker.SpeakerWork.BeginTime == 0 || (speaker.SpeakerWork.BeginTime != 0 && speaker.SpeakerWork.EndTime != 0) {
+		if speaker.BeginTime == 0 || speaker.PauseTime != 0 || (speaker.BeginTime != 0 && speaker.SpeakerWork.EndTime != 0) {
 			continue
 		}
 
@@ -576,6 +578,7 @@ func getSpeakerLists(ctx context.Context, los *dbListOfSpeakers, meetingID int, 
 		"point_of_order",
 		"weight",
 		"begin_time",
+		"pause_time",
 		"end_time",
 	}
 
@@ -602,7 +605,7 @@ func getSpeakerLists(ctx context.Context, los *dbListOfSpeakers, meetingID int, 
 			speaker.User = user.UserRepresentation(meetingID)
 		}
 
-		if speaker.SpeakerWork.BeginTime == 0 && speaker.SpeakerWork.EndTime == 0 {
+		if (speaker.BeginTime == 0 || speaker.SpeechState == "interposed_question") && speaker.SpeakerWork.EndTime == 0 {
 			*speakersWaiting = append(*speakersWaiting, *speaker)
 			continue
 		}
