@@ -453,6 +453,7 @@ func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID 
 	fields := []string{
 		"meeting_user_id",
 		"begin_time",
+		"pause_time",
 		"end_time",
 	}
 
@@ -462,7 +463,7 @@ func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID 
 			return "", "", fmt.Errorf("loading speaker %d: %w", id, err)
 		}
 
-		if speaker.BeginTime == 0 || (speaker.BeginTime != 0 && speaker.SpeakerWork.EndTime != 0) {
+		if speaker.BeginTime == 0 || speaker.PauseTime != 0 || (speaker.BeginTime != 0 && speaker.SpeakerWork.EndTime != 0) {
 			continue
 		}
 
