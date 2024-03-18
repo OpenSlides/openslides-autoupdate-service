@@ -174,8 +174,12 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, history History)
 		}
 
 		if isLongPolling {
-			if err := handleLongpolling(ctx, w, uid, builder, connecter, compress, hashes); err != nil {
-				handleErrorWithoutStatus(w, err)
+			if headersSent, err := handleLongpolling(ctx, w, uid, builder, connecter, compress, hashes); err != nil {
+				if headersSent {
+					handleErrorWithoutStatus(w, err)
+				} else {
+					handleErrorWithStatus(w, err)
+				}
 				return
 			}
 			return
@@ -372,42 +376,42 @@ func HandleHistoryInformation(mux *http.ServeMux, auth Authenticater, hi History
 	mux.Handle(prefixPublic+"/history_information", authMiddleware(handler, auth))
 }
 
-func handleLongpolling(ctx context.Context, w http.ResponseWriter, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool, hashes string) error {
+func handleLongpolling(ctx context.Context, w http.ResponseWriter, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool, hashes string) (bool, error) {
 	conn, err := connecter.Connect(ctx, uid, kb)
 	if err != nil {
-		return fmt.Errorf("getting connection: %w", err)
+		return false, fmt.Errorf("getting connection: %w", err)
 	}
 
 	data, newHashes, err := conn.NextWithFilter(ctx, hashes)
 	if err != nil {
-		return fmt.Errorf("getting data: %w", err)
+		return false, fmt.Errorf("getting data: %w", err)
 	}
 
 	mp := multipart.NewWriter(w)
 	w.Header().Set("Content-Type", mp.FormDataContentType())
 	dataWriter, err := mp.CreateFormField("data")
 	if err != nil {
-		return fmt.Errorf("creating data part: %w", err)
+		return true, fmt.Errorf("creating data part: %w", err)
 	}
 
 	if err := writeData(dataWriter, data, compress); err != nil {
-		return fmt.Errorf("write data: %w", err)
+		return true, fmt.Errorf("write data: %w", err)
 	}
 
 	hashWriter, err := mp.CreateFormField("hash")
 	if err != nil {
-		return fmt.Errorf("creating hashes part: %w", err)
+		return true, fmt.Errorf("creating hashes part: %w", err)
 	}
 
 	if _, err := hashWriter.Write([]byte(newHashes)); err != nil {
-		return fmt.Errorf("writing hashes: %w", err)
+		return true, fmt.Errorf("writing hashes: %w", err)
 	}
 
 	if err := mp.Close(); err != nil {
-		return fmt.Errorf("close multipart: %w", err)
+		return true, fmt.Errorf("close multipart: %w", err)
 	}
 
-	return nil
+	return true, nil
 }
 
 func sendMessages(ctx context.Context, r *http.Request, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool) error {
