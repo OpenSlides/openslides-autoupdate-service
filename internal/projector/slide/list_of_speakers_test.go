@@ -90,6 +90,14 @@ func TestListOfSpeakers(t *testing.T) {
 			weight:         30
 			begin_time:     24
 			end_time:       28
+		7:
+			# Waiting
+			meeting_user_id:        330
+			speech_state:   interposed_question
+			note:           Seq2Waiting
+			point_of_order: false
+			weight:         20
+			begin_time:     150
 
 	meeting_user:
 		100:
@@ -110,6 +118,9 @@ func TestListOfSpeakers(t *testing.T) {
 		320:
 			user_id: 32
 		
+		330:
+			user_id: 33
+		
 	user:
 		10:
 			username: jonny123
@@ -123,6 +134,8 @@ func TestListOfSpeakers(t *testing.T) {
 			username: Ernest
 		32:
 			username: Calli
+		33:
+			username: Joe
 	`)
 
 	for _, tt := range []struct {
@@ -152,20 +165,23 @@ func TestListOfSpeakers(t *testing.T) {
 					"user": "Jonny",
 					"speech_state": "pro",
 					"note": "SeqCurrent",
-					"point_of_order": false
+					"point_of_order": false,
+					"begin_time": 100
 				},
 				"finished": [
 					{
 						"user": "Ernest",
 						"speech_state": "contra",
 						"note": "Seq1Finished",
-						"point_of_order": true
+						"point_of_order": true,
+						"begin_time": 29
 					},
 					{
 						"user": "Calli",
 						"speech_state": "contra",
 						"note": "Seq2Finished",
-						"point_of_order": true
+						"point_of_order": true,
+						"begin_time": 24
 					}
 				],
 				"closed": true,
@@ -197,8 +213,43 @@ func TestListOfSpeakers(t *testing.T) {
 					"user": "Bo",
 					"speech_state": "contra",
 					"note": "Seq3Finished",
-					"point_of_order": true
+					"point_of_order": true,
+					"begin_time": 20
 				}],
+				"closed": true,
+				"title_information": {
+					"agenda_item_number": "ItemNr Assignment1",
+					"collection": "assignment",
+					"content_object_id": "assignment/1",
+					"title": "assignment1 title"
+				}
+			}
+			`,
+		},
+		{
+			"Paused current speaker with interposed",
+			changeData(data, map[dskey.Key][]byte{
+				dskey.MustKey("list_of_speakers/1/speaker_ids"):                              []byte("[3,7]"),
+				dskey.MustKey("meeting/1/list_of_speakers_show_amount_of_speakers_on_slide"): []byte("false"),
+				dskey.MustKey("speaker/3/pause_time"):                                        []byte("150"),
+			}),
+			`{
+				"waiting": [{
+					"user": "Joe",
+					"speech_state": "interposed_question",
+					"note": "Seq2Waiting",
+					"point_of_order": false,
+					"begin_time": 150
+				}],
+				"current": {
+					"user": "Jonny",
+					"speech_state": "pro",
+					"note": "SeqCurrent",
+					"point_of_order": false,
+					"begin_time": 100,
+					"pause_time": 150
+				},
+				"finished": null,
 				"closed": true,
 				"title_information": {
 					"agenda_item_number": "ItemNr Assignment1",

@@ -207,7 +207,7 @@ func (a *Autoupdate) skipWorkpool(ctx context.Context, userID int) (bool, error)
 			return false, fmt.Errorf("getting groupIDs of user: %w", err)
 		}
 
-		adminGroups := make([]int, len(groupIDs))
+		adminGroups := make([]dsfetch.Maybe[int], len(groupIDs))
 		for i := 0; i < len(groupIDs); i++ {
 			ds.Group_AdminGroupForMeetingID(groupIDs[i]).Lazy(&adminGroups[i])
 		}
@@ -265,7 +265,7 @@ func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (boo
 		groupIDs = append(groupIDs, groupPerMeetingIDs[i]...)
 	}
 
-	isAdminGroup := make([]int, len(groupIDs))
+	isAdminGroup := make([]dsfetch.Maybe[int], len(groupIDs))
 	for i, groupID := range groupIDs {
 		ds.Group_AdminGroupForMeetingID(groupID).Lazy(&isAdminGroup[i])
 	}
@@ -276,8 +276,8 @@ func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (boo
 
 	var meetingAdmin []int
 	for _, meetingID := range isAdminGroup {
-		if meetingID > 0 {
-			meetingAdmin = append(meetingAdmin, meetingID)
+		if id, ok := meetingID.Value(); ok {
+			meetingAdmin = append(meetingAdmin, id)
 		}
 	}
 
