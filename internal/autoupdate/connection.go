@@ -8,6 +8,12 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsrecorder"
 )
 
+// Connection holds the connection to data and has the ability to return the next.
+type Connection interface {
+	Next() (func(context.Context) (map[dskey.Key][]byte, error), bool)
+	NextWithFilter(ctx context.Context, filterHashes string) (map[dskey.Key][]byte, string, error)
+}
+
 // connection holds the state of a client. It has to be created by colling
 // Connect() on a autoupdate.Service instance.
 type connection struct {
@@ -94,6 +100,34 @@ func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, error)
 	}, true
 }
 
+func (c *connection) NextWithFilter(ctx context.Context, filterHashes string) (map[dskey.Key][]byte, string, error) {
+	c.tid = c.autoupdate.topic.LastID()
+
+	if err := c.filter.setHashState(filterHashes); err != nil {
+		return nil, "", fmt.Errorf("set history state: %w", err)
+	}
+
+	data, err := c.updatedData(ctx)
+	if err != nil {
+		return nil, "", fmt.Errorf("creating first time data: %w", err)
+	}
+
+	if len(data) == 0 {
+		fn, _ := c.Next()
+		dd, err := fn(ctx)
+		if err != nil {
+			return nil, "", fmt.Errorf("getting new data: %w", err)
+		}
+		data = dd
+	}
+
+	hashes, err := c.filter.hashState()
+	if err != nil {
+		return nil, "", fmt.Errorf("create new hashes: %w", err)
+	}
+	return data, hashes, nil
+}
+
 // updatedData returns all values from the datastore.getter.
 func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, error) {
 	if !c.skipWorkpool {
@@ -121,20 +155,4 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 	c.filter.filter(data)
 
 	return data, nil
-}
-
-// notInSlice returns elements that are in slice a but not in b.
-func notInSlice(a, b []dskey.Key) []dskey.Key {
-	bSet := make(map[dskey.Key]struct{}, len(b))
-	for _, k := range b {
-		bSet[k] = struct{}{}
-	}
-
-	var missing []dskey.Key
-	for _, k := range a {
-		if _, ok := bSet[k]; !ok {
-			missing = append(missing, k)
-		}
-	}
-	return missing
 }

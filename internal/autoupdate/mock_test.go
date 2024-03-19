@@ -21,12 +21,12 @@ func getConnection() (func(context.Context) (map[dskey.Key][]byte, error), *dsmo
 	lookup := environment.ForTests{}
 	s, bg, _ := autoupdate.New(lookup, datastore, RestrictAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
-	next, err := s.Connect(context.Background(), 1, kb)
+	conn, err := s.Connect(context.Background(), 1, kb)
 	if err != nil {
 		panic(err)
 	}
 
-	f, _ := next()
+	f, _ := conn.Next()
 
 	return f, datastore, bg
 }
