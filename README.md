@@ -35,7 +35,7 @@ export DATABASE_PASSWORD_FILE=secrets/postgres_password
 export AUTH_TOKEN_KEY_FILE=secrets/auth_token_key
 export AUTH_COOKIE_KEY_FILE=secrets/auth_cookie_key
 go build
-./autoupdate
+./openslides-autoupdate-service
 ```
 
 
@@ -58,7 +58,7 @@ To restart the service when ever a source file has shanged, the tool
 
 ```
 go install github.com/githubnemo/CompileDaemon@latest
-CompileDaemon -log-prefix=false -build "go build" -command "./autoupdate"
+CompileDaemon -log-prefix=false -build "go build" -command "./openslides-autoupdate-service"
 ```
 
 The make target `build-dev` creates a docker image that uses this tool. The
