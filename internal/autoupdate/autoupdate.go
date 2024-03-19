@@ -102,14 +102,11 @@ func New(lookup environment.Environmenter, flow flow.Flow, restricter RestrictMi
 	return a, background, nil
 }
 
-// DataProvider is a function that returns the next data for a user.
-type DataProvider func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool)
-
 // Connect has to be called by a client to register to the service. The method
 // returns a Connection object, that can be used to receive the data.
 //
 // There is no need to "close" the returned DataProvider.
-func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (DataProvider, error) {
+func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (Connection, error) {
 	skipWorkpool, err := a.skipWorkpool(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("check if workpool should be used: %w", err)
@@ -122,7 +119,7 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (D
 		skipWorkpool: skipWorkpool,
 	}
 
-	return c.Next, nil
+	return c, nil
 }
 
 // SingleData returns the data for the given keysbuilder without autoupdates.
@@ -210,7 +207,7 @@ func (a *Autoupdate) skipWorkpool(ctx context.Context, userID int) (bool, error)
 			return false, fmt.Errorf("getting groupIDs of user: %w", err)
 		}
 
-		adminGroups := make([]int, len(groupIDs))
+		adminGroups := make([]dsfetch.Maybe[int], len(groupIDs))
 		for i := 0; i < len(groupIDs); i++ {
 			ds.Group_AdminGroupForMeetingID(groupIDs[i]).Lazy(&adminGroups[i])
 		}
@@ -268,7 +265,7 @@ func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (boo
 		groupIDs = append(groupIDs, groupPerMeetingIDs[i]...)
 	}
 
-	isAdminGroup := make([]int, len(groupIDs))
+	isAdminGroup := make([]dsfetch.Maybe[int], len(groupIDs))
 	for i, groupID := range groupIDs {
 		ds.Group_AdminGroupForMeetingID(groupID).Lazy(&isAdminGroup[i])
 	}
@@ -279,8 +276,8 @@ func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (boo
 
 	var meetingAdmin []int
 	for _, meetingID := range isAdminGroup {
-		if meetingID > 0 {
-			meetingAdmin = append(meetingAdmin, meetingID)
+		if id, ok := meetingID.Value(); ok {
+			meetingAdmin = append(meetingAdmin, id)
 		}
 	}
 

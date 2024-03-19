@@ -113,12 +113,12 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 				}
 
 				for _, p7onID := range p7onIDs {
-					_, exist, err := ds.Projection_CurrentProjectorID(p7onID).Value(ctx)
+					value, err := ds.Projection_CurrentProjectorID(p7onID).Value(ctx)
 					if err != nil {
 						return false, fmt.Errorf("getting current projector id: %w", err)
 					}
 
-					if exist {
+					if !value.Null() {
 						return true, nil
 					}
 				}
@@ -156,22 +156,22 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 
 func usedAsLogoOrFont(ctx context.Context, ds *dsfetch.Fetch, mediafileID int) (bool, error) {
 	var usedAs struct {
-		UsedAsLogoProjectorMainInMeetingID     int
-		UsedAsLogoProjectorHeaderInMeetingID   int
-		UsedAsLogoWebHeaderInMeetingID         int
-		UsedAsLogoPdfHeaderLInMeetingID        int
-		UsedAsLogoPdfHeaderRInMeetingID        int
-		UsedAsLogoPdfFooterLInMeetingID        int
-		UsedAsLogoPdfFooterRInMeetingID        int
-		UsedAsLogoPdfBallotPaperInMeetingID    int
-		UsedAsFontRegularInMeetingID           int
-		UsedAsFontItalicInMeetingID            int
-		UsedAsFontBoldInMeetingID              int
-		UsedAsFontBoldItalicInMeetingID        int
-		UsedAsFontMonospaceInMeetingID         int
-		UsedAsFontChyronSpeakerNameInMeetingID int
-		UsedAsFontProjectorH1InMeetingID       int
-		UsedAsFontProjectorH2InMeetingID       int
+		UsedAsLogoProjectorMainInMeetingID     dsfetch.Maybe[int]
+		UsedAsLogoProjectorHeaderInMeetingID   dsfetch.Maybe[int]
+		UsedAsLogoWebHeaderInMeetingID         dsfetch.Maybe[int]
+		UsedAsLogoPdfHeaderLInMeetingID        dsfetch.Maybe[int]
+		UsedAsLogoPdfHeaderRInMeetingID        dsfetch.Maybe[int]
+		UsedAsLogoPdfFooterLInMeetingID        dsfetch.Maybe[int]
+		UsedAsLogoPdfFooterRInMeetingID        dsfetch.Maybe[int]
+		UsedAsLogoPdfBallotPaperInMeetingID    dsfetch.Maybe[int]
+		UsedAsFontRegularInMeetingID           dsfetch.Maybe[int]
+		UsedAsFontItalicInMeetingID            dsfetch.Maybe[int]
+		UsedAsFontBoldInMeetingID              dsfetch.Maybe[int]
+		UsedAsFontBoldItalicInMeetingID        dsfetch.Maybe[int]
+		UsedAsFontMonospaceInMeetingID         dsfetch.Maybe[int]
+		UsedAsFontChyronSpeakerNameInMeetingID dsfetch.Maybe[int]
+		UsedAsFontProjectorH1InMeetingID       dsfetch.Maybe[int]
+		UsedAsFontProjectorH2InMeetingID       dsfetch.Maybe[int]
 	}
 
 	ds.Mediafile_UsedAsLogoProjectorMainInMeetingID(mediafileID).Lazy(&usedAs.UsedAsLogoProjectorMainInMeetingID)
@@ -194,20 +194,20 @@ func usedAsLogoOrFont(ctx context.Context, ds *dsfetch.Fetch, mediafileID int) (
 		return false, fmt.Errorf("fetching as logo and as font: %w", err)
 	}
 
-	return usedAs.UsedAsLogoProjectorMainInMeetingID > 0 ||
-		usedAs.UsedAsLogoProjectorHeaderInMeetingID > 0 ||
-		usedAs.UsedAsLogoWebHeaderInMeetingID > 0 ||
-		usedAs.UsedAsLogoPdfHeaderLInMeetingID > 0 ||
-		usedAs.UsedAsLogoPdfHeaderRInMeetingID > 0 ||
-		usedAs.UsedAsLogoPdfFooterLInMeetingID > 0 ||
-		usedAs.UsedAsLogoPdfFooterRInMeetingID > 0 ||
-		usedAs.UsedAsLogoPdfBallotPaperInMeetingID > 0 ||
-		usedAs.UsedAsFontRegularInMeetingID > 0 ||
-		usedAs.UsedAsFontItalicInMeetingID > 0 ||
-		usedAs.UsedAsFontBoldInMeetingID > 0 ||
-		usedAs.UsedAsFontBoldItalicInMeetingID > 0 ||
-		usedAs.UsedAsFontMonospaceInMeetingID > 0 ||
-		usedAs.UsedAsFontChyronSpeakerNameInMeetingID > 0 ||
-		usedAs.UsedAsFontProjectorH1InMeetingID > 0 ||
-		usedAs.UsedAsFontProjectorH2InMeetingID > 0, nil
+	return !usedAs.UsedAsLogoProjectorMainInMeetingID.Null() ||
+		!usedAs.UsedAsLogoProjectorHeaderInMeetingID.Null() ||
+		!usedAs.UsedAsLogoWebHeaderInMeetingID.Null() ||
+		!usedAs.UsedAsLogoPdfHeaderLInMeetingID.Null() ||
+		!usedAs.UsedAsLogoPdfHeaderRInMeetingID.Null() ||
+		!usedAs.UsedAsLogoPdfFooterLInMeetingID.Null() ||
+		!usedAs.UsedAsLogoPdfFooterRInMeetingID.Null() ||
+		!usedAs.UsedAsLogoPdfBallotPaperInMeetingID.Null() ||
+		!usedAs.UsedAsFontRegularInMeetingID.Null() ||
+		!usedAs.UsedAsFontItalicInMeetingID.Null() ||
+		!usedAs.UsedAsFontBoldInMeetingID.Null() ||
+		!usedAs.UsedAsFontBoldItalicInMeetingID.Null() ||
+		!usedAs.UsedAsFontMonospaceInMeetingID.Null() ||
+		!usedAs.UsedAsFontChyronSpeakerNameInMeetingID.Null() ||
+		!usedAs.UsedAsFontProjectorH1InMeetingID.Null() ||
+		!usedAs.UsedAsFontProjectorH2InMeetingID.Null(), nil
 }

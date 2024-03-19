@@ -78,9 +78,9 @@ func genHeader(buf *bytes.Buffer) error {
 func genValueTypes(buf *bytes.Buffer) error {
 	typesToGo := map[string]string{
 		"ValueInt":         "int",
-		"ValueMaybeInt":    "int",
+		"ValueMaybeInt":    "Maybe[int]",
 		"ValueString":      "string",
-		"ValueMaybeString": "string",
+		"ValueMaybeString": "Maybe[string]",
 		"ValueBool":        "bool",
 		"ValueFloat":       "float32",
 		"ValueJSON":        "json.RawMessage",

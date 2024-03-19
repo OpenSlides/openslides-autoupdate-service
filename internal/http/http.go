@@ -9,6 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -83,7 +85,7 @@ func Run(
 
 // Connecter returns an connect object.
 type Connecter interface {
-	Connect(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (autoupdate.DataProvider, error)
+	Connect(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (autoupdate.Connection, error)
 	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (map[dskey.Key][]byte, error)
 }
 
@@ -102,17 +104,10 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, history History)
 			return
 		}
 
-		body, err := io.ReadAll(r.Body)
+		body, hashes, isLongPolling, err := parseBody(r)
 		if err != nil {
-			w.WriteHeader(400)
-			fmt.Fprintln(w, "Invalid body")
+			handleErrorWithStatus(w, fmt.Errorf("parse Body: %w", err))
 			return
-		}
-
-		compactedBody := new(bytes.Buffer)
-		if err := json.Compact(compactedBody, body); err == nil {
-			// Ignore error, it will be handled in the keysbuilder function.
-			ctx = oserror.ContextWithBody(ctx, string(body))
 		}
 
 		bodyBuilder, err := keysbuilder.ManyFromJSON(bytes.NewReader(body))
@@ -178,11 +173,73 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, history History)
 			wr = newSkipFirst(w)
 		}
 
-		if err := sendMessages(ctx, wr, uid, builder, connecter, compress); err != nil {
+		if isLongPolling {
+			if headersSent, err := handleLongpolling(ctx, w, uid, builder, connecter, compress, hashes); err != nil {
+				if headersSent {
+					handleErrorWithoutStatus(w, err)
+				} else {
+					handleErrorWithStatus(w, err)
+				}
+				return
+			}
+			return
+		}
+
+		if err := sendMessages(ctx, r, wr, uid, builder, connecter, compress); err != nil {
 			handleErrorWithoutStatus(w, err)
 			return
 		}
 	})
+}
+
+func parseBody(r *http.Request) ([]byte, string, bool, error) {
+	contentType := r.Header.Get("Content-Type")
+
+	if contentType == "" {
+		return parseBodyNormal(r)
+	}
+
+	mediaType, params, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		return nil, "", false, fmt.Errorf("parsing multipart: %w", err)
+	}
+
+	if !strings.HasPrefix(mediaType, "multipart/") {
+		return parseBodyNormal(r)
+	}
+
+	mr := multipart.NewReader(r.Body, params["boundary"])
+
+	kbPart, err := mr.NextPart()
+	if err != nil {
+		return nil, "", false, fmt.Errorf("no keysbuilder part: %w", err)
+	}
+
+	body, err := io.ReadAll(kbPart)
+	if err != nil {
+		return nil, "", false, fmt.Errorf("invalid body: %w", err)
+	}
+
+	lpPart, err := mr.NextPart()
+	if err != nil {
+		return nil, "", false, fmt.Errorf("no longpolling part: %w", err)
+	}
+
+	longPollinHashes, err := io.ReadAll(lpPart)
+	if err != nil {
+		return nil, "", false, fmt.Errorf("invalid body: %w", err)
+	}
+
+	return body, string(longPollinHashes), true, nil
+}
+
+func parseBodyNormal(r *http.Request) ([]byte, string, bool, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, "", false, fmt.Errorf("invalid body: %w", err)
+	}
+
+	return body, "", r.URL.Query().Has("longpolling"), nil
 }
 
 // HandleAutoupdate builds the requested keys from the body of a request. The
@@ -319,13 +376,51 @@ func HandleHistoryInformation(mux *http.ServeMux, auth Authenticater, hi History
 	mux.Handle(prefixPublic+"/history_information", authMiddleware(handler, auth))
 }
 
-func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool) error {
-	next, err := connecter.Connect(ctx, uid, kb)
+func handleLongpolling(ctx context.Context, w http.ResponseWriter, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool, hashes string) (bool, error) {
+	conn, err := connecter.Connect(ctx, uid, kb)
+	if err != nil {
+		return false, fmt.Errorf("getting connection: %w", err)
+	}
+
+	data, newHashes, err := conn.NextWithFilter(ctx, hashes)
+	if err != nil {
+		return false, fmt.Errorf("getting data: %w", err)
+	}
+
+	mp := multipart.NewWriter(w)
+	w.Header().Set("Content-Type", mp.FormDataContentType())
+	dataWriter, err := mp.CreateFormField("data")
+	if err != nil {
+		return true, fmt.Errorf("creating data part: %w", err)
+	}
+
+	if err := writeData(dataWriter, data, compress); err != nil {
+		return true, fmt.Errorf("write data: %w", err)
+	}
+
+	hashWriter, err := mp.CreateFormField("hash")
+	if err != nil {
+		return true, fmt.Errorf("creating hashes part: %w", err)
+	}
+
+	if _, err := hashWriter.Write([]byte(newHashes)); err != nil {
+		return true, fmt.Errorf("writing hashes: %w", err)
+	}
+
+	if err := mp.Close(); err != nil {
+		return true, fmt.Errorf("close multipart: %w", err)
+	}
+
+	return true, nil
+}
+
+func sendMessages(ctx context.Context, r *http.Request, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool) error {
+	conn, err := connecter.Connect(ctx, uid, kb)
 	if err != nil {
 		return fmt.Errorf("getting connection: %w", err)
 	}
 
-	for f, ok := next(); ok; f, ok = next() {
+	for f, ok := conn.Next(); ok; f, ok = conn.Next() {
 		// This blocks, until there is new data. It also unblocks, when the
 		// client context is done.
 		data, err := f(ctx)
@@ -337,6 +432,7 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 			return fmt.Errorf("write data: %w", err)
 		}
 		w.(http.Flusher).Flush()
+
 	}
 	return ctx.Err()
 }

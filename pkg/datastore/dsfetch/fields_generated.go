@@ -18,27 +18,27 @@ type ValueBool struct {
 	required bool
 
 	lazies []*bool
-	isNull bool
 
 	fetch *Fetch
 }
 
 // Value returns the value.
 func (v *ValueBool) Value(ctx context.Context) (bool, error) {
+	var zero bool
 	if err := v.err; err != nil {
-		return false, v.err
+		return zero, v.err
 	}
 
 	rawValue, err := v.fetch.getOneKey(ctx, v.key)
 	if err != nil {
-		return false, err
+		return zero, err
 	}
 
 	var value bool
 	v.Lazy(&value)
 
 	if err := v.execute(rawValue); err != nil {
-		return false, err
+		return zero, err
 	}
 
 	return value, nil
@@ -68,7 +68,6 @@ func (v *ValueBool) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &value); err != nil {
 			return fmt.Errorf("decoding value %q: %w", p, err)
@@ -90,27 +89,27 @@ type ValueFloat struct {
 	required bool
 
 	lazies []*float32
-	isNull bool
 
 	fetch *Fetch
 }
 
 // Value returns the value.
 func (v *ValueFloat) Value(ctx context.Context) (float32, error) {
+	var zero float32
 	if err := v.err; err != nil {
-		return 0, v.err
+		return zero, v.err
 	}
 
 	rawValue, err := v.fetch.getOneKey(ctx, v.key)
 	if err != nil {
-		return 0, err
+		return zero, err
 	}
 
 	var value float32
 	v.Lazy(&value)
 
 	if err := v.execute(rawValue); err != nil {
-		return 0, err
+		return zero, err
 	}
 
 	return value, nil
@@ -140,7 +139,6 @@ func (v *ValueFloat) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &value); err != nil {
 			return fmt.Errorf("decoding value %q: %w", p, err)
@@ -162,27 +160,27 @@ type ValueInt struct {
 	required bool
 
 	lazies []*int
-	isNull bool
 
 	fetch *Fetch
 }
 
 // Value returns the value.
 func (v *ValueInt) Value(ctx context.Context) (int, error) {
+	var zero int
 	if err := v.err; err != nil {
-		return 0, v.err
+		return zero, v.err
 	}
 
 	rawValue, err := v.fetch.getOneKey(ctx, v.key)
 	if err != nil {
-		return 0, err
+		return zero, err
 	}
 
 	var value int
 	v.Lazy(&value)
 
 	if err := v.execute(rawValue); err != nil {
-		return 0, err
+		return zero, err
 	}
 
 	return value, nil
@@ -212,7 +210,6 @@ func (v *ValueInt) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		r, err := fastjson.DecodeInt(p)
 		if err != nil {
@@ -236,27 +233,27 @@ type ValueIntSlice struct {
 	required bool
 
 	lazies []*[]int
-	isNull bool
 
 	fetch *Fetch
 }
 
 // Value returns the value.
 func (v *ValueIntSlice) Value(ctx context.Context) ([]int, error) {
+	var zero []int
 	if err := v.err; err != nil {
-		return nil, v.err
+		return zero, v.err
 	}
 
 	rawValue, err := v.fetch.getOneKey(ctx, v.key)
 	if err != nil {
-		return nil, err
+		return zero, err
 	}
 
 	var value []int
 	v.Lazy(&value)
 
 	if err := v.execute(rawValue); err != nil {
-		return nil, err
+		return zero, err
 	}
 
 	return value, nil
@@ -286,7 +283,6 @@ func (v *ValueIntSlice) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		r, err := fastjson.DecodeIntList(p)
 		if err != nil {
@@ -310,27 +306,27 @@ type ValueJSON struct {
 	required bool
 
 	lazies []*json.RawMessage
-	isNull bool
 
 	fetch *Fetch
 }
 
 // Value returns the value.
 func (v *ValueJSON) Value(ctx context.Context) (json.RawMessage, error) {
+	var zero json.RawMessage
 	if err := v.err; err != nil {
-		return nil, v.err
+		return zero, v.err
 	}
 
 	rawValue, err := v.fetch.getOneKey(ctx, v.key)
 	if err != nil {
-		return nil, err
+		return zero, err
 	}
 
 	var value json.RawMessage
 	v.Lazy(&value)
 
 	if err := v.execute(rawValue); err != nil {
-		return nil, err
+		return zero, err
 	}
 
 	return value, nil
@@ -360,7 +356,6 @@ func (v *ValueJSON) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &value); err != nil {
 			return fmt.Errorf("decoding value %q: %w", p, err)
@@ -381,37 +376,37 @@ type ValueMaybeInt struct {
 	key      dskey.Key
 	required bool
 
-	lazies []*int
-	isNull bool
+	lazies []*Maybe[int]
 
 	fetch *Fetch
 }
 
 // Value returns the value.
-func (v *ValueMaybeInt) Value(ctx context.Context) (int, bool, error) {
+func (v *ValueMaybeInt) Value(ctx context.Context) (Maybe[int], error) {
+	var zero Maybe[int]
 	if err := v.err; err != nil {
-		return 0, false, v.err
+		return zero, v.err
 	}
 
 	rawValue, err := v.fetch.getOneKey(ctx, v.key)
 	if err != nil {
-		return 0, false, err
+		return zero, err
 	}
 
-	var value int
+	var value Maybe[int]
 	v.Lazy(&value)
 
 	if err := v.execute(rawValue); err != nil {
-		return 0, false, err
+		return zero, err
 	}
 
-	return value, !v.isNull, nil
+	return value, nil
 }
 
 // Lazy sets a value as soon as it es executed.
 //
 // Make sure to call request.Execute() before using the value.
-func (v *ValueMaybeInt) Lazy(value *int) {
+func (v *ValueMaybeInt) Lazy(value *Maybe[int]) {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 	v.lazies = append(v.lazies, value)
 }
@@ -427,12 +422,11 @@ func (v *ValueMaybeInt) Preload() {
 
 // execute will be called from request.
 func (v *ValueMaybeInt) execute(p []byte) error {
-	var value int
+	var value Maybe[int]
 	if p == nil {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &value); err != nil {
 			return fmt.Errorf("decoding value %q: %w", p, err)
@@ -453,37 +447,37 @@ type ValueMaybeString struct {
 	key      dskey.Key
 	required bool
 
-	lazies []*string
-	isNull bool
+	lazies []*Maybe[string]
 
 	fetch *Fetch
 }
 
 // Value returns the value.
-func (v *ValueMaybeString) Value(ctx context.Context) (string, bool, error) {
+func (v *ValueMaybeString) Value(ctx context.Context) (Maybe[string], error) {
+	var zero Maybe[string]
 	if err := v.err; err != nil {
-		return "", false, v.err
+		return zero, v.err
 	}
 
 	rawValue, err := v.fetch.getOneKey(ctx, v.key)
 	if err != nil {
-		return "", false, err
+		return zero, err
 	}
 
-	var value string
+	var value Maybe[string]
 	v.Lazy(&value)
 
 	if err := v.execute(rawValue); err != nil {
-		return "", false, err
+		return zero, err
 	}
 
-	return value, !v.isNull, nil
+	return value, nil
 }
 
 // Lazy sets a value as soon as it es executed.
 //
 // Make sure to call request.Execute() before using the value.
-func (v *ValueMaybeString) Lazy(value *string) {
+func (v *ValueMaybeString) Lazy(value *Maybe[string]) {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 	v.lazies = append(v.lazies, value)
 }
@@ -499,12 +493,11 @@ func (v *ValueMaybeString) Preload() {
 
 // execute will be called from request.
 func (v *ValueMaybeString) execute(p []byte) error {
-	var value string
+	var value Maybe[string]
 	if p == nil {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &value); err != nil {
 			return fmt.Errorf("decoding value %q: %w", p, err)
@@ -526,27 +519,27 @@ type ValueString struct {
 	required bool
 
 	lazies []*string
-	isNull bool
 
 	fetch *Fetch
 }
 
 // Value returns the value.
 func (v *ValueString) Value(ctx context.Context) (string, error) {
+	var zero string
 	if err := v.err; err != nil {
-		return "", v.err
+		return zero, v.err
 	}
 
 	rawValue, err := v.fetch.getOneKey(ctx, v.key)
 	if err != nil {
-		return "", err
+		return zero, err
 	}
 
 	var value string
 	v.Lazy(&value)
 
 	if err := v.execute(rawValue); err != nil {
-		return "", err
+		return zero, err
 	}
 
 	return value, nil
@@ -576,7 +569,6 @@ func (v *ValueString) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &value); err != nil {
 			return fmt.Errorf("decoding value %q: %w", p, err)
@@ -598,27 +590,27 @@ type ValueStringSlice struct {
 	required bool
 
 	lazies []*[]string
-	isNull bool
 
 	fetch *Fetch
 }
 
 // Value returns the value.
 func (v *ValueStringSlice) Value(ctx context.Context) ([]string, error) {
+	var zero []string
 	if err := v.err; err != nil {
-		return nil, v.err
+		return zero, v.err
 	}
 
 	rawValue, err := v.fetch.getOneKey(ctx, v.key)
 	if err != nil {
-		return nil, err
+		return zero, err
 	}
 
 	var value []string
 	v.Lazy(&value)
 
 	if err := v.execute(rawValue); err != nil {
-		return nil, err
+		return zero, err
 	}
 
 	return value, nil
@@ -648,7 +640,6 @@ func (v *ValueStringSlice) execute(p []byte) error {
 		if v.required {
 			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-		v.isNull = true
 	} else {
 		if err := json.Unmarshal(p, &value); err != nil {
 			return fmt.Errorf("decoding value %q: %w", p, err)
@@ -5007,6 +4998,15 @@ func (r *Fetch) MotionWorkingGroupSpeaker_Weight(motionWorkingGroupSpeakerID int
 	}
 
 	return &ValueInt{fetch: r, key: key}
+}
+
+func (r *Fetch) Motion_AdditionalSubmitter(motionID int) *ValueString {
+	key, err := dskey.FromParts("motion", motionID, "additional_submitter")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Motion_AgendaItemID(motionID int) *ValueMaybeInt {
