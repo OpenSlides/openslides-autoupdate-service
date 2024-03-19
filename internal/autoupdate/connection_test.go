@@ -96,7 +96,7 @@ func TestConnectionEmptyData(t *testing.T) {
 		if err != nil {
 			t.Fatalf("creating conection: %v", err)
 		}
-		next, _ := conn()
+		next, _ := conn.Next()
 
 		data, err := next(context.Background())
 		if err != nil {
@@ -148,7 +148,7 @@ func TestConnectionEmptyData(t *testing.T) {
 			if err != nil {
 				t.Fatalf("creating conection: %v", err)
 			}
-			next, _ := conn()
+			next, _ := conn.Next()
 
 			if _, err := next(context.Background()); err != nil {
 				t.Errorf("next(): %v", err)
@@ -202,7 +202,7 @@ func TestConnectionEmptyData(t *testing.T) {
 		if err != nil {
 			t.Fatalf("creating conection: %v", err)
 		}
-		next, _ := conn()
+		next, _ := conn.Next()
 
 		if _, err := next(context.Background()); err != nil {
 			t.Errorf("next() returned an error: %v", err)
@@ -248,7 +248,7 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("creating conection: %v", err)
 	}
-	next, _ := conn()
+	next, _ := conn.Next()
 
 	if _, err := next(ctx); err != nil {
 		t.Errorf("next(): %v", err)
@@ -285,7 +285,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 	if err != nil {
 		t.Fatalf("creating conection: %v", err)
 	}
-	next, _ := conn()
+	next, _ := conn.Next()
 
 	t.Run("first call", func(t *testing.T) {
 		var data map[dskey.Key][]byte
@@ -377,7 +377,7 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("creating conection: %v", err)
 	}
-	next, _ := conn()
+	next, _ := conn.Next()
 
 	if _, err := next(shutdownCtx); err != nil {
 		t.Fatalf("Getting first data: %v", err)
@@ -448,7 +448,7 @@ func TestKeyRequestedAgain(t *testing.T) {
 	if err != nil {
 		t.Fatalf("creating conection: %v", err)
 	}
-	next, _ := conn()
+	next, _ := conn.Next()
 
 	// Receive the initial data
 	if _, err := next(shutdownCtx); err != nil {
