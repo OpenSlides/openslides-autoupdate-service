@@ -139,8 +139,10 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 		defer done()
 	}
 
-	fmt.Printf("%d: Start updateData, skipWorkpool: %t\n", c.debugName, c.skipWorkpool)
-	defer fmt.Printf("%d: End updateData\n", c.debugName)
+	if c.debugName < 1000 {
+		fmt.Printf("%d: Start updateData, skipWorkpool: %t\n", c.debugName, c.skipWorkpool)
+		defer fmt.Printf("%d: End updateData\n", c.debugName)
+	}
 
 	recorder := dsrecorder.New(c.autoupdate.flow)
 	ctx, restricter := c.autoupdate.restricter(ctx, recorder, c.uid)
