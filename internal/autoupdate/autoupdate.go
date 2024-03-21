@@ -118,7 +118,7 @@ func (a *Autoupdate) Connect(ctx context.Context, userID int, kb KeysBuilder) (C
 		uid:          userID,
 		kb:           kb,
 		skipWorkpool: skipWorkpool,
-		debugName:    rand.Intn(10.000),
+		debugName:    rand.Intn(10_000),
 	}
 
 	return c, nil
