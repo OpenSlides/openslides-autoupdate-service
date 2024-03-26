@@ -216,8 +216,8 @@ func (a *Autoupdate) skipWorkpool(ctx context.Context, userID int) (bool, error)
 			return false, fmt.Errorf("checking for admin groups: %w", err)
 		}
 
-		for isAdmin := range adminGroups {
-			if isAdmin > 0 {
+		for _, isAdmin := range adminGroups {
+			if _, ok := isAdmin.Value(); ok {
 				return true, nil
 			}
 		}
