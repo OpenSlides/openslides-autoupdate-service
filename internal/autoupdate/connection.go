@@ -3,6 +3,7 @@ package autoupdate
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsrecorder"
@@ -24,6 +25,7 @@ type connection struct {
 	filter       filter
 	skipWorkpool bool
 	hotkeys      map[dskey.Key]struct{}
+	debugName    int
 }
 
 // Next returns a function to fetch the next data.
@@ -136,6 +138,12 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 			return nil, err
 		}
 		defer done()
+	}
+
+	if c.debugName < 1000 {
+		start := time.Now()
+		fmt.Printf("%d: User %d, Start updateData, skipWorkpool: %t\n", c.debugName, c.uid, c.skipWorkpool)
+		defer fmt.Printf("%d: User %d, End updateData after %v\n", c.debugName, c.uid, time.Since(start))
 	}
 
 	recorder := dsrecorder.New(c.autoupdate.flow)
