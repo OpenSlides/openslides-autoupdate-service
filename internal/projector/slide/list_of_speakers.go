@@ -37,6 +37,7 @@ type dbSpeakerWork struct {
 	MeetingUserID                  int `json:"meeting_user_id"`
 	Weight                         int `json:"weight"`
 	EndTime                        int `json:"end_time"`
+	TotalPause                     int `json:"total_pause"`
 	StructureLevelListOfSpeakersID int `json:"structure_level_list_of_speakers_id"`
 }
 type dbSpeaker struct {
@@ -221,7 +222,8 @@ type structureLevelRepr struct {
 	ID               int    `json:"id"`
 	Name             string `json:"name"`
 	Color            string `json:"color"`
-	RemainingTime    int    `json:"remaining_time"`
+	SpeechState      string `json:"speech_state"`
+	RemainingTime    *int   `json:"remaining_time,omitempty"`
 	CurrentStartTime int    `json:"current_start_time"`
 }
 
@@ -278,7 +280,7 @@ func CurrentStructureLevelList(store *projector.SlideStore) {
 				ID:               sls.StructureLevelID,
 				Name:             sl.Name,
 				Color:            sl.Color,
-				RemainingTime:    sls.RemainingTime,
+				RemainingTime:    &sls.RemainingTime,
 				CurrentStartTime: sls.CurrentStartTime,
 			}
 			structureLevels = append(structureLevels, structureLevel)
@@ -308,30 +310,59 @@ func CurrentSpeakingStructureLevel(store *projector.SlideStore) {
 			return nil, fmt.Errorf("error in getLosID: %w", err)
 		}
 
-		slsID, err := getStructureLevelData(ctx, fetch, losID)
+		speaker, err := getStructureLevelData(ctx, fetch, losID)
 		if err != nil {
 			return nil, fmt.Errorf("error in getStructureLevelData: %w", err)
 		}
 
-		if slsID != 0 {
-			slsData := fetch.Object(ctx, fmt.Sprintf("structure_level_list_of_speakers/%d", slsID), "structure_level_id", "remaining_time", "current_start_time")
-			sls, err := structureLevelListOfSpeakersFromMap(slsData)
-			if err != nil {
-				return nil, fmt.Errorf("parsing structure level los %d for list of speakers %d: %w", slsID, losID, err)
-			}
-
-			slData := fetch.Object(ctx, fmt.Sprintf("structure_level/%d", sls.StructureLevelID), "name", "color")
-			sl, err := structureLevelFromMap(slData)
-			if err != nil {
-				return nil, fmt.Errorf("parsing structure level %d for list of speakers %d: %w", sls.StructureLevelID, losID, err)
-			}
-
+		if speaker != nil {
+			slsID := speaker.SpeakerWork.StructureLevelListOfSpeakersID
 			out := structureLevelRepr{
-				ID:               sls.StructureLevelID,
-				Name:             sl.Name,
-				Color:            sl.Color,
-				RemainingTime:    sls.RemainingTime,
-				CurrentStartTime: sls.CurrentStartTime,
+				SpeechState: speaker.SpeechState,
+			}
+
+			if slsID != 0 {
+				slsData := fetch.Object(ctx, fmt.Sprintf("structure_level_list_of_speakers/%d", slsID), "structure_level_id", "remaining_time", "current_start_time")
+				sls, err := structureLevelListOfSpeakersFromMap(slsData)
+				if err != nil {
+					return nil, fmt.Errorf("parsing structure level los %d for list of speakers %d: %w", slsID, losID, err)
+				}
+
+				slData := fetch.Object(ctx, fmt.Sprintf("structure_level/%d", sls.StructureLevelID), "name", "color")
+				sl, err := structureLevelFromMap(slData)
+				if err != nil {
+					return nil, fmt.Errorf("parsing structure level %d for list of speakers %d: %w", sls.StructureLevelID, losID, err)
+				}
+
+				out.ID = sls.StructureLevelID
+				out.Name = sl.Name
+				out.Color = sl.Color
+				out.RemainingTime = &sls.RemainingTime
+				out.CurrentStartTime = sls.CurrentStartTime
+			}
+
+			if speaker.SpeechState == "interposed_question" || speaker.SpeechState == "intervention" || slsID == 0 {
+				if speaker.SpeechState == "intervention" {
+					meetingID := datastore.Int(ctx, fetch.FetchIfExist, "list_of_speakers/%d/meeting_id", losID)
+					if err := fetch.Err(); err != nil {
+						return nil, fmt.Errorf("Error loading meeting id from los %d %w", losID, err)
+					}
+					interventionTime := datastore.Int(ctx, fetch.FetchIfExist, "meeting/%d/list_of_speakers_intervention_time", meetingID)
+					if err := fetch.Err(); err != nil {
+						return nil, fmt.Errorf("Error loading intervention time from meeting %d %w", meetingID, err)
+					}
+					out.RemainingTime = &interventionTime
+				}
+				if speaker.PauseTime != 0 {
+					if out.RemainingTime == nil {
+						out.CurrentStartTime = 0
+					} else {
+						out.CurrentStartTime = 0
+						*out.RemainingTime -= speaker.PauseTime - (speaker.BeginTime + speaker.SpeakerWork.TotalPause)
+					}
+				} else {
+					out.CurrentStartTime = speaker.BeginTime + speaker.SpeakerWork.TotalPause
+				}
 			}
 
 			responseValue, err := json.Marshal(out)
@@ -413,34 +444,46 @@ func getLosID(ctx context.Context, ContentObjectID string, fetch *datastore.Fetc
 	return losID, referenceProjectorID, nil
 }
 
-func getStructureLevelData(ctx context.Context, fetch *datastore.Fetcher, losID int) (id int, err error) {
+func getStructureLevelData(ctx context.Context, fetch *datastore.Fetcher, losID int) (speaker *dbSpeaker, err error) {
 	data := fetch.Object(ctx, fmt.Sprintf("list_of_speakers/%d", losID), "speaker_ids", "content_object_id", "closed")
 	los, err := losFromMap(data)
 	if err != nil {
-		return 0, fmt.Errorf("loading list of speakers: %w", err)
+		return nil, fmt.Errorf("loading list of speakers: %w", err)
 	}
 
 	fields := []string{
 		"begin_time",
+		"pause_time",
 		"end_time",
+		"total_pause",
+		"weight",
 		"speech_state",
 		"structure_level_list_of_speakers_id",
 	}
 
+	var fallbackSpeaker *dbSpeaker
 	for _, id := range los.SpeakerIDs {
 		speaker, err := speakerFromMap(fetch.Object(ctx, fmt.Sprintf("speaker/%d", id), fields...))
 		if err != nil {
-			return 0, fmt.Errorf("loading speaker %d: %w", id, err)
+			return nil, fmt.Errorf("loading speaker %d: %w", id, err)
 		}
 
-		if speaker.BeginTime == 0 || (speaker.BeginTime != 0 && speaker.SpeakerWork.EndTime != 0) || speaker.SpeechState == "interposed_question" || speaker.SpeakerWork.StructureLevelListOfSpeakersID == 0 {
+		if (fallbackSpeaker == nil || fallbackSpeaker.SpeakerWork.Weight > speaker.SpeakerWork.Weight) && speaker.BeginTime != 0 && speaker.SpeakerWork.EndTime == 0 {
+			fallbackSpeaker = speaker
+		}
+
+		if speaker.BeginTime == 0 || speaker.PauseTime != 0 || (speaker.BeginTime != 0 && speaker.SpeakerWork.EndTime != 0) {
 			continue
 		}
 
-		return speaker.SpeakerWork.StructureLevelListOfSpeakersID, nil
+		return speaker, nil
 	}
 
-	return 0, nil
+	if fallbackSpeaker != nil {
+		return fallbackSpeaker, nil
+	}
+
+	return nil, nil
 }
 
 func getCurrentSpeakerData(ctx context.Context, fetch *datastore.Fetcher, losID int, meetingID int) (shortName string, structureLevel string, err error) {
