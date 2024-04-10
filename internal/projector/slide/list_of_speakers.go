@@ -223,6 +223,7 @@ type structureLevelRepr struct {
 	Name             string `json:"name"`
 	Color            string `json:"color"`
 	SpeechState      string `json:"speech_state"`
+	PointOfOrder     bool   `json:"point_of_order"`
 	RemainingTime    *int   `json:"remaining_time,omitempty"`
 	CurrentStartTime int    `json:"current_start_time"`
 }
@@ -318,7 +319,8 @@ func CurrentSpeakingStructureLevel(store *projector.SlideStore) {
 		if speaker != nil {
 			slsID := speaker.SpeakerWork.StructureLevelListOfSpeakersID
 			out := structureLevelRepr{
-				SpeechState: speaker.SpeechState,
+				SpeechState:  speaker.SpeechState,
+				PointOfOrder: speaker.PointOfOrder,
 			}
 
 			if slsID != 0 {
@@ -456,6 +458,7 @@ func getStructureLevelData(ctx context.Context, fetch *datastore.Fetcher, losID 
 		"pause_time",
 		"end_time",
 		"total_pause",
+		"point_of_order",
 		"weight",
 		"speech_state",
 		"structure_level_list_of_speakers_id",
