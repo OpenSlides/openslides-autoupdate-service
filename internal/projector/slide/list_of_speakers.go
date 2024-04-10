@@ -343,7 +343,8 @@ func CurrentSpeakingStructureLevel(store *projector.SlideStore) {
 				out.CurrentStartTime = sls.CurrentStartTime
 			}
 
-			if speaker.SpeechState == "interposed_question" || speaker.SpeechState == "intervention" || slsID == 0 {
+			if speaker.SpeechState == "interposed_question" || speaker.SpeechState == "intervention" || speaker.PointOfOrder || slsID == 0 {
+				out.RemainingTime = nil
 				if speaker.SpeechState == "intervention" {
 					meetingID := datastore.Int(ctx, fetch.FetchIfExist, "list_of_speakers/%d/meeting_id", losID)
 					if err := fetch.Err(); err != nil {
