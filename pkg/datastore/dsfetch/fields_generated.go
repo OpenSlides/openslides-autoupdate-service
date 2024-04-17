@@ -4037,6 +4037,33 @@ func (r *Fetch) Meeting_UsersEnableVoteWeight(meetingID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_UsersForbidDelegatorAsSubmitter(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "users_forbid_delegator_as_submitter")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_UsersForbidDelegatorAsSupporter(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "users_forbid_delegator_as_supporter")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_UsersForbidDelegatorInListOfSpeakers(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "users_forbid_delegator_in_list_of_speakers")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_UsersPdfWelcometext(meetingID int) *ValueString {
 	key, err := dskey.FromParts("meeting", meetingID, "users_pdf_welcometext")
 	if err != nil {
