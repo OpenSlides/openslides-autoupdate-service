@@ -222,7 +222,11 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 
 				allowedIDs, err := r.SeeFunc(ctx, ds, ids...)
 				if err != nil {
-					return false, fmt.Errorf("checking required object %s: %w", r.Name, err)
+					meetingUserOrUser := "meetingUserID"
+					if r.OnUser {
+						meetingUserOrUser = "user"
+					}
+					return false, fmt.Errorf("checking required object %s on %s %d: %w", r.Name, meetingUserOrUser, id, err)
 				}
 				if len(allowedIDs) > 0 {
 					return true, nil
@@ -293,13 +297,6 @@ func (User) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []UserRequir
 			ds.User_VoteIDs,
 			Collection(ctx, Vote{}.Name()).Modes("A"),
 			true,
-		},
-
-		{
-			"vote delegated user",
-			ds.MeetingUser_VoteDelegationsFromIDs,
-			Collection(ctx, Vote{}.Name()).Modes("A"),
-			false,
 		},
 
 		{

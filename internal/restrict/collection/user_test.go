@@ -291,33 +291,6 @@ func TestUserModeA(t *testing.T) {
 	)
 
 	testCase(
-		"vote delegated ids",
-		t,
-		f,
-		true,
-		`---
-		user/1/meeting_user_ids: [10]
-		user/2/meeting_user_ids: [20]
-
-		meeting_user/10:
-			meeting_id: 30
-		meeting_user/20:
-			vote_delegations_from_ids: [4]
-			meeting_id: 30
-		
-		vote/4/option_id: 5
-		option/5/poll_id: 6
-		poll/6:
-			state: published
-			meeting_id: 30
-
-		meeting/30/enable_anonymous: true
-		`,
-		withRequestUser(1),
-		withElementID(2),
-	)
-
-	testCase(
 		"chat messages",
 		t,
 		f,
