@@ -3002,6 +3002,15 @@ func (r *Fetch) Meeting_ListOfSpeakersEnableProContraSpeech(meetingID int) *Valu
 	return &ValueBool{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_ListOfSpeakersHideContributionCount(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "list_of_speakers_hide_contribution_count")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_ListOfSpeakersIDs(meetingID int) *ValueIntSlice {
 	key, err := dskey.FromParts("meeting", meetingID, "list_of_speakers_ids")
 	if err != nil {
@@ -4021,6 +4030,33 @@ func (r *Fetch) Meeting_UsersEnableVoteDelegations(meetingID int) *ValueBool {
 
 func (r *Fetch) Meeting_UsersEnableVoteWeight(meetingID int) *ValueBool {
 	key, err := dskey.FromParts("meeting", meetingID, "users_enable_vote_weight")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_UsersForbidDelegatorAsSubmitter(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "users_forbid_delegator_as_submitter")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_UsersForbidDelegatorAsSupporter(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "users_forbid_delegator_as_supporter")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_UsersForbidDelegatorInListOfSpeakers(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "users_forbid_delegator_in_list_of_speakers")
 	if err != nil {
 		return &ValueBool{err: err}
 	}
