@@ -2138,6 +2138,15 @@ func (r *Fetch) Meeting_AgendaShowSubtitles(meetingID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_AgendaShowTopicNavigationOnDetailView(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "agenda_show_topic_navigation_on_detail_view")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_AllProjectionIDs(meetingID int) *ValueIntSlice {
 	key, err := dskey.FromParts("meeting", meetingID, "all_projection_ids")
 	if err != nil {
