@@ -430,6 +430,8 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 			meeting_id: 6
 			structure_level_id: 4
 			speaker_ids: [8]
+
+		meeting/6/list_of_speakers_default_structure_level_time: 1
 	`) {
 		data[k] = v
 	}
@@ -447,6 +449,19 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 				"font_color": "red",
 				"current_speaker_name": "Admiral Don Snyder",
 				"current_speaker_level": "Level"
+			}
+			`,
+		},
+		{
+			"current speaker structure level countdown disabled",
+			changeData(data, map[dskey.Key][]byte{
+				dskey.MustKey("meeting/6/list_of_speakers_default_structure_level_time"): []byte("0"),
+			}),
+			`{
+				"background_color": "green",
+				"font_color": "red",
+				"current_speaker_name": "Admiral Don Snyder",
+				"current_speaker_level": "Foo, Level"
 			}
 			`,
 		},

@@ -125,10 +125,7 @@ func restrict(ctx context.Context, getter flow.Getter, uid int, data map[dskey.K
 
 		allowedIDs, err := modeFunc(ctx, ds, ids...)
 		if err != nil {
-			var errDoesNotExist dsfetch.DoesNotExistError
-			if !errors.As(err, &errDoesNotExist) {
-				return nil, fmt.Errorf("calling collection %s modefunc %s with ids %v: %w", cm.Collection, cm.Mode, ids, err)
-			}
+			return nil, fmt.Errorf("calling collection %s modefunc %s with ids %v: %w", cm.Collection, cm.Mode, ids, err)
 		}
 		allowedMods[cm] = set.New(allowedIDs...)
 
