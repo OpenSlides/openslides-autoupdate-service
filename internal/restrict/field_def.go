@@ -551,6 +551,7 @@ var restrictionModes = map[string]string{
 	"meeting/agenda_numeral_system":                                 "B",
 	"meeting/agenda_show_internal_items_on_projector":               "B",
 	"meeting/agenda_show_subtitles":                                 "B",
+	"meeting/agenda_show_topic_navigation_on_detail_view":           "B",
 	"meeting/all_projection_ids":                                    "B",
 	"meeting/assignment_candidate_ids":                              "B",
 	"meeting/assignment_ids":                                        "B",
