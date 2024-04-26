@@ -4073,6 +4073,15 @@ func (r *Fetch) Meeting_UsersForbidDelegatorInListOfSpeakers(meetingID int) *Val
 	return &ValueBool{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_UsersForbidDelegatorToVote(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "users_forbid_delegator_to_vote")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_UsersPdfWelcometext(meetingID int) *ValueString {
 	key, err := dskey.FromParts("meeting", meetingID, "users_pdf_welcometext")
 	if err != nil {
