@@ -45,8 +45,8 @@ func Run(
 ) error {
 	var connectionCount [2]*ConnectionCount
 	if redisConnection != nil {
-		connectionCount[0] = newConnectionCount(ctx, redisConnection, saveIntercal, "autoupdate_connection_count_normal")
-		connectionCount[1] = newConnectionCount(ctx, redisConnection, saveIntercal, "autoupdate_connection_count_longpolling")
+		connectionCount[0] = newConnectionCount(ctx, redisConnection, saveIntercal, "connections_stream")
+		connectionCount[1] = newConnectionCount(ctx, redisConnection, saveIntercal, "connections_logpolling")
 		metric.Register(connectionCount[0].Metric)
 		metric.Register(connectionCount[1].Metric)
 	}
