@@ -18,24 +18,24 @@ type RedisMetric interface {
 	Get(ctx context.Context) (map[int]int, error)
 }
 
-// connectionCount counts, how many connections a user has.
+// ConnectionCount counts, how many connections a user has.
 //
-// It holds a local counter and saves it to redis after a connection is created
-// or closed.
+// It holds a local counter and saves it to redis from time to time. The
+// argument `saveInterval` defines, how oftem it is saved.
 //
-// It also pings redis from time to time to show, that this instance is
-// still running.
-type connectionCount struct {
+// It also pings redis from time to time to show, that this instance is still
+// running.
+type ConnectionCount struct {
 	metric RedisMetric
 
 	mu          sync.Mutex
 	connections map[int]int
 }
 
-func newConnectionCount(ctx context.Context, r *redis.Redis, saveInterval time.Duration) *connectionCount {
-	redisMetric := redis.NewMetric[map[int]int](r, "autoupdate_connection_count", mapIntCombiner{}, saveInterval*2, time.Now)
+func newConnectionCount(ctx context.Context, r *redis.Redis, saveInterval time.Duration, name string) *ConnectionCount {
+	redisMetric := redis.NewMetric[map[int]int](r, name, mapIntCombiner{}, saveInterval*2, time.Now)
 
-	c := connectionCount{
+	c := ConnectionCount{
 		metric:      redisMetric,
 		connections: make(map[int]int),
 	}
@@ -60,7 +60,7 @@ func newConnectionCount(ctx context.Context, r *redis.Redis, saveInterval time.D
 	return &c
 }
 
-func (c *connectionCount) save(ctx context.Context) error {
+func (c *ConnectionCount) save(ctx context.Context) error {
 	c.mu.Lock()
 	converted, err := json.Marshal(c.connections)
 	c.mu.Unlock()
@@ -75,31 +75,38 @@ func (c *connectionCount) save(ctx context.Context) error {
 	return nil
 }
 
-func (c *connectionCount) increment(uid int, increment int) {
+func (c *ConnectionCount) increment(uid int, increment int) {
 	c.mu.Lock()
 	c.connections[uid] += increment
 	c.mu.Unlock()
 }
 
-func (c *connectionCount) Add(uid int) {
+// Add adds one connection to the counter.
+func (c *ConnectionCount) Add(uid int) {
 	c.increment(uid, 1)
 }
 
-func (c *connectionCount) Done(uid int) {
+// Done removes one connection from the counter.
+func (c *ConnectionCount) Done(uid int) {
 	c.increment(uid, -1)
 }
 
-func (c *connectionCount) Show(ctx context.Context) (map[int]int, error) {
+// Show shoes the counter.
+func (c *ConnectionCount) Show(ctx context.Context, filter func(ctx context.Context, count map[int]int) error) (map[int]int, error) {
 	data, err := c.metric.Get(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting counter from redis: %w", err)
+	}
+
+	if err := filter(ctx, data); err != nil {
+		return nil, fmt.Errorf("filtering counter: %w", err)
 	}
 
 	return data, nil
 }
 
 // Metric is a function needed my the openslides metric system to fetch some values.
-func (c *connectionCount) Metric(con metric.Container) {
+func (c *ConnectionCount) Metric(con metric.Container) {
 	ctx := context.Background()
 
 	data, err := c.metric.Get(ctx)
