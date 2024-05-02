@@ -46,7 +46,7 @@ func Run(
 	var connectionCount [2]*ConnectionCount
 	if redisConnection != nil {
 		connectionCount[0] = newConnectionCount(ctx, redisConnection, saveIntercal, "connections_stream")
-		connectionCount[1] = newConnectionCount(ctx, redisConnection, saveIntercal, "connections_logpolling")
+		connectionCount[1] = newConnectionCount(ctx, redisConnection, saveIntercal, "connections_longpolling")
 		metric.Register(connectionCount[0].Metric)
 		metric.Register(connectionCount[1].Metric)
 	}

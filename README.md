@@ -229,14 +229,14 @@ The logged metric is a json dictonary like:
 
 ```json
 {
-    "connections_logpolling_connected_users_anonymous_connections": 0,
-    "connections_logpolling_connected_users_average_connections": 3,
-    "connections_logpolling_connected_users_current": 1,
-    "connections_logpolling_connected_users_current_local": 1,
-    "connections_logpolling_connected_users_total": 1,
-    "connections_logpolling_connected_users_total_local": 1,
-    "connections_logpolling_current_connections": 3,
-    "connections_logpolling_current_connections_local": 3,
+    "connections_longpolling_connected_users_anonymous_connections": 0,
+    "connections_longpolling_connected_users_average_connections": 3,
+    "connections_longpolling_connected_users_current": 1,
+    "connections_longpolling_connected_users_current_local": 1,
+    "connections_longpolling_connected_users_total": 1,
+    "connections_longpolling_connected_users_total_local": 1,
+    "connections_longpolling_current_connections": 3,
+    "connections_longpolling_current_connections_local": 3,
     "connections_stream_connected_users_anonymous_connections": 0,
     "connections_stream_connected_users_average_connections": 6,
     "connections_stream_connected_users_current": 2,
