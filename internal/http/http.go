@@ -43,10 +43,12 @@ func Run(
 	redisConnection *redis.Redis,
 	saveIntercal time.Duration,
 ) error {
-	var connectionCount *connectionCount
+	var connectionCount [2]*ConnectionCount
 	if redisConnection != nil {
-		connectionCount = newConnectionCount(ctx, redisConnection, saveIntercal)
-		metric.Register(connectionCount.Metric)
+		connectionCount[0] = newConnectionCount(ctx, redisConnection, saveIntercal, "connections_stream")
+		connectionCount[1] = newConnectionCount(ctx, redisConnection, saveIntercal, "connections_longpolling")
+		metric.Register(connectionCount[0].Metric)
+		metric.Register(connectionCount[1].Metric)
 	}
 
 	mux := http.NewServeMux()
@@ -244,7 +246,7 @@ func parseBodyNormal(r *http.Request) ([]byte, string, bool, error) {
 
 // HandleAutoupdate builds the requested keys from the body of a request. The
 // body has to be in the format specified in the keysbuilder package.
-func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, history History, connectionCount *connectionCount) {
+func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, history History, connectionCount [2]*ConnectionCount) {
 	mux.Handle(
 		prefixPublic,
 		validRequest(
@@ -303,9 +305,9 @@ func writeData(w io.Writer, data map[dskey.Key][]byte, compress bool) error {
 }
 
 // HandleShowConnectionCount adds a handler to show the result of the connection counter.
-func HandleShowConnectionCount(mux *http.ServeMux, autoupdate *autoupdate.Autoupdate, auth Authenticater, connectionCount *connectionCount) {
+func HandleShowConnectionCount(mux *http.ServeMux, autoupdate *autoupdate.Autoupdate, auth Authenticater, connectionCount [2]*ConnectionCount) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if connectionCount == nil {
+		if connectionCount[0] == nil {
 			oserror.Handle(fmt.Errorf("Error connection count is not initialized"))
 			http.Error(w, "Counting not possible", 500)
 			return
@@ -326,20 +328,31 @@ func HandleShowConnectionCount(mux *http.ServeMux, autoupdate *autoupdate.Autoup
 			return
 		}
 
-		val, err := connectionCount.Show(ctx)
+		filter := func(ctx context.Context, count map[int]int) error {
+			return autoupdate.FilterConnectionCount(ctx, meetingIDs, count)
+		}
+
+		val1, err := connectionCount[0].Show(ctx, filter)
 		if err != nil {
-			oserror.Handle(fmt.Errorf("Error counting connection: %w", err))
+			oserror.Handle(fmt.Errorf("Error counting normal connection: %w", err))
 			http.Error(w, "Counting not possible", 500)
 			return
 		}
 
-		if err := autoupdate.FilterConnectionCount(ctx, meetingIDs, val); err != nil {
+		val2, err := connectionCount[1].Show(ctx, filter)
+		if err != nil {
+			oserror.Handle(fmt.Errorf("Error counting longpolling connection: %w", err))
+			http.Error(w, "Counting not possible", 500)
+			return
+		}
+
+		if err := autoupdate.FilterConnectionCount(ctx, meetingIDs, val2); err != nil {
 			oserror.Handle(fmt.Errorf("Error filtering connection count: %w", err))
 			http.Error(w, "Counting not possible", 500)
 			return
 		}
 
-		if err := json.NewEncoder(w).Encode(val); err != nil {
+		if err := json.NewEncoder(w).Encode([2]map[int]int{val1, val2}); err != nil {
 			oserror.Handle(fmt.Errorf("Error decoding counter %w", err))
 			http.Error(w, "Counting not possible", 500)
 			return
@@ -563,18 +576,32 @@ func validRequest(next http.Handler) http.Handler {
 	})
 }
 
-func connectionCountMiddleware(next http.Handler, auth Authenticater, counter *connectionCount) http.Handler {
-	if counter == nil {
+// isLongPollingRequest returns, if the request is a longpolling fallback
+// request.
+//
+// This is the case, if it has the argument "longpolling" or if the body is
+// multipart.
+func isLongPollingRequest(r *http.Request) bool {
+	return r.URL.Query().Has("longpolling") || strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "multipart/")
+}
+
+func connectionCountMiddleware(next http.Handler, auth Authenticater, counter [2]*ConnectionCount) http.Handler {
+	if counter[0] == nil {
 		return next
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		uid := auth.FromContext(ctx)
-		counter.Add(uid)
+		count := counter[0]
+		if isLongPollingRequest(r) {
+			count = counter[1]
+		}
+
+		count.Add(uid)
 
 		defer func() {
-			counter.Done(uid)
+			count.Done(uid)
 		}()
 
 		next.ServeHTTP(w, r)
