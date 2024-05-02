@@ -229,36 +229,49 @@ The logged metric is a json dictonary like:
 
 ```json
 {
-    "connected_users_anonymous_connections": 1,
-    "connected_users_average_connections": 3,
-    "connected_users_current": 3,
-    "connected_users_current_local": 3,
-    "connected_users_total": 3,
-    "connected_users_total_local": 3,
-    "current_connections": 8,
-    "current_connections_local": 8,
-    "datastore_cache_key_len": 343,
-    "datastore_cache_size": 3114,
-    "runtime_goroutines": 42
+    "connections_longpolling_connected_users_anonymous_connections": 0,
+    "connections_longpolling_connected_users_average_connections": 3,
+    "connections_longpolling_connected_users_current": 1,
+    "connections_longpolling_connected_users_current_local": 1,
+    "connections_longpolling_connected_users_total": 1,
+    "connections_longpolling_connected_users_total_local": 1,
+    "connections_longpolling_current_connections": 3,
+    "connections_longpolling_current_connections_local": 3,
+    "connections_stream_connected_users_anonymous_connections": 0,
+    "connections_stream_connected_users_average_connections": 6,
+    "connections_stream_connected_users_current": 2,
+    "connections_stream_connected_users_current_local": 2,
+    "connections_stream_connected_users_total": 3,
+    "connections_stream_connected_users_total_local": 3,
+    "connections_stream_current_connections": 13,
+    "connections_stream_current_connections_local": 13,
+    "datastore_cache_key_len": 236478,
+    "datastore_cache_size": 1722987,
+    "runtime_goroutines": 68
 }
 ```
 
-The values are:
+The prefix `connections_stream` are for "normal" connections.
+`connections_longpolling` are for connections, that use the longpolling
+fallback.
 
-* `connected_users_anonymous_connections`: Number of connections from the
-  anonymous users from all autoupdate instances.
-* `connected_users_average_connections`: Average connection count for each user
-  except for anonymous user.
-* `connected_users_current`: Amount of connected users that have at least one
-  open connection.
-* `connected_users_current_local`: Amount of connected users that have at least
-  one open connection of this instance.
-* `connected_users_total`: Amount of different users that are currently
-  connected or were connected since the autoupdate service was started.
-* `connected_users_total_local`: Same as `connected_users_total`, but only for this
-instance.
-* `current_connections`: Amount of all connections.
-* `current_connections_local`: Amount of all connections of this instance.
+
+
+* `connections_stream_connected_users_anonymous_connections`: Number of
+  connections from the anonymous users from all autoupdate instances.
+* `connections_stream_connected_users_average_connections`: Average connection
+  count for each user except for anonymous user.
+* `connections_stream_connected_users_current`: Amount of connected users that
+  have at least one open connection.
+* `connections_stream_connected_users_current_local`: Amount of connected users
+  that have at least one open connection of this instance.
+* `connections_stream_connected_users_total`: Amount of different users that are
+  currently connected or were connected since the autoupdate service was
+  started.
+* `connections_stream_connected_users_total_local`: Same as
+`connected_users_total`, but only for this instance.
+* `connections_stream_current_connections`: Amount of all connections.
+* `connections_stream_current_connections_local`: Amount of all connections of this instance.
 * `datastore_cache_key_len`: Amount of keys in the cache.
 * `datastore_cache_size`: Combined size of all values in the cache.
 * `runtime_goroutines`: Current goroutines used by the instance.
