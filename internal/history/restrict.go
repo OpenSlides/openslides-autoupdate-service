@@ -32,7 +32,6 @@ func (h restricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][
 
 	currentDS := dsfetch.New(h.currentGetter)
 	ctx = perm.ContextWithPermissionCache(ctx, h.currentGetter, h.userID)
-	oldDS := dsfetch.New(h.oldGetter)
 
 	orgaManager, err := perm.HasOrganizationManagementLevel(ctx, currentDS, h.userID, perm.OMLCanManageOrganization)
 	if err != nil {
@@ -63,7 +62,7 @@ func (h restricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][
 	allowedKeys := make([]dskey.Key, 0, len(keys))
 
 	for _, key := range keys {
-		canSee, err := h.canSeeKey(ctx, oldDS, currentDS, orgaManager, adminInMeeting, key)
+		canSee, err := h.canSeeKey(ctx, currentDS, orgaManager, adminInMeeting, key)
 		if err != nil {
 			return nil, fmt.Errorf("checking key %s: %w", key, err)
 		}
@@ -82,8 +81,7 @@ func (h restricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][
 
 func (h restricter) canSeeKey(
 	ctx context.Context,
-	oldDS,
-	currentDS *dsfetch.Fetch,
+	ds *dsfetch.Fetch,
 	isOrgaManager bool,
 	adminInMeeting map[int]struct{},
 	key dskey.Key,
@@ -93,12 +91,12 @@ func (h restricter) canSeeKey(
 	}
 
 	if key.Collection() == "personal_note" {
-		personalNoteMeetingUserID, err := oldDS.PersonalNote_MeetingUserID(key.ID()).Value(ctx)
+		personalNoteMeetingUserID, err := ds.PersonalNote_MeetingUserID(key.ID()).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("getting personal note meeting user: %w", err)
 		}
 
-		personalNoteUserID, err := oldDS.MeetingUser_UserID(personalNoteMeetingUserID).Value(ctx)
+		personalNoteUserID, err := ds.MeetingUser_UserID(personalNoteMeetingUserID).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("getting personal note user: %w", err)
 		}
@@ -118,7 +116,7 @@ func (h restricter) canSeeKey(
 		return false, nil
 	}
 
-	meetingID, hasMeeting, err := collection.Collection(ctx, key.Collection()).MeetingID(ctx, oldDS, key.ID())
+	meetingID, hasMeeting, err := collection.Collection(ctx, key.Collection()).MeetingID(ctx, ds, key.ID())
 	if err != nil {
 		return false, fmt.Errorf("getting meeting id: %w", err)
 	}
@@ -129,13 +127,13 @@ func (h restricter) canSeeKey(
 	}
 
 	if key.Collection() == "user" {
-		meetingUserIDs, err := oldDS.User_MeetingUserIDs(key.ID()).Value(ctx)
+		meetingUserIDs, err := ds.User_MeetingUserIDs(key.ID()).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("getting meeting user ids from user %d in old version: %w", key.ID(), err)
 		}
 
 		for _, muID := range meetingUserIDs {
-			meetingID, err := oldDS.MeetingUser_MeetingID(muID).Value(ctx)
+			meetingID, err := ds.MeetingUser_MeetingID(muID).Value(ctx)
 			if err != nil {
 				return false, fmt.Errorf("getting meeting id from meeting user %d in old version: %w", muID, err)
 			}

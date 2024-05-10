@@ -19,31 +19,22 @@ import (
 
 var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*`)
 
-// Datastore is the source for the data.
-type Datastore interface {
-	Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byte, error)
-	GetPosition(ctx context.Context, position int, keys ...dskey.Key) (map[dskey.Key][]byte, error)
-	HistoryInformation(ctx context.Context, fqid string, w io.Writer) error
-}
-
 // History get access to old data int the datastore
 type History struct {
-	source *sourceDatastore
-}
-
-// KeysBuilder holds the keys that are requested by a user.
-type KeysBuilder interface {
-	Update(ctx context.Context, ds flow.Getter) ([]dskey.Key, error)
+	history *sourceDatastore
+	getter  flow.Getter
 }
 
 // New initializes a new history.
-func New(lookup environment.Environmenter) (*History, error) {
-	source, err := newSourceDatastore(lookup)
+func New(lookup environment.Environmenter, getter flow.Getter) (*History, error) {
+	datastore, err := newSourceDatastore(lookup)
 	if err != nil {
 		return nil, fmt.Errorf("initializing datastore: %w", err)
 	}
+
 	return &History{
-		source: source,
+		history: datastore,
+		getter:  getter,
 	}, nil
 }
 
@@ -57,7 +48,7 @@ func (h History) HistoryInformation(ctx context.Context, uid int, fqid string, w
 	coll, rawID, _ := strings.Cut(fqid, "/")
 	id, _ := strconv.Atoi(rawID)
 
-	ds := dsfetch.New(h.source)
+	ds := dsfetch.New(h.getter)
 
 	meetingID, hasMeeting, err := collection.Collection(ctx, coll).MeetingID(ctx, ds, id)
 	if err != nil {
@@ -91,37 +82,13 @@ func (h History) HistoryInformation(ctx context.Context, uid int, fqid string, w
 		}
 	}
 
-	if err := h.source.HistoryInformation(ctx, fqid, w); err != nil {
+	if err := h.history.HistoryInformation(ctx, fqid, w); err != nil {
 		return fmt.Errorf("getting history information: %w", err)
 	}
 
 	fmt.Fprintln(w)
 
 	return nil
-}
-
-// Data returns old data from the datastore
-func (h History) Data(ctx context.Context, userID int, kb KeysBuilder, position int) (map[dskey.Key][]byte, error) {
-	getter := newGetPosition(h.source, position)
-	restricter := newRestricter(h.source, getter, userID)
-
-	keys, err := kb.Update(ctx, restricter)
-	if err != nil {
-		return nil, fmt.Errorf("create keys for keysbuilder: %w", err)
-	}
-
-	data, err := restricter.Get(ctx, keys...)
-	if err != nil {
-		return nil, fmt.Errorf("get restricted data: %w", err)
-	}
-
-	for k, v := range data {
-		if len(v) == 0 {
-			delete(data, k)
-		}
-	}
-
-	return data, nil
 }
 
 type permissionDeniedError struct {

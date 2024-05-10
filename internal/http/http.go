@@ -39,7 +39,7 @@ func Run(
 	addr string,
 	auth Authenticater,
 	autoupdate *autoupdate.Autoupdate,
-	history History,
+	history HistoryInformationer,
 	redisConnection *redis.Redis,
 	saveIntercal time.Duration,
 ) error {
@@ -53,8 +53,8 @@ func Run(
 
 	mux := http.NewServeMux()
 	HandleHealth(mux)
-	HandleAutoupdate(mux, auth, autoupdate, history, connectionCount)
-	HandleInternalAutoupdate(mux, auth, history, autoupdate)
+	HandleAutoupdate(mux, auth, autoupdate, connectionCount)
+	HandleInternalAutoupdate(mux, auth, autoupdate)
 	HandleShowConnectionCount(mux, autoupdate, auth, connectionCount)
 	HandleHistoryInformation(mux, auth, history)
 	HandleProfile(mux)
@@ -91,7 +91,7 @@ type Connecter interface {
 	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (map[dskey.Key][]byte, error)
 }
 
-func autoupdateHandler(auth Authenticater, connecter Connecter, history History) http.Handler {
+func autoupdateHandler(auth Authenticater, connecter Connecter) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Cache-Control", "no-store, max-age=0")
@@ -120,45 +120,16 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, history History)
 
 		builder := keysbuilder.FromBuilders(queryBuilder, bodyBuilder)
 
-		rawPosition := r.URL.Query().Get("position")
-		position := 0
-		if rawPosition != "" {
-			p, err := strconv.Atoi(rawPosition)
-			if err != nil {
-				handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("position has to be a number, not %s", rawPosition)})
-				return
-			}
-			position = p
-		}
-
-		if r.URL.Query().Has("profile_restrict") {
-			ctx = oserror.ContextWithTag(ctx, "profile_restrict")
-		}
-
 		var compress bool
 		if r.URL.Query().Has("compress") {
 			compress = true
 		}
 
-		if r.URL.Query().Has("single") || position != 0 {
-			var data map[dskey.Key][]byte
-			switch position {
-			case 0:
-				d, err := connecter.SingleData(ctx, uid, builder)
-				if err != nil {
-					handleErrorWithStatus(w, fmt.Errorf("getting single data: %w", err))
-					return
-				}
-
-				data = d
-
-			default:
-				d, err := history.Data(ctx, uid, builder, position)
-				if err != nil {
-					handleErrorWithStatus(w, fmt.Errorf("getting history data: %w", err))
-					return
-				}
-				data = d
+		if r.URL.Query().Has("single") {
+			data, err := connecter.SingleData(ctx, uid, builder)
+			if err != nil {
+				handleErrorWithStatus(w, fmt.Errorf("getting single data: %w", err))
+				return
 			}
 
 			if err := writeData(w, data, compress); err != nil {
@@ -168,13 +139,6 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, history History)
 			return
 		}
 
-		var wr io.Writer = w
-		if r.URL.Query().Has("skip_first") {
-			// TODO: This will not compress the first data. For the performance
-			// tool this does not matter.
-			wr = newSkipFirst(w)
-		}
-
 		if isLongPolling {
 			if headersSent, err := handleLongpolling(ctx, w, uid, builder, connecter, compress, hashes); err != nil {
 				if headersSent {
@@ -182,12 +146,11 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, history History)
 				} else {
 					handleErrorWithStatus(w, err)
 				}
-				return
 			}
 			return
 		}
 
-		if err := sendMessages(ctx, r, wr, uid, builder, connecter, compress); err != nil {
+		if err := sendMessages(ctx, w, uid, builder, connecter, compress); err != nil {
 			handleErrorWithoutStatus(w, err)
 			return
 		}
@@ -246,13 +209,13 @@ func parseBodyNormal(r *http.Request) ([]byte, string, bool, error) {
 
 // HandleAutoupdate builds the requested keys from the body of a request. The
 // body has to be in the format specified in the keysbuilder package.
-func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, history History, connectionCount [2]*ConnectionCount) {
+func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, connectionCount [2]*ConnectionCount) {
 	mux.Handle(
 		prefixPublic,
 		validRequest(
 			authMiddleware(
 				connectionCountMiddleware(
-					autoupdateHandler(auth, connecter, history),
+					autoupdateHandler(auth, connecter),
 					auth,
 					connectionCount,
 				),
@@ -266,12 +229,12 @@ func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecte
 // uses the user_id from an argument.
 //
 // /internal/autoupdate?user_id=23&single=1&k=user/1/username
-func HandleInternalAutoupdate(mux *http.ServeMux, auth Authenticater, history History, connecter Connecter) {
+func HandleInternalAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter) {
 	mux.Handle(
 		prefixInternal,
 		validRequest(
 			internalAuthMiddleware(
-				autoupdateHandler(auth, connecter, history),
+				autoupdateHandler(auth, connecter),
 				auth,
 			),
 		),
@@ -427,7 +390,7 @@ func handleLongpolling(ctx context.Context, w http.ResponseWriter, uid int, kb a
 	return true, nil
 }
 
-func sendMessages(ctx context.Context, r *http.Request, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool) error {
+func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool) error {
 	conn, err := connecter.Connect(ctx, uid, kb)
 	if err != nil {
 		return fmt.Errorf("getting connection: %w", err)
