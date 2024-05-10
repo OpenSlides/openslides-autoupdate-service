@@ -134,7 +134,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	messageBus := redis.New(lookup)
 
 	// Autoupdate data flow.
-	flow, history, flowBackground, err := autoupdate.NewFlow(lookup, messageBus)
+	flow, flowBackground, err := autoupdate.NewFlow(lookup, messageBus)
 	if err != nil {
 		return nil, fmt.Errorf("init autoupdate data flow: %w", err)
 	}
@@ -185,7 +185,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 
 		// Start http server.
 		fmt.Printf("Listen on %s\n", listenAddr)
-		return http.Run(ctx, listenAddr, authService, auService, history, metricStorage, metricSaveInterval)
+		return http.Run(ctx, listenAddr, authService, auService, metricStorage, metricSaveInterval)
 	}
 
 	return service, nil

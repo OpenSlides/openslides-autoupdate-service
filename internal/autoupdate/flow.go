@@ -3,9 +3,9 @@ package autoupdate
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/history"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
@@ -29,13 +29,14 @@ type Flow struct {
 
 	cache     *cache.Cache
 	projector *projector.Projector
+	postgres  *datastore.FlowPostgres
 }
 
 // NewFlow initializes a flow for the autoupdate service.
-func NewFlow(lookup environment.Environmenter, messageBus flow.Updater) (*Flow, *history.History, func(context.Context, func(error)), error) {
+func NewFlow(lookup environment.Environmenter, messageBus flow.Updater) (*Flow, func(context.Context, func(error)), error) {
 	postgres, err := datastore.NewFlowPostgres(lookup, messageBus)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("init postgres: %w", err)
+		return nil, nil, fmt.Errorf("init postgres: %w", err)
 	}
 
 	vote := datastore.NewFlowVoteCount(lookup)
@@ -61,13 +62,12 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater) (*Flow, 
 		Flow:      projector,
 		cache:     cache,
 		projector: projector,
+		postgres:  postgres,
 	}
 
 	metric.Register(flow.metric)
 
-	hi := history.New(postgres)
-
-	return &flow, hi, background, nil
+	return &flow, background, nil
 }
 
 // ResetCache clears the cache.
@@ -79,4 +79,8 @@ func (f *Flow) ResetCache() {
 func (f *Flow) metric(values metric.Container) {
 	values.Add("datastore_cache_key_len", f.cache.Len())
 	values.Add("datastore_cache_size", f.cache.Size())
+}
+
+func (f *Flow) historyInformation(ctx context.Context, fqid string, w io.Writer) error {
+	return f.postgres.HistoryInformation(ctx, fqid, w)
 }

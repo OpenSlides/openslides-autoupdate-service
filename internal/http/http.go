@@ -39,7 +39,6 @@ func Run(
 	addr string,
 	auth Authenticater,
 	autoupdate *autoupdate.Autoupdate,
-	history HistoryInformationer,
 	redisConnection *redis.Redis,
 	saveIntercal time.Duration,
 ) error {
@@ -56,7 +55,7 @@ func Run(
 	HandleAutoupdate(mux, auth, autoupdate, connectionCount)
 	HandleInternalAutoupdate(mux, auth, autoupdate)
 	HandleShowConnectionCount(mux, autoupdate, auth, connectionCount)
-	HandleHistoryInformation(mux, auth, history)
+	HandleHistoryInformation(mux, auth, autoupdate)
 	HandleProfile(mux)
 
 	srv := &http.Server{
