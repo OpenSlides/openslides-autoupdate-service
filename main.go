@@ -141,7 +141,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	}
 	backgroundTasks = append(backgroundTasks, flowBackground)
 
-	historyService, err := history.New(lookup, flow)
+	historyService, err := history.New(flow)
 	if err != nil {
 		return nil, fmt.Errorf("init history: %w", err)
 	}

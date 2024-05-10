@@ -14,27 +14,29 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 )
 
 var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*`)
 
+// Getter is a flow.Getter, that can also access the history information.
+type Getter interface {
+	flow.Getter
+	HistoryInformation(ctx context.Context, fqid string, w io.Writer) error
+}
+
 // History get access to old data int the datastore
 type History struct {
-	history *sourceDatastore
-	getter  flow.Getter
+	getter Getter
 }
 
 // New initializes a new history.
-func New(lookup environment.Environmenter, getter flow.Getter) (*History, error) {
-	datastore, err := newSourceDatastore(lookup)
-	if err != nil {
-		return nil, fmt.Errorf("initializing datastore: %w", err)
+func New(getter flow.Getter) (*History, error) {
+	hg, ok := getter.(Getter)
+	if !ok {
+		return nil, fmt.Errorf("flow does not support history information")
 	}
-
 	return &History{
-		history: datastore,
-		getter:  getter,
+		getter: hg,
 	}, nil
 }
 
@@ -82,7 +84,7 @@ func (h History) HistoryInformation(ctx context.Context, uid int, fqid string, w
 		}
 	}
 
-	if err := h.history.HistoryInformation(ctx, fqid, w); err != nil {
+	if err := h.getter.HistoryInformation(ctx, fqid, w); err != nil {
 		return fmt.Errorf("getting history information: %w", err)
 	}
 
