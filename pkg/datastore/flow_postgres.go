@@ -7,6 +7,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
@@ -157,7 +158,7 @@ func (p *FlowPostgres) HistoryInformation(ctx context.Context, fqid string, w io
 
 	type historyInformation struct {
 		Position    int             `json:"position"`
-		Timestamp   float64         `json:"timestamp"`
+		Timestamp   int             `json:"timestamp"`
 		UserID      int             `json:"user_id"`
 		Information json.RawMessage `json:"information"`
 	}
@@ -166,10 +167,13 @@ func (p *FlowPostgres) HistoryInformation(ctx context.Context, fqid string, w io
 
 	for rows.Next() {
 		var hi historyInformation
+		var timestamp time.Time
 
-		if err = rows.Scan(&hi.Position, &hi.Timestamp, &hi.UserID, &hi.Information); err != nil {
+		if err = rows.Scan(&hi.Position, &timestamp, &hi.UserID, &hi.Information); err != nil {
 			return fmt.Errorf("scan: %w", err)
 		}
+
+		hi.Timestamp = int(timestamp.Unix())
 		output[fqid] = append(output[fqid], hi)
 	}
 
