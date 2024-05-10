@@ -30,14 +30,10 @@ type History struct {
 }
 
 // New initializes a new history.
-func New(getter flow.Getter) (*History, error) {
-	hg, ok := getter.(Getter)
-	if !ok {
-		return nil, fmt.Errorf("flow does not support history information")
-	}
+func New(getter Getter) *History {
 	return &History{
-		getter: hg,
-	}, nil
+		getter: getter,
+	}
 }
 
 // HistoryInformation returns the histrory information for an fqid.

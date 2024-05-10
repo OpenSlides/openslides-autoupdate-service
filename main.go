@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/history"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/http"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
@@ -135,16 +134,11 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	messageBus := redis.New(lookup)
 
 	// Autoupdate data flow.
-	flow, flowBackground, err := autoupdate.NewFlow(lookup, messageBus)
+	flow, history, flowBackground, err := autoupdate.NewFlow(lookup, messageBus)
 	if err != nil {
 		return nil, fmt.Errorf("init autoupdate data flow: %w", err)
 	}
 	backgroundTasks = append(backgroundTasks, flowBackground)
-
-	historyService, err := history.New(flow)
-	if err != nil {
-		return nil, fmt.Errorf("init history: %w", err)
-	}
 
 	// Auth Service.
 	authService, authBackground, err := auth.New(lookup, messageBus)
@@ -191,7 +185,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 
 		// Start http server.
 		fmt.Printf("Listen on %s\n", listenAddr)
-		return http.Run(ctx, listenAddr, authService, auService, historyService, metricStorage, metricSaveInterval)
+		return http.Run(ctx, listenAddr, authService, auService, history, metricStorage, metricSaveInterval)
 	}
 
 	return service, nil
