@@ -148,6 +148,7 @@ func CurrentSpeakerChyron(store *projector.SlideStore) {
 		}
 
 		var shortName, structureLevel string
+		var titleInfo json.RawMessage
 		if losID > 0 {
 			shortName, structureLevel, err = getCurrentSpeakerData(ctx, fetch, losID, meetingID)
 			if err != nil {
@@ -156,16 +157,38 @@ func CurrentSpeakerChyron(store *projector.SlideStore) {
 			if err := fetch.Err(); err != nil {
 				return nil, err
 			}
+
+			var losContentObject string
+			fetch.FetchIfExist(ctx, &losContentObject, "list_of_speakers/%d/content_object_id", losID)
+			if err := fetch.Err(); err != nil {
+				return nil, fmt.Errorf("getting los content object %d: %w", losID, err)
+			}
+
+			parts := strings.Split(losContentObject, "/")
+			if len(parts) != 2 {
+				return nil, fmt.Errorf("splitting ComtentObjectID: %w", err)
+			}
+			collection := parts[0]
+
+			titler := store.GetTitleInformationFunc(collection)
+			if titler != nil {
+				titleInfo, err = titler.GetTitleInformation(ctx, fetch, losContentObject, "", meetingID)
+				if err != nil {
+					return nil, fmt.Errorf("get title func: %w", err)
+				}
+			}
 		}
 
 		out := struct {
-			BackgroundColor     string `json:"background_color"`
-			FontColor           string `json:"font_color"`
-			CurrentSpeakerName  string `json:"current_speaker_name"`
-			CurrentSpeakerLevel string `json:"current_speaker_level"`
+			BackgroundColor     string          `json:"background_color"`
+			FontColor           string          `json:"font_color"`
+			TitleInformation    json.RawMessage `json:"title_information,omitempty"`
+			CurrentSpeakerName  string          `json:"current_speaker_name"`
+			CurrentSpeakerLevel string          `json:"current_speaker_level"`
 		}{
 			projector.ChyronBackgroundColor,
 			projector.ChyronFontColor,
+			titleInfo,
 			shortName,
 			structureLevel,
 		}
