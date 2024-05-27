@@ -1284,6 +1284,7 @@ var restrictionModes = map[string]string{
 	"user/email":                         "B",
 	"user/is_active":                     "B",
 	"user/last_email_sent":               "B",
+	"user/member_number":                 "B",
 	"user/organization_management_level": "B",
 	"user/saml_id":                       "B",
 	"user/username":                      "B",
