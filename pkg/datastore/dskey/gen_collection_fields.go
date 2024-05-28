@@ -895,6 +895,7 @@ var collectionFields = [...]collectionField{
 	{"user", "last_name"},
 	{"user", "meeting_ids"},
 	{"user", "meeting_user_ids"},
+	{"user", "member_number"},
 	{"user", "option_ids"},
 	{"user", "organization_id"},
 	{"user", "organization_management_level"},
@@ -2704,48 +2705,50 @@ func collectionFieldToID(cf string) int {
 		return 891
 	case "user/meeting_user_ids":
 		return 892
-	case "user/option_ids":
+	case "user/member_number":
 		return 893
-	case "user/organization_id":
+	case "user/option_ids":
 		return 894
-	case "user/organization_management_level":
+	case "user/organization_id":
 		return 895
-	case "user/password":
+	case "user/organization_management_level":
 		return 896
-	case "user/poll_candidate_ids":
+	case "user/password":
 		return 897
-	case "user/poll_voted_ids":
+	case "user/poll_candidate_ids":
 		return 898
-	case "user/pronoun":
+	case "user/poll_voted_ids":
 		return 899
-	case "user/saml_id":
+	case "user/pronoun":
 		return 900
-	case "user/title":
+	case "user/saml_id":
 		return 901
-	case "user/username":
+	case "user/title":
 		return 902
-	case "user/vote_ids":
+	case "user/username":
 		return 903
-	case "vote/A":
+	case "user/vote_ids":
 		return 904
-	case "vote/B":
+	case "vote/A":
 		return 905
-	case "vote/delegated_user_id":
+	case "vote/B":
 		return 906
-	case "vote/id":
+	case "vote/delegated_user_id":
 		return 907
-	case "vote/meeting_id":
+	case "vote/id":
 		return 908
-	case "vote/option_id":
+	case "vote/meeting_id":
 		return 909
-	case "vote/user_id":
+	case "vote/option_id":
 		return 910
-	case "vote/user_token":
+	case "vote/user_id":
 		return 911
-	case "vote/value":
+	case "vote/user_token":
 		return 912
-	case "vote/weight":
+	case "vote/value":
 		return 913
+	case "vote/weight":
+		return 914
 	default:
 		return -1
 	}
