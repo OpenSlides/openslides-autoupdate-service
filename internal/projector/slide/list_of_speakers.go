@@ -156,6 +156,29 @@ func CurrentSpeakerChyron(store *projector.SlideStore) {
 			if err := fetch.Err(); err != nil {
 				return nil, err
 			}
+<<<<<<< HEAD
+=======
+
+			var losContentObject string
+			fetch.FetchIfExist(ctx, &losContentObject, "list_of_speakers/%d/content_object_id", losID)
+			if err := fetch.Err(); err != nil {
+				return nil, fmt.Errorf("getting los content object %d: %w", losID, err)
+			}
+
+			parts := strings.Split(losContentObject, "/")
+			if len(parts) != 2 {
+				return nil, fmt.Errorf("invalid ContentObjectID %s. Expected two parts", losContentObject)
+			}
+			collection := parts[0]
+
+			titler := store.GetTitleInformationFunc(collection)
+			if titler != nil {
+				titleInfo, err = titler.GetTitleInformation(ctx, fetch, losContentObject, "", meetingID)
+				if err != nil {
+					return nil, fmt.Errorf("get title func: %w", err)
+				}
+			}
+>>>>>>> b044dce (Fix error message)
 		}
 
 		out := struct {
