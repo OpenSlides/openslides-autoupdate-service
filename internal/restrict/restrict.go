@@ -88,7 +88,7 @@ func restrict(ctx context.Context, getter flow.Getter, uid int, data map[dskey.K
 	}
 
 	if isSuperAdmin {
-		if err := restrictSuperAdmin(ctx, getter, uid, data); err != nil {
+		if err := restrictSuperAdmin(ctx, getter, data); err != nil {
 			return nil, fmt.Errorf("restrict as superadmin: %w", err)
 		}
 		return nil, nil
@@ -163,7 +163,7 @@ func restrict(ctx context.Context, getter flow.Getter, uid int, data map[dskey.K
 	return times, nil
 }
 
-func restrictSuperAdmin(ctx context.Context, getter flow.Getter, uid int, data map[dskey.Key][]byte) error {
+func restrictSuperAdmin(ctx context.Context, getter flow.Getter, data map[dskey.Key][]byte) error {
 	ds := dsfetch.New(getter)
 
 	for key := range data {
