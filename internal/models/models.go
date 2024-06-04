@@ -12,7 +12,22 @@ import (
 // Unmarshal parses the content of models.yml to a datastruct.q
 func Unmarshal(r io.Reader) (map[string]Model, error) {
 	var m map[string]Model
-	if err := yaml.NewDecoder(r).Decode(&m); err != nil {
+
+	var tmp map[string]interface{}
+	if err := yaml.NewDecoder(r).Decode(&tmp); err != nil {
+		return m, err
+	}
+
+	if _, ok := tmp["_meta"]; ok {
+		delete(tmp, "_meta")
+	}
+
+	cleanYml, err := yaml.Marshal(tmp)
+	if err != nil {
+		return m, err
+	}
+
+	if err := yaml.Unmarshal(cleanYml, &m); err != nil {
 		return nil, fmt.Errorf("decoding models: %w", err)
 	}
 	return m, nil
