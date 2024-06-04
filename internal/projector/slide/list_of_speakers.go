@@ -166,7 +166,7 @@ func CurrentSpeakerChyron(store *projector.SlideStore) {
 
 			parts := strings.Split(losContentObject, "/")
 			if len(parts) != 2 {
-				return nil, fmt.Errorf("splitting ComtentObjectID: %w", err)
+				return nil, fmt.Errorf("invalid ContentObjectID %s. Expected two parts", losContentObject)
 			}
 			collection := parts[0]
 
