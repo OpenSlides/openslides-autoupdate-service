@@ -8,12 +8,17 @@ package autoupdate
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
+	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
@@ -326,6 +331,69 @@ func (a *Autoupdate) FilterConnectionCount(ctx context.Context, meetingIDs []int
 			delete(count, userID)
 		}
 	}
+
+	return nil
+}
+
+var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*`)
+
+// HistoryInformation returns the histrory information for an fqid.
+func (a *Autoupdate) HistoryInformation(ctx context.Context, uid int, fqid string, w io.Writer) error {
+	type History interface {
+		historyInformation(ctx context.Context, fqid string, w io.Writer) error
+	}
+	hi, ok := a.flow.(History)
+	if !ok {
+		return fmt.Errorf("history not supported")
+	}
+
+	if !reValidKeys.MatchString(fqid) {
+		// TODO Client Error
+		return invalidInputError{fmt.Sprintf("fqid %s is invalid", fqid)}
+	}
+
+	coll, rawID, _ := strings.Cut(fqid, "/")
+	id, _ := strconv.Atoi(rawID)
+
+	ds := dsfetch.New(a.flow)
+
+	meetingID, hasMeeting, err := collection.Collection(ctx, coll).MeetingID(ctx, ds, id)
+	if err != nil {
+		var errNotExist dsfetch.DoesNotExistError
+		if errors.As(err, &errNotExist) {
+			// TODO Client Error
+			return notExistError{dskey.Key(errNotExist)}
+		}
+		return fmt.Errorf("getting meeting id for collection %s id %d: %w", coll, id, err)
+	}
+
+	if !hasMeeting {
+		hasOML, err := perm.HasOrganizationManagementLevel(ctx, ds, uid, perm.OMLCanManageOrganization)
+		if err != nil {
+			return fmt.Errorf("getting organization management level: %w", err)
+		}
+
+		if !hasOML {
+			// TODO Client Error
+			return permissionDeniedError{fmt.Errorf("you are not allowed to use history information on %s", fqid)}
+		}
+	} else {
+		p, err := perm.New(ctx, ds, uid, meetingID)
+		if err != nil {
+			return fmt.Errorf("getting meeting permissions: %w", err)
+		}
+
+		if !p.Has(perm.MeetingCanSeeHistory) {
+			// TODO Client Error
+			return permissionDeniedError{fmt.Errorf("you are not allowed to use history information on %s", fqid)}
+		}
+	}
+
+	if err := hi.historyInformation(ctx, fqid, w); err != nil {
+		return fmt.Errorf("getting history information: %w", err)
+	}
+
+	fmt.Fprintln(w)
 
 	return nil
 }

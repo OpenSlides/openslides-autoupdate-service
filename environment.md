@@ -17,11 +17,6 @@ The Service uses the following environment variables:
 * `VOTE_PROTOCOL`: Protocol of the vote-service. The default is `http`.
 * `VOTE_HOST`: Host of the vote-service. The default is `localhost`.
 * `VOTE_PORT`: Port of the vote-service. The default is `9013`.
-* `DATASTORE_READER_PROTOCOL`: Protocol of the datastore reader. The default is `http`.
-* `DATASTORE_READER_HOST`: Host of the datastore reader. The default is `localhost`.
-* `DATASTORE_READER_PORT`: Port of the datastore reader. The default is `9010`.
-* `DATASTORE_TIMEOUT`: Time until a request to the datastore times out. The default is `3s`.
-* `DATASTORE_MAX_PARALLEL_KEYS`: Max keys that are send in one request to the datastore. The default is `1000`.
 * `AUTH_PROTOCOL`: Protocol of the auth service. The default is `http`.
 * `AUTH_HOST`: Host of the auth service. The default is `localhost`.
 * `AUTH_PORT`: Port of the auth service. The default is `9004`.
