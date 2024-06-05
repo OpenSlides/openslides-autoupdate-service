@@ -148,6 +148,7 @@ func CurrentSpeakerChyron(store *projector.SlideStore) {
 		}
 
 		var shortName, structureLevel string
+		var titleInfo json.RawMessage
 		if losID > 0 {
 			shortName, structureLevel, err = getCurrentSpeakerData(ctx, fetch, losID, meetingID)
 			if err != nil {
@@ -156,8 +157,6 @@ func CurrentSpeakerChyron(store *projector.SlideStore) {
 			if err := fetch.Err(); err != nil {
 				return nil, err
 			}
-<<<<<<< HEAD
-=======
 
 			var losContentObject string
 			fetch.FetchIfExist(ctx, &losContentObject, "list_of_speakers/%d/content_object_id", losID)
@@ -178,17 +177,18 @@ func CurrentSpeakerChyron(store *projector.SlideStore) {
 					return nil, fmt.Errorf("get title func: %w", err)
 				}
 			}
->>>>>>> b044dce (Fix error message)
 		}
 
 		out := struct {
-			BackgroundColor     string `json:"background_color"`
-			FontColor           string `json:"font_color"`
-			CurrentSpeakerName  string `json:"current_speaker_name"`
-			CurrentSpeakerLevel string `json:"current_speaker_level"`
+			BackgroundColor     string          `json:"background_color"`
+			FontColor           string          `json:"font_color"`
+			TitleInformation    json.RawMessage `json:"title_information,omitempty"`
+			CurrentSpeakerName  string          `json:"current_speaker_name"`
+			CurrentSpeakerLevel string          `json:"current_speaker_level"`
 		}{
 			projector.ChyronBackgroundColor,
 			projector.ChyronFontColor,
+			titleInfo,
 			shortName,
 			structureLevel,
 		}
