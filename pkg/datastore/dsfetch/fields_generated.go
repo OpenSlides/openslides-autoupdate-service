@@ -6719,8 +6719,26 @@ func (r *Fetch) Projector_ChyronBackgroundColor(projectorID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
+func (r *Fetch) Projector_ChyronBackgroundColor2(projectorID int) *ValueString {
+	key, err := dskey.FromParts("projector", projectorID, "chyron_background_color_2")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
 func (r *Fetch) Projector_ChyronFontColor(projectorID int) *ValueString {
 	key, err := dskey.FromParts("projector", projectorID, "chyron_font_color")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
+func (r *Fetch) Projector_ChyronFontColor2(projectorID int) *ValueString {
+	key, err := dskey.FromParts("projector", projectorID, "chyron_font_color_2")
 	if err != nil {
 		return &ValueString{err: err}
 	}
