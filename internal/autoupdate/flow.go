@@ -3,6 +3,7 @@ package autoupdate
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
@@ -28,6 +29,7 @@ type Flow struct {
 
 	cache     *cache.Cache
 	projector *projector.Projector
+	postgres  *datastore.FlowPostgres
 }
 
 // NewFlow initializes a flow for the autoupdate service.
@@ -65,6 +67,7 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater) (*Flow, 
 		Flow:      projector,
 		cache:     cache,
 		projector: projector,
+		postgres:  postgres,
 	}
 
 	metric.Register(flow.metric)
@@ -81,4 +84,8 @@ func (f *Flow) ResetCache() {
 func (f *Flow) metric(values metric.Container) {
 	values.Add("datastore_cache_key_len", f.cache.Len())
 	values.Add("datastore_cache_size", f.cache.Size())
+}
+
+func (f *Flow) historyInformation(ctx context.Context, fqid string, w io.Writer) error {
+	return f.postgres.HistoryInformation(ctx, fqid, w)
 }
