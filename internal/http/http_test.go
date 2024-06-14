@@ -62,7 +62,7 @@ func TestKeysHandler(t *testing.T) {
 		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil, [2]*ahttp.ConnectionCount{})
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, [2]*ahttp.ConnectionCount{})
 
 	req := httptest.NewRequest("GET", "/system/autoupdate?k=user/1/username,user/2/username", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()
@@ -98,7 +98,7 @@ func TestComplexHandler(t *testing.T) {
 		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil, [2]*ahttp.ConnectionCount{})
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, [2]*ahttp.ConnectionCount{})
 
 	req := httptest.NewRequest(
 		"GET",
@@ -153,7 +153,7 @@ func TestErrors(t *testing.T) {
 		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, nil, [2]*ahttp.ConnectionCount{})
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, [2]*ahttp.ConnectionCount{})
 
 	for _, tt := range []struct {
 		name    string

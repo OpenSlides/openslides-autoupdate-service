@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/history"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/http"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
@@ -141,11 +140,6 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	}
 	backgroundTasks = append(backgroundTasks, flowBackground)
 
-	historyService, err := history.New(lookup)
-	if err != nil {
-		return nil, fmt.Errorf("init history: %w", err)
-	}
-
 	// Auth Service.
 	authService, authBackground, err := auth.New(lookup, messageBus)
 	if err != nil {
@@ -191,7 +185,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 
 		// Start http server.
 		fmt.Printf("Listen on %s\n", listenAddr)
-		return http.Run(ctx, listenAddr, authService, auService, historyService, metricStorage, metricSaveInterval)
+		return http.Run(ctx, listenAddr, authService, auService, metricStorage, metricSaveInterval)
 	}
 
 	return service, nil

@@ -2,9 +2,12 @@ package datastore
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
@@ -140,6 +143,45 @@ func (p *FlowPostgres) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Ke
 	}
 
 	return values, nil
+}
+
+// HistoryInformation fetches the history information for one fqid.
+func (p *FlowPostgres) HistoryInformation(ctx context.Context, fqid string, w io.Writer) error {
+	sql := `select distinct on (position) position, timestamp, user_id, information from positions natural join events
+	where fqid = $1 and information::text<>'null'::text order by position asc`
+
+	rows, err := p.pool.Query(ctx, sql, fqid)
+	if err != nil {
+		return fmt.Errorf("sending query: %w", err)
+	}
+	defer rows.Close()
+
+	type historyInformation struct {
+		Position    int             `json:"position"`
+		Timestamp   int             `json:"timestamp"`
+		UserID      int             `json:"user_id"`
+		Information json.RawMessage `json:"information"`
+	}
+
+	output := make(map[string][]historyInformation, 1)
+
+	for rows.Next() {
+		var hi historyInformation
+		var timestamp time.Time
+
+		if err = rows.Scan(&hi.Position, &timestamp, &hi.UserID, &hi.Information); err != nil {
+			return fmt.Errorf("scan: %w", err)
+		}
+
+		hi.Timestamp = int(timestamp.Unix())
+		output[fqid] = append(output[fqid], hi)
+	}
+
+	if err := json.NewEncoder(w).Encode(output); err != nil {
+		return fmt.Errorf("encode: %w", err)
+	}
+
+	return nil
 }
 
 // Update calls the updater.
