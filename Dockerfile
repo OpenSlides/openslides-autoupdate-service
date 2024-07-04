@@ -1,4 +1,4 @@
-FROM golang:1.22.4-alpine as base
+FROM golang:1.22.5-alpine as base
 WORKDIR /root/
 
 RUN apk add git
