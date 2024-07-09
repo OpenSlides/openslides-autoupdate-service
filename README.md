@@ -101,8 +101,7 @@ send a keyrequest in the body of the request. An example request is:
 
 `curl -N localhost:9012/system/autoupdate -d '[{"ids": [1], "collection": "user", "fields": {"username": null}}]'`
 
-To see a list of possible json-strings see the file
-internal/autoupdate/keysbuilder/keysbuilder_test.go
+To see a list of possible json-strings see the file [internal/keysbuilder/keysbuilder_test.go](internal/keysbuilder/keysbuilder_test.go).
 
 Keys can also defined with the query parameter `k`:
 
