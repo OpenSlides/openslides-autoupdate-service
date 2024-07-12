@@ -928,11 +928,12 @@ func TestUserSuperAdminModeG(t *testing.T) {
 
 func TestUserModeH(t *testing.T) {
 	var u collection.User
+	f := u.Modes("H")
 
 	testCase(
 		"request superadmin",
 		t,
-		u.Modes("H"),
+		f,
 		false,
 		`---
 		user/2:
@@ -946,7 +947,7 @@ func TestUserModeH(t *testing.T) {
 	testCase(
 		"request superadmin as orga manager",
 		t,
-		u.Modes("H"),
+		f,
 		false,
 		`---
 		user/1/organization_management_level: can_manage_organization
@@ -961,7 +962,7 @@ func TestUserModeH(t *testing.T) {
 	testCase(
 		"request organization manager",
 		t,
-		u.Modes("H"),
+		f,
 		false,
 		`---
 		user/2:
@@ -975,7 +976,7 @@ func TestUserModeH(t *testing.T) {
 	testCase(
 		"request organization manager as can_manage_organization",
 		t,
-		u.Modes("H"),
+		f,
 		true,
 		`---
 		user/1/organization_management_level: can_manage_organization
@@ -990,7 +991,7 @@ func TestUserModeH(t *testing.T) {
 	testCase(
 		"request organization user manager",
 		t,
-		u.Modes("H"),
+		f,
 		false,
 		`---
 		user/2:
@@ -1004,7 +1005,7 @@ func TestUserModeH(t *testing.T) {
 	testCase(
 		"request organization user manager as orga manager",
 		t,
-		u.Modes("H"),
+		f,
 		true,
 		`---
 		user/1/organization_management_level: can_manage_organization
@@ -1019,7 +1020,7 @@ func TestUserModeH(t *testing.T) {
 	testCase(
 		"request organization user manager as user manager",
 		t,
-		u.Modes("H"),
+		f,
 		true,
 		`---
 		user/1/organization_management_level: can_manage_users
@@ -1034,10 +1035,58 @@ func TestUserModeH(t *testing.T) {
 	testCase(
 		"As anonymous",
 		t,
-		u.Modes("H"),
+		f,
 		false,
 		`user/2/id: 2`,
 		withRequestUser(0),
+		withElementID(2),
+	)
+
+	testCase(
+		"Committee Manager",
+		t,
+		f,
+		true,
+		`---
+		user/2/committee_ids: [5]
+		user/1:
+			committee_management_ids: [5]
+		committee/5/user_ids: [2]
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"Committee Manager user not in it",
+		t,
+		f,
+		false,
+		`---
+		user/2/committee_ids: [5]
+		user/1:
+			committee_management_ids: [5]
+		committee/5/user_ids: []
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
+		"Committee Manager but other user has higher organisation_permission",
+		t,
+		f,
+		false,
+		`---
+		user/2:
+			committee_ids: [5]
+			organization_management_level: can_manage_users
+
+		user/1:
+			committee_management_ids: [5]
+		committee/5/user_ids: [2]
+		`,
+		withRequestUser(1),
 		withElementID(2),
 	)
 }
