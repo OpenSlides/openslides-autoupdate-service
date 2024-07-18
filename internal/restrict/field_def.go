@@ -634,6 +634,7 @@ var restrictionModes = map[string]string{
 	"meeting/list_of_speakers_show_first_contribution":              "B",
 	"meeting/list_of_speakers_speaker_note_for_everyone":            "B",
 	"meeting/location":                                              "B",
+	"meeting/locked_from_inside":                                    "B",
 	"meeting/logo_pdf_ballot_paper_id":                              "B",
 	"meeting/logo_pdf_footer_l_id":                                  "B",
 	"meeting/logo_pdf_footer_r_id":                                  "B",

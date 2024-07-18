@@ -3092,6 +3092,15 @@ func (r *Fetch) Meeting_Location(meetingID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_LockedFromInside(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "locked_from_inside")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_LogoPdfBallotPaperID(meetingID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("meeting", meetingID, "logo_pdf_ballot_paper_id")
 	if err != nil {
