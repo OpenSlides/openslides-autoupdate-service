@@ -774,6 +774,7 @@ var restrictionModes = map[string]string{
 	"meeting_user/chat_message_ids":                 "A",
 	"meeting_user/group_ids":                        "A",
 	"meeting_user/id":                               "A",
+	"meeting_user/locked_out":                       "A",
 	"meeting_user/meeting_id":                       "A",
 	"meeting_user/motion_editor_ids":                "A",
 	"meeting_user/motion_submitter_ids":             "A",
