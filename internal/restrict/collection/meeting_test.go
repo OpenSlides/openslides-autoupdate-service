@@ -45,6 +45,27 @@ func TestMeetingModeB(t *testing.T) {
 	)
 
 	testCase(
+		"anonymous enabled, as locked in user that was locked out",
+		t,
+		m.Modes("B"),
+		false,
+		`---
+		meeting/30:
+			enable_anonymous: true
+			group_ids: [7]
+		
+		group/7/meeting_user_ids: [10]
+		meeting_user/10:
+			user_id: 1	
+			locked_out: true
+			meeting_id: 30
+
+		user/1/meeting_user_ids: [10]
+		`,
+		withElementID(30),
+	)
+
+	testCase(
 		"user in meeting",
 		t,
 		m.Modes("B"),
@@ -61,6 +82,27 @@ func TestMeetingModeB(t *testing.T) {
 	)
 
 	testCase(
+		"user in meeting but locked out",
+		t,
+		m.Modes("B"),
+		false,
+		`---
+		meeting/30:
+			group_ids: [7]
+			committee_id: 2
+		
+		group/7/meeting_user_ids: [10]
+		meeting_user/10:
+			user_id: 1	
+			locked_out: true
+			meeting_id: 30
+
+		user/1/meeting_user_ids: [10]
+		`,
+		withElementID(30),
+	)
+
+	testCase(
 		"CML can manage",
 		t,
 		m.Modes("B"),
@@ -68,6 +110,29 @@ func TestMeetingModeB(t *testing.T) {
 		`---
 		meeting/30/committee_id: 4
 		user/1/committee_management_ids: [4]
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"CML can manage, but locked out",
+		t,
+		m.Modes("B"),
+		false,
+		`---
+		meeting/30:
+			committee_id: 4
+			group_ids: [7]
+
+		user/1:
+			committee_management_ids: [4]
+			meeting_user_ids: [10]
+
+		group/7/meeting_user_ids: [10]
+		meeting_user/10:
+			user_id: 1	
+			locked_out: true
+			meeting_id: 30
 		`,
 		withElementID(30),
 	)
@@ -119,6 +184,29 @@ func TestMeetingModeB(t *testing.T) {
 		`---
 		user/1/organization_management_level: can_manage_organization
 		meeting/30/id: 30
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"CML can manage organization, but locked out",
+		t,
+		m.Modes("B"),
+		false,
+		`---
+		meeting/30:
+			enable_anonymous: true
+			group_ids: [7]
+		
+		group/7/meeting_user_ids: [10]
+		meeting_user/10:
+			user_id: 1	
+			locked_out: true
+			meeting_id: 30
+
+		user/1:
+			meeting_user_ids: [10]
+			organization_management_level: can_manage_organization
 		`,
 		withElementID(30),
 	)

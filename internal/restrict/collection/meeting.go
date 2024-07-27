@@ -19,6 +19,7 @@ import (
 //	The user has the OML can_manage_organization.
 //
 // If `meeting/locked_from_inside` is set, only users in the meeting can see it.
+// If the user is locked out (meeting_user/locked_out) he can not see the meeting.
 //
 // Mode A: Always visible to everyone.
 //
@@ -60,6 +61,19 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) 
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
+	var meetingUserIDs []int
+	if requestUser != 0 {
+		meetingUserIDs, err = ds.User_MeetingUserIDs(requestUser).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting all meeting_user_ids of the reques user: %w", err)
+		}
+	}
+
+	meetingUserMeetingIDs := make([]int, len(meetingUserIDs))
+	for i, id := range meetingUserIDs {
+		ds.MeetingUser_MeetingID(id).Lazy(&meetingUserMeetingIDs[i])
+	}
+
 	lockedMeetings := make([]bool, len(meetingIDs))
 	enabledAnonymous := make([]bool, len(meetingIDs))
 	for i, id := range meetingIDs {
@@ -68,7 +82,13 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) 
 	}
 
 	if err := ds.Execute(ctx); err != nil {
-		return nil, fmt.Errorf("get locked from inside value: %w", err)
+		return nil, fmt.Errorf("get meeting/locked_from_inside, meeting/enable_anonymous and meeting_user/meeting_id value: %w", err)
+	}
+
+	meetingIDToMeetingUserID := make(map[int]int, len(meetingIDs))
+	for i, meetingUserID := range meetingUserIDs {
+		meetingID := meetingUserMeetingIDs[i]
+		meetingIDToMeetingUserID[meetingID] = meetingUserID
 	}
 
 	oml, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
@@ -79,6 +99,18 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) 
 	var allowed []int
 LOOP_MEETINGS:
 	for i, meetingID := range meetingIDs {
+		// Check, if the user is locked out
+		meetingUserID := meetingIDToMeetingUserID[meetingID]
+		if meetingUserID != 0 {
+			lockedOut, err := ds.MeetingUser_LockedOut(meetingUserID).Value(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("getting meeting_user/locked_out: %w", err)
+			}
+			if lockedOut {
+				continue
+			}
+		}
+
 		groupIDs, err := ds.Meeting_GroupIDs(meetingID).Value(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("getting group_ids: %w", err)
