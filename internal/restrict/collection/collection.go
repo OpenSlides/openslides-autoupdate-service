@@ -24,8 +24,6 @@ func (cm CM) String() string {
 // FieldRestricter is a function to restrict fields of a collection.
 type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, id ...int) ([]int, error)
 
-type singleFieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, id int) (bool, error)
-
 // Allways is a restricter func that just returns true.
 func Allways(ctx context.Context, ds *dsfetch.Fetch, elementIDs ...int) ([]int, error) {
 	return elementIDs, nil

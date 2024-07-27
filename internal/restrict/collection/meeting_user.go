@@ -20,6 +20,8 @@ import (
 //
 //	The request user has the OML can_manage_users or higher.
 //	The request user has user.can_manage in the meeting
+//
+// Mode E: User has the permissoin can_see_sensible_data.
 type MeetingUser struct{}
 
 // Name returns the collection name.
@@ -47,6 +49,9 @@ func (m MeetingUser) Modes(mode string) FieldRestricter {
 
 	case "D":
 		return m.modeD
+
+	case "E":
+		return m.modeE
 
 	}
 	return nil
@@ -112,4 +117,8 @@ func (m MeetingUser) modeD(ctx context.Context, ds *dsfetch.Fetch, meetingUserID
 	}
 
 	return meetingPerm(ctx, ds, m, meetingUserIDs, perm.UserCanManage)
+}
+
+func (m MeetingUser) modeE(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs ...int) ([]int, error) {
+	return meetingPerm(ctx, ds, m, meetingUserIDs, perm.UserCanSeeSensitiveData)
 }

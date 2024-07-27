@@ -204,3 +204,36 @@ func TestMeetingUserModeD(t *testing.T) {
 		withPerms(5, perm.UserCanManage),
 	)
 }
+
+func TestMeetingUserModeE(t *testing.T) {
+	mode := collection.MeetingUser{}.Modes("E")
+
+	testCase(
+		"Without perms",
+		t,
+		mode,
+		false,
+		`---
+		user/2/id: 2
+		meeting_user/20:
+			user_id: 2
+			meeting_id: 5
+		`,
+		withElementID(20),
+	)
+
+	testCase(
+		"Can see",
+		t,
+		mode,
+		true,
+		`---
+		user/2/id: 2
+		meeting_user/20:
+			user_id: 2
+			meeting_id: 5
+		`,
+		withPerms(5, perm.UserCanSeeSensitiveData),
+		withElementID(20),
+	)
+}

@@ -71,4 +71,44 @@ func TestChatGroupModeA(t *testing.T) {
 		meeting_user/10/meeting_id: 30
 		`,
 	)
+
+	testCase(
+		"In chat read group locked out",
+		t,
+		c.Modes("A"),
+		false,
+		`---
+		chat_group/1:
+			meeting_id: 30
+			read_group_ids: [4]
+
+		meeting/30/id: 1
+		group/4/id: 4
+
+		user/1/meeting_user_ids: [10]
+		meeting_user/10/group_ids: [4]
+		meeting_user/10/meeting_id: 30
+		meeting_user/10/locked_out: true
+		`,
+	)
+
+	testCase(
+		"In chat write group locked out",
+		t,
+		c.Modes("A"),
+		false,
+		`---
+		chat_group/1:
+			meeting_id: 30
+			write_group_ids: [4]
+
+		meeting/30/id: 1
+		group/4/id: 4
+
+		user/1/meeting_user_ids: [10]
+		meeting_user/10/group_ids: [4]
+		meeting_user/10/meeting_id: 30
+		meeting_user/10/locked_out: true
+		`,
+	)
 }
