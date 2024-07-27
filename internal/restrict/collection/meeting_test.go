@@ -132,6 +132,33 @@ func TestMeetingModeB(t *testing.T) {
 		withRequestUser(0),
 		withElementID(30),
 	)
+
+	testCase(
+		"locked meeting, orga admin",
+		t,
+		m.Modes("B"),
+		false,
+		`
+		user/1/organization_management_level: can_manage_organization
+		meeting/30/locked_from_inside: true
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"locked meeting, anonymous enabled",
+		t,
+		m.Modes("B"),
+		false,
+		`
+		meeting/30:
+			locked_from_inside: true
+			enable_anonymous: true
+		
+		`,
+		withElementID(30),
+		withRequestUser(0),
+	)
 }
 
 func TestMeetingModeC(t *testing.T) {
