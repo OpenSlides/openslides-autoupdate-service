@@ -3,6 +3,7 @@ package collection
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
@@ -109,37 +110,22 @@ LOOP_MEETINGS:
 			if lockedOut {
 				continue
 			}
-		}
 
-		groupIDs, err := ds.Meeting_GroupIDs(meetingID).Value(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("getting group_ids: %w", err)
-		}
-
-		groupMeetingUserIDs := make([][]int, len(groupIDs))
-		for i, gID := range groupIDs {
-			ds.Group_MeetingUserIDs(gID).Lazy(&groupMeetingUserIDs[i])
-		}
-		if err := ds.Execute(ctx); err != nil {
-			return nil, fmt.Errorf("fetching meeting_user ids: %w", err)
-		}
-
-		groupUserIDList := make([][]int, len(groupMeetingUserIDs))
-		for i, muIDs := range groupMeetingUserIDs {
-			groupUserID := make([]int, len(muIDs))
-			for j, muID := range muIDs {
-				ds.MeetingUser_UserID(muID).Lazy(&groupUserID[j])
+			groupIDs, err := ds.Meeting_GroupIDs(meetingID).Value(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("getting group_ids: %w", err)
 			}
-			groupUserIDList[i] = groupUserID
 
-		}
-		if err := ds.Execute(ctx); err != nil {
-			return nil, fmt.Errorf("fetching user ids: %w", err)
-		}
+			groupMeetingUserIDs := make([][]int, len(groupIDs))
+			for i, gID := range groupIDs {
+				ds.Group_MeetingUserIDs(gID).Lazy(&groupMeetingUserIDs[i])
+			}
+			if err := ds.Execute(ctx); err != nil {
+				return nil, fmt.Errorf("fetching meeting_user ids: %w", err)
+			}
 
-		for _, userIDs := range groupUserIDList {
-			for _, userID := range userIDs {
-				if requestUser == userID {
+			for _, muIDs := range groupMeetingUserIDs {
+				if slices.Contains(muIDs, meetingUserID) {
 					allowed = append(allowed, meetingID)
 					continue LOOP_MEETINGS
 				}

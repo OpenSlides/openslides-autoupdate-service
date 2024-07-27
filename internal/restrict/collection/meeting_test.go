@@ -76,7 +76,10 @@ func TestMeetingModeB(t *testing.T) {
 			committee_id: 2
 		
 		group/7/meeting_user_ids: [10]
-		meeting_user/10/user_id: 1
+		meeting_user/10:
+			user_id: 1
+			meeting_id: 30
+		user/1/meeting_user_ids: [10]
 		`,
 		withElementID(30),
 	)
