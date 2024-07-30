@@ -54,8 +54,10 @@ import (
 //
 // Mode G: No one. Not even the superadmin.
 //
-// Mode H: Like D but the fields are not visible, if the request has a lower
-// organization management level then the requested user.
+// Mode H: The fields can be seen if one of the following conditions is true:
+//   - Any of the conditions in D or
+//   - There exists a committee where Y has the CML can_manage and X is in committee/user_ids
+//     But the fields are never visible, if the request has a lower organization management level than the requested user.
 type User struct{}
 
 // Name returns the collection name.
@@ -543,23 +545,57 @@ func (u User) modeH(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]i
 
 	ownLevel := perm.OrganizationManagementLevel(ownOrgaManagementLevel)
 
+	otherLevelStr := make([]string, len(userIDs))
+	for i, userID := range userIDs {
+		ds.User_OrganizationManagementLevel(userID).Lazy(&otherLevelStr[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("getting organization management level of other users: %w", err)
+	}
+
+	otherLevel := make([]perm.OrganizationManagementLevel, len(userIDs))
+	for i, str := range otherLevelStr {
+		otherLevel[i] = perm.OrganizationManagementLevel(str)
+	}
+
 	fromD, err := u.modeD(ctx, ds, userIDs...)
 	if err != nil {
 		return nil, fmt.Errorf("restriction with mode d: %w", err)
 	}
 
-	allowed := make([]int, 0, len(fromD))
-	for _, userID := range fromD {
-		requestedOrgaManagementLevel, err := ds.User_OrganizationManagementLevel(userID).Value(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("getting orga managament level for user %d: %w", userID, err)
+	// Get all userIDs of committees, where the request user is manager.
+	commiteeIDs, err := perm.ManagementLevelCommittees(ctx, ds, requestUser)
+	if err != nil {
+		return nil, fmt.Errorf("getting committee ids: %w", err)
+	}
+
+	committeeUsers := make([][]int, len(commiteeIDs))
+	for i, commiteeID := range commiteeIDs {
+		ds.Committee_UserIDs(commiteeID).Lazy(&committeeUsers[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("getting committee user ids: %w", err)
+	}
+
+	allUsers := set.NewWithSize(len(userIDs), fromD...)
+	for _, fromCommittee := range committeeUsers {
+		allUsers.Add(fromCommittee...)
+	}
+
+	// Do the logic
+	allowed := make([]int, 0, allUsers.Len())
+	for i, userID := range userIDs {
+		if !higherThenOrgaManagement(ownLevel, otherLevel[i]) {
+			continue
 		}
 
-		otherLevel := perm.OrganizationManagementLevel(requestedOrgaManagementLevel)
-
-		if higherThenOrgaManagement(ownLevel, otherLevel) {
-			allowed = append(allowed, userID)
+		if !allUsers.Has(userID) {
+			continue
 		}
+
+		allowed = append(allowed, userID)
 	}
 
 	return allowed, nil
