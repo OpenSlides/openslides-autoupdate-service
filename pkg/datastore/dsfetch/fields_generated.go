@@ -5846,6 +5846,15 @@ func (r *Fetch) Organization_PrivacyPolicy(organizationID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
+func (r *Fetch) Organization_RequireDuplicateFrom(organizationID int) *ValueBool {
+	key, err := dskey.FromParts("organization", organizationID, "require_duplicate_from")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Organization_ResetPasswordVerboseErrors(organizationID int) *ValueBool {
 	key, err := dskey.FromParts("organization", organizationID, "reset_password_verbose_errors")
 	if err != nil {
