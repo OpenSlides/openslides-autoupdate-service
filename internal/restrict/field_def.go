@@ -990,6 +990,7 @@ var restrictionModes = map[string]string{
 	"organization/mediafile_ids":                 "A",
 	"organization/name":                          "A",
 	"organization/privacy_policy":                "A",
+	"organization/require_duplicate_from":        "A",
 	"organization/saml_attr_mapping":             "A",
 	"organization/saml_enabled":                  "A",
 	"organization/saml_login_button_text":        "A",
