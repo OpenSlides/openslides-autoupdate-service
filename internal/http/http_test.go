@@ -17,7 +17,6 @@ import (
 
 var (
 	myKey1, _ = dskey.FromParts("user", 1, "username")
-	myKey2, _ = dskey.FromParts("user", 2, "username")
 )
 
 type nexterMock struct {

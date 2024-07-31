@@ -338,7 +338,7 @@ func HandleHistoryInformation(mux *http.ServeMux, auth Authenticater, hi History
 
 		fqid := r.URL.Query().Get("fqid")
 		if fqid == "" {
-			handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("History Information needs an fqid")})
+			handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("history information needs an fqid")})
 			return
 		}
 
@@ -530,7 +530,7 @@ func validRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Only allow GET or POST requests.
 		if !(r.Method == http.MethodPost || r.Method == http.MethodGet) {
-			handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("Only GET or POST requests are supported")})
+			handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("only GET or POST requests are supported")})
 			return
 		}
 
