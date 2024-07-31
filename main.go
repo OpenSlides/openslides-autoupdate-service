@@ -134,8 +134,10 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	// Redis as message bus for datastore and logout events.
 	messageBus := redis.New(lookup)
 
+	anonymousOnly, _ := strconv.ParseBool(envAnonymousOnly.Value(lookup))
+
 	// Autoupdate data flow.
-	flow, flowBackground, err := autoupdate.NewFlow(lookup, messageBus)
+	flow, flowBackground, err := autoupdate.NewFlow(lookup, messageBus, anonymousOnly)
 	if err != nil {
 		return nil, fmt.Errorf("init autoupdate data flow: %w", err)
 	}
@@ -166,8 +168,6 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	if err != nil {
 		return nil, fmt.Errorf("invalid value for `METRIC_SAVE_INTERVAL`, expected duration got %s: %w", envMetricInterval.Value(lookup), err)
 	}
-
-	anonymousOnly, _ := strconv.ParseBool(envAnonymousOnly.Value(lookup))
 
 	if !anonymousOnly || metricTime > 0 {
 		runMetirc := func(ctx context.Context, errorHandler func(error)) {

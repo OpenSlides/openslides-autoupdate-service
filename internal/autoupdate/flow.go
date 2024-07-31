@@ -33,7 +33,7 @@ type Flow struct {
 }
 
 // NewFlow initializes a flow for the autoupdate service.
-func NewFlow(lookup environment.Environmenter, messageBus flow.Updater) (*Flow, func(context.Context, func(error)), error) {
+func NewFlow(lookup environment.Environmenter, messageBus flow.Updater, skipVoteService bool) (*Flow, func(context.Context, func(error)), error) {
 	postgres, err := datastore.NewFlowPostgres(lookup, messageBus)
 	if err != nil {
 		return nil, nil, fmt.Errorf("init postgres: %w", err)
@@ -41,12 +41,15 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater) (*Flow, 
 
 	vote := datastore.NewFlowVoteCount(lookup)
 
-	combined := flow.Combine(
-		postgres,
-		map[string]flow.Flow{"poll/vote_count": vote},
-	)
+	var dataFlow flow.Flow = postgres
+	if !skipVoteService {
+		dataFlow = flow.Combine(
+			postgres,
+			map[string]flow.Flow{"poll/vote_count": vote},
+		)
+	}
 
-	cache := cache.New(combined)
+	cache := cache.New(dataFlow)
 	projector := projector.NewProjector(cache, slide.Slides())
 
 	eventer := func() (<-chan time.Time, func() bool) {
