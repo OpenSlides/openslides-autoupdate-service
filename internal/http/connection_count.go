@@ -33,8 +33,14 @@ type ConnectionCount struct {
 	connections map[int]int
 }
 
+// newConnectionCount creates a new storage for metrics.
+//
+// If r is set, it saves the metric to redis. If r is nil, then no data is saved to redis.
 func newConnectionCount(ctx context.Context, r *redis.Redis, saveInterval time.Duration, name string) *ConnectionCount {
-	redisMetric := redis.NewMetric[map[int]int](r, name, mapIntCombiner{}, saveInterval*2, time.Now)
+	var redisMetric RedisMetric
+	if r != nil {
+		redisMetric = redis.NewMetric(r, name, mapIntCombiner{}, saveInterval*2, time.Now)
+	}
 
 	c := ConnectionCount{
 		metric:      redisMetric,
@@ -42,22 +48,24 @@ func newConnectionCount(ctx context.Context, r *redis.Redis, saveInterval time.D
 		connections: make(map[int]int),
 	}
 
-	go func() {
-		tick := time.NewTicker(saveInterval)
-		defer tick.Stop()
+	if redisMetric != nil {
+		go func() {
+			tick := time.NewTicker(saveInterval)
+			defer tick.Stop()
 
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-tick.C:
-			}
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-tick.C:
+				}
 
-			if err := c.save(ctx); err != nil {
-				oserror.Handle(fmt.Errorf("Error: save connection count: %w", err))
+				if err := c.save(ctx); err != nil {
+					oserror.Handle(fmt.Errorf("Error: save connection count: %w", err))
+				}
 			}
-		}
-	}()
+		}()
+	}
 
 	return &c
 }
@@ -93,11 +101,22 @@ func (c *ConnectionCount) Done(uid int) {
 	c.increment(uid, -1)
 }
 
-// Show shoes the counter.
+// Show shows the counter.
+//
+// if a redis connection is set, the data are fetched from redis. In other case,
+// only the local data is returned.
 func (c *ConnectionCount) Show(ctx context.Context, filter func(ctx context.Context, count map[int]int) error) (map[int]int, error) {
-	data, err := c.metric.Get(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getting counter from redis: %w", err)
+	var data map[int]int
+	if c.metric == nil {
+		c.mu.Lock()
+		data = c.connections
+		c.mu.Unlock()
+	} else {
+		var err error
+		data, err = c.metric.Get(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting counter from redis: %w", err)
+		}
 	}
 
 	if err := filter(ctx, data); err != nil {
@@ -111,10 +130,41 @@ func (c *ConnectionCount) Show(ctx context.Context, filter func(ctx context.Cont
 func (c *ConnectionCount) Metric(con metric.Container) {
 	ctx := context.Background()
 
-	data, err := c.metric.Get(ctx)
-	if err != nil {
-		oserror.Handle(fmt.Errorf("fetch connection count metric from redis: %w", err))
-		return
+	if c.metric != nil {
+		data, err := c.metric.Get(ctx)
+		if err != nil {
+			oserror.Handle(fmt.Errorf("fetch connection count metric from redis: %w", err))
+			return
+		}
+
+		currentConnectedUsers := 0
+		currentConnections := 0
+		averageCount := 0
+		averageSum := 0
+		for k, v := range data {
+			if v <= 0 {
+				continue
+			}
+
+			currentConnectedUsers++
+			currentConnections += v
+
+			if k != 0 {
+				averageCount++
+				averageSum += v
+			}
+		}
+
+		average := 0
+		if averageCount > 0 {
+			average = averageSum / averageCount
+		}
+
+		con.Add(c.name+"_connected_users_current", currentConnectedUsers)
+		con.Add(c.name+"_connected_users_total", len(data))
+		con.Add(c.name+"_connected_users_average_connections", average)
+		con.Add(c.name+"_connected_users_anonymous_connections", data[0])
+		con.Add(c.name+"_current_connections", currentConnections)
 	}
 
 	localCurrentUsers := 0
@@ -131,37 +181,8 @@ func (c *ConnectionCount) Metric(con metric.Container) {
 	}
 	c.mu.Unlock()
 
-	currentConnectedUsers := 0
-	currentConnections := 0
-	averageCount := 0
-	averageSum := 0
-	for k, v := range data {
-		if v <= 0 {
-			continue
-		}
-
-		currentConnectedUsers++
-		currentConnections += v
-
-		if k != 0 {
-			averageCount++
-			averageSum += v
-		}
-	}
-
-	average := 0
-	if averageCount > 0 {
-		average = averageSum / averageCount
-	}
-
-	con.Add(c.name+"_connected_users_current", currentConnectedUsers)
-	con.Add(c.name+"_connected_users_total", len(data))
 	con.Add(c.name+"_connected_users_current_local", localCurrentUsers)
 	con.Add(c.name+"_connected_users_total_local", totalCurrentConnections)
-	con.Add(c.name+"_connected_users_average_connections", average)
-	con.Add(c.name+"_connected_users_anonymous_connections", data[0])
-
-	con.Add(c.name+"_current_connections", currentConnections)
 	con.Add(c.name+"_current_connections_local", localCurrentConnections)
 }
 
