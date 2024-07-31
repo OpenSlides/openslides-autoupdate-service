@@ -169,7 +169,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 		return nil, fmt.Errorf("invalid value for `METRIC_SAVE_INTERVAL`, expected duration got %s: %w", envMetricInterval.Value(lookup), err)
 	}
 
-	if !anonymousOnly || metricTime > 0 {
+	if metricTime > 0 {
 		runMetirc := func(ctx context.Context, errorHandler func(error)) {
 			metric.Loop(ctx, metricTime, log.Default())
 		}
@@ -177,7 +177,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	}
 
 	metricStorage := messageBus
-	if disable, _ := strconv.ParseBool(envDisableConnectionCount.Value(lookup)); disable {
+	if disable, _ := strconv.ParseBool(envDisableConnectionCount.Value(lookup)); disable || anonymousOnly {
 		metricStorage = nil
 	}
 
