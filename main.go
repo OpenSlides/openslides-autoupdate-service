@@ -163,7 +163,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 
 	metricSaveInterval, err := environment.ParseDuration(envMetricSaveInterval.Value(lookup))
 	if err != nil {
-		return nil, fmt.Errorf("invalid value for `METRIC_TOO_OLD`, expected duration got %s: %w", envMetricInterval.Value(lookup), err)
+		return nil, fmt.Errorf("invalid value for `METRIC_SAVE_INTERVAL`, expected duration got %s: %w", envMetricInterval.Value(lookup), err)
 	}
 
 	if metricTime > 0 {
