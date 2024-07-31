@@ -310,7 +310,7 @@ func TestHistoryInformationNoFQID(t *testing.T) {
 		t.Errorf("got status %s, expected %s", resp.Result().Status, http.StatusText(http.StatusBadRequest))
 	}
 
-	expect := `{"error": {"type": "invalid_request", "msg": "Invalid request: History Information needs an fqid"}}`
+	expect := `{"error": {"type": "invalid_request", "msg": "Invalid request: history information needs an fqid"}}`
 	if body, _ := io.ReadAll(resp.Result().Body); string(body) != expect {
 		t.Errorf("got body `%s`, expected `%s`", body, expect)
 	}
