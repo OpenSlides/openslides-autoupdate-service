@@ -34,9 +34,8 @@ var (
 
 // Redis holds the state of the redis receiver.
 type Redis struct {
-	pool             *redis.Pool
-	lastAutoupdateID string
-	lastLogoutID     string
+	pool         *redis.Pool
+	lastLogoutID string
 }
 
 // New initializes a Redis instance.
