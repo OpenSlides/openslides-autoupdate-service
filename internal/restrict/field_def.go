@@ -788,6 +788,7 @@ var restrictionModes = map[string]string{
 	"meeting_user/vote_weight":                      "A",
 	"meeting_user/personal_note_ids":                "B",
 	"meeting_user/comment":                          "D",
+	"meeting_user/locked_out":                       "E",
 
 	// motion
 	"motion/all_derived_motion_ids":                 "A",
