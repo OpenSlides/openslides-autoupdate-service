@@ -56,7 +56,6 @@ func Run(
 	HandleInternalAutoupdate(mux, auth, autoupdate)
 	HandleShowConnectionCount(mux, autoupdate, auth, connectionCount)
 	HandleHistoryInformation(mux, auth, autoupdate)
-	HandleServerTime(mux)
 	HandleProfile(mux)
 
 	srv := &http.Server{
@@ -411,15 +410,6 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 
 	}
 	return ctx.Err()
-}
-
-// HandleServerTime returns the unix time in seconds.
-func HandleServerTime(mux *http.ServeMux) {
-	url := prefixPublic + "/server_time"
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, `{"server_time": %d}`+"\n", time.Now().Unix())
-	})
-	mux.HandleFunc(url, handler)
 }
 
 // HandleHealth tells, if the service is running.
