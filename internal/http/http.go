@@ -43,12 +43,10 @@ func Run(
 	saveIntercal time.Duration,
 ) error {
 	var connectionCount [2]*ConnectionCount
-	if redisConnection != nil {
-		connectionCount[0] = newConnectionCount(ctx, redisConnection, saveIntercal, "connections_stream")
-		connectionCount[1] = newConnectionCount(ctx, redisConnection, saveIntercal, "connections_longpolling")
-		metric.Register(connectionCount[0].Metric)
-		metric.Register(connectionCount[1].Metric)
-	}
+	connectionCount[0] = newConnectionCount(ctx, redisConnection, saveIntercal, "connections_stream")
+	connectionCount[1] = newConnectionCount(ctx, redisConnection, saveIntercal, "connections_longpolling")
+	metric.Register(connectionCount[0].Metric)
+	metric.Register(connectionCount[1].Metric)
 
 	mux := http.NewServeMux()
 	HandleHealth(mux)
@@ -338,7 +336,7 @@ func HandleHistoryInformation(mux *http.ServeMux, auth Authenticater, hi History
 
 		fqid := r.URL.Query().Get("fqid")
 		if fqid == "" {
-			handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("History Information needs an fqid")})
+			handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("history information needs an fqid")})
 			return
 		}
 
@@ -530,7 +528,7 @@ func validRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Only allow GET or POST requests.
 		if !(r.Method == http.MethodPost || r.Method == http.MethodGet) {
-			handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("Only GET or POST requests are supported")})
+			handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("only GET or POST requests are supported")})
 			return
 		}
 
