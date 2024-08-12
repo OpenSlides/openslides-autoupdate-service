@@ -1940,6 +1940,15 @@ func (r *Fetch) MeetingUser_ID(meetingUserID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
+func (r *Fetch) MeetingUser_LockedOut(meetingUserID int) *ValueBool {
+	key, err := dskey.FromParts("meeting_user", meetingUserID, "locked_out")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) MeetingUser_MeetingID(meetingUserID int) *ValueInt {
 	key, err := dskey.FromParts("meeting_user", meetingUserID, "meeting_id")
 	if err != nil {
