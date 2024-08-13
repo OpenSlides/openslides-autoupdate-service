@@ -88,17 +88,22 @@ func newAnonymous(ctx context.Context, ds *dsfetch.Fetch, meetingID int) (*Permi
 		return nil, nil
 	}
 
-	defaultGroupID, err := ds.Meeting_DefaultGroupID(meetingID).Value(ctx)
+	maybeAnonymousGroupID, err := ds.Meeting_AnonymousGroupID(meetingID).Value(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("getting default group: %w", err)
+		return nil, fmt.Errorf("getting anonymous group: %w", err)
 	}
 
-	perms, err := permissionsFromGroups(ctx, ds, defaultGroupID)
+	anonymousGroupID, hasAnonymousGroup := maybeAnonymousGroupID.Value()
+	if !hasAnonymousGroup {
+		return nil, fmt.Errorf("anonymous group id not set")
+	}
+
+	perms, err := permissionsFromGroups(ctx, ds, anonymousGroupID)
 	if err != nil {
 		return nil, fmt.Errorf("getting permissions for default group: %w", err)
 	}
 
-	return &Permission{groupIDs: []int{defaultGroupID}, permissions: perms}, nil
+	return &Permission{groupIDs: []int{anonymousGroupID}, permissions: perms}, nil
 }
 
 func isAdmin(ctx context.Context, ds *dsfetch.Fetch, meetingID int, groupIDs []int) (bool, error) {
