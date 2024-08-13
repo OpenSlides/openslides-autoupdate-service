@@ -986,6 +986,7 @@ var restrictionModes = map[string]string{
 	"option/yes":                              "B",
 
 	// organization
+	"organization/active_meeting_ids":            "A",
 	"organization/default_language":              "A",
 	"organization/description":                   "A",
 	"organization/genders":                       "A",
@@ -1011,7 +1012,6 @@ var restrictionModes = map[string]string{
 	"organization/users_email_sender":            "A",
 	"organization/users_email_subject":           "A",
 	"organization/vote_decrypt_public_main_key":  "A",
-	"organization/active_meeting_ids":            "B",
 	"organization/archived_meeting_ids":          "B",
 	"organization/committee_ids":                 "B",
 	"organization/enable_chat":                   "B",
