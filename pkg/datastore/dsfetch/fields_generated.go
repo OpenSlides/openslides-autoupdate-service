@@ -1292,6 +1292,15 @@ func (r *Fetch) Group_AdminGroupForMeetingID(groupID int) *ValueMaybeInt {
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
+func (r *Fetch) Group_AnonymousGroupForMeetingID(groupID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("group", groupID, "anonymous_group_for_meeting_id")
+	if err != nil {
+		return &ValueMaybeInt{err: err}
+	}
+
+	return &ValueMaybeInt{fetch: r, key: key}
+}
+
 func (r *Fetch) Group_DefaultGroupForMeetingID(groupID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("group", groupID, "default_group_for_meeting_id")
 	if err != nil {
@@ -2163,6 +2172,15 @@ func (r *Fetch) Meeting_AllProjectionIDs(meetingID int) *ValueIntSlice {
 	}
 
 	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_AnonymousGroupID(meetingID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting", meetingID, "anonymous_group_id")
+	if err != nil {
+		return &ValueMaybeInt{err: err}
+	}
+
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_ApplauseEnable(meetingID int) *ValueBool {
