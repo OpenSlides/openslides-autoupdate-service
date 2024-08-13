@@ -100,7 +100,7 @@ func newAnonymous(ctx context.Context, ds *dsfetch.Fetch, meetingID int) (*Permi
 
 	perms, err := permissionsFromGroups(ctx, ds, anonymousGroupID)
 	if err != nil {
-		return nil, fmt.Errorf("getting permissions for default group: %w", err)
+		return nil, fmt.Errorf("getting permissions for anonymous group: %w", err)
 	}
 
 	return &Permission{groupIDs: []int{anonymousGroupID}, permissions: perms}, nil
