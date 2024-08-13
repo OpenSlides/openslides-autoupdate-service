@@ -18,6 +18,7 @@ var relationFields = map[string]string{
 	"committee/forwarding_user_id":                                                   "user/forwarding_committee_ids",
 	"committee/organization_id":                                                      "organization/committee_ids",
 	"group/admin_group_for_meeting_id":                                               "meeting/admin_group_id",
+	"group/anonymous_group_for_meeting_id":                                           "meeting/anonymous_group_id",
 	"group/default_group_for_meeting_id":                                             "meeting/default_group_id",
 	"group/meeting_id":                                                               "meeting/group_ids",
 	"group/used_as_assignment_poll_default_id":                                       "meeting/assignment_poll_default_group_ids",
@@ -44,6 +45,7 @@ var relationFields = map[string]string{
 	"mediafile/used_as_logo_projector_main_in_meeting_id":                            "meeting/logo_projector_main_id",
 	"mediafile/used_as_logo_web_header_in_meeting_id":                                "meeting/logo_web_header_id",
 	"meeting/admin_group_id":                                                         "group/admin_group_for_meeting_id",
+	"meeting/anonymous_group_id":                                                     "group/anonymous_group_for_meeting_id",
 	"meeting/committee_id":                                                           "committee/meeting_ids",
 	"meeting/default_group_id":                                                       "group/default_group_for_meeting_id",
 	"meeting/default_meeting_for_committee_id":                                       "committee/default_meeting_id",
@@ -459,6 +461,7 @@ var restrictionModes = map[string]string{
 
 	// group
 	"group/admin_group_for_meeting_id":           "A",
+	"group/anonymous_group_for_meeting_id":       "A",
 	"group/default_group_for_meeting_id":         "A",
 	"group/external_id":                          "A",
 	"group/id":                                   "A",
@@ -553,6 +556,7 @@ var restrictionModes = map[string]string{
 	"meeting/agenda_show_subtitles":                                 "B",
 	"meeting/agenda_show_topic_navigation_on_detail_view":           "B",
 	"meeting/all_projection_ids":                                    "B",
+	"meeting/anonymous_group_id":                                    "B",
 	"meeting/assignment_candidate_ids":                              "B",
 	"meeting/assignment_ids":                                        "B",
 	"meeting/assignment_poll_add_candidates_to_list_of_speakers":    "B",
@@ -982,6 +986,7 @@ var restrictionModes = map[string]string{
 	"option/yes":                              "B",
 
 	// organization
+	"organization/active_meeting_ids":            "A",
 	"organization/default_language":              "A",
 	"organization/description":                   "A",
 	"organization/genders":                       "A",
@@ -1007,7 +1012,6 @@ var restrictionModes = map[string]string{
 	"organization/users_email_sender":            "A",
 	"organization/users_email_subject":           "A",
 	"organization/vote_decrypt_public_main_key":  "A",
-	"organization/active_meeting_ids":            "B",
 	"organization/archived_meeting_ids":          "B",
 	"organization/committee_ids":                 "B",
 	"organization/enable_chat":                   "B",
