@@ -56,6 +56,7 @@ func Run(
 	HandleInternalAutoupdate(mux, auth, autoupdate)
 	HandleShowConnectionCount(mux, autoupdate, auth, connectionCount)
 	HandleHistoryInformation(mux, auth, autoupdate)
+	HandleServerTime(mux)
 	HandleProfile(mux)
 
 	srv := &http.Server{
@@ -338,7 +339,7 @@ func HandleHistoryInformation(mux *http.ServeMux, auth Authenticater, hi History
 
 		fqid := r.URL.Query().Get("fqid")
 		if fqid == "" {
-			handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("History Information needs an fqid")})
+			handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("history information needs an fqid")})
 			return
 		}
 
@@ -410,6 +411,15 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 
 	}
 	return ctx.Err()
+}
+
+// HandleServerTime returns the unix time in seconds.
+func HandleServerTime(mux *http.ServeMux) {
+	url := prefixPublic + "/server_time"
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, `{"server_time": %d}`+"\n", time.Now().Unix())
+	})
+	mux.HandleFunc(url, handler)
 }
 
 // HandleHealth tells, if the service is running.
@@ -530,7 +540,7 @@ func validRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Only allow GET or POST requests.
 		if !(r.Method == http.MethodPost || r.Method == http.MethodGet) {
-			handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("Only GET or POST requests are supported")})
+			handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("only GET or POST requests are supported")})
 			return
 		}
 
