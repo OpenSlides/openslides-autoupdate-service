@@ -97,64 +97,72 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 		}
 
 		return eachCondition(ids, func(mediafileID int) (bool, error) {
-			logoOrFont, err := usedAsLogoOrFont(ctx, ds, mediafileID)
+			meetingMediafileIDs, err := ds.Mediafile_MeetingMediafileIDs(mediafileID).Value(ctx)
 			if err != nil {
 				return false, err
 			}
 
-			if len(canSeeMeeting) == 1 && logoOrFont {
-				return true, nil
-			}
-
-			if perms.Has(perm.ProjectorCanSee) {
-				p7onIDs, err := ds.Mediafile_ProjectionIDs(mediafileID).Value(ctx)
+			for _, meetingMediafileID := range meetingMediafileIDs {
+				logoOrFont, err := usedAsLogoOrFont(ctx, ds, meetingMediafileID)
 				if err != nil {
-					return false, fmt.Errorf("getting projection ids: %w", err)
+					return false, err
 				}
 
-				for _, p7onID := range p7onIDs {
-					value, err := ds.Projection_CurrentProjectorID(p7onID).Value(ctx)
-					if err != nil {
-						return false, fmt.Errorf("getting current projector id: %w", err)
-					}
-
-					if !value.Null() {
-						return true, nil
-					}
-				}
-			}
-
-			if perms.Has(perm.MediafileCanManage) {
-				return true, nil
-			}
-
-			if perms.Has(perm.MediafileCanSee) {
-				public, err := ds.Mediafile_IsPublic(mediafileID).Value(ctx)
-				if err != nil {
-					return false, fmt.Errorf("getting is public: %w", err)
-				}
-
-				if public {
+				if len(canSeeMeeting) == 1 && logoOrFont {
 					return true, nil
 				}
 
-				inheritedGroups, err := ds.Mediafile_InheritedAccessGroupIDs(mediafileID).Value(ctx)
-				if err != nil {
-					return false, fmt.Errorf("getting inheritedGroups: %w", err)
+				if perms.Has(perm.ProjectorCanSee) {
+					p7onIDs, err := ds.MeetingMediafile_ProjectionIDs(mediafileID).Value(ctx)
+					if err != nil {
+						return false, fmt.Errorf("getting projection ids: %w", err)
+					}
+
+					for _, p7onID := range p7onIDs {
+						value, err := ds.Projection_CurrentProjectorID(p7onID).Value(ctx)
+						if err != nil {
+							return false, fmt.Errorf("getting current projector id: %w", err)
+						}
+
+						if !value.Null() {
+							return true, nil
+						}
+					}
 				}
 
-				for _, id := range inheritedGroups {
-					if perms.InGroup(id) {
+				if perms.Has(perm.MediafileCanManage) {
+					return true, nil
+				}
+
+				if perms.Has(perm.MediafileCanSee) {
+					public, err := ds.MeetingMediafile_IsPublic(mediafileID).Value(ctx)
+					if err != nil {
+						return false, fmt.Errorf("getting is public: %w", err)
+					}
+
+					if public {
 						return true, nil
+					}
+
+					inheritedGroups, err := ds.MeetingMediafile_InheritedAccessGroupIDs(mediafileID).Value(ctx)
+					if err != nil {
+						return false, fmt.Errorf("getting inheritedGroups: %w", err)
+					}
+
+					for _, id := range inheritedGroups {
+						if perms.InGroup(id) {
+							return true, nil
+						}
 					}
 				}
 			}
+
 			return false, nil
 		})
 	})
 }
 
-func usedAsLogoOrFont(ctx context.Context, ds *dsfetch.Fetch, mediafileID int) (bool, error) {
+func usedAsLogoOrFont(ctx context.Context, ds *dsfetch.Fetch, meetingMediafileID int) (bool, error) {
 	var usedAs struct {
 		UsedAsLogoProjectorMainInMeetingID     dsfetch.Maybe[int]
 		UsedAsLogoProjectorHeaderInMeetingID   dsfetch.Maybe[int]
@@ -174,22 +182,22 @@ func usedAsLogoOrFont(ctx context.Context, ds *dsfetch.Fetch, mediafileID int) (
 		UsedAsFontProjectorH2InMeetingID       dsfetch.Maybe[int]
 	}
 
-	ds.Mediafile_UsedAsLogoProjectorMainInMeetingID(mediafileID).Lazy(&usedAs.UsedAsLogoProjectorMainInMeetingID)
-	ds.Mediafile_UsedAsLogoProjectorHeaderInMeetingID(mediafileID).Lazy(&usedAs.UsedAsLogoProjectorHeaderInMeetingID)
-	ds.Mediafile_UsedAsLogoWebHeaderInMeetingID(mediafileID).Lazy(&usedAs.UsedAsLogoWebHeaderInMeetingID)
-	ds.Mediafile_UsedAsLogoPdfHeaderLInMeetingID(mediafileID).Lazy(&usedAs.UsedAsLogoPdfHeaderLInMeetingID)
-	ds.Mediafile_UsedAsLogoPdfHeaderRInMeetingID(mediafileID).Lazy(&usedAs.UsedAsLogoPdfHeaderRInMeetingID)
-	ds.Mediafile_UsedAsLogoPdfFooterLInMeetingID(mediafileID).Lazy(&usedAs.UsedAsLogoPdfFooterLInMeetingID)
-	ds.Mediafile_UsedAsLogoPdfFooterRInMeetingID(mediafileID).Lazy(&usedAs.UsedAsLogoPdfFooterRInMeetingID)
-	ds.Mediafile_UsedAsLogoPdfBallotPaperInMeetingID(mediafileID).Lazy(&usedAs.UsedAsLogoPdfBallotPaperInMeetingID)
-	ds.Mediafile_UsedAsFontRegularInMeetingID(mediafileID).Lazy(&usedAs.UsedAsFontRegularInMeetingID)
-	ds.Mediafile_UsedAsFontItalicInMeetingID(mediafileID).Lazy(&usedAs.UsedAsFontItalicInMeetingID)
-	ds.Mediafile_UsedAsFontBoldInMeetingID(mediafileID).Lazy(&usedAs.UsedAsFontBoldInMeetingID)
-	ds.Mediafile_UsedAsFontBoldItalicInMeetingID(mediafileID).Lazy(&usedAs.UsedAsFontBoldItalicInMeetingID)
-	ds.Mediafile_UsedAsFontMonospaceInMeetingID(mediafileID).Lazy(&usedAs.UsedAsFontMonospaceInMeetingID)
-	ds.Mediafile_UsedAsFontChyronSpeakerNameInMeetingID(mediafileID).Lazy(&usedAs.UsedAsFontChyronSpeakerNameInMeetingID)
-	ds.Mediafile_UsedAsFontProjectorH1InMeetingID(mediafileID).Lazy(&usedAs.UsedAsFontProjectorH1InMeetingID)
-	ds.Mediafile_UsedAsFontProjectorH2InMeetingID(mediafileID).Lazy(&usedAs.UsedAsFontProjectorH2InMeetingID)
+	ds.MeetingMediafile_UsedAsLogoProjectorMainInMeetingID(meetingMediafileID).Lazy(&usedAs.UsedAsLogoProjectorMainInMeetingID)
+	ds.MeetingMediafile_UsedAsLogoProjectorHeaderInMeetingID(meetingMediafileID).Lazy(&usedAs.UsedAsLogoProjectorHeaderInMeetingID)
+	ds.MeetingMediafile_UsedAsLogoWebHeaderInMeetingID(meetingMediafileID).Lazy(&usedAs.UsedAsLogoWebHeaderInMeetingID)
+	ds.MeetingMediafile_UsedAsLogoPdfHeaderLInMeetingID(meetingMediafileID).Lazy(&usedAs.UsedAsLogoPdfHeaderLInMeetingID)
+	ds.MeetingMediafile_UsedAsLogoPdfHeaderRInMeetingID(meetingMediafileID).Lazy(&usedAs.UsedAsLogoPdfHeaderRInMeetingID)
+	ds.MeetingMediafile_UsedAsLogoPdfFooterLInMeetingID(meetingMediafileID).Lazy(&usedAs.UsedAsLogoPdfFooterLInMeetingID)
+	ds.MeetingMediafile_UsedAsLogoPdfFooterRInMeetingID(meetingMediafileID).Lazy(&usedAs.UsedAsLogoPdfFooterRInMeetingID)
+	ds.MeetingMediafile_UsedAsLogoPdfBallotPaperInMeetingID(meetingMediafileID).Lazy(&usedAs.UsedAsLogoPdfBallotPaperInMeetingID)
+	ds.MeetingMediafile_UsedAsFontRegularInMeetingID(meetingMediafileID).Lazy(&usedAs.UsedAsFontRegularInMeetingID)
+	ds.MeetingMediafile_UsedAsFontItalicInMeetingID(meetingMediafileID).Lazy(&usedAs.UsedAsFontItalicInMeetingID)
+	ds.MeetingMediafile_UsedAsFontBoldInMeetingID(meetingMediafileID).Lazy(&usedAs.UsedAsFontBoldInMeetingID)
+	ds.MeetingMediafile_UsedAsFontBoldItalicInMeetingID(meetingMediafileID).Lazy(&usedAs.UsedAsFontBoldItalicInMeetingID)
+	ds.MeetingMediafile_UsedAsFontMonospaceInMeetingID(meetingMediafileID).Lazy(&usedAs.UsedAsFontMonospaceInMeetingID)
+	ds.MeetingMediafile_UsedAsFontChyronSpeakerNameInMeetingID(meetingMediafileID).Lazy(&usedAs.UsedAsFontChyronSpeakerNameInMeetingID)
+	ds.MeetingMediafile_UsedAsFontProjectorH1InMeetingID(meetingMediafileID).Lazy(&usedAs.UsedAsFontProjectorH1InMeetingID)
+	ds.MeetingMediafile_UsedAsFontProjectorH2InMeetingID(meetingMediafileID).Lazy(&usedAs.UsedAsFontProjectorH2InMeetingID)
 	if err := ds.Execute(ctx); err != nil {
 		return false, fmt.Errorf("fetching as logo and as font: %w", err)
 	}

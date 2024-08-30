@@ -1589,24 +1589,6 @@ func (r *Fetch) ListOfSpeakers_StructureLevelListOfSpeakersIDs(listOfSpeakersID 
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_AccessGroupIDs(mediafileID int) *ValueIntSlice {
-	key, err := dskey.FromParts("mediafile", mediafileID, "access_group_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
-}
-
-func (r *Fetch) Mediafile_AttachmentIDs(mediafileID int) *ValueStringSlice {
-	key, err := dskey.FromParts("mediafile", mediafileID, "attachment_ids")
-	if err != nil {
-		return &ValueStringSlice{err: err}
-	}
-
-	return &ValueStringSlice{fetch: r, key: key}
-}
-
 func (r *Fetch) Mediafile_ChildIDs(mediafileID int) *ValueIntSlice {
 	key, err := dskey.FromParts("mediafile", mediafileID, "child_ids")
 	if err != nil {
@@ -1652,15 +1634,6 @@ func (r *Fetch) Mediafile_ID(mediafileID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_InheritedAccessGroupIDs(mediafileID int) *ValueIntSlice {
-	key, err := dskey.FromParts("mediafile", mediafileID, "inherited_access_group_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
-}
-
 func (r *Fetch) Mediafile_IsDirectory(mediafileID int) *ValueBool {
 	key, err := dskey.FromParts("mediafile", mediafileID, "is_directory")
 	if err != nil {
@@ -1670,22 +1643,13 @@ func (r *Fetch) Mediafile_IsDirectory(mediafileID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_IsPublic(mediafileID int) *ValueBool {
-	key, err := dskey.FromParts("mediafile", mediafileID, "is_public")
+func (r *Fetch) Mediafile_MeetingMediafileIDs(mediafileID int) *ValueIntSlice {
+	key, err := dskey.FromParts("mediafile", mediafileID, "meeting_mediafile_ids")
 	if err != nil {
-		return &ValueBool{err: err}
+		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueBool{fetch: r, key: key, required: true}
-}
-
-func (r *Fetch) Mediafile_ListOfSpeakersID(mediafileID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("mediafile", mediafileID, "list_of_speakers_id")
-	if err != nil {
-		return &ValueMaybeInt{err: err}
-	}
-
-	return &ValueMaybeInt{fetch: r, key: key}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Mediafile_Mimetype(mediafileID int) *ValueString {
@@ -1724,13 +1688,13 @@ func (r *Fetch) Mediafile_PdfInformation(mediafileID int) *ValueJSON {
 	return &ValueJSON{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_ProjectionIDs(mediafileID int) *ValueIntSlice {
-	key, err := dskey.FromParts("mediafile", mediafileID, "projection_ids")
+func (r *Fetch) Mediafile_PublishedToMeetingsInOrganizationID(mediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("mediafile", mediafileID, "published_to_meetings_in_organization_id")
 	if err != nil {
-		return &ValueIntSlice{err: err}
+		return &ValueMaybeInt{err: err}
 	}
 
-	return &ValueIntSlice{fetch: r, key: key}
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Mediafile_Title(mediafileID int) *ValueString {
@@ -1751,8 +1715,53 @@ func (r *Fetch) Mediafile_Token(mediafileID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_UsedAsFontBoldInMeetingID(mediafileID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("mediafile", mediafileID, "used_as_font_bold_in_meeting_id")
+func (r *Fetch) MeetingMediafile_AccessGroupIDs(meetingMediafileID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "access_group_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) MeetingMediafile_AttachmentIDs(meetingMediafileID int) *ValueStringSlice {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "attachment_ids")
+	if err != nil {
+		return &ValueStringSlice{err: err}
+	}
+
+	return &ValueStringSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) MeetingMediafile_ID(meetingMediafileID int) *ValueInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key}
+}
+
+func (r *Fetch) MeetingMediafile_InheritedAccessGroupIDs(meetingMediafileID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "inherited_access_group_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) MeetingMediafile_IsPublic(meetingMediafileID int) *ValueBool {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "is_public")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) MeetingMediafile_ListOfSpeakersID(meetingMediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "list_of_speakers_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -1760,8 +1769,35 @@ func (r *Fetch) Mediafile_UsedAsFontBoldInMeetingID(mediafileID int) *ValueMaybe
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_UsedAsFontBoldItalicInMeetingID(mediafileID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("mediafile", mediafileID, "used_as_font_bold_italic_in_meeting_id")
+func (r *Fetch) MeetingMediafile_MediafileID(meetingMediafileID int) *ValueInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "mediafile_id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) MeetingMediafile_MeetingID(meetingMediafileID int) *ValueInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "meeting_id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) MeetingMediafile_ProjectionIDs(meetingMediafileID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "projection_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) MeetingMediafile_UsedAsFontBoldInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_font_bold_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -1769,8 +1805,8 @@ func (r *Fetch) Mediafile_UsedAsFontBoldItalicInMeetingID(mediafileID int) *Valu
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_UsedAsFontChyronSpeakerNameInMeetingID(mediafileID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("mediafile", mediafileID, "used_as_font_chyron_speaker_name_in_meeting_id")
+func (r *Fetch) MeetingMediafile_UsedAsFontBoldItalicInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_font_bold_italic_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -1778,8 +1814,8 @@ func (r *Fetch) Mediafile_UsedAsFontChyronSpeakerNameInMeetingID(mediafileID int
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_UsedAsFontItalicInMeetingID(mediafileID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("mediafile", mediafileID, "used_as_font_italic_in_meeting_id")
+func (r *Fetch) MeetingMediafile_UsedAsFontChyronSpeakerNameInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_font_chyron_speaker_name_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -1787,8 +1823,8 @@ func (r *Fetch) Mediafile_UsedAsFontItalicInMeetingID(mediafileID int) *ValueMay
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_UsedAsFontMonospaceInMeetingID(mediafileID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("mediafile", mediafileID, "used_as_font_monospace_in_meeting_id")
+func (r *Fetch) MeetingMediafile_UsedAsFontItalicInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_font_italic_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -1796,8 +1832,8 @@ func (r *Fetch) Mediafile_UsedAsFontMonospaceInMeetingID(mediafileID int) *Value
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_UsedAsFontProjectorH1InMeetingID(mediafileID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("mediafile", mediafileID, "used_as_font_projector_h1_in_meeting_id")
+func (r *Fetch) MeetingMediafile_UsedAsFontMonospaceInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_font_monospace_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -1805,8 +1841,8 @@ func (r *Fetch) Mediafile_UsedAsFontProjectorH1InMeetingID(mediafileID int) *Val
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_UsedAsFontProjectorH2InMeetingID(mediafileID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("mediafile", mediafileID, "used_as_font_projector_h2_in_meeting_id")
+func (r *Fetch) MeetingMediafile_UsedAsFontProjectorH1InMeetingID(meetingMediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_font_projector_h1_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -1814,8 +1850,8 @@ func (r *Fetch) Mediafile_UsedAsFontProjectorH2InMeetingID(mediafileID int) *Val
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_UsedAsFontRegularInMeetingID(mediafileID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("mediafile", mediafileID, "used_as_font_regular_in_meeting_id")
+func (r *Fetch) MeetingMediafile_UsedAsFontProjectorH2InMeetingID(meetingMediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_font_projector_h2_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -1823,8 +1859,8 @@ func (r *Fetch) Mediafile_UsedAsFontRegularInMeetingID(mediafileID int) *ValueMa
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_UsedAsLogoPdfBallotPaperInMeetingID(mediafileID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("mediafile", mediafileID, "used_as_logo_pdf_ballot_paper_in_meeting_id")
+func (r *Fetch) MeetingMediafile_UsedAsFontRegularInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_font_regular_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -1832,8 +1868,8 @@ func (r *Fetch) Mediafile_UsedAsLogoPdfBallotPaperInMeetingID(mediafileID int) *
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_UsedAsLogoPdfFooterLInMeetingID(mediafileID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("mediafile", mediafileID, "used_as_logo_pdf_footer_l_in_meeting_id")
+func (r *Fetch) MeetingMediafile_UsedAsLogoPdfBallotPaperInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_logo_pdf_ballot_paper_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -1841,8 +1877,8 @@ func (r *Fetch) Mediafile_UsedAsLogoPdfFooterLInMeetingID(mediafileID int) *Valu
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_UsedAsLogoPdfFooterRInMeetingID(mediafileID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("mediafile", mediafileID, "used_as_logo_pdf_footer_r_in_meeting_id")
+func (r *Fetch) MeetingMediafile_UsedAsLogoPdfFooterLInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_logo_pdf_footer_l_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -1850,8 +1886,8 @@ func (r *Fetch) Mediafile_UsedAsLogoPdfFooterRInMeetingID(mediafileID int) *Valu
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_UsedAsLogoPdfHeaderLInMeetingID(mediafileID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("mediafile", mediafileID, "used_as_logo_pdf_header_l_in_meeting_id")
+func (r *Fetch) MeetingMediafile_UsedAsLogoPdfFooterRInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_logo_pdf_footer_r_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -1859,8 +1895,8 @@ func (r *Fetch) Mediafile_UsedAsLogoPdfHeaderLInMeetingID(mediafileID int) *Valu
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_UsedAsLogoPdfHeaderRInMeetingID(mediafileID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("mediafile", mediafileID, "used_as_logo_pdf_header_r_in_meeting_id")
+func (r *Fetch) MeetingMediafile_UsedAsLogoPdfHeaderLInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_logo_pdf_header_l_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -1868,8 +1904,8 @@ func (r *Fetch) Mediafile_UsedAsLogoPdfHeaderRInMeetingID(mediafileID int) *Valu
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_UsedAsLogoProjectorHeaderInMeetingID(mediafileID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("mediafile", mediafileID, "used_as_logo_projector_header_in_meeting_id")
+func (r *Fetch) MeetingMediafile_UsedAsLogoPdfHeaderRInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_logo_pdf_header_r_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -1877,8 +1913,8 @@ func (r *Fetch) Mediafile_UsedAsLogoProjectorHeaderInMeetingID(mediafileID int) 
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_UsedAsLogoProjectorMainInMeetingID(mediafileID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("mediafile", mediafileID, "used_as_logo_projector_main_in_meeting_id")
+func (r *Fetch) MeetingMediafile_UsedAsLogoProjectorHeaderInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_logo_projector_header_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -1886,8 +1922,17 @@ func (r *Fetch) Mediafile_UsedAsLogoProjectorMainInMeetingID(mediafileID int) *V
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Mediafile_UsedAsLogoWebHeaderInMeetingID(mediafileID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("mediafile", mediafileID, "used_as_logo_web_header_in_meeting_id")
+func (r *Fetch) MeetingMediafile_UsedAsLogoProjectorMainInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_logo_projector_main_in_meeting_id")
+	if err != nil {
+		return &ValueMaybeInt{err: err}
+	}
+
+	return &ValueMaybeInt{fetch: r, key: key}
+}
+
+func (r *Fetch) MeetingMediafile_UsedAsLogoWebHeaderInMeetingID(meetingMediafileID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("meeting_mediafile", meetingMediafileID, "used_as_logo_web_header_in_meeting_id")
 	if err != nil {
 		return &ValueMaybeInt{err: err}
 	}
@@ -3202,6 +3247,15 @@ func (r *Fetch) Meeting_LogoWebHeaderID(meetingID int) *ValueMaybeInt {
 
 func (r *Fetch) Meeting_MediafileIDs(meetingID int) *ValueIntSlice {
 	key, err := dskey.FromParts("meeting", meetingID, "mediafile_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_MeetingMediafileIDs(meetingID int) *ValueIntSlice {
+	key, err := dskey.FromParts("meeting", meetingID, "meeting_mediafile_ids")
 	if err != nil {
 		return &ValueIntSlice{err: err}
 	}
@@ -5871,6 +5925,15 @@ func (r *Fetch) Organization_PrivacyPolicy(organizationID int) *ValueString {
 	}
 
 	return &ValueString{fetch: r, key: key}
+}
+
+func (r *Fetch) Organization_PublishedMediafileIDs(organizationID int) *ValueIntSlice {
+	key, err := dskey.FromParts("organization", organizationID, "published_mediafile_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Organization_RequireDuplicateFrom(organizationID int) *ValueBool {
