@@ -14,7 +14,7 @@ import (
 
 func TestMediafile(t *testing.T) {
 	s := new(projector.SlideStore)
-	slide.Mediafile(s)
+	slide.MeetingMediafile(s)
 
 	mfSlide := s.GetSlider("mediafile")
 	assert.NotNilf(t, mfSlide, "Slide with name `mediafile` not found.")
