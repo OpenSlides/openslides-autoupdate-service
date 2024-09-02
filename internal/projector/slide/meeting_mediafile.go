@@ -11,8 +11,8 @@ import (
 )
 
 type dbMeetingMediafile struct {
-	ID       int    `json:"id"`
-	MediafileID    int `json:"mediafile_id"`
+	ID          int `json:"id"`
+	MediafileID int `json:"mediafile_id"`
 }
 
 type dbMediafile struct {
@@ -55,7 +55,7 @@ func MeetingMediafile(store *projector.SlideStore) {
 			return nil, err
 		}
 		meetingMediafile, err := meetingMediafileItemFromMap(meetingMediafileData)
-		data := fetch.Object(ctx, "mediafile/" + strconv.Itoa(meetingMediafile.MediafileID), "id", "mimetype")
+		data := fetch.Object(ctx, "mediafile/"+strconv.Itoa(meetingMediafile.MediafileID), "id", "mimetype")
 		if err := fetch.Err(); err != nil {
 			return nil, err
 		}

@@ -77,87 +77,92 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 		// ownerID can be a meetingID or the organizationID
 		if collection == "organization" {
 			if requestUser != 0 {
-				return ids, nil
+				managementLevel, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
+				if err != nil {
+					return nil, err
+				}
+
+				if managementLevel {
+					return ids, nil
+				}
 			}
-			return nil, nil
-		}
-
-		perms, err := perm.FromContext(ctx, ownerID)
-		if err != nil {
-			return nil, fmt.Errorf("getting perms for meeting %d: %w", ownerID, err)
-		}
-
-		if perms.IsAdmin() {
-			return ids, nil
-		}
-
-		canSeeMeeting, err := Collection(ctx, Meeting{}.Name()).Modes("B")(ctx, ds, ownerID)
-		if err != nil {
-			return nil, fmt.Errorf("can see meeting %d: %w", ownerID, err)
 		}
 
 		return eachCondition(ids, func(mediafileID int) (bool, error) {
+			token, err := ds.Mediafile_Token(mediafileID).Value(ctx)
+			if err != nil {
+				return false, err
+			}
+
+			if token == "web_header" {
+				return true, nil
+			}
+
+			published, err := ds.Mediafile_PublishedToMeetingsInOrganizationID(mediafileID).Value(ctx)
+			if err != nil {
+				return false, err
+			}
+
+			if val, isSet := published.Value(); isSet && val == 1 {
+				return isMeetingAdmin(ctx, ds)
+			}
+
 			meetingMediafileIDs, err := ds.Mediafile_MeetingMediafileIDs(mediafileID).Value(ctx)
 			if err != nil {
 				return false, err
 			}
 
-			for _, meetingMediafileID := range meetingMediafileIDs {
-				logoOrFont, err := usedAsLogoOrFont(ctx, ds, meetingMediafileID)
-				if err != nil {
-					return false, err
-				}
+			canSeeMeetingMediafile, err := Collection(ctx, MeetingMediafile{}.Name()).Modes("A")(ctx, ds, meetingMediafileIDs...)
+			if err != nil {
+				return false, fmt.Errorf("can see meeting mediafile of mediafile %d: %w", mediafileID, err)
+			}
 
-				if len(canSeeMeeting) == 1 && logoOrFont {
-					return true, nil
-				}
-
-				if perms.Has(perm.ProjectorCanSee) {
-					p7onIDs, err := ds.MeetingMediafile_ProjectionIDs(meetingMediafileID).Value(ctx)
-					if err != nil {
-						return false, fmt.Errorf("getting projection ids: %w", err)
-					}
-
-					for _, p7onID := range p7onIDs {
-						value, err := ds.Projection_CurrentProjectorID(p7onID).Value(ctx)
-						if err != nil {
-							return false, fmt.Errorf("getting current projector id: %w", err)
-						}
-
-						if !value.Null() {
-							return true, nil
-						}
-					}
-				}
-
-				if perms.Has(perm.MediafileCanManage) {
-					return true, nil
-				}
-
-				if perms.Has(perm.MediafileCanSee) {
-					public, err := ds.MeetingMediafile_IsPublic(meetingMediafileID).Value(ctx)
-					if err != nil {
-						return false, fmt.Errorf("getting is public: %w", err)
-					}
-
-					if public {
-						return true, nil
-					}
-
-					inheritedGroups, err := ds.MeetingMediafile_InheritedAccessGroupIDs(meetingMediafileID).Value(ctx)
-					if err != nil {
-						return false, fmt.Errorf("getting inheritedGroups: %w", err)
-					}
-
-					for _, id := range inheritedGroups {
-						if perms.InGroup(id) {
-							return true, nil
-						}
-					}
-				}
+			if len(canSeeMeetingMediafile) >= 1 {
+				return true, nil
 			}
 
 			return false, nil
 		})
 	})
+}
+
+func isMeetingAdmin(ctx context.Context, ds *dsfetch.Fetch) (bool, error) {
+	userID, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return false, fmt.Errorf("getting request user: %w", err)
+	}
+
+	if userID == 0 {
+		return false, nil
+	}
+
+	meetingUserIDs, err := ds.User_MeetingUserIDs(userID).Value(ctx)
+	if err != nil {
+		return false, fmt.Errorf("getting meeting_user objects: %w", err)
+	}
+
+	for _, muid := range meetingUserIDs {
+		groupIDs, err := ds.MeetingUser_GroupIDs(muid).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting groupIDs of user: %w", err)
+		}
+
+		adminGroups := make([]dsfetch.Maybe[int], len(groupIDs))
+		for i := 0; i < len(groupIDs); i++ {
+			ds.Group_AdminGroupForMeetingID(groupIDs[i]).Lazy(&adminGroups[i])
+		}
+
+		if err := ds.Execute(ctx); err != nil {
+			return false, fmt.Errorf("checking for admin groups: %w", err)
+		}
+
+		for _, isAdmin := range adminGroups {
+			if _, ok := isAdmin.Value(); ok {
+				return true, nil
+			}
+		}
+
+	}
+
+	return false, nil
 }

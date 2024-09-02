@@ -8,7 +8,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
-// Mediafile handels permissions for the collection mediafile.
+// MeetingMediafile handels permissions for the collection mediafile.
 //
 // Every logged in user can see a medafile that belongs to the organization.
 //
