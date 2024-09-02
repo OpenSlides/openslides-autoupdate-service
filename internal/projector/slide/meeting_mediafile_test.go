@@ -16,10 +16,11 @@ func TestMediafile(t *testing.T) {
 	s := new(projector.SlideStore)
 	slide.MeetingMediafile(s)
 
-	mfSlide := s.GetSlider("mediafile")
+	mfSlide := s.GetSlider("meeting_mediafile")
 	assert.NotNilf(t, mfSlide, "Slide with name `mediafile` not found.")
 
 	data := dsmock.YAMLData(`
+	meeting_mediafile/1/mediafile_id: 1
 	mediafile/1/mimetype: application/pdf
     `)
 
@@ -42,7 +43,7 @@ func TestMediafile(t *testing.T) {
 			fetch := datastore.NewFetcher(ds)
 
 			p7on := &projector.Projection{
-				ContentObjectID: "mediafile/1",
+				ContentObjectID: "meeting_mediafile/1",
 			}
 
 			bs, err := mfSlide.Slide(context.Background(), fetch, p7on)
