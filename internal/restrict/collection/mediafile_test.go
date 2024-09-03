@@ -77,6 +77,31 @@ func TestMediafileModeA(t *testing.T) {
 	)
 
 	testCase(
+		"Anonymous access published organization not public meeting global logo",
+		t,
+		m.Modes("A"),
+		true,
+		`---
+		mediafile/1:
+			owner_id: organization/1
+			published_to_meetings_in_organization_id: 1
+			meeting_mediafile_ids: [2]
+			token: web_header
+		meeting_mediafile/2:
+			meeting_id: 7
+			mediafile_id: 1
+			is_public: false
+			inherited_access_group_ids: [3]
+		meeting/7:
+			committee_id: 300
+
+		group/3/id: 3
+		`,
+		withPerms(7, perm.MediafileCanSee),
+		withRequestUser(0),
+	)
+
+	testCase(
 		"Admin via meeting mediafile",
 		t,
 		m.Modes("A"),
