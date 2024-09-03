@@ -94,7 +94,7 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 				return false, err
 			}
 
-			if token == "web_header" {
+			if token != "" {
 				return true, nil
 			}
 

@@ -77,7 +77,7 @@ func TestMediafileModeA(t *testing.T) {
 	)
 
 	testCase(
-		"Anonymous access published organization not public meeting global logo",
+		"Anonymous access published organization not public with token",
 		t,
 		m.Modes("A"),
 		true,
