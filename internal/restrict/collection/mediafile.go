@@ -104,7 +104,16 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 			}
 
 			if val, isSet := published.Value(); isSet && val == 1 {
-				return isMeetingAdmin(ctx, ds)
+				isAdmin, err := isMeetingAdmin(ctx, ds)
+				if err != nil {
+					return false, err
+				}
+
+				if isAdmin {
+					return true, nil
+				}
+			} else if collection == "organization" {
+				return true, nil
 			}
 
 			meetingMediafileIDs, err := ds.Mediafile_MeetingMediafileIDs(mediafileID).Value(ctx)
@@ -112,13 +121,15 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 				return false, err
 			}
 
-			canSeeMeetingMediafile, err := Collection(ctx, MeetingMediafile{}.Name()).Modes("A")(ctx, ds, meetingMediafileIDs...)
-			if err != nil {
-				return false, fmt.Errorf("can see meeting mediafile of mediafile %d: %w", mediafileID, err)
-			}
+			if len(meetingMediafileIDs) > 0 {
+				canSeeMeetingMediafile, err := Collection(ctx, MeetingMediafile{}.Name()).Modes("A")(ctx, ds, meetingMediafileIDs...)
+				if err != nil {
+					return false, fmt.Errorf("can see meeting mediafile of mediafile %d: %w", mediafileID, err)
+				}
 
-			if len(canSeeMeetingMediafile) >= 1 {
-				return true, nil
+				if len(canSeeMeetingMediafile) >= 1 {
+					return true, nil
+				}
 			}
 
 			return false, nil
