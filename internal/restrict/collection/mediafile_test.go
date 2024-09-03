@@ -77,7 +77,7 @@ func TestMediafileModeA(t *testing.T) {
 	)
 
 	testCase(
-		"Admin",
+		"Admin via meeting mediafile",
 		t,
 		m.Modes("A"),
 		true,
@@ -95,6 +95,29 @@ func TestMediafileModeA(t *testing.T) {
 		user/1/meeting_user_ids: [10]
 		meeting_user/10/group_ids: [8]
 		meeting_user/10/meeting_id: 7
+		`,
+	)
+
+	testCase(
+		"Admin via published to orga",
+		t,
+		m.Modes("A"),
+		true,
+		`---
+		mediafile/1:
+			owner_id: organization/1
+			published_to_meetings_in_organization_id: 1
+		meeting/7:
+			admin_group_id: 8
+			committee_id: 70
+		committee/70/id: 70
+
+		user/1/meeting_user_ids: [10]
+		meeting_user/10/group_ids: [8]
+		meeting_user/10/meeting_id: 7
+		group/8:
+			meeting_user_ids: [10]
+			admin_group_for_meeting_id: 7
 		`,
 	)
 
