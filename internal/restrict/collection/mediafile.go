@@ -113,7 +113,7 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 					return true, nil
 				}
 			} else if collection == "organization" {
-				return true, nil
+				return requestUser != 0, nil
 			}
 
 			meetingMediafileIDs, err := ds.Mediafile_MeetingMediafileIDs(mediafileID).Value(ctx)
