@@ -53,6 +53,30 @@ func TestMediafileModeA(t *testing.T) {
 	)
 
 	testCase(
+		"Anonymous published organization",
+		t,
+		m.Modes("A"),
+		true,
+		`---
+		mediafile/1:
+			owner_id: organization/1
+			published_to_meetings_in_organization_id: 1
+			meeting_mediafile_ids: [2]
+		meeting_mediafile/2:
+			meeting_id: 7
+			mediafile_id: 1
+			is_public: false
+			inherited_access_group_ids: [1337]
+		meeting/7:
+			enable_anonymous: true
+			anonymous_group_id: 1337
+			committee_id: 300
+		`,
+		withPerms(7, perm.MediafileCanSee),
+		withRequestUser(0),
+	)
+
+	testCase(
 		"Admin",
 		t,
 		m.Modes("A"),
@@ -67,7 +91,6 @@ func TestMediafileModeA(t *testing.T) {
 			admin_group_id: 8
 			committee_id: 70
 		committee/70/id: 70
-
 
 		user/1/meeting_user_ids: [10]
 		meeting_user/10/group_ids: [8]
