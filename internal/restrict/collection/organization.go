@@ -66,8 +66,12 @@ func (Organization) modeC(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int
 
 func (Organization) modeE(ctx context.Context, ds *dsfetch.Fetch, ids ...int) ([]int, error) {
 	isAdmin, err := isMeetingAdmin(ctx, ds)
-	if err != nil || !isAdmin {
-		return nil, err
+	if err != nil {
+		return nil, fmt.Errorf("checking is user meeting admin: %w", err)
+	}
+
+	if !isAdmin {
+		return nil, nil
 	}
 
 	return ids, nil

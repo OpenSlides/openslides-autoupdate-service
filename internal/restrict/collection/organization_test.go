@@ -72,3 +72,61 @@ func TestOrganizationModeC(t *testing.T) {
 		withRequestUser(1),
 	)
 }
+
+func TestOrganizationModeE(t *testing.T) {
+	f := collection.Organization{}.Modes("E")
+
+	testCase(
+		"anonymous",
+		t,
+		f,
+		false,
+		``,
+		withRequestUser(0),
+	)
+
+	testCase(
+		"logged in",
+		t,
+		f,
+		false,
+		``,
+		withRequestUser(1),
+	)
+
+	testCase(
+		"normal user in meeting",
+		t,
+		f,
+		false,
+		`---
+		meeting/7:
+			admin_group_id: 8
+
+		user/1/meeting_user_ids: [10]
+		group/6/id: 6
+		meeting_user/10:
+			group_ids: [6]
+			meeting_id: 7
+		`,
+		withRequestUser(1),
+	)
+
+	testCase(
+		"meeting admin",
+		t,
+		f,
+		true,
+		`---
+		meeting/7:
+			admin_group_id: 8
+
+		user/1/meeting_user_ids: [10]
+		group/8/admin_group_for_meeting_id: 7
+		meeting_user/10:
+			group_ids: [8]
+			meeting_id: 7
+		`,
+		withRequestUser(1),
+	)
+}
