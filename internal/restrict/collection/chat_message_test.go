@@ -77,4 +77,22 @@ func TestChatMessageModeA(t *testing.T) {
 		meeting/10/id: 10		
 		`,
 	)
+
+	testCase(
+		"has no author",
+		t,
+		c.Modes("A"),
+		false,
+		`---
+		chat_message/1:
+			chat_group_id: 5
+			meeting_user_id: null
+		meeting_user/20/user_id: 1
+
+		chat_group/5:
+			meeting_id: 30
+		
+		meeting/10/id: 10		
+		`,
+	)
 }
