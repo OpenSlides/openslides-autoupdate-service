@@ -14,10 +14,10 @@ import (
 //
 // Mediafiles can be seen if:
 //
-//  The meeting mediafile belongs to the organization and the user has organization management permissions
-//  The user is admin in a meeting and published_to_organization_id is set to the current organization id
-//  The user can see any of the meeting mediafiles of the mediafile
-//  The field token is set to any non empty value
+//	The meeting mediafile belongs to the organization and the user has organization management permissions
+//	The user is admin in a meeting and published_to_organization_id is set to the current organization id
+//	The user can see any of the meeting mediafiles of the mediafile
+//	The field token is set to any non empty value
 //
 // Mode A: The user can see the mediafile.
 type Mediafile struct{}
