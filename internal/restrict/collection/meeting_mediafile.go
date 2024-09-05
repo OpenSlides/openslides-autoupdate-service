@@ -8,21 +8,19 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
-// MeetingMediafile handels permissions for the collection mediafile.
+// MeetingMediafile handels permissions for the collection meeting_mediafile.
 //
-// Every logged in user can see a medafile that belongs to the organization.
-//
-// The user can see a mediafile of a meeting if any of:
+// The user can see a meeting mediafile if any of:
 //
 //	The user is an admin of the meeting.
 //	The user can see the meeting and used_as_logo_*_in_meeting_id or used_as_font_*_in_meeting_id is not empty.
-//	The user has projector.can_see and there exists a mediafile/projection_ids with projection/current_projector_id set.
+//	The user has projector.can_see and there exists a meeting_mediafile/projection_ids with projection/current_projector_id set.
 //	The user has mediafile.can_manage.
 //	The user has mediafile.can_see and either:
-//	    mediafile/is_public is true, or
-//	    The user has groups in common with meeting/inherited_access_group_ids.
+//	    meeting_mediafile/is_public is true, or
+//	    The user has groups in common with meeting_mediafile/inherited_access_group_ids.
 //
-// Mode A: The user can see the mediafile.
+// Mode A: The user can see the meeting mediafile.
 type MeetingMediafile struct{}
 
 // Name returns the collection name.
@@ -40,7 +38,7 @@ func (m MeetingMediafile) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id i
 	return meetingID, true, nil
 }
 
-// Modes returns the field modes for the collection mediafile.
+// Modes returns the field modes for the collection meeting_mediafile.
 func (m MeetingMediafile) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
