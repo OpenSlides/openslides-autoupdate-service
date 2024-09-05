@@ -659,6 +659,7 @@ var restrictionModes = map[string]string{
 	"meeting/motion_poll_ballot_paper_selection":                    "B",
 	"meeting/motion_poll_default_backend":                           "B",
 	"meeting/motion_poll_default_group_ids":                         "B",
+	"meeting/motion_poll_default_method":                            "B",
 	"meeting/motion_poll_default_onehundred_percent_base":           "B",
 	"meeting/motion_poll_default_type":                              "B",
 	"meeting/motion_state_ids":                                      "B",
