@@ -1157,13 +1157,13 @@ func (r *Fetch) ChatMessage_MeetingID(chatMessageID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) ChatMessage_MeetingUserID(chatMessageID int) *ValueInt {
+func (r *Fetch) ChatMessage_MeetingUserID(chatMessageID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("chat_message", chatMessageID, "meeting_user_id")
 	if err != nil {
-		return &ValueInt{err: err}
+		return &ValueMaybeInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Committee_DefaultMeetingID(committeeID int) *ValueMaybeInt {
@@ -3315,6 +3315,15 @@ func (r *Fetch) Meeting_MotionPollDefaultGroupIDs(meetingID int) *ValueIntSlice 
 	}
 
 	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_MotionPollDefaultMethod(meetingID int) *ValueString {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_default_method")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MotionPollDefaultOnehundredPercentBase(meetingID int) *ValueString {
