@@ -33,7 +33,7 @@ func TestMediafileModeA(t *testing.T) {
 		"No perms organization file",
 		t,
 		m.Modes("A"),
-		true,
+		false,
 		`---
 		mediafile/1:
 			owner_id: organization/1

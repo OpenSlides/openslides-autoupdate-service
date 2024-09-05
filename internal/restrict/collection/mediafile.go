@@ -12,17 +12,12 @@ import (
 
 // Mediafile handels permissions for the collection mediafile.
 //
-// Every logged in user can see a medafile that belongs to the organization.
+// Mediafiles can be seen if:
 //
-// The user can see a mediafile of a meeting if any of:
-//
-//	The user is an admin of the meeting.
-//	The user can see the meeting and used_as_logo_*_in_meeting_id or used_as_font_*_in_meeting_id is not empty.
-//	The user has projector.can_see and there exists a mediafile/projection_ids with projection/current_projector_id set.
-//	The user has mediafile.can_manage.
-//	The user has mediafile.can_see and either:
-//	    mediafile/is_public is true, or
-//	    The user has groups in common with meeting/inherited_access_group_ids.
+//  The meeting mediafile belongs to the organization and the user has organization management permissions
+//  The user is admin in a meeting and published_to_organization_id is set to the current organization id
+//  The user can see any of the meeting mediafiles of the mediafile
+//  The field token is set to any non empty value
 //
 // Mode A: The user can see the mediafile.
 type Mediafile struct{}
@@ -79,7 +74,7 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 			if requestUser != 0 {
 				managementLevel, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("getting organization management level: %w", err)
 				}
 
 				if managementLevel {
@@ -91,7 +86,7 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 		return eachCondition(ids, func(mediafileID int) (bool, error) {
 			token, err := ds.Mediafile_Token(mediafileID).Value(ctx)
 			if err != nil {
-				return false, err
+				return false, fmt.Errorf("getting mediafile token: %w", err)
 			}
 
 			if token != "" {
@@ -100,25 +95,25 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 
 			published, err := ds.Mediafile_PublishedToMeetingsInOrganizationID(mediafileID).Value(ctx)
 			if err != nil {
-				return false, err
+				return false, fmt.Errorf("getting published to meetings in organization: %w", err)
 			}
 
-			if val, isSet := published.Value(); isSet && val == 1 {
+			if val, _ := published.Value(); val == 1 {
 				isAdmin, err := isMeetingAdmin(ctx, ds)
 				if err != nil {
-					return false, err
+					return false, fmt.Errorf("checking if user is meeting admin: %w", err)
 				}
 
 				if isAdmin {
 					return true, nil
 				}
 			} else if collection == "organization" {
-				return requestUser != 0, nil
+				return false, nil
 			}
 
 			meetingMediafileIDs, err := ds.Mediafile_MeetingMediafileIDs(mediafileID).Value(ctx)
 			if err != nil {
-				return false, err
+				return false, fmt.Errorf("getting meeting mediafile ids: %w", err)
 			}
 
 			if len(meetingMediafileIDs) > 0 {
