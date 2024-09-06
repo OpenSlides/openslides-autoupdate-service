@@ -1157,13 +1157,13 @@ func (r *Fetch) ChatMessage_MeetingID(chatMessageID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) ChatMessage_MeetingUserID(chatMessageID int) *ValueInt {
+func (r *Fetch) ChatMessage_MeetingUserID(chatMessageID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("chat_message", chatMessageID, "meeting_user_id")
 	if err != nil {
-		return &ValueInt{err: err}
+		return &ValueMaybeInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Committee_DefaultMeetingID(committeeID int) *ValueMaybeInt {
@@ -1328,24 +1328,6 @@ func (r *Fetch) Group_ID(groupID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Group_MediafileAccessGroupIDs(groupID int) *ValueIntSlice {
-	key, err := dskey.FromParts("group", groupID, "mediafile_access_group_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
-}
-
-func (r *Fetch) Group_MediafileInheritedAccessGroupIDs(groupID int) *ValueIntSlice {
-	key, err := dskey.FromParts("group", groupID, "mediafile_inherited_access_group_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
-}
-
 func (r *Fetch) Group_MeetingID(groupID int) *ValueInt {
 	key, err := dskey.FromParts("group", groupID, "meeting_id")
 	if err != nil {
@@ -1353,6 +1335,24 @@ func (r *Fetch) Group_MeetingID(groupID int) *ValueInt {
 	}
 
 	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) Group_MeetingMediafileAccessGroupIDs(groupID int) *ValueIntSlice {
+	key, err := dskey.FromParts("group", groupID, "meeting_mediafile_access_group_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Group_MeetingMediafileInheritedAccessGroupIDs(groupID int) *ValueIntSlice {
+	key, err := dskey.FromParts("group", groupID, "meeting_mediafile_inherited_access_group_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Group_MeetingUserIDs(groupID int) *ValueIntSlice {
@@ -3369,6 +3369,15 @@ func (r *Fetch) Meeting_MotionPollDefaultGroupIDs(meetingID int) *ValueIntSlice 
 	}
 
 	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_MotionPollDefaultMethod(meetingID int) *ValueString {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_default_method")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MotionPollDefaultOnehundredPercentBase(meetingID int) *ValueString {

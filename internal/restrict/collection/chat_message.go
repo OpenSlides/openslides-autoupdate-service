@@ -79,7 +79,12 @@ func (ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, chatMessageIDs ..
 				return false, fmt.Errorf("getting meeting_user: %w", err)
 			}
 
-			author, err := ds.MeetingUser_UserID(meetingUser).Value(ctx)
+			meetingUserID, ok := meetingUser.Value()
+			if !ok {
+				return false, nil
+			}
+
+			author, err := ds.MeetingUser_UserID(meetingUserID).Value(ctx)
 			if err != nil {
 				return false, fmt.Errorf("reading author of chat message: %w", err)
 			}
