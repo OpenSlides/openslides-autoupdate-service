@@ -914,8 +914,8 @@ func (r *Fetch) Assignment_AgendaItemID(assignmentID int) *ValueMaybeInt {
 	return &ValueMaybeInt{fetch: r, key: key}
 }
 
-func (r *Fetch) Assignment_AttachmentIDs(assignmentID int) *ValueIntSlice {
-	key, err := dskey.FromParts("assignment", assignmentID, "attachment_ids")
+func (r *Fetch) Assignment_AttachmentMeetingMediafileIDs(assignmentID int) *ValueIntSlice {
+	key, err := dskey.FromParts("assignment", assignmentID, "attachment_meeting_mediafile_ids")
 	if err != nil {
 		return &ValueIntSlice{err: err}
 	}
@@ -5198,8 +5198,8 @@ func (r *Fetch) Motion_AmendmentParagraphs(motionID int) *ValueJSON {
 	return &ValueJSON{fetch: r, key: key}
 }
 
-func (r *Fetch) Motion_AttachmentIDs(motionID int) *ValueIntSlice {
-	key, err := dskey.FromParts("motion", motionID, "attachment_ids")
+func (r *Fetch) Motion_AttachmentMeetingMediafileIDs(motionID int) *ValueIntSlice {
+	key, err := dskey.FromParts("motion", motionID, "attachment_meeting_mediafile_ids")
 	if err != nil {
 		return &ValueIntSlice{err: err}
 	}
@@ -7934,8 +7934,8 @@ func (r *Fetch) Topic_AgendaItemID(topicID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) Topic_AttachmentIDs(topicID int) *ValueIntSlice {
-	key, err := dskey.FromParts("topic", topicID, "attachment_ids")
+func (r *Fetch) Topic_AttachmentMeetingMediafileIDs(topicID int) *ValueIntSlice {
+	key, err := dskey.FromParts("topic", topicID, "attachment_meeting_mediafile_ids")
 	if err != nil {
 		return &ValueIntSlice{err: err}
 	}

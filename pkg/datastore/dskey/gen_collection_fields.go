@@ -33,7 +33,7 @@ var collectionFields = [...]collectionField{
 	{"agenda_item", "weight"},
 	{"assignment", "A"},
 	{"assignment", "agenda_item_id"},
-	{"assignment", "attachment_ids"},
+	{"assignment", "attachment_meeting_mediafile_ids"},
 	{"assignment", "candidate_ids"},
 	{"assignment", "default_poll_description"},
 	{"assignment", "description"},
@@ -436,7 +436,7 @@ var collectionFields = [...]collectionField{
 	{"motion", "all_origin_ids"},
 	{"motion", "amendment_ids"},
 	{"motion", "amendment_paragraphs"},
-	{"motion", "attachment_ids"},
+	{"motion", "attachment_meeting_mediafile_ids"},
 	{"motion", "block_id"},
 	{"motion", "category_id"},
 	{"motion", "category_weight"},
@@ -876,7 +876,7 @@ var collectionFields = [...]collectionField{
 	{"theme", "yes"},
 	{"topic", "A"},
 	{"topic", "agenda_item_id"},
-	{"topic", "attachment_ids"},
+	{"topic", "attachment_meeting_mediafile_ids"},
 	{"topic", "id"},
 	{"topic", "list_of_speakers_id"},
 	{"topic", "meeting_id"},
@@ -998,7 +998,7 @@ func collectionFieldToID(cf string) int {
 		return 29
 	case "assignment/agenda_item_id":
 		return 30
-	case "assignment/attachment_ids":
+	case "assignment/attachment_meeting_mediafile_ids":
 		return 31
 	case "assignment/candidate_ids":
 		return 32
@@ -1804,7 +1804,7 @@ func collectionFieldToID(cf string) int {
 		return 432
 	case "motion/amendment_paragraphs":
 		return 433
-	case "motion/attachment_ids":
+	case "motion/attachment_meeting_mediafile_ids":
 		return 434
 	case "motion/block_id":
 		return 435
@@ -2684,7 +2684,7 @@ func collectionFieldToID(cf string) int {
 		return 872
 	case "topic/agenda_item_id":
 		return 873
-	case "topic/attachment_ids":
+	case "topic/attachment_meeting_mediafile_ids":
 		return 874
 	case "topic/id":
 		return 875
