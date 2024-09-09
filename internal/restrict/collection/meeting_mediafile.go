@@ -14,7 +14,7 @@ import (
 //
 //	The user is an admin of the meeting.
 //	The user can see the meeting and used_as_logo_*_in_meeting_id or used_as_font_*_in_meeting_id is not empty.
-//  The user has projector.can_see and one of the projections linked with meeting_mediafile/projection_ids has projection/current_projector_id set.
+//	The user has projector.can_see and one of the projections linked with meeting_mediafile/projection_ids has projection/current_projector_id set.
 //	The user has mediafile.can_see and either:
 //	    meeting_mediafile/is_public is true, or
 //	    the user has groups in common with meeting_mediafile/inherited_access_group_ids.
