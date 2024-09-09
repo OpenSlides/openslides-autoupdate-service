@@ -105,6 +105,17 @@ func (m MeetingMediafile) see(ctx context.Context, ds *dsfetch.Fetch, meetingMed
 					return true, nil
 				}
 
+				accessGroups, err := ds.MeetingMediafile_AccessGroupIDs(meetingMediafileID).Value(ctx)
+				if err != nil {
+					return false, fmt.Errorf("getting accessGroups: %w", err)
+				}
+
+				for _, id := range accessGroups {
+					if perms.InGroup(id) {
+						return true, nil
+					}
+				}
+
 				inheritedGroups, err := ds.MeetingMediafile_InheritedAccessGroupIDs(meetingMediafileID).Value(ctx)
 				if err != nil {
 					return false, fmt.Errorf("getting inheritedGroups: %w", err)
