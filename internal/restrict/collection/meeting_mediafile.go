@@ -15,7 +15,6 @@ import (
 //	The user is an admin of the meeting.
 //	The user can see the meeting and used_as_logo_*_in_meeting_id or used_as_font_*_in_meeting_id is not empty.
 //	The user has projector.can_see and there exists a meeting_mediafile/projection_ids with projection/current_projector_id set.
-//	The user has mediafile.can_manage.
 //	The user has mediafile.can_see and either:
 //	    meeting_mediafile/is_public is true, or
 //	    The user has groups in common with meeting_mediafile/inherited_access_group_ids.
@@ -49,6 +48,15 @@ func (m MeetingMediafile) Modes(mode string) FieldRestricter {
 
 func (m MeetingMediafile) see(ctx context.Context, ds *dsfetch.Fetch, meetingMediafileIDs ...int) ([]int, error) {
 	return eachMeeting(ctx, ds, m, meetingMediafileIDs, func(meetingID int, ids []int) ([]int, error) {
+		canSeeMeeting, err := Collection(ctx, Meeting{}.Name()).Modes("B")(ctx, ds, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("can see meeting %d: %w", meetingID, err)
+		}
+
+		if len(canSeeMeeting) == 0 {
+			return nil, nil
+		}
+
 		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting perms for meeting %d: %w", meetingID, err)
@@ -58,18 +66,13 @@ func (m MeetingMediafile) see(ctx context.Context, ds *dsfetch.Fetch, meetingMed
 			return ids, nil
 		}
 
-		canSeeMeeting, err := Collection(ctx, Meeting{}.Name()).Modes("B")(ctx, ds, meetingID)
-		if err != nil {
-			return nil, fmt.Errorf("can see meeting %d: %w", meetingID, err)
-		}
-
 		return eachCondition(ids, func(meetingMediafileID int) (bool, error) {
 			logoOrFont, err := usedAsLogoOrFont(ctx, ds, meetingMediafileID)
 			if err != nil {
 				return false, err
 			}
 
-			if len(canSeeMeeting) == 1 && logoOrFont {
+			if logoOrFont {
 				return true, nil
 			}
 
@@ -91,10 +94,6 @@ func (m MeetingMediafile) see(ctx context.Context, ds *dsfetch.Fetch, meetingMed
 				}
 			}
 
-			if perms.Has(perm.MediafileCanManage) {
-				return true, nil
-			}
-
 			if perms.Has(perm.MediafileCanSee) {
 				public, err := ds.MeetingMediafile_IsPublic(meetingMediafileID).Value(ctx)
 				if err != nil {
@@ -110,10 +109,8 @@ func (m MeetingMediafile) see(ctx context.Context, ds *dsfetch.Fetch, meetingMed
 					return false, fmt.Errorf("getting inheritedGroups: %w", err)
 				}
 
-				for _, id := range inheritedGroups {
-					if perms.InGroup(id) {
-						return true, nil
-					}
+				if perms.InGroup(inheritedGroups...) {
+					return true, nil
 				}
 			}
 

@@ -68,18 +68,21 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
+	hasManagementLevel, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
+	if err != nil {
+		return nil, fmt.Errorf("getting organization management level: %w", err)
+	}
+
+	isMeetingAdmin, err := isAdminInAnyMeeting(ctx, ds)
+	if err != nil {
+		return nil, fmt.Errorf("checking if user is meeting admin: %w", err)
+	}
+
 	return eachContentObjectCollection(ctx, ds.Mediafile_OwnerID, mediafileIDs, func(collection string, ownerID int, ids []int) ([]int, error) {
 		// ownerID can be a meetingID or the organizationID
-		if collection == "organization" {
+		if collection == "organization" && hasManagementLevel {
 			if requestUser != 0 {
-				managementLevel, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
-				if err != nil {
-					return nil, fmt.Errorf("getting organization management level: %w", err)
-				}
-
-				if managementLevel {
-					return ids, nil
-				}
+				return ids, nil
 			}
 		}
 
@@ -98,16 +101,11 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 				return false, fmt.Errorf("getting published to meetings in organization: %w", err)
 			}
 
-			if val, _ := published.Value(); val == 1 {
-				isAdmin, err := isMeetingAdmin(ctx, ds)
-				if err != nil {
-					return false, fmt.Errorf("checking if user is meeting admin: %w", err)
-				}
+			if !published.Null() && isMeetingAdmin {
+				return true, nil
+			}
 
-				if isAdmin {
-					return true, nil
-				}
-			} else if collection == "organization" {
+			if collection == "organization" && published.Null() {
 				return false, nil
 			}
 
@@ -116,15 +114,13 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 				return false, fmt.Errorf("getting meeting mediafile ids: %w", err)
 			}
 
-			if len(meetingMediafileIDs) > 0 {
-				canSeeMeetingMediafile, err := Collection(ctx, MeetingMediafile{}.Name()).Modes("A")(ctx, ds, meetingMediafileIDs...)
-				if err != nil {
-					return false, fmt.Errorf("can see meeting mediafile of mediafile %d: %w", mediafileID, err)
-				}
+			canSeeMeetingMediafile, err := Collection(ctx, MeetingMediafile{}.Name()).Modes("A")(ctx, ds, meetingMediafileIDs...)
+			if err != nil {
+				return false, fmt.Errorf("can see meeting mediafile of mediafile %d: %w", mediafileID, err)
+			}
 
-				if len(canSeeMeetingMediafile) >= 1 {
-					return true, nil
-				}
+			if len(canSeeMeetingMediafile) >= 1 {
+				return true, nil
 			}
 
 			return false, nil
@@ -132,7 +128,7 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 	})
 }
 
-func isMeetingAdmin(ctx context.Context, ds *dsfetch.Fetch) (bool, error) {
+func isAdminInAnyMeeting(ctx context.Context, ds *dsfetch.Fetch) (bool, error) {
 	userID, err := perm.RequestUserFromContext(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting request user: %w", err)

@@ -65,11 +65,8 @@ func (c ChatGroup) see(ctx context.Context, ds *dsfetch.Fetch, chatGroupIDs ...i
 			}
 
 			allGroups := append(readGroups, writeGroups...)
-
-			for _, gid := range allGroups {
-				if perms.InGroup(gid) {
-					return true, nil
-				}
+			if perms.InGroup(allGroups...) {
+				return true, nil
 			}
 			return false, nil
 		})
