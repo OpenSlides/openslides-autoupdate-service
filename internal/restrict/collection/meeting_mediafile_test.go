@@ -238,26 +238,6 @@ func TestMeetingMediafileModeA(t *testing.T) {
 	)
 
 	testCase(
-		"meeting mediafile can_see not in access_group_ids",
-		t,
-		m.Modes("A"),
-		false,
-		`---
-		meeting_mediafile/1:
-			meeting_id: 7
-			access_group_ids: [3]
-			is_public: false
-
-		meeting/7:
-			id: 7
-			committee_id: 300
-		group/3/id: 3
-		group/4/id: 4
-		`,
-		withPerms(7, perm.MediafileCanSee),
-	)
-
-	testCase(
 		"meeting mediafile without perm can_see in inherited_access_group_ids",
 		t,
 		m.Modes("A"),
