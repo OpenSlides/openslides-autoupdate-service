@@ -53,10 +53,14 @@ func TestMeetingMediafileModeA(t *testing.T) {
 			meeting_id: 7
 		meeting/7:
 			admin_group_id: 8
+			group_ids: [8]
+			committee_id: 12
 
+		group/8/meeting_user_ids: [10]
 		user/1/meeting_user_ids: [10]
 		meeting_user/10/group_ids: [8]
 		meeting_user/10/meeting_id: 7
+		meeting_user/10/user_id: 1
 		`,
 	)
 
@@ -104,7 +108,12 @@ func TestMeetingMediafileModeA(t *testing.T) {
 			projection_ids: [4]
 		projection/4/current_projector_id: 5
 
-		meeting/7/committee_id: 404
+		meeting/7:
+			committee_id: 404
+			group_ids: [2]
+
+		group/2/meeting_user_ids: [10]
+		meeting_user/10/user_id: 1
 		`,
 		withPerms(7, perm.ProjectorCanSee),
 	)
@@ -120,9 +129,12 @@ func TestMeetingMediafileModeA(t *testing.T) {
 			projection_ids: [4]
 		
 		meeting/7:
-			id: 7
 			committee_id: 404
-		
+			group_ids: [2]
+
+		group/2/meeting_user_ids: [10]
+		meeting_user/10/user_id: 1
+
 		projection/4/current_projector_id: 5
 		`,
 	)
@@ -138,9 +150,12 @@ func TestMeetingMediafileModeA(t *testing.T) {
 			projection_ids: [4]
 
 		meeting/7:
-			id: 7
+			group_ids: [2]
 			committee_id: 404
 		
+		group/2/meeting_user_ids: [10]
+		meeting_user/10/user_id: 1
+
 		projection/4/id: 4
 		`,
 		withPerms(7, perm.ProjectorCanSee),
@@ -150,14 +165,19 @@ func TestMeetingMediafileModeA(t *testing.T) {
 		"meeting mediafile can_manage",
 		t,
 		m.Modes("A"),
-		true,
+		false,
 		`---
 		meeting_mediafile/1:
 			meeting_id: 7
+			inherited_access_group_ids: []
+			is_public: false
 
 		meeting/7:
-			id: 7
+			group_ids: [2]
 			committee_id: 300
+
+		group/2/meeting_user_ids: [10]
+		meeting_user/10/user_id: 1
 		`,
 		withPerms(7, perm.MediafileCanManage),
 	)
@@ -173,8 +193,11 @@ func TestMeetingMediafileModeA(t *testing.T) {
 			is_public: false
 
 		meeting/7:
-			id: 7
 			committee_id: 300
+			group_ids: [2]
+
+		group/2/meeting_user_ids: [10]
+		meeting_user/10/user_id: 1
 		`,
 		withPerms(7, perm.MediafileCanSee),
 	)
@@ -190,8 +213,11 @@ func TestMeetingMediafileModeA(t *testing.T) {
 			is_public: true
 
 		meeting/7:
-			id: 7
 			committee_id: 300
+			group_ids: [2]
+
+		group/2/meeting_user_ids: [10]
+		meeting_user/10/user_id: 1
 		`,
 		withPerms(7, perm.MediafileCanSee),
 	)
@@ -207,12 +233,17 @@ func TestMeetingMediafileModeA(t *testing.T) {
 			inherited_access_group_ids: [3]
 			is_public: false
 
-		meeting/7/committee_id: 300
+		meeting/7:
+			committee_id: 300
+			group_ids: [3]
+
 		group/3/id: 3
+		group/3/meeting_user_ids: [10]
 		
 		user/1/meeting_user_ids: [10]
 		meeting_user/10/group_ids: [3]
 		meeting_user/10/meeting_id: 7
+		meeting_user/10/user_id: 1
 		`,
 		withPerms(7, perm.MediafileCanSee),
 	)

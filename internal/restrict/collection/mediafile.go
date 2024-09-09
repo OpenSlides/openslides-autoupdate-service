@@ -81,9 +81,7 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 	return eachContentObjectCollection(ctx, ds.Mediafile_OwnerID, mediafileIDs, func(collection string, ownerID int, ids []int) ([]int, error) {
 		// ownerID can be a meetingID or the organizationID
 		if collection == "organization" && hasManagementLevel {
-			if requestUser != 0 {
-				return ids, nil
-			}
+			return ids, nil
 		}
 
 		return eachCondition(ids, func(mediafileID int) (bool, error) {
@@ -105,7 +103,7 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 				return true, nil
 			}
 
-			if collection == "organization" && published.Null() {
+			if published.Null() && collection == "organization" {
 				return false, nil
 			}
 
