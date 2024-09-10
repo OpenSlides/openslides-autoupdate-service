@@ -406,7 +406,6 @@ var restrictionModes = map[string]string{
 	"agenda_item/weight":            "A",
 	"agenda_item/duration":          "B",
 	"agenda_item/comment":           "C",
-	"agenda_item/moderator_notes":   "D",
 
 	// assignment
 	"assignment/agenda_item_id":                   "A",
@@ -504,6 +503,7 @@ var restrictionModes = map[string]string{
 	"list_of_speakers/sequential_number":                    "A",
 	"list_of_speakers/speaker_ids":                          "A",
 	"list_of_speakers/structure_level_list_of_speakers_ids": "A",
+	"list_of_speakers/moderator_notes":                      "B",
 
 	// mediafile
 	"mediafile/child_ids":                                "A",
