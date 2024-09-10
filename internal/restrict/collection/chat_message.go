@@ -67,10 +67,8 @@ func (ChatMessage) see(ctx context.Context, ds *dsfetch.Fetch, chatMessageIDs ..
 			return nil, fmt.Errorf("getting chat read group ids: %w", err)
 		}
 
-		for _, gid := range readGroups {
-			if perms.InGroup(gid) {
-				return ids, nil
-			}
+		if perms.InGroup(readGroups...) {
+			return ids, nil
 		}
 
 		allowed, err := eachCondition(ids, func(chatMessageID int) (bool, error) {
