@@ -171,6 +171,7 @@ var collectionMap = map[string]Restricter{
 	ImportPreview{}.Name():                ImportPreview{},
 	Mediafile{}.Name():                    Mediafile{},
 	Meeting{}.Name():                      Meeting{},
+	MeetingMediafile{}.Name():             MeetingMediafile{},
 	MeetingUser{}.Name():                  MeetingUser{},
 	Motion{}.Name():                       Motion{},
 	MotionBlock{}.Name():                  MotionBlock{},

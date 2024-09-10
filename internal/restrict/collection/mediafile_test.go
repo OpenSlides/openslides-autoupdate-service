@@ -18,6 +18,10 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/1:
 			owner_id: meeting/7
+			meeting_mediafile_ids: [2]
+
+		meeting_mediafile/2:
+			meeting_id: 7
 
 		meeting/7:
 			id: 7
@@ -29,7 +33,7 @@ func TestMediafileModeA(t *testing.T) {
 		"No perms organization file",
 		t,
 		m.Modes("A"),
-		true,
+		false,
 		`---
 		mediafile/1:
 			owner_id: organization/1
@@ -49,21 +53,100 @@ func TestMediafileModeA(t *testing.T) {
 	)
 
 	testCase(
-		"Admin",
+		"Anonymous published organization",
 		t,
 		m.Modes("A"),
 		true,
 		`---
-		mediafile/1/owner_id: meeting/7
+		mediafile/1:
+			owner_id: organization/1
+			published_to_meetings_in_organization_id: 1
+			meeting_mediafile_ids: [2]
+		meeting_mediafile/2:
+			meeting_id: 7
+			mediafile_id: 1
+			is_public: false
+			inherited_access_group_ids: [1337]
+		meeting/7:
+			enable_anonymous: true
+			anonymous_group_id: 1337
+			committee_id: 300
+		`,
+		withPerms(7, perm.MediafileCanSee),
+		withRequestUser(0),
+	)
+
+	testCase(
+		"Anonymous access published organization not public with token",
+		t,
+		m.Modes("A"),
+		true,
+		`---
+		mediafile/1:
+			owner_id: organization/1
+			published_to_meetings_in_organization_id: 1
+			meeting_mediafile_ids: [2]
+			token: web_header
+		meeting_mediafile/2:
+			meeting_id: 7
+			mediafile_id: 1
+			is_public: false
+			inherited_access_group_ids: [3]
+		meeting/7:
+			committee_id: 300
+
+		group/3/id: 3
+		`,
+		withPerms(7, perm.MediafileCanSee),
+		withRequestUser(0),
+	)
+
+	testCase(
+		"Admin via meeting mediafile",
+		t,
+		m.Modes("A"),
+		true,
+		`---
+		mediafile/1:
+			owner_id: meeting/7
+			meeting_mediafile_ids: [2]
+		meeting_mediafile/2:
+			meeting_id: 7
+		meeting/7:
+			admin_group_id: 8
+			committee_id: 70
+			group_ids: [8]
+		committee/70/id: 70
+
+		group/8/admin_group_for_meeting_id: 7
+		group/8/meeting_user_ids: [10]
+		user/1/meeting_user_ids: [10]
+		meeting_user/10/group_ids: [8]
+		meeting_user/10/meeting_id: 7
+		meeting_user/10/user_id: 1
+		`,
+	)
+
+	testCase(
+		"Admin via published to orga",
+		t,
+		m.Modes("A"),
+		true,
+		`---
+		mediafile/1:
+			owner_id: organization/1
+			published_to_meetings_in_organization_id: 1
 		meeting/7:
 			admin_group_id: 8
 			committee_id: 70
 		committee/70/id: 70
 
-
 		user/1/meeting_user_ids: [10]
 		meeting_user/10/group_ids: [8]
 		meeting_user/10/meeting_id: 7
+		group/8:
+			meeting_user_ids: [10]
+			admin_group_for_meeting_id: 7
 		`,
 	)
 
@@ -75,6 +158,10 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/3:
 			owner_id: meeting/7
+			meeting_mediafile_ids: [2]
+
+		meeting_mediafile/2:
+			meeting_id: 7
 		
 		meeting/7:
 			group_ids: [2]
@@ -93,6 +180,10 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/3:
 			owner_id: meeting/7
+			meeting_mediafile_ids: [2]
+
+		meeting_mediafile/2:
+			meeting_id: 7
 
 		meeting/7:
 			id: 7
@@ -109,6 +200,10 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/3:
 			owner_id: meeting/7
+			meeting_mediafile_ids: [2]
+
+		meeting_mediafile/2:
+			meeting_id: 7
 			used_as_logo_projector_main_in_meeting_id: 5
 		meeting/7:
 			group_ids: [2]
@@ -130,10 +225,19 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/1:
 			owner_id: meeting/7
+			meeting_mediafile_ids: [2]
+
+		meeting_mediafile/2:
+			meeting_id: 7
 			projection_ids: [4]
 		projection/4/current_projector_id: 5
 
-		meeting/7/committee_id: 404
+		meeting/7:
+			committee_id: 404
+			group_ids: [2]
+
+		group/2/meeting_user_ids: [10]
+		meeting_user/10/user_id: 1
 		`,
 		withPerms(7, perm.ProjectorCanSee),
 	)
@@ -146,6 +250,10 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/1:
 			owner_id: meeting/7
+			meeting_mediafile_ids: [2]
+
+		meeting_mediafile/2:
+			meeting_id: 7
 			projection_ids: [4]
 		
 		meeting/7:
@@ -164,6 +272,10 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/1:
 			owner_id: meeting/7
+			meeting_mediafile_ids: [2]
+
+		meeting_mediafile/2:
+			meeting_id: 7
 			projection_ids: [4]
 
 		meeting/7:
@@ -179,10 +291,14 @@ func TestMediafileModeA(t *testing.T) {
 		"mediafile can_manage",
 		t,
 		m.Modes("A"),
-		true,
+		false,
 		`---
 		mediafile/1:
 			owner_id: meeting/7
+			meeting_mediafile_ids: [2]
+
+		meeting_mediafile/2:
+			meeting_id: 7
 
 		meeting/7:
 			id: 7
@@ -199,6 +315,10 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/1:
 			owner_id: meeting/7
+			meeting_mediafile_ids: [2]
+
+		meeting_mediafile/2:
+			meeting_id: 7
 			is_public: false
 
 		meeting/7:
@@ -216,11 +336,18 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/1:
 			owner_id: meeting/7
+			meeting_mediafile_ids: [2]
+
+		meeting_mediafile/2:
+			meeting_id: 7
 			is_public: true
 
 		meeting/7:
-			id: 7
 			committee_id: 300
+			group_ids: [2]
+
+		group/2/meeting_user_ids: [10]
+		meeting_user/10/user_id: 1
 		`,
 		withPerms(7, perm.MediafileCanSee),
 	)
@@ -233,15 +360,24 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/1:
 			owner_id: meeting/7
+			meeting_mediafile_ids: [2]
+
+		meeting_mediafile/2:
+			meeting_id: 7
 			inherited_access_group_ids: [3]
 			is_public: false
 
-		meeting/7/committee_id: 300
+		meeting/7:
+			committee_id: 300
+			group_ids: [3]
+
 		group/3/id: 3
+		group/3/meeting_user_ids: [10]
 		
 		user/1/meeting_user_ids: [10]
 		meeting_user/10/group_ids: [3]
 		meeting_user/10/meeting_id: 7
+		meeting_user/10/user_id: 1
 		`,
 		withPerms(7, perm.MediafileCanSee),
 	)
@@ -254,6 +390,10 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/1:
 			owner_id: meeting/7
+			meeting_mediafile_ids: [2]
+
+		meeting_mediafile/2:
+			meeting_id: 7
 			inherited_access_group_ids: [3]
 			is_public: false
 
@@ -274,6 +414,10 @@ func TestMediafileModeA(t *testing.T) {
 		`---
 		mediafile/1:
 			owner_id: meeting/7
+			meeting_mediafile_ids: [2]
+
+		meeting_mediafile/2:
+			meeting_id: 7
 			inherited_access_group_ids: [3]
 
 		meeting/7:
