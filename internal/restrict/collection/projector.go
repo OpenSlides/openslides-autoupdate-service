@@ -10,7 +10,9 @@ import (
 
 // Projector handels the restriction for the projector collection.
 //
-// The user can see a projector, if the user has projector.can_see.
+// The user can see a projector,
+// * if the user has projector.can_see or
+// * the projector is the reference projector and the user has meeting.can_see_autopilot.
 //
 // If the projector has internal=true, then the user needs projector.can_manage
 //
@@ -52,13 +54,11 @@ func (p Projector) see(ctx context.Context, ds *dsfetch.Fetch, projectorIDs ...i
 			return projectorIDs, nil
 		}
 
-		if !perms.Has(perm.ProjectorCanSee) {
-			return nil, nil
-		}
-
 		internalProjectorIDs := make([]bool, len(projectorIDs))
+		usedAsReference := make([]dsfetch.Maybe[int], len(projectorIDs))
 		for i, projectorID := range projectorIDs {
 			ds.Projector_IsInternal(projectorID).Lazy(&internalProjectorIDs[i])
+			ds.Projector_UsedAsReferenceProjectorMeetingID(projectorID).Lazy(&usedAsReference[i])
 		}
 
 		if err := ds.Execute(ctx); err != nil {
@@ -67,7 +67,15 @@ func (p Projector) see(ctx context.Context, ds *dsfetch.Fetch, projectorIDs ...i
 
 		var allowed []int
 		for i, projectorID := range projectorIDs {
-			if !internalProjectorIDs[i] {
+			if internalProjectorIDs[i] {
+				continue
+			}
+
+			if !usedAsReference[i].Null() && perms.Has(perm.MeetingCanSeeAutopilot) {
+				allowed = append(allowed, projectorID)
+			}
+
+			if perms.Has(perm.ProjectorCanSee) {
 				allowed = append(allowed, projectorID)
 			}
 		}
