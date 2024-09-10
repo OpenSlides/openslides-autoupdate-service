@@ -73,14 +73,16 @@ func TestMeetingMediafileModeA(t *testing.T) {
 		meeting_mediafile/1:
 			meeting_id: 7
 		
-		meeting/7/group_ids: [2]
+		meeting/7:
+			group_ids: [2]
+			committee_id: 8
 		group/2/meeting_user_ids: [10]
 		meeting_user/10/user_id: 1
 		`,
 	)
 
 	testCase(
-		"Logo with see",
+		"Logo with see meeting",
 		t,
 		m.Modes("A"),
 		true,
@@ -92,7 +94,10 @@ func TestMeetingMediafileModeA(t *testing.T) {
 			group_ids: [2]
 
 		group/2/meeting_user_ids: [10]
-		meeting_user/10/user_id: 1
+		meeting_user/10:
+			user_id: 1
+			meeting_id: 7
+		user/1/meeting_user_ids: [10]
 		`,
 		withElementID(3),
 	)
