@@ -163,7 +163,9 @@ func TestMediafileModeA(t *testing.T) {
 		meeting_mediafile/2:
 			meeting_id: 7
 		
-		meeting/7/group_ids: [2]
+		meeting/7:
+			group_ids: [2]
+			committee_id: 8
 		group/2/meeting_user_ids: [10]
 		meeting_user/10/user_id: 1
 		`,
@@ -207,7 +209,10 @@ func TestMediafileModeA(t *testing.T) {
 			group_ids: [2]
 			committee_id: 5
 		group/2/meeting_user_ids: [10]
-		meeting_user/10/user_id: 1
+		meeting_user/10:
+			user_id: 1
+			meeting_id: 7
+		user/1/meeting_user_ids: [10]
 		`,
 		withElementID(3),
 	)
