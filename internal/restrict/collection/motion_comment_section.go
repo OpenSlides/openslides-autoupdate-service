@@ -91,10 +91,8 @@ func (m MotionCommentSection) seeAs(ctx context.Context, ds *dsfetch.Fetch, perm
 		return 0, fmt.Errorf("getting write_groups: %w", err)
 	}
 
-	for _, gid := range append(readGroups, writeGroups...) {
-		if perms.InGroup(gid) {
-			return 1, nil
-		}
+	if perms.InGroup(append(readGroups, writeGroups...)...) {
+		return 1, nil
 	}
 
 	submitterCanWrite, err := ds.MotionCommentSection_SubmitterCanWrite(motionCommentSectionID).Value(ctx)

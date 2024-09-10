@@ -17,6 +17,8 @@ import (
 // Mode B: The user must be logged in (no anonymous).
 //
 // Mode C: The user has the OML can_manage_users or higher.
+//
+// Mode E: The user is meeting admin in at least one meeting.
 type Organization struct{}
 
 // Name returns the collection name.
@@ -38,6 +40,8 @@ func (o Organization) Modes(mode string) FieldRestricter {
 		return loggedIn
 	case "C":
 		return o.modeC
+	case "E":
+		return o.modeE
 	}
 	return nil
 }
@@ -58,4 +62,17 @@ func (Organization) modeC(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int
 	}
 
 	return nil, nil
+}
+
+func (Organization) modeE(ctx context.Context, ds *dsfetch.Fetch, ids ...int) ([]int, error) {
+	isAdmin, err := isAdminInAnyMeeting(ctx, ds)
+	if err != nil {
+		return nil, fmt.Errorf("checking is user meeting admin: %w", err)
+	}
+
+	if !isAdmin {
+		return nil, nil
+	}
+
+	return ids, nil
 }
