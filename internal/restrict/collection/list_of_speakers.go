@@ -14,6 +14,8 @@ import (
 // or can_be_speaker.
 //
 // Mode A: The user can see the list of speakers.
+//
+// Mode B: The user has list_of_speakers.can_see_moderator_notes
 type ListOfSpeakers struct{}
 
 // Name returns the collection name.
@@ -35,6 +37,8 @@ func (los ListOfSpeakers) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
 		return los.see
+	case "B":
+		return los.modeB
 	}
 	return nil
 }
@@ -53,4 +57,8 @@ func (los ListOfSpeakers) see(ctx context.Context, ds *dsfetch.Fetch, losIDs ...
 		}
 		return losIDs, nil
 	})
+}
+
+func (los ListOfSpeakers) modeB(ctx context.Context, ds *dsfetch.Fetch, losIDs ...int) ([]int, error) {
+	return meetingPerm(ctx, ds, los, losIDs, perm.ListOfSpeakersCanSeeModeratorNotes)
 }
