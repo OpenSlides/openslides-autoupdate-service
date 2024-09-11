@@ -21,7 +21,10 @@ import (
 //	The request user has the OML can_manage_users or higher.
 //	The request user has user.can_manage in the meeting
 //
-// Mode E: User has the permissoin can_see_sensible_data.
+// Mode E: Y can see these fields if at least one condition is true:
+//
+//	Y has the permissoin can_see_sensible_data.
+//	Y is the related user.
 type MeetingUser struct{}
 
 // Name returns the collection name.
@@ -120,5 +123,27 @@ func (m MeetingUser) modeD(ctx context.Context, ds *dsfetch.Fetch, meetingUserID
 }
 
 func (m MeetingUser) modeE(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs ...int) ([]int, error) {
-	return meetingPerm(ctx, ds, m, meetingUserIDs, perm.UserCanSeeSensitiveData)
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	return eachMeeting(ctx, ds, m, meetingUserIDs, func(meetingID int, idsInMeeting []int) ([]int, error) {
+		perms, err := perm.FromContext(ctx, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting permission: %w", err)
+		}
+
+		if perms.Has(perm.UserCanSeeSensitiveData) {
+			return idsInMeeting, nil
+		}
+
+		return eachRelationField(ctx, ds.MeetingUser_UserID, idsInMeeting, func(userID int, ids []int) ([]int, error) {
+			if userID == requestUser {
+				return ids, nil
+			}
+
+			return nil, nil
+		})
+	})
 }
