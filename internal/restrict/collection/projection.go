@@ -10,7 +10,9 @@ import (
 
 // Projection handels the restriction for the projection collection.
 //
-// The user can see a projection, if he can see the linked projector.
+// The user can see a projection,
+// * if he has projector.can_manage or
+// * he can see the projector linked in projection/current_projector_id.
 //
 // Mode A: The user can see the projection.
 type Projection struct{}
