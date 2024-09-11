@@ -52,9 +52,9 @@ func (p Projection) see(ctx context.Context, ds *dsfetch.Fetch, projectionIDs ..
 			return ids, nil
 		}
 
-		current_projector := make([]dsfetch.Maybe[int], len(ids))
+		currentProjector := make([]dsfetch.Maybe[int], len(ids))
 		for i, id := range ids {
-			ds.Projection_CurrentProjectorID(id).Lazy(&current_projector[i])
+			ds.Projection_CurrentProjectorID(id).Lazy(&currentProjector[i])
 		}
 
 		if err := ds.Execute(ctx); err != nil {
@@ -62,7 +62,7 @@ func (p Projection) see(ctx context.Context, ds *dsfetch.Fetch, projectionIDs ..
 		}
 
 		var allowed []int
-		for i, maybeID := range current_projector {
+		for i, maybeID := range currentProjector {
 			projectorID, hasCurrent := maybeID.Value()
 			if !hasCurrent {
 				continue
