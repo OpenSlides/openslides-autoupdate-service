@@ -43,12 +43,10 @@ func Run(
 	saveIntercal time.Duration,
 ) error {
 	var connectionCount [2]*ConnectionCount
-	if redisConnection != nil {
-		connectionCount[0] = newConnectionCount(ctx, redisConnection, saveIntercal, "connections_stream")
-		connectionCount[1] = newConnectionCount(ctx, redisConnection, saveIntercal, "connections_longpolling")
-		metric.Register(connectionCount[0].Metric)
-		metric.Register(connectionCount[1].Metric)
-	}
+	connectionCount[0] = newConnectionCount(ctx, redisConnection, saveIntercal, "connections_stream")
+	connectionCount[1] = newConnectionCount(ctx, redisConnection, saveIntercal, "connections_longpolling")
+	metric.Register(connectionCount[0].Metric)
+	metric.Register(connectionCount[1].Metric)
 
 	mux := http.NewServeMux()
 	HandleHealth(mux)
@@ -56,7 +54,6 @@ func Run(
 	HandleInternalAutoupdate(mux, auth, autoupdate)
 	HandleShowConnectionCount(mux, autoupdate, auth, connectionCount)
 	HandleHistoryInformation(mux, auth, autoupdate)
-	HandleServerTime(mux)
 	HandleProfile(mux)
 
 	srv := &http.Server{
@@ -411,15 +408,6 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 
 	}
 	return ctx.Err()
-}
-
-// HandleServerTime returns the unix time in seconds.
-func HandleServerTime(mux *http.ServeMux) {
-	url := prefixPublic + "/server_time"
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, `{"server_time": %d}`+"\n", time.Now().Unix())
-	})
-	mux.HandleFunc(url, handler)
 }
 
 // HandleHealth tells, if the service is running.

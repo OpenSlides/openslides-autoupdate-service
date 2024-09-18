@@ -88,17 +88,22 @@ func newAnonymous(ctx context.Context, ds *dsfetch.Fetch, meetingID int) (*Permi
 		return nil, nil
 	}
 
-	defaultGroupID, err := ds.Meeting_DefaultGroupID(meetingID).Value(ctx)
+	maybeAnonymousGroupID, err := ds.Meeting_AnonymousGroupID(meetingID).Value(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("getting default group: %w", err)
+		return nil, fmt.Errorf("getting anonymous group: %w", err)
 	}
 
-	perms, err := permissionsFromGroups(ctx, ds, defaultGroupID)
-	if err != nil {
-		return nil, fmt.Errorf("getting permissions for default group: %w", err)
+	anonymousGroupID, hasAnonymousGroup := maybeAnonymousGroupID.Value()
+	if !hasAnonymousGroup {
+		return nil, fmt.Errorf("anonymous group id not set")
 	}
 
-	return &Permission{groupIDs: []int{defaultGroupID}, permissions: perms}, nil
+	perms, err := permissionsFromGroups(ctx, ds, anonymousGroupID)
+	if err != nil {
+		return nil, fmt.Errorf("getting permissions for anonymous group: %w", err)
+	}
+
+	return &Permission{groupIDs: []int{anonymousGroupID}, permissions: perms}, nil
 }
 
 func isAdmin(ctx context.Context, ds *dsfetch.Fetch, meetingID int, groupIDs []int) (bool, error) {
@@ -163,7 +168,7 @@ func (p *Permission) IsAdmin() bool {
 }
 
 // InGroup returns true, if the user is in the given group (by group_id).
-func (p *Permission) InGroup(gid int) bool {
+func (p *Permission) InGroup(groupIDs ...int) bool {
 	if p == nil {
 		return false
 	}
@@ -172,9 +177,11 @@ func (p *Permission) InGroup(gid int) bool {
 		return true
 	}
 
-	for _, id := range p.groupIDs {
-		if id == gid {
-			return true
+	for _, cid := range groupIDs {
+		for _, id := range p.groupIDs {
+			if id == cid {
+				return true
+			}
 		}
 	}
 	return false

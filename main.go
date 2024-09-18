@@ -28,6 +28,7 @@ var (
 	envMetricInterval         = environment.NewVariable("METRIC_INTERVAL", "5m", "Time in how often the metrics are gathered. Zero disables the metrics.")
 	envMetricSaveInterval     = environment.NewVariable("METRIC_SAVE_INTERVAL", "5m", "Interval, how often the metric should be saved to redis. Redis will ignore entries, that are twice at old then the save interval.")
 	envDisableConnectionCount = environment.NewVariable("DISABLE_CONNECTION_COUNT", "false", "Do not count connections.")
+	envAnonymousOnly          = environment.NewVariable("ANONYMOUS_ONLY", "false", "Start for only anonymous users. Does not write to redis or connect to the vote-service.")
 )
 
 var cli struct {
@@ -133,8 +134,10 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	// Redis as message bus for datastore and logout events.
 	messageBus := redis.New(lookup)
 
+	anonymousOnly, _ := strconv.ParseBool(envAnonymousOnly.Value(lookup))
+
 	// Autoupdate data flow.
-	flow, flowBackground, err := autoupdate.NewFlow(lookup, messageBus)
+	flow, flowBackground, err := autoupdate.NewFlow(lookup, messageBus, anonymousOnly)
 	if err != nil {
 		return nil, fmt.Errorf("init autoupdate data flow: %w", err)
 	}
@@ -163,7 +166,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 
 	metricSaveInterval, err := environment.ParseDuration(envMetricSaveInterval.Value(lookup))
 	if err != nil {
-		return nil, fmt.Errorf("invalid value for `METRIC_TOO_OLD`, expected duration got %s: %w", envMetricInterval.Value(lookup), err)
+		return nil, fmt.Errorf("invalid value for `METRIC_SAVE_INTERVAL`, expected duration got %s: %w", envMetricInterval.Value(lookup), err)
 	}
 
 	if metricTime > 0 {
@@ -174,7 +177,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	}
 
 	metricStorage := messageBus
-	if disable, _ := strconv.ParseBool(envDisableConnectionCount.Value(lookup)); disable {
+	if disable, _ := strconv.ParseBool(envDisableConnectionCount.Value(lookup)); disable || anonymousOnly {
 		metricStorage = nil
 	}
 
