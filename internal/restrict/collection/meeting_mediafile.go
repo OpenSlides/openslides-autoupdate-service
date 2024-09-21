@@ -14,7 +14,7 @@ import (
 //
 //	The user is an admin of the meeting.
 //	The user can see the meeting and used_as_logo_*_in_meeting_id or used_as_font_*_in_meeting_id is not empty.
-//	The user has projector.can_see and one of the projections linked with meeting_mediafile/projection_ids has projection/current_projector_id set.
+//	The user can see a projection linked in `meeting_mediafile/projection_ids`.
 //	The user has mediafile.can_see and either:
 //	    meeting_mediafile/is_public is true, or
 //	    the user has groups in common with meeting_mediafile/inherited_access_group_ids.
@@ -47,6 +47,8 @@ func (m MeetingMediafile) Modes(mode string) FieldRestricter {
 }
 
 func (m MeetingMediafile) see(ctx context.Context, ds *dsfetch.Fetch, meetingMediafileIDs ...int) ([]int, error) {
+	projectionRestrictor := Collection(ctx, "projection").Modes("A")
+
 	return eachMeeting(ctx, ds, m, meetingMediafileIDs, func(meetingID int, ids []int) ([]int, error) {
 		canSeeMeeting, err := Collection(ctx, Meeting{}.Name()).Modes("B")(ctx, ds, meetingID)
 		if err != nil {
@@ -76,22 +78,18 @@ func (m MeetingMediafile) see(ctx context.Context, ds *dsfetch.Fetch, meetingMed
 				return true, nil
 			}
 
-			if perms.Has(perm.ProjectorCanSee) {
-				p7onIDs, err := ds.MeetingMediafile_ProjectionIDs(meetingMediafileID).Value(ctx)
-				if err != nil {
-					return false, fmt.Errorf("getting projection ids: %w", err)
-				}
+			p7onIDs, err := ds.MeetingMediafile_ProjectionIDs(meetingMediafileID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting projection ids: %w", err)
+			}
 
-				for _, p7onID := range p7onIDs {
-					value, err := ds.Projection_CurrentProjectorID(p7onID).Value(ctx)
-					if err != nil {
-						return false, fmt.Errorf("getting current projector id: %w", err)
-					}
+			allowedP7ons, err := projectionRestrictor(ctx, ds, p7onIDs...)
+			if err != nil {
+				return false, fmt.Errorf("checking p7on restriction: %w", err)
+			}
 
-					if !value.Null() {
-						return true, nil
-					}
-				}
+			if len(allowedP7ons) > 0 {
+				return true, nil
 			}
 
 			if perms.Has(perm.MediafileCanSee) {
