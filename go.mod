@@ -3,7 +3,7 @@ module github.com/OpenSlides/openslides-autoupdate-service
 go 1.23
 
 require (
-	github.com/alecthomas/kong v0.9.0
+	github.com/alecthomas/kong v1.2.1
 	github.com/goccy/go-yaml v1.12.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/gomodule/redigo v1.9.2
