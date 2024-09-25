@@ -223,6 +223,20 @@ func TestMeetingUserModeE(t *testing.T) {
 	)
 
 	testCase(
+		"Without perms themselves",
+		t,
+		mode,
+		true,
+		`---
+		user/1/id: 1
+		meeting_user/20:
+			user_id: 1
+			meeting_id: 5
+		`,
+		withElementID(20),
+	)
+
+	testCase(
 		"Can see",
 		t,
 		mode,
