@@ -1283,6 +1283,42 @@ func (r *Fetch) Committee_UserIDs(committeeID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
+func (r *Fetch) Gender_ID(genderID int) *ValueInt {
+	key, err := dskey.FromParts("gender", genderID, "id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key}
+}
+
+func (r *Fetch) Gender_Name(genderID int) *ValueString {
+	key, err := dskey.FromParts("gender", genderID, "name")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) Gender_OrganizationID(genderID int) *ValueInt {
+	key, err := dskey.FromParts("gender", genderID, "organization_id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) Gender_UserIDs(genderID int) *ValueIntSlice {
+	key, err := dskey.FromParts("gender", genderID, "user_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
 func (r *Fetch) Group_AdminGroupForMeetingID(groupID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("group", groupID, "admin_group_for_meeting_id")
 	if err != nil {
@@ -5846,13 +5882,13 @@ func (r *Fetch) Organization_EnableElectronicVoting(organizationID int) *ValueBo
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) Organization_Genders(organizationID int) *ValueStringSlice {
-	key, err := dskey.FromParts("organization", organizationID, "genders")
+func (r *Fetch) Organization_GenderIDs(organizationID int) *ValueIntSlice {
+	key, err := dskey.FromParts("organization", organizationID, "gender_ids")
 	if err != nil {
-		return &ValueStringSlice{err: err}
+		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueStringSlice{fetch: r, key: key}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Organization_ID(organizationID int) *ValueInt {
@@ -8105,13 +8141,13 @@ func (r *Fetch) User_ForwardingCommitteeIDs(userID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) User_Gender(userID int) *ValueString {
-	key, err := dskey.FromParts("user", userID, "gender")
+func (r *Fetch) User_GenderID(userID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("user", userID, "gender_id")
 	if err != nil {
-		return &ValueString{err: err}
+		return &ValueMaybeInt{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key}
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) User_ID(userID int) *ValueInt {
