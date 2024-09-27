@@ -580,4 +580,5 @@ var collectionOrder = map[string]int{
 	"structure_level_list_of_speakers": 55,
 	"motion_working_group_speaker":     56,
 	"motion_editor":                    57,
+	"gender":                           58,
 }
