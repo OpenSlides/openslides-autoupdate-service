@@ -686,6 +686,7 @@ var restrictionModes = map[string]string{
 	"meeting/motions_export_preamble":                               "B",
 	"meeting/motions_export_submitter_recommendation":               "B",
 	"meeting/motions_export_title":                                  "B",
+	"meeting/motions_hide_metadata_background":                      "B",
 	"meeting/motions_line_length":                                   "B",
 	"meeting/motions_number_min_digits":                             "B",
 	"meeting/motions_number_type":                                   "B",
