@@ -3677,6 +3677,15 @@ func (r *Fetch) Meeting_MotionsExportTitle(meetingID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_MotionsHideMetadataBackground(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "motions_hide_metadata_background")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_MotionsLineLength(meetingID int) *ValueInt {
 	key, err := dskey.FromParts("meeting", meetingID, "motions_line_length")
 	if err != nil {
