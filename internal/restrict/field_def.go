@@ -1015,6 +1015,7 @@ var restrictionModes = map[string]string{
 	"organization/active_meeting_ids":            "A",
 	"organization/default_language":              "A",
 	"organization/description":                   "A",
+	"organization/enable_anonymous":              "A",
 	"organization/gender_ids":                    "A",
 	"organization/id":                            "A",
 	"organization/legal_notice":                  "A",
