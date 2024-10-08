@@ -38,6 +38,48 @@ func TestMotionModeC(t *testing.T) {
 	)
 
 	testCase(
+		"motion/all_derived_motion_ids but not motion.can_see_origin",
+		t,
+		f,
+		false,
+		`---
+		motion:
+			1:
+				meeting_id: 30
+				state_id: 3
+				all_derived_motion_ids: [10]
+
+			10:
+				meeting_id: 31
+				state_id: 3
+
+		motion_state/3/id: 3
+		`,
+		withPerms(31, perm.MotionCanSee),
+	)
+
+	testCase(
+		"motion/all_derived_motion_ids with motion.can_see_origin",
+		t,
+		f,
+		true,
+		`---
+		motion:
+			1:
+				meeting_id: 30
+				state_id: 3
+				all_derived_motion_ids: [10]
+
+			10:
+				meeting_id: 31
+				state_id: 3
+
+		motion_state/3/id: 3
+		`,
+		withPerms(31, perm.MotionCanSeeOrigin),
+	)
+
+	testCase(
 		"motion.can_see with restrict is_submitter",
 		t,
 		f,

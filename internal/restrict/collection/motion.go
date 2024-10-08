@@ -14,21 +14,27 @@ import (
 //
 // The user can see a motion if:
 //
-//		The user has motion.can_see in the meeting, and
-//		For one `restriction` in the motion's state `state/restriction` field:
-//		    If: `restriction` is `is_submitter`: The user needs to be a submitter of the motion
-//		    Else: (a permission string): The user needs the permission
-//	 And - for amendments (lead_motion_id != null) - the user can also see the lead motion.
+//	The user has motion.can_see in the meeting or
+//	for one of the motions in `motion/all_derived_motion_ids` the user has motion.can_see_origin in the corresponding meeting
 //
-// Mode A: The user can see the motion or can see a referenced motion in motion/all_origin_ids and motion/all_derived_motion_ids.
+//	and for one `restriction` in the motion's state `state/restriction` field:
+//	    If: `restriction` is `is_submitter`: The user needs to be a submitter of the motion
+//	    Else: (a permission string): The user needs the permission
 //
-// Mode B: The user has the permission motion.can_manage_metadata in the motion's meeting.
+//	and - for amendments (lead_motion_id != null) - the user can also see the lead motion.
+//
+// Mode A: The user can see the motion or can see a referenced motion in
+// motion/all_origin_ids and motion/all_derived_motion_ids.
+//
+// Mode B: The user has the permission motion.can_manage_metadata in the
+// motion's meeting.
 //
 // Mode C: The user can see the motion.
 //
 // Mode D: Never published to any user.
 //
-// Mode E: If the motion states is_internal is true the user needs the permission motion.can_manage_metadata otherwise same as Mode C
+// Mode E: If the motion states is_internal is true the user needs the
+// permission motion.can_manage_metadata otherwise same as Mode C
 type Motion struct{}
 
 // Name returns the collection name.
@@ -76,11 +82,44 @@ func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, motionIDs ...int) ([
 				return nil, fmt.Errorf("getting permissions: %w", err)
 			}
 
-			if !perms.Has(perm.MotionCanSee) {
-				return nil, nil
+			step1Allowed, err := eachCondition(ids, func(id int) (bool, error) {
+				if perms.Has(perm.MotionCanSee) {
+					return true, nil
+				}
+
+				derivedIDs, err := ds.Motion_AllDerivedMotionIDs(id).Value(ctx)
+				if err != nil {
+					return false, fmt.Errorf("fetching all_derived_ids: %w", err)
+				}
+
+				meetingIDs := make([]int, len(derivedIDs))
+				for i, derivedID := range derivedIDs {
+					ds.Motion_MeetingID(derivedID).Lazy(&meetingIDs[i])
+				}
+
+				if err := ds.Execute(ctx); err != nil {
+					return false, fmt.Errorf("fetching meeting ids from derived motions: %w", err)
+				}
+
+				for _, meetingID := range meetingIDs {
+					perms, err := perm.FromContext(ctx, meetingID)
+					if err != nil {
+						return false, fmt.Errorf("getting permission from derived motion meeting: %w", err)
+					}
+
+					if perms.Has(perm.MotionCanSeeOrigin) {
+						return true, nil
+					}
+				}
+
+				return false, nil
+
+			})
+			if err != nil {
+				return nil, fmt.Errorf("checking condition 1: %w", err)
 			}
 
-			return eachRelationField(ctx, ds.Motion_StateID, ids, func(stateID int, ids []int) ([]int, error) {
+			return eachRelationField(ctx, ds.Motion_StateID, step1Allowed, func(stateID int, ids []int) ([]int, error) {
 				restrictions, err := ds.MotionState_Restrictions(stateID).Value(ctx)
 				if err != nil {
 					return nil, fmt.Errorf("getting restrictions: %w", err)
