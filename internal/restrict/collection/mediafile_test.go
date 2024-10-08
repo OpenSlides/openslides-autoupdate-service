@@ -58,6 +58,7 @@ func TestMediafileModeA(t *testing.T) {
 		m.Modes("A"),
 		true,
 		`---
+		organization/1/enable_anonymous: true
 		mediafile/1:
 			owner_id: organization/1
 			published_to_meetings_in_organization_id: 1

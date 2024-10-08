@@ -559,14 +559,14 @@ func TestUserModeB(t *testing.T) {
 		meeting_user/20:
 			motion_submitter_ids: [4]
 			meeting_id: 30
-		
+
 		motion_submitter/4:
 			motion_id: 7
-		
+
 		motion/7:
 			meeting_id: 30
 			state_id: 5
-		
+
 		motion_state/5/id: 5
 		`,
 		withRequestUser(1),
@@ -588,11 +588,11 @@ func TestUserModeB(t *testing.T) {
 		meeting_user/20:
 			supported_motion_ids: [7]
 			meeting_id: 30
-		
+
 		motion/7:
 			meeting_id: 30
 			state_id: 5
-		
+
 		motion_state/5/id: 5
 		`,
 		withRequestUser(1),
@@ -614,7 +614,7 @@ func TestUserModeB(t *testing.T) {
 		meeting_user/20:
 			assignment_candidate_ids: [4]
 			meeting_id: 30
-		
+
 		assignment_candidate/4/assignment_id: 5
 		assignment/5/meeting_id: 30
 		`,
@@ -637,7 +637,7 @@ func TestUserModeB(t *testing.T) {
 		meeting_user/20:
 			speaker_ids: [4]
 			meeting_id: 30
-		
+
 		speaker/4:
 			list_of_speakers_id: 5
 			meeting_id: 30
@@ -674,7 +674,7 @@ func TestUserModeB(t *testing.T) {
 			state: published
 			meeting_id: 30
 
-		meeting/30/enable_anonymous: true
+		meeting/30/id: 30
 		`,
 		withRequestUser(1),
 		withElementID(2),
