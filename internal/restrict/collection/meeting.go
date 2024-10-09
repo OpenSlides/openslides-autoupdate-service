@@ -13,7 +13,7 @@ import (
 //
 // The user can see a meeting if one of the following is True:
 //
-//	`meeting/enable_anonymous`.
+//	`meeting/enable_anonymous` and organization/1/enable_anonymous.
 //	The user is in the meeting.
 //	The user has the CML can_manage of the meeting's committee.
 //	The user has the CML can_manage of any meeting and the meeting is a template meeting.
@@ -76,10 +76,12 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) 
 	}
 
 	lockedMeetings := make([]bool, len(meetingIDs))
-	enabledAnonymous := make([]bool, len(meetingIDs))
+	enabledMeetingAnonymous := make([]bool, len(meetingIDs))
+	var enabledOrgaAnonymous bool
+	ds.Organization_EnableAnonymous(1).Lazy(&enabledOrgaAnonymous)
 	for i, id := range meetingIDs {
 		ds.Meeting_LockedFromInside(id).Lazy(&lockedMeetings[i])
-		ds.Meeting_EnableAnonymous(id).Lazy(&enabledAnonymous[i])
+		ds.Meeting_EnableAnonymous(id).Lazy(&enabledMeetingAnonymous[i])
 	}
 
 	if err := ds.Execute(ctx); err != nil {
@@ -136,7 +138,7 @@ LOOP_MEETINGS:
 			continue
 		}
 
-		if enabledAnonymous[i] || oml {
+		if (enabledOrgaAnonymous && enabledMeetingAnonymous[i]) || oml {
 			allowed = append(allowed, meetingID)
 			continue
 		}

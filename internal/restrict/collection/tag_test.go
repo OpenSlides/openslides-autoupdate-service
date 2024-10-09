@@ -16,6 +16,7 @@ func TestTagModeA(t *testing.T) {
 		true,
 		`---
 		tag/1/meeting_id: 5
+		organization/1/enable_anonymous: true
 		meeting/5:
 			enable_anonymous: true
 			committee_id: 300
@@ -30,7 +31,6 @@ func TestTagModeA(t *testing.T) {
 		`---
 		tag/1/meeting_id: 5
 		meeting/5:
-			enable_anonymous: false
 			committee_id: 300
 		`,
 	)
