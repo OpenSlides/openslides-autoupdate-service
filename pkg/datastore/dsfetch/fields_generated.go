@@ -5873,6 +5873,15 @@ func (r *Fetch) Organization_Description(organizationID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
+func (r *Fetch) Organization_EnableAnonymous(organizationID int) *ValueBool {
+	key, err := dskey.FromParts("organization", organizationID, "enable_anonymous")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Organization_EnableChat(organizationID int) *ValueBool {
 	key, err := dskey.FromParts("organization", organizationID, "enable_chat")
 	if err != nil {

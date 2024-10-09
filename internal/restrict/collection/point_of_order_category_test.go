@@ -17,7 +17,6 @@ func TestPointOfOrderCategoryModeA(t *testing.T) {
 		`---
 		point_of_order_category/1/meeting_id: 5
 		meeting/5:
-			enable_anonymous: false
 			committee_id: 404
 		`,
 	)
@@ -28,6 +27,7 @@ func TestPointOfOrderCategoryModeA(t *testing.T) {
 		p.Modes("A"),
 		true,
 		`---
+		organization/1/enable_anonymous: true
 		point_of_order_category/1/meeting_id: 5
 		meeting/5:
 			enable_anonymous: true
