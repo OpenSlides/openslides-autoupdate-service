@@ -40,7 +40,36 @@ func TestMeetingModeB(t *testing.T) {
 		t,
 		m.Modes("B"),
 		true,
-		`meeting/30/enable_anonymous: true`,
+		`---
+		meeting/30/enable_anonymous: true
+		organization/1/enable_anonymous: true
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"anonymous enabled only in organization",
+		t,
+		m.Modes("B"),
+		false,
+		`---
+		organization/1/enable_anonymous: true
+		meeting/30:
+			committee_id: 3
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"anonymous enabled only in meeting",
+		t,
+		m.Modes("B"),
+		false,
+		`---
+		meeting/30:
+			enable_anonymous: true
+			committee_id: 3
+		`,
 		withElementID(30),
 	)
 
@@ -50,6 +79,7 @@ func TestMeetingModeB(t *testing.T) {
 		m.Modes("B"),
 		false,
 		`---
+		organization/1/enable_anonymous: true
 		meeting/30:
 			enable_anonymous: true
 			group_ids: [7]
@@ -197,6 +227,7 @@ func TestMeetingModeB(t *testing.T) {
 		m.Modes("B"),
 		false,
 		`---
+		organization/1/enable_anonymous: true
 		meeting/30:
 			enable_anonymous: true
 			group_ids: [7]
@@ -242,6 +273,7 @@ func TestMeetingModeB(t *testing.T) {
 		m.Modes("B"),
 		false,
 		`
+		organization/1/enable_anonymous: true
 		meeting/30:
 			locked_from_inside: true
 			enable_anonymous: true
