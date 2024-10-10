@@ -1157,13 +1157,13 @@ func (r *Fetch) ChatMessage_MeetingID(chatMessageID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) ChatMessage_MeetingUserID(chatMessageID int) *ValueInt {
+func (r *Fetch) ChatMessage_MeetingUserID(chatMessageID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("chat_message", chatMessageID, "meeting_user_id")
 	if err != nil {
-		return &ValueInt{err: err}
+		return &ValueMaybeInt{err: err}
 	}
 
-	return &ValueInt{fetch: r, key: key, required: true}
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Committee_DefaultMeetingID(committeeID int) *ValueMaybeInt {
@@ -1276,6 +1276,42 @@ func (r *Fetch) Committee_ReceiveForwardingsFromCommitteeIDs(committeeID int) *V
 
 func (r *Fetch) Committee_UserIDs(committeeID int) *ValueIntSlice {
 	key, err := dskey.FromParts("committee", committeeID, "user_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
+func (r *Fetch) Gender_ID(genderID int) *ValueInt {
+	key, err := dskey.FromParts("gender", genderID, "id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key}
+}
+
+func (r *Fetch) Gender_Name(genderID int) *ValueString {
+	key, err := dskey.FromParts("gender", genderID, "name")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) Gender_OrganizationID(genderID int) *ValueInt {
+	key, err := dskey.FromParts("gender", genderID, "organization_id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) Gender_UserIDs(genderID int) *ValueIntSlice {
+	key, err := dskey.FromParts("gender", genderID, "user_ids")
 	if err != nil {
 		return &ValueIntSlice{err: err}
 	}
@@ -3371,6 +3407,15 @@ func (r *Fetch) Meeting_MotionPollDefaultGroupIDs(meetingID int) *ValueIntSlice 
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_MotionPollDefaultMethod(meetingID int) *ValueString {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_default_method")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_MotionPollDefaultOnehundredPercentBase(meetingID int) *ValueString {
 	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_default_onehundred_percent_base")
 	if err != nil {
@@ -3630,6 +3675,15 @@ func (r *Fetch) Meeting_MotionsExportTitle(meetingID int) *ValueString {
 	}
 
 	return &ValueString{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_MotionsHideMetadataBackground(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "motions_hide_metadata_background")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MotionsLineLength(meetingID int) *ValueInt {
@@ -5819,6 +5873,15 @@ func (r *Fetch) Organization_Description(organizationID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
+func (r *Fetch) Organization_EnableAnonymous(organizationID int) *ValueBool {
+	key, err := dskey.FromParts("organization", organizationID, "enable_anonymous")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Organization_EnableChat(organizationID int) *ValueBool {
 	key, err := dskey.FromParts("organization", organizationID, "enable_chat")
 	if err != nil {
@@ -5837,13 +5900,13 @@ func (r *Fetch) Organization_EnableElectronicVoting(organizationID int) *ValueBo
 	return &ValueBool{fetch: r, key: key}
 }
 
-func (r *Fetch) Organization_Genders(organizationID int) *ValueStringSlice {
-	key, err := dskey.FromParts("organization", organizationID, "genders")
+func (r *Fetch) Organization_GenderIDs(organizationID int) *ValueIntSlice {
+	key, err := dskey.FromParts("organization", organizationID, "gender_ids")
 	if err != nil {
-		return &ValueStringSlice{err: err}
+		return &ValueIntSlice{err: err}
 	}
 
-	return &ValueStringSlice{fetch: r, key: key}
+	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) Organization_ID(organizationID int) *ValueInt {
@@ -8096,13 +8159,13 @@ func (r *Fetch) User_ForwardingCommitteeIDs(userID int) *ValueIntSlice {
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) User_Gender(userID int) *ValueString {
-	key, err := dskey.FromParts("user", userID, "gender")
+func (r *Fetch) User_GenderID(userID int) *ValueMaybeInt {
+	key, err := dskey.FromParts("user", userID, "gender_id")
 	if err != nil {
-		return &ValueString{err: err}
+		return &ValueMaybeInt{err: err}
 	}
 
-	return &ValueString{fetch: r, key: key}
+	return &ValueMaybeInt{fetch: r, key: key}
 }
 
 func (r *Fetch) User_ID(userID int) *ValueInt {

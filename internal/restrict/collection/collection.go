@@ -24,8 +24,6 @@ func (cm CM) String() string {
 // FieldRestricter is a function to restrict fields of a collection.
 type FieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, id ...int) ([]int, error)
 
-type singleFieldRestricter func(ctx context.Context, ds *dsfetch.Fetch, id int) (bool, error)
-
 // Allways is a restricter func that just returns true.
 func Allways(ctx context.Context, ds *dsfetch.Fetch, elementIDs ...int) ([]int, error) {
 	return elementIDs, nil
@@ -169,6 +167,7 @@ var collectionMap = map[string]Restricter{
 	ChatGroup{}.Name():                    ChatGroup{},
 	ChatMessage{}.Name():                  ChatMessage{},
 	Committee{}.Name():                    Committee{},
+	Gender{}.Name():                       Gender{},
 	Group{}.Name():                        Group{},
 	ImportPreview{}.Name():                ImportPreview{},
 	Mediafile{}.Name():                    Mediafile{},
