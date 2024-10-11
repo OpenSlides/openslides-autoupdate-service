@@ -167,6 +167,7 @@ var collectionMap = map[string]Restricter{
 	ChatGroup{}.Name():                    ChatGroup{},
 	ChatMessage{}.Name():                  ChatMessage{},
 	Committee{}.Name():                    Committee{},
+	Gender{}.Name():                       Gender{},
 	Group{}.Name():                        Group{},
 	ImportPreview{}.Name():                ImportPreview{},
 	Mediafile{}.Name():                    Mediafile{},

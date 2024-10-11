@@ -39,6 +39,8 @@ func testCase(name string, t *testing.T, f collection.FieldRestricter, expect bo
 		o(&td)
 	}
 
+	td.data[dskey.MustKey("organization/1/id")] = []byte("1")
+
 	if td.requestUserID != 0 {
 		userIDKey, err := dskey.FromString(fmt.Sprintf("user/%d/id", td.requestUserID))
 		if err != nil {

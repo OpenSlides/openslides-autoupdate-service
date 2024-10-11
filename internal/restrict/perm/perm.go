@@ -51,11 +51,16 @@ func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permis
 	}
 
 	if meetingUserID == 0 {
-		// User is not in the meeting. Do not just return nil. Nil would be an
-		// nil interface. But what we want is a interface of type permission
-		// with value nil.
-		var p *Permission
-		return p, nil
+		return nil, nil
+	}
+
+	lockedOut, err := ds.MeetingUser_LockedOut(meetingUserID).Value(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting locked out value: %w", err)
+	}
+
+	if lockedOut {
+		return nil, nil
 	}
 
 	groupIDs, err := ds.MeetingUser_GroupIDs(meetingUserID).Value(ctx)
@@ -80,11 +85,15 @@ func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permis
 }
 
 func newAnonymous(ctx context.Context, ds *dsfetch.Fetch, meetingID int) (*Permission, error) {
-	enableAnonymous, err := ds.Meeting_EnableAnonymous(meetingID).Value(ctx)
+	enabledOrgaAnonymous, err := ds.Organization_EnableAnonymous(1).Value(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("checking anonymous enabled: %w", err)
+		return nil, fmt.Errorf("checking orga meeting enabled: %w", err)
 	}
-	if !enableAnonymous {
+	enableMeetingAnonymous, err := ds.Meeting_EnableAnonymous(meetingID).Value(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("checking anonymous meeting enabled: %w", err)
+	}
+	if !(enableMeetingAnonymous && enabledOrgaAnonymous) {
 		return nil, nil
 	}
 

@@ -31,6 +31,7 @@ func TestMeetingMediafileModeA(t *testing.T) {
 		m.Modes("A"),
 		true,
 		`---
+		organization/1/enable_anonymous: true
 		meeting_mediafile/1:
 			meeting_id: 7
 			is_public: false
@@ -73,14 +74,16 @@ func TestMeetingMediafileModeA(t *testing.T) {
 		meeting_mediafile/1:
 			meeting_id: 7
 		
-		meeting/7/group_ids: [2]
+		meeting/7:
+			group_ids: [2]
+			committee_id: 8
 		group/2/meeting_user_ids: [10]
 		meeting_user/10/user_id: 1
 		`,
 	)
 
 	testCase(
-		"Logo with see",
+		"Logo with see meeting",
 		t,
 		m.Modes("A"),
 		true,
@@ -92,7 +95,10 @@ func TestMeetingMediafileModeA(t *testing.T) {
 			group_ids: [2]
 
 		group/2/meeting_user_ids: [10]
-		meeting_user/10/user_id: 1
+		meeting_user/10:
+			user_id: 1
+			meeting_id: 7
+		user/1/meeting_user_ids: [10]
 		`,
 		withElementID(3),
 	)
@@ -106,7 +112,12 @@ func TestMeetingMediafileModeA(t *testing.T) {
 		meeting_mediafile/1:
 			meeting_id: 7
 			projection_ids: [4]
-		projection/4/current_projector_id: 5
+
+		projection/4:
+			current_projector_id: 5
+			meeting_id: 7
+
+		projector/5/meeting_id: 7
 
 		meeting/7:
 			committee_id: 404
@@ -156,9 +167,37 @@ func TestMeetingMediafileModeA(t *testing.T) {
 		group/2/meeting_user_ids: [10]
 		meeting_user/10/user_id: 1
 
-		projection/4/id: 4
+		projection/4/meeting_id: 7
 		`,
 		withPerms(7, perm.ProjectorCanSee),
+	)
+
+	testCase(
+		"On autopilot projector with meeting.can_see_autopilot",
+		t,
+		m.Modes("A"),
+		true,
+		`---
+		meeting_mediafile/1:
+			meeting_id: 30
+			projection_ids: [4]
+
+		projection/4:
+			current_projector_id: 7
+			meeting_id: 30
+
+		projector/7:
+			used_as_reference_projector_meeting_id: 30
+			meeting_id: 30
+
+		meeting/30:
+			committee_id: 404
+			group_ids: [2]
+
+		group/2/meeting_user_ids: [10]
+		meeting_user/10/user_id: 1
+		`,
+		withPerms(30, perm.MeetingCanSeeAutopilot),
 	)
 
 	testCase(
