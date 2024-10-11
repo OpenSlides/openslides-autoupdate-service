@@ -58,6 +58,7 @@ func TestMediafileModeA(t *testing.T) {
 		m.Modes("A"),
 		true,
 		`---
+		organization/1/enable_anonymous: true
 		mediafile/1:
 			owner_id: organization/1
 			published_to_meetings_in_organization_id: 1
@@ -230,7 +231,12 @@ func TestMediafileModeA(t *testing.T) {
 		meeting_mediafile/2:
 			meeting_id: 7
 			projection_ids: [4]
-		projection/4/current_projector_id: 5
+
+		projection/4:
+			current_projector_id: 5
+			meeting_id: 7
+
+		projector/5/meeting_id: 7
 
 		meeting/7:
 			committee_id: 404
