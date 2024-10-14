@@ -10,7 +10,7 @@ func TestPersonalNoteModeA(t *testing.T) {
 	var p collection.PersonalNote
 
 	testCase(
-		"as anonymous",
+		"From public access",
 		t,
 		p.Modes("A"),
 		false,

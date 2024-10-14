@@ -76,12 +76,12 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) 
 	}
 
 	lockedMeetings := make([]bool, len(meetingIDs))
-	enabledMeetingAnonymous := make([]bool, len(meetingIDs))
-	var enabledOrgaAnonymous bool
-	ds.Organization_EnableAnonymous(1).Lazy(&enabledOrgaAnonymous)
+	enabledMeetingPublicAccess := make([]bool, len(meetingIDs))
+	var enabledOrgaPublicAccess bool
+	ds.Organization_EnableAnonymous(1).Lazy(&enabledOrgaPublicAccess)
 	for i, id := range meetingIDs {
 		ds.Meeting_LockedFromInside(id).Lazy(&lockedMeetings[i])
-		ds.Meeting_EnableAnonymous(id).Lazy(&enabledMeetingAnonymous[i])
+		ds.Meeting_EnableAnonymous(id).Lazy(&enabledMeetingPublicAccess[i])
 	}
 
 	if err := ds.Execute(ctx); err != nil {
@@ -138,7 +138,7 @@ LOOP_MEETINGS:
 			continue
 		}
 
-		if (enabledOrgaAnonymous && enabledMeetingAnonymous[i]) || oml {
+		if (enabledOrgaPublicAccess && enabledMeetingPublicAccess[i]) || oml {
 			allowed = append(allowed, meetingID)
 			continue
 		}

@@ -22,7 +22,7 @@ func TestOrganizationModeB(t *testing.T) {
 	f := collection.Organization{}.Modes("B")
 
 	testCase(
-		"anonymous",
+		"Public access",
 		t,
 		f,
 		false,
@@ -44,7 +44,7 @@ func TestOrganizationModeC(t *testing.T) {
 	f := collection.Organization{}.Modes("C")
 
 	testCase(
-		"anonymous",
+		"Public access",
 		t,
 		f,
 		false,
@@ -77,7 +77,7 @@ func TestOrganizationModeE(t *testing.T) {
 	f := collection.Organization{}.Modes("E")
 
 	testCase(
-		"anonymous",
+		"Public access",
 		t,
 		f,
 		false,

@@ -21,7 +21,7 @@ type Permission struct {
 // If the user is not a member of the meeting, nil is returned.
 func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permission, error) {
 	if userID == 0 {
-		return newAnonymous(ctx, ds, meetingID)
+		return newPublicAccess(ctx, ds, meetingID)
 	}
 
 	isSuperAdmin, err := HasOrganizationManagementLevel(ctx, ds, userID, OMLSuperadmin)
@@ -84,35 +84,35 @@ func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permis
 	return &Permission{groupIDs: groupIDs, permissions: perms}, nil
 }
 
-func newAnonymous(ctx context.Context, ds *dsfetch.Fetch, meetingID int) (*Permission, error) {
-	enabledOrgaAnonymous, err := ds.Organization_EnableAnonymous(1).Value(ctx)
+func newPublicAccess(ctx context.Context, ds *dsfetch.Fetch, meetingID int) (*Permission, error) {
+	enabledOrgaPublicAccess, err := ds.Organization_EnableAnonymous(1).Value(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("checking orga meeting enabled: %w", err)
+		return nil, fmt.Errorf("checking orga public access enabled: %w", err)
 	}
-	enableMeetingAnonymous, err := ds.Meeting_EnableAnonymous(meetingID).Value(ctx)
+	enableMeetingPublicAccess, err := ds.Meeting_EnableAnonymous(meetingID).Value(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("checking anonymous meeting enabled: %w", err)
+		return nil, fmt.Errorf("checking meeting public access enabled: %w", err)
 	}
-	if !(enableMeetingAnonymous && enabledOrgaAnonymous) {
+	if !(enableMeetingPublicAccess && enabledOrgaPublicAccess) {
 		return nil, nil
 	}
 
-	maybeAnonymousGroupID, err := ds.Meeting_AnonymousGroupID(meetingID).Value(ctx)
+	maybePublicAccessGroupID, err := ds.Meeting_AnonymousGroupID(meetingID).Value(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("getting anonymous group: %w", err)
+		return nil, fmt.Errorf("getting public access group: %w", err)
 	}
 
-	anonymousGroupID, hasAnonymousGroup := maybeAnonymousGroupID.Value()
-	if !hasAnonymousGroup {
-		return nil, fmt.Errorf("anonymous group id not set")
+	publicAccessGroupID, hasPublicAccessGroup := maybePublicAccessGroupID.Value()
+	if !hasPublicAccessGroup {
+		return nil, fmt.Errorf("public access group id not set")
 	}
 
-	perms, err := permissionsFromGroups(ctx, ds, anonymousGroupID)
+	perms, err := permissionsFromGroups(ctx, ds, publicAccessGroupID)
 	if err != nil {
-		return nil, fmt.Errorf("getting permissions for anonymous group: %w", err)
+		return nil, fmt.Errorf("getting permissions for public access group: %w", err)
 	}
 
-	return &Permission{groupIDs: []int{anonymousGroupID}, permissions: perms}, nil
+	return &Permission{groupIDs: []int{publicAccessGroupID}, permissions: perms}, nil
 }
 
 func isAdmin(ctx context.Context, ds *dsfetch.Fetch, meetingID int, groupIDs []int) (bool, error) {
