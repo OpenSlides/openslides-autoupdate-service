@@ -231,6 +231,7 @@ func (a *Auth) pruneOldData(ctx context.Context) {
 	}
 }
 
+// TrimPrefixCaseInsensitive trims the prefix from the string s. The prefix is
 func TrimPrefixCaseInsensitive(s, prefix string) string {
 	if strings.HasPrefix(strings.ToLower(s), strings.ToLower(prefix)) {
 		return s[len(prefix):]
@@ -288,6 +289,7 @@ const (
 	userIDType authString = "user_id"
 )
 
+// OpenSlidesClaims custom openslides claims
 type OpenSlidesClaims struct {
 	jwt.StandardClaims
 	UserID    string `json:"userId"`
