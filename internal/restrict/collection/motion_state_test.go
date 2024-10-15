@@ -26,4 +26,30 @@ func TestMotionStateModeA(t *testing.T) {
 		"motion_state/1/meeting_id: 30",
 		withPerms(30, perm.MotionCanSee),
 	)
+
+	testCase(
+		"can see motion",
+		t,
+		f,
+		true,
+		`---
+		motion:
+			1:
+				meeting_id: 30
+				state_id: 3
+				all_derived_motion_ids: [10]
+
+			10:
+				meeting_id: 31
+				state_id: 7
+
+		motion_state/3:
+			meeting_id: 30
+			motion_ids: [1]
+			
+		motion_state/7/id: 7
+		`,
+		withPerms(31, perm.MotionCanSeeOrigin),
+		withElementID(3),
+	)
 }
