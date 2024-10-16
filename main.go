@@ -28,7 +28,7 @@ var (
 	envMetricInterval         = environment.NewVariable("METRIC_INTERVAL", "5m", "Time in how often the metrics are gathered. Zero disables the metrics.")
 	envMetricSaveInterval     = environment.NewVariable("METRIC_SAVE_INTERVAL", "5m", "Interval, how often the metric should be saved to redis. Redis will ignore entries, that are twice at old then the save interval.")
 	envDisableConnectionCount = environment.NewVariable("DISABLE_CONNECTION_COUNT", "false", "Do not count connections.")
-	envPublicAccessOnly       = environment.NewVariable("PUBLIC_ACCESS_ONLY", "false", "Start for only public access. Does not write to redis or connect to the vote-service.")
+	envPublicAccessOnly       = environment.NewVariable("OPENSLIDES_PUBLIC_ACCESS_ONLY", "false", "Start for only public access. Does not write to redis or connect to the vote-service.")
 )
 
 var cli struct {
