@@ -175,7 +175,7 @@ func (a *Auth) AuthenticatedContext(ctx context.Context, userID int) context.Con
 
 // FromContext returnes the user id from a context returned by Authenticate().
 //
-// If the user is an anonymous user 0 is returned.
+// If the user is not logged in (public access) user 0 is returned.
 //
 // Panics, if the context was not returned from Authenticate
 func (a *Auth) FromContext(ctx context.Context) int {
@@ -240,7 +240,7 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload jwt.Cla
 	encodedToken := strings.TrimPrefix(header, "bearer ")
 
 	if cookie == nil && header == encodedToken {
-		// No token and no auth cookie. Handle the request as anonymous requst.
+		// No token and no auth cookie. Handle the request as public access requst.
 		return nil
 	}
 

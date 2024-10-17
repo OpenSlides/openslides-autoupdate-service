@@ -26,7 +26,7 @@ func TestMeetingMediafileModeA(t *testing.T) {
 	)
 
 	testCase(
-		"Anonymous",
+		"Public Access",
 		t,
 		m.Modes("A"),
 		true,

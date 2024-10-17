@@ -36,7 +36,7 @@ func TestMeetingModeB(t *testing.T) {
 	)
 
 	testCase(
-		"anonymous enabled",
+		"Public Access enabled",
 		t,
 		m.Modes("B"),
 		true,
@@ -48,7 +48,7 @@ func TestMeetingModeB(t *testing.T) {
 	)
 
 	testCase(
-		"anonymous enabled only in organization",
+		"Public access enabled only in organization",
 		t,
 		m.Modes("B"),
 		false,
@@ -61,7 +61,7 @@ func TestMeetingModeB(t *testing.T) {
 	)
 
 	testCase(
-		"anonymous enabled only in meeting",
+		"Public Access enabled only in meeting",
 		t,
 		m.Modes("B"),
 		false,
@@ -74,7 +74,7 @@ func TestMeetingModeB(t *testing.T) {
 	)
 
 	testCase(
-		"anonymous enabled, as locked in user that was locked out",
+		"Public access enabled, as locked in user that was locked out",
 		t,
 		m.Modes("B"),
 		false,
@@ -246,7 +246,7 @@ func TestMeetingModeB(t *testing.T) {
 	)
 
 	testCase(
-		"Request with anonymous",
+		"Request from public access",
 		t,
 		m.Modes("B"),
 		false,

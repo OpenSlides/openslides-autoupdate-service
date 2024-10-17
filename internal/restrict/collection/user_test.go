@@ -21,7 +21,7 @@ func TestUserModeA(t *testing.T) {
 	)
 
 	testCase(
-		"With anonymous",
+		"From public access",
 		t,
 		f,
 		false,
@@ -370,7 +370,7 @@ func TestUserModeB(t *testing.T) {
 	)
 
 	testCase(
-		"With anonymous",
+		"From public access",
 		t,
 		f,
 		false,
@@ -782,7 +782,7 @@ func TestUserModeE(t *testing.T) {
 	)
 
 	testCase(
-		"With anonymous",
+		"From public access",
 		t,
 		u.Modes("E"),
 		false,
@@ -1065,7 +1065,7 @@ func TestUserModeH(t *testing.T) {
 	)
 
 	testCase(
-		"As anonymous",
+		"From public access",
 		t,
 		f,
 		false,

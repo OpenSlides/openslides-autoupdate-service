@@ -163,7 +163,7 @@ func (c *ConnectionCount) Metric(con metric.Container) {
 		con.Add(c.name+"_connected_users_current", currentConnectedUsers)
 		con.Add(c.name+"_connected_users_total", len(data))
 		con.Add(c.name+"_connected_users_average_connections", average)
-		con.Add(c.name+"_connected_users_anonymous_connections", data[0])
+		con.Add(c.name+"_connections_public_access", data[0])
 		con.Add(c.name+"_current_connections", currentConnections)
 	}
 

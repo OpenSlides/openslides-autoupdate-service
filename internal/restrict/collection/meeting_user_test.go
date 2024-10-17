@@ -24,7 +24,7 @@ func TestMeetingUserModeA(t *testing.T) {
 	)
 
 	testCase(
-		"With anonymous",
+		"With public access enabled",
 		t,
 		f,
 		false,

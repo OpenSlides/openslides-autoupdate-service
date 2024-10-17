@@ -41,7 +41,7 @@ func TestMediafileModeA(t *testing.T) {
 	)
 
 	testCase(
-		"Anonymous organization",
+		"Public access organization",
 		t,
 		m.Modes("A"),
 		false,
@@ -53,7 +53,7 @@ func TestMediafileModeA(t *testing.T) {
 	)
 
 	testCase(
-		"Anonymous published organization",
+		"Public access published organization",
 		t,
 		m.Modes("A"),
 		true,
@@ -78,7 +78,7 @@ func TestMediafileModeA(t *testing.T) {
 	)
 
 	testCase(
-		"Anonymous access published organization not public with token",
+		"Public access published organization not public with token",
 		t,
 		m.Modes("A"),
 		true,
