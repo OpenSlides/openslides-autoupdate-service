@@ -806,15 +806,6 @@ func (r *Fetch) AgendaItem_MeetingID(agendaItemID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) AgendaItem_ModeratorNotes(agendaItemID int) *ValueString {
-	key, err := dskey.FromParts("agenda_item", agendaItemID, "moderator_notes")
-	if err != nil {
-		return &ValueString{err: err}
-	}
-
-	return &ValueString{fetch: r, key: key}
-}
-
 func (r *Fetch) AgendaItem_ParentID(agendaItemID int) *ValueMaybeInt {
 	key, err := dskey.FromParts("agenda_item", agendaItemID, "parent_id")
 	if err != nil {
@@ -1587,6 +1578,15 @@ func (r *Fetch) ListOfSpeakers_MeetingID(listOfSpeakersID int) *ValueInt {
 	}
 
 	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) ListOfSpeakers_ModeratorNotes(listOfSpeakersID int) *ValueString {
+	key, err := dskey.FromParts("list_of_speakers", listOfSpeakersID, "moderator_notes")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
 }
 
 func (r *Fetch) ListOfSpeakers_ProjectionIDs(listOfSpeakersID int) *ValueIntSlice {

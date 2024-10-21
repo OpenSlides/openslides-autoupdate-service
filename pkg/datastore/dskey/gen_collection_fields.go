@@ -13,7 +13,6 @@ var collectionFields = [...]collectionField{
 	{"agenda_item", "A"},
 	{"agenda_item", "B"},
 	{"agenda_item", "C"},
-	{"agenda_item", "D"},
 	{"agenda_item", "child_ids"},
 	{"agenda_item", "closed"},
 	{"agenda_item", "comment"},
@@ -25,7 +24,6 @@ var collectionFields = [...]collectionField{
 	{"agenda_item", "item_number"},
 	{"agenda_item", "level"},
 	{"agenda_item", "meeting_id"},
-	{"agenda_item", "moderator_notes"},
 	{"agenda_item", "parent_id"},
 	{"agenda_item", "projection_ids"},
 	{"agenda_item", "tag_ids"},
@@ -118,10 +116,12 @@ var collectionFields = [...]collectionField{
 	{"import_preview", "result"},
 	{"import_preview", "state"},
 	{"list_of_speakers", "A"},
+	{"list_of_speakers", "B"},
 	{"list_of_speakers", "closed"},
 	{"list_of_speakers", "content_object_id"},
 	{"list_of_speakers", "id"},
 	{"list_of_speakers", "meeting_id"},
+	{"list_of_speakers", "moderator_notes"},
 	{"list_of_speakers", "projection_ids"},
 	{"list_of_speakers", "sequential_number"},
 	{"list_of_speakers", "speaker_ids"},
@@ -952,223 +952,223 @@ func collectionFieldToID(cf string) int {
 		return 9
 	case "agenda_item/C":
 		return 10
-	case "agenda_item/D":
-		return 11
 	case "agenda_item/child_ids":
-		return 12
+		return 11
 	case "agenda_item/closed":
-		return 13
+		return 12
 	case "agenda_item/comment":
-		return 14
+		return 13
 	case "agenda_item/content_object_id":
-		return 15
+		return 14
 	case "agenda_item/duration":
-		return 16
+		return 15
 	case "agenda_item/id":
-		return 17
+		return 16
 	case "agenda_item/is_hidden":
-		return 18
+		return 17
 	case "agenda_item/is_internal":
-		return 19
+		return 18
 	case "agenda_item/item_number":
-		return 20
+		return 19
 	case "agenda_item/level":
-		return 21
+		return 20
 	case "agenda_item/meeting_id":
-		return 22
-	case "agenda_item/moderator_notes":
-		return 23
+		return 21
 	case "agenda_item/parent_id":
-		return 24
+		return 22
 	case "agenda_item/projection_ids":
-		return 25
+		return 23
 	case "agenda_item/tag_ids":
-		return 26
+		return 24
 	case "agenda_item/type":
-		return 27
+		return 25
 	case "agenda_item/weight":
-		return 28
+		return 26
 	case "assignment/A":
-		return 29
+		return 27
 	case "assignment/agenda_item_id":
-		return 30
+		return 28
 	case "assignment/attachment_meeting_mediafile_ids":
-		return 31
+		return 29
 	case "assignment/candidate_ids":
-		return 32
+		return 30
 	case "assignment/default_poll_description":
-		return 33
+		return 31
 	case "assignment/description":
-		return 34
+		return 32
 	case "assignment/id":
-		return 35
+		return 33
 	case "assignment/list_of_speakers_id":
-		return 36
+		return 34
 	case "assignment/meeting_id":
-		return 37
+		return 35
 	case "assignment/number_poll_candidates":
-		return 38
+		return 36
 	case "assignment/open_posts":
-		return 39
+		return 37
 	case "assignment/phase":
-		return 40
+		return 38
 	case "assignment/poll_ids":
-		return 41
+		return 39
 	case "assignment/projection_ids":
-		return 42
+		return 40
 	case "assignment/sequential_number":
-		return 43
+		return 41
 	case "assignment/tag_ids":
-		return 44
+		return 42
 	case "assignment/title":
-		return 45
+		return 43
 	case "assignment_candidate/A":
-		return 46
+		return 44
 	case "assignment_candidate/assignment_id":
-		return 47
+		return 45
 	case "assignment_candidate/id":
-		return 48
+		return 46
 	case "assignment_candidate/meeting_id":
-		return 49
+		return 47
 	case "assignment_candidate/meeting_user_id":
-		return 50
+		return 48
 	case "assignment_candidate/weight":
-		return 51
+		return 49
 	case "chat_group/A":
-		return 52
+		return 50
 	case "chat_group/chat_message_ids":
-		return 53
+		return 51
 	case "chat_group/id":
-		return 54
+		return 52
 	case "chat_group/meeting_id":
-		return 55
+		return 53
 	case "chat_group/name":
-		return 56
+		return 54
 	case "chat_group/read_group_ids":
-		return 57
+		return 55
 	case "chat_group/weight":
-		return 58
+		return 56
 	case "chat_group/write_group_ids":
-		return 59
+		return 57
 	case "chat_message/A":
-		return 60
+		return 58
 	case "chat_message/chat_group_id":
-		return 61
+		return 59
 	case "chat_message/content":
-		return 62
+		return 60
 	case "chat_message/created":
-		return 63
+		return 61
 	case "chat_message/id":
-		return 64
+		return 62
 	case "chat_message/meeting_id":
-		return 65
+		return 63
 	case "chat_message/meeting_user_id":
-		return 66
+		return 64
 	case "committee/A":
-		return 67
+		return 65
 	case "committee/B":
-		return 68
+		return 66
 	case "committee/default_meeting_id":
-		return 69
+		return 67
 	case "committee/description":
-		return 70
+		return 68
 	case "committee/external_id":
-		return 71
+		return 69
 	case "committee/forward_to_committee_ids":
-		return 72
+		return 70
 	case "committee/forwarding_user_id":
-		return 73
+		return 71
 	case "committee/id":
-		return 74
+		return 72
 	case "committee/manager_ids":
-		return 75
+		return 73
 	case "committee/meeting_ids":
-		return 76
+		return 74
 	case "committee/name":
-		return 77
+		return 75
 	case "committee/organization_id":
-		return 78
+		return 76
 	case "committee/organization_tag_ids":
-		return 79
+		return 77
 	case "committee/receive_forwardings_from_committee_ids":
-		return 80
+		return 78
 	case "committee/user_ids":
-		return 81
+		return 79
 	case "gender/A":
-		return 82
+		return 80
 	case "gender/id":
-		return 83
+		return 81
 	case "gender/name":
-		return 84
+		return 82
 	case "gender/organization_id":
-		return 85
+		return 83
 	case "gender/user_ids":
-		return 86
+		return 84
 	case "group/A":
-		return 87
+		return 85
 	case "group/admin_group_for_meeting_id":
-		return 88
+		return 86
 	case "group/anonymous_group_for_meeting_id":
-		return 89
+		return 87
 	case "group/default_group_for_meeting_id":
-		return 90
+		return 88
 	case "group/external_id":
-		return 91
+		return 89
 	case "group/id":
-		return 92
+		return 90
 	case "group/meeting_id":
-		return 93
+		return 91
 	case "group/meeting_mediafile_access_group_ids":
-		return 94
+		return 92
 	case "group/meeting_mediafile_inherited_access_group_ids":
-		return 95
+		return 93
 	case "group/meeting_user_ids":
-		return 96
+		return 94
 	case "group/name":
-		return 97
+		return 95
 	case "group/permissions":
-		return 98
+		return 96
 	case "group/poll_ids":
-		return 99
+		return 97
 	case "group/read_chat_group_ids":
-		return 100
+		return 98
 	case "group/read_comment_section_ids":
-		return 101
+		return 99
 	case "group/used_as_assignment_poll_default_id":
-		return 102
+		return 100
 	case "group/used_as_motion_poll_default_id":
-		return 103
+		return 101
 	case "group/used_as_poll_default_id":
-		return 104
+		return 102
 	case "group/used_as_topic_poll_default_id":
-		return 105
+		return 103
 	case "group/weight":
-		return 106
+		return 104
 	case "group/write_chat_group_ids":
-		return 107
+		return 105
 	case "group/write_comment_section_ids":
-		return 108
+		return 106
 	case "import_preview/A":
-		return 109
+		return 107
 	case "import_preview/created":
-		return 110
+		return 108
 	case "import_preview/id":
-		return 111
+		return 109
 	case "import_preview/name":
-		return 112
+		return 110
 	case "import_preview/result":
-		return 113
+		return 111
 	case "import_preview/state":
-		return 114
+		return 112
 	case "list_of_speakers/A":
-		return 115
+		return 113
+	case "list_of_speakers/B":
+		return 114
 	case "list_of_speakers/closed":
-		return 116
+		return 115
 	case "list_of_speakers/content_object_id":
-		return 117
+		return 116
 	case "list_of_speakers/id":
-		return 118
+		return 117
 	case "list_of_speakers/meeting_id":
+		return 118
+	case "list_of_speakers/moderator_notes":
 		return 119
 	case "list_of_speakers/projection_ids":
 		return 120
