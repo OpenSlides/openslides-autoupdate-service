@@ -17,7 +17,6 @@ type dbMeeting struct {
 	MotionsEnableReasonOnProjector            bool   `json:"motions_enable_reason_on_projector"`
 	MotionsShowReferringMotions               bool   `json:"motions_show_referring_motions"`
 	MotionsEnableRecommendationOnProjector    bool   `json:"motions_enable_recommendation_on_projector"`
-	MotionsStatuteRecommendationsBy           string `json:"motions_statute_recommendations_by"`
 	MotionsRecommendationsBy                  string `json:"motions_recommendations_by"`
 	MotionsEnableSideboxOnProjector           bool   `json:"motions_enable_sidebox_on_projector"`
 	MotionsLineLength                         int    `json:"motions_line_length"`
