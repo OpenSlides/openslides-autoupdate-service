@@ -557,7 +557,6 @@ var collectionOrder = map[string]int{
 	"motion_comment_section":           22,
 	"motion_comment":                   23,
 	"motion_state":                     24,
-	"motion_statute_paragraph":         25,
 	"motion_submitter":                 26,
 	"motion_workflow":                  27,
 	"poll":                             28,
