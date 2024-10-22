@@ -434,7 +434,7 @@ func TestMotion(t *testing.T) {
                         "number": "RecommendationExtensionReferenceMotion10 number"
                     }
                 },
-                "recommender": "Meeting MotionsStatuteRecommendations"
+                "recommender": "Meeting not used variant"
             }
             `,
 		},
