@@ -168,6 +168,9 @@ func Motion(store *projector.SlideStore) {
 			"start_line_number",
 			"additional_submitter",
 		}
+		if meeting.MotionsEnableTextOnProjector {
+			fetchFields = append(fetchFields, "text", "amendment_paragraphs")
+		}
 		if meeting.MotionsEnableReasonOnProjector {
 			fetchFields = append(fetchFields, "reason")
 		}
