@@ -14,7 +14,7 @@ import (
 //
 // Mode A: The user can see the organization (always).
 //
-// Mode B: The user must be logged in (no anonymous).
+// Mode B: The user must be logged in (no public access).
 //
 // Mode C: The user has the OML can_manage_users or higher.
 //

@@ -33,7 +33,6 @@ func TestMotion(t *testing.T) {
             motions_enable_reason_on_projector: false
             motions_show_referring_motions: false
             motions_enable_recommendation_on_projector: false
-            motions_statute_recommendations_by: Meeting MotionsStatuteRecommendations
             motions_recommendations_by: Meeting not used variant
             motions_enable_sidebox_on_projector: true
             motions_line_length: 85
@@ -146,10 +145,7 @@ func TestMotion(t *testing.T) {
             username: user12
         13:
             username: user13
-    motion_statute_paragraph:
-        1:
-            title: MotionStatuteParagraph1 title
-            text: <p>MotionStatuteParagraph1 text html</p>
+
     motion_change_recommendation:
         1:
             internal: false
@@ -291,8 +287,7 @@ func TestMotion(t *testing.T) {
                         "merge_amendment_into_diff": "undefined"
                     }
                 ]
-            }
-            `,
+            } `,
 		},
 		{
 			"motion including conditional fields",
@@ -303,7 +298,6 @@ func TestMotion(t *testing.T) {
 				dskey.MustKey("meeting/1/motions_show_referring_motions"):             []byte(`true`),
 				dskey.MustKey("meeting/1/motions_enable_recommendation_on_projector"): []byte(`true`),
 				dskey.MustKey("motion/1/lead_motion_id"):                              []byte(`2`),
-				dskey.MustKey("motion/1/statute_paragraph_id"):                        []byte(`1`),
 			}),
 			`{
                 "id":1,
@@ -406,10 +400,6 @@ func TestMotion(t *testing.T) {
                     "text":"<p>Lead Motion Text HTML</p>",
                     "start_line_number": 24
                 },
-                "base_statute":{
-                    "title":"MotionStatuteParagraph1 title",
-                    "text":"<p>MotionStatuteParagraph1 text html</p>"
-                },
                 "recommendation_referencing_motions":[
                     {
                         "agenda_item_number":"ItemNr Motion7",
@@ -444,7 +434,7 @@ func TestMotion(t *testing.T) {
                         "number": "RecommendationExtensionReferenceMotion10 number"
                     }
                 },
-                "recommender": "Meeting MotionsStatuteRecommendations"
+                "recommender": "Meeting not used variant"
             }
             `,
 		},

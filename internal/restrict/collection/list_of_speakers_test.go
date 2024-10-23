@@ -84,3 +84,36 @@ func TestListOfSpeakersModeA(t *testing.T) {
 		withPerms(30, perm.ListOfSpeakersCanBeSpeaker),
 	)
 }
+
+func TestListOfSpeakersModeB(t *testing.T) {
+	f := collection.ListOfSpeakers{}.Modes("B")
+
+	testCase(
+		"no perm",
+		t,
+		f,
+		false,
+		`---
+		list_of_speakers/1: 
+			meeting_id: 30
+			content_object_id: topic/5
+
+		topic/5/meeting_id: 30
+		`,
+	)
+
+	testCase(
+		"perm list_of_speakers.can_see_moderator_notes",
+		t,
+		f,
+		true,
+		`---
+		list_of_speakers/1: 
+			meeting_id: 30
+			content_object_id: topic/5
+
+		topic/5/meeting_id: 30
+		`,
+		withPerms(30, perm.ListOfSpeakersCanSeeModeratorNotes),
+	)
+}
