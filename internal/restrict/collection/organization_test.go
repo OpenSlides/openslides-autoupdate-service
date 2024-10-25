@@ -130,3 +130,47 @@ func TestOrganizationModeE(t *testing.T) {
 		withRequestUser(1),
 	)
 }
+
+func TestOrganizationModeD(t *testing.T) {
+	f := collection.Organization{}.Modes("D")
+
+	testCase(
+		"Public access",
+		t,
+		f,
+		false,
+		``,
+		withRequestUser(0),
+	)
+
+	testCase(
+		"logged in",
+		t,
+		f,
+		false,
+		``,
+		withRequestUser(1),
+	)
+
+	testCase(
+		"orga admin",
+		t,
+		f,
+		false,
+		`---
+		user/1/organization_management_level: can_manage_organization
+		`,
+		withRequestUser(1),
+	)
+
+	testCase(
+		"orga admin",
+		t,
+		f,
+		true,
+		`---
+		user/1/organization_management_level: superadmin
+		`,
+		withRequestUser(1),
+	)
+}

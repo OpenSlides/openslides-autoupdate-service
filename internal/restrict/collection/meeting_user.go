@@ -6,13 +6,14 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // MeetingUser handels permissions for the collection meeting_user.
 //
 // A User can see a MeetingUser if he can see the user.
 //
-// Mode A: The user can see the related user.
+// Mode A: The request user is the related user or the request user has user.can_see.
 //
 // Mode B: The request user is the related user.
 //
@@ -61,32 +62,43 @@ func (m MeetingUser) Modes(mode string) FieldRestricter {
 }
 
 func (m MeetingUser) see(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs ...int) ([]int, error) {
-	userToMeetingUsers := make(map[int][]int)
-	for _, id := range meetingUserIDs {
-		userID, err := ds.MeetingUser_UserID(id).Value(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("getting user id for meeting_user %d: %w", id, err)
+	allowed, err := meetingPerm(ctx, ds, m, meetingUserIDs, perm.UserCanSee)
+	if err != nil {
+		return nil, fmt.Errorf("checking permission: %w", err)
+	}
+
+	if len(meetingUserIDs) == len(allowed) {
+		// Fast exit if all requested users are allowed.
+		return allowed, nil
+	}
+
+	allowedSet := set.New(allowed...)
+
+	userIDs := make([]int, len(meetingUserIDs))
+	for i, meetingUserID := range meetingUserIDs {
+		ds.MeetingUser_UserID(meetingUserID).Lazy(&userIDs[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("fetching user ids: %w", err)
+	}
+
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	for i, meetingUserID := range meetingUserIDs {
+		if allowedSet.Has(meetingUserID) {
+			continue
 		}
 
-		userToMeetingUsers[userID] = append(userToMeetingUsers[userID], id)
+		if userIDs[i] == requestUser {
+			allowed = append(allowed, meetingUserID)
+		}
 	}
 
-	userIDs := make([]int, 0, len(userToMeetingUsers))
-	for userID := range userToMeetingUsers {
-		userIDs = append(userIDs, userID)
-	}
-
-	allowedUserIDs, err := Collection(ctx, User{}.Name()).Modes("A")(ctx, ds, userIDs...)
-	if err != nil {
-		return nil, fmt.Errorf("checking user restrictions: %w", err)
-	}
-
-	var allowedIDs []int
-	for _, allowedUserID := range allowedUserIDs {
-		allowedIDs = append(allowedIDs, userToMeetingUsers[allowedUserID]...)
-	}
-
-	return allowedIDs, nil
+	return allowed, nil
 }
 
 func (MeetingUser) modeB(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs ...int) ([]int, error) {
