@@ -9,12 +9,15 @@ import (
 )
 
 // Vote handels restrictions of the collection vote.
-// The user can see a vote if any of:
 //
-//	The associated poll/state is published.
-//	The user can manage the associated poll.
-//	The user's id is equal to vote/user_id.
-//	The user's id is equal to vote/delegated_user_id.
+// The user can see a vote if
+//
+//	he can see the related poll and any of:
+//
+//		The associated poll/state is published.
+//		The user can manage the associated poll.
+//		The user's id is equal to vote/user_id.
+//		The user's id is equal to vote/delegated_user_id.
 //
 // Group A: The user can see the vote.
 //
@@ -67,6 +70,15 @@ func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int
 		pollID, err := pollID(ctx, ds, optionID)
 		if err != nil {
 			return false, fmt.Errorf("getting poll id: %w", err)
+		}
+
+		canSeePoll, err := Collection(ctx, Poll{}.Name()).Modes("A")(ctx, ds, pollID)
+		if err != nil {
+			return false, fmt.Errorf("check poll: %w", err)
+		}
+
+		if len(canSeePoll) == 0 {
+			return false, nil
 		}
 
 		state, err := ds.Poll_State(pollID).Value(ctx)
