@@ -52,7 +52,7 @@ import (
 //
 // Mode F: Y has the OML can_manage_users or higher.
 //
-// Mode G: No one. Not even the superadmin.
+// Mode G: No one.
 //
 // Mode H: The fields can be seen if one of the following conditions is true:
 //   - Any of the conditions in D or
@@ -89,14 +89,6 @@ func (u User) Modes(mode string) FieldRestricter {
 		return u.modeH
 	}
 	return nil
-}
-
-// SuperAdmin restricts the super admin.
-func (User) SuperAdmin(mode string) FieldRestricter {
-	if mode == "G" {
-		return never
-	}
-	return Allways
 }
 
 func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int, error) {

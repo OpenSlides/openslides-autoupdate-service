@@ -13,8 +13,6 @@ import (
 //
 // The user can see a personal node, if personal_note/user_id is the same as the id of the requested user.
 //
-// The superadmin can not see personal_notes from other users.
-//
 // Mode A: The user can see the personal note.
 type PersonalNote struct{}
 
@@ -65,9 +63,4 @@ func (p PersonalNote) see(ctx context.Context, ds *dsfetch.Fetch, personalNoteID
 		}
 		return nil, nil
 	})
-}
-
-// SuperAdmin restricts the super admin.
-func (p PersonalNote) SuperAdmin(mode string) FieldRestricter {
-	return p.Modes(mode)
 }

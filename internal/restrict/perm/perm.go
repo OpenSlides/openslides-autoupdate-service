@@ -4,6 +4,7 @@ package perm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
@@ -24,12 +25,22 @@ func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permis
 		return newPublicAccess(ctx, ds, meetingID)
 	}
 
-	isSuperAdmin, err := HasOrganizationManagementLevel(ctx, ds, userID, OMLSuperadmin)
+	lockedMeeting, err := ds.Meeting_LockedFromInside(meetingID).Value(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("getting organization management level: %w", err)
+		var errDoesNotExist dsfetch.DoesNotExistError
+		if !errors.As(err, &errDoesNotExist) {
+			return nil, fmt.Errorf("check if meeting is locked: %w", err)
+		}
 	}
-	if isSuperAdmin {
-		return &Permission{admin: true}, nil
+
+	if !lockedMeeting {
+		isOrgaAdmin, err := HasOrganizationManagementLevel(ctx, ds, userID, OMLCanManageOrganization)
+		if err != nil {
+			return nil, fmt.Errorf("getting organization management level: %w", err)
+		}
+		if isOrgaAdmin {
+			return &Permission{admin: true}, nil
+		}
 	}
 
 	meetingUserIDs, err := ds.User_MeetingUserIDs(userID).Value(ctx)

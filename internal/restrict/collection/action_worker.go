@@ -7,6 +7,8 @@ import (
 )
 
 // ActionWorker handles permission for action_worker.
+//
+// Everyone can see all action workers.
 type ActionWorker struct{}
 
 // Name returns the collection name.

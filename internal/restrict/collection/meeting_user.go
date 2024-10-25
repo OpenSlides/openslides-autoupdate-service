@@ -11,9 +11,10 @@ import (
 
 // MeetingUser handels permissions for the collection meeting_user.
 //
-// A User can see a MeetingUser if he can see the user.
+// A User can see a MeetingUser if the request user is the related user or the
+// request user has user.can_see.
 //
-// Mode A: The request user is the related user or the request user has user.can_see.
+// Mode A: The user can see the meeting_user.
 //
 // Mode B: The request user is the related user.
 //

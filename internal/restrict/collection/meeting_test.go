@@ -210,13 +210,14 @@ func TestMeetingModeB(t *testing.T) {
 	)
 
 	testCase(
-		"CML can manage organization",
+		"OML can manage organization",
 		t,
 		m.Modes("B"),
 		true,
 		`---
 		user/1/organization_management_level: can_manage_organization
-		meeting/30/id: 30
+		meeting/30:
+			committee_id: 4
 		`,
 		withElementID(30),
 	)
