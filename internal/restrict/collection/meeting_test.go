@@ -268,6 +268,18 @@ func TestMeetingModeB(t *testing.T) {
 	)
 
 	testCase(
+		"locked meeting, superadmin",
+		t,
+		m.Modes("B"),
+		false,
+		`
+		user/1/organization_management_level: superadmin
+		meeting/30/locked_from_inside: true
+		`,
+		withElementID(30),
+	)
+
+	testCase(
 		"locked meeting, anonymous enabled",
 		t,
 		m.Modes("B"),
@@ -328,4 +340,33 @@ func TestMeetingModeD(t *testing.T) {
 		withPerms(30, perm.MeetingCanSeeLivestream),
 		withElementID(30),
 	)
+}
+
+func TestMeetingModeE(t *testing.T) {
+	m := collection.Meeting{}.Modes("E")
+
+	testCase(
+		"locked meeting, superadmin",
+		t,
+		m,
+		true,
+		`
+		user/1/organization_management_level: superadmin
+		meeting/30/locked_from_inside: true
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"locked meeting, orga admin",
+		t,
+		m,
+		false,
+		`
+		user/1/organization_management_level: can_manage_organization
+		meeting/30/locked_from_inside: true
+		`,
+		withElementID(30),
+	)
+
 }

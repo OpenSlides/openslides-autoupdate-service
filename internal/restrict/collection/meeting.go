@@ -29,6 +29,8 @@ import (
 // Mode C: The user has meeting.can_see_frontpage.
 //
 // Mode D: The user has meeting.can_see_livestream.
+//
+// Mode E: The user can see the meeting or is superadmin.
 type Meeting struct{}
 
 // Name returns the collection name.
@@ -52,6 +54,8 @@ func (m Meeting) Modes(mode string) FieldRestricter {
 		return m.modeC
 	case "D":
 		return m.modeD
+	case "E":
+		return m.modeE
 	}
 	return nil
 }
@@ -211,4 +215,22 @@ func (m Meeting) modeD(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int
 	}
 
 	return allowed, nil
+}
+
+func (m Meeting) modeE(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	isSuperadmin, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLSuperadmin)
+	if err != nil {
+		return nil, fmt.Errorf("checking for superadmin: %w", err)
+	}
+
+	if isSuperadmin {
+		return meetingIDs, nil
+	}
+
+	return Collection(ctx, m.Name()).Modes("B")(ctx, ds, meetingIDs...)
 }

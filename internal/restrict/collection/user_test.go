@@ -114,22 +114,6 @@ func TestUserModeA(t *testing.T) {
 		"user.can_see in meeting but locked out",
 		t,
 		f,
-		false,
-		`---
-		user/2/meeting_user_ids: [20]
-		meeting_user/20:
-			meeting_id: 5
-			locked_out: true
-		`,
-		withRequestUser(1),
-		withElementID(2),
-		withPerms(5, perm.UserCanSee),
-	)
-
-	testCase(
-		"user.can_see_sensible_data in meeting but locked out",
-		t,
-		f,
 		true,
 		`---
 		user/2/meeting_user_ids: [20]
@@ -139,7 +123,7 @@ func TestUserModeA(t *testing.T) {
 		`,
 		withRequestUser(1),
 		withElementID(2),
-		withPerms(5, perm.UserCanSeeSensitiveData),
+		withPerms(5, perm.UserCanSee),
 	)
 
 	testCase(

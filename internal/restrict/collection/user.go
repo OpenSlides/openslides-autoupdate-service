@@ -18,8 +18,7 @@ import (
 //	Y==X
 //	Y has the OML can_manage_users or higher.
 //	There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
-//	X is in a group of a meeting where Y has user.can_see and X is not locked out in this meeting.
-//	X is in a group of a meeting where Y has user.can_see_sensitive_data.
+//	X is in a group of a meeting where Y has user.can_see.
 //	There is a related object:
 //	    There exists a motion which Y can see and X is a submitter/supporter.
 //	    There exists an option which Y can see and X is the linked content object.
@@ -195,16 +194,7 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 				return false, fmt.Errorf("checking permissions of meeting %d: %w", meetingID, err)
 			}
 
-			if perms.Has(perm.UserCanSeeSensitiveData) {
-				return true, nil
-			}
-
-			lockedOut, err := ds.MeetingUser_LockedOut(meetingUserID).Value(ctx)
-			if err != nil {
-				return false, fmt.Errorf("getting locked_out value: %w", err)
-			}
-
-			if !lockedOut && perms.Has(perm.UserCanSee) {
+			if perms.Has(perm.UserCanSee) {
 				return true, nil
 			}
 		}
