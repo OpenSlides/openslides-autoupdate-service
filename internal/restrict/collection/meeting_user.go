@@ -17,6 +17,8 @@ import (
 //
 // Mode B: The request user is the related user.
 //
+// Mode C: Everybody can see it.
+//
 // Mode D: Y can see these fields if at least one condition is true:
 //
 //	The request user has the OML can_manage_users or higher.
@@ -50,6 +52,9 @@ func (m MeetingUser) Modes(mode string) FieldRestricter {
 
 	case "B":
 		return m.modeB
+
+	case "C":
+		return Allways
 
 	case "D":
 		return m.modeD

@@ -119,6 +119,18 @@ func TestMeetingUserModeB(t *testing.T) {
 	)
 }
 
+func TestMeetingUserModeC(t *testing.T) {
+	var m collection.MeetingUser
+
+	testCase(
+		"No perms",
+		t,
+		m.Modes("C"),
+		true,
+		``,
+	)
+}
+
 func TestMeetingUserModeD(t *testing.T) {
 	f := collection.MeetingUser{}.Modes("D")
 
