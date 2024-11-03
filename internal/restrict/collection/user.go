@@ -18,16 +18,7 @@ import (
 //	Y==X
 //	Y has the OML can_manage_users or higher.
 //	There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
-//	X is in a group of a meeting where Y has user.can_see.
-//	There is a related object:
-//	    There exists a motion which Y can see and X is a submitter/supporter.
-//	    There exists an option which Y can see and X is the linked content object.
-//	    There exists an assignment candidate which Y can see and X is the linked user.
-//	    There exists a speaker which Y can see and X is the linked user.
-//	    There exists a poll where Y can see the poll/voted_ids and X is part of that list.
-//	    There exists a vote which Y can see and X is linked in user_id or delegated_user_id.
-//	    There exists a chat_message which Y can see and X has sent it (specified by chat_message/user_id).
-//	X is linked in one of the relations vote_delegated_to_id or vote_delegations_from_ids of Y.
+//	Y can see a meeting_user of X.
 //
 // Mode A: Y can see X.
 //
@@ -114,130 +105,40 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 		return userIDs, nil
 	}
 
-	// Precalculated list of userIDs, that the user can see.
-	allowedUserIDs := set.New[int]()
-	if requestUserID != 0 {
-		allowedUserIDs.Add(requestUserID)
-
-		// Get all userIDs of committees, where the request user is manager.
-		commiteeIDs, err := perm.ManagementLevelCommittees(ctx, ds, requestUserID)
-		if err != nil {
-			return nil, fmt.Errorf("getting committee ids: %w", err)
-		}
-
-		for _, committeeID := range commiteeIDs {
-			userIDs, err := ds.Committee_UserIDs(committeeID).Value(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("fetching users from committee %d: %w", committeeID, err)
-			}
-			allowedUserIDs.Add(userIDs...)
-		}
-
-		meetingUserIDs, err := ds.User_MeetingUserIDs(requestUserID).Value(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("getting meeting user: %w", err)
-		}
-
-		for _, meetingUserID := range meetingUserIDs {
-			// Getting users where the request users delegated his vote to.
-			delegatedToMeetingUserID, err := ds.MeetingUser_VoteDelegatedToID(meetingUserID).Value(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("getting 'vote delegated to' for meeting_user %d: %w", meetingUserID, err)
-			}
-
-			if id, ok := delegatedToMeetingUserID.Value(); ok {
-				delegatedUser, err := ds.MeetingUser_UserID(id).Value(ctx)
-				if err != nil {
-					return nil, fmt.Errorf("getting delegated user: %w", err)
-				}
-
-				allowedUserIDs.Add(delegatedUser)
-			}
-
-			// Getting users, that delegated his vote to the request user.
-			delegationsFromMeetingUserID, err := ds.MeetingUser_VoteDelegationsFromIDs(meetingUserID).Value(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("getting 'vote delegations from' for meeting_user %d: %w", meetingUserID, err)
-			}
-
-			for _, delegateMeetingUserID := range delegationsFromMeetingUserID {
-				delegationUserID, err := ds.MeetingUser_UserID(delegateMeetingUserID).Value(ctx)
-				if err != nil {
-					return nil, fmt.Errorf("getting delegation user id: %w", err)
-				}
-
-				allowedUserIDs.Add(delegationUserID)
-			}
-		}
+	managedCommiteeIDs, err := perm.ManagementLevelCommittees(ctx, ds, requestUserID)
+	if err != nil {
+		return nil, fmt.Errorf("getting committee ids: %w", err)
 	}
 
 	return eachCondition(userIDs, func(otherUserID int) (bool, error) {
-		if allowedUserIDs.Has(otherUserID) {
+		if requestUserID == otherUserID {
 			return true, nil
 		}
 
-		// Check if the user is in a meeting, where the request user can
-		// user.can_see.
+		inCommitteeIDs, err := ds.User_CommitteeIDs(otherUserID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("fetch committee ids: %w", err)
+		}
+
+		for _, managedCommitteeID := range managedCommiteeIDs {
+			for _, id := range inCommitteeIDs {
+				if id == managedCommitteeID {
+					return true, nil
+				}
+			}
+		}
+
 		otherUserMeetingUserIDs, err := ds.User_MeetingUserIDs(otherUserID).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("fetch meeting ids from requested user %d: %w", otherUserID, err)
 		}
 
-		for _, meetingUserID := range otherUserMeetingUserIDs {
-			meetingID, err := ds.MeetingUser_MeetingID(meetingUserID).Value(ctx)
-			if err != nil {
-				return false, fmt.Errorf("getting meeting: %w", err)
-			}
-
-			perms, err := perm.FromContext(ctx, meetingID)
-			if err != nil {
-				return false, fmt.Errorf("checking permissions of meeting %d: %w", meetingID, err)
-			}
-
-			if perms.Has(perm.UserCanSee) {
-				return true, nil
-			}
-		}
-
-		meetingUserIDs, err := ds.User_MeetingUserIDs(otherUserID).Value(ctx)
+		allowed, err := Collection(ctx, MeetingUser{}.Name()).Modes("A")(ctx, ds, otherUserMeetingUserIDs...)
 		if err != nil {
-			return false, fmt.Errorf("fetching meeting_user of %d: %w", otherUserID, err)
+			return false, fmt.Errorf("checking meeting user: %w", err)
 		}
 
-		for i, meetingUserID := range meetingUserIDs {
-			for _, r := range u.RequiredObjects(ctx, ds) {
-				id := meetingUserID
-				if r.OnUser {
-					if i > 0 {
-						// Some requiredObjects have the realtion directly on
-						// the user object. They only have to be checked once in
-						// this loop
-						continue
-					}
-					id = otherUserID
-				}
-
-				ids, err := r.ElemFunc(id).Value(ctx)
-				if err != nil {
-					return false, fmt.Errorf("getting ids for %s: %w", r.Name, err)
-				}
-
-				allowedIDs, err := r.SeeFunc(ctx, ds, ids...)
-				if err != nil {
-					meetingUserOrUser := "meetingUserID"
-					if r.OnUser {
-						meetingUserOrUser = "user"
-					}
-					return false, fmt.Errorf("checking required object %s on %s %d: %w", r.Name, meetingUserOrUser, id, err)
-				}
-				if len(allowedIDs) > 0 {
-					return true, nil
-				}
-
-			}
-		}
-
-		return false, nil
+		return len(allowed) > 0, nil
 	})
 }
 

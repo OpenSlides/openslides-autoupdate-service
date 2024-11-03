@@ -6,26 +6,36 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
 )
 
 // MeetingUser handels permissions for the collection meeting_user.
+// Y = the request user; X = the requested user.
 //
-// A User can see a MeetingUser if he can see the user.
+// A User can see a meeting_user, if
 //
-// Mode A: The request user is the related user or the request user has user.can_see.
+//	the request user is the related user,
+//	the request user has user.can_see,
+//	X is linked in one of the relations vote_delegated_to_id or vote_delegations_from_ids of Y or
+//	there is a related object:
+//	  There exists a motion which Y can see and X is a submitter/supporter.
+//	  There exists an option which Y can see and X is the linked content object.
+//	  There exists an assignment candidate which Y can see and X is the linked user.
+//	  There exists a speaker which Y can see and X is the linked user.
+//	  There exists a poll where Y can see the poll/voted_ids and X is part of that list.
+//	  There exists a vote which Y can see and X is linked in user_id or delegated_user_id.
+//	  There exists a chat_message which Y can see and X has sent it (specified by chat_message/user_id).
+//
+// Mode A: Can see.
 //
 // Mode B: The request user is the related user.
 //
-// Mode D: Y can see these fields if at least one condition is true:
+// Mode D: Y can see these fields if
+//   - the request user has the OML can_manage_users or higher or
+//   - the request user has user.can_manage in the meeting.
 //
-//	The request user has the OML can_manage_users or higher.
-//	The request user has user.can_manage in the meeting
-//
-// Mode E: Y can see these fields if at least one condition is true:
-//
-//	Y has the permissoin can_see_sensible_data.
-//	Y is the related user.
+// Mode E: Y can see these fields if
+//   - Y has the permissoin can_see_sensible_data or
+//   - Y is the related user.
 type MeetingUser struct{}
 
 // Name returns the collection name.
@@ -62,43 +72,102 @@ func (m MeetingUser) Modes(mode string) FieldRestricter {
 }
 
 func (m MeetingUser) see(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs ...int) ([]int, error) {
-	allowed, err := meetingPerm(ctx, ds, m, meetingUserIDs, perm.UserCanSee)
-	if err != nil {
-		return nil, fmt.Errorf("checking permission: %w", err)
-	}
-
-	if len(meetingUserIDs) == len(allowed) {
-		// Fast exit if all requested users are allowed.
-		return allowed, nil
-	}
-
-	allowedSet := set.New(allowed...)
-
-	userIDs := make([]int, len(meetingUserIDs))
-	for i, meetingUserID := range meetingUserIDs {
-		ds.MeetingUser_UserID(meetingUserID).Lazy(&userIDs[i])
-	}
-
-	if err := ds.Execute(ctx); err != nil {
-		return nil, fmt.Errorf("fetching user ids: %w", err)
-	}
-
-	requestUser, err := perm.RequestUserFromContext(ctx)
+	requestUserID, err := perm.RequestUserFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	for i, meetingUserID := range meetingUserIDs {
-		if allowedSet.Has(meetingUserID) {
-			continue
-		}
-
-		if userIDs[i] == requestUser {
-			allowed = append(allowed, meetingUserID)
-		}
+	requestMeetingUserIDs, err := ds.User_MeetingUserIDs(requestUserID).Value(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting meeting_user for request user: %w", err)
 	}
 
-	return allowed, nil
+	meetingUserMeetingIDs := make([]int, len(requestMeetingUserIDs))
+	for i, meetingUserID := range requestMeetingUserIDs {
+		ds.MeetingUser_MeetingID(meetingUserID).Lazy(&meetingUserMeetingIDs[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("fetching meeting ids of request users meeting user: %w", err)
+	}
+
+	meetingToMeetingUser := make(map[int]int, len(meetingUserMeetingIDs))
+	for i, meetingID := range meetingUserMeetingIDs {
+		meetingToMeetingUser[meetingID] = requestMeetingUserIDs[i]
+	}
+
+	return eachMeeting(ctx, ds, m, meetingUserIDs, func(meetingID int, meetingUserIDs []int) ([]int, error) {
+		perms, err := perm.FromContext(ctx, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting perms for meeting %d: %w", meetingID, err)
+		}
+
+		if perms.Has(perm.UserCanSee) {
+			return meetingUserIDs, nil
+		}
+
+		return eachCondition(meetingUserIDs, func(meetingUserID int) (bool, error) {
+			userID, err := ds.MeetingUser_UserID(meetingUserID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("fetching user id: %w", err)
+			}
+
+			if userID == requestUserID {
+				return true, nil
+			}
+
+			delegatedToMeetingUserID, err := ds.MeetingUser_VoteDelegatedToID(meetingUserID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting 'vote delegated to' for meeting_user %d: %w", meetingUserID, err)
+			}
+
+			if id, ok := delegatedToMeetingUserID.Value(); ok {
+				if meetingToMeetingUser[meetingID] == id {
+					return true, nil
+				}
+			}
+
+			// Getting users, that delegated his vote to the request user.
+			delegationsFromMeetingUserID, err := ds.MeetingUser_VoteDelegationsFromIDs(meetingUserID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting 'vote delegations from' for meeting_user %d: %w", meetingUserID, err)
+			}
+
+			for _, delegateMeetingUserID := range delegationsFromMeetingUserID {
+				if meetingToMeetingUser[meetingID] == delegateMeetingUserID {
+					return true, nil
+				}
+			}
+
+			var u User // TODO: Remove me
+
+			for _, r := range u.RequiredObjects(ctx, ds) {
+				id := meetingUserID
+				if r.OnUser {
+					id = userID
+				}
+
+				ids, err := r.ElemFunc(id).Value(ctx)
+				if err != nil {
+					return false, fmt.Errorf("getting ids for %s: %w", r.Name, err)
+				}
+
+				allowedIDs, err := r.SeeFunc(ctx, ds, ids...)
+				if err != nil {
+					meetingUserOrUser := "meetingUserID"
+					if r.OnUser {
+						meetingUserOrUser = "user"
+					}
+					return false, fmt.Errorf("checking required object %s on %s %d: %w", r.Name, meetingUserOrUser, id, err)
+				}
+				if len(allowedIDs) > 0 {
+					return true, nil
+				}
+			}
+
+			return false, nil
+		})
+	})
 }
 
 func (MeetingUser) modeB(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs ...int) ([]int, error) {
