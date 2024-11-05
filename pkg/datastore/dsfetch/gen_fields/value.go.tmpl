@@ -76,8 +76,8 @@ func (v *{{.TypeName}}) convert(p []byte) ({{.GoType}}, error) {
 	return value, nil
 }
 
-// execute sets the lazy values.
-func (v *{{.TypeName}}) execute(p []byte) error {
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *{{.TypeName}}) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
 		return fmt.Errorf("converting value: %w", err)

@@ -75,8 +75,8 @@ func (v *ValueBool) convert(p []byte) (bool, error) {
 	return value, nil
 }
 
-// execute sets the lazy values.
-func (v *ValueBool) execute(p []byte) error {
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueBool) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
 		return fmt.Errorf("converting value: %w", err)
@@ -154,8 +154,8 @@ func (v *ValueFloat) convert(p []byte) (float32, error) {
 	return value, nil
 }
 
-// execute sets the lazy values.
-func (v *ValueFloat) execute(p []byte) error {
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueFloat) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
 		return fmt.Errorf("converting value: %w", err)
@@ -233,8 +233,8 @@ func (v *ValueInt) convert(p []byte) (int, error) {
 	return value, nil
 }
 
-// execute sets the lazy values.
-func (v *ValueInt) execute(p []byte) error {
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueInt) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
 		return fmt.Errorf("converting value: %w", err)
@@ -312,8 +312,8 @@ func (v *ValueIntSlice) convert(p []byte) ([]int, error) {
 	return value, nil
 }
 
-// execute sets the lazy values.
-func (v *ValueIntSlice) execute(p []byte) error {
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueIntSlice) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
 		return fmt.Errorf("converting value: %w", err)
@@ -391,8 +391,8 @@ func (v *ValueJSON) convert(p []byte) (json.RawMessage, error) {
 	return value, nil
 }
 
-// execute sets the lazy values.
-func (v *ValueJSON) execute(p []byte) error {
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueJSON) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
 		return fmt.Errorf("converting value: %w", err)
@@ -470,8 +470,8 @@ func (v *ValueMaybeInt) convert(p []byte) (Maybe[int], error) {
 	return value, nil
 }
 
-// execute sets the lazy values.
-func (v *ValueMaybeInt) execute(p []byte) error {
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueMaybeInt) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
 		return fmt.Errorf("converting value: %w", err)
@@ -549,8 +549,8 @@ func (v *ValueMaybeString) convert(p []byte) (Maybe[string], error) {
 	return value, nil
 }
 
-// execute sets the lazy values.
-func (v *ValueMaybeString) execute(p []byte) error {
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueMaybeString) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
 		return fmt.Errorf("converting value: %w", err)
@@ -628,8 +628,8 @@ func (v *ValueString) convert(p []byte) (string, error) {
 	return value, nil
 }
 
-// execute sets the lazy values.
-func (v *ValueString) execute(p []byte) error {
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueString) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
 		return fmt.Errorf("converting value: %w", err)
@@ -707,8 +707,8 @@ func (v *ValueStringSlice) convert(p []byte) ([]string, error) {
 	return value, nil
 }
 
-// execute sets the lazy values.
-func (v *ValueStringSlice) execute(p []byte) error {
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueStringSlice) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
 		return fmt.Errorf("converting value: %w", err)

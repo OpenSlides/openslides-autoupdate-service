@@ -17,14 +17,14 @@ import (
 type Fetch struct {
 	getter flow.Getter
 
-	requested map[dskey.Key][]executer
+	requested map[dskey.Key][]setLazyer
 }
 
 // New initializes a Request object.
 func New(getter flow.Getter) *Fetch {
 	r := Fetch{
 		getter:    getter,
-		requested: make(map[dskey.Key][]executer),
+		requested: make(map[dskey.Key][]setLazyer),
 	}
 	return &r
 }
@@ -71,7 +71,7 @@ func (f *Fetch) Execute(ctx context.Context) error {
 		}
 
 		for _, exec := range f.requested[key] {
-			if err := exec.execute(value); err != nil {
+			if err := exec.setLazy(value); err != nil {
 				return fmt.Errorf("executing field %s: %w", key, err)
 			}
 		}
@@ -85,8 +85,8 @@ func (f *Fetch) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byt
 	return f.getter.Get(ctx, keys...)
 }
 
-type executer interface {
-	execute([]byte) error // TODO: Rename to setLazies
+type setLazyer interface {
+	setLazy([]byte) error
 }
 
 // DoesNotExistError is thrown when an object does not exist.
