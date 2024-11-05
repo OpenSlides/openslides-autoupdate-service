@@ -22,11 +22,9 @@ func (v *{{.TypeName}}) Value(ctx context.Context) ({{.GoType}}, error) {
 		return zero, err
 	}
 
-	var value {{.GoType}}
-	v.Lazy(&value)
-
-	if err := v.execute(rawValue); err != nil {
-		return zero, err
+	value, err := v.convert(rawValue)
+	if err != nil {
+		return zero, fmt.Errorf("converting raw value: %w", err)
 	}
 
 	return value, nil
@@ -49,31 +47,40 @@ func (v *{{.TypeName}}) Preload() {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 }
 
-// execute will be called from request.
-func (v *{{.TypeName}}) execute(p []byte) error {
-	var value {{.GoType}}
+// convert converts the json value to the type.
+func (v *{{.TypeName}}) convert(p []byte) ({{.GoType}}, error) {
+	var zero {{.GoType}}
 	if p == nil {
 		if v.required {
-			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
+			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-	} else {
-		{{- if eq .TypeName "ValueIntSlice"}}
-			r, err := fastjson.DecodeIntList(p)
-			if err != nil {
-				return fmt.Errorf("decoding value %q: %w", p, err)
-			}
-			value = r
-		{{- else if eq .TypeName "ValueInt" }}
-			r, err := fastjson.DecodeInt(p)
-			if err != nil {
-				return fmt.Errorf("decoding value %q: %w", p, err)
-			}
-			value = r
-		{{- else }}
-			if err := json.Unmarshal(p, &value); err != nil {
-				return fmt.Errorf("decoding value %q: %w", p, err)
-			}
-		{{- end }}
+		return zero, nil
+	} 
+
+	{{- if eq .TypeName "ValueIntSlice"}}
+		value, err := fastjson.DecodeIntList(p)
+		if err != nil {
+			return zero, fmt.Errorf("decoding value %q: %w", p, err)
+		}
+	{{- else if eq .TypeName "ValueInt" }}
+		value, err := fastjson.DecodeInt(p)
+		if err != nil {
+			return zero, fmt.Errorf("decoding value %q: %w", p, err)
+		}
+	{{- else }}
+		var value {{.GoType}}
+		if err := json.Unmarshal(p, &value); err != nil {
+			return zero, fmt.Errorf("decoding value %q: %w", p, err)
+		}
+	{{- end }}
+	return value, nil
+}
+
+// execute sets the lazy values.
+func (v *{{.TypeName}}) execute(p []byte) error {
+	value, err := v.convert(p)
+	if err != nil {
+		return fmt.Errorf("converting value: %w", err)
 	}
 
 	for i := 0; i < len(v.lazies); i++ {

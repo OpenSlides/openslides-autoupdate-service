@@ -67,7 +67,7 @@ func (f *Fetch) Execute(ctx context.Context) error {
 
 	for key, value := range data {
 		if data[key.IDField()] == nil {
-			return DoesNotExistError(key)
+			return fmt.Errorf("key has no _id field. Executing %d keys: %w", len(f.requested), DoesNotExistError(key))
 		}
 
 		for _, exec := range f.requested[key] {
@@ -86,7 +86,7 @@ func (f *Fetch) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]byt
 }
 
 type executer interface {
-	execute([]byte) error
+	execute([]byte) error // TODO: Rename to setLazies
 }
 
 // DoesNotExistError is thrown when an object does not exist.
