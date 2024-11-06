@@ -5,7 +5,7 @@ go 1.23
 require (
 	github.com/alecthomas/kong v1.3.0
 	github.com/goccy/go-yaml v1.13.6
-	github.com/golang-jwt/jwt/v4 v4.5.0
+	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/gomodule/redigo v1.9.2
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/klauspost/compress v1.17.11
