@@ -775,6 +775,15 @@ func (r *Fetch) ActionWorker_Timestamp(actionWorkerID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
+func (r *Fetch) ActionWorker_UserID(actionWorkerID int) *ValueInt {
+	key, err := dskey.FromParts("action_worker", actionWorkerID, "user_id")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
 func (r *Fetch) AgendaItem_ChildIDs(agendaItemID int) *ValueIntSlice {
 	key, err := dskey.FromParts("agenda_item", agendaItemID, "child_ids")
 	if err != nil {

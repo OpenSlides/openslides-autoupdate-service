@@ -386,6 +386,7 @@ var restrictionModes = map[string]string{
 	"action_worker/result":    "A",
 	"action_worker/state":     "A",
 	"action_worker/timestamp": "A",
+	"action_worker/user_id":   "A",
 
 	// agenda_item
 	"agenda_item/child_ids":         "A",
