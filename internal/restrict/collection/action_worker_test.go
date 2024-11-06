@@ -30,4 +30,15 @@ func TestActionWorkerModeA(t *testing.T) {
 		`,
 		withRequestUser(5),
 	)
+
+	testCase(
+		"Anonymous is disallowed all the time",
+		t,
+		a.Modes("A"),
+		false,
+		`---
+		action_worker/1/user_id: 0
+		`,
+		withRequestUser(0),
+	)
 }

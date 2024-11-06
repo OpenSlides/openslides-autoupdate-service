@@ -11,6 +11,7 @@ import (
 // ActionWorker handles permission for action_worker.
 //
 // A user can see an action worker, if he is the user from action_worker/user_id.
+// Anonymous can never get the data.
 type ActionWorker struct{}
 
 // Name returns the collection name.
@@ -45,6 +46,10 @@ func (a ActionWorker) see(ctx context.Context, ds *dsfetch.Fetch, actionWorkerID
 	requestUser, err := perm.RequestUserFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	if requestUser == 0 {
+		return nil, nil
 	}
 
 	var allowed []int
