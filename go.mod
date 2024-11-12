@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/alecthomas/kong v1.4.0
-	github.com/goccy/go-yaml v1.13.6
+	github.com/goccy/go-yaml v1.13.8
 	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/gomodule/redigo v1.9.2
 	github.com/jackc/pgx/v5 v5.7.1
@@ -30,7 +30,6 @@ require (
 	github.com/docker/docker v27.1.1+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/fatih/color v1.18.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -38,8 +37,6 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.8 // indirect
 	github.com/kr/text v0.1.0 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/term v0.5.0 // indirect
