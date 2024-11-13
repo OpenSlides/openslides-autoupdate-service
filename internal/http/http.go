@@ -179,7 +179,7 @@ func parseBody(r *http.Request) ([]byte, string, bool, error) {
 
 	body, err := io.ReadAll(kbPart)
 	if err != nil {
-		return nil, "", false, fmt.Errorf("invalid body: %w", err)
+		return nil, "", false, fmt.Errorf("invalid multipart body, key-builder-part: %w", err)
 	}
 
 	lpPart, err := mr.NextPart()
@@ -189,7 +189,7 @@ func parseBody(r *http.Request) ([]byte, string, bool, error) {
 
 	longPollinHashes, err := io.ReadAll(lpPart)
 	if err != nil {
-		return nil, "", false, fmt.Errorf("invalid body: %w", err)
+		return nil, "", false, fmt.Errorf("invalid multipart body, long-poll-part: %w", err)
 	}
 
 	return body, string(longPollinHashes), true, nil

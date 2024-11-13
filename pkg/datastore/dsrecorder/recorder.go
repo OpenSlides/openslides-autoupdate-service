@@ -36,6 +36,11 @@ func (r *Recorder) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][]
 	return r.getter.Get(ctx, keys...)
 }
 
+// Reset clears the recorder cache.
+func (r *Recorder) Reset() {
+	r.keys = map[dskey.Key]struct{}{}
+}
+
 // Keys returns all datastore keys that where fetched in the process.
 func (r *Recorder) Keys() map[dskey.Key]struct{} {
 	return r.keys
