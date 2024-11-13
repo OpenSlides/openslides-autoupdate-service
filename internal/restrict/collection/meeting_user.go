@@ -142,9 +142,7 @@ func (m MeetingUser) see(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs 
 				}
 			}
 
-			var u User // TODO: Remove me
-
-			for _, r := range u.RequiredObjects(ctx, ds) {
+			for _, r := range m.RequiredObjects(ctx, ds) {
 				id := meetingUserID
 				if r.OnUser {
 					id = userID
@@ -171,6 +169,75 @@ func (m MeetingUser) see(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs 
 			return false, nil
 		})
 	})
+}
+
+// UserRequiredObject represents the reference from a user to other objects.
+type UserRequiredObject struct {
+	Name     string
+	ElemFunc func(int) *dsfetch.ValueIntSlice
+	SeeFunc  FieldRestricter
+	OnUser   bool // Tells, if the relation is via meeting_user_id or user_id
+}
+
+// RequiredObjects returns all references to other objects from the user.
+func (MeetingUser) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []UserRequiredObject {
+	return []UserRequiredObject{
+		{
+			"motion submitter",
+			ds.MeetingUser_MotionSubmitterIDs,
+			Collection(ctx, MotionSubmitter{}.Name()).Modes("A"),
+			false,
+		},
+
+		{
+			"motion supporter",
+			ds.MeetingUser_SupportedMotionIDs,
+			Collection(ctx, Motion{}.Name()).Modes("C"),
+			false,
+		},
+
+		{
+			"option",
+			ds.User_OptionIDs,
+			Collection(ctx, Option{}.Name()).Modes("A"),
+			true,
+		},
+
+		{
+			"assignment candidate",
+			ds.MeetingUser_AssignmentCandidateIDs,
+			Collection(ctx, AssignmentCandidate{}.Name()).Modes("A"),
+			false,
+		},
+
+		{
+			"speaker",
+			ds.MeetingUser_SpeakerIDs,
+			Collection(ctx, Speaker{}.Name()).Modes("A"),
+			false,
+		},
+
+		{
+			"poll voted",
+			ds.User_PollVotedIDs,
+			Collection(ctx, Poll{}.Name()).Modes("A"),
+			true,
+		},
+
+		{
+			"vote user",
+			ds.User_VoteIDs,
+			Collection(ctx, Vote{}.Name()).Modes("A"),
+			true,
+		},
+
+		{
+			"chat messages",
+			ds.MeetingUser_ChatMessageIDs,
+			Collection(ctx, ChatMessage{}.Name()).Modes("A"),
+			false,
+		},
+	}
 }
 
 func (MeetingUser) modeB(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs ...int) ([]int, error) {
