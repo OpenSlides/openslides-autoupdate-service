@@ -77,23 +77,26 @@ func (m MeetingUser) see(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs 
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	requestMeetingUserIDs, err := ds.User_MeetingUserIDs(requestUserID).Value(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getting meeting_user for request user: %w", err)
-	}
+	meetingToMeetingUser := make(map[int]int)
+	if requestUserID != 0 {
+		requestMeetingUserIDs, err := ds.User_MeetingUserIDs(requestUserID).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting meeting_user for request user: %w", err)
+		}
 
-	meetingUserMeetingIDs := make([]int, len(requestMeetingUserIDs))
-	for i, meetingUserID := range requestMeetingUserIDs {
-		ds.MeetingUser_MeetingID(meetingUserID).Lazy(&meetingUserMeetingIDs[i])
-	}
+		meetingUserMeetingIDs := make([]int, len(requestMeetingUserIDs))
+		for i, meetingUserID := range requestMeetingUserIDs {
+			ds.MeetingUser_MeetingID(meetingUserID).Lazy(&meetingUserMeetingIDs[i])
+		}
 
-	if err := ds.Execute(ctx); err != nil {
-		return nil, fmt.Errorf("fetching meeting ids of request users meeting user: %w", err)
-	}
+		if err := ds.Execute(ctx); err != nil {
+			return nil, fmt.Errorf("fetching meeting ids of request users meeting user: %w", err)
+		}
 
-	meetingToMeetingUser := make(map[int]int, len(meetingUserMeetingIDs))
-	for i, meetingID := range meetingUserMeetingIDs {
-		meetingToMeetingUser[meetingID] = requestMeetingUserIDs[i]
+		meetingToMeetingUser = make(map[int]int, len(meetingUserMeetingIDs))
+		for i, meetingID := range meetingUserMeetingIDs {
+			meetingToMeetingUser[meetingID] = requestMeetingUserIDs[i]
+		}
 	}
 
 	return eachMeeting(ctx, ds, m, meetingUserIDs, func(meetingID int, meetingUserIDs []int) ([]int, error) {

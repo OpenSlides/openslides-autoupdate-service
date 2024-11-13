@@ -74,7 +74,7 @@ func TestUserModeA(t *testing.T) {
 		f,
 		false,
 		`---
-		user/2/committee_ids: [5]
+		user/2/committee_ids: [404]
 		user/1:
 			committee_management_ids: [5]
 		committee/5/user_ids: []
@@ -134,6 +134,7 @@ func TestUserModeA(t *testing.T) {
 		`---
 		user/1:
 			committee_management_ids: [7]
+		user/2/committee_ids: [7]
 		committee/7/user_ids: [2]
 
 		meeting/5/committee_id: 7
@@ -165,14 +166,17 @@ func TestUserModeA(t *testing.T) {
 		true,
 		`---
 		user/1/meeting_user_ids: [10]
-		user/2/id: 2
+		user/2/meeting_user_ids: [20]
 
 		meeting_user:
 			10:
-				vote_delegated_to_id: 20
 				user_id: 1
+				meeting_id: 3
 			20:
 				user_id: 2
+				meeting_id: 3
+				vote_delegated_to_id: 10
+		meeting/3/admin_group_id: 1
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -185,14 +189,17 @@ func TestUserModeA(t *testing.T) {
 		true,
 		`---
 		user/1/meeting_user_ids: [10]
-		user/2/id: 2
+		user/2/meeting_user_ids: [20]
 
 		meeting_user:
 			10:
-				vote_delegations_from_ids: [20]
 				user_id: 1
+				meeting_id: 3
 			20:
 				user_id: 2
+				meeting_id: 3
+				vote_delegations_from_ids: [10]
+		meeting/3/admin_group_id: 1
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -212,14 +219,15 @@ func TestUserModeA(t *testing.T) {
 		meeting_user/20:
 			motion_submitter_ids: [4]
 			meeting_id: 30
-		
+			user_id: 2
+
 		motion_submitter/4:
 			motion_id: 7
-		
+
 		motion/7:
 			meeting_id: 30
 			state_id: 5
-		
+
 		motion_state/5/id: 5
 		`,
 		withRequestUser(1),
@@ -241,6 +249,7 @@ func TestUserModeA(t *testing.T) {
 		meeting_user/20:
 			supported_motion_ids: [7]
 			meeting_id: 30
+			user_id: 2
 		
 		motion/7:
 			meeting_id: 30
@@ -267,6 +276,7 @@ func TestUserModeA(t *testing.T) {
 		meeting_user/20:
 			assignment_candidate_ids: [4]
 			meeting_id: 30
+			user_id: 2
 		
 		assignment_candidate/4/assignment_id: 5
 		assignment/5/meeting_id: 30
@@ -290,6 +300,7 @@ func TestUserModeA(t *testing.T) {
 		meeting_user/20:
 			speaker_ids: [4]
 			meeting_id: 30
+			user_id: 2
 		
 		speaker/4:
 			list_of_speakers_id: 5
@@ -320,6 +331,7 @@ func TestUserModeA(t *testing.T) {
 		meeting_user/20:
 			chat_message_ids: [4]
 			meeting_id: 30
+			user_id: 2
 
 		meeting_user/10/group_ids: [5]
 		
