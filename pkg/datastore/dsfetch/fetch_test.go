@@ -7,6 +7,7 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
+	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsrecorder"
 )
 
 func TestRequestTwoWithErrors(t *testing.T) {
@@ -77,5 +78,54 @@ func TestFech_two_times_lazy(t *testing.T) {
 
 	if username1 != "max" || username2 != "max" {
 		t.Errorf("usernames: '%s', '%s', expected two times max", username1, username2)
+	}
+}
+
+func TestFech_error_on_value_followed_by_execute(t *testing.T) {
+	ctx := context.Background()
+
+	ds := dsfetch.New(dsmock.Stub(dsmock.YAMLData(`---
+	user/1/username: max
+	`)))
+
+	if _, err := ds.User_Username(2).Value(ctx); err == nil {
+		t.Fatalf("fetching non existing user did not return an error")
+	}
+
+	var username1 string
+	ds.User_Username(1).Lazy(&username1)
+
+	if err := ds.Execute(ctx); err != nil {
+		t.Errorf("Execute: %v", err)
+	}
+}
+
+func TestFech_lazy_after_value_should_not_fetch_value_again(t *testing.T) {
+	ctx := context.Background()
+
+	stub := dsmock.Stub(dsmock.YAMLData(`---
+	user/1/username: max
+	user/2/username: muster
+	`))
+
+	recorder := dsrecorder.New(stub)
+
+	ds := dsfetch.New(recorder)
+
+	if _, err := ds.User_Username(1).Value(ctx); err != nil {
+		t.Fatalf("Error: %v", err)
+	}
+
+	recorder.Reset()
+
+	var username2 string
+	ds.User_Username(2).Lazy(&username2)
+
+	if err := ds.Execute(ctx); err != nil {
+		t.Fatalf("Error: %v", err)
+	}
+
+	if len(recorder.Keys()) != 2 {
+		t.Errorf("Expecting 2 keys (user/2/username and user/2/id), got: %v", recorder.Keys())
 	}
 }
