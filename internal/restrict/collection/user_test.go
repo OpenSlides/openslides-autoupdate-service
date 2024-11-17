@@ -263,6 +263,54 @@ func TestUserModeA(t *testing.T) {
 	)
 
 	testCase(
+		"motion editor",
+		t,
+		f,
+		true,
+		`---
+		user/1/meeting_user_ids: [10]
+		user/2/meeting_user_ids: [20]
+
+		meeting_user/10:
+			meeting_id: 30
+		meeting_user/20:
+			meeting_id: 30
+			user_id: 2
+			motion_editor_ids: [4]
+
+		motion_editor/4:
+			meeting_id: 30
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(30, perm.MotionCanManageMetadata),
+	)
+
+	testCase(
+		"motion working group speakder",
+		t,
+		f,
+		true,
+		`---
+		user/1/meeting_user_ids: [10]
+		user/2/meeting_user_ids: [20]
+
+		meeting_user/10:
+			meeting_id: 30
+		meeting_user/20:
+			meeting_id: 30
+			user_id: 2
+			motion_working_group_speaker_ids: [4]
+
+		motion_working_group_speaker/4:
+			meeting_id: 30
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(30, perm.MotionCanManageMetadata),
+	)
+
+	testCase(
 		"assignment candidate",
 		t,
 		f,
@@ -350,6 +398,7 @@ func TestUserModeA(t *testing.T) {
 		withRequestUser(1),
 		withElementID(2),
 	)
+
 }
 
 func TestUserModeB(t *testing.T) {
