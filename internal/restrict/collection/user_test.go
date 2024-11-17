@@ -398,7 +398,6 @@ func TestUserModeA(t *testing.T) {
 		withRequestUser(1),
 		withElementID(2),
 	)
-
 }
 
 func TestUserModeB(t *testing.T) {
