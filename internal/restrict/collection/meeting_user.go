@@ -18,6 +18,7 @@ import (
 //	X is linked in one of the relations vote_delegated_to_id or vote_delegations_from_ids of Y or
 //	there is a related object:
 //	  There exists a motion which Y can see and X is a submitter/supporter.
+//	  X is a motion/editor or motion_working_group_speaker that Y can see.
 //	  There exists an option which Y can see and X is the linked content object.
 //	  There exists an assignment candidate which Y can see and X is the linked user.
 //	  There exists a speaker which Y can see and X is the linked user.
@@ -193,6 +194,20 @@ func (MeetingUser) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []Use
 			"motion supporter",
 			ds.MeetingUser_SupportedMotionIDs,
 			Collection(ctx, Motion{}.Name()).Modes("C"),
+			false,
+		},
+
+		{
+			"motion editor",
+			ds.MeetingUser_MotionEditorIDs,
+			Collection(ctx, MotionEditor{}.Name()).Modes("A"),
+			false,
+		},
+
+		{
+			"motion working group speaker",
+			ds.MeetingUser_MotionWorkingGroupSpeakerIDs,
+			Collection(ctx, MotionWorkingGroupSpeaker{}.Name()).Modes("A"),
 			false,
 		},
 
