@@ -174,7 +174,7 @@ func Motion(store *projector.SlideStore) {
 		if meeting.MotionsEnableReasonOnProjector {
 			fetchFields = append(fetchFields, "reason")
 		}
-		if p7on.Options != nil && options.Mode == "final" {
+		if p7on.Options != nil && (options.Mode == "final" || options.Mode == "modified_final_version") {
 			fetchFields = append(fetchFields, "modified_final_version")
 		}
 
