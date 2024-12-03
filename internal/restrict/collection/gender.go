@@ -7,6 +7,8 @@ import (
 )
 
 // Gender handles permission for action_worker.
+//
+// Everyone can see all genders.
 type Gender struct{}
 
 // Name returns the collection name.
