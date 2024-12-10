@@ -194,7 +194,7 @@ func (p *Permission) InGroup(groupIDs ...int) bool {
 
 // HasOrganizationManagementLevel returns true if the user has the level or a higher level
 func HasOrganizationManagementLevel(ctx context.Context, ds *dsfetch.Fetch, userID int, level OrganizationManagementLevel) (bool, error) {
-	if userID == 0 {
+	if userID == nil {
 		return false, nil
 	}
 

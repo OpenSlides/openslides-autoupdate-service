@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -77,14 +78,14 @@ func TestAuth(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		request *http.Request
-		uid     int
+		uid     *string
 		header  string
 		errMSG  string
 	}{
 		{
 			"No cookie no token",
 			&http.Request{},
-			0,
+			nil,
 			"",
 			"",
 		},
@@ -95,7 +96,7 @@ func TestAuth(t *testing.T) {
 					"Cookie": {validCookie},
 				},
 			},
-			0,
+			nil,
 			"",
 			"Can not find auth token",
 		},
@@ -106,7 +107,7 @@ func TestAuth(t *testing.T) {
 					authHeader: {validHeader},
 				},
 			},
-			0,
+			nil,
 			"",
 			"Can not find auth cookie",
 		},
@@ -118,7 +119,7 @@ func TestAuth(t *testing.T) {
 					authHeader: {validHeader},
 				},
 			},
-			0,
+			nil,
 			"",
 			"Invalid auth token",
 		},
@@ -130,7 +131,7 @@ func TestAuth(t *testing.T) {
 					authHeader: {invalidHeader},
 				},
 			},
-			0,
+			nil,
 			"",
 			"Invalid auth token",
 		},
@@ -142,7 +143,7 @@ func TestAuth(t *testing.T) {
 					authHeader: {validHeader},
 				},
 			},
-			1,
+			StringPtr("1"),
 			"",
 			"",
 		},
@@ -154,7 +155,7 @@ func TestAuth(t *testing.T) {
 					authHeader: {oldHeader},
 				},
 			},
-			1,
+			StringPtr("1"),
 			"NEWTOKEN",
 			"",
 		},
@@ -195,11 +196,15 @@ func TestAuth(t *testing.T) {
 				t.Errorf("Got header `%s`, expected `%s`", got, tt.header)
 			}
 
-			if got := a.FromContext(ctx); got != tt.uid {
-				t.Errorf("Got uid %d, expected %d", got, tt.uid)
+			if got := a.FromContext(ctx); strings.Compare(got, *tt.uid) != 0 {
+				t.Errorf("Got uid %s, expected %d", got, tt.uid)
 			}
 		})
 	}
+}
+
+func StringPtr(s string) *string {
+	return &s
 }
 
 func TestFromContext(t *testing.T) {
@@ -222,18 +227,19 @@ func TestFromContext(t *testing.T) {
 		}
 
 		got := a.FromContext(ctx)
-		if got != 1 {
-			t.Errorf("Got uid %d from auth-context. Expected 1", got)
+		if got != "1" {
+			t.Errorf("Got uid %s from auth-context. Expected 1", got)
 		}
 	})
 
 	t.Run("Context from AuthenticatedContext", func(t *testing.T) {
 		ctx := context.Background()
-		ctx = a.AuthenticatedContext(ctx, 7)
+		userID := 7
+		ctx = a.AuthenticatedContext(ctx, &userID)
 
 		got := a.FromContext(ctx)
 		if got != 7 {
-			t.Errorf("Got uid %d from auth-context. Expected 7", got)
+			t.Errorf("Got uid %s from auth-context. Expected 7", got)
 		}
 	})
 }

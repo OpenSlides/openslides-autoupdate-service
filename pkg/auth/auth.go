@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,6 +17,8 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/ostcar/topic"
+
+	"github.com/coreos/go-oidc"
 )
 
 // DebugTokenKey and DebugCookieKey are non random auth keys for development.
@@ -24,13 +28,20 @@ const (
 )
 
 var (
-	envAuthHost     = environment.NewVariable("AUTH_HOST", "localhost", "Host of the auth service.")
-	envAuthPort     = environment.NewVariable("AUTH_PORT", "9004", "Port of the auth service.")
-	envAuthProtocol = environment.NewVariable("AUTH_PROTOCOL", "http", "Protocol of the auth service.")
+	envAuthHost     = environment.NewVariable("KEYCLOAK_HOST", "localhost", "Host of the auth service.")
+	envAuthPort     = environment.NewVariable("KEYCLOAK_PORT", "9004", "Port of the auth service.")
+	envAuthProtocol = environment.NewVariable("KEYCLOAK_PROTOCOL", "http", "Protocol of the auth service.")
 	envAuthFake     = environment.NewVariable("AUTH_FAKE", "false", "Use user id 1 for every request. Ignores all other auth environment variables.")
 
 	envAuthTokenFile  = environment.NewVariable("AUTH_TOKEN_KEY_FILE", "/run/secrets/auth_token_key", "Key to sign the JWT auth tocken.")
 	envAuthCookieFile = environment.NewVariable("AUTH_COOKIE_KEY_FILE", "/run/secrets/auth_cookie_key", "Key to sign the JWT auth cookie.")
+
+	issuer       = environment.NewVariable("OPENSLIDES_TOKEN_ISSUER", "", "The issuer of the token.")
+	clientID     = environment.NewVariable("OPENSLIDES_AUTH_CLIENT_ID", "", "The client ID of the application.")
+	ctx          = context.Background()
+	oidcProvider *oidc.Provider
+	verifier     *oidc.IDTokenVerifier
+	fetcher      = datastore.NewFetcher(
 )
 
 // pruneTime defines how long a topic id will be valid. This should be higher
@@ -42,6 +53,17 @@ const (
 	authHeader = "Authentication"
 	authPath   = "/internal/auth/authenticate"
 )
+
+func validateAccessToken(tokenString string) (*oidc.IDToken, error) {
+	// Parse and verify the token using the verifier.
+	idToken, err := verifier.Verify(ctx, tokenString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify token: %v", err)
+	}
+
+	// Token is valid.
+	return idToken, nil
+}
 
 // LogoutEventer tells, when a sessionID gets revoked.
 //
@@ -69,13 +91,26 @@ type Auth struct {
 //
 // Returns the initialized Auth objectand a function to be called in the
 // background.
-func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, func(context.Context, func(error)), error) {
+func New(lookup environment.Environmenter, fetch *datastore.Fetcher, messageBus LogoutEventer) (*Auth, func(context.Context, func(error)), error) {
 	url := fmt.Sprintf(
 		"%s://%s:%s",
 		envAuthProtocol.Value(lookup),
 		envAuthHost.Value(lookup),
 		envAuthPort.Value(lookup),
 	)
+
+	var err error
+	// Discover OIDC provider configuration.
+	oidcProvider, err = oidc.NewProvider(ctx, issuer.Value(lookup))
+	if err != nil {
+		log.Fatalf("Failed to initialize OIDC provider: %v", err)
+	}
+
+	// Set up the verifier using the discovered configuration.
+	oidcConfig := &oidc.Config{
+		ClientID: clientID.Value(lookup), // The client ID of your application
+	}
+	verifier = oidcProvider.Verifier(oidcConfig)
 
 	fake, _ := strconv.ParseBool(envAuthFake.Value(lookup))
 
@@ -128,9 +163,10 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 		return nil, fmt.Errorf("reading token: %w", err)
 	}
 
-	if p.UserID == "0" {
-		return a.AuthenticatedContext(ctx, 0), nil
-	}
+	// this cannot happen, user id is always set in token
+	//if p.UserID == nil {
+	//	return a.AuthenticatedContext(ctx, 0), nil
+	//}
 
 	_, sessionIDs, err := a.logedoutSessions.Receive(ctx, 0)
 	if err != nil {
@@ -142,9 +178,10 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 		}
 	}
 
-	// convert p.UserID to int
-	userID, err := strconv.Atoi(p.UserID)
-	ctx, cancelCtx := context.WithCancel(a.AuthenticatedContext(ctx, userID))
+	// get user from datastore
+	user, err := a.getUser(ctx, p.UserID)
+
+	ctx, cancelCtx := context.WithCancel(a.AuthenticatedContext(ctx, &p.UserID))
 
 	go func() {
 		defer cancelCtx()
@@ -176,7 +213,7 @@ func (a *Auth) AuthenticatedContext(ctx context.Context, userID int) context.Con
 	return context.WithValue(ctx, userIDType, userID)
 }
 
-// FromContext returnes the user id from a context returned by Authenticate().
+// FromContext returns the user id from a context returned by Authenticate().
 //
 // If the user is an anonymous user 0 is returned.
 //
@@ -251,15 +288,7 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload *OpenSl
 		return nil
 	}
 
-	token, err := jwt.ParseWithClaims(encodedToken, payload, func(token *jwt.Token) (interface{}, error) {
-		return []byte(a.tokenKey), nil
-	})
-
-	claims, _ := token.Claims.(*OpenSlidesClaims)
-	fmt.Printf("UserID: %s\n", payload.UserID)
-	//fmt.Printf("Issuer: %s\n", claims.Issuer)
-
-	payload.UserID = claims.UserID
+	token, err := validateAccessToken(encodedToken)
 
 	if err != nil {
 		var invalid *jwt.ValidationError
@@ -267,6 +296,16 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload *OpenSl
 			return a.handleInvalidToken(r.Context(), invalid, w, encodedToken)
 		}
 	}
+
+	var claims OpenSlidesClaims
+	if err := token.Claims(&claims); err != nil {
+		log.Fatalf("Failed to parse claims: %v", err)
+	}
+
+	fmt.Printf("UserID: %s\n", payload.UserID)
+	//fmt.Printf("Issuer: %s\n", claims.Issuer)
+
+	payload.UserID = claims.UserID
 
 	return nil
 }
