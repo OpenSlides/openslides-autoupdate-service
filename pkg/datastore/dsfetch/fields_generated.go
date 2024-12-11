@@ -1270,15 +1270,6 @@ func (r *Fetch) Committee_ForwardToCommitteeIDs(committeeID int) *ValueIntSlice 
 	return &ValueIntSlice{fetch: r, key: key}
 }
 
-func (r *Fetch) Committee_ForwardingUserID(committeeID int) *ValueMaybeInt {
-	key, err := dskey.FromParts("committee", committeeID, "forwarding_user_id")
-	if err != nil {
-		return &ValueMaybeInt{err: err}
-	}
-
-	return &ValueMaybeInt{fetch: r, key: key}
-}
-
 func (r *Fetch) Committee_ID(committeeID int) *ValueInt {
 	key, err := dskey.FromParts("committee", committeeID, "id")
 	if err != nil {
@@ -3608,15 +3599,6 @@ func (r *Fetch) Meeting_MotionsBlockSlideColumns(meetingID int) *ValueInt {
 	}
 
 	return &ValueInt{fetch: r, key: key}
-}
-
-func (r *Fetch) Meeting_MotionsCreateEnableAdditionalSubmitterText(meetingID int) *ValueBool {
-	key, err := dskey.FromParts("meeting", meetingID, "motions_create_enable_additional_submitter_text")
-	if err != nil {
-		return &ValueBool{err: err}
-	}
-
-	return &ValueBool{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MotionsDefaultAmendmentWorkflowID(meetingID int) *ValueInt {
@@ -8117,15 +8099,6 @@ func (r *Fetch) User_FirstName(userID int) *ValueString {
 	}
 
 	return &ValueString{fetch: r, key: key}
-}
-
-func (r *Fetch) User_ForwardingCommitteeIDs(userID int) *ValueIntSlice {
-	key, err := dskey.FromParts("user", userID, "forwarding_committee_ids")
-	if err != nil {
-		return &ValueIntSlice{err: err}
-	}
-
-	return &ValueIntSlice{fetch: r, key: key}
 }
 
 func (r *Fetch) User_GenderID(userID int) *ValueMaybeInt {
