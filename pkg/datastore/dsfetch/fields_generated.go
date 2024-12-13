@@ -3610,6 +3610,15 @@ func (r *Fetch) Meeting_MotionsBlockSlideColumns(meetingID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_MotionsCreateEnableAdditionalSubmitterText(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "motions_create_enable_additional_submitter_text")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
+}
+
 func (r *Fetch) Meeting_MotionsDefaultAmendmentWorkflowID(meetingID int) *ValueInt {
 	key, err := dskey.FromParts("meeting", meetingID, "motions_default_amendment_workflow_id")
 	if err != nil {
