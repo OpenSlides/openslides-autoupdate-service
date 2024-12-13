@@ -36,7 +36,6 @@ func (m Mediafile) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (in
 
 	collection, rawID, found := strings.Cut(genericOwnerID, "/")
 	if !found {
-		// TODO LAST ERROR
 		return 0, false, fmt.Errorf("invalid ownerID: %s", genericOwnerID)
 	}
 
@@ -46,7 +45,6 @@ func (m Mediafile) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (in
 
 	ownerID, err := strconv.Atoi(rawID)
 	if err != nil {
-		// TODO LAST ERROR
 		return 0, false, fmt.Errorf("invalid id part of ownerID: %s", genericOwnerID)
 	}
 
