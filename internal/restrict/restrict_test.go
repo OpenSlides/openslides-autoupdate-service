@@ -12,6 +12,7 @@ import (
 func TestRestrict(t *testing.T) {
 	ctx := context.Background()
 	ds := dsmock.Stub(dsmock.YAMLData(`---
+	organization/1/enable_anonymous: true
 	meeting:
 		30:
 			enable_anonymous: true

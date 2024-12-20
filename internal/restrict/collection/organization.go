@@ -14,11 +14,13 @@ import (
 //
 // Mode A: The user can see the organization (always).
 //
-// Mode B: The user must be logged in (no anonymous).
+// Mode B: The user must be logged in (no public access).
 //
 // Mode C: The user has the OML can_manage_users or higher.
 //
 // Mode E: The user is meeting admin in at least one meeting.
+//
+// Mode D: The user is superadmin.
 type Organization struct{}
 
 // Name returns the collection name.
@@ -42,6 +44,8 @@ func (o Organization) Modes(mode string) FieldRestricter {
 		return o.modeC
 	case "E":
 		return o.modeE
+	case "D":
+		return o.modeD
 	}
 	return nil
 }
@@ -75,4 +79,21 @@ func (Organization) modeE(ctx context.Context, ds *dsfetch.Fetch, ids ...int) ([
 	}
 
 	return ids, nil
+}
+
+func (Organization) modeD(ctx context.Context, ds *dsfetch.Fetch, ids ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	isSuperadmin, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLSuperadmin)
+	if err != nil {
+		return nil, fmt.Errorf("checking for superadmin: %w", err)
+	}
+
+	if isSuperadmin {
+		return ids, nil
+	}
+	return nil, nil
 }

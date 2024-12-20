@@ -22,7 +22,7 @@ func TestOrganizationModeB(t *testing.T) {
 	f := collection.Organization{}.Modes("B")
 
 	testCase(
-		"anonymous",
+		"Public access",
 		t,
 		f,
 		false,
@@ -44,7 +44,7 @@ func TestOrganizationModeC(t *testing.T) {
 	f := collection.Organization{}.Modes("C")
 
 	testCase(
-		"anonymous",
+		"Public access",
 		t,
 		f,
 		false,
@@ -77,7 +77,7 @@ func TestOrganizationModeE(t *testing.T) {
 	f := collection.Organization{}.Modes("E")
 
 	testCase(
-		"anonymous",
+		"Public access",
 		t,
 		f,
 		false,
@@ -126,6 +126,50 @@ func TestOrganizationModeE(t *testing.T) {
 		meeting_user/10:
 			group_ids: [8]
 			meeting_id: 7
+		`,
+		withRequestUser(1),
+	)
+}
+
+func TestOrganizationModeD(t *testing.T) {
+	f := collection.Organization{}.Modes("D")
+
+	testCase(
+		"Public access",
+		t,
+		f,
+		false,
+		``,
+		withRequestUser(0),
+	)
+
+	testCase(
+		"logged in",
+		t,
+		f,
+		false,
+		``,
+		withRequestUser(1),
+	)
+
+	testCase(
+		"orga admin",
+		t,
+		f,
+		false,
+		`---
+		user/1/organization_management_level: can_manage_organization
+		`,
+		withRequestUser(1),
+	)
+
+	testCase(
+		"orga admin",
+		t,
+		f,
+		true,
+		`---
+		user/1/organization_management_level: superadmin
 		`,
 		withRequestUser(1),
 	)

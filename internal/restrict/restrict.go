@@ -539,7 +539,8 @@ var collectionOrder = map[string]int{
 	"chat_group":                       4,
 	"chat_message":                     5,
 	"committee":                        6,
-	"meeting":                          7,
+	"meeting/A":                        7,
+	"meeting/E":                        8,
 	"point_of_order_category":          8,
 	"group":                            9,
 	"projector":                        10,
@@ -557,7 +558,6 @@ var collectionOrder = map[string]int{
 	"motion_comment_section":           22,
 	"motion_comment":                   23,
 	"motion_state":                     24,
-	"motion_statute_paragraph":         25,
 	"motion_submitter":                 26,
 	"motion_workflow":                  27,
 	"poll":                             28,
@@ -580,4 +580,5 @@ var collectionOrder = map[string]int{
 	"structure_level_list_of_speakers": 55,
 	"motion_working_group_speaker":     56,
 	"motion_editor":                    57,
+	"gender":                           58,
 }

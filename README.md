@@ -210,10 +210,11 @@ It returns a JSON dictonary like this:
 
 `{"0":15,"1":4,"2":3}`
 
-The key is a user ID and the value is the amount of currently open connections. User ID
-`0` is the anonymous user. It the example above, the anonymous user has 15 open
-connections, the user with the ID 1 has 4 open connections and the user with the
-ID 2 has 3 open connection.
+The key is a user ID and the value is the amount of currently open connections.
+User ID `0` is for connections, that are not logged in (public access). It the
+example above, there are 15 open connections from public access, the user with
+the ID 1 has 4 open connections and the user with the ID 2 has 3 open
+connection.
 
 Users can only access this page if they have the organization management level
 or higher.
@@ -228,7 +229,7 @@ The logged metric is a json dictonary like:
 
 ```json
 {
-    "connections_longpolling_connected_users_anonymous_connections": 0,
+    "connections_longpolling_connected_connections_public_access": 0,
     "connections_longpolling_connected_users_average_connections": 3,
     "connections_longpolling_connected_users_current": 1,
     "connections_longpolling_connected_users_current_local": 1,
@@ -236,7 +237,7 @@ The logged metric is a json dictonary like:
     "connections_longpolling_connected_users_total_local": 1,
     "connections_longpolling_current_connections": 3,
     "connections_longpolling_current_connections_local": 3,
-    "connections_stream_connected_users_anonymous_connections": 0,
+    "connections_stream_connected_connections_public_access": 0,
     "connections_stream_connected_users_average_connections": 6,
     "connections_stream_connected_users_current": 2,
     "connections_stream_connected_users_current_local": 2,
@@ -255,11 +256,10 @@ The prefix `connections_stream` are for "normal" connections.
 fallback.
 
 
-
-* `connections_stream_connected_users_anonymous_connections`: Number of
-  connections from the anonymous users from all autoupdate instances.
+* `connections_stream_connected_connections_public_access`: Number of
+  connections from non logged in users (public access) from all autoupdate instances.
 * `connections_stream_connected_users_average_connections`: Average connection
-  count for each user except for anonymous user.
+  count for each logged in user (no public access).
 * `connections_stream_connected_users_current`: Amount of connected users that
   have at least one open connection.
 * `connections_stream_connected_users_current_local`: Amount of connected users

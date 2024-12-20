@@ -21,7 +21,7 @@ func TestUserModeA(t *testing.T) {
 	)
 
 	testCase(
-		"With anonymous",
+		"From public access",
 		t,
 		f,
 		false,
@@ -74,7 +74,7 @@ func TestUserModeA(t *testing.T) {
 		f,
 		false,
 		`---
-		user/2/committee_ids: [5]
+		user/2/committee_ids: [404]
 		user/1:
 			committee_management_ids: [5]
 		committee/5/user_ids: []
@@ -114,7 +114,7 @@ func TestUserModeA(t *testing.T) {
 		"user.can_see in meeting but locked out",
 		t,
 		f,
-		false,
+		true,
 		`---
 		user/2/meeting_user_ids: [20]
 		meeting_user/20:
@@ -127,22 +127,6 @@ func TestUserModeA(t *testing.T) {
 	)
 
 	testCase(
-		"user.can_see_sensible_data in meeting but locked out",
-		t,
-		f,
-		true,
-		`---
-		user/2/meeting_user_ids: [20]
-		meeting_user/20:
-			meeting_id: 5
-			locked_out: true
-		`,
-		withRequestUser(1),
-		withElementID(2),
-		withPerms(5, perm.UserCanSeeSensitiveData),
-	)
-
-	testCase(
 		"committee can manage",
 		t,
 		f,
@@ -150,6 +134,7 @@ func TestUserModeA(t *testing.T) {
 		`---
 		user/1:
 			committee_management_ids: [7]
+		user/2/committee_ids: [7]
 		committee/7/user_ids: [2]
 
 		meeting/5/committee_id: 7
@@ -181,14 +166,17 @@ func TestUserModeA(t *testing.T) {
 		true,
 		`---
 		user/1/meeting_user_ids: [10]
-		user/2/id: 2
+		user/2/meeting_user_ids: [20]
 
 		meeting_user:
 			10:
-				vote_delegated_to_id: 20
 				user_id: 1
+				meeting_id: 3
 			20:
 				user_id: 2
+				meeting_id: 3
+				vote_delegated_to_id: 10
+		meeting/3/admin_group_id: 1
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -201,14 +189,17 @@ func TestUserModeA(t *testing.T) {
 		true,
 		`---
 		user/1/meeting_user_ids: [10]
-		user/2/id: 2
+		user/2/meeting_user_ids: [20]
 
 		meeting_user:
 			10:
-				vote_delegations_from_ids: [20]
 				user_id: 1
+				meeting_id: 3
 			20:
 				user_id: 2
+				meeting_id: 3
+				vote_delegations_from_ids: [10]
+		meeting/3/admin_group_id: 1
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -228,14 +219,15 @@ func TestUserModeA(t *testing.T) {
 		meeting_user/20:
 			motion_submitter_ids: [4]
 			meeting_id: 30
-		
+			user_id: 2
+
 		motion_submitter/4:
 			motion_id: 7
-		
+
 		motion/7:
 			meeting_id: 30
 			state_id: 5
-		
+
 		motion_state/5/id: 5
 		`,
 		withRequestUser(1),
@@ -257,6 +249,7 @@ func TestUserModeA(t *testing.T) {
 		meeting_user/20:
 			supported_motion_ids: [7]
 			meeting_id: 30
+			user_id: 2
 		
 		motion/7:
 			meeting_id: 30
@@ -267,6 +260,54 @@ func TestUserModeA(t *testing.T) {
 		withRequestUser(1),
 		withElementID(2),
 		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"motion editor",
+		t,
+		f,
+		true,
+		`---
+		user/1/meeting_user_ids: [10]
+		user/2/meeting_user_ids: [20]
+
+		meeting_user/10:
+			meeting_id: 30
+		meeting_user/20:
+			meeting_id: 30
+			user_id: 2
+			motion_editor_ids: [4]
+
+		motion_editor/4:
+			meeting_id: 30
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(30, perm.MotionCanManageMetadata),
+	)
+
+	testCase(
+		"motion working group speakder",
+		t,
+		f,
+		true,
+		`---
+		user/1/meeting_user_ids: [10]
+		user/2/meeting_user_ids: [20]
+
+		meeting_user/10:
+			meeting_id: 30
+		meeting_user/20:
+			meeting_id: 30
+			user_id: 2
+			motion_working_group_speaker_ids: [4]
+
+		motion_working_group_speaker/4:
+			meeting_id: 30
+		`,
+		withRequestUser(1),
+		withElementID(2),
+		withPerms(30, perm.MotionCanManageMetadata),
 	)
 
 	testCase(
@@ -283,6 +324,7 @@ func TestUserModeA(t *testing.T) {
 		meeting_user/20:
 			assignment_candidate_ids: [4]
 			meeting_id: 30
+			user_id: 2
 		
 		assignment_candidate/4/assignment_id: 5
 		assignment/5/meeting_id: 30
@@ -306,6 +348,7 @@ func TestUserModeA(t *testing.T) {
 		meeting_user/20:
 			speaker_ids: [4]
 			meeting_id: 30
+			user_id: 2
 		
 		speaker/4:
 			list_of_speakers_id: 5
@@ -336,6 +379,7 @@ func TestUserModeA(t *testing.T) {
 		meeting_user/20:
 			chat_message_ids: [4]
 			meeting_id: 30
+			user_id: 2
 
 		meeting_user/10/group_ids: [5]
 		
@@ -370,7 +414,7 @@ func TestUserModeB(t *testing.T) {
 	)
 
 	testCase(
-		"With anonymous",
+		"From public access",
 		t,
 		f,
 		false,
@@ -559,14 +603,14 @@ func TestUserModeB(t *testing.T) {
 		meeting_user/20:
 			motion_submitter_ids: [4]
 			meeting_id: 30
-		
+
 		motion_submitter/4:
 			motion_id: 7
-		
+
 		motion/7:
 			meeting_id: 30
 			state_id: 5
-		
+
 		motion_state/5/id: 5
 		`,
 		withRequestUser(1),
@@ -588,11 +632,11 @@ func TestUserModeB(t *testing.T) {
 		meeting_user/20:
 			supported_motion_ids: [7]
 			meeting_id: 30
-		
+
 		motion/7:
 			meeting_id: 30
 			state_id: 5
-		
+
 		motion_state/5/id: 5
 		`,
 		withRequestUser(1),
@@ -614,7 +658,7 @@ func TestUserModeB(t *testing.T) {
 		meeting_user/20:
 			assignment_candidate_ids: [4]
 			meeting_id: 30
-		
+
 		assignment_candidate/4/assignment_id: 5
 		assignment/5/meeting_id: 30
 		`,
@@ -637,7 +681,7 @@ func TestUserModeB(t *testing.T) {
 		meeting_user/20:
 			speaker_ids: [4]
 			meeting_id: 30
-		
+
 		speaker/4:
 			list_of_speakers_id: 5
 			meeting_id: 30
@@ -674,7 +718,7 @@ func TestUserModeB(t *testing.T) {
 			state: published
 			meeting_id: 30
 
-		meeting/30/enable_anonymous: true
+		meeting/30/id: 30
 		`,
 		withRequestUser(1),
 		withElementID(2),
@@ -782,7 +826,7 @@ func TestUserModeE(t *testing.T) {
 	)
 
 	testCase(
-		"With anonymous",
+		"From public access",
 		t,
 		u.Modes("E"),
 		false,
@@ -1065,7 +1109,7 @@ func TestUserModeH(t *testing.T) {
 	)
 
 	testCase(
-		"As anonymous",
+		"From public access",
 		t,
 		f,
 		false,

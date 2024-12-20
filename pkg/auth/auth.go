@@ -215,7 +215,7 @@ func (a *Auth) AuthenticatedContext(ctx context.Context, userID int) context.Con
 
 // FromContext returns the user id from a context returned by Authenticate().
 //
-// If the user is an anonymous user 0 is returned.
+// If the user is not logged in (public access) user 0 is returned.
 //
 // Panics, if the context was not returned from Authenticate
 func (a *Auth) FromContext(ctx context.Context) int {
@@ -284,7 +284,7 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload *OpenSl
 	encodedToken := TrimPrefixCaseInsensitive(header, "bearer ")
 
 	if header == encodedToken {
-		println("no bearer")
+		// No token. Handle the request as public access requst.
 		return nil
 	}
 

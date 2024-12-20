@@ -17,22 +17,11 @@ func TestMeetingUserModeA(t *testing.T) {
 		false,
 		`---
 		user/2/id: 2
-		meeting_user/20/user_id: 2
+		meeting_user/20:
+			user_id: 2
+			meeting_id: 30
 		`,
 		withRequestUser(1),
-		withElementID(20),
-	)
-
-	testCase(
-		"With anonymous",
-		t,
-		f,
-		false,
-		`---
-		user/2/id: 2
-		meeting_user/20/user_id: 2
-		`,
-		withRequestUser(0),
 		withElementID(20),
 	)
 
@@ -43,21 +32,41 @@ func TestMeetingUserModeA(t *testing.T) {
 		true,
 		`---
 		user/1/id: 1
-		meeting_user/10/user_id: 1
+		meeting_user/10:
+			user_id: 1
+			meeting_id: 30
 		`,
 		withRequestUser(1),
 		withElementID(10),
 	)
 
 	testCase(
-		"Can manage users",
+		"user.can_see",
 		t,
 		f,
 		true,
 		`---
 		user/2/id: 2
+		meeting_user/20:
+			user_id: 2
+			meeting_id: 30
+		`,
+		withRequestUser(1),
+		withElementID(20),
+		withPerms(30, perm.UserCanSee),
+	)
+
+	testCase(
+		"Can manage users",
+		t,
+		f,
+		false,
+		`---
+		user/2/id: 2
 		user/1/organization_management_level: can_manage_users
-		meeting_user/20/user_id: 2
+		meeting_user/20:
+			user_id: 2
+			meeting_id: 30
 		`,
 		withRequestUser(1),
 		withElementID(20),
@@ -67,47 +76,18 @@ func TestMeetingUserModeA(t *testing.T) {
 		"Committee Manager",
 		t,
 		f,
-		true,
-		`---
-		user/2/committee_ids: [5]
-		user/1:
-			committee_management_ids: [5]
-		committee/5/user_ids: [2]
-		meeting_user/20/user_id: 2
-		`,
-		withRequestUser(1),
-		withElementID(20),
-	)
-
-	testCase(
-		"Committee Manager user not in it",
-		t,
-		f,
 		false,
 		`---
 		user/2/committee_ids: [5]
 		user/1:
 			committee_management_ids: [5]
-		committee/5/user_ids: []
-		meeting_user/20/user_id: 2
+		committee/5/user_ids: [2]
+		meeting_user/20:
+			user_id: 2
+			meeting_id: 30
 		`,
 		withRequestUser(1),
 		withElementID(20),
-	)
-
-	testCase(
-		"user.can_see in meeting",
-		t,
-		f,
-		true,
-		`---
-		user/2/meeting_user_ids: [20]
-		meeting_user/20/meeting_id: 5
-		meeting_user/20/user_id: 2
-		`,
-		withRequestUser(1),
-		withElementID(20),
-		withPerms(5, perm.UserCanSee),
 	)
 }
 

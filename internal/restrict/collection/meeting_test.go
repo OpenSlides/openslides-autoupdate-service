@@ -36,20 +36,50 @@ func TestMeetingModeB(t *testing.T) {
 	)
 
 	testCase(
-		"anonymous enabled",
+		"Public Access enabled",
 		t,
 		m.Modes("B"),
 		true,
-		`meeting/30/enable_anonymous: true`,
+		`---
+		meeting/30/enable_anonymous: true
+		organization/1/enable_anonymous: true
+		`,
 		withElementID(30),
 	)
 
 	testCase(
-		"anonymous enabled, as locked in user that was locked out",
+		"Public access enabled only in organization",
 		t,
 		m.Modes("B"),
 		false,
 		`---
+		organization/1/enable_anonymous: true
+		meeting/30:
+			committee_id: 3
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"Public Access enabled only in meeting",
+		t,
+		m.Modes("B"),
+		false,
+		`---
+		meeting/30:
+			enable_anonymous: true
+			committee_id: 3
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"Public access enabled, as locked in user that was locked out",
+		t,
+		m.Modes("B"),
+		false,
+		`---
+		organization/1/enable_anonymous: true
 		meeting/30:
 			enable_anonymous: true
 			group_ids: [7]
@@ -197,6 +227,7 @@ func TestMeetingModeB(t *testing.T) {
 		m.Modes("B"),
 		false,
 		`---
+		organization/1/enable_anonymous: true
 		meeting/30:
 			enable_anonymous: true
 			group_ids: [7]
@@ -215,7 +246,7 @@ func TestMeetingModeB(t *testing.T) {
 	)
 
 	testCase(
-		"Request with anonymous",
+		"Request from public access",
 		t,
 		m.Modes("B"),
 		false,
@@ -237,11 +268,24 @@ func TestMeetingModeB(t *testing.T) {
 	)
 
 	testCase(
+		"locked meeting, superadmin",
+		t,
+		m.Modes("B"),
+		false,
+		`
+		user/1/organization_management_level: superadmin
+		meeting/30/locked_from_inside: true
+		`,
+		withElementID(30),
+	)
+
+	testCase(
 		"locked meeting, anonymous enabled",
 		t,
 		m.Modes("B"),
 		false,
 		`
+		organization/1/enable_anonymous: true
 		meeting/30:
 			locked_from_inside: true
 			enable_anonymous: true
@@ -296,4 +340,33 @@ func TestMeetingModeD(t *testing.T) {
 		withPerms(30, perm.MeetingCanSeeLivestream),
 		withElementID(30),
 	)
+}
+
+func TestMeetingModeE(t *testing.T) {
+	m := collection.Meeting{}.Modes("E")
+
+	testCase(
+		"locked meeting, superadmin",
+		t,
+		m,
+		true,
+		`
+		user/1/organization_management_level: superadmin
+		meeting/30/locked_from_inside: true
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"locked meeting, orga admin",
+		t,
+		m,
+		false,
+		`
+		user/1/organization_management_level: can_manage_organization
+		meeting/30/locked_from_inside: true
+		`,
+		withElementID(30),
+	)
+
 }

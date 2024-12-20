@@ -10,7 +10,7 @@ func TestOrganizationTagModeA(t *testing.T) {
 	f := collection.OrganizationTag{}.Modes("A")
 
 	testCase(
-		"anonymous",
+		"Public access",
 		t,
 		f,
 		false,

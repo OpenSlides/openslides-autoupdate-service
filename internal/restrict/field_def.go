@@ -662,6 +662,7 @@ var restrictionModes = map[string]string{
 	"meeting/motions_amendments_prefix":                             "B",
 	"meeting/motions_amendments_text_mode":                          "B",
 	"meeting/motions_block_slide_columns":                           "B",
+	"meeting/motions_create_enable_additional_submitter_text":       "B",
 	"meeting/motions_default_amendment_workflow_id":                 "B",
 	"meeting/motions_default_line_numbering":                        "B",
 	"meeting/motions_default_sorting":                               "B",

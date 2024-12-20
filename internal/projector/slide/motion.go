@@ -38,11 +38,6 @@ func motionStateFromMap(in map[string]json.RawMessage) (*dbMotionState, error) {
 	return &ms, nil
 }
 
-type dbMotionStatuteParagraph struct {
-	Title string `json:"title"`
-	Text  string `json:"text"`
-}
-
 type dbMotionChangeRecommendation struct {
 	ID               int    `json:"id"`
 	Rejected         bool   `json:"rejected"`
@@ -72,7 +67,6 @@ type leadMotionType struct {
 type dbMotionWork struct {
 	MeetingID                                    int      `json:"meeting_id"`
 	LeadMotionID                                 int      `json:"lead_motion_id"`
-	StatuteParagraphID                           int      `json:"statute_paragraph_id"`
 	ChangeRecommendationIDS                      []int    `json:"change_recommendation_ids"`
 	AmendmentIDS                                 []int    `json:"amendment_ids"`
 	SubmitterIDS                                 []int    `json:"submitter_ids"`
@@ -95,7 +89,6 @@ type dbMotion struct {
 	LineNumbering                    string                         `json:"line_numbering"`
 	AmendmentParagraph               json.RawMessage                `json:"amendment_paragraphs,omitempty"`
 	LeadMotion                       *leadMotionType                `json:"lead_motion,omitempty"`
-	BaseStatute                      *dbMotionStatuteParagraph      `json:"base_statute,omitempty"`
 	ChangeRecommendations            []dbMotionChangeRecommendation `json:"change_recommendations"`
 	Amendments                       []amendmentsType               `json:"amendments,omitempty"`
 	RecommendationReferencingMotions []json.RawMessage              `json:"recommendation_referencing_motions,omitempty"`
@@ -136,7 +129,6 @@ func Motion(store *projector.SlideStore) {
 			"motions_enable_reason_on_projector",
 			"motions_show_referring_motions",
 			"motions_enable_recommendation_on_projector",
-			"motions_statute_recommendations_by",
 			"motions_recommendations_by",
 			"motions_enable_sidebox_on_projector",
 			"motions_line_length",
@@ -177,12 +169,12 @@ func Motion(store *projector.SlideStore) {
 			"additional_submitter",
 		}
 		if meeting.MotionsEnableTextOnProjector {
-			fetchFields = append(fetchFields, "text", "amendment_paragraphs", "statute_paragraph_id")
+			fetchFields = append(fetchFields, "text", "amendment_paragraphs")
 		}
 		if meeting.MotionsEnableReasonOnProjector {
 			fetchFields = append(fetchFields, "reason")
 		}
-		if p7on.Options != nil && options.Mode == "final" {
+		if p7on.Options != nil && (options.Mode == "final" || options.Mode == "modified_final_version") {
 			fetchFields = append(fetchFields, "modified_final_version")
 		}
 
@@ -202,10 +194,6 @@ func Motion(store *projector.SlideStore) {
 
 		if err := fillLeadMotion(ctx, fetch, motion, meeting); err != nil {
 			return nil, fmt.Errorf("fillLeadMotion: %w", err)
-		}
-
-		if err := fillBaseStatute(ctx, fetch, motion); err != nil {
-			return nil, fmt.Errorf("fillBaseStatute: %w", err)
 		}
 
 		if err := fillChangeRecommendations(ctx, fetch, motion); err != nil {
@@ -315,23 +303,6 @@ func fillLeadMotion(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 	return nil
 }
 
-func fillBaseStatute(ctx context.Context, fetch *datastore.Fetcher, motion *dbMotion) error {
-	if motion.MotionWork.StatuteParagraphID == 0 {
-		return nil
-	}
-	data := fetch.Object(ctx, fmt.Sprintf("motion_statute_paragraph/%d", motion.MotionWork.StatuteParagraphID), "title", "text")
-	bs, err := json.Marshal(data)
-	if err != nil {
-		return fmt.Errorf("encoding BaseStatute data: %w", err)
-	}
-	var mo dbMotionStatuteParagraph
-	if err := json.Unmarshal(bs, &mo); err != nil {
-		return fmt.Errorf("decoding BaseStatute data: %w", err)
-	}
-	motion.BaseStatute = &mo
-	return nil
-}
-
 func fillChangeRecommendations(ctx context.Context, fetch *datastore.Fetcher, motion *dbMotion) error {
 	if len(motion.MotionWork.ChangeRecommendationIDS) == 0 {
 		return nil
@@ -411,11 +382,9 @@ func fillRecommendationLabelEtc(ctx context.Context, fetch *datastore.Fetcher, t
 		}
 
 	}
-	if motion.MotionWork.StatuteParagraphID > 0 {
-		motion.Recommender = meeting.MotionsStatuteRecommendationsBy
-	} else {
-		motion.Recommender = meeting.MotionsRecommendationsBy
-	}
+
+	motion.Recommender = meeting.MotionsRecommendationsBy
+
 	return nil
 }
 

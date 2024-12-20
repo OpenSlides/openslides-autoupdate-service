@@ -34,11 +34,9 @@ func (v *ValueBool) Value(ctx context.Context) (bool, error) {
 		return zero, err
 	}
 
-	var value bool
-	v.Lazy(&value)
-
-	if err := v.execute(rawValue); err != nil {
-		return zero, err
+	value, err := v.convert(rawValue)
+	if err != nil {
+		return zero, fmt.Errorf("converting raw value: %w", err)
 	}
 
 	return value, nil
@@ -61,17 +59,27 @@ func (v *ValueBool) Preload() {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 }
 
-// execute will be called from request.
-func (v *ValueBool) execute(p []byte) error {
-	var value bool
+// convert converts the json value to the type.
+func (v *ValueBool) convert(p []byte) (bool, error) {
+	var zero bool
 	if p == nil {
 		if v.required {
-			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
+			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-	} else {
-		if err := json.Unmarshal(p, &value); err != nil {
-			return fmt.Errorf("decoding value %q: %w", p, err)
-		}
+		return zero, nil
+	}
+	var value bool
+	if err := json.Unmarshal(p, &value); err != nil {
+		return zero, fmt.Errorf("decoding value %q: %w", p, err)
+	}
+	return value, nil
+}
+
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueBool) setLazy(p []byte) error {
+	value, err := v.convert(p)
+	if err != nil {
+		return fmt.Errorf("converting value: %w", err)
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
@@ -105,11 +113,9 @@ func (v *ValueFloat) Value(ctx context.Context) (float32, error) {
 		return zero, err
 	}
 
-	var value float32
-	v.Lazy(&value)
-
-	if err := v.execute(rawValue); err != nil {
-		return zero, err
+	value, err := v.convert(rawValue)
+	if err != nil {
+		return zero, fmt.Errorf("converting raw value: %w", err)
 	}
 
 	return value, nil
@@ -132,17 +138,27 @@ func (v *ValueFloat) Preload() {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 }
 
-// execute will be called from request.
-func (v *ValueFloat) execute(p []byte) error {
-	var value float32
+// convert converts the json value to the type.
+func (v *ValueFloat) convert(p []byte) (float32, error) {
+	var zero float32
 	if p == nil {
 		if v.required {
-			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
+			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-	} else {
-		if err := json.Unmarshal(p, &value); err != nil {
-			return fmt.Errorf("decoding value %q: %w", p, err)
-		}
+		return zero, nil
+	}
+	var value float32
+	if err := json.Unmarshal(p, &value); err != nil {
+		return zero, fmt.Errorf("decoding value %q: %w", p, err)
+	}
+	return value, nil
+}
+
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueFloat) setLazy(p []byte) error {
+	value, err := v.convert(p)
+	if err != nil {
+		return fmt.Errorf("converting value: %w", err)
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
@@ -176,11 +192,9 @@ func (v *ValueInt) Value(ctx context.Context) (int, error) {
 		return zero, err
 	}
 
-	var value int
-	v.Lazy(&value)
-
-	if err := v.execute(rawValue); err != nil {
-		return zero, err
+	value, err := v.convert(rawValue)
+	if err != nil {
+		return zero, fmt.Errorf("converting raw value: %w", err)
 	}
 
 	return value, nil
@@ -203,19 +217,27 @@ func (v *ValueInt) Preload() {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 }
 
-// execute will be called from request.
-func (v *ValueInt) execute(p []byte) error {
-	var value int
+// convert converts the json value to the type.
+func (v *ValueInt) convert(p []byte) (int, error) {
+	var zero int
 	if p == nil {
 		if v.required {
-			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
+			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-	} else {
-		r, err := fastjson.DecodeInt(p)
-		if err != nil {
-			return fmt.Errorf("decoding value %q: %w", p, err)
-		}
-		value = r
+		return zero, nil
+	}
+	value, err := fastjson.DecodeInt(p)
+	if err != nil {
+		return zero, fmt.Errorf("decoding value %q: %w", p, err)
+	}
+	return value, nil
+}
+
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueInt) setLazy(p []byte) error {
+	value, err := v.convert(p)
+	if err != nil {
+		return fmt.Errorf("converting value: %w", err)
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
@@ -249,11 +271,9 @@ func (v *ValueIntSlice) Value(ctx context.Context) ([]int, error) {
 		return zero, err
 	}
 
-	var value []int
-	v.Lazy(&value)
-
-	if err := v.execute(rawValue); err != nil {
-		return zero, err
+	value, err := v.convert(rawValue)
+	if err != nil {
+		return zero, fmt.Errorf("converting raw value: %w", err)
 	}
 
 	return value, nil
@@ -276,19 +296,27 @@ func (v *ValueIntSlice) Preload() {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 }
 
-// execute will be called from request.
-func (v *ValueIntSlice) execute(p []byte) error {
-	var value []int
+// convert converts the json value to the type.
+func (v *ValueIntSlice) convert(p []byte) ([]int, error) {
+	var zero []int
 	if p == nil {
 		if v.required {
-			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
+			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-	} else {
-		r, err := fastjson.DecodeIntList(p)
-		if err != nil {
-			return fmt.Errorf("decoding value %q: %w", p, err)
-		}
-		value = r
+		return zero, nil
+	}
+	value, err := fastjson.DecodeIntList(p)
+	if err != nil {
+		return zero, fmt.Errorf("decoding value %q: %w", p, err)
+	}
+	return value, nil
+}
+
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueIntSlice) setLazy(p []byte) error {
+	value, err := v.convert(p)
+	if err != nil {
+		return fmt.Errorf("converting value: %w", err)
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
@@ -322,11 +350,9 @@ func (v *ValueJSON) Value(ctx context.Context) (json.RawMessage, error) {
 		return zero, err
 	}
 
-	var value json.RawMessage
-	v.Lazy(&value)
-
-	if err := v.execute(rawValue); err != nil {
-		return zero, err
+	value, err := v.convert(rawValue)
+	if err != nil {
+		return zero, fmt.Errorf("converting raw value: %w", err)
 	}
 
 	return value, nil
@@ -349,17 +375,27 @@ func (v *ValueJSON) Preload() {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 }
 
-// execute will be called from request.
-func (v *ValueJSON) execute(p []byte) error {
-	var value json.RawMessage
+// convert converts the json value to the type.
+func (v *ValueJSON) convert(p []byte) (json.RawMessage, error) {
+	var zero json.RawMessage
 	if p == nil {
 		if v.required {
-			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
+			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-	} else {
-		if err := json.Unmarshal(p, &value); err != nil {
-			return fmt.Errorf("decoding value %q: %w", p, err)
-		}
+		return zero, nil
+	}
+	var value json.RawMessage
+	if err := json.Unmarshal(p, &value); err != nil {
+		return zero, fmt.Errorf("decoding value %q: %w", p, err)
+	}
+	return value, nil
+}
+
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueJSON) setLazy(p []byte) error {
+	value, err := v.convert(p)
+	if err != nil {
+		return fmt.Errorf("converting value: %w", err)
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
@@ -393,11 +429,9 @@ func (v *ValueMaybeInt) Value(ctx context.Context) (Maybe[int], error) {
 		return zero, err
 	}
 
-	var value Maybe[int]
-	v.Lazy(&value)
-
-	if err := v.execute(rawValue); err != nil {
-		return zero, err
+	value, err := v.convert(rawValue)
+	if err != nil {
+		return zero, fmt.Errorf("converting raw value: %w", err)
 	}
 
 	return value, nil
@@ -420,17 +454,27 @@ func (v *ValueMaybeInt) Preload() {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 }
 
-// execute will be called from request.
-func (v *ValueMaybeInt) execute(p []byte) error {
-	var value Maybe[int]
+// convert converts the json value to the type.
+func (v *ValueMaybeInt) convert(p []byte) (Maybe[int], error) {
+	var zero Maybe[int]
 	if p == nil {
 		if v.required {
-			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
+			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-	} else {
-		if err := json.Unmarshal(p, &value); err != nil {
-			return fmt.Errorf("decoding value %q: %w", p, err)
-		}
+		return zero, nil
+	}
+	var value Maybe[int]
+	if err := json.Unmarshal(p, &value); err != nil {
+		return zero, fmt.Errorf("decoding value %q: %w", p, err)
+	}
+	return value, nil
+}
+
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueMaybeInt) setLazy(p []byte) error {
+	value, err := v.convert(p)
+	if err != nil {
+		return fmt.Errorf("converting value: %w", err)
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
@@ -464,11 +508,9 @@ func (v *ValueMaybeString) Value(ctx context.Context) (Maybe[string], error) {
 		return zero, err
 	}
 
-	var value Maybe[string]
-	v.Lazy(&value)
-
-	if err := v.execute(rawValue); err != nil {
-		return zero, err
+	value, err := v.convert(rawValue)
+	if err != nil {
+		return zero, fmt.Errorf("converting raw value: %w", err)
 	}
 
 	return value, nil
@@ -491,17 +533,27 @@ func (v *ValueMaybeString) Preload() {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 }
 
-// execute will be called from request.
-func (v *ValueMaybeString) execute(p []byte) error {
-	var value Maybe[string]
+// convert converts the json value to the type.
+func (v *ValueMaybeString) convert(p []byte) (Maybe[string], error) {
+	var zero Maybe[string]
 	if p == nil {
 		if v.required {
-			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
+			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-	} else {
-		if err := json.Unmarshal(p, &value); err != nil {
-			return fmt.Errorf("decoding value %q: %w", p, err)
-		}
+		return zero, nil
+	}
+	var value Maybe[string]
+	if err := json.Unmarshal(p, &value); err != nil {
+		return zero, fmt.Errorf("decoding value %q: %w", p, err)
+	}
+	return value, nil
+}
+
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueMaybeString) setLazy(p []byte) error {
+	value, err := v.convert(p)
+	if err != nil {
+		return fmt.Errorf("converting value: %w", err)
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
@@ -535,11 +587,9 @@ func (v *ValueString) Value(ctx context.Context) (string, error) {
 		return zero, err
 	}
 
-	var value string
-	v.Lazy(&value)
-
-	if err := v.execute(rawValue); err != nil {
-		return zero, err
+	value, err := v.convert(rawValue)
+	if err != nil {
+		return zero, fmt.Errorf("converting raw value: %w", err)
 	}
 
 	return value, nil
@@ -562,17 +612,27 @@ func (v *ValueString) Preload() {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 }
 
-// execute will be called from request.
-func (v *ValueString) execute(p []byte) error {
-	var value string
+// convert converts the json value to the type.
+func (v *ValueString) convert(p []byte) (string, error) {
+	var zero string
 	if p == nil {
 		if v.required {
-			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
+			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-	} else {
-		if err := json.Unmarshal(p, &value); err != nil {
-			return fmt.Errorf("decoding value %q: %w", p, err)
-		}
+		return zero, nil
+	}
+	var value string
+	if err := json.Unmarshal(p, &value); err != nil {
+		return zero, fmt.Errorf("decoding value %q: %w", p, err)
+	}
+	return value, nil
+}
+
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueString) setLazy(p []byte) error {
+	value, err := v.convert(p)
+	if err != nil {
+		return fmt.Errorf("converting value: %w", err)
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
@@ -606,11 +666,9 @@ func (v *ValueStringSlice) Value(ctx context.Context) ([]string, error) {
 		return zero, err
 	}
 
-	var value []string
-	v.Lazy(&value)
-
-	if err := v.execute(rawValue); err != nil {
-		return zero, err
+	value, err := v.convert(rawValue)
+	if err != nil {
+		return zero, fmt.Errorf("converting raw value: %w", err)
 	}
 
 	return value, nil
@@ -633,17 +691,27 @@ func (v *ValueStringSlice) Preload() {
 	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
 }
 
-// execute will be called from request.
-func (v *ValueStringSlice) execute(p []byte) error {
-	var value []string
+// convert converts the json value to the type.
+func (v *ValueStringSlice) convert(p []byte) ([]string, error) {
+	var zero []string
 	if p == nil {
 		if v.required {
-			return fmt.Errorf("database is corrupted. Required field %s is null", v.key)
+			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
-	} else {
-		if err := json.Unmarshal(p, &value); err != nil {
-			return fmt.Errorf("decoding value %q: %w", p, err)
-		}
+		return zero, nil
+	}
+	var value []string
+	if err := json.Unmarshal(p, &value); err != nil {
+		return zero, fmt.Errorf("decoding value %q: %w", p, err)
+	}
+	return value, nil
+}
+
+// setLazy sets the lazy values defiend with Lazy or Preload.
+func (v *ValueStringSlice) setLazy(p []byte) error {
+	value, err := v.convert(p)
+	if err != nil {
+		return fmt.Errorf("converting value: %w", err)
 	}
 
 	for i := 0; i < len(v.lazies); i++ {
@@ -3540,6 +3608,15 @@ func (r *Fetch) Meeting_MotionsBlockSlideColumns(meetingID int) *ValueInt {
 	}
 
 	return &ValueInt{fetch: r, key: key}
+}
+
+func (r *Fetch) Meeting_MotionsCreateEnableAdditionalSubmitterText(meetingID int) *ValueBool {
+	key, err := dskey.FromParts("meeting", meetingID, "motions_create_enable_additional_submitter_text")
+	if err != nil {
+		return &ValueBool{err: err}
+	}
+
+	return &ValueBool{fetch: r, key: key}
 }
 
 func (r *Fetch) Meeting_MotionsDefaultAmendmentWorkflowID(meetingID int) *ValueInt {
@@ -8069,15 +8146,6 @@ func (r *Fetch) User_ID(userID int) *ValueInt {
 	return &ValueInt{fetch: r, key: key, required: true}
 }
 
-func (r *Fetch) User_IDpID(userID int) *ValueString {
-	key, err := dskey.FromParts("user", userID, "idp_id")
-	if err != nil {
-		return &ValueString{err: err}
-	}
-
-	return &ValueString{fetch: r, key: key}
-}
-
 func (r *Fetch) User_IsActive(userID int) *ValueBool {
 	key, err := dskey.FromParts("user", userID, "is_active")
 	if err != nil {
@@ -8224,6 +8292,15 @@ func (r *Fetch) User_PollVotedIDs(userID int) *ValueIntSlice {
 
 func (r *Fetch) User_Pronoun(userID int) *ValueString {
 	key, err := dskey.FromParts("user", userID, "pronoun")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key}
+}
+
+func (r *Fetch) User_SamlID(userID int) *ValueString {
+	key, err := dskey.FromParts("user", userID, "saml_id")
 	if err != nil {
 		return &ValueString{err: err}
 	}

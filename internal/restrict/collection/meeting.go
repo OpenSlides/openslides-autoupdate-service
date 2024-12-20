@@ -13,7 +13,7 @@ import (
 //
 // The user can see a meeting if one of the following is True:
 //
-//	`meeting/enable_anonymous`.
+//	`meeting/enable_anonymous` and organization/1/enable_anonymous.
 //	The user is in the meeting.
 //	The user has the CML can_manage of the meeting's committee.
 //	The user has the CML can_manage of any meeting and the meeting is a template meeting.
@@ -29,6 +29,8 @@ import (
 // Mode C: The user has meeting.can_see_frontpage.
 //
 // Mode D: The user has meeting.can_see_livestream.
+//
+// Mode E: The user can see the meeting or is superadmin.
 type Meeting struct{}
 
 // Name returns the collection name.
@@ -52,6 +54,8 @@ func (m Meeting) Modes(mode string) FieldRestricter {
 		return m.modeC
 	case "D":
 		return m.modeD
+	case "E":
+		return m.modeE
 	}
 	return nil
 }
@@ -76,10 +80,12 @@ func (m Meeting) see(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) 
 	}
 
 	lockedMeetings := make([]bool, len(meetingIDs))
-	enabledAnonymous := make([]bool, len(meetingIDs))
+	enabledMeetingPublicAccess := make([]bool, len(meetingIDs))
+	var enabledOrgaPublicAccess bool
+	ds.Organization_EnableAnonymous(1).Lazy(&enabledOrgaPublicAccess)
 	for i, id := range meetingIDs {
 		ds.Meeting_LockedFromInside(id).Lazy(&lockedMeetings[i])
-		ds.Meeting_EnableAnonymous(id).Lazy(&enabledAnonymous[i])
+		ds.Meeting_EnableAnonymous(id).Lazy(&enabledMeetingPublicAccess[i])
 	}
 
 	if err := ds.Execute(ctx); err != nil {
@@ -136,7 +142,7 @@ LOOP_MEETINGS:
 			continue
 		}
 
-		if enabledAnonymous[i] || oml {
+		if (enabledOrgaPublicAccess && enabledMeetingPublicAccess[i]) || oml {
 			allowed = append(allowed, meetingID)
 			continue
 		}
@@ -209,4 +215,22 @@ func (m Meeting) modeD(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int
 	}
 
 	return allowed, nil
+}
+
+func (m Meeting) modeE(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	isSuperadmin, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLSuperadmin)
+	if err != nil {
+		return nil, fmt.Errorf("checking for superadmin: %w", err)
+	}
+
+	if isSuperadmin {
+		return meetingIDs, nil
+	}
+
+	return Collection(ctx, m.Name()).Modes("B")(ctx, ds, meetingIDs...)
 }

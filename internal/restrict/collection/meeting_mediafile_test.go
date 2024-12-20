@@ -26,11 +26,12 @@ func TestMeetingMediafileModeA(t *testing.T) {
 	)
 
 	testCase(
-		"Anonymous",
+		"Public Access",
 		t,
 		m.Modes("A"),
 		true,
 		`---
+		organization/1/enable_anonymous: true
 		meeting_mediafile/1:
 			meeting_id: 7
 			is_public: false

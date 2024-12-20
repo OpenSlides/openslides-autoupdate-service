@@ -22,11 +22,12 @@ func TestGroupModeA(t *testing.T) {
 	)
 
 	testCase(
-		"anonymous enabled",
+		"public access enabled",
 		t,
 		g.Modes("A"),
 		true,
 		`---
+		organization/1/enable_anonymous: true
 		group/1/meeting_id: 30
 		meeting/30/enable_anonymous: true
 		`,
