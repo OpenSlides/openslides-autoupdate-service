@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Group handels restrictions of the collection group.
 //
 // The user can see a group, if the user can see the group's meeting.
+// Organization Admins can see all groups.
 //
 // Mode A: The user can see the group.
 type Group struct{}
@@ -39,6 +41,20 @@ func (g Group) Modes(mode string) FieldRestricter {
 }
 
 func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, groupIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	isOrgaAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
+	if err != nil {
+		return nil, fmt.Errorf("checking for superadmin: %w", err)
+	}
+
+	if isOrgaAdmin {
+		return groupIDs, nil
+	}
+
 	return eachMeeting(ctx, ds, g, groupIDs, func(meetingID int, ids []int) ([]int, error) {
 		canSee, err := Collection(ctx, Meeting{}.Name()).Modes("B")(ctx, ds, meetingID)
 		if err != nil {
