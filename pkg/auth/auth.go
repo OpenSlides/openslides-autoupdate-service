@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 	"log"
 	"net/http"
 	"strconv"
@@ -36,12 +35,12 @@ var (
 	envAuthTokenFile  = environment.NewVariable("AUTH_TOKEN_KEY_FILE", "/run/secrets/auth_token_key", "Key to sign the JWT auth tocken.")
 	envAuthCookieFile = environment.NewVariable("AUTH_COOKIE_KEY_FILE", "/run/secrets/auth_cookie_key", "Key to sign the JWT auth cookie.")
 
-	issuer       = environment.NewVariable("OPENSLIDES_TOKEN_ISSUER", "", "The issuer of the token.")
-	clientID     = environment.NewVariable("OPENSLIDES_AUTH_CLIENT_ID", "", "The client ID of the application.")
-	ctx          = context.Background()
-	oidcProvider *oidc.Provider
-	verifier     *oidc.IDTokenVerifier
-	fetcher      = datastore.NewFetcher(
+	keycloakUrl                        = environment.NewVariable("OPENSLIDES_KEYCLOAK_URL", "", "The issuer of the token.")
+	issuer                             = environment.NewVariable("OPENSLIDES_TOKEN_ISSUER", "", "The issuer of the token.")
+	clientID                           = environment.NewVariable("OPENSLIDES_AUTH_CLIENT_ID", "", "The client ID of the application.")
+	ctx                                = context.Background()
+	oidcProvider *oidc.Provider        = nil
+	verifier     *oidc.IDTokenVerifier = nil
 )
 
 // pruneTime defines how long a topic id will be valid. This should be higher
@@ -49,9 +48,7 @@ var (
 const pruneTime = 15 * time.Minute
 
 const (
-	cookieName = "refreshId"
 	authHeader = "Authentication"
-	authPath   = "/internal/auth/authenticate"
 )
 
 func validateAccessToken(tokenString string) (*oidc.IDToken, error) {
@@ -91,7 +88,7 @@ type Auth struct {
 //
 // Returns the initialized Auth objectand a function to be called in the
 // background.
-func New(lookup environment.Environmenter, fetch *datastore.Fetcher, messageBus LogoutEventer) (*Auth, func(context.Context, func(error)), error) {
+func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, func(context.Context, func(error)), error) {
 	url := fmt.Sprintf(
 		"%s://%s:%s",
 		envAuthProtocol.Value(lookup),
@@ -101,7 +98,7 @@ func New(lookup environment.Environmenter, fetch *datastore.Fetcher, messageBus 
 
 	var err error
 	// Discover OIDC provider configuration.
-	oidcProvider, err = oidc.NewProvider(ctx, issuer.Value(lookup))
+	oidcProvider, err = oidc.NewProvider(ctx, keycloakUrl.Value(lookup))
 	if err != nil {
 		log.Fatalf("Failed to initialize OIDC provider: %v", err)
 	}
@@ -158,15 +155,10 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 
 	p := new(OpenSlidesClaims)
 	// 0 means anonymous user
-	p.UserID = "0"
+	p.UserID = 0
 	if err := a.loadToken(w, r, p); err != nil {
 		return nil, fmt.Errorf("reading token: %w", err)
 	}
-
-	// this cannot happen, user id is always set in token
-	//if p.UserID == nil {
-	//	return a.AuthenticatedContext(ctx, 0), nil
-	//}
 
 	_, sessionIDs, err := a.logedoutSessions.Receive(ctx, 0)
 	if err != nil {
@@ -178,10 +170,7 @@ func (a *Auth) Authenticate(w http.ResponseWriter, r *http.Request) (context.Con
 		}
 	}
 
-	// get user from datastore
-	user, err := a.getUser(ctx, p.UserID)
-
-	ctx, cancelCtx := context.WithCancel(a.AuthenticatedContext(ctx, &p.UserID))
+	ctx, cancelCtx := context.WithCancel(a.AuthenticatedContext(ctx, p.UserID))
 
 	go func() {
 		defer cancelCtx()
@@ -331,6 +320,6 @@ const (
 // OpenSlidesClaims custom openslides claims
 type OpenSlidesClaims struct {
 	jwt.StandardClaims
-	UserID    string `json:"userId"`
+	UserID    int    `json:"os_uid"`
 	SessionID string `json:"sid"`
 }
