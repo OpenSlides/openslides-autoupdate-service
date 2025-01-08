@@ -375,7 +375,7 @@ func TestMeetingModeF(t *testing.T) {
 	m := collection.Meeting{}.Modes("F")
 
 	testCase(
-		"locked meeting, orga admin",
+		"locked meeting, orga manager",
 		t,
 		m,
 		true,
@@ -387,7 +387,7 @@ func TestMeetingModeF(t *testing.T) {
 	)
 
 	testCase(
-		"locked meeting, user admin",
+		"locked meeting, user manager",
 		t,
 		m,
 		false,

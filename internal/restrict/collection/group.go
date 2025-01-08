@@ -11,7 +11,7 @@ import (
 // Group handels restrictions of the collection group.
 //
 // The user can see a group, if the user can see the group's meeting.
-// Organization Admins can see all groups.
+// Organization managers can see all groups.
 //
 // Mode A: The user can see the group.
 type Group struct{}
@@ -46,12 +46,12 @@ func (g Group) see(ctx context.Context, ds *dsfetch.Fetch, groupIDs ...int) ([]i
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	isOrgaAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
+	isOrgaManager, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
 	if err != nil {
 		return nil, fmt.Errorf("checking for superadmin: %w", err)
 	}
 
-	if isOrgaAdmin {
+	if isOrgaManager {
 		return groupIDs, nil
 	}
 

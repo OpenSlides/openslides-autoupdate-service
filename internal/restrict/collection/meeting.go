@@ -32,7 +32,7 @@ import (
 //
 // Mode E: The user can see the meeting or is superadmin.
 //
-// Mode F: The user can see the meeting or is orga admin or higher.
+// Mode F: The user can see the meeting or is organization manager or higher.
 type Meeting struct{}
 
 // Name returns the collection name.
@@ -245,12 +245,12 @@ func (m Meeting) modeF(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	isOrgaAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
+	isOrgaManager, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
 	if err != nil {
 		return nil, fmt.Errorf("checking for superadmin: %w", err)
 	}
 
-	if isOrgaAdmin {
+	if isOrgaManager {
 		return meetingIDs, nil
 	}
 

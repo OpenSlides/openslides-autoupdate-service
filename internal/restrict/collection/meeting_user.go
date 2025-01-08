@@ -30,7 +30,7 @@ import (
 //
 // Mode B: The request user is the related user.
 //
-// Mode C: The request user can see the meeting_user or is Organization Admin.
+// Mode C: The request user can see the meeting_user or is Organization Manager or higher.
 //
 // Mode D: Y can see these fields if
 //   - the request user has the OML can_manage_users or higher or
@@ -281,12 +281,12 @@ func (m MeetingUser) modeC(ctx context.Context, ds *dsfetch.Fetch, meetingUserID
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	isOrgaAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
+	isOrgaManager, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
 	if err != nil {
 		return nil, fmt.Errorf("checking for superadmin: %w", err)
 	}
 
-	if isOrgaAdmin {
+	if isOrgaManager {
 		return meetingUserIDs, nil
 	}
 
