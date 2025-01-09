@@ -42,7 +42,7 @@ func testCase(name string, t *testing.T, f collection.FieldRestricter, expect bo
 	td.data[dskey.MustKey("organization/1/id")] = []byte("1")
 
 	if td.requestUserID != 0 {
-		userIDKey, err := dskey.FromString(fmt.Sprintf("user/%d/id", td.requestUserID))
+		userIDKey, err := dskey.FromString("user/%d/id", td.requestUserID)
 		if err != nil {
 			t.Fatalf("invalid key %v", fmt.Sprintf("user/%d/id", td.requestUserID))
 		}
@@ -67,7 +67,7 @@ func testCaseMulti(name string, t *testing.T, f collection.FieldRestricter, ids,
 		o(&td)
 	}
 
-	userIDKey := dskey.MustKey(fmt.Sprintf("user/%d/id", td.requestUserID))
+	userIDKey := dskey.MustKey("user/%d/id", td.requestUserID)
 
 	td.data[userIDKey] = []byte(strconv.Itoa(td.requestUserID))
 

@@ -49,7 +49,23 @@ func TestGroupModeA(t *testing.T) {
 			group_ids: [1]
 			committee_id: 2
 		user/5/meeting_user_ids: [50]
+		`,
+		withRequestUser(5),
+	)
 
+	testCase(
+		"Organization Manager in locked meeting",
+		t,
+		g.Modes("A"),
+		true,
+		`---
+		group/1:
+			meeting_id: 30
+		meeting/30:
+			group_ids: [1]
+			committee_id: 2
+			locked_from_inside: true
+		user/5/organization_management_level: can_manage_organization
 		`,
 		withRequestUser(5),
 	)

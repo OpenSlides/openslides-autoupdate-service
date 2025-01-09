@@ -30,6 +30,8 @@ import (
 //
 // Mode B: The request user is the related user.
 //
+// Mode C: The request user can see the meeting_user or is Organization Manager or higher.
+//
 // Mode D: Y can see these fields if
 //   - the request user has the OML can_manage_users or higher or
 //   - the request user has user.can_manage in the meeting.
@@ -61,6 +63,9 @@ func (m MeetingUser) Modes(mode string) FieldRestricter {
 
 	case "B":
 		return m.modeB
+
+	case "C":
+		return m.modeC
 
 	case "D":
 		return m.modeD
@@ -268,6 +273,24 @@ func (MeetingUser) modeB(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs 
 
 		return nil, nil
 	})
+}
+
+func (m MeetingUser) modeC(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	isOrgaManager, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
+	if err != nil {
+		return nil, fmt.Errorf("checking for superadmin: %w", err)
+	}
+
+	if isOrgaManager {
+		return meetingUserIDs, nil
+	}
+
+	return Collection(ctx, m.Name()).Modes("A")(ctx, ds, meetingUserIDs...)
 }
 
 func (m MeetingUser) modeD(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs ...int) ([]int, error) {
