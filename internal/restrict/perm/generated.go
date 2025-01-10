@@ -34,6 +34,7 @@ const (
 	MotionCanSeeOrigin                    TPermission = "motion.can_see_origin"
 	MotionCanSupport                      TPermission = "motion.can_support"
 	PollCanManage                         TPermission = "poll.can_manage"
+	PollCanSeeProgress                    TPermission = "poll.can_see_progress"
 	ProjectorCanManage                    TPermission = "projector.can_manage"
 	ProjectorCanSee                       TPermission = "projector.can_see"
 	TagCanManage                          TPermission = "tag.can_manage"
@@ -77,7 +78,8 @@ var derivatePerms = map[TPermission][]TPermission{
 	"motion.can_see_internal":                     {"motion.can_see"},
 	"motion.can_see_origin":                       {"motion.can_see"},
 	"motion.can_support":                          {"motion.can_see"},
-	"poll.can_manage":                             {},
+	"poll.can_manage":                             {"poll.can_see_progress"},
+	"poll.can_see_progress":                       {},
 	"projector.can_manage":                        {"projector.can_see"},
 	"projector.can_see":                           {},
 	"tag.can_manage":                              {},
