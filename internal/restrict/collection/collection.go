@@ -146,18 +146,6 @@ func (r *restrictCache) Modes(mode string) FieldRestricter {
 	}
 }
 
-func (r *restrictCache) SuperAdmin(mode string) FieldRestricter {
-	type superRestricter interface {
-		SuperAdmin(mode string) FieldRestricter
-	}
-
-	if sr, ok := r.Restricter.(superRestricter); ok {
-		return sr.SuperAdmin(mode)
-	}
-
-	return nil
-}
-
 var collectionMap = map[string]Restricter{
 	ActionWorker{}.Name():                 ActionWorker{},
 	AgendaItem{}.Name():                   AgendaItem{},
