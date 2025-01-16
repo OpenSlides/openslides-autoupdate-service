@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
 )
 
 // Tag handels the restrictions for the tag collection.
 //
 // The user can see a tag, if the user can see the tag's meeting.
+// Organization Managers or higher can see all tags.
 //
 // Mode A: The user can see the tag.
 type Tag struct{}
@@ -39,6 +41,20 @@ func (t Tag) Modes(mode string) FieldRestricter {
 }
 
 func (t Tag) see(ctx context.Context, ds *dsfetch.Fetch, tagIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	isOrgaAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
+	if err != nil {
+		return nil, fmt.Errorf("checking for superadmin: %w", err)
+	}
+
+	if isOrgaAdmin {
+		return tagIDs, nil
+	}
+
 	return eachMeeting(ctx, ds, t, tagIDs, func(meetingID int, ids []int) ([]int, error) {
 		canSee, err := Collection(ctx, Meeting{}.Name()).Modes("B")(ctx, ds, meetingID)
 		if err != nil {

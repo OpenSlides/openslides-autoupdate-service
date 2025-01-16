@@ -8,14 +8,30 @@ import (
 )
 
 func TestMeetingModeA(t *testing.T) {
-	var m collection.Meeting
+	m := collection.Meeting{}.Modes("A")
 
 	testCase(
-		"without perms",
+		"locked meeting, orga manager",
 		t,
-		m.Modes("A"),
+		m,
 		true,
-		"meeting/30/id: 30",
+		`
+		user/1/organization_management_level: can_manage_organization
+		meeting/30/locked_from_inside: true
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"locked meeting, user manager",
+		t,
+		m,
+		false,
+		`
+		user/1/organization_management_level: can_manage_users
+		meeting/30/locked_from_inside: true
+		`,
+		withElementID(30),
 	)
 }
 
@@ -83,10 +99,10 @@ func TestMeetingModeB(t *testing.T) {
 		meeting/30:
 			enable_anonymous: true
 			group_ids: [7]
-		
+
 		group/7/meeting_user_ids: [10]
 		meeting_user/10:
-			user_id: 1	
+			user_id: 1
 			locked_out: true
 			meeting_id: 30
 
@@ -104,7 +120,7 @@ func TestMeetingModeB(t *testing.T) {
 		meeting/30:
 			group_ids: [7]
 			committee_id: 2
-		
+
 		group/7/meeting_user_ids: [10]
 		meeting_user/10:
 			user_id: 1
@@ -123,10 +139,10 @@ func TestMeetingModeB(t *testing.T) {
 		meeting/30:
 			group_ids: [7]
 			committee_id: 2
-		
+
 		group/7/meeting_user_ids: [10]
 		meeting_user/10:
-			user_id: 1	
+			user_id: 1
 			locked_out: true
 			meeting_id: 30
 
@@ -163,7 +179,7 @@ func TestMeetingModeB(t *testing.T) {
 
 		group/7/meeting_user_ids: [10]
 		meeting_user/10:
-			user_id: 1	
+			user_id: 1
 			locked_out: true
 			meeting_id: 30
 		`,
@@ -210,13 +226,14 @@ func TestMeetingModeB(t *testing.T) {
 	)
 
 	testCase(
-		"CML can manage organization",
+		"OML can manage organization",
 		t,
 		m.Modes("B"),
 		true,
 		`---
 		user/1/organization_management_level: can_manage_organization
-		meeting/30/id: 30
+		meeting/30:
+			committee_id: 4
 		`,
 		withElementID(30),
 	)
@@ -231,10 +248,10 @@ func TestMeetingModeB(t *testing.T) {
 		meeting/30:
 			enable_anonymous: true
 			group_ids: [7]
-		
+
 		group/7/meeting_user_ids: [10]
 		meeting_user/10:
-			user_id: 1	
+			user_id: 1
 			locked_out: true
 			meeting_id: 30
 
@@ -289,7 +306,7 @@ func TestMeetingModeB(t *testing.T) {
 		meeting/30:
 			locked_from_inside: true
 			enable_anonymous: true
-		
+
 		`,
 		withElementID(30),
 		withRequestUser(0),
@@ -368,5 +385,4 @@ func TestMeetingModeE(t *testing.T) {
 		`,
 		withElementID(30),
 	)
-
 }
