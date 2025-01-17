@@ -43,7 +43,7 @@ func TestVoteCountSourceGet(t *testing.T) {
 		go flow.Connect(ctx, eventer, func(error) {})
 	})
 
-	key1 := dskey.MustKey("poll/1/vote_count")
+	key1 := dskey.MustKey("poll/1/has_voted_user_ids")
 
 	t.Run("no data from vote-service", func(t *testing.T) {
 		got, err := flow.Get(ctx, key1)
@@ -58,7 +58,7 @@ func TestVoteCountSourceGet(t *testing.T) {
 
 	t.Run("first data from vote-service", func(t *testing.T) {
 		waitForResponse(ctx, flow, func() {
-			sender <- `{"1":42}`
+			sender <- `{"1":[42]}`
 		})
 
 		got, err := flow.Get(ctx, key1)
@@ -66,14 +66,14 @@ func TestVoteCountSourceGet(t *testing.T) {
 			t.Fatalf("Get: %v", err)
 		}
 
-		if string(got[key1]) != "42" {
+		if string(got[key1]) != "[42]" {
 			t.Errorf("Get() after first data returned `%s`, expected `42`", got[key1])
 		}
 	})
 
 	t.Run("second data from vote-service", func(t *testing.T) {
 		waitForResponse(ctx, flow, func() {
-			sender <- `{"1":43}`
+			sender <- `{"1":[43]}`
 		})
 
 		got, err := flow.Get(ctx, key1)
@@ -81,14 +81,14 @@ func TestVoteCountSourceGet(t *testing.T) {
 			t.Fatalf("Get: %v", err)
 		}
 
-		if string(got[key1]) != "43" {
+		if string(got[key1]) != "[42,43]" {
 			t.Errorf("Get() after first data returned `%s`, expected `43`", got[key1])
 		}
 	})
 
 	t.Run("again data from vote-service", func(t *testing.T) {
 		waitForResponse(ctx, flow, func() {
-			sender <- `{"1":44}`
+			sender <- `{"1":[44]}`
 		})
 
 		got, err := flow.Get(ctx, key1)
@@ -96,14 +96,14 @@ func TestVoteCountSourceGet(t *testing.T) {
 			t.Fatalf("Get: %v", err)
 		}
 
-		if string(got[key1]) != "44" {
+		if string(got[key1]) != "[42,43,44]" {
 			t.Errorf("Get() after first data returned `%s`, expected `44`", got[key1])
 		}
 	})
 
-	t.Run("receive 0", func(t *testing.T) {
+	t.Run("receive null", func(t *testing.T) {
 		waitForResponse(ctx, flow, func() {
-			sender <- `{"1":0}`
+			sender <- `{"1":null}`
 		})
 
 		got, err := flow.Get(ctx, key1)
@@ -146,7 +146,7 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 		go flow.Connect(ctx, eventer, func(error) {})
 	})
 
-	key1 := dskey.MustKey("poll/1/vote_count")
+	key1 := dskey.MustKey("poll/1/has_voted_user_ids")
 
 	t.Run("no data from vote-service", func(t *testing.T) {
 		ctxTimeout, cancel := context.WithTimeout(ctx, time.Millisecond)
@@ -159,13 +159,13 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 
 	t.Run("first data from vote-service", func(t *testing.T) {
 		got, err := updateResult(ctx, flow, func() {
-			sender <- `{"1":42}`
+			sender <- `{"1":[42]}`
 		})
 		if err != nil {
 			t.Fatalf("Update: %v", err)
 		}
 
-		expect := map[dskey.Key][]byte{key1: []byte("42")}
+		expect := map[dskey.Key][]byte{key1: []byte("[42]")}
 		if !reflect.DeepEqual(got, expect) {
 			t.Errorf("Update() returned %v, expected %v", got, expect)
 		}
@@ -173,21 +173,21 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 
 	t.Run("second data from vote-service", func(t *testing.T) {
 		got, err := updateResult(ctx, flow, func() {
-			sender <- `{"1":43}`
+			sender <- `{"1":[43]}`
 		})
 		if err != nil {
 			t.Fatalf("Update: %v", err)
 		}
 
-		expect := map[dskey.Key][]byte{key1: []byte("43")}
+		expect := map[dskey.Key][]byte{key1: []byte("[42,43]")}
 		if !reflect.DeepEqual(got, expect) {
 			t.Errorf("Update() returned %v, expected %v", got, expect)
 		}
 	})
 
-	t.Run("receive 0", func(t *testing.T) {
+	t.Run("receive null", func(t *testing.T) {
 		got, err := updateResult(ctx, flow, func() {
-			sender <- `{"1":0}`
+			sender <- `{"1":null}`
 		})
 		if err != nil {
 			t.Fatalf("Update: %v", err)
@@ -201,7 +201,7 @@ func TestVoteCountSourceUpdate(t *testing.T) {
 }
 
 func TestReconnect(t *testing.T) {
-	msg := `{"1":23}`
+	msg := `{"1":[23]}`
 	sender := make(chan struct{})
 	var counter int
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -264,8 +264,8 @@ func TestReconnectWhenDeletedBetween(t *testing.T) {
 
 	flow := datastore.NewFlowVoteCount(env)
 	go flow.Connect(ctx, eventer, func(error) {})
-	msg <- `{"1":23,"2":42}`
-	msg <- `{"1":23}`
+	msg <- `{"1":[23],"2":[42]}`
+	msg <- `{"1":[23]}`
 
 	received, cancel := context.WithCancel(ctx)
 	go flow.Update(ctx, func(map[dskey.Key][]byte, error) {
@@ -274,13 +274,13 @@ func TestReconnectWhenDeletedBetween(t *testing.T) {
 
 	<-received.Done()
 
-	key := dskey.MustKey("poll/2/vote_count")
+	key := dskey.MustKey("poll/2/has_voted_user_ids")
 	data, err := flow.Get(ctx, key)
 	if err != nil {
 		t.Errorf("Get: %v", err)
 	}
 
-	if string(data[key]) != `42` {
+	if string(data[key]) != `[42]` {
 		t.Errorf("Get for deleted key returned `%s`, expected 42", data[key])
 	}
 }
@@ -306,7 +306,7 @@ func TestGetWithoutConnect(t *testing.T) {
 
 	source := datastore.NewFlowVoteCount(env)
 
-	key := dskey.MustKey("poll/1/vote_count")
+	key := dskey.MustKey("poll/1/has_voted_user_ids")
 
 	ctxTimeout, cancel := context.WithTimeout(ctx, time.Millisecond)
 	defer cancel()

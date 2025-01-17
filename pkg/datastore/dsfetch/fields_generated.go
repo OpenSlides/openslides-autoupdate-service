@@ -6409,6 +6409,15 @@ func (r *Fetch) Poll_GlobalYes(pollID int) *ValueBool {
 	return &ValueBool{fetch: r, key: key}
 }
 
+func (r *Fetch) Poll_HasVotedUserIDs(pollID int) *ValueIntSlice {
+	key, err := dskey.FromParts("poll", pollID, "has_voted_user_ids")
+	if err != nil {
+		return &ValueIntSlice{err: err}
+	}
+
+	return &ValueIntSlice{fetch: r, key: key}
+}
+
 func (r *Fetch) Poll_ID(pollID int) *ValueInt {
 	key, err := dskey.FromParts("poll", pollID, "id")
 	if err != nil {
@@ -6533,15 +6542,6 @@ func (r *Fetch) Poll_Type(pollID int) *ValueString {
 	}
 
 	return &ValueString{fetch: r, key: key, required: true}
-}
-
-func (r *Fetch) Poll_VoteCount(pollID int) *ValueInt {
-	key, err := dskey.FromParts("poll", pollID, "vote_count")
-	if err != nil {
-		return &ValueInt{err: err}
-	}
-
-	return &ValueInt{fetch: r, key: key}
 }
 
 func (r *Fetch) Poll_VotedIDs(pollID int) *ValueIntSlice {

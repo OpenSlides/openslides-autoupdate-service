@@ -1084,7 +1084,7 @@ var restrictionModes = map[string]string{
 	"poll/votes_signature":         "B",
 	"poll/votesinvalid":            "B",
 	"poll/votesvalid":              "B",
-	"poll/vote_count":              "C",
+	"poll/has_voted_user_ids":      "C",
 	"poll/votescast":               "D",
 
 	// poll_candidate

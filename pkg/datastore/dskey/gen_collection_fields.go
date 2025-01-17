@@ -681,6 +681,7 @@ var collectionFields = [...]collectionField{
 	{"poll", "global_no"},
 	{"poll", "global_option_id"},
 	{"poll", "global_yes"},
+	{"poll", "has_voted_user_ids"},
 	{"poll", "id"},
 	{"poll", "is_pseudoanonymized"},
 	{"poll", "max_votes_amount"},
@@ -695,7 +696,6 @@ var collectionFields = [...]collectionField{
 	{"poll", "state"},
 	{"poll", "title"},
 	{"poll", "type"},
-	{"poll", "vote_count"},
 	{"poll", "voted_ids"},
 	{"poll", "votes_raw"},
 	{"poll", "votes_signature"},
@@ -2293,35 +2293,35 @@ func collectionFieldToID(cf string) int {
 		return 677
 	case "poll/global_yes":
 		return 678
-	case "poll/id":
+	case "poll/has_voted_user_ids":
 		return 679
-	case "poll/is_pseudoanonymized":
+	case "poll/id":
 		return 680
-	case "poll/max_votes_amount":
+	case "poll/is_pseudoanonymized":
 		return 681
-	case "poll/max_votes_per_option":
+	case "poll/max_votes_amount":
 		return 682
-	case "poll/meeting_id":
+	case "poll/max_votes_per_option":
 		return 683
-	case "poll/min_votes_amount":
+	case "poll/meeting_id":
 		return 684
-	case "poll/onehundred_percent_base":
+	case "poll/min_votes_amount":
 		return 685
-	case "poll/option_ids":
+	case "poll/onehundred_percent_base":
 		return 686
-	case "poll/pollmethod":
+	case "poll/option_ids":
 		return 687
-	case "poll/projection_ids":
+	case "poll/pollmethod":
 		return 688
-	case "poll/sequential_number":
+	case "poll/projection_ids":
 		return 689
-	case "poll/state":
+	case "poll/sequential_number":
 		return 690
-	case "poll/title":
+	case "poll/state":
 		return 691
-	case "poll/type":
+	case "poll/title":
 		return 692
-	case "poll/vote_count":
+	case "poll/type":
 		return 693
 	case "poll/voted_ids":
 		return 694

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
@@ -28,10 +27,10 @@ type FlowVoteCount struct {
 	client         *http.Client
 	id             uint64
 
-	mu        sync.Mutex
-	voteCount map[int]int
-	update    chan map[int]int
-	ready     chan struct{}
+	mu            sync.Mutex
+	pollToUserIDs map[int][]int
+	update        chan map[int][]int
+	ready         chan struct{}
 }
 
 // NewFlowVoteCount initializes the object.
@@ -46,8 +45,8 @@ func NewFlowVoteCount(lookup environment.Environmenter) *FlowVoteCount {
 	flow := FlowVoteCount{
 		voteServiceURL: url,
 		client:         &http.Client{},
-		update:         make(chan map[int]int, 1),
-		voteCount:      make(map[int]int),
+		update:         make(chan map[int][]int, 1),
+		pollToUserIDs:  make(map[int][]int),
 		ready:          make(chan struct{}),
 	}
 
@@ -96,8 +95,8 @@ func (s *FlowVoteCount) connect(ctx context.Context) error {
 
 	decoder := json.NewDecoder(resp.Body)
 	for {
-		var counts map[int]int
-		if err := decoder.Decode(&counts); err != nil {
+		var fromVoteService map[int][]int
+		if err := decoder.Decode(&fromVoteService); err != nil {
 			if err == io.EOF {
 				return nil
 			}
@@ -105,12 +104,12 @@ func (s *FlowVoteCount) connect(ctx context.Context) error {
 		}
 
 		s.mu.Lock()
-		for k, v := range counts {
-			if v == 0 {
-				delete(s.voteCount, k)
+		for pollID, userIDs := range fromVoteService {
+			if userIDs == nil {
+				delete(s.pollToUserIDs, pollID)
 				continue
 			}
-			s.voteCount[k] = v
+			s.pollToUserIDs[pollID] = append(s.pollToUserIDs[pollID], userIDs...)
 		}
 		s.mu.Unlock()
 
@@ -121,7 +120,7 @@ func (s *FlowVoteCount) connect(ctx context.Context) error {
 		}
 
 		select {
-		case s.update <- counts:
+		case s.update <- fromVoteService:
 		default:
 		}
 	}
@@ -142,12 +141,25 @@ func (s *FlowVoteCount) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.K
 	for _, key := range keys {
 		out[key] = nil
 
-		if key.Collection() != "poll" || key.Field() != "vote_count" {
-			continue
-		}
+		switch key.Collection() {
+		case "poll":
+			if key.Field() != "has_voted_user_ids" {
+				continue
+			}
 
-		if count, ok := s.voteCount[key.ID()]; ok {
-			out[key] = []byte(strconv.Itoa(count))
+			userIDs, ok := s.pollToUserIDs[key.ID()]
+			if !ok {
+				continue
+			}
+
+			bytes, err := json.Marshal(userIDs)
+			if err != nil {
+				return nil, fmt.Errorf("converting user_ids to json: %w", err)
+			}
+			out[key] = bytes
+
+		default:
+			continue
 		}
 	}
 	return out, nil
@@ -156,28 +168,24 @@ func (s *FlowVoteCount) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.K
 // Update has to be called frequently. It blocks, until there is new data.
 func (s *FlowVoteCount) Update(ctx context.Context, updateFn func(map[dskey.Key][]byte, error)) {
 	for {
-		var data map[int]int
+		var fromVoteService map[int][]int
 		select {
 		case <-ctx.Done():
 			return // TODO: Should the error be returned?
 
-		case data = <-s.update:
+		case fromVoteService = <-s.update:
 		}
 
-		out := make(map[dskey.Key][]byte, len(data))
-		for pollID, count := range data {
-			bs := []byte(strconv.Itoa(count))
-			if count == 0 {
-				bs = nil
-			}
-			key, err := dskey.FromParts("poll", pollID, "vote_count")
+		var keys []dskey.Key
+		for pollID := range fromVoteService {
+			pollKey, err := dskey.FromParts("poll", pollID, "has_voted_user_ids")
 			if err != nil {
-				updateFn(out, err)
+				updateFn(nil, err)
 				return
 			}
-			out[key] = bs
+			keys = append(keys, pollKey)
 		}
 
-		updateFn(out, nil)
+		updateFn(s.Get(ctx, keys...))
 	}
 }

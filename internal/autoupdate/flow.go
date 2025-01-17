@@ -46,7 +46,7 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater, skipVote
 	if !skipVoteService {
 		dataFlow = flow.Combine(
 			postgres,
-			map[string]flow.Flow{"poll/vote_count": vote},
+			map[string]flow.Flow{"poll/has_voted_user_ids": vote},
 		)
 
 		eventer := func() (<-chan time.Time, func() bool) {
