@@ -5,7 +5,6 @@ package restrict
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -54,7 +53,7 @@ func (r restricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][
 	}
 
 	start := time.Now()
-	times, err := restrict(ctx, r.getter, r.uid, data)
+	times, err := restrict(ctx, r.getter, data)
 	if err != nil {
 		return nil, fmt.Errorf("restricting data: %w", err)
 	}
@@ -74,25 +73,8 @@ func (r restricter) Get(ctx context.Context, keys ...dskey.Key) (map[dskey.Key][
 
 // restrict changes the keys and values in data for the user with the given user
 // id.
-func restrict(ctx context.Context, getter flow.Getter, uid int, data map[dskey.Key][]byte) (map[string]timeCount, error) {
+func restrict(ctx context.Context, getter flow.Getter, data map[dskey.Key][]byte) (map[string]timeCount, error) {
 	ds := dsfetch.New(getter)
-
-	isSuperAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, uid, perm.OMLSuperadmin)
-	if err != nil {
-		var errDoesNotExist dsfetch.DoesNotExistError
-		if errors.As(err, &errDoesNotExist) || dskey.Key(errDoesNotExist).Collection() == "user" {
-			// TODO LAST ERROR
-			return nil, fmt.Errorf("request user %d does not exist", uid)
-		}
-		return nil, fmt.Errorf("checking for superadmin: %w", err)
-	}
-
-	if isSuperAdmin {
-		if err := restrictSuperAdmin(ctx, getter, data); err != nil {
-			return nil, fmt.Errorf("restrict as superadmin: %w", err)
-		}
-		return nil, nil
-	}
 
 	// Get all required collections with there ids.
 	restrictModeIDs := make(map[collection.CM]set.Set[int])
@@ -161,51 +143,6 @@ func restrict(ctx context.Context, getter flow.Getter, uid int, data map[dskey.K
 	}
 
 	return times, nil
-}
-
-func restrictSuperAdmin(ctx context.Context, getter flow.Getter, data map[dskey.Key][]byte) error {
-	ds := dsfetch.New(getter)
-
-	for key := range data {
-		if data[key] == nil {
-			continue
-		}
-
-		restricter := collection.Collection(ctx, key.Collection())
-		if restricter == nil {
-			// Superadmins can see unknown collections.
-			continue
-		}
-
-		type superRestricter interface {
-			SuperAdmin(mode string) collection.FieldRestricter
-		}
-		sr, ok := restricter.(superRestricter)
-		if !ok {
-			continue
-		}
-
-		restrictionMode, err := restrictModeName(key.Collection(), key.Field())
-		if err != nil {
-			return fmt.Errorf("getting restriction Mode for %s: %w", key, err)
-		}
-
-		modefunc := sr.SuperAdmin(restrictionMode)
-		if modefunc == nil {
-			// Do not restrict unknown fields that are not implemented.
-			continue
-		}
-
-		allowed, err := modefunc(ctx, ds, key.ID())
-		if err != nil {
-			return fmt.Errorf("calling mode func: %w", err)
-		}
-
-		if len(allowed) == 0 {
-			data[key] = nil
-		}
-	}
-	return nil
 }
 
 // groupKeysByCollection groups all the keys in data by there collection.
