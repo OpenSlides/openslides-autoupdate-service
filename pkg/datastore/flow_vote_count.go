@@ -19,7 +19,7 @@ var (
 	envVoteProtocol = environment.NewVariable("VOTE_PROTOCOL", "http", "Protocol of the vote-service.")
 )
 
-const voteCountPath = "/internal/vote/vote_count"
+const allVotedIdsPath = "/internal/vote/all_voted_ids"
 
 // FlowVoteCount is a datastore flow for the poll/vote_count value.
 type FlowVoteCount struct {
@@ -81,7 +81,7 @@ func (s *FlowVoteCount) wait(ctx context.Context, eventProvider func() (<-chan t
 }
 
 func (s *FlowVoteCount) connect(ctx context.Context) error {
-	req, err := http.NewRequestWithContext(ctx, "GET", s.voteServiceURL+voteCountPath, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", s.voteServiceURL+allVotedIdsPath, nil)
 	if err != nil {
 		return fmt.Errorf("building request: %w", err)
 	}
