@@ -10,7 +10,8 @@ import (
 
 // StructureLevel handels restrictions of the collection structure_level.
 //
-// The user can see a structure level if he has `list_of_speakers.can_see` OR `user.can_see`
+// The user can see a structure level if he has `list_of_speakers.can_see` OR
+// can see any of the  linked `meeting_user_ids`.
 //
 // Mode A: The user can see the speaker.
 type StructureLevel struct{}
@@ -35,12 +36,33 @@ func (s StructureLevel) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
 		return s.see
-	case "B":
-		return never // TODO: Remove me after the fix in the backend
 	}
 	return nil
 }
 
 func (s StructureLevel) see(ctx context.Context, ds *dsfetch.Fetch, structureLevelIDs ...int) ([]int, error) {
-	return meetingPerm(ctx, ds, s, structureLevelIDs, perm.ListOfSpeakersCanSee, perm.UserCanSee)
+	return eachMeeting(ctx, ds, s, structureLevelIDs, func(meetingID int, structureLevelIDs []int) ([]int, error) {
+		perms, err := perm.FromContext(ctx, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting permission: %w", err)
+		}
+
+		if perms.Has(perm.ListOfSpeakersCanSee) {
+			return structureLevelIDs, nil
+		}
+
+		return eachCondition(structureLevelIDs, func(id int) (bool, error) {
+			meetingUserIDs, err := ds.StructureLevel_MeetingUserIDs(id).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting meeting_user_ids: %w", err)
+			}
+
+			canSee, err := Collection(ctx, "meeting_user").Modes("A")(ctx, ds, meetingUserIDs...)
+			if err != nil {
+				return false, fmt.Errorf("checking meeting_user: %w", err)
+			}
+
+			return len(canSee) > 0, nil
+		})
+	})
 }
