@@ -32,12 +32,17 @@ func TestStructureLevelModeA(t *testing.T) {
 	)
 
 	testCase(
-		"user.can_see",
+		"Can see meeting_user",
 		t,
 		f,
 		true,
 		`---
-		structure_level/1/meeting_id: 30
+		structure_level/1:
+			meeting_id: 30
+			meeting_user_ids: [20]
+
+		meeting_user/20:
+			meeting_id: 30
 		`,
 		withPerms(30, perm.UserCanSee),
 	)

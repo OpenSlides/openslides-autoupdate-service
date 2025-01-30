@@ -16,28 +16,37 @@ func TestStructureLevelListOfSpeakersModeA(t *testing.T) {
 		f,
 		false,
 		`---
-		structure_level_list_of_speakers/1/meeting_id: 30
+		structure_level_list_of_speakers/1:
+			list_of_speakers_id: 5
+		list_of_speakers/5:
+			meeting_id: 30
 		`,
 	)
 
 	testCase(
-		"list_of_speakers.can_see",
+		"Can see linked list_of_speakers",
 		t,
 		f,
 		true,
 		`---
-		structure_level_list_of_speakers/1/meeting_id: 30
+		structure_level_list_of_speakers/1:
+			list_of_speakers_id: 5
+		list_of_speakers/5:
+			meeting_id: 30
 		`,
 		withPerms(30, perm.ListOfSpeakersCanSee),
 	)
 
 	testCase(
-		"user.can_see",
+		"Can not see linked list_of_speakers",
 		t,
 		f,
 		false,
 		`---
-		structure_level_list_of_speakers/1/meeting_id: 30
+		structure_level_list_of_speakers/1:
+			list_of_speakers_id: 5
+		list_of_speakers/5:
+			meeting_id: 30
 		`,
 		withPerms(30, perm.UserCanSee),
 	)

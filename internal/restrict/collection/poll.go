@@ -33,7 +33,8 @@ import (
 // Mode C: The poll is in the started state and
 //
 //	the user can manage the poll or
-//	the user has the permissions `user.can_see` and `list_of_speakers.can_manage`.
+//	the user has the permissions `user.can_see` and `list_of_speakers.can_manage` or
+//	the user has the permission `poll.can_see_progress`.
 //
 // Mode D: Same as Mode B, but for `finished`: Accessible if the user can manage the poll or the user has list_of_speakers.can_manage.
 type Poll struct{}
@@ -196,7 +197,7 @@ func (p Poll) modeC(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]i
 				return nil, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
 			}
 
-			if perms.Has(perm.UserCanSee) && perms.Has(perm.ListOfSpeakersCanManage) {
+			if perms.Has(perm.UserCanSee) && perms.Has(perm.ListOfSpeakersCanManage) || perms.Has(perm.PollCanSeeProgress) {
 				return ids, nil
 			}
 
