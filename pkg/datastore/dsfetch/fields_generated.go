@@ -3511,6 +3511,24 @@ func (r *Fetch) Meeting_MotionPollDefaultType(meetingID int) *ValueString {
 	return &ValueString{fetch: r, key: key}
 }
 
+func (r *Fetch) Meeting_MotionPollProjectionMaxColumns(meetingID int) *ValueInt {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_projection_max_columns")
+	if err != nil {
+		return &ValueInt{err: err}
+	}
+
+	return &ValueInt{fetch: r, key: key, required: true}
+}
+
+func (r *Fetch) Meeting_MotionPollProjectionNameOrderFirst(meetingID int) *ValueString {
+	key, err := dskey.FromParts("meeting", meetingID, "motion_poll_projection_name_order_first")
+	if err != nil {
+		return &ValueString{err: err}
+	}
+
+	return &ValueString{fetch: r, key: key, required: true}
+}
+
 func (r *Fetch) Meeting_MotionStateIDs(meetingID int) *ValueIntSlice {
 	key, err := dskey.FromParts("meeting", meetingID, "motion_state_ids")
 	if err != nil {
