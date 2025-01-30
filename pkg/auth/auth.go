@@ -6,8 +6,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	//"log"
+	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -36,13 +37,31 @@ var (
 	envAuthCookieFile = environment.NewVariable("AUTH_COOKIE_KEY_FILE", "/run/secrets/auth_cookie_key", "Key to sign the JWT auth cookie.")
 
 	keycloakUrl                        = environment.NewVariable("OPENSLIDES_KEYCLOAK_URL", "", "The issuer of the token.")
-	realmName                          = environment.NewVariable("OPENSLIDES_AUTH_REALM", "", "The realm name.")
 	issuer                             = environment.NewVariable("OPENSLIDES_TOKEN_ISSUER", "", "The issuer of the token.")
 	clientID                           = environment.NewVariable("OPENSLIDES_AUTH_CLIENT_ID", "", "The client ID of the application.")
 	ctx                                = context.Background()
 	oidcProvider *oidc.Provider        = nil
 	verifier     *oidc.IDTokenVerifier = nil
 )
+
+type CustomTransport struct {
+	Base        http.RoundTripper
+	keycloakUrl string
+}
+
+func (t *CustomTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	keycloakUrl, _ := url.Parse(t.keycloakUrl)
+	// Check if the request URL matches the .well-known path
+	if strings.Contains(req.URL.Path, "/.well-known/openid-configuration") && strings.Contains(req.URL.Host, "localhost:8000") {
+		// Modify the request to point to the new host and scheme
+		req.URL.Scheme = keycloakUrl.Scheme
+		req.URL.Host = keycloakUrl.Host
+		fmt.Printf("Redirecting to: %s\n", req.URL.String())
+	}
+
+	// Use the base RoundTripper to perform the request
+	return t.Base.RoundTrip(req)
+}
 
 // pruneTime defines how long a topic id will be valid. This should be higher
 // then the max livetime of a token.
@@ -79,8 +98,6 @@ type Auth struct {
 
 	logedoutSessions *topic.Topic[string]
 
-	authServiceURL string
-
 	tokenKey  string
 	cookieKey string
 }
@@ -90,28 +107,31 @@ type Auth struct {
 // Returns the initialized Auth objectand a function to be called in the
 // background.
 func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, func(context.Context, func(error)), error) {
-	url := fmt.Sprintf(
-		"%s://%s:%s",
-		envAuthProtocol.Value(lookup),
-		envAuthHost.Value(lookup),
-		envAuthPort.Value(lookup),
-	)
 
-	//issuerUrl := fmt.Sprintf("%s/realms/%s", keycloakUrl.Value(lookup), realmName.Value(lookup))
-	//
-	//var err error
-	//// Discover OIDC provider configuration.
-	//println("Issuer URL: ", issuerUrl)
-	//oidcProvider, err = oidc.NewProvider(ctx, issuerUrl)
-	//if err != nil {
-	//	log.Fatalf("Failed to initialize OIDC provider: %v", err)
-	//}
-	//
-	//// Set up the verifier using the discovered configuration.
-	//oidcConfig := &oidc.Config{
-	//	ClientID: clientID.Value(lookup), // The client ID of your application
-	//}
-	//verifier = oidcProvider.Verifier(oidcConfig)
+	http.DefaultTransport = &CustomTransport{
+		Base:        http.DefaultTransport,
+		keycloakUrl: keycloakUrl.Value(lookup),
+	}
+
+	var err error
+
+	var oidcProvider *oidc.Provider
+
+	for {
+		oidcProvider, err = oidc.NewProvider(ctx, issuer.Value(lookup))
+		if err == nil {
+			break
+		}
+
+		log.Println("Fehler beim Initialisieren des OIDC-Providers (%v). Neuer Versuch in 2s ...\n", err)
+		time.Sleep(2 * time.Second)
+	}
+
+	// Set up the verifier using the discovered configuration.
+	oidcConfig := &oidc.Config{
+		ClientID: clientID.Value(lookup),
+	}
+	verifier = oidcProvider.Verifier(oidcConfig)
 
 	fake, _ := strconv.ParseBool(envAuthFake.Value(lookup))
 
@@ -128,7 +148,6 @@ func New(lookup environment.Environmenter, messageBus LogoutEventer) (*Auth, fun
 	a := &Auth{
 		fake:             fake,
 		logedoutSessions: topic.New[string](),
-		authServiceURL:   url,
 		tokenKey:         authToken,
 		cookieKey:        cookieToken,
 	}
@@ -288,8 +307,8 @@ func (a *Auth) loadToken(w http.ResponseWriter, r *http.Request, payload *OpenSl
 		return nil
 	}
 
-	//token_validated, err := validateAccessToken(encodedToken)
-	//println("Token validated: ", token_validated)
+	token_validated, err := validateAccessToken(encodedToken)
+	println("Token validated: ", token_validated)
 
 	token, err := jwt.ParseWithClaims(encodedToken, payload, func(token *jwt.Token) (interface{}, error) {
 		return []byte(a.tokenKey), nil
