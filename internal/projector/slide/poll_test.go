@@ -220,8 +220,8 @@ func TestPollSingleVotes(t *testing.T) {
 	slide.Motion(s)
 	slide.Topic(s)
 
-	pollSlide := s.GetSlider("poll")
-	assert.NotNilf(t, pollSlide, "Slide with name `poll` not found.")
+	pollSlide := s.GetSlider("poll_single_votes")
+	assert.NotNilf(t, pollSlide, "Slide with name `poll_single_votes` not found.")
 
 	data := dsmock.YAMLData(`
 	user:
