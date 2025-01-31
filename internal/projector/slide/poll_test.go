@@ -256,12 +256,14 @@ func TestPollSingleVotes(t *testing.T) {
 			user_id:3
 	structure_level:
 		1:
-			name: Brandenburg
+			name: Birmingham
+			meeting_id: 111
 	meeting:
 		111:
 			poll_ids: [1]
 			meeting_user_ids: [1111, 1112, 1116]
 			user_ids: [1,2,6]
+			structure_level_ids: [1]
 	poll:
 	    1:
 	        content_object_id: motion/1
@@ -384,7 +386,7 @@ func TestPollSingleVotes(t *testing.T) {
 							"first_name": Bob
 							"last_name": Buckingham
 							"username": BillyBobBuckingham
-							"level": Brandenburg
+							"level": Birmingham
 						}
 					},
 					{
