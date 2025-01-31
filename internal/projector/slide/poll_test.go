@@ -259,8 +259,8 @@ func TestPollSingleVotes(t *testing.T) {
 			name: Brandenburg
 	meeting:
 		111:
-			poll_ids: [1],
-			meeting_user_ids: [1111,1112,1116]
+			poll_ids: [1]
+			meeting_user_ids: [1111, 1112, 1116]
 			user_ids: [1,2,6]
 	poll:
 	    1:
