@@ -260,7 +260,7 @@ func PollSingleVotes(store *projector.SlideStore) {
 		}
 		if poll.EntitledUsersAtStop != nil {
 			var pollUserData []map[string]interface{}
-			if err := json.Unmarshal(*poll.EntitledUsersAtStop, pollUserData); err != nil {
+			if err := json.Unmarshal(*poll.EntitledUsersAtStop, &pollUserData); err != nil {
 				return nil, fmt.Errorf("reading entitled users")
 			}
 
