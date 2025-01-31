@@ -173,7 +173,7 @@ func PollSlideDataFunction(ctx context.Context, fetch *datastore.Fetcher, p7on *
 
 // Poll renders the poll slide.
 func Poll(store *projector.SlideStore) {
-	store.RegisterSliderFunc("poll", func (ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
+	store.RegisterSliderFunc("poll", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
 		poll, err := PollSlideDataFunction(ctx, fetch, p7on, store)
 		responseValue, err := json.Marshal(poll)
 		if err != nil {
@@ -263,7 +263,7 @@ func PollSingleVotes(store *projector.SlideStore) {
 			if err := json.Unmarshal(*poll.EntitledUsersAtStop, pollUserData); err != nil {
 				return nil, fmt.Errorf("reading entitled users")
 			}
-			
+
 			var newUserData []map[string]interface{}
 			for _, userDate := range pollUserData {
 				var userID int
