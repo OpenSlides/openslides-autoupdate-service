@@ -114,7 +114,7 @@ func pollFromMap(in map[string]json.RawMessage, state string) (*dbPoll, error) {
 	return &po, nil
 }
 
-func PollSlideDataFunction(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection, store *projector.SlideStore) (poll *dbPoll, err error) {
+func PollSlideDataFunction(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection, store *projector.SlideStore) (*dbPoll, error) {
 	fetchFields := []string{
 		"id",
 		"content_object_id",
@@ -277,11 +277,11 @@ func PollSingleVotes(store *projector.SlideStore) {
 				userDate["user_data"], err = NewUser(ctx, fetch, userID, p7on.MeetingID)
 				newUserData = append(newUserData, userDate)
 			}
-			var pollUserDataJson, err = json.Marshal(newUserData)
+			var pollUserDataJSON, err = json.Marshal(newUserData)
 			if err != nil {
 				return nil, fmt.Errorf("encoding entitled users interpretation")
 			}
-			var pollUserDataJsonRaw = json.RawMessage(pollUserDataJson)
+			var pollUserDataJSONRaw = json.RawMessage(pollUserDataJson)
 			poll.EntitledUsersAtStop = &pollUserDataJsonRaw
 		}
 		responseValue, err := json.Marshal(poll)
