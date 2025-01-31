@@ -143,7 +143,7 @@ func PollSlideDataFunction(ctx context.Context, fetch *datastore.Fetcher, p7on *
 	}
 	data := fetch.Object(ctx, p7on.ContentObjectID, fetchFields...)
 
-	poll, err = pollFromMap(data, state)
+	poll, err := pollFromMap(data, state)
 	if err != nil {
 		return nil, fmt.Errorf("get poll: %w", err)
 	}
@@ -281,8 +281,8 @@ func PollSingleVotes(store *projector.SlideStore) {
 			if err != nil {
 				return nil, fmt.Errorf("encoding entitled users interpretation")
 			}
-			var pollUserDataJSONRaw = json.RawMessage(pollUserDataJson)
-			poll.EntitledUsersAtStop = &pollUserDataJsonRaw
+			var pollUserDataJSONRaw = json.RawMessage(pollUserDataJSON)
+			poll.EntitledUsersAtStop = &pollUserDataJSONRaw
 		}
 		responseValue, err := json.Marshal(poll)
 		if err != nil {
