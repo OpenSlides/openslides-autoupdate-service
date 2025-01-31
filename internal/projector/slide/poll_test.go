@@ -249,7 +249,7 @@ func TestPollSingleVotes(t *testing.T) {
 	meeting_user:
 		1111:
 			user_id: 1
-			structure_level: 1
+			structure_level_ids: [1]
 		1112:
 			user_id:2
 		1116:
