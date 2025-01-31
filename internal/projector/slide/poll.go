@@ -114,7 +114,7 @@ func pollFromMap(in map[string]json.RawMessage, state string) (*dbPoll, error) {
 	return &po, nil
 }
 
-func PollSlideDataFunction(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection, store *projector.SlideStore) (*dbPoll, error) {
+func pollSlideDataFunction(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection, store *projector.SlideStore) (*dbPoll, error) {
 	fetchFields := []string{
 		"id",
 		"content_object_id",
@@ -174,7 +174,7 @@ func PollSlideDataFunction(ctx context.Context, fetch *datastore.Fetcher, p7on *
 // Poll renders the poll slide.
 func Poll(store *projector.SlideStore) {
 	store.RegisterSliderFunc("poll", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
-		poll, err := PollSlideDataFunction(ctx, fetch, p7on, store)
+		poll, err := pollSlideDataFunction(ctx, fetch, p7on, store)
 		responseValue, err := json.Marshal(poll)
 		if err != nil {
 			return nil, fmt.Errorf("encoding response slide poll: %w", err)
@@ -254,7 +254,7 @@ func getTitleInfoFromContentObject(ctx context.Context, fetch *datastore.Fetcher
 // PollSingleVotes renders the poll_single_votes slide.
 func PollSingleVotes(store *projector.SlideStore) {
 	store.RegisterSliderFunc("poll_single_votes", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
-		poll, err := PollSlideDataFunction(ctx, fetch, p7on, store)
+		poll, err := pollSlideDataFunction(ctx, fetch, p7on, store)
 		if err != nil {
 			return nil, err
 		}
