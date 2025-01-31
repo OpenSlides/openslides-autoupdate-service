@@ -264,6 +264,7 @@ func PollSingleVotes(store *projector.SlideStore) {
 				return nil, fmt.Errorf("reading entitled users")
 			}
 			
+			var newUserData []map[string]interface{}
 			for _, userDate := range pollUserData {
 				var userID int
 				if userDate["user_merged_into_id"] != nil {
@@ -274,7 +275,14 @@ func PollSingleVotes(store *projector.SlideStore) {
 					continue
 				}
 				userDate["user_data"], err = NewUser(ctx, fetch, userID, p7on.MeetingID)
+				newUserData = append(newUserData, userDate)
 			}
+			var pollUserDataJson, err = json.Marshal(newUserData)
+			if err != nil {
+				return nil, fmt.Errorf("encoding entitled users interpretation")
+			}
+			var pollUserDataJsonRaw = json.RawMessage(pollUserDataJson)
+			poll.EntitledUsersAtStop = &pollUserDataJsonRaw
 		}
 		responseValue, err := json.Marshal(poll)
 		if err != nil {
