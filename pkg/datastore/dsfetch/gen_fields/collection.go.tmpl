@@ -1,0 +1,25 @@
+// {{.GoName}} has all fields from {{.ModelsName}}.
+type {{.GoName}} struct{
+    {{- range .Fields}}
+    {{.Name}} {{.Type}}
+    {{- end}}
+}
+
+func (t *{{.GoName}})lazy(ds *Fetch, id int) {
+    {{- range .Fields}}
+    ds.{{.FetchName}}(id).Lazy(&t.{{.Name}})
+    {{- end}}
+}
+
+func (t *{{.GoName}})preload(ds *Fetch,  id int) {
+	{{- range .Fields}}
+    ds.{{.FetchName}}(id).Preload()
+    {{- end}}
+}
+
+func (r *Fetch){{.GoName}}(id int) *ValueCollection[{{.GoName}}, *{{.GoName}}]{
+	return &ValueCollection[{{.GoName}}, *{{.GoName}}]{
+		id: id,
+		fetch: r,
+	}
+}

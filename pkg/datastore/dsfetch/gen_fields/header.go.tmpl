@@ -9,3 +9,36 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/fastjson"
 )
+
+type loader[T any] interface{
+	lazy(ds *Fetch,  id int)
+	preload(ds *Fetch,  id int)
+	*T
+}
+
+// ValueCollection is a generic struct, where the loader interface is
+// implemented by the pointer of C.
+type ValueCollection[C any, T loader[C]] struct {
+	id int
+	fetch *Fetch
+}
+
+func (v *ValueCollection[T, P]) Value(ctx context.Context) (T, error) {
+	var collection T
+	v.Lazy(&collection)
+
+	if err := v.fetch.Execute(ctx); err != nil {
+		var zero T
+		return zero, err
+	}
+	return collection, nil
+}
+
+func (v *ValueCollection[T, P]) Lazy(collection P) {
+	collection.lazy(v.fetch, v.id)
+}
+
+func (v *ValueCollection[T, P]) Preload() {
+	var collection P
+	collection.preload(v.fetch, v.id)
+}

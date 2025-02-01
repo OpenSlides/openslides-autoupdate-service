@@ -3,6 +3,7 @@ package dsfetch_test
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
@@ -127,5 +128,32 @@ func TestFech_lazy_after_value_should_not_fetch_value_again(t *testing.T) {
 
 	if len(recorder.Keys()) != 2 {
 		t.Errorf("Expecting 2 keys (user/2/username and user/2/id), got: %v", recorder.Keys())
+	}
+}
+
+func TestCollection(t *testing.T) {
+	ctx := context.Background()
+
+	fetch := dsfetch.New(dsmock.Stub(dsmock.YAMLData(`---
+	tag/1:
+		name: my-tag
+		tagged_ids: ["motion/1", "assignment/2"]
+		meeting_id: 30
+	`)))
+
+	tag, err := fetch.Tag(1).Value(ctx)
+	if err != nil {
+		t.Fatalf("loading Tag: %v", err)
+	}
+
+	expectedTag := dsfetch.Tag{
+		ID:        1,
+		Name:      "my-tag",
+		TaggedIDs: []string{"motion/1", "assignment/2"},
+		MeetingID: 30,
+	}
+
+	if !reflect.DeepEqual(tag, expectedTag) {
+		t.Errorf("%v != %v", tag, expectedTag)
 	}
 }
