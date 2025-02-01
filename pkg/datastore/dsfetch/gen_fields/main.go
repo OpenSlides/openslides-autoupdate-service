@@ -216,6 +216,7 @@ func toFields(raw map[string]models.Model) ([]field, error) {
 	return fields, nil
 }
 
+// Collection represents a models Collection for the collection.go.tmpl
 type Collection struct {
 	GoName     string
 	ModelsName string
