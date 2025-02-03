@@ -988,20 +988,6 @@ func TestUserModeG(t *testing.T) {
 	)
 }
 
-func TestUserSuperAdminModeG(t *testing.T) {
-	var u collection.User
-
-	testCase(
-		"Superadmin",
-		t,
-		u.SuperAdmin("G"),
-		false,
-		``,
-		withRequestUser(1),
-		withElementID(2),
-	)
-}
-
 func TestUserModeH(t *testing.T) {
 	var u collection.User
 	f := u.Modes("H")

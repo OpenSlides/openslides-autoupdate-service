@@ -119,6 +119,30 @@ func TestMeetingUserModeB(t *testing.T) {
 	)
 }
 
+func TestMeetingUserModeC(t *testing.T) {
+	f := collection.MeetingUser{}.Modes("C")
+
+	testCase(
+		"locked meeting, orga manager",
+		t,
+		f,
+		true,
+		`
+		user/1/organization_management_level: can_manage_organization
+		meeting/30:
+			locked_from_inside: true
+			enable_anonymous: false
+
+		user/2/id: 2
+
+		meeting_user/20:
+			user_id: 2
+			meeting_id: 30
+		`,
+		withElementID(20),
+	)
+}
+
 func TestMeetingUserModeD(t *testing.T) {
 	f := collection.MeetingUser{}.Modes("D")
 
