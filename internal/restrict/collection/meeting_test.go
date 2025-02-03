@@ -386,3 +386,28 @@ func TestMeetingModeE(t *testing.T) {
 		withElementID(30),
 	)
 }
+
+func TestMeetingModeF(t *testing.T) {
+	m := collection.Meeting{}.Modes("F")
+
+	testCase(
+		"locked meeting, superadmin",
+		t,
+		m,
+		true,
+		`
+		meeting/30/locked_from_inside: true
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"No permission",
+		t,
+		m,
+		true,
+		`
+		`,
+		withElementID(30),
+	)
+}

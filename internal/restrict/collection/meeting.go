@@ -31,6 +31,8 @@ import (
 // Mode D: The user has meeting.can_see_livestream.
 //
 // Mode E: The user can see the meeting or is superadmin.
+//
+// Mode F: Anyone can see it. Even anonymous.
 type Meeting struct{}
 
 // Name returns the collection name.
@@ -56,6 +58,8 @@ func (m Meeting) Modes(mode string) FieldRestricter {
 		return m.modeD
 	case "E":
 		return m.modeE
+	case "F":
+		return Allways
 	}
 	return nil
 }
