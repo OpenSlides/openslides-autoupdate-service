@@ -8,7 +8,7 @@ import (
 )
 
 func TestMeetingModeA(t *testing.T) {
-	m := collection.Meeting{}.Modes("F")
+	m := collection.Meeting{}.Modes("A")
 
 	testCase(
 		"locked meeting, superadmin",
@@ -385,7 +385,7 @@ func TestMeetingModeE(t *testing.T) {
 }
 
 func TestMeetingModeF(t *testing.T) {
-	m := collection.Meeting{}.Modes("A")
+	m := collection.Meeting{}.Modes("F")
 
 	testCase(
 		"locked meeting, orga manager",
