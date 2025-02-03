@@ -55,11 +55,22 @@ func (m MotionChangeRecommendation) see(ctx context.Context, ds *dsfetch.Fetch, 
 			return ids, nil
 		}
 
-		if !perms.Has(perm.MotionCanSee) {
-			return nil, nil
-		}
+		// if !perms.Has(perm.MotionCanSee) {
+		// 	return nil, nil
+		// }
 
 		allowed, err := eachCondition(ids, func(motionChangeRecommendationID int) (bool, error) {
+			motion_id, err := ds.MotionChangeRecommendation_MotionID(motionChangeRecommendationID).Value(ctx)
+			if err != nil {
+				return false, fmt.Errorf("getting motion_id")
+			}
+
+			can_see_motion, err := Collection(ctx, Motion{}.Name()).Modes("C")(ctx, ds, motion_id)
+
+			if len(can_see_motion) == 0 {
+				return false, nil
+			}
+
 			internalChangeRecommendation, err := ds.MotionChangeRecommendation_Internal(motionChangeRecommendationID).Value(ctx)
 			if err != nil {
 				return false, fmt.Errorf("getting internal: %w", err)
