@@ -14,7 +14,7 @@ require (
 	github.com/ostcar/topic v0.4.1
 	github.com/stretchr/testify v1.10.0
 	github.com/zeebo/xxh3 v1.0.2
-	golang.org/x/sync v0.10.0
+	golang.org/x/sync v0.11.0
 	golang.org/x/sys v0.29.0
 )
 
