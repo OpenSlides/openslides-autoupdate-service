@@ -22,7 +22,7 @@ import (
 // If `meeting/locked_from_inside` is set, only users in the meeting can see it.
 // If the user is locked out (meeting_user/locked_out) he can not see the meeting.
 //
-// Mode A: The user can see the meeting or is organization manager or higher.
+// Mode A: Anyone can see it. Even anonymous.
 //
 // Mode B: The user can see the meeting.
 //
@@ -31,6 +31,8 @@ import (
 // Mode D: The user has meeting.can_see_livestream.
 //
 // Mode E: The user can see the meeting or is superadmin.
+//
+// Mode F: The user can see the meeting or is organization manager or higher.
 type Meeting struct{}
 
 // Name returns the collection name.
@@ -47,7 +49,7 @@ func (m Meeting) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int,
 func (m Meeting) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return m.modeA
+		return Allways
 	case "B":
 		return m.see
 	case "C":
@@ -56,6 +58,8 @@ func (m Meeting) Modes(mode string) FieldRestricter {
 		return m.modeD
 	case "E":
 		return m.modeE
+	case "F":
+		return m.modeF
 	}
 	return nil
 }
@@ -185,7 +189,7 @@ LOOP_MEETINGS:
 	return allowed, nil
 }
 
-func (m Meeting) modeA(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) ([]int, error) {
+func (m Meeting) modeF(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) ([]int, error) {
 	requestUser, err := perm.RequestUserFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting request user: %w", err)
