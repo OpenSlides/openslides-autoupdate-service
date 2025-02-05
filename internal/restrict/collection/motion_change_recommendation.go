@@ -73,7 +73,7 @@ func (m MotionChangeRecommendation) see(ctx context.Context, ds *dsfetch.Fetch, 
 		allowed, err := eachCondition(ids, func(motionChangeRecommendationID int) (bool, error) {
 			motionID, err := ds.MotionChangeRecommendation_MotionID(motionChangeRecommendationID).Value(ctx)
 			if err != nil {
-				return false, fmt.Errorf("getting motion_id")
+				return false, fmt.Errorf("getting motion_id: %w", err)
 			}
 
 			if !slices.Contains(allowedMotionIDs, motionID) {
