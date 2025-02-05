@@ -3,6 +3,7 @@ package collection
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
@@ -45,6 +46,20 @@ func (m MotionChangeRecommendation) Modes(mode string) FieldRestricter {
 }
 
 func (m MotionChangeRecommendation) see(ctx context.Context, ds *dsfetch.Fetch, motionChangeRecommendationIDs ...int) ([]int, error) {
+	motionIDs := make([]int, len(motionChangeRecommendationIDs))
+	for i, id := range motionChangeRecommendationIDs {
+		ds.MotionChangeRecommendation_MotionID(id).Lazy(&motionIDs[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("fechting motion ids: %w", err)
+	}
+
+	allowedMotionIDs, err := Collection(ctx, Motion{}.Name()).Modes("C")(ctx, ds, motionIDs...)
+	if err != nil {
+		return nil, fmt.Errorf("checking motions: %w", err)
+	}
+
 	return eachMeeting(ctx, ds, m, motionChangeRecommendationIDs, func(meetingID int, ids []int) ([]int, error) {
 		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
@@ -55,19 +70,13 @@ func (m MotionChangeRecommendation) see(ctx context.Context, ds *dsfetch.Fetch, 
 			return ids, nil
 		}
 
-		// if !perms.Has(perm.MotionCanSee) {
-		// 	return nil, nil
-		// }
-
 		allowed, err := eachCondition(ids, func(motionChangeRecommendationID int) (bool, error) {
-			motion_id, err := ds.MotionChangeRecommendation_MotionID(motionChangeRecommendationID).Value(ctx)
+			motionID, err := ds.MotionChangeRecommendation_MotionID(motionChangeRecommendationID).Value(ctx)
 			if err != nil {
 				return false, fmt.Errorf("getting motion_id")
 			}
 
-			can_see_motion, err := Collection(ctx, Motion{}.Name()).Modes("C")(ctx, ds, motion_id)
-
-			if len(can_see_motion) == 0 {
+			if !slices.Contains(allowedMotionIDs, motionID) {
 				return false, nil
 			}
 
@@ -78,11 +87,6 @@ func (m MotionChangeRecommendation) see(ctx context.Context, ds *dsfetch.Fetch, 
 
 			if internalChangeRecommendation {
 				return false, nil
-			}
-
-			motionID, err := ds.MotionChangeRecommendation_MotionID(motionChangeRecommendationID).Value(ctx)
-			if err != nil {
-				return false, fmt.Errorf("getting motion_id: %w", err)
 			}
 
 			stateID, err := ds.Motion_StateID(motionID).Value(ctx)
