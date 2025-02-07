@@ -3,19 +3,24 @@ type {{.GoName}} struct{
     {{- range .Fields}}
     {{.Name}} {{.Type}}
     {{- end}}
+    fetch *Fetch
 }
 
-func (t *{{.GoName}})lazy(ds *Fetch, id int) {
+func (c *{{.GoName}})lazy(ds *Fetch, id int) {
+    c.fetch = ds
     {{- range .Fields}}
-    ds.{{.FetchName}}(id).Lazy(&t.{{.Name}})
+    ds.{{.FetchName}}(id).Lazy(&c.{{.Name}})
     {{- end}}
 }
 
-func (t *{{.GoName}})preload(ds *Fetch,  id int) {
+func (c *{{.GoName}})preload(ds *Fetch,  id int) {
+    c.fetch = ds
 	{{- range .Fields}}
     ds.{{.FetchName}}(id).Preload()
     {{- end}}
 }
+
+// TODO: Generate functions for all relations
 
 func (r *Fetch){{.GoName}}(id int) *ValueCollection[{{.GoName}}, *{{.GoName}}]{
 	return &ValueCollection[{{.GoName}}, *{{.GoName}}]{

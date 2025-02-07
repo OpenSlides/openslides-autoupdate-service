@@ -157,3 +157,30 @@ func TestCollection(t *testing.T) {
 		t.Errorf("%v != %v", tag, expectedTag)
 	}
 }
+
+func TestCollectionRelation(t *testing.T) {
+	ctx := context.Background()
+
+	fetch := dsfetch.New(dsmock.Stub(dsmock.YAMLData(`---
+	tag/1:
+		name: my-tag
+		tagged_ids: ["motion/1", "assignment/2"]
+		meeting_id: 30
+
+	meeting/30/name: my-meeting
+	`)))
+
+	tag, err := fetch.Tag(1).Value(ctx)
+	if err != nil {
+		t.Fatalf("loading Tag: %v", err)
+	}
+
+	meeting, err := tag.Meeting().Value(ctx)
+	if err != nil {
+		t.Fatalf("loading meeting from tag %v", err)
+	}
+
+	if meeting.Name != "my-meeting" {
+		t.Errorf("got %v, expectd %v", meeting.Name, "my-meeting")
+	}
+}

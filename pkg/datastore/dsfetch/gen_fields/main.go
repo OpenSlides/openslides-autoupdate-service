@@ -5,12 +5,14 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	_ "embed"
 	"fmt"
 	"go/format"
 	"io"
 	"log"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 	"text/template"
@@ -250,6 +252,11 @@ func toCollections(raw map[string]models.Model) []Collection {
 		}
 		collections = append(collections, col)
 	}
+
+	// TODO: find a way to sort in in the order defined my models.yml
+	slices.SortFunc(collections, func(a, b Collection) int {
+		return cmp.Compare(a.GoName, b.GoName)
+	})
 	return collections
 }
 
