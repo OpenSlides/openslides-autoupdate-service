@@ -222,11 +222,13 @@ func toFields(raw map[string]models.Model) ([]field, error) {
 type Collection struct {
 	GoName     string
 	ModelsName string
-	Fields     []struct {
-		Name      string
-		Type      string
-		FetchName string
-	}
+	Fields     []CollectionField
+}
+
+type CollectionField struct {
+	Name      string
+	Type      string
+	FetchName string
 }
 
 func toCollections(raw map[string]models.Model) []Collection {
@@ -239,17 +241,19 @@ func toCollections(raw map[string]models.Model) []Collection {
 		for fieldName, modelField := range collection.Fields {
 			col.Fields = append(
 				col.Fields,
-				struct {
-					Name      string
-					Type      string
-					FetchName string
-				}{
+				CollectionField{
 					goName(fieldName),
 					typesToGo[valueType(modelField.Type, modelField.Required)],
 					goName(collectionName) + "_" + goName(fieldName),
 				},
 			)
 		}
+
+		// TODO: find a way to sort in in the order defined my models.yml
+		slices.SortFunc(col.Fields, func(a, b CollectionField) int {
+			return cmp.Compare(a.Name, b.Name)
+		})
+
 		collections = append(collections, col)
 	}
 
