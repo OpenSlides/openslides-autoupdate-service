@@ -3,8 +3,8 @@ module github.com/OpenSlides/openslides-autoupdate-service
 go 1.23
 
 require (
-	github.com/alecthomas/kong v1.6.1
-	github.com/goccy/go-yaml v1.15.15
+	github.com/alecthomas/kong v1.7.0
+	github.com/goccy/go-yaml v1.15.17
 	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/gomodule/redigo v1.9.2
 	github.com/jackc/pgx/v5 v5.7.2
@@ -14,8 +14,8 @@ require (
 	github.com/ostcar/topic v0.4.1
 	github.com/stretchr/testify v1.10.0
 	github.com/zeebo/xxh3 v1.0.2
-	golang.org/x/sync v0.10.0
-	golang.org/x/sys v0.29.0
+	golang.org/x/sync v0.11.0
+	golang.org/x/sys v0.30.0
 )
 
 require (
