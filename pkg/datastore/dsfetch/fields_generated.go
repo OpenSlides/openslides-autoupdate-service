@@ -12,7 +12,6 @@ import (
 
 type loader[T any] interface {
 	lazy(ds *Fetch, id int)
-	preload(ds *Fetch, id int)
 	*T
 }
 
@@ -36,11 +35,6 @@ func (v *ValueCollection[T, P]) Value(ctx context.Context) (T, error) {
 
 func (v *ValueCollection[T, P]) Lazy(collection P) {
 	collection.lazy(v.fetch, v.id)
-}
-
-func (v *ValueCollection[T, P]) Preload() {
-	var collection P
-	collection.preload(v.fetch, v.id)
 }
 
 // ValueBool is a value from the datastore.
@@ -83,15 +77,6 @@ func (v *ValueBool) Lazy(value *bool) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueBool) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueBool) convert(p []byte) (bool, error) {
 	var zero bool
@@ -108,7 +93,7 @@ func (v *ValueBool) convert(p []byte) (bool, error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueBool) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -162,15 +147,6 @@ func (v *ValueFloat) Lazy(value *float32) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueFloat) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueFloat) convert(p []byte) (float32, error) {
 	var zero float32
@@ -187,7 +163,7 @@ func (v *ValueFloat) convert(p []byte) (float32, error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueFloat) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -241,15 +217,6 @@ func (v *ValueInt) Lazy(value *int) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueInt) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueInt) convert(p []byte) (int, error) {
 	var zero int
@@ -266,7 +233,7 @@ func (v *ValueInt) convert(p []byte) (int, error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueInt) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -320,15 +287,6 @@ func (v *ValueIntSlice) Lazy(value *[]int) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueIntSlice) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueIntSlice) convert(p []byte) ([]int, error) {
 	var zero []int
@@ -345,7 +303,7 @@ func (v *ValueIntSlice) convert(p []byte) ([]int, error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueIntSlice) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -399,15 +357,6 @@ func (v *ValueJSON) Lazy(value *json.RawMessage) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueJSON) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueJSON) convert(p []byte) (json.RawMessage, error) {
 	var zero json.RawMessage
@@ -424,7 +373,7 @@ func (v *ValueJSON) convert(p []byte) (json.RawMessage, error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueJSON) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -478,15 +427,6 @@ func (v *ValueMaybeInt) Lazy(value *Maybe[int]) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueMaybeInt) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueMaybeInt) convert(p []byte) (Maybe[int], error) {
 	var zero Maybe[int]
@@ -503,7 +443,7 @@ func (v *ValueMaybeInt) convert(p []byte) (Maybe[int], error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueMaybeInt) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -557,15 +497,6 @@ func (v *ValueMaybeString) Lazy(value *Maybe[string]) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueMaybeString) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueMaybeString) convert(p []byte) (Maybe[string], error) {
 	var zero Maybe[string]
@@ -582,7 +513,7 @@ func (v *ValueMaybeString) convert(p []byte) (Maybe[string], error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueMaybeString) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -636,15 +567,6 @@ func (v *ValueString) Lazy(value *string) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueString) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueString) convert(p []byte) (string, error) {
 	var zero string
@@ -661,7 +583,7 @@ func (v *ValueString) convert(p []byte) (string, error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueString) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -715,15 +637,6 @@ func (v *ValueStringSlice) Lazy(value *[]string) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueStringSlice) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueStringSlice) convert(p []byte) ([]string, error) {
 	var zero []string
@@ -740,7 +653,7 @@ func (v *ValueStringSlice) convert(p []byte) ([]string, error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueStringSlice) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -8463,17 +8376,6 @@ func (c *ActionWorker) lazy(ds *Fetch, id int) {
 	ds.ActionWorker_UserID(id).Lazy(&c.UserID)
 }
 
-func (c *ActionWorker) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.ActionWorker_Created(id).Preload()
-	ds.ActionWorker_ID(id).Preload()
-	ds.ActionWorker_Name(id).Preload()
-	ds.ActionWorker_Result(id).Preload()
-	ds.ActionWorker_State(id).Preload()
-	ds.ActionWorker_Timestamp(id).Preload()
-	ds.ActionWorker_UserID(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) ActionWorker(id int) *ValueCollection[ActionWorker, *ActionWorker] {
@@ -8522,26 +8424,6 @@ func (c *AgendaItem) lazy(ds *Fetch, id int) {
 	ds.AgendaItem_TagIDs(id).Lazy(&c.TagIDs)
 	ds.AgendaItem_Type(id).Lazy(&c.Type)
 	ds.AgendaItem_Weight(id).Lazy(&c.Weight)
-}
-
-func (c *AgendaItem) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.AgendaItem_ChildIDs(id).Preload()
-	ds.AgendaItem_Closed(id).Preload()
-	ds.AgendaItem_Comment(id).Preload()
-	ds.AgendaItem_ContentObjectID(id).Preload()
-	ds.AgendaItem_Duration(id).Preload()
-	ds.AgendaItem_ID(id).Preload()
-	ds.AgendaItem_IsHidden(id).Preload()
-	ds.AgendaItem_IsInternal(id).Preload()
-	ds.AgendaItem_ItemNumber(id).Preload()
-	ds.AgendaItem_Level(id).Preload()
-	ds.AgendaItem_MeetingID(id).Preload()
-	ds.AgendaItem_ParentID(id).Preload()
-	ds.AgendaItem_ProjectionIDs(id).Preload()
-	ds.AgendaItem_TagIDs(id).Preload()
-	ds.AgendaItem_Type(id).Preload()
-	ds.AgendaItem_Weight(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -8594,26 +8476,6 @@ func (c *Assignment) lazy(ds *Fetch, id int) {
 	ds.Assignment_Title(id).Lazy(&c.Title)
 }
 
-func (c *Assignment) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.Assignment_AgendaItemID(id).Preload()
-	ds.Assignment_AttachmentMeetingMediafileIDs(id).Preload()
-	ds.Assignment_CandidateIDs(id).Preload()
-	ds.Assignment_DefaultPollDescription(id).Preload()
-	ds.Assignment_Description(id).Preload()
-	ds.Assignment_ID(id).Preload()
-	ds.Assignment_ListOfSpeakersID(id).Preload()
-	ds.Assignment_MeetingID(id).Preload()
-	ds.Assignment_NumberPollCandidates(id).Preload()
-	ds.Assignment_OpenPosts(id).Preload()
-	ds.Assignment_Phase(id).Preload()
-	ds.Assignment_PollIDs(id).Preload()
-	ds.Assignment_ProjectionIDs(id).Preload()
-	ds.Assignment_SequentialNumber(id).Preload()
-	ds.Assignment_TagIDs(id).Preload()
-	ds.Assignment_Title(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) Assignment(id int) *ValueCollection[Assignment, *Assignment] {
@@ -8640,15 +8502,6 @@ func (c *AssignmentCandidate) lazy(ds *Fetch, id int) {
 	ds.AssignmentCandidate_MeetingID(id).Lazy(&c.MeetingID)
 	ds.AssignmentCandidate_MeetingUserID(id).Lazy(&c.MeetingUserID)
 	ds.AssignmentCandidate_Weight(id).Lazy(&c.Weight)
-}
-
-func (c *AssignmentCandidate) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.AssignmentCandidate_AssignmentID(id).Preload()
-	ds.AssignmentCandidate_ID(id).Preload()
-	ds.AssignmentCandidate_MeetingID(id).Preload()
-	ds.AssignmentCandidate_MeetingUserID(id).Preload()
-	ds.AssignmentCandidate_Weight(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -8683,17 +8536,6 @@ func (c *ChatGroup) lazy(ds *Fetch, id int) {
 	ds.ChatGroup_WriteGroupIDs(id).Lazy(&c.WriteGroupIDs)
 }
 
-func (c *ChatGroup) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.ChatGroup_ChatMessageIDs(id).Preload()
-	ds.ChatGroup_ID(id).Preload()
-	ds.ChatGroup_MeetingID(id).Preload()
-	ds.ChatGroup_Name(id).Preload()
-	ds.ChatGroup_ReadGroupIDs(id).Preload()
-	ds.ChatGroup_Weight(id).Preload()
-	ds.ChatGroup_WriteGroupIDs(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) ChatGroup(id int) *ValueCollection[ChatGroup, *ChatGroup] {
@@ -8722,16 +8564,6 @@ func (c *ChatMessage) lazy(ds *Fetch, id int) {
 	ds.ChatMessage_ID(id).Lazy(&c.ID)
 	ds.ChatMessage_MeetingID(id).Lazy(&c.MeetingID)
 	ds.ChatMessage_MeetingUserID(id).Lazy(&c.MeetingUserID)
-}
-
-func (c *ChatMessage) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.ChatMessage_ChatGroupID(id).Preload()
-	ds.ChatMessage_Content(id).Preload()
-	ds.ChatMessage_Created(id).Preload()
-	ds.ChatMessage_ID(id).Preload()
-	ds.ChatMessage_MeetingID(id).Preload()
-	ds.ChatMessage_MeetingUserID(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -8778,23 +8610,6 @@ func (c *Committee) lazy(ds *Fetch, id int) {
 	ds.Committee_UserIDs(id).Lazy(&c.UserIDs)
 }
 
-func (c *Committee) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.Committee_DefaultMeetingID(id).Preload()
-	ds.Committee_Description(id).Preload()
-	ds.Committee_ExternalID(id).Preload()
-	ds.Committee_ForwardToCommitteeIDs(id).Preload()
-	ds.Committee_ForwardingUserID(id).Preload()
-	ds.Committee_ID(id).Preload()
-	ds.Committee_ManagerIDs(id).Preload()
-	ds.Committee_MeetingIDs(id).Preload()
-	ds.Committee_Name(id).Preload()
-	ds.Committee_OrganizationID(id).Preload()
-	ds.Committee_OrganizationTagIDs(id).Preload()
-	ds.Committee_ReceiveForwardingsFromCommitteeIDs(id).Preload()
-	ds.Committee_UserIDs(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) Committee(id int) *ValueCollection[Committee, *Committee] {
@@ -8819,14 +8634,6 @@ func (c *Gender) lazy(ds *Fetch, id int) {
 	ds.Gender_Name(id).Lazy(&c.Name)
 	ds.Gender_OrganizationID(id).Lazy(&c.OrganizationID)
 	ds.Gender_UserIDs(id).Lazy(&c.UserIDs)
-}
-
-func (c *Gender) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.Gender_ID(id).Preload()
-	ds.Gender_Name(id).Preload()
-	ds.Gender_OrganizationID(id).Preload()
-	ds.Gender_UserIDs(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -8889,31 +8696,6 @@ func (c *Group) lazy(ds *Fetch, id int) {
 	ds.Group_WriteCommentSectionIDs(id).Lazy(&c.WriteCommentSectionIDs)
 }
 
-func (c *Group) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.Group_AdminGroupForMeetingID(id).Preload()
-	ds.Group_AnonymousGroupForMeetingID(id).Preload()
-	ds.Group_DefaultGroupForMeetingID(id).Preload()
-	ds.Group_ExternalID(id).Preload()
-	ds.Group_ID(id).Preload()
-	ds.Group_MeetingID(id).Preload()
-	ds.Group_MeetingMediafileAccessGroupIDs(id).Preload()
-	ds.Group_MeetingMediafileInheritedAccessGroupIDs(id).Preload()
-	ds.Group_MeetingUserIDs(id).Preload()
-	ds.Group_Name(id).Preload()
-	ds.Group_Permissions(id).Preload()
-	ds.Group_PollIDs(id).Preload()
-	ds.Group_ReadChatGroupIDs(id).Preload()
-	ds.Group_ReadCommentSectionIDs(id).Preload()
-	ds.Group_UsedAsAssignmentPollDefaultID(id).Preload()
-	ds.Group_UsedAsMotionPollDefaultID(id).Preload()
-	ds.Group_UsedAsPollDefaultID(id).Preload()
-	ds.Group_UsedAsTopicPollDefaultID(id).Preload()
-	ds.Group_Weight(id).Preload()
-	ds.Group_WriteChatGroupIDs(id).Preload()
-	ds.Group_WriteCommentSectionIDs(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) Group(id int) *ValueCollection[Group, *Group] {
@@ -8940,15 +8722,6 @@ func (c *ImportPreview) lazy(ds *Fetch, id int) {
 	ds.ImportPreview_Name(id).Lazy(&c.Name)
 	ds.ImportPreview_Result(id).Lazy(&c.Result)
 	ds.ImportPreview_State(id).Lazy(&c.State)
-}
-
-func (c *ImportPreview) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.ImportPreview_Created(id).Preload()
-	ds.ImportPreview_ID(id).Preload()
-	ds.ImportPreview_Name(id).Preload()
-	ds.ImportPreview_Result(id).Preload()
-	ds.ImportPreview_State(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -8985,19 +8758,6 @@ func (c *ListOfSpeakers) lazy(ds *Fetch, id int) {
 	ds.ListOfSpeakers_SequentialNumber(id).Lazy(&c.SequentialNumber)
 	ds.ListOfSpeakers_SpeakerIDs(id).Lazy(&c.SpeakerIDs)
 	ds.ListOfSpeakers_StructureLevelListOfSpeakersIDs(id).Lazy(&c.StructureLevelListOfSpeakersIDs)
-}
-
-func (c *ListOfSpeakers) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.ListOfSpeakers_Closed(id).Preload()
-	ds.ListOfSpeakers_ContentObjectID(id).Preload()
-	ds.ListOfSpeakers_ID(id).Preload()
-	ds.ListOfSpeakers_MeetingID(id).Preload()
-	ds.ListOfSpeakers_ModeratorNotes(id).Preload()
-	ds.ListOfSpeakers_ProjectionIDs(id).Preload()
-	ds.ListOfSpeakers_SequentialNumber(id).Preload()
-	ds.ListOfSpeakers_SpeakerIDs(id).Preload()
-	ds.ListOfSpeakers_StructureLevelListOfSpeakersIDs(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -9044,24 +8804,6 @@ func (c *Mediafile) lazy(ds *Fetch, id int) {
 	ds.Mediafile_PublishedToMeetingsInOrganizationID(id).Lazy(&c.PublishedToMeetingsInOrganizationID)
 	ds.Mediafile_Title(id).Lazy(&c.Title)
 	ds.Mediafile_Token(id).Lazy(&c.Token)
-}
-
-func (c *Mediafile) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.Mediafile_ChildIDs(id).Preload()
-	ds.Mediafile_CreateTimestamp(id).Preload()
-	ds.Mediafile_Filename(id).Preload()
-	ds.Mediafile_Filesize(id).Preload()
-	ds.Mediafile_ID(id).Preload()
-	ds.Mediafile_IsDirectory(id).Preload()
-	ds.Mediafile_MeetingMediafileIDs(id).Preload()
-	ds.Mediafile_Mimetype(id).Preload()
-	ds.Mediafile_OwnerID(id).Preload()
-	ds.Mediafile_ParentID(id).Preload()
-	ds.Mediafile_PdfInformation(id).Preload()
-	ds.Mediafile_PublishedToMeetingsInOrganizationID(id).Preload()
-	ds.Mediafile_Title(id).Preload()
-	ds.Mediafile_Token(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -9552,245 +9294,6 @@ func (c *Meeting) lazy(ds *Fetch, id int) {
 	ds.Meeting_WelcomeTitle(id).Lazy(&c.WelcomeTitle)
 }
 
-func (c *Meeting) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.Meeting_AdminGroupID(id).Preload()
-	ds.Meeting_AgendaEnableNumbering(id).Preload()
-	ds.Meeting_AgendaItemCreation(id).Preload()
-	ds.Meeting_AgendaItemIDs(id).Preload()
-	ds.Meeting_AgendaNewItemsDefaultVisibility(id).Preload()
-	ds.Meeting_AgendaNumberPrefix(id).Preload()
-	ds.Meeting_AgendaNumeralSystem(id).Preload()
-	ds.Meeting_AgendaShowInternalItemsOnProjector(id).Preload()
-	ds.Meeting_AgendaShowSubtitles(id).Preload()
-	ds.Meeting_AgendaShowTopicNavigationOnDetailView(id).Preload()
-	ds.Meeting_AllProjectionIDs(id).Preload()
-	ds.Meeting_AnonymousGroupID(id).Preload()
-	ds.Meeting_ApplauseEnable(id).Preload()
-	ds.Meeting_ApplauseMaxAmount(id).Preload()
-	ds.Meeting_ApplauseMinAmount(id).Preload()
-	ds.Meeting_ApplauseParticleImageUrl(id).Preload()
-	ds.Meeting_ApplauseShowLevel(id).Preload()
-	ds.Meeting_ApplauseTimeout(id).Preload()
-	ds.Meeting_ApplauseType(id).Preload()
-	ds.Meeting_AssignmentCandidateIDs(id).Preload()
-	ds.Meeting_AssignmentIDs(id).Preload()
-	ds.Meeting_AssignmentPollAddCandidatesToListOfSpeakers(id).Preload()
-	ds.Meeting_AssignmentPollBallotPaperNumber(id).Preload()
-	ds.Meeting_AssignmentPollBallotPaperSelection(id).Preload()
-	ds.Meeting_AssignmentPollDefaultBackend(id).Preload()
-	ds.Meeting_AssignmentPollDefaultGroupIDs(id).Preload()
-	ds.Meeting_AssignmentPollDefaultMethod(id).Preload()
-	ds.Meeting_AssignmentPollDefaultOnehundredPercentBase(id).Preload()
-	ds.Meeting_AssignmentPollDefaultType(id).Preload()
-	ds.Meeting_AssignmentPollEnableMaxVotesPerOption(id).Preload()
-	ds.Meeting_AssignmentPollSortPollResultByVotes(id).Preload()
-	ds.Meeting_AssignmentsExportPreamble(id).Preload()
-	ds.Meeting_AssignmentsExportTitle(id).Preload()
-	ds.Meeting_ChatGroupIDs(id).Preload()
-	ds.Meeting_ChatMessageIDs(id).Preload()
-	ds.Meeting_CommitteeID(id).Preload()
-	ds.Meeting_ConferenceAutoConnect(id).Preload()
-	ds.Meeting_ConferenceAutoConnectNextSpeakers(id).Preload()
-	ds.Meeting_ConferenceEnableHelpdesk(id).Preload()
-	ds.Meeting_ConferenceLosRestriction(id).Preload()
-	ds.Meeting_ConferenceOpenMicrophone(id).Preload()
-	ds.Meeting_ConferenceOpenVideo(id).Preload()
-	ds.Meeting_ConferenceShow(id).Preload()
-	ds.Meeting_ConferenceStreamPosterUrl(id).Preload()
-	ds.Meeting_ConferenceStreamUrl(id).Preload()
-	ds.Meeting_CustomTranslations(id).Preload()
-	ds.Meeting_DefaultGroupID(id).Preload()
-	ds.Meeting_DefaultMeetingForCommitteeID(id).Preload()
-	ds.Meeting_DefaultProjectorAgendaItemListIDs(id).Preload()
-	ds.Meeting_DefaultProjectorAmendmentIDs(id).Preload()
-	ds.Meeting_DefaultProjectorAssignmentIDs(id).Preload()
-	ds.Meeting_DefaultProjectorAssignmentPollIDs(id).Preload()
-	ds.Meeting_DefaultProjectorCountdownIDs(id).Preload()
-	ds.Meeting_DefaultProjectorCurrentListOfSpeakersIDs(id).Preload()
-	ds.Meeting_DefaultProjectorListOfSpeakersIDs(id).Preload()
-	ds.Meeting_DefaultProjectorMediafileIDs(id).Preload()
-	ds.Meeting_DefaultProjectorMessageIDs(id).Preload()
-	ds.Meeting_DefaultProjectorMotionBlockIDs(id).Preload()
-	ds.Meeting_DefaultProjectorMotionIDs(id).Preload()
-	ds.Meeting_DefaultProjectorMotionPollIDs(id).Preload()
-	ds.Meeting_DefaultProjectorPollIDs(id).Preload()
-	ds.Meeting_DefaultProjectorTopicIDs(id).Preload()
-	ds.Meeting_Description(id).Preload()
-	ds.Meeting_EnableAnonymous(id).Preload()
-	ds.Meeting_EndTime(id).Preload()
-	ds.Meeting_ExportCsvEncoding(id).Preload()
-	ds.Meeting_ExportCsvSeparator(id).Preload()
-	ds.Meeting_ExportPdfFontsize(id).Preload()
-	ds.Meeting_ExportPdfLineHeight(id).Preload()
-	ds.Meeting_ExportPdfPageMarginBottom(id).Preload()
-	ds.Meeting_ExportPdfPageMarginLeft(id).Preload()
-	ds.Meeting_ExportPdfPageMarginRight(id).Preload()
-	ds.Meeting_ExportPdfPageMarginTop(id).Preload()
-	ds.Meeting_ExportPdfPagenumberAlignment(id).Preload()
-	ds.Meeting_ExportPdfPagesize(id).Preload()
-	ds.Meeting_ExternalID(id).Preload()
-	ds.Meeting_FontBoldID(id).Preload()
-	ds.Meeting_FontBoldItalicID(id).Preload()
-	ds.Meeting_FontChyronSpeakerNameID(id).Preload()
-	ds.Meeting_FontItalicID(id).Preload()
-	ds.Meeting_FontMonospaceID(id).Preload()
-	ds.Meeting_FontProjectorH1ID(id).Preload()
-	ds.Meeting_FontProjectorH2ID(id).Preload()
-	ds.Meeting_FontRegularID(id).Preload()
-	ds.Meeting_ForwardedMotionIDs(id).Preload()
-	ds.Meeting_GroupIDs(id).Preload()
-	ds.Meeting_ID(id).Preload()
-	ds.Meeting_ImportedAt(id).Preload()
-	ds.Meeting_IsActiveInOrganizationID(id).Preload()
-	ds.Meeting_IsArchivedInOrganizationID(id).Preload()
-	ds.Meeting_JitsiDomain(id).Preload()
-	ds.Meeting_JitsiRoomName(id).Preload()
-	ds.Meeting_JitsiRoomPassword(id).Preload()
-	ds.Meeting_Language(id).Preload()
-	ds.Meeting_ListOfSpeakersAllowMultipleSpeakers(id).Preload()
-	ds.Meeting_ListOfSpeakersAmountLastOnProjector(id).Preload()
-	ds.Meeting_ListOfSpeakersAmountNextOnProjector(id).Preload()
-	ds.Meeting_ListOfSpeakersCanCreatePointOfOrderForOthers(id).Preload()
-	ds.Meeting_ListOfSpeakersCanSetContributionSelf(id).Preload()
-	ds.Meeting_ListOfSpeakersClosingDisablesPointOfOrder(id).Preload()
-	ds.Meeting_ListOfSpeakersCountdownID(id).Preload()
-	ds.Meeting_ListOfSpeakersCoupleCountdown(id).Preload()
-	ds.Meeting_ListOfSpeakersDefaultStructureLevelTime(id).Preload()
-	ds.Meeting_ListOfSpeakersEnableInterposedQuestion(id).Preload()
-	ds.Meeting_ListOfSpeakersEnablePointOfOrderCategories(id).Preload()
-	ds.Meeting_ListOfSpeakersEnablePointOfOrderSpeakers(id).Preload()
-	ds.Meeting_ListOfSpeakersEnableProContraSpeech(id).Preload()
-	ds.Meeting_ListOfSpeakersHideContributionCount(id).Preload()
-	ds.Meeting_ListOfSpeakersIDs(id).Preload()
-	ds.Meeting_ListOfSpeakersInitiallyClosed(id).Preload()
-	ds.Meeting_ListOfSpeakersInterventionTime(id).Preload()
-	ds.Meeting_ListOfSpeakersPresentUsersOnly(id).Preload()
-	ds.Meeting_ListOfSpeakersShowAmountOfSpeakersOnSlide(id).Preload()
-	ds.Meeting_ListOfSpeakersShowFirstContribution(id).Preload()
-	ds.Meeting_ListOfSpeakersSpeakerNoteForEveryone(id).Preload()
-	ds.Meeting_Location(id).Preload()
-	ds.Meeting_LockedFromInside(id).Preload()
-	ds.Meeting_LogoPdfBallotPaperID(id).Preload()
-	ds.Meeting_LogoPdfFooterLID(id).Preload()
-	ds.Meeting_LogoPdfFooterRID(id).Preload()
-	ds.Meeting_LogoPdfHeaderLID(id).Preload()
-	ds.Meeting_LogoPdfHeaderRID(id).Preload()
-	ds.Meeting_LogoProjectorHeaderID(id).Preload()
-	ds.Meeting_LogoProjectorMainID(id).Preload()
-	ds.Meeting_LogoWebHeaderID(id).Preload()
-	ds.Meeting_MediafileIDs(id).Preload()
-	ds.Meeting_MeetingMediafileIDs(id).Preload()
-	ds.Meeting_MeetingUserIDs(id).Preload()
-	ds.Meeting_MotionBlockIDs(id).Preload()
-	ds.Meeting_MotionCategoryIDs(id).Preload()
-	ds.Meeting_MotionChangeRecommendationIDs(id).Preload()
-	ds.Meeting_MotionCommentIDs(id).Preload()
-	ds.Meeting_MotionCommentSectionIDs(id).Preload()
-	ds.Meeting_MotionEditorIDs(id).Preload()
-	ds.Meeting_MotionIDs(id).Preload()
-	ds.Meeting_MotionPollBallotPaperNumber(id).Preload()
-	ds.Meeting_MotionPollBallotPaperSelection(id).Preload()
-	ds.Meeting_MotionPollDefaultBackend(id).Preload()
-	ds.Meeting_MotionPollDefaultGroupIDs(id).Preload()
-	ds.Meeting_MotionPollDefaultMethod(id).Preload()
-	ds.Meeting_MotionPollDefaultOnehundredPercentBase(id).Preload()
-	ds.Meeting_MotionPollDefaultType(id).Preload()
-	ds.Meeting_MotionStateIDs(id).Preload()
-	ds.Meeting_MotionSubmitterIDs(id).Preload()
-	ds.Meeting_MotionWorkflowIDs(id).Preload()
-	ds.Meeting_MotionWorkingGroupSpeakerIDs(id).Preload()
-	ds.Meeting_MotionsAmendmentsEnabled(id).Preload()
-	ds.Meeting_MotionsAmendmentsInMainList(id).Preload()
-	ds.Meeting_MotionsAmendmentsMultipleParagraphs(id).Preload()
-	ds.Meeting_MotionsAmendmentsOfAmendments(id).Preload()
-	ds.Meeting_MotionsAmendmentsPrefix(id).Preload()
-	ds.Meeting_MotionsAmendmentsTextMode(id).Preload()
-	ds.Meeting_MotionsBlockSlideColumns(id).Preload()
-	ds.Meeting_MotionsCreateEnableAdditionalSubmitterText(id).Preload()
-	ds.Meeting_MotionsDefaultAmendmentWorkflowID(id).Preload()
-	ds.Meeting_MotionsDefaultLineNumbering(id).Preload()
-	ds.Meeting_MotionsDefaultSorting(id).Preload()
-	ds.Meeting_MotionsDefaultWorkflowID(id).Preload()
-	ds.Meeting_MotionsEnableEditor(id).Preload()
-	ds.Meeting_MotionsEnableReasonOnProjector(id).Preload()
-	ds.Meeting_MotionsEnableRecommendationOnProjector(id).Preload()
-	ds.Meeting_MotionsEnableSideboxOnProjector(id).Preload()
-	ds.Meeting_MotionsEnableTextOnProjector(id).Preload()
-	ds.Meeting_MotionsEnableWorkingGroupSpeaker(id).Preload()
-	ds.Meeting_MotionsExportFollowRecommendation(id).Preload()
-	ds.Meeting_MotionsExportPreamble(id).Preload()
-	ds.Meeting_MotionsExportSubmitterRecommendation(id).Preload()
-	ds.Meeting_MotionsExportTitle(id).Preload()
-	ds.Meeting_MotionsHideMetadataBackground(id).Preload()
-	ds.Meeting_MotionsLineLength(id).Preload()
-	ds.Meeting_MotionsNumberMinDigits(id).Preload()
-	ds.Meeting_MotionsNumberType(id).Preload()
-	ds.Meeting_MotionsNumberWithBlank(id).Preload()
-	ds.Meeting_MotionsPreamble(id).Preload()
-	ds.Meeting_MotionsReasonRequired(id).Preload()
-	ds.Meeting_MotionsRecommendationTextMode(id).Preload()
-	ds.Meeting_MotionsRecommendationsBy(id).Preload()
-	ds.Meeting_MotionsShowReferringMotions(id).Preload()
-	ds.Meeting_MotionsShowSequentialNumber(id).Preload()
-	ds.Meeting_MotionsSupportersMinAmount(id).Preload()
-	ds.Meeting_Name(id).Preload()
-	ds.Meeting_OptionIDs(id).Preload()
-	ds.Meeting_OrganizationTagIDs(id).Preload()
-	ds.Meeting_PersonalNoteIDs(id).Preload()
-	ds.Meeting_PointOfOrderCategoryIDs(id).Preload()
-	ds.Meeting_PollBallotPaperNumber(id).Preload()
-	ds.Meeting_PollBallotPaperSelection(id).Preload()
-	ds.Meeting_PollCandidateIDs(id).Preload()
-	ds.Meeting_PollCandidateListIDs(id).Preload()
-	ds.Meeting_PollCountdownID(id).Preload()
-	ds.Meeting_PollCoupleCountdown(id).Preload()
-	ds.Meeting_PollDefaultBackend(id).Preload()
-	ds.Meeting_PollDefaultGroupIDs(id).Preload()
-	ds.Meeting_PollDefaultMethod(id).Preload()
-	ds.Meeting_PollDefaultOnehundredPercentBase(id).Preload()
-	ds.Meeting_PollDefaultType(id).Preload()
-	ds.Meeting_PollIDs(id).Preload()
-	ds.Meeting_PollSortPollResultByVotes(id).Preload()
-	ds.Meeting_PresentUserIDs(id).Preload()
-	ds.Meeting_ProjectionIDs(id).Preload()
-	ds.Meeting_ProjectorCountdownDefaultTime(id).Preload()
-	ds.Meeting_ProjectorCountdownIDs(id).Preload()
-	ds.Meeting_ProjectorCountdownWarningTime(id).Preload()
-	ds.Meeting_ProjectorIDs(id).Preload()
-	ds.Meeting_ProjectorMessageIDs(id).Preload()
-	ds.Meeting_ReferenceProjectorID(id).Preload()
-	ds.Meeting_SpeakerIDs(id).Preload()
-	ds.Meeting_StartTime(id).Preload()
-	ds.Meeting_StructureLevelIDs(id).Preload()
-	ds.Meeting_StructureLevelListOfSpeakersIDs(id).Preload()
-	ds.Meeting_TagIDs(id).Preload()
-	ds.Meeting_TemplateForOrganizationID(id).Preload()
-	ds.Meeting_TopicIDs(id).Preload()
-	ds.Meeting_TopicPollDefaultGroupIDs(id).Preload()
-	ds.Meeting_UserIDs(id).Preload()
-	ds.Meeting_UsersAllowSelfSetPresent(id).Preload()
-	ds.Meeting_UsersEmailBody(id).Preload()
-	ds.Meeting_UsersEmailReplyto(id).Preload()
-	ds.Meeting_UsersEmailSender(id).Preload()
-	ds.Meeting_UsersEmailSubject(id).Preload()
-	ds.Meeting_UsersEnablePresenceView(id).Preload()
-	ds.Meeting_UsersEnableVoteDelegations(id).Preload()
-	ds.Meeting_UsersEnableVoteWeight(id).Preload()
-	ds.Meeting_UsersForbidDelegatorAsSubmitter(id).Preload()
-	ds.Meeting_UsersForbidDelegatorAsSupporter(id).Preload()
-	ds.Meeting_UsersForbidDelegatorInListOfSpeakers(id).Preload()
-	ds.Meeting_UsersForbidDelegatorToVote(id).Preload()
-	ds.Meeting_UsersPdfWelcometext(id).Preload()
-	ds.Meeting_UsersPdfWelcometitle(id).Preload()
-	ds.Meeting_UsersPdfWlanEncryption(id).Preload()
-	ds.Meeting_UsersPdfWlanPassword(id).Preload()
-	ds.Meeting_UsersPdfWlanSsid(id).Preload()
-	ds.Meeting_VoteIDs(id).Preload()
-	ds.Meeting_WelcomeText(id).Preload()
-	ds.Meeting_WelcomeTitle(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) Meeting(id int) *ValueCollection[Meeting, *Meeting] {
@@ -9859,35 +9362,6 @@ func (c *MeetingMediafile) lazy(ds *Fetch, id int) {
 	ds.MeetingMediafile_UsedAsLogoWebHeaderInMeetingID(id).Lazy(&c.UsedAsLogoWebHeaderInMeetingID)
 }
 
-func (c *MeetingMediafile) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.MeetingMediafile_AccessGroupIDs(id).Preload()
-	ds.MeetingMediafile_AttachmentIDs(id).Preload()
-	ds.MeetingMediafile_ID(id).Preload()
-	ds.MeetingMediafile_InheritedAccessGroupIDs(id).Preload()
-	ds.MeetingMediafile_IsPublic(id).Preload()
-	ds.MeetingMediafile_ListOfSpeakersID(id).Preload()
-	ds.MeetingMediafile_MediafileID(id).Preload()
-	ds.MeetingMediafile_MeetingID(id).Preload()
-	ds.MeetingMediafile_ProjectionIDs(id).Preload()
-	ds.MeetingMediafile_UsedAsFontBoldInMeetingID(id).Preload()
-	ds.MeetingMediafile_UsedAsFontBoldItalicInMeetingID(id).Preload()
-	ds.MeetingMediafile_UsedAsFontChyronSpeakerNameInMeetingID(id).Preload()
-	ds.MeetingMediafile_UsedAsFontItalicInMeetingID(id).Preload()
-	ds.MeetingMediafile_UsedAsFontMonospaceInMeetingID(id).Preload()
-	ds.MeetingMediafile_UsedAsFontProjectorH1InMeetingID(id).Preload()
-	ds.MeetingMediafile_UsedAsFontProjectorH2InMeetingID(id).Preload()
-	ds.MeetingMediafile_UsedAsFontRegularInMeetingID(id).Preload()
-	ds.MeetingMediafile_UsedAsLogoPdfBallotPaperInMeetingID(id).Preload()
-	ds.MeetingMediafile_UsedAsLogoPdfFooterLInMeetingID(id).Preload()
-	ds.MeetingMediafile_UsedAsLogoPdfFooterRInMeetingID(id).Preload()
-	ds.MeetingMediafile_UsedAsLogoPdfHeaderLInMeetingID(id).Preload()
-	ds.MeetingMediafile_UsedAsLogoPdfHeaderRInMeetingID(id).Preload()
-	ds.MeetingMediafile_UsedAsLogoProjectorHeaderInMeetingID(id).Preload()
-	ds.MeetingMediafile_UsedAsLogoProjectorMainInMeetingID(id).Preload()
-	ds.MeetingMediafile_UsedAsLogoWebHeaderInMeetingID(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) MeetingMediafile(id int) *ValueCollection[MeetingMediafile, *MeetingMediafile] {
@@ -9944,30 +9418,6 @@ func (c *MeetingUser) lazy(ds *Fetch, id int) {
 	ds.MeetingUser_VoteDelegatedToID(id).Lazy(&c.VoteDelegatedToID)
 	ds.MeetingUser_VoteDelegationsFromIDs(id).Lazy(&c.VoteDelegationsFromIDs)
 	ds.MeetingUser_VoteWeight(id).Lazy(&c.VoteWeight)
-}
-
-func (c *MeetingUser) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.MeetingUser_AboutMe(id).Preload()
-	ds.MeetingUser_AssignmentCandidateIDs(id).Preload()
-	ds.MeetingUser_ChatMessageIDs(id).Preload()
-	ds.MeetingUser_Comment(id).Preload()
-	ds.MeetingUser_GroupIDs(id).Preload()
-	ds.MeetingUser_ID(id).Preload()
-	ds.MeetingUser_LockedOut(id).Preload()
-	ds.MeetingUser_MeetingID(id).Preload()
-	ds.MeetingUser_MotionEditorIDs(id).Preload()
-	ds.MeetingUser_MotionSubmitterIDs(id).Preload()
-	ds.MeetingUser_MotionWorkingGroupSpeakerIDs(id).Preload()
-	ds.MeetingUser_Number(id).Preload()
-	ds.MeetingUser_PersonalNoteIDs(id).Preload()
-	ds.MeetingUser_SpeakerIDs(id).Preload()
-	ds.MeetingUser_StructureLevelIDs(id).Preload()
-	ds.MeetingUser_SupportedMotionIDs(id).Preload()
-	ds.MeetingUser_UserID(id).Preload()
-	ds.MeetingUser_VoteDelegatedToID(id).Preload()
-	ds.MeetingUser_VoteDelegationsFromIDs(id).Preload()
-	ds.MeetingUser_VoteWeight(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -10094,63 +9544,6 @@ func (c *Motion) lazy(ds *Fetch, id int) {
 	ds.Motion_WorkingGroupSpeakerIDs(id).Lazy(&c.WorkingGroupSpeakerIDs)
 }
 
-func (c *Motion) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.Motion_AdditionalSubmitter(id).Preload()
-	ds.Motion_AgendaItemID(id).Preload()
-	ds.Motion_AllDerivedMotionIDs(id).Preload()
-	ds.Motion_AllOriginIDs(id).Preload()
-	ds.Motion_AmendmentIDs(id).Preload()
-	ds.Motion_AmendmentParagraphs(id).Preload()
-	ds.Motion_AttachmentMeetingMediafileIDs(id).Preload()
-	ds.Motion_BlockID(id).Preload()
-	ds.Motion_CategoryID(id).Preload()
-	ds.Motion_CategoryWeight(id).Preload()
-	ds.Motion_ChangeRecommendationIDs(id).Preload()
-	ds.Motion_CommentIDs(id).Preload()
-	ds.Motion_Created(id).Preload()
-	ds.Motion_DerivedMotionIDs(id).Preload()
-	ds.Motion_EditorIDs(id).Preload()
-	ds.Motion_Forwarded(id).Preload()
-	ds.Motion_ID(id).Preload()
-	ds.Motion_IDenticalMotionIDs(id).Preload()
-	ds.Motion_LastModified(id).Preload()
-	ds.Motion_LeadMotionID(id).Preload()
-	ds.Motion_ListOfSpeakersID(id).Preload()
-	ds.Motion_MeetingID(id).Preload()
-	ds.Motion_ModifiedFinalVersion(id).Preload()
-	ds.Motion_Number(id).Preload()
-	ds.Motion_NumberValue(id).Preload()
-	ds.Motion_OptionIDs(id).Preload()
-	ds.Motion_OriginID(id).Preload()
-	ds.Motion_OriginMeetingID(id).Preload()
-	ds.Motion_PersonalNoteIDs(id).Preload()
-	ds.Motion_PollIDs(id).Preload()
-	ds.Motion_ProjectionIDs(id).Preload()
-	ds.Motion_Reason(id).Preload()
-	ds.Motion_RecommendationExtension(id).Preload()
-	ds.Motion_RecommendationExtensionReferenceIDs(id).Preload()
-	ds.Motion_RecommendationID(id).Preload()
-	ds.Motion_ReferencedInMotionRecommendationExtensionIDs(id).Preload()
-	ds.Motion_ReferencedInMotionStateExtensionIDs(id).Preload()
-	ds.Motion_SequentialNumber(id).Preload()
-	ds.Motion_SortChildIDs(id).Preload()
-	ds.Motion_SortParentID(id).Preload()
-	ds.Motion_SortWeight(id).Preload()
-	ds.Motion_StartLineNumber(id).Preload()
-	ds.Motion_StateExtension(id).Preload()
-	ds.Motion_StateExtensionReferenceIDs(id).Preload()
-	ds.Motion_StateID(id).Preload()
-	ds.Motion_SubmitterIDs(id).Preload()
-	ds.Motion_SupporterMeetingUserIDs(id).Preload()
-	ds.Motion_TagIDs(id).Preload()
-	ds.Motion_Text(id).Preload()
-	ds.Motion_TextHash(id).Preload()
-	ds.Motion_Title(id).Preload()
-	ds.Motion_WorkflowTimestamp(id).Preload()
-	ds.Motion_WorkingGroupSpeakerIDs(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) Motion(id int) *ValueCollection[Motion, *Motion] {
@@ -10185,19 +9578,6 @@ func (c *MotionBlock) lazy(ds *Fetch, id int) {
 	ds.MotionBlock_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
 	ds.MotionBlock_SequentialNumber(id).Lazy(&c.SequentialNumber)
 	ds.MotionBlock_Title(id).Lazy(&c.Title)
-}
-
-func (c *MotionBlock) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.MotionBlock_AgendaItemID(id).Preload()
-	ds.MotionBlock_ID(id).Preload()
-	ds.MotionBlock_Internal(id).Preload()
-	ds.MotionBlock_ListOfSpeakersID(id).Preload()
-	ds.MotionBlock_MeetingID(id).Preload()
-	ds.MotionBlock_MotionIDs(id).Preload()
-	ds.MotionBlock_ProjectionIDs(id).Preload()
-	ds.MotionBlock_SequentialNumber(id).Preload()
-	ds.MotionBlock_Title(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -10236,20 +9616,6 @@ func (c *MotionCategory) lazy(ds *Fetch, id int) {
 	ds.MotionCategory_Prefix(id).Lazy(&c.Prefix)
 	ds.MotionCategory_SequentialNumber(id).Lazy(&c.SequentialNumber)
 	ds.MotionCategory_Weight(id).Lazy(&c.Weight)
-}
-
-func (c *MotionCategory) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.MotionCategory_ChildIDs(id).Preload()
-	ds.MotionCategory_ID(id).Preload()
-	ds.MotionCategory_Level(id).Preload()
-	ds.MotionCategory_MeetingID(id).Preload()
-	ds.MotionCategory_MotionIDs(id).Preload()
-	ds.MotionCategory_Name(id).Preload()
-	ds.MotionCategory_ParentID(id).Preload()
-	ds.MotionCategory_Prefix(id).Preload()
-	ds.MotionCategory_SequentialNumber(id).Preload()
-	ds.MotionCategory_Weight(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -10292,21 +9658,6 @@ func (c *MotionChangeRecommendation) lazy(ds *Fetch, id int) {
 	ds.MotionChangeRecommendation_Type(id).Lazy(&c.Type)
 }
 
-func (c *MotionChangeRecommendation) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.MotionChangeRecommendation_CreationTime(id).Preload()
-	ds.MotionChangeRecommendation_ID(id).Preload()
-	ds.MotionChangeRecommendation_Internal(id).Preload()
-	ds.MotionChangeRecommendation_LineFrom(id).Preload()
-	ds.MotionChangeRecommendation_LineTo(id).Preload()
-	ds.MotionChangeRecommendation_MeetingID(id).Preload()
-	ds.MotionChangeRecommendation_MotionID(id).Preload()
-	ds.MotionChangeRecommendation_OtherDescription(id).Preload()
-	ds.MotionChangeRecommendation_Rejected(id).Preload()
-	ds.MotionChangeRecommendation_Text(id).Preload()
-	ds.MotionChangeRecommendation_Type(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) MotionChangeRecommendation(id int) *ValueCollection[MotionChangeRecommendation, *MotionChangeRecommendation] {
@@ -10333,15 +9684,6 @@ func (c *MotionComment) lazy(ds *Fetch, id int) {
 	ds.MotionComment_MeetingID(id).Lazy(&c.MeetingID)
 	ds.MotionComment_MotionID(id).Lazy(&c.MotionID)
 	ds.MotionComment_SectionID(id).Lazy(&c.SectionID)
-}
-
-func (c *MotionComment) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.MotionComment_Comment(id).Preload()
-	ds.MotionComment_ID(id).Preload()
-	ds.MotionComment_MeetingID(id).Preload()
-	ds.MotionComment_MotionID(id).Preload()
-	ds.MotionComment_SectionID(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -10380,19 +9722,6 @@ func (c *MotionCommentSection) lazy(ds *Fetch, id int) {
 	ds.MotionCommentSection_WriteGroupIDs(id).Lazy(&c.WriteGroupIDs)
 }
 
-func (c *MotionCommentSection) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.MotionCommentSection_CommentIDs(id).Preload()
-	ds.MotionCommentSection_ID(id).Preload()
-	ds.MotionCommentSection_MeetingID(id).Preload()
-	ds.MotionCommentSection_Name(id).Preload()
-	ds.MotionCommentSection_ReadGroupIDs(id).Preload()
-	ds.MotionCommentSection_SequentialNumber(id).Preload()
-	ds.MotionCommentSection_SubmitterCanWrite(id).Preload()
-	ds.MotionCommentSection_Weight(id).Preload()
-	ds.MotionCommentSection_WriteGroupIDs(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) MotionCommentSection(id int) *ValueCollection[MotionCommentSection, *MotionCommentSection] {
@@ -10419,15 +9748,6 @@ func (c *MotionEditor) lazy(ds *Fetch, id int) {
 	ds.MotionEditor_MeetingUserID(id).Lazy(&c.MeetingUserID)
 	ds.MotionEditor_MotionID(id).Lazy(&c.MotionID)
 	ds.MotionEditor_Weight(id).Lazy(&c.Weight)
-}
-
-func (c *MotionEditor) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.MotionEditor_ID(id).Preload()
-	ds.MotionEditor_MeetingID(id).Preload()
-	ds.MotionEditor_MeetingUserID(id).Preload()
-	ds.MotionEditor_MotionID(id).Preload()
-	ds.MotionEditor_Weight(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -10498,35 +9818,6 @@ func (c *MotionState) lazy(ds *Fetch, id int) {
 	ds.MotionState_WorkflowID(id).Lazy(&c.WorkflowID)
 }
 
-func (c *MotionState) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.MotionState_AllowCreatePoll(id).Preload()
-	ds.MotionState_AllowMotionForwarding(id).Preload()
-	ds.MotionState_AllowSubmitterEdit(id).Preload()
-	ds.MotionState_AllowSupport(id).Preload()
-	ds.MotionState_CssClass(id).Preload()
-	ds.MotionState_FirstStateOfWorkflowID(id).Preload()
-	ds.MotionState_ID(id).Preload()
-	ds.MotionState_IsInternal(id).Preload()
-	ds.MotionState_MeetingID(id).Preload()
-	ds.MotionState_MergeAmendmentIntoFinal(id).Preload()
-	ds.MotionState_MotionIDs(id).Preload()
-	ds.MotionState_MotionRecommendationIDs(id).Preload()
-	ds.MotionState_Name(id).Preload()
-	ds.MotionState_NextStateIDs(id).Preload()
-	ds.MotionState_PreviousStateIDs(id).Preload()
-	ds.MotionState_RecommendationLabel(id).Preload()
-	ds.MotionState_Restrictions(id).Preload()
-	ds.MotionState_SetNumber(id).Preload()
-	ds.MotionState_SetWorkflowTimestamp(id).Preload()
-	ds.MotionState_ShowRecommendationExtensionField(id).Preload()
-	ds.MotionState_ShowStateExtensionField(id).Preload()
-	ds.MotionState_SubmitterWithdrawBackIDs(id).Preload()
-	ds.MotionState_SubmitterWithdrawStateID(id).Preload()
-	ds.MotionState_Weight(id).Preload()
-	ds.MotionState_WorkflowID(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) MotionState(id int) *ValueCollection[MotionState, *MotionState] {
@@ -10553,15 +9844,6 @@ func (c *MotionSubmitter) lazy(ds *Fetch, id int) {
 	ds.MotionSubmitter_MeetingUserID(id).Lazy(&c.MeetingUserID)
 	ds.MotionSubmitter_MotionID(id).Lazy(&c.MotionID)
 	ds.MotionSubmitter_Weight(id).Lazy(&c.Weight)
-}
-
-func (c *MotionSubmitter) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.MotionSubmitter_ID(id).Preload()
-	ds.MotionSubmitter_MeetingID(id).Preload()
-	ds.MotionSubmitter_MeetingUserID(id).Preload()
-	ds.MotionSubmitter_MotionID(id).Preload()
-	ds.MotionSubmitter_Weight(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -10598,18 +9880,6 @@ func (c *MotionWorkflow) lazy(ds *Fetch, id int) {
 	ds.MotionWorkflow_StateIDs(id).Lazy(&c.StateIDs)
 }
 
-func (c *MotionWorkflow) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.MotionWorkflow_DefaultAmendmentWorkflowMeetingID(id).Preload()
-	ds.MotionWorkflow_DefaultWorkflowMeetingID(id).Preload()
-	ds.MotionWorkflow_FirstStateID(id).Preload()
-	ds.MotionWorkflow_ID(id).Preload()
-	ds.MotionWorkflow_MeetingID(id).Preload()
-	ds.MotionWorkflow_Name(id).Preload()
-	ds.MotionWorkflow_SequentialNumber(id).Preload()
-	ds.MotionWorkflow_StateIDs(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) MotionWorkflow(id int) *ValueCollection[MotionWorkflow, *MotionWorkflow] {
@@ -10636,15 +9906,6 @@ func (c *MotionWorkingGroupSpeaker) lazy(ds *Fetch, id int) {
 	ds.MotionWorkingGroupSpeaker_MeetingUserID(id).Lazy(&c.MeetingUserID)
 	ds.MotionWorkingGroupSpeaker_MotionID(id).Lazy(&c.MotionID)
 	ds.MotionWorkingGroupSpeaker_Weight(id).Lazy(&c.Weight)
-}
-
-func (c *MotionWorkingGroupSpeaker) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.MotionWorkingGroupSpeaker_ID(id).Preload()
-	ds.MotionWorkingGroupSpeaker_MeetingID(id).Preload()
-	ds.MotionWorkingGroupSpeaker_MeetingUserID(id).Preload()
-	ds.MotionWorkingGroupSpeaker_MotionID(id).Preload()
-	ds.MotionWorkingGroupSpeaker_Weight(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -10685,21 +9946,6 @@ func (c *Option) lazy(ds *Fetch, id int) {
 	ds.Option_VoteIDs(id).Lazy(&c.VoteIDs)
 	ds.Option_Weight(id).Lazy(&c.Weight)
 	ds.Option_Yes(id).Lazy(&c.Yes)
-}
-
-func (c *Option) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.Option_Abstain(id).Preload()
-	ds.Option_ContentObjectID(id).Preload()
-	ds.Option_ID(id).Preload()
-	ds.Option_MeetingID(id).Preload()
-	ds.Option_No(id).Preload()
-	ds.Option_PollID(id).Preload()
-	ds.Option_Text(id).Preload()
-	ds.Option_UsedAsGlobalOptionInPollID(id).Preload()
-	ds.Option_VoteIDs(id).Preload()
-	ds.Option_Weight(id).Preload()
-	ds.Option_Yes(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -10794,47 +10040,6 @@ func (c *Organization) lazy(ds *Fetch, id int) {
 	ds.Organization_VoteDecryptPublicMainKey(id).Lazy(&c.VoteDecryptPublicMainKey)
 }
 
-func (c *Organization) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.Organization_ActiveMeetingIDs(id).Preload()
-	ds.Organization_ArchivedMeetingIDs(id).Preload()
-	ds.Organization_CommitteeIDs(id).Preload()
-	ds.Organization_DefaultLanguage(id).Preload()
-	ds.Organization_Description(id).Preload()
-	ds.Organization_EnableAnonymous(id).Preload()
-	ds.Organization_EnableChat(id).Preload()
-	ds.Organization_EnableElectronicVoting(id).Preload()
-	ds.Organization_GenderIDs(id).Preload()
-	ds.Organization_ID(id).Preload()
-	ds.Organization_LegalNotice(id).Preload()
-	ds.Organization_LimitOfMeetings(id).Preload()
-	ds.Organization_LimitOfUsers(id).Preload()
-	ds.Organization_LoginText(id).Preload()
-	ds.Organization_MediafileIDs(id).Preload()
-	ds.Organization_Name(id).Preload()
-	ds.Organization_OrganizationTagIDs(id).Preload()
-	ds.Organization_PrivacyPolicy(id).Preload()
-	ds.Organization_PublishedMediafileIDs(id).Preload()
-	ds.Organization_RequireDuplicateFrom(id).Preload()
-	ds.Organization_ResetPasswordVerboseErrors(id).Preload()
-	ds.Organization_SamlAttrMapping(id).Preload()
-	ds.Organization_SamlEnabled(id).Preload()
-	ds.Organization_SamlLoginButtonText(id).Preload()
-	ds.Organization_SamlMetadataIDp(id).Preload()
-	ds.Organization_SamlMetadataSp(id).Preload()
-	ds.Organization_SamlPrivateKey(id).Preload()
-	ds.Organization_TemplateMeetingIDs(id).Preload()
-	ds.Organization_ThemeID(id).Preload()
-	ds.Organization_ThemeIDs(id).Preload()
-	ds.Organization_Url(id).Preload()
-	ds.Organization_UserIDs(id).Preload()
-	ds.Organization_UsersEmailBody(id).Preload()
-	ds.Organization_UsersEmailReplyto(id).Preload()
-	ds.Organization_UsersEmailSender(id).Preload()
-	ds.Organization_UsersEmailSubject(id).Preload()
-	ds.Organization_VoteDecryptPublicMainKey(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) Organization(id int) *ValueCollection[Organization, *Organization] {
@@ -10861,15 +10066,6 @@ func (c *OrganizationTag) lazy(ds *Fetch, id int) {
 	ds.OrganizationTag_Name(id).Lazy(&c.Name)
 	ds.OrganizationTag_OrganizationID(id).Lazy(&c.OrganizationID)
 	ds.OrganizationTag_TaggedIDs(id).Lazy(&c.TaggedIDs)
-}
-
-func (c *OrganizationTag) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.OrganizationTag_Color(id).Preload()
-	ds.OrganizationTag_ID(id).Preload()
-	ds.OrganizationTag_Name(id).Preload()
-	ds.OrganizationTag_OrganizationID(id).Preload()
-	ds.OrganizationTag_TaggedIDs(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -10902,16 +10098,6 @@ func (c *PersonalNote) lazy(ds *Fetch, id int) {
 	ds.PersonalNote_Star(id).Lazy(&c.Star)
 }
 
-func (c *PersonalNote) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.PersonalNote_ContentObjectID(id).Preload()
-	ds.PersonalNote_ID(id).Preload()
-	ds.PersonalNote_MeetingID(id).Preload()
-	ds.PersonalNote_MeetingUserID(id).Preload()
-	ds.PersonalNote_Note(id).Preload()
-	ds.PersonalNote_Star(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) PersonalNote(id int) *ValueCollection[PersonalNote, *PersonalNote] {
@@ -10938,15 +10124,6 @@ func (c *PointOfOrderCategory) lazy(ds *Fetch, id int) {
 	ds.PointOfOrderCategory_Rank(id).Lazy(&c.Rank)
 	ds.PointOfOrderCategory_SpeakerIDs(id).Lazy(&c.SpeakerIDs)
 	ds.PointOfOrderCategory_Text(id).Lazy(&c.Text)
-}
-
-func (c *PointOfOrderCategory) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.PointOfOrderCategory_ID(id).Preload()
-	ds.PointOfOrderCategory_MeetingID(id).Preload()
-	ds.PointOfOrderCategory_Rank(id).Preload()
-	ds.PointOfOrderCategory_SpeakerIDs(id).Preload()
-	ds.PointOfOrderCategory_Text(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -11031,42 +10208,6 @@ func (c *Poll) lazy(ds *Fetch, id int) {
 	ds.Poll_Votesvalid(id).Lazy(&c.Votesvalid)
 }
 
-func (c *Poll) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.Poll_Backend(id).Preload()
-	ds.Poll_ContentObjectID(id).Preload()
-	ds.Poll_CryptKey(id).Preload()
-	ds.Poll_CryptSignature(id).Preload()
-	ds.Poll_Description(id).Preload()
-	ds.Poll_EntitledGroupIDs(id).Preload()
-	ds.Poll_EntitledUsersAtStop(id).Preload()
-	ds.Poll_GlobalAbstain(id).Preload()
-	ds.Poll_GlobalNo(id).Preload()
-	ds.Poll_GlobalOptionID(id).Preload()
-	ds.Poll_GlobalYes(id).Preload()
-	ds.Poll_ID(id).Preload()
-	ds.Poll_IsPseudoanonymized(id).Preload()
-	ds.Poll_MaxVotesAmount(id).Preload()
-	ds.Poll_MaxVotesPerOption(id).Preload()
-	ds.Poll_MeetingID(id).Preload()
-	ds.Poll_MinVotesAmount(id).Preload()
-	ds.Poll_OnehundredPercentBase(id).Preload()
-	ds.Poll_OptionIDs(id).Preload()
-	ds.Poll_Pollmethod(id).Preload()
-	ds.Poll_ProjectionIDs(id).Preload()
-	ds.Poll_SequentialNumber(id).Preload()
-	ds.Poll_State(id).Preload()
-	ds.Poll_Title(id).Preload()
-	ds.Poll_Type(id).Preload()
-	ds.Poll_VoteCount(id).Preload()
-	ds.Poll_VotedIDs(id).Preload()
-	ds.Poll_VotesRaw(id).Preload()
-	ds.Poll_VotesSignature(id).Preload()
-	ds.Poll_Votescast(id).Preload()
-	ds.Poll_Votesinvalid(id).Preload()
-	ds.Poll_Votesvalid(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) Poll(id int) *ValueCollection[Poll, *Poll] {
@@ -11095,15 +10236,6 @@ func (c *PollCandidate) lazy(ds *Fetch, id int) {
 	ds.PollCandidate_Weight(id).Lazy(&c.Weight)
 }
 
-func (c *PollCandidate) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.PollCandidate_ID(id).Preload()
-	ds.PollCandidate_MeetingID(id).Preload()
-	ds.PollCandidate_PollCandidateListID(id).Preload()
-	ds.PollCandidate_UserID(id).Preload()
-	ds.PollCandidate_Weight(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) PollCandidate(id int) *ValueCollection[PollCandidate, *PollCandidate] {
@@ -11128,14 +10260,6 @@ func (c *PollCandidateList) lazy(ds *Fetch, id int) {
 	ds.PollCandidateList_MeetingID(id).Lazy(&c.MeetingID)
 	ds.PollCandidateList_OptionID(id).Lazy(&c.OptionID)
 	ds.PollCandidateList_PollCandidateIDs(id).Lazy(&c.PollCandidateIDs)
-}
-
-func (c *PollCandidateList) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.PollCandidateList_ID(id).Preload()
-	ds.PollCandidateList_MeetingID(id).Preload()
-	ds.PollCandidateList_OptionID(id).Preload()
-	ds.PollCandidateList_PollCandidateIDs(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -11176,21 +10300,6 @@ func (c *Projection) lazy(ds *Fetch, id int) {
 	ds.Projection_Stable(id).Lazy(&c.Stable)
 	ds.Projection_Type(id).Lazy(&c.Type)
 	ds.Projection_Weight(id).Lazy(&c.Weight)
-}
-
-func (c *Projection) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.Projection_Content(id).Preload()
-	ds.Projection_ContentObjectID(id).Preload()
-	ds.Projection_CurrentProjectorID(id).Preload()
-	ds.Projection_HistoryProjectorID(id).Preload()
-	ds.Projection_ID(id).Preload()
-	ds.Projection_MeetingID(id).Preload()
-	ds.Projection_Options(id).Preload()
-	ds.Projection_PreviewProjectorID(id).Preload()
-	ds.Projection_Stable(id).Preload()
-	ds.Projection_Type(id).Preload()
-	ds.Projection_Weight(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -11293,51 +10402,6 @@ func (c *Projector) lazy(ds *Fetch, id int) {
 	ds.Projector_Width(id).Lazy(&c.Width)
 }
 
-func (c *Projector) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.Projector_AspectRatioDenominator(id).Preload()
-	ds.Projector_AspectRatioNumerator(id).Preload()
-	ds.Projector_BackgroundColor(id).Preload()
-	ds.Projector_ChyronBackgroundColor(id).Preload()
-	ds.Projector_ChyronBackgroundColor2(id).Preload()
-	ds.Projector_ChyronFontColor(id).Preload()
-	ds.Projector_ChyronFontColor2(id).Preload()
-	ds.Projector_Color(id).Preload()
-	ds.Projector_CurrentProjectionIDs(id).Preload()
-	ds.Projector_HeaderBackgroundColor(id).Preload()
-	ds.Projector_HeaderFontColor(id).Preload()
-	ds.Projector_HeaderH1Color(id).Preload()
-	ds.Projector_HistoryProjectionIDs(id).Preload()
-	ds.Projector_ID(id).Preload()
-	ds.Projector_IsInternal(id).Preload()
-	ds.Projector_MeetingID(id).Preload()
-	ds.Projector_Name(id).Preload()
-	ds.Projector_PreviewProjectionIDs(id).Preload()
-	ds.Projector_Scale(id).Preload()
-	ds.Projector_Scroll(id).Preload()
-	ds.Projector_SequentialNumber(id).Preload()
-	ds.Projector_ShowClock(id).Preload()
-	ds.Projector_ShowHeaderFooter(id).Preload()
-	ds.Projector_ShowLogo(id).Preload()
-	ds.Projector_ShowTitle(id).Preload()
-	ds.Projector_UsedAsDefaultProjectorForAgendaItemListInMeetingID(id).Preload()
-	ds.Projector_UsedAsDefaultProjectorForAmendmentInMeetingID(id).Preload()
-	ds.Projector_UsedAsDefaultProjectorForAssignmentInMeetingID(id).Preload()
-	ds.Projector_UsedAsDefaultProjectorForAssignmentPollInMeetingID(id).Preload()
-	ds.Projector_UsedAsDefaultProjectorForCountdownInMeetingID(id).Preload()
-	ds.Projector_UsedAsDefaultProjectorForCurrentListOfSpeakersInMeetingID(id).Preload()
-	ds.Projector_UsedAsDefaultProjectorForListOfSpeakersInMeetingID(id).Preload()
-	ds.Projector_UsedAsDefaultProjectorForMediafileInMeetingID(id).Preload()
-	ds.Projector_UsedAsDefaultProjectorForMessageInMeetingID(id).Preload()
-	ds.Projector_UsedAsDefaultProjectorForMotionBlockInMeetingID(id).Preload()
-	ds.Projector_UsedAsDefaultProjectorForMotionInMeetingID(id).Preload()
-	ds.Projector_UsedAsDefaultProjectorForMotionPollInMeetingID(id).Preload()
-	ds.Projector_UsedAsDefaultProjectorForPollInMeetingID(id).Preload()
-	ds.Projector_UsedAsDefaultProjectorForTopicInMeetingID(id).Preload()
-	ds.Projector_UsedAsReferenceProjectorMeetingID(id).Preload()
-	ds.Projector_Width(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) Projector(id int) *ValueCollection[Projector, *Projector] {
@@ -11376,20 +10440,6 @@ func (c *ProjectorCountdown) lazy(ds *Fetch, id int) {
 	ds.ProjectorCountdown_UsedAsPollCountdownMeetingID(id).Lazy(&c.UsedAsPollCountdownMeetingID)
 }
 
-func (c *ProjectorCountdown) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.ProjectorCountdown_CountdownTime(id).Preload()
-	ds.ProjectorCountdown_DefaultTime(id).Preload()
-	ds.ProjectorCountdown_Description(id).Preload()
-	ds.ProjectorCountdown_ID(id).Preload()
-	ds.ProjectorCountdown_MeetingID(id).Preload()
-	ds.ProjectorCountdown_ProjectionIDs(id).Preload()
-	ds.ProjectorCountdown_Running(id).Preload()
-	ds.ProjectorCountdown_Title(id).Preload()
-	ds.ProjectorCountdown_UsedAsListOfSpeakersCountdownMeetingID(id).Preload()
-	ds.ProjectorCountdown_UsedAsPollCountdownMeetingID(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) ProjectorCountdown(id int) *ValueCollection[ProjectorCountdown, *ProjectorCountdown] {
@@ -11414,14 +10464,6 @@ func (c *ProjectorMessage) lazy(ds *Fetch, id int) {
 	ds.ProjectorMessage_MeetingID(id).Lazy(&c.MeetingID)
 	ds.ProjectorMessage_Message(id).Lazy(&c.Message)
 	ds.ProjectorMessage_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
-}
-
-func (c *ProjectorMessage) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.ProjectorMessage_ID(id).Preload()
-	ds.ProjectorMessage_MeetingID(id).Preload()
-	ds.ProjectorMessage_Message(id).Preload()
-	ds.ProjectorMessage_ProjectionIDs(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -11472,25 +10514,6 @@ func (c *Speaker) lazy(ds *Fetch, id int) {
 	ds.Speaker_Weight(id).Lazy(&c.Weight)
 }
 
-func (c *Speaker) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.Speaker_BeginTime(id).Preload()
-	ds.Speaker_EndTime(id).Preload()
-	ds.Speaker_ID(id).Preload()
-	ds.Speaker_ListOfSpeakersID(id).Preload()
-	ds.Speaker_MeetingID(id).Preload()
-	ds.Speaker_MeetingUserID(id).Preload()
-	ds.Speaker_Note(id).Preload()
-	ds.Speaker_PauseTime(id).Preload()
-	ds.Speaker_PointOfOrder(id).Preload()
-	ds.Speaker_PointOfOrderCategoryID(id).Preload()
-	ds.Speaker_SpeechState(id).Preload()
-	ds.Speaker_StructureLevelListOfSpeakersID(id).Preload()
-	ds.Speaker_TotalPause(id).Preload()
-	ds.Speaker_UnpauseTime(id).Preload()
-	ds.Speaker_Weight(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) Speaker(id int) *ValueCollection[Speaker, *Speaker] {
@@ -11521,17 +10544,6 @@ func (c *StructureLevel) lazy(ds *Fetch, id int) {
 	ds.StructureLevel_MeetingUserIDs(id).Lazy(&c.MeetingUserIDs)
 	ds.StructureLevel_Name(id).Lazy(&c.Name)
 	ds.StructureLevel_StructureLevelListOfSpeakersIDs(id).Lazy(&c.StructureLevelListOfSpeakersIDs)
-}
-
-func (c *StructureLevel) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.StructureLevel_Color(id).Preload()
-	ds.StructureLevel_DefaultTime(id).Preload()
-	ds.StructureLevel_ID(id).Preload()
-	ds.StructureLevel_MeetingID(id).Preload()
-	ds.StructureLevel_MeetingUserIDs(id).Preload()
-	ds.StructureLevel_Name(id).Preload()
-	ds.StructureLevel_StructureLevelListOfSpeakersIDs(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -11570,19 +10582,6 @@ func (c *StructureLevelListOfSpeakers) lazy(ds *Fetch, id int) {
 	ds.StructureLevelListOfSpeakers_StructureLevelID(id).Lazy(&c.StructureLevelID)
 }
 
-func (c *StructureLevelListOfSpeakers) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.StructureLevelListOfSpeakers_AdditionalTime(id).Preload()
-	ds.StructureLevelListOfSpeakers_CurrentStartTime(id).Preload()
-	ds.StructureLevelListOfSpeakers_ID(id).Preload()
-	ds.StructureLevelListOfSpeakers_InitialTime(id).Preload()
-	ds.StructureLevelListOfSpeakers_ListOfSpeakersID(id).Preload()
-	ds.StructureLevelListOfSpeakers_MeetingID(id).Preload()
-	ds.StructureLevelListOfSpeakers_RemainingTime(id).Preload()
-	ds.StructureLevelListOfSpeakers_SpeakerIDs(id).Preload()
-	ds.StructureLevelListOfSpeakers_StructureLevelID(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) StructureLevelListOfSpeakers(id int) *ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers] {
@@ -11607,14 +10606,6 @@ func (c *Tag) lazy(ds *Fetch, id int) {
 	ds.Tag_MeetingID(id).Lazy(&c.MeetingID)
 	ds.Tag_Name(id).Lazy(&c.Name)
 	ds.Tag_TaggedIDs(id).Lazy(&c.TaggedIDs)
-}
-
-func (c *Tag) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.Tag_ID(id).Preload()
-	ds.Tag_MeetingID(id).Preload()
-	ds.Tag_Name(id).Preload()
-	ds.Tag_TaggedIDs(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -11735,60 +10726,6 @@ func (c *Theme) lazy(ds *Fetch, id int) {
 	ds.Theme_Yes(id).Lazy(&c.Yes)
 }
 
-func (c *Theme) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.Theme_Abstain(id).Preload()
-	ds.Theme_Accent100(id).Preload()
-	ds.Theme_Accent200(id).Preload()
-	ds.Theme_Accent300(id).Preload()
-	ds.Theme_Accent400(id).Preload()
-	ds.Theme_Accent50(id).Preload()
-	ds.Theme_Accent500(id).Preload()
-	ds.Theme_Accent600(id).Preload()
-	ds.Theme_Accent700(id).Preload()
-	ds.Theme_Accent800(id).Preload()
-	ds.Theme_Accent900(id).Preload()
-	ds.Theme_AccentA100(id).Preload()
-	ds.Theme_AccentA200(id).Preload()
-	ds.Theme_AccentA400(id).Preload()
-	ds.Theme_AccentA700(id).Preload()
-	ds.Theme_Headbar(id).Preload()
-	ds.Theme_ID(id).Preload()
-	ds.Theme_Name(id).Preload()
-	ds.Theme_No(id).Preload()
-	ds.Theme_OrganizationID(id).Preload()
-	ds.Theme_Primary100(id).Preload()
-	ds.Theme_Primary200(id).Preload()
-	ds.Theme_Primary300(id).Preload()
-	ds.Theme_Primary400(id).Preload()
-	ds.Theme_Primary50(id).Preload()
-	ds.Theme_Primary500(id).Preload()
-	ds.Theme_Primary600(id).Preload()
-	ds.Theme_Primary700(id).Preload()
-	ds.Theme_Primary800(id).Preload()
-	ds.Theme_Primary900(id).Preload()
-	ds.Theme_PrimaryA100(id).Preload()
-	ds.Theme_PrimaryA200(id).Preload()
-	ds.Theme_PrimaryA400(id).Preload()
-	ds.Theme_PrimaryA700(id).Preload()
-	ds.Theme_ThemeForOrganizationID(id).Preload()
-	ds.Theme_Warn100(id).Preload()
-	ds.Theme_Warn200(id).Preload()
-	ds.Theme_Warn300(id).Preload()
-	ds.Theme_Warn400(id).Preload()
-	ds.Theme_Warn50(id).Preload()
-	ds.Theme_Warn500(id).Preload()
-	ds.Theme_Warn600(id).Preload()
-	ds.Theme_Warn700(id).Preload()
-	ds.Theme_Warn800(id).Preload()
-	ds.Theme_Warn900(id).Preload()
-	ds.Theme_WarnA100(id).Preload()
-	ds.Theme_WarnA200(id).Preload()
-	ds.Theme_WarnA400(id).Preload()
-	ds.Theme_WarnA700(id).Preload()
-	ds.Theme_Yes(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) Theme(id int) *ValueCollection[Theme, *Theme] {
@@ -11825,20 +10762,6 @@ func (c *Topic) lazy(ds *Fetch, id int) {
 	ds.Topic_SequentialNumber(id).Lazy(&c.SequentialNumber)
 	ds.Topic_Text(id).Lazy(&c.Text)
 	ds.Topic_Title(id).Lazy(&c.Title)
-}
-
-func (c *Topic) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.Topic_AgendaItemID(id).Preload()
-	ds.Topic_AttachmentMeetingMediafileIDs(id).Preload()
-	ds.Topic_ID(id).Preload()
-	ds.Topic_ListOfSpeakersID(id).Preload()
-	ds.Topic_MeetingID(id).Preload()
-	ds.Topic_PollIDs(id).Preload()
-	ds.Topic_ProjectionIDs(id).Preload()
-	ds.Topic_SequentialNumber(id).Preload()
-	ds.Topic_Text(id).Preload()
-	ds.Topic_Title(id).Preload()
 }
 
 // TODO: Generate functions for all relations
@@ -11923,42 +10846,6 @@ func (c *User) lazy(ds *Fetch, id int) {
 	ds.User_VoteIDs(id).Lazy(&c.VoteIDs)
 }
 
-func (c *User) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.User_CanChangeOwnPassword(id).Preload()
-	ds.User_CommitteeIDs(id).Preload()
-	ds.User_CommitteeManagementIDs(id).Preload()
-	ds.User_DefaultPassword(id).Preload()
-	ds.User_DefaultVoteWeight(id).Preload()
-	ds.User_DelegatedVoteIDs(id).Preload()
-	ds.User_Email(id).Preload()
-	ds.User_FirstName(id).Preload()
-	ds.User_ForwardingCommitteeIDs(id).Preload()
-	ds.User_GenderID(id).Preload()
-	ds.User_ID(id).Preload()
-	ds.User_IsActive(id).Preload()
-	ds.User_IsDemoUser(id).Preload()
-	ds.User_IsPhysicalPerson(id).Preload()
-	ds.User_IsPresentInMeetingIDs(id).Preload()
-	ds.User_LastEmailSent(id).Preload()
-	ds.User_LastLogin(id).Preload()
-	ds.User_LastName(id).Preload()
-	ds.User_MeetingIDs(id).Preload()
-	ds.User_MeetingUserIDs(id).Preload()
-	ds.User_MemberNumber(id).Preload()
-	ds.User_OptionIDs(id).Preload()
-	ds.User_OrganizationID(id).Preload()
-	ds.User_OrganizationManagementLevel(id).Preload()
-	ds.User_Password(id).Preload()
-	ds.User_PollCandidateIDs(id).Preload()
-	ds.User_PollVotedIDs(id).Preload()
-	ds.User_Pronoun(id).Preload()
-	ds.User_SamlID(id).Preload()
-	ds.User_Title(id).Preload()
-	ds.User_Username(id).Preload()
-	ds.User_VoteIDs(id).Preload()
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch) User(id int) *ValueCollection[User, *User] {
@@ -11991,18 +10878,6 @@ func (c *Vote) lazy(ds *Fetch, id int) {
 	ds.Vote_UserToken(id).Lazy(&c.UserToken)
 	ds.Vote_Value(id).Lazy(&c.Value)
 	ds.Vote_Weight(id).Lazy(&c.Weight)
-}
-
-func (c *Vote) preload(ds *Fetch, id int) {
-	c.fetch = ds
-	ds.Vote_DelegatedUserID(id).Preload()
-	ds.Vote_ID(id).Preload()
-	ds.Vote_MeetingID(id).Preload()
-	ds.Vote_OptionID(id).Preload()
-	ds.Vote_UserID(id).Preload()
-	ds.Vote_UserToken(id).Preload()
-	ds.Vote_Value(id).Preload()
-	ds.Vote_Weight(id).Preload()
 }
 
 // TODO: Generate functions for all relations

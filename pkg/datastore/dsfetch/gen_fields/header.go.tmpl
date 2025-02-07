@@ -12,7 +12,6 @@ import (
 
 type loader[T any] interface{
 	lazy(ds *Fetch,  id int)
-	preload(ds *Fetch,  id int)
 	*T
 }
 
@@ -36,9 +35,4 @@ func (v *ValueCollection[T, P]) Value(ctx context.Context) (T, error) {
 
 func (v *ValueCollection[T, P]) Lazy(collection P) {
 	collection.lazy(v.fetch, v.id)
-}
-
-func (v *ValueCollection[T, P]) Preload() {
-	var collection P
-	collection.preload(v.fetch, v.id)
 }

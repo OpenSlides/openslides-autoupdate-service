@@ -13,13 +13,6 @@ func (c *{{.GoName}})lazy(ds *Fetch, id int) {
     {{- end}}
 }
 
-func (c *{{.GoName}})preload(ds *Fetch,  id int) {
-    c.fetch = ds
-	{{- range .Fields}}
-    ds.{{.FetchName}}(id).Preload()
-    {{- end}}
-}
-
 // TODO: Generate functions for all relations
 
 func (r *Fetch){{.GoName}}(id int) *ValueCollection[{{.GoName}}, *{{.GoName}}]{
