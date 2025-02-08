@@ -233,6 +233,7 @@ type CollectionField struct {
 }
 
 type CollectionRelation struct {
+	ResultType string
 	IsList     bool
 	Type       string
 	FieldName  string
@@ -264,18 +265,28 @@ func toCollections(raw map[string]models.Model) []Collection {
 
 			if strings.Contains(modelField.Type, "generic") {
 				// TODO: Add generic
+				//fmt.Println(collectionName, fieldName)
 				continue
 			}
 
-			toType := relation.ToCollections()[0].Collection
+			toType := goName(relation.ToCollections()[0].Collection)
+
+			resultType := fmt.Sprintf("*ValueCollection[%s, *%s]", toType, toType)
+			if !relation.List() && !modelField.Required {
+				resultType = fmt.Sprintf("Maybe[%s]", resultType)
+			}
+			if relation.List() {
+				resultType = "[]" + resultType
+			}
 
 			col.Relations = append(
 				col.Relations,
 				CollectionRelation{
+					ResultType: resultType,
 					IsList:     relation.List(),
 					FieldName:  goName(fieldName),
 					MethodName: withoutID(goName(fieldName)),
-					Type:       goName(toType),
+					Type:       toType,
 					Required:   modelField.Required,
 				},
 			)
