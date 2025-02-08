@@ -223,12 +223,20 @@ type Collection struct {
 	GoName     string
 	ModelsName string
 	Fields     []CollectionField
+	Relations  []CollectionRelation
 }
 
 type CollectionField struct {
 	Name      string
 	Type      string
 	FetchName string
+}
+
+type CollectionRelation struct {
+	IsList     bool
+	Type       string
+	FieldName  string
+	MethodName string
 }
 
 func toCollections(raw map[string]models.Model) []Collection {
@@ -242,11 +250,44 @@ func toCollections(raw map[string]models.Model) []Collection {
 			col.Fields = append(
 				col.Fields,
 				CollectionField{
-					goName(fieldName),
-					typesToGo[valueType(modelField.Type, modelField.Required)],
-					goName(collectionName) + "_" + goName(fieldName),
+					Name:      goName(fieldName),
+					Type:      typesToGo[valueType(modelField.Type, modelField.Required)],
+					FetchName: goName(collectionName) + "_" + goName(fieldName),
 				},
 			)
+
+			relation := modelField.Relation()
+			if relation == nil {
+				continue
+			}
+
+			if strings.Contains(modelField.Type, "generic") {
+				// TODO: Add generic
+				continue
+			}
+
+			if !modelField.Relation().List() && !modelField.Required {
+				// TODO: support maybe
+				//fmt.Println(collectionName, fieldName)
+				continue
+			}
+
+			toType := relation.ToCollections()[0].Collection
+			if toType == "" {
+				fmt.Println(collectionName, fieldName, relation.ToCollections(), "unknown type")
+				continue
+			}
+
+			col.Relations = append(
+				col.Relations,
+				CollectionRelation{
+					IsList:     relation.List(),
+					FieldName:  goName(fieldName),
+					MethodName: withoutID(goName(fieldName)),
+					Type:       goName(toType),
+				},
+			)
+
 		}
 
 		// TODO: find a way to sort in in the order defined my models.yml
@@ -304,6 +345,15 @@ func goName(name string) string {
 
 	name = strings.ReplaceAll(name, "Id", "ID")
 	return name
+}
+
+func withoutID(in string) string {
+	result := strings.TrimSuffix(strings.TrimSuffix(in, "ID"), "IDs")
+
+	if strings.HasSuffix(in, "IDs") {
+		return result + "List"
+	}
+	return result
 }
 
 func firstLower(s string) string {

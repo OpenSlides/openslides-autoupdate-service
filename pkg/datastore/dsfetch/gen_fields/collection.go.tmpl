@@ -13,7 +13,25 @@ func (c *{{.GoName}})lazy(ds *Fetch, id int) {
     {{- end}}
 }
 
-// TODO: Generate functions for all relations
+{{ range .Relations}}
+func (c *{{$.GoName}}) {{.MethodName}}() {{if .IsList}}[]{{end}}*ValueCollection[{{.Type}}, *{{.Type}}]{
+    {{- if .IsList}}
+    result := make([]*ValueCollection[{{.Type}}, *{{.Type}}], len(c.{{.FieldName}}))
+    for i, id := range c.{{.FieldName}}{
+        result[i] = &ValueCollection[{{.Type}}, *{{.Type}}]{
+            id: id,
+            fetch: c.fetch,
+        }
+    }
+    return result
+    {{- else}}
+    return &ValueCollection[{{.Type}}, *{{.Type}}]{
+		id: c.{{.FieldName}},
+		fetch: c.fetch,
+	}
+	{{- end}}
+}
+{{end}}
 
 func (r *Fetch){{.GoName}}(id int) *ValueCollection[{{.GoName}}, *{{.GoName}}]{
 	return &ValueCollection[{{.GoName}}, *{{.GoName}}]{
