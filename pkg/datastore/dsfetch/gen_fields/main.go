@@ -226,12 +226,14 @@ type Collection struct {
 	Relations  []CollectionRelation
 }
 
+// CollectionField is one field of a Collection.
 type CollectionField struct {
 	Name      string
 	Type      string
 	FetchName string
 }
 
+// CollectionRelation is one Relation, needed for method generation.
 type CollectionRelation struct {
 	ResultType string
 	IsList     bool
