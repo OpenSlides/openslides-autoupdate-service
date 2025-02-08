@@ -286,6 +286,9 @@ func toCollections(raw map[string]models.Model) []Collection {
 		slices.SortFunc(col.Fields, func(a, b CollectionField) int {
 			return cmp.Compare(a.Name, b.Name)
 		})
+		slices.SortFunc(col.Relations, func(a, b CollectionRelation) int {
+			return cmp.Compare(a.FieldName, b.FieldName)
+		})
 
 		collections = append(collections, col)
 	}
