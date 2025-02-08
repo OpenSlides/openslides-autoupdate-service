@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/oserror"
+	"github.com/OpenSlides/openslides-go/oserror"
 	"github.com/OpenSlides/openslides-go/redis"
 )
 
