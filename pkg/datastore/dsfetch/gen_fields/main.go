@@ -237,6 +237,7 @@ type CollectionRelation struct {
 	Type       string
 	FieldName  string
 	MethodName string
+	Required   bool
 }
 
 func toCollections(raw map[string]models.Model) []Collection {
@@ -266,17 +267,7 @@ func toCollections(raw map[string]models.Model) []Collection {
 				continue
 			}
 
-			if !modelField.Relation().List() && !modelField.Required {
-				// TODO: support maybe
-				//fmt.Println(collectionName, fieldName)
-				continue
-			}
-
 			toType := relation.ToCollections()[0].Collection
-			if toType == "" {
-				fmt.Println(collectionName, fieldName, relation.ToCollections(), "unknown type")
-				continue
-			}
 
 			col.Relations = append(
 				col.Relations,
@@ -285,6 +276,7 @@ func toCollections(raw map[string]models.Model) []Collection {
 					FieldName:  goName(fieldName),
 					MethodName: withoutID(goName(fieldName)),
 					Type:       goName(toType),
+					Required:   modelField.Required,
 				},
 			)
 

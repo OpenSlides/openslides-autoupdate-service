@@ -14,7 +14,7 @@ func (c *{{.GoName}})lazy(ds *Fetch, id int) {
 }
 
 {{ range .Relations}}
-func (c *{{$.GoName}}) {{.MethodName}}() {{if .IsList}}[]{{end}}*ValueCollection[{{.Type}}, *{{.Type}}]{
+func (c *{{$.GoName}}) {{.MethodName}}() {{if .IsList}}[]{{end}}{{if and (not .IsList) (not .Required)}}Maybe[{{end}}*ValueCollection[{{.Type}}, *{{.Type}}]{{if and (not .IsList) (not .Required)}}]{{end}}{
     {{- if .IsList}}
     result := make([]*ValueCollection[{{.Type}}, *{{.Type}}], len(c.{{.FieldName}}))
     for i, id := range c.{{.FieldName}}{
@@ -24,11 +24,23 @@ func (c *{{$.GoName}}) {{.MethodName}}() {{if .IsList}}[]{{end}}*ValueCollection
         }
     }
     return result
-    {{- else}}
+    {{- else if .Required}}
     return &ValueCollection[{{.Type}}, *{{.Type}}]{
 		id: c.{{.FieldName}},
 		fetch: c.fetch,
 	}
+	{{- else}}
+    var result Maybe[*ValueCollection[{{.Type}}, *{{.Type}}]]
+	id, hasValue := c.{{.FieldName}}.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[{{.Type}}, *{{.Type}}]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
 	{{- end}}
 }
 {{end}}
