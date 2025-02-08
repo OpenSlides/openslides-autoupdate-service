@@ -38,15 +38,6 @@ func (v *{{.TypeName}}) Lazy(value *{{.GoType}}) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *{{.TypeName}}) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *{{.TypeName}}) convert(p []byte) ({{.GoType}}, error) {
 	var zero {{.GoType}}
@@ -55,7 +46,7 @@ func (v *{{.TypeName}}) convert(p []byte) ({{.GoType}}, error) {
 			return zero, fmt.Errorf("database is corrupted. Required field %s is null", v.key)
 		}
 		return zero, nil
-	} 
+	}
 
 	{{- if eq .TypeName "ValueIntSlice"}}
 		value, err := fastjson.DecodeIntList(p)
@@ -76,7 +67,7 @@ func (v *{{.TypeName}}) convert(p []byte) ({{.GoType}}, error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *{{.TypeName}}) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {

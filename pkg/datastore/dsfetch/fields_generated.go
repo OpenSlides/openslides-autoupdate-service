@@ -10,6 +10,33 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/pkg/fastjson"
 )
 
+type loader[T any] interface {
+	lazy(ds *Fetch, id int)
+	*T
+}
+
+// ValueCollection is a generic struct, where the loader interface is
+// implemented by the pointer of C.
+type ValueCollection[C any, T loader[C]] struct {
+	id    int
+	fetch *Fetch
+}
+
+func (v *ValueCollection[T, P]) Value(ctx context.Context) (T, error) {
+	var collection T
+	v.Lazy(&collection)
+
+	if err := v.fetch.Execute(ctx); err != nil {
+		var zero T
+		return zero, err
+	}
+	return collection, nil
+}
+
+func (v *ValueCollection[T, P]) Lazy(collection P) {
+	collection.lazy(v.fetch, v.id)
+}
+
 // ValueBool is a value from the datastore.
 type ValueBool struct {
 	err error
@@ -50,15 +77,6 @@ func (v *ValueBool) Lazy(value *bool) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueBool) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueBool) convert(p []byte) (bool, error) {
 	var zero bool
@@ -75,7 +93,7 @@ func (v *ValueBool) convert(p []byte) (bool, error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueBool) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -129,15 +147,6 @@ func (v *ValueFloat) Lazy(value *float32) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueFloat) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueFloat) convert(p []byte) (float32, error) {
 	var zero float32
@@ -154,7 +163,7 @@ func (v *ValueFloat) convert(p []byte) (float32, error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueFloat) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -208,15 +217,6 @@ func (v *ValueInt) Lazy(value *int) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueInt) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueInt) convert(p []byte) (int, error) {
 	var zero int
@@ -233,7 +233,7 @@ func (v *ValueInt) convert(p []byte) (int, error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueInt) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -287,15 +287,6 @@ func (v *ValueIntSlice) Lazy(value *[]int) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueIntSlice) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueIntSlice) convert(p []byte) ([]int, error) {
 	var zero []int
@@ -312,7 +303,7 @@ func (v *ValueIntSlice) convert(p []byte) ([]int, error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueIntSlice) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -366,15 +357,6 @@ func (v *ValueJSON) Lazy(value *json.RawMessage) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueJSON) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueJSON) convert(p []byte) (json.RawMessage, error) {
 	var zero json.RawMessage
@@ -391,7 +373,7 @@ func (v *ValueJSON) convert(p []byte) (json.RawMessage, error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueJSON) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -445,15 +427,6 @@ func (v *ValueMaybeInt) Lazy(value *Maybe[int]) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueMaybeInt) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueMaybeInt) convert(p []byte) (Maybe[int], error) {
 	var zero Maybe[int]
@@ -470,7 +443,7 @@ func (v *ValueMaybeInt) convert(p []byte) (Maybe[int], error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueMaybeInt) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -524,15 +497,6 @@ func (v *ValueMaybeString) Lazy(value *Maybe[string]) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueMaybeString) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueMaybeString) convert(p []byte) (Maybe[string], error) {
 	var zero Maybe[string]
@@ -549,7 +513,7 @@ func (v *ValueMaybeString) convert(p []byte) (Maybe[string], error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueMaybeString) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -603,15 +567,6 @@ func (v *ValueString) Lazy(value *string) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueString) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueString) convert(p []byte) (string, error) {
 	var zero string
@@ -628,7 +583,7 @@ func (v *ValueString) convert(p []byte) (string, error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueString) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -682,15 +637,6 @@ func (v *ValueStringSlice) Lazy(value *[]string) {
 	v.lazies = append(v.lazies, value)
 }
 
-// Preload fetches the value but does nothing with it.
-//
-// This makes sure, that the value is in the cache.
-//
-// Make sure to call fetch.Execute().
-func (v *ValueStringSlice) Preload() {
-	v.fetch.requested[v.key] = append(v.fetch.requested[v.key], v)
-}
-
 // convert converts the json value to the type.
 func (v *ValueStringSlice) convert(p []byte) ([]string, error) {
 	var zero []string
@@ -707,7 +653,7 @@ func (v *ValueStringSlice) convert(p []byte) ([]string, error) {
 	return value, nil
 }
 
-// setLazy sets the lazy values defiend with Lazy or Preload.
+// setLazy sets the lazy values defiend with Lazy.
 func (v *ValueStringSlice) setLazy(p []byte) error {
 	value, err := v.convert(p)
 	if err != nil {
@@ -8405,4 +8351,6326 @@ func (r *Fetch) Vote_Weight(voteID int) *ValueString {
 	}
 
 	return &ValueString{fetch: r, key: key}
+}
+
+// ActionWorker has all fields from action_worker.
+type ActionWorker struct {
+	Created   int
+	ID        int
+	Name      string
+	Result    json.RawMessage
+	State     string
+	Timestamp int
+	UserID    int
+	fetch     *Fetch
+}
+
+func (c *ActionWorker) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.ActionWorker_Created(id).Lazy(&c.Created)
+	ds.ActionWorker_ID(id).Lazy(&c.ID)
+	ds.ActionWorker_Name(id).Lazy(&c.Name)
+	ds.ActionWorker_Result(id).Lazy(&c.Result)
+	ds.ActionWorker_State(id).Lazy(&c.State)
+	ds.ActionWorker_Timestamp(id).Lazy(&c.Timestamp)
+	ds.ActionWorker_UserID(id).Lazy(&c.UserID)
+}
+
+func (r *Fetch) ActionWorker(id int) *ValueCollection[ActionWorker, *ActionWorker] {
+	return &ValueCollection[ActionWorker, *ActionWorker]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// AgendaItem has all fields from agenda_item.
+type AgendaItem struct {
+	ChildIDs        []int
+	Closed          bool
+	Comment         string
+	ContentObjectID string
+	Duration        int
+	ID              int
+	IsHidden        bool
+	IsInternal      bool
+	ItemNumber      string
+	Level           int
+	MeetingID       int
+	ParentID        Maybe[int]
+	ProjectionIDs   []int
+	TagIDs          []int
+	Type            string
+	Weight          int
+	fetch           *Fetch
+}
+
+func (c *AgendaItem) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.AgendaItem_ChildIDs(id).Lazy(&c.ChildIDs)
+	ds.AgendaItem_Closed(id).Lazy(&c.Closed)
+	ds.AgendaItem_Comment(id).Lazy(&c.Comment)
+	ds.AgendaItem_ContentObjectID(id).Lazy(&c.ContentObjectID)
+	ds.AgendaItem_Duration(id).Lazy(&c.Duration)
+	ds.AgendaItem_ID(id).Lazy(&c.ID)
+	ds.AgendaItem_IsHidden(id).Lazy(&c.IsHidden)
+	ds.AgendaItem_IsInternal(id).Lazy(&c.IsInternal)
+	ds.AgendaItem_ItemNumber(id).Lazy(&c.ItemNumber)
+	ds.AgendaItem_Level(id).Lazy(&c.Level)
+	ds.AgendaItem_MeetingID(id).Lazy(&c.MeetingID)
+	ds.AgendaItem_ParentID(id).Lazy(&c.ParentID)
+	ds.AgendaItem_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
+	ds.AgendaItem_TagIDs(id).Lazy(&c.TagIDs)
+	ds.AgendaItem_Type(id).Lazy(&c.Type)
+	ds.AgendaItem_Weight(id).Lazy(&c.Weight)
+}
+
+func (c *AgendaItem) ChildList() []*ValueCollection[AgendaItem, *AgendaItem] {
+	result := make([]*ValueCollection[AgendaItem, *AgendaItem], len(c.ChildIDs))
+	for i, id := range c.ChildIDs {
+		result[i] = &ValueCollection[AgendaItem, *AgendaItem]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *AgendaItem) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *AgendaItem) Parent() Maybe[*ValueCollection[AgendaItem, *AgendaItem]] {
+	var result Maybe[*ValueCollection[AgendaItem, *AgendaItem]]
+	id, hasValue := c.ParentID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[AgendaItem, *AgendaItem]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *AgendaItem) ProjectionList() []*ValueCollection[Projection, *Projection] {
+	result := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
+	for i, id := range c.ProjectionIDs {
+		result[i] = &ValueCollection[Projection, *Projection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *AgendaItem) TagList() []*ValueCollection[Tag, *Tag] {
+	result := make([]*ValueCollection[Tag, *Tag], len(c.TagIDs))
+	for i, id := range c.TagIDs {
+		result[i] = &ValueCollection[Tag, *Tag]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) AgendaItem(id int) *ValueCollection[AgendaItem, *AgendaItem] {
+	return &ValueCollection[AgendaItem, *AgendaItem]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// Assignment has all fields from assignment.
+type Assignment struct {
+	AgendaItemID                  Maybe[int]
+	AttachmentMeetingMediafileIDs []int
+	CandidateIDs                  []int
+	DefaultPollDescription        string
+	Description                   string
+	ID                            int
+	ListOfSpeakersID              int
+	MeetingID                     int
+	NumberPollCandidates          bool
+	OpenPosts                     int
+	Phase                         string
+	PollIDs                       []int
+	ProjectionIDs                 []int
+	SequentialNumber              int
+	TagIDs                        []int
+	Title                         string
+	fetch                         *Fetch
+}
+
+func (c *Assignment) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.Assignment_AgendaItemID(id).Lazy(&c.AgendaItemID)
+	ds.Assignment_AttachmentMeetingMediafileIDs(id).Lazy(&c.AttachmentMeetingMediafileIDs)
+	ds.Assignment_CandidateIDs(id).Lazy(&c.CandidateIDs)
+	ds.Assignment_DefaultPollDescription(id).Lazy(&c.DefaultPollDescription)
+	ds.Assignment_Description(id).Lazy(&c.Description)
+	ds.Assignment_ID(id).Lazy(&c.ID)
+	ds.Assignment_ListOfSpeakersID(id).Lazy(&c.ListOfSpeakersID)
+	ds.Assignment_MeetingID(id).Lazy(&c.MeetingID)
+	ds.Assignment_NumberPollCandidates(id).Lazy(&c.NumberPollCandidates)
+	ds.Assignment_OpenPosts(id).Lazy(&c.OpenPosts)
+	ds.Assignment_Phase(id).Lazy(&c.Phase)
+	ds.Assignment_PollIDs(id).Lazy(&c.PollIDs)
+	ds.Assignment_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
+	ds.Assignment_SequentialNumber(id).Lazy(&c.SequentialNumber)
+	ds.Assignment_TagIDs(id).Lazy(&c.TagIDs)
+	ds.Assignment_Title(id).Lazy(&c.Title)
+}
+
+func (c *Assignment) AgendaItem() Maybe[*ValueCollection[AgendaItem, *AgendaItem]] {
+	var result Maybe[*ValueCollection[AgendaItem, *AgendaItem]]
+	id, hasValue := c.AgendaItemID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[AgendaItem, *AgendaItem]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Assignment) AttachmentMeetingMediafileList() []*ValueCollection[MeetingMediafile, *MeetingMediafile] {
+	result := make([]*ValueCollection[MeetingMediafile, *MeetingMediafile], len(c.AttachmentMeetingMediafileIDs))
+	for i, id := range c.AttachmentMeetingMediafileIDs {
+		result[i] = &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Assignment) CandidateList() []*ValueCollection[AssignmentCandidate, *AssignmentCandidate] {
+	result := make([]*ValueCollection[AssignmentCandidate, *AssignmentCandidate], len(c.CandidateIDs))
+	for i, id := range c.CandidateIDs {
+		result[i] = &ValueCollection[AssignmentCandidate, *AssignmentCandidate]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Assignment) ListOfSpeakers() *ValueCollection[ListOfSpeakers, *ListOfSpeakers] {
+	return &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
+		id:    c.ListOfSpeakersID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Assignment) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Assignment) PollList() []*ValueCollection[Poll, *Poll] {
+	result := make([]*ValueCollection[Poll, *Poll], len(c.PollIDs))
+	for i, id := range c.PollIDs {
+		result[i] = &ValueCollection[Poll, *Poll]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Assignment) ProjectionList() []*ValueCollection[Projection, *Projection] {
+	result := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
+	for i, id := range c.ProjectionIDs {
+		result[i] = &ValueCollection[Projection, *Projection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Assignment) TagList() []*ValueCollection[Tag, *Tag] {
+	result := make([]*ValueCollection[Tag, *Tag], len(c.TagIDs))
+	for i, id := range c.TagIDs {
+		result[i] = &ValueCollection[Tag, *Tag]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) Assignment(id int) *ValueCollection[Assignment, *Assignment] {
+	return &ValueCollection[Assignment, *Assignment]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// AssignmentCandidate has all fields from assignment_candidate.
+type AssignmentCandidate struct {
+	AssignmentID  int
+	ID            int
+	MeetingID     int
+	MeetingUserID Maybe[int]
+	Weight        int
+	fetch         *Fetch
+}
+
+func (c *AssignmentCandidate) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.AssignmentCandidate_AssignmentID(id).Lazy(&c.AssignmentID)
+	ds.AssignmentCandidate_ID(id).Lazy(&c.ID)
+	ds.AssignmentCandidate_MeetingID(id).Lazy(&c.MeetingID)
+	ds.AssignmentCandidate_MeetingUserID(id).Lazy(&c.MeetingUserID)
+	ds.AssignmentCandidate_Weight(id).Lazy(&c.Weight)
+}
+
+func (c *AssignmentCandidate) Assignment() *ValueCollection[Assignment, *Assignment] {
+	return &ValueCollection[Assignment, *Assignment]{
+		id:    c.AssignmentID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *AssignmentCandidate) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *AssignmentCandidate) MeetingUser() Maybe[*ValueCollection[MeetingUser, *MeetingUser]] {
+	var result Maybe[*ValueCollection[MeetingUser, *MeetingUser]]
+	id, hasValue := c.MeetingUserID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingUser, *MeetingUser]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (r *Fetch) AssignmentCandidate(id int) *ValueCollection[AssignmentCandidate, *AssignmentCandidate] {
+	return &ValueCollection[AssignmentCandidate, *AssignmentCandidate]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// ChatGroup has all fields from chat_group.
+type ChatGroup struct {
+	ChatMessageIDs []int
+	ID             int
+	MeetingID      int
+	Name           string
+	ReadGroupIDs   []int
+	Weight         int
+	WriteGroupIDs  []int
+	fetch          *Fetch
+}
+
+func (c *ChatGroup) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.ChatGroup_ChatMessageIDs(id).Lazy(&c.ChatMessageIDs)
+	ds.ChatGroup_ID(id).Lazy(&c.ID)
+	ds.ChatGroup_MeetingID(id).Lazy(&c.MeetingID)
+	ds.ChatGroup_Name(id).Lazy(&c.Name)
+	ds.ChatGroup_ReadGroupIDs(id).Lazy(&c.ReadGroupIDs)
+	ds.ChatGroup_Weight(id).Lazy(&c.Weight)
+	ds.ChatGroup_WriteGroupIDs(id).Lazy(&c.WriteGroupIDs)
+}
+
+func (c *ChatGroup) ChatMessageList() []*ValueCollection[ChatMessage, *ChatMessage] {
+	result := make([]*ValueCollection[ChatMessage, *ChatMessage], len(c.ChatMessageIDs))
+	for i, id := range c.ChatMessageIDs {
+		result[i] = &ValueCollection[ChatMessage, *ChatMessage]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *ChatGroup) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *ChatGroup) ReadGroupList() []*ValueCollection[Group, *Group] {
+	result := make([]*ValueCollection[Group, *Group], len(c.ReadGroupIDs))
+	for i, id := range c.ReadGroupIDs {
+		result[i] = &ValueCollection[Group, *Group]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *ChatGroup) WriteGroupList() []*ValueCollection[Group, *Group] {
+	result := make([]*ValueCollection[Group, *Group], len(c.WriteGroupIDs))
+	for i, id := range c.WriteGroupIDs {
+		result[i] = &ValueCollection[Group, *Group]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) ChatGroup(id int) *ValueCollection[ChatGroup, *ChatGroup] {
+	return &ValueCollection[ChatGroup, *ChatGroup]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// ChatMessage has all fields from chat_message.
+type ChatMessage struct {
+	ChatGroupID   int
+	Content       string
+	Created       int
+	ID            int
+	MeetingID     int
+	MeetingUserID Maybe[int]
+	fetch         *Fetch
+}
+
+func (c *ChatMessage) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.ChatMessage_ChatGroupID(id).Lazy(&c.ChatGroupID)
+	ds.ChatMessage_Content(id).Lazy(&c.Content)
+	ds.ChatMessage_Created(id).Lazy(&c.Created)
+	ds.ChatMessage_ID(id).Lazy(&c.ID)
+	ds.ChatMessage_MeetingID(id).Lazy(&c.MeetingID)
+	ds.ChatMessage_MeetingUserID(id).Lazy(&c.MeetingUserID)
+}
+
+func (c *ChatMessage) ChatGroup() *ValueCollection[ChatGroup, *ChatGroup] {
+	return &ValueCollection[ChatGroup, *ChatGroup]{
+		id:    c.ChatGroupID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *ChatMessage) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *ChatMessage) MeetingUser() Maybe[*ValueCollection[MeetingUser, *MeetingUser]] {
+	var result Maybe[*ValueCollection[MeetingUser, *MeetingUser]]
+	id, hasValue := c.MeetingUserID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingUser, *MeetingUser]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (r *Fetch) ChatMessage(id int) *ValueCollection[ChatMessage, *ChatMessage] {
+	return &ValueCollection[ChatMessage, *ChatMessage]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// Committee has all fields from committee.
+type Committee struct {
+	DefaultMeetingID                   Maybe[int]
+	Description                        string
+	ExternalID                         string
+	ForwardToCommitteeIDs              []int
+	ForwardingUserID                   Maybe[int]
+	ID                                 int
+	ManagerIDs                         []int
+	MeetingIDs                         []int
+	Name                               string
+	OrganizationID                     int
+	OrganizationTagIDs                 []int
+	ReceiveForwardingsFromCommitteeIDs []int
+	UserIDs                            []int
+	fetch                              *Fetch
+}
+
+func (c *Committee) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.Committee_DefaultMeetingID(id).Lazy(&c.DefaultMeetingID)
+	ds.Committee_Description(id).Lazy(&c.Description)
+	ds.Committee_ExternalID(id).Lazy(&c.ExternalID)
+	ds.Committee_ForwardToCommitteeIDs(id).Lazy(&c.ForwardToCommitteeIDs)
+	ds.Committee_ForwardingUserID(id).Lazy(&c.ForwardingUserID)
+	ds.Committee_ID(id).Lazy(&c.ID)
+	ds.Committee_ManagerIDs(id).Lazy(&c.ManagerIDs)
+	ds.Committee_MeetingIDs(id).Lazy(&c.MeetingIDs)
+	ds.Committee_Name(id).Lazy(&c.Name)
+	ds.Committee_OrganizationID(id).Lazy(&c.OrganizationID)
+	ds.Committee_OrganizationTagIDs(id).Lazy(&c.OrganizationTagIDs)
+	ds.Committee_ReceiveForwardingsFromCommitteeIDs(id).Lazy(&c.ReceiveForwardingsFromCommitteeIDs)
+	ds.Committee_UserIDs(id).Lazy(&c.UserIDs)
+}
+
+func (c *Committee) DefaultMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.DefaultMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Committee) ForwardToCommitteeList() []*ValueCollection[Committee, *Committee] {
+	result := make([]*ValueCollection[Committee, *Committee], len(c.ForwardToCommitteeIDs))
+	for i, id := range c.ForwardToCommitteeIDs {
+		result[i] = &ValueCollection[Committee, *Committee]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Committee) ForwardingUser() Maybe[*ValueCollection[User, *User]] {
+	var result Maybe[*ValueCollection[User, *User]]
+	id, hasValue := c.ForwardingUserID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[User, *User]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Committee) ManagerList() []*ValueCollection[User, *User] {
+	result := make([]*ValueCollection[User, *User], len(c.ManagerIDs))
+	for i, id := range c.ManagerIDs {
+		result[i] = &ValueCollection[User, *User]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Committee) MeetingList() []*ValueCollection[Meeting, *Meeting] {
+	result := make([]*ValueCollection[Meeting, *Meeting], len(c.MeetingIDs))
+	for i, id := range c.MeetingIDs {
+		result[i] = &ValueCollection[Meeting, *Meeting]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Committee) Organization() *ValueCollection[Organization, *Organization] {
+	return &ValueCollection[Organization, *Organization]{
+		id:    c.OrganizationID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Committee) OrganizationTagList() []*ValueCollection[OrganizationTag, *OrganizationTag] {
+	result := make([]*ValueCollection[OrganizationTag, *OrganizationTag], len(c.OrganizationTagIDs))
+	for i, id := range c.OrganizationTagIDs {
+		result[i] = &ValueCollection[OrganizationTag, *OrganizationTag]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Committee) ReceiveForwardingsFromCommitteeList() []*ValueCollection[Committee, *Committee] {
+	result := make([]*ValueCollection[Committee, *Committee], len(c.ReceiveForwardingsFromCommitteeIDs))
+	for i, id := range c.ReceiveForwardingsFromCommitteeIDs {
+		result[i] = &ValueCollection[Committee, *Committee]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Committee) UserList() []*ValueCollection[User, *User] {
+	result := make([]*ValueCollection[User, *User], len(c.UserIDs))
+	for i, id := range c.UserIDs {
+		result[i] = &ValueCollection[User, *User]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) Committee(id int) *ValueCollection[Committee, *Committee] {
+	return &ValueCollection[Committee, *Committee]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// Gender has all fields from gender.
+type Gender struct {
+	ID             int
+	Name           string
+	OrganizationID int
+	UserIDs        []int
+	fetch          *Fetch
+}
+
+func (c *Gender) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.Gender_ID(id).Lazy(&c.ID)
+	ds.Gender_Name(id).Lazy(&c.Name)
+	ds.Gender_OrganizationID(id).Lazy(&c.OrganizationID)
+	ds.Gender_UserIDs(id).Lazy(&c.UserIDs)
+}
+
+func (c *Gender) Organization() *ValueCollection[Organization, *Organization] {
+	return &ValueCollection[Organization, *Organization]{
+		id:    c.OrganizationID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Gender) UserList() []*ValueCollection[User, *User] {
+	result := make([]*ValueCollection[User, *User], len(c.UserIDs))
+	for i, id := range c.UserIDs {
+		result[i] = &ValueCollection[User, *User]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) Gender(id int) *ValueCollection[Gender, *Gender] {
+	return &ValueCollection[Gender, *Gender]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// Group has all fields from group.
+type Group struct {
+	AdminGroupForMeetingID                  Maybe[int]
+	AnonymousGroupForMeetingID              Maybe[int]
+	DefaultGroupForMeetingID                Maybe[int]
+	ExternalID                              string
+	ID                                      int
+	MeetingID                               int
+	MeetingMediafileAccessGroupIDs          []int
+	MeetingMediafileInheritedAccessGroupIDs []int
+	MeetingUserIDs                          []int
+	Name                                    string
+	Permissions                             []string
+	PollIDs                                 []int
+	ReadChatGroupIDs                        []int
+	ReadCommentSectionIDs                   []int
+	UsedAsAssignmentPollDefaultID           Maybe[int]
+	UsedAsMotionPollDefaultID               Maybe[int]
+	UsedAsPollDefaultID                     Maybe[int]
+	UsedAsTopicPollDefaultID                Maybe[int]
+	Weight                                  int
+	WriteChatGroupIDs                       []int
+	WriteCommentSectionIDs                  []int
+	fetch                                   *Fetch
+}
+
+func (c *Group) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.Group_AdminGroupForMeetingID(id).Lazy(&c.AdminGroupForMeetingID)
+	ds.Group_AnonymousGroupForMeetingID(id).Lazy(&c.AnonymousGroupForMeetingID)
+	ds.Group_DefaultGroupForMeetingID(id).Lazy(&c.DefaultGroupForMeetingID)
+	ds.Group_ExternalID(id).Lazy(&c.ExternalID)
+	ds.Group_ID(id).Lazy(&c.ID)
+	ds.Group_MeetingID(id).Lazy(&c.MeetingID)
+	ds.Group_MeetingMediafileAccessGroupIDs(id).Lazy(&c.MeetingMediafileAccessGroupIDs)
+	ds.Group_MeetingMediafileInheritedAccessGroupIDs(id).Lazy(&c.MeetingMediafileInheritedAccessGroupIDs)
+	ds.Group_MeetingUserIDs(id).Lazy(&c.MeetingUserIDs)
+	ds.Group_Name(id).Lazy(&c.Name)
+	ds.Group_Permissions(id).Lazy(&c.Permissions)
+	ds.Group_PollIDs(id).Lazy(&c.PollIDs)
+	ds.Group_ReadChatGroupIDs(id).Lazy(&c.ReadChatGroupIDs)
+	ds.Group_ReadCommentSectionIDs(id).Lazy(&c.ReadCommentSectionIDs)
+	ds.Group_UsedAsAssignmentPollDefaultID(id).Lazy(&c.UsedAsAssignmentPollDefaultID)
+	ds.Group_UsedAsMotionPollDefaultID(id).Lazy(&c.UsedAsMotionPollDefaultID)
+	ds.Group_UsedAsPollDefaultID(id).Lazy(&c.UsedAsPollDefaultID)
+	ds.Group_UsedAsTopicPollDefaultID(id).Lazy(&c.UsedAsTopicPollDefaultID)
+	ds.Group_Weight(id).Lazy(&c.Weight)
+	ds.Group_WriteChatGroupIDs(id).Lazy(&c.WriteChatGroupIDs)
+	ds.Group_WriteCommentSectionIDs(id).Lazy(&c.WriteCommentSectionIDs)
+}
+
+func (c *Group) AdminGroupForMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.AdminGroupForMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Group) AnonymousGroupForMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.AnonymousGroupForMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Group) DefaultGroupForMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.DefaultGroupForMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Group) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Group) MeetingMediafileAccessGroupList() []*ValueCollection[MeetingMediafile, *MeetingMediafile] {
+	result := make([]*ValueCollection[MeetingMediafile, *MeetingMediafile], len(c.MeetingMediafileAccessGroupIDs))
+	for i, id := range c.MeetingMediafileAccessGroupIDs {
+		result[i] = &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Group) MeetingMediafileInheritedAccessGroupList() []*ValueCollection[MeetingMediafile, *MeetingMediafile] {
+	result := make([]*ValueCollection[MeetingMediafile, *MeetingMediafile], len(c.MeetingMediafileInheritedAccessGroupIDs))
+	for i, id := range c.MeetingMediafileInheritedAccessGroupIDs {
+		result[i] = &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Group) MeetingUserList() []*ValueCollection[MeetingUser, *MeetingUser] {
+	result := make([]*ValueCollection[MeetingUser, *MeetingUser], len(c.MeetingUserIDs))
+	for i, id := range c.MeetingUserIDs {
+		result[i] = &ValueCollection[MeetingUser, *MeetingUser]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Group) PollList() []*ValueCollection[Poll, *Poll] {
+	result := make([]*ValueCollection[Poll, *Poll], len(c.PollIDs))
+	for i, id := range c.PollIDs {
+		result[i] = &ValueCollection[Poll, *Poll]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Group) ReadChatGroupList() []*ValueCollection[ChatGroup, *ChatGroup] {
+	result := make([]*ValueCollection[ChatGroup, *ChatGroup], len(c.ReadChatGroupIDs))
+	for i, id := range c.ReadChatGroupIDs {
+		result[i] = &ValueCollection[ChatGroup, *ChatGroup]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Group) ReadCommentSectionList() []*ValueCollection[MotionCommentSection, *MotionCommentSection] {
+	result := make([]*ValueCollection[MotionCommentSection, *MotionCommentSection], len(c.ReadCommentSectionIDs))
+	for i, id := range c.ReadCommentSectionIDs {
+		result[i] = &ValueCollection[MotionCommentSection, *MotionCommentSection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Group) UsedAsAssignmentPollDefault() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsAssignmentPollDefaultID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Group) UsedAsMotionPollDefault() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsMotionPollDefaultID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Group) UsedAsPollDefault() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsPollDefaultID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Group) UsedAsTopicPollDefault() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsTopicPollDefaultID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Group) WriteChatGroupList() []*ValueCollection[ChatGroup, *ChatGroup] {
+	result := make([]*ValueCollection[ChatGroup, *ChatGroup], len(c.WriteChatGroupIDs))
+	for i, id := range c.WriteChatGroupIDs {
+		result[i] = &ValueCollection[ChatGroup, *ChatGroup]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Group) WriteCommentSectionList() []*ValueCollection[MotionCommentSection, *MotionCommentSection] {
+	result := make([]*ValueCollection[MotionCommentSection, *MotionCommentSection], len(c.WriteCommentSectionIDs))
+	for i, id := range c.WriteCommentSectionIDs {
+		result[i] = &ValueCollection[MotionCommentSection, *MotionCommentSection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) Group(id int) *ValueCollection[Group, *Group] {
+	return &ValueCollection[Group, *Group]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// ImportPreview has all fields from import_preview.
+type ImportPreview struct {
+	Created int
+	ID      int
+	Name    string
+	Result  json.RawMessage
+	State   string
+	fetch   *Fetch
+}
+
+func (c *ImportPreview) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.ImportPreview_Created(id).Lazy(&c.Created)
+	ds.ImportPreview_ID(id).Lazy(&c.ID)
+	ds.ImportPreview_Name(id).Lazy(&c.Name)
+	ds.ImportPreview_Result(id).Lazy(&c.Result)
+	ds.ImportPreview_State(id).Lazy(&c.State)
+}
+
+func (r *Fetch) ImportPreview(id int) *ValueCollection[ImportPreview, *ImportPreview] {
+	return &ValueCollection[ImportPreview, *ImportPreview]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// ListOfSpeakers has all fields from list_of_speakers.
+type ListOfSpeakers struct {
+	Closed                          bool
+	ContentObjectID                 string
+	ID                              int
+	MeetingID                       int
+	ModeratorNotes                  string
+	ProjectionIDs                   []int
+	SequentialNumber                int
+	SpeakerIDs                      []int
+	StructureLevelListOfSpeakersIDs []int
+	fetch                           *Fetch
+}
+
+func (c *ListOfSpeakers) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.ListOfSpeakers_Closed(id).Lazy(&c.Closed)
+	ds.ListOfSpeakers_ContentObjectID(id).Lazy(&c.ContentObjectID)
+	ds.ListOfSpeakers_ID(id).Lazy(&c.ID)
+	ds.ListOfSpeakers_MeetingID(id).Lazy(&c.MeetingID)
+	ds.ListOfSpeakers_ModeratorNotes(id).Lazy(&c.ModeratorNotes)
+	ds.ListOfSpeakers_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
+	ds.ListOfSpeakers_SequentialNumber(id).Lazy(&c.SequentialNumber)
+	ds.ListOfSpeakers_SpeakerIDs(id).Lazy(&c.SpeakerIDs)
+	ds.ListOfSpeakers_StructureLevelListOfSpeakersIDs(id).Lazy(&c.StructureLevelListOfSpeakersIDs)
+}
+
+func (c *ListOfSpeakers) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *ListOfSpeakers) ProjectionList() []*ValueCollection[Projection, *Projection] {
+	result := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
+	for i, id := range c.ProjectionIDs {
+		result[i] = &ValueCollection[Projection, *Projection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *ListOfSpeakers) SpeakerList() []*ValueCollection[Speaker, *Speaker] {
+	result := make([]*ValueCollection[Speaker, *Speaker], len(c.SpeakerIDs))
+	for i, id := range c.SpeakerIDs {
+		result[i] = &ValueCollection[Speaker, *Speaker]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *ListOfSpeakers) StructureLevelListOfSpeakersList() []*ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers] {
+	result := make([]*ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers], len(c.StructureLevelListOfSpeakersIDs))
+	for i, id := range c.StructureLevelListOfSpeakersIDs {
+		result[i] = &ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) ListOfSpeakers(id int) *ValueCollection[ListOfSpeakers, *ListOfSpeakers] {
+	return &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// Mediafile has all fields from mediafile.
+type Mediafile struct {
+	ChildIDs                            []int
+	CreateTimestamp                     int
+	Filename                            string
+	Filesize                            int
+	ID                                  int
+	IsDirectory                         bool
+	MeetingMediafileIDs                 []int
+	Mimetype                            string
+	OwnerID                             string
+	ParentID                            Maybe[int]
+	PdfInformation                      json.RawMessage
+	PublishedToMeetingsInOrganizationID Maybe[int]
+	Title                               string
+	Token                               string
+	fetch                               *Fetch
+}
+
+func (c *Mediafile) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.Mediafile_ChildIDs(id).Lazy(&c.ChildIDs)
+	ds.Mediafile_CreateTimestamp(id).Lazy(&c.CreateTimestamp)
+	ds.Mediafile_Filename(id).Lazy(&c.Filename)
+	ds.Mediafile_Filesize(id).Lazy(&c.Filesize)
+	ds.Mediafile_ID(id).Lazy(&c.ID)
+	ds.Mediafile_IsDirectory(id).Lazy(&c.IsDirectory)
+	ds.Mediafile_MeetingMediafileIDs(id).Lazy(&c.MeetingMediafileIDs)
+	ds.Mediafile_Mimetype(id).Lazy(&c.Mimetype)
+	ds.Mediafile_OwnerID(id).Lazy(&c.OwnerID)
+	ds.Mediafile_ParentID(id).Lazy(&c.ParentID)
+	ds.Mediafile_PdfInformation(id).Lazy(&c.PdfInformation)
+	ds.Mediafile_PublishedToMeetingsInOrganizationID(id).Lazy(&c.PublishedToMeetingsInOrganizationID)
+	ds.Mediafile_Title(id).Lazy(&c.Title)
+	ds.Mediafile_Token(id).Lazy(&c.Token)
+}
+
+func (c *Mediafile) ChildList() []*ValueCollection[Mediafile, *Mediafile] {
+	result := make([]*ValueCollection[Mediafile, *Mediafile], len(c.ChildIDs))
+	for i, id := range c.ChildIDs {
+		result[i] = &ValueCollection[Mediafile, *Mediafile]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Mediafile) MeetingMediafileList() []*ValueCollection[MeetingMediafile, *MeetingMediafile] {
+	result := make([]*ValueCollection[MeetingMediafile, *MeetingMediafile], len(c.MeetingMediafileIDs))
+	for i, id := range c.MeetingMediafileIDs {
+		result[i] = &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Mediafile) Parent() Maybe[*ValueCollection[Mediafile, *Mediafile]] {
+	var result Maybe[*ValueCollection[Mediafile, *Mediafile]]
+	id, hasValue := c.ParentID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Mediafile, *Mediafile]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Mediafile) PublishedToMeetingsInOrganization() Maybe[*ValueCollection[Organization, *Organization]] {
+	var result Maybe[*ValueCollection[Organization, *Organization]]
+	id, hasValue := c.PublishedToMeetingsInOrganizationID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Organization, *Organization]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (r *Fetch) Mediafile(id int) *ValueCollection[Mediafile, *Mediafile] {
+	return &ValueCollection[Mediafile, *Mediafile]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// Meeting has all fields from meeting.
+type Meeting struct {
+	AdminGroupID                                 Maybe[int]
+	AgendaEnableNumbering                        bool
+	AgendaItemCreation                           string
+	AgendaItemIDs                                []int
+	AgendaNewItemsDefaultVisibility              string
+	AgendaNumberPrefix                           string
+	AgendaNumeralSystem                          string
+	AgendaShowInternalItemsOnProjector           bool
+	AgendaShowSubtitles                          bool
+	AgendaShowTopicNavigationOnDetailView        bool
+	AllProjectionIDs                             []int
+	AnonymousGroupID                             Maybe[int]
+	ApplauseEnable                               bool
+	ApplauseMaxAmount                            int
+	ApplauseMinAmount                            int
+	ApplauseParticleImageUrl                     string
+	ApplauseShowLevel                            bool
+	ApplauseTimeout                              int
+	ApplauseType                                 string
+	AssignmentCandidateIDs                       []int
+	AssignmentIDs                                []int
+	AssignmentPollAddCandidatesToListOfSpeakers  bool
+	AssignmentPollBallotPaperNumber              int
+	AssignmentPollBallotPaperSelection           string
+	AssignmentPollDefaultBackend                 string
+	AssignmentPollDefaultGroupIDs                []int
+	AssignmentPollDefaultMethod                  string
+	AssignmentPollDefaultOnehundredPercentBase   string
+	AssignmentPollDefaultType                    string
+	AssignmentPollEnableMaxVotesPerOption        bool
+	AssignmentPollSortPollResultByVotes          bool
+	AssignmentsExportPreamble                    string
+	AssignmentsExportTitle                       string
+	ChatGroupIDs                                 []int
+	ChatMessageIDs                               []int
+	CommitteeID                                  int
+	ConferenceAutoConnect                        bool
+	ConferenceAutoConnectNextSpeakers            int
+	ConferenceEnableHelpdesk                     bool
+	ConferenceLosRestriction                     bool
+	ConferenceOpenMicrophone                     bool
+	ConferenceOpenVideo                          bool
+	ConferenceShow                               bool
+	ConferenceStreamPosterUrl                    string
+	ConferenceStreamUrl                          string
+	CustomTranslations                           json.RawMessage
+	DefaultGroupID                               int
+	DefaultMeetingForCommitteeID                 Maybe[int]
+	DefaultProjectorAgendaItemListIDs            []int
+	DefaultProjectorAmendmentIDs                 []int
+	DefaultProjectorAssignmentIDs                []int
+	DefaultProjectorAssignmentPollIDs            []int
+	DefaultProjectorCountdownIDs                 []int
+	DefaultProjectorCurrentListOfSpeakersIDs     []int
+	DefaultProjectorListOfSpeakersIDs            []int
+	DefaultProjectorMediafileIDs                 []int
+	DefaultProjectorMessageIDs                   []int
+	DefaultProjectorMotionBlockIDs               []int
+	DefaultProjectorMotionIDs                    []int
+	DefaultProjectorMotionPollIDs                []int
+	DefaultProjectorPollIDs                      []int
+	DefaultProjectorTopicIDs                     []int
+	Description                                  string
+	EnableAnonymous                              bool
+	EndTime                                      int
+	ExportCsvEncoding                            string
+	ExportCsvSeparator                           string
+	ExportPdfFontsize                            int
+	ExportPdfLineHeight                          float32
+	ExportPdfPageMarginBottom                    int
+	ExportPdfPageMarginLeft                      int
+	ExportPdfPageMarginRight                     int
+	ExportPdfPageMarginTop                       int
+	ExportPdfPagenumberAlignment                 string
+	ExportPdfPagesize                            string
+	ExternalID                                   string
+	FontBoldID                                   Maybe[int]
+	FontBoldItalicID                             Maybe[int]
+	FontChyronSpeakerNameID                      Maybe[int]
+	FontItalicID                                 Maybe[int]
+	FontMonospaceID                              Maybe[int]
+	FontProjectorH1ID                            Maybe[int]
+	FontProjectorH2ID                            Maybe[int]
+	FontRegularID                                Maybe[int]
+	ForwardedMotionIDs                           []int
+	GroupIDs                                     []int
+	ID                                           int
+	ImportedAt                                   int
+	IsActiveInOrganizationID                     Maybe[int]
+	IsArchivedInOrganizationID                   Maybe[int]
+	JitsiDomain                                  string
+	JitsiRoomName                                string
+	JitsiRoomPassword                            string
+	Language                                     string
+	ListOfSpeakersAllowMultipleSpeakers          bool
+	ListOfSpeakersAmountLastOnProjector          int
+	ListOfSpeakersAmountNextOnProjector          int
+	ListOfSpeakersCanCreatePointOfOrderForOthers bool
+	ListOfSpeakersCanSetContributionSelf         bool
+	ListOfSpeakersClosingDisablesPointOfOrder    bool
+	ListOfSpeakersCountdownID                    Maybe[int]
+	ListOfSpeakersCoupleCountdown                bool
+	ListOfSpeakersDefaultStructureLevelTime      int
+	ListOfSpeakersEnableInterposedQuestion       bool
+	ListOfSpeakersEnablePointOfOrderCategories   bool
+	ListOfSpeakersEnablePointOfOrderSpeakers     bool
+	ListOfSpeakersEnableProContraSpeech          bool
+	ListOfSpeakersHideContributionCount          bool
+	ListOfSpeakersIDs                            []int
+	ListOfSpeakersInitiallyClosed                bool
+	ListOfSpeakersInterventionTime               int
+	ListOfSpeakersPresentUsersOnly               bool
+	ListOfSpeakersShowAmountOfSpeakersOnSlide    bool
+	ListOfSpeakersShowFirstContribution          bool
+	ListOfSpeakersSpeakerNoteForEveryone         bool
+	Location                                     string
+	LockedFromInside                             bool
+	LogoPdfBallotPaperID                         Maybe[int]
+	LogoPdfFooterLID                             Maybe[int]
+	LogoPdfFooterRID                             Maybe[int]
+	LogoPdfHeaderLID                             Maybe[int]
+	LogoPdfHeaderRID                             Maybe[int]
+	LogoProjectorHeaderID                        Maybe[int]
+	LogoProjectorMainID                          Maybe[int]
+	LogoWebHeaderID                              Maybe[int]
+	MediafileIDs                                 []int
+	MeetingMediafileIDs                          []int
+	MeetingUserIDs                               []int
+	MotionBlockIDs                               []int
+	MotionCategoryIDs                            []int
+	MotionChangeRecommendationIDs                []int
+	MotionCommentIDs                             []int
+	MotionCommentSectionIDs                      []int
+	MotionEditorIDs                              []int
+	MotionIDs                                    []int
+	MotionPollBallotPaperNumber                  int
+	MotionPollBallotPaperSelection               string
+	MotionPollDefaultBackend                     string
+	MotionPollDefaultGroupIDs                    []int
+	MotionPollDefaultMethod                      string
+	MotionPollDefaultOnehundredPercentBase       string
+	MotionPollDefaultType                        string
+	MotionStateIDs                               []int
+	MotionSubmitterIDs                           []int
+	MotionWorkflowIDs                            []int
+	MotionWorkingGroupSpeakerIDs                 []int
+	MotionsAmendmentsEnabled                     bool
+	MotionsAmendmentsInMainList                  bool
+	MotionsAmendmentsMultipleParagraphs          bool
+	MotionsAmendmentsOfAmendments                bool
+	MotionsAmendmentsPrefix                      string
+	MotionsAmendmentsTextMode                    string
+	MotionsBlockSlideColumns                     int
+	MotionsCreateEnableAdditionalSubmitterText   bool
+	MotionsDefaultAmendmentWorkflowID            int
+	MotionsDefaultLineNumbering                  string
+	MotionsDefaultSorting                        string
+	MotionsDefaultWorkflowID                     int
+	MotionsEnableEditor                          bool
+	MotionsEnableReasonOnProjector               bool
+	MotionsEnableRecommendationOnProjector       bool
+	MotionsEnableSideboxOnProjector              bool
+	MotionsEnableTextOnProjector                 bool
+	MotionsEnableWorkingGroupSpeaker             bool
+	MotionsExportFollowRecommendation            bool
+	MotionsExportPreamble                        string
+	MotionsExportSubmitterRecommendation         bool
+	MotionsExportTitle                           string
+	MotionsHideMetadataBackground                bool
+	MotionsLineLength                            int
+	MotionsNumberMinDigits                       int
+	MotionsNumberType                            string
+	MotionsNumberWithBlank                       bool
+	MotionsPreamble                              string
+	MotionsReasonRequired                        bool
+	MotionsRecommendationTextMode                string
+	MotionsRecommendationsBy                     string
+	MotionsShowReferringMotions                  bool
+	MotionsShowSequentialNumber                  bool
+	MotionsSupportersMinAmount                   int
+	Name                                         string
+	OptionIDs                                    []int
+	OrganizationTagIDs                           []int
+	PersonalNoteIDs                              []int
+	PointOfOrderCategoryIDs                      []int
+	PollBallotPaperNumber                        int
+	PollBallotPaperSelection                     string
+	PollCandidateIDs                             []int
+	PollCandidateListIDs                         []int
+	PollCountdownID                              Maybe[int]
+	PollCoupleCountdown                          bool
+	PollDefaultBackend                           string
+	PollDefaultGroupIDs                          []int
+	PollDefaultMethod                            string
+	PollDefaultOnehundredPercentBase             string
+	PollDefaultType                              string
+	PollIDs                                      []int
+	PollSortPollResultByVotes                    bool
+	PresentUserIDs                               []int
+	ProjectionIDs                                []int
+	ProjectorCountdownDefaultTime                int
+	ProjectorCountdownIDs                        []int
+	ProjectorCountdownWarningTime                int
+	ProjectorIDs                                 []int
+	ProjectorMessageIDs                          []int
+	ReferenceProjectorID                         int
+	SpeakerIDs                                   []int
+	StartTime                                    int
+	StructureLevelIDs                            []int
+	StructureLevelListOfSpeakersIDs              []int
+	TagIDs                                       []int
+	TemplateForOrganizationID                    Maybe[int]
+	TopicIDs                                     []int
+	TopicPollDefaultGroupIDs                     []int
+	UserIDs                                      []int
+	UsersAllowSelfSetPresent                     bool
+	UsersEmailBody                               string
+	UsersEmailReplyto                            string
+	UsersEmailSender                             string
+	UsersEmailSubject                            string
+	UsersEnablePresenceView                      bool
+	UsersEnableVoteDelegations                   bool
+	UsersEnableVoteWeight                        bool
+	UsersForbidDelegatorAsSubmitter              bool
+	UsersForbidDelegatorAsSupporter              bool
+	UsersForbidDelegatorInListOfSpeakers         bool
+	UsersForbidDelegatorToVote                   bool
+	UsersPdfWelcometext                          string
+	UsersPdfWelcometitle                         string
+	UsersPdfWlanEncryption                       string
+	UsersPdfWlanPassword                         string
+	UsersPdfWlanSsid                             string
+	VoteIDs                                      []int
+	WelcomeText                                  string
+	WelcomeTitle                                 string
+	fetch                                        *Fetch
+}
+
+func (c *Meeting) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.Meeting_AdminGroupID(id).Lazy(&c.AdminGroupID)
+	ds.Meeting_AgendaEnableNumbering(id).Lazy(&c.AgendaEnableNumbering)
+	ds.Meeting_AgendaItemCreation(id).Lazy(&c.AgendaItemCreation)
+	ds.Meeting_AgendaItemIDs(id).Lazy(&c.AgendaItemIDs)
+	ds.Meeting_AgendaNewItemsDefaultVisibility(id).Lazy(&c.AgendaNewItemsDefaultVisibility)
+	ds.Meeting_AgendaNumberPrefix(id).Lazy(&c.AgendaNumberPrefix)
+	ds.Meeting_AgendaNumeralSystem(id).Lazy(&c.AgendaNumeralSystem)
+	ds.Meeting_AgendaShowInternalItemsOnProjector(id).Lazy(&c.AgendaShowInternalItemsOnProjector)
+	ds.Meeting_AgendaShowSubtitles(id).Lazy(&c.AgendaShowSubtitles)
+	ds.Meeting_AgendaShowTopicNavigationOnDetailView(id).Lazy(&c.AgendaShowTopicNavigationOnDetailView)
+	ds.Meeting_AllProjectionIDs(id).Lazy(&c.AllProjectionIDs)
+	ds.Meeting_AnonymousGroupID(id).Lazy(&c.AnonymousGroupID)
+	ds.Meeting_ApplauseEnable(id).Lazy(&c.ApplauseEnable)
+	ds.Meeting_ApplauseMaxAmount(id).Lazy(&c.ApplauseMaxAmount)
+	ds.Meeting_ApplauseMinAmount(id).Lazy(&c.ApplauseMinAmount)
+	ds.Meeting_ApplauseParticleImageUrl(id).Lazy(&c.ApplauseParticleImageUrl)
+	ds.Meeting_ApplauseShowLevel(id).Lazy(&c.ApplauseShowLevel)
+	ds.Meeting_ApplauseTimeout(id).Lazy(&c.ApplauseTimeout)
+	ds.Meeting_ApplauseType(id).Lazy(&c.ApplauseType)
+	ds.Meeting_AssignmentCandidateIDs(id).Lazy(&c.AssignmentCandidateIDs)
+	ds.Meeting_AssignmentIDs(id).Lazy(&c.AssignmentIDs)
+	ds.Meeting_AssignmentPollAddCandidatesToListOfSpeakers(id).Lazy(&c.AssignmentPollAddCandidatesToListOfSpeakers)
+	ds.Meeting_AssignmentPollBallotPaperNumber(id).Lazy(&c.AssignmentPollBallotPaperNumber)
+	ds.Meeting_AssignmentPollBallotPaperSelection(id).Lazy(&c.AssignmentPollBallotPaperSelection)
+	ds.Meeting_AssignmentPollDefaultBackend(id).Lazy(&c.AssignmentPollDefaultBackend)
+	ds.Meeting_AssignmentPollDefaultGroupIDs(id).Lazy(&c.AssignmentPollDefaultGroupIDs)
+	ds.Meeting_AssignmentPollDefaultMethod(id).Lazy(&c.AssignmentPollDefaultMethod)
+	ds.Meeting_AssignmentPollDefaultOnehundredPercentBase(id).Lazy(&c.AssignmentPollDefaultOnehundredPercentBase)
+	ds.Meeting_AssignmentPollDefaultType(id).Lazy(&c.AssignmentPollDefaultType)
+	ds.Meeting_AssignmentPollEnableMaxVotesPerOption(id).Lazy(&c.AssignmentPollEnableMaxVotesPerOption)
+	ds.Meeting_AssignmentPollSortPollResultByVotes(id).Lazy(&c.AssignmentPollSortPollResultByVotes)
+	ds.Meeting_AssignmentsExportPreamble(id).Lazy(&c.AssignmentsExportPreamble)
+	ds.Meeting_AssignmentsExportTitle(id).Lazy(&c.AssignmentsExportTitle)
+	ds.Meeting_ChatGroupIDs(id).Lazy(&c.ChatGroupIDs)
+	ds.Meeting_ChatMessageIDs(id).Lazy(&c.ChatMessageIDs)
+	ds.Meeting_CommitteeID(id).Lazy(&c.CommitteeID)
+	ds.Meeting_ConferenceAutoConnect(id).Lazy(&c.ConferenceAutoConnect)
+	ds.Meeting_ConferenceAutoConnectNextSpeakers(id).Lazy(&c.ConferenceAutoConnectNextSpeakers)
+	ds.Meeting_ConferenceEnableHelpdesk(id).Lazy(&c.ConferenceEnableHelpdesk)
+	ds.Meeting_ConferenceLosRestriction(id).Lazy(&c.ConferenceLosRestriction)
+	ds.Meeting_ConferenceOpenMicrophone(id).Lazy(&c.ConferenceOpenMicrophone)
+	ds.Meeting_ConferenceOpenVideo(id).Lazy(&c.ConferenceOpenVideo)
+	ds.Meeting_ConferenceShow(id).Lazy(&c.ConferenceShow)
+	ds.Meeting_ConferenceStreamPosterUrl(id).Lazy(&c.ConferenceStreamPosterUrl)
+	ds.Meeting_ConferenceStreamUrl(id).Lazy(&c.ConferenceStreamUrl)
+	ds.Meeting_CustomTranslations(id).Lazy(&c.CustomTranslations)
+	ds.Meeting_DefaultGroupID(id).Lazy(&c.DefaultGroupID)
+	ds.Meeting_DefaultMeetingForCommitteeID(id).Lazy(&c.DefaultMeetingForCommitteeID)
+	ds.Meeting_DefaultProjectorAgendaItemListIDs(id).Lazy(&c.DefaultProjectorAgendaItemListIDs)
+	ds.Meeting_DefaultProjectorAmendmentIDs(id).Lazy(&c.DefaultProjectorAmendmentIDs)
+	ds.Meeting_DefaultProjectorAssignmentIDs(id).Lazy(&c.DefaultProjectorAssignmentIDs)
+	ds.Meeting_DefaultProjectorAssignmentPollIDs(id).Lazy(&c.DefaultProjectorAssignmentPollIDs)
+	ds.Meeting_DefaultProjectorCountdownIDs(id).Lazy(&c.DefaultProjectorCountdownIDs)
+	ds.Meeting_DefaultProjectorCurrentListOfSpeakersIDs(id).Lazy(&c.DefaultProjectorCurrentListOfSpeakersIDs)
+	ds.Meeting_DefaultProjectorListOfSpeakersIDs(id).Lazy(&c.DefaultProjectorListOfSpeakersIDs)
+	ds.Meeting_DefaultProjectorMediafileIDs(id).Lazy(&c.DefaultProjectorMediafileIDs)
+	ds.Meeting_DefaultProjectorMessageIDs(id).Lazy(&c.DefaultProjectorMessageIDs)
+	ds.Meeting_DefaultProjectorMotionBlockIDs(id).Lazy(&c.DefaultProjectorMotionBlockIDs)
+	ds.Meeting_DefaultProjectorMotionIDs(id).Lazy(&c.DefaultProjectorMotionIDs)
+	ds.Meeting_DefaultProjectorMotionPollIDs(id).Lazy(&c.DefaultProjectorMotionPollIDs)
+	ds.Meeting_DefaultProjectorPollIDs(id).Lazy(&c.DefaultProjectorPollIDs)
+	ds.Meeting_DefaultProjectorTopicIDs(id).Lazy(&c.DefaultProjectorTopicIDs)
+	ds.Meeting_Description(id).Lazy(&c.Description)
+	ds.Meeting_EnableAnonymous(id).Lazy(&c.EnableAnonymous)
+	ds.Meeting_EndTime(id).Lazy(&c.EndTime)
+	ds.Meeting_ExportCsvEncoding(id).Lazy(&c.ExportCsvEncoding)
+	ds.Meeting_ExportCsvSeparator(id).Lazy(&c.ExportCsvSeparator)
+	ds.Meeting_ExportPdfFontsize(id).Lazy(&c.ExportPdfFontsize)
+	ds.Meeting_ExportPdfLineHeight(id).Lazy(&c.ExportPdfLineHeight)
+	ds.Meeting_ExportPdfPageMarginBottom(id).Lazy(&c.ExportPdfPageMarginBottom)
+	ds.Meeting_ExportPdfPageMarginLeft(id).Lazy(&c.ExportPdfPageMarginLeft)
+	ds.Meeting_ExportPdfPageMarginRight(id).Lazy(&c.ExportPdfPageMarginRight)
+	ds.Meeting_ExportPdfPageMarginTop(id).Lazy(&c.ExportPdfPageMarginTop)
+	ds.Meeting_ExportPdfPagenumberAlignment(id).Lazy(&c.ExportPdfPagenumberAlignment)
+	ds.Meeting_ExportPdfPagesize(id).Lazy(&c.ExportPdfPagesize)
+	ds.Meeting_ExternalID(id).Lazy(&c.ExternalID)
+	ds.Meeting_FontBoldID(id).Lazy(&c.FontBoldID)
+	ds.Meeting_FontBoldItalicID(id).Lazy(&c.FontBoldItalicID)
+	ds.Meeting_FontChyronSpeakerNameID(id).Lazy(&c.FontChyronSpeakerNameID)
+	ds.Meeting_FontItalicID(id).Lazy(&c.FontItalicID)
+	ds.Meeting_FontMonospaceID(id).Lazy(&c.FontMonospaceID)
+	ds.Meeting_FontProjectorH1ID(id).Lazy(&c.FontProjectorH1ID)
+	ds.Meeting_FontProjectorH2ID(id).Lazy(&c.FontProjectorH2ID)
+	ds.Meeting_FontRegularID(id).Lazy(&c.FontRegularID)
+	ds.Meeting_ForwardedMotionIDs(id).Lazy(&c.ForwardedMotionIDs)
+	ds.Meeting_GroupIDs(id).Lazy(&c.GroupIDs)
+	ds.Meeting_ID(id).Lazy(&c.ID)
+	ds.Meeting_ImportedAt(id).Lazy(&c.ImportedAt)
+	ds.Meeting_IsActiveInOrganizationID(id).Lazy(&c.IsActiveInOrganizationID)
+	ds.Meeting_IsArchivedInOrganizationID(id).Lazy(&c.IsArchivedInOrganizationID)
+	ds.Meeting_JitsiDomain(id).Lazy(&c.JitsiDomain)
+	ds.Meeting_JitsiRoomName(id).Lazy(&c.JitsiRoomName)
+	ds.Meeting_JitsiRoomPassword(id).Lazy(&c.JitsiRoomPassword)
+	ds.Meeting_Language(id).Lazy(&c.Language)
+	ds.Meeting_ListOfSpeakersAllowMultipleSpeakers(id).Lazy(&c.ListOfSpeakersAllowMultipleSpeakers)
+	ds.Meeting_ListOfSpeakersAmountLastOnProjector(id).Lazy(&c.ListOfSpeakersAmountLastOnProjector)
+	ds.Meeting_ListOfSpeakersAmountNextOnProjector(id).Lazy(&c.ListOfSpeakersAmountNextOnProjector)
+	ds.Meeting_ListOfSpeakersCanCreatePointOfOrderForOthers(id).Lazy(&c.ListOfSpeakersCanCreatePointOfOrderForOthers)
+	ds.Meeting_ListOfSpeakersCanSetContributionSelf(id).Lazy(&c.ListOfSpeakersCanSetContributionSelf)
+	ds.Meeting_ListOfSpeakersClosingDisablesPointOfOrder(id).Lazy(&c.ListOfSpeakersClosingDisablesPointOfOrder)
+	ds.Meeting_ListOfSpeakersCountdownID(id).Lazy(&c.ListOfSpeakersCountdownID)
+	ds.Meeting_ListOfSpeakersCoupleCountdown(id).Lazy(&c.ListOfSpeakersCoupleCountdown)
+	ds.Meeting_ListOfSpeakersDefaultStructureLevelTime(id).Lazy(&c.ListOfSpeakersDefaultStructureLevelTime)
+	ds.Meeting_ListOfSpeakersEnableInterposedQuestion(id).Lazy(&c.ListOfSpeakersEnableInterposedQuestion)
+	ds.Meeting_ListOfSpeakersEnablePointOfOrderCategories(id).Lazy(&c.ListOfSpeakersEnablePointOfOrderCategories)
+	ds.Meeting_ListOfSpeakersEnablePointOfOrderSpeakers(id).Lazy(&c.ListOfSpeakersEnablePointOfOrderSpeakers)
+	ds.Meeting_ListOfSpeakersEnableProContraSpeech(id).Lazy(&c.ListOfSpeakersEnableProContraSpeech)
+	ds.Meeting_ListOfSpeakersHideContributionCount(id).Lazy(&c.ListOfSpeakersHideContributionCount)
+	ds.Meeting_ListOfSpeakersIDs(id).Lazy(&c.ListOfSpeakersIDs)
+	ds.Meeting_ListOfSpeakersInitiallyClosed(id).Lazy(&c.ListOfSpeakersInitiallyClosed)
+	ds.Meeting_ListOfSpeakersInterventionTime(id).Lazy(&c.ListOfSpeakersInterventionTime)
+	ds.Meeting_ListOfSpeakersPresentUsersOnly(id).Lazy(&c.ListOfSpeakersPresentUsersOnly)
+	ds.Meeting_ListOfSpeakersShowAmountOfSpeakersOnSlide(id).Lazy(&c.ListOfSpeakersShowAmountOfSpeakersOnSlide)
+	ds.Meeting_ListOfSpeakersShowFirstContribution(id).Lazy(&c.ListOfSpeakersShowFirstContribution)
+	ds.Meeting_ListOfSpeakersSpeakerNoteForEveryone(id).Lazy(&c.ListOfSpeakersSpeakerNoteForEveryone)
+	ds.Meeting_Location(id).Lazy(&c.Location)
+	ds.Meeting_LockedFromInside(id).Lazy(&c.LockedFromInside)
+	ds.Meeting_LogoPdfBallotPaperID(id).Lazy(&c.LogoPdfBallotPaperID)
+	ds.Meeting_LogoPdfFooterLID(id).Lazy(&c.LogoPdfFooterLID)
+	ds.Meeting_LogoPdfFooterRID(id).Lazy(&c.LogoPdfFooterRID)
+	ds.Meeting_LogoPdfHeaderLID(id).Lazy(&c.LogoPdfHeaderLID)
+	ds.Meeting_LogoPdfHeaderRID(id).Lazy(&c.LogoPdfHeaderRID)
+	ds.Meeting_LogoProjectorHeaderID(id).Lazy(&c.LogoProjectorHeaderID)
+	ds.Meeting_LogoProjectorMainID(id).Lazy(&c.LogoProjectorMainID)
+	ds.Meeting_LogoWebHeaderID(id).Lazy(&c.LogoWebHeaderID)
+	ds.Meeting_MediafileIDs(id).Lazy(&c.MediafileIDs)
+	ds.Meeting_MeetingMediafileIDs(id).Lazy(&c.MeetingMediafileIDs)
+	ds.Meeting_MeetingUserIDs(id).Lazy(&c.MeetingUserIDs)
+	ds.Meeting_MotionBlockIDs(id).Lazy(&c.MotionBlockIDs)
+	ds.Meeting_MotionCategoryIDs(id).Lazy(&c.MotionCategoryIDs)
+	ds.Meeting_MotionChangeRecommendationIDs(id).Lazy(&c.MotionChangeRecommendationIDs)
+	ds.Meeting_MotionCommentIDs(id).Lazy(&c.MotionCommentIDs)
+	ds.Meeting_MotionCommentSectionIDs(id).Lazy(&c.MotionCommentSectionIDs)
+	ds.Meeting_MotionEditorIDs(id).Lazy(&c.MotionEditorIDs)
+	ds.Meeting_MotionIDs(id).Lazy(&c.MotionIDs)
+	ds.Meeting_MotionPollBallotPaperNumber(id).Lazy(&c.MotionPollBallotPaperNumber)
+	ds.Meeting_MotionPollBallotPaperSelection(id).Lazy(&c.MotionPollBallotPaperSelection)
+	ds.Meeting_MotionPollDefaultBackend(id).Lazy(&c.MotionPollDefaultBackend)
+	ds.Meeting_MotionPollDefaultGroupIDs(id).Lazy(&c.MotionPollDefaultGroupIDs)
+	ds.Meeting_MotionPollDefaultMethod(id).Lazy(&c.MotionPollDefaultMethod)
+	ds.Meeting_MotionPollDefaultOnehundredPercentBase(id).Lazy(&c.MotionPollDefaultOnehundredPercentBase)
+	ds.Meeting_MotionPollDefaultType(id).Lazy(&c.MotionPollDefaultType)
+	ds.Meeting_MotionStateIDs(id).Lazy(&c.MotionStateIDs)
+	ds.Meeting_MotionSubmitterIDs(id).Lazy(&c.MotionSubmitterIDs)
+	ds.Meeting_MotionWorkflowIDs(id).Lazy(&c.MotionWorkflowIDs)
+	ds.Meeting_MotionWorkingGroupSpeakerIDs(id).Lazy(&c.MotionWorkingGroupSpeakerIDs)
+	ds.Meeting_MotionsAmendmentsEnabled(id).Lazy(&c.MotionsAmendmentsEnabled)
+	ds.Meeting_MotionsAmendmentsInMainList(id).Lazy(&c.MotionsAmendmentsInMainList)
+	ds.Meeting_MotionsAmendmentsMultipleParagraphs(id).Lazy(&c.MotionsAmendmentsMultipleParagraphs)
+	ds.Meeting_MotionsAmendmentsOfAmendments(id).Lazy(&c.MotionsAmendmentsOfAmendments)
+	ds.Meeting_MotionsAmendmentsPrefix(id).Lazy(&c.MotionsAmendmentsPrefix)
+	ds.Meeting_MotionsAmendmentsTextMode(id).Lazy(&c.MotionsAmendmentsTextMode)
+	ds.Meeting_MotionsBlockSlideColumns(id).Lazy(&c.MotionsBlockSlideColumns)
+	ds.Meeting_MotionsCreateEnableAdditionalSubmitterText(id).Lazy(&c.MotionsCreateEnableAdditionalSubmitterText)
+	ds.Meeting_MotionsDefaultAmendmentWorkflowID(id).Lazy(&c.MotionsDefaultAmendmentWorkflowID)
+	ds.Meeting_MotionsDefaultLineNumbering(id).Lazy(&c.MotionsDefaultLineNumbering)
+	ds.Meeting_MotionsDefaultSorting(id).Lazy(&c.MotionsDefaultSorting)
+	ds.Meeting_MotionsDefaultWorkflowID(id).Lazy(&c.MotionsDefaultWorkflowID)
+	ds.Meeting_MotionsEnableEditor(id).Lazy(&c.MotionsEnableEditor)
+	ds.Meeting_MotionsEnableReasonOnProjector(id).Lazy(&c.MotionsEnableReasonOnProjector)
+	ds.Meeting_MotionsEnableRecommendationOnProjector(id).Lazy(&c.MotionsEnableRecommendationOnProjector)
+	ds.Meeting_MotionsEnableSideboxOnProjector(id).Lazy(&c.MotionsEnableSideboxOnProjector)
+	ds.Meeting_MotionsEnableTextOnProjector(id).Lazy(&c.MotionsEnableTextOnProjector)
+	ds.Meeting_MotionsEnableWorkingGroupSpeaker(id).Lazy(&c.MotionsEnableWorkingGroupSpeaker)
+	ds.Meeting_MotionsExportFollowRecommendation(id).Lazy(&c.MotionsExportFollowRecommendation)
+	ds.Meeting_MotionsExportPreamble(id).Lazy(&c.MotionsExportPreamble)
+	ds.Meeting_MotionsExportSubmitterRecommendation(id).Lazy(&c.MotionsExportSubmitterRecommendation)
+	ds.Meeting_MotionsExportTitle(id).Lazy(&c.MotionsExportTitle)
+	ds.Meeting_MotionsHideMetadataBackground(id).Lazy(&c.MotionsHideMetadataBackground)
+	ds.Meeting_MotionsLineLength(id).Lazy(&c.MotionsLineLength)
+	ds.Meeting_MotionsNumberMinDigits(id).Lazy(&c.MotionsNumberMinDigits)
+	ds.Meeting_MotionsNumberType(id).Lazy(&c.MotionsNumberType)
+	ds.Meeting_MotionsNumberWithBlank(id).Lazy(&c.MotionsNumberWithBlank)
+	ds.Meeting_MotionsPreamble(id).Lazy(&c.MotionsPreamble)
+	ds.Meeting_MotionsReasonRequired(id).Lazy(&c.MotionsReasonRequired)
+	ds.Meeting_MotionsRecommendationTextMode(id).Lazy(&c.MotionsRecommendationTextMode)
+	ds.Meeting_MotionsRecommendationsBy(id).Lazy(&c.MotionsRecommendationsBy)
+	ds.Meeting_MotionsShowReferringMotions(id).Lazy(&c.MotionsShowReferringMotions)
+	ds.Meeting_MotionsShowSequentialNumber(id).Lazy(&c.MotionsShowSequentialNumber)
+	ds.Meeting_MotionsSupportersMinAmount(id).Lazy(&c.MotionsSupportersMinAmount)
+	ds.Meeting_Name(id).Lazy(&c.Name)
+	ds.Meeting_OptionIDs(id).Lazy(&c.OptionIDs)
+	ds.Meeting_OrganizationTagIDs(id).Lazy(&c.OrganizationTagIDs)
+	ds.Meeting_PersonalNoteIDs(id).Lazy(&c.PersonalNoteIDs)
+	ds.Meeting_PointOfOrderCategoryIDs(id).Lazy(&c.PointOfOrderCategoryIDs)
+	ds.Meeting_PollBallotPaperNumber(id).Lazy(&c.PollBallotPaperNumber)
+	ds.Meeting_PollBallotPaperSelection(id).Lazy(&c.PollBallotPaperSelection)
+	ds.Meeting_PollCandidateIDs(id).Lazy(&c.PollCandidateIDs)
+	ds.Meeting_PollCandidateListIDs(id).Lazy(&c.PollCandidateListIDs)
+	ds.Meeting_PollCountdownID(id).Lazy(&c.PollCountdownID)
+	ds.Meeting_PollCoupleCountdown(id).Lazy(&c.PollCoupleCountdown)
+	ds.Meeting_PollDefaultBackend(id).Lazy(&c.PollDefaultBackend)
+	ds.Meeting_PollDefaultGroupIDs(id).Lazy(&c.PollDefaultGroupIDs)
+	ds.Meeting_PollDefaultMethod(id).Lazy(&c.PollDefaultMethod)
+	ds.Meeting_PollDefaultOnehundredPercentBase(id).Lazy(&c.PollDefaultOnehundredPercentBase)
+	ds.Meeting_PollDefaultType(id).Lazy(&c.PollDefaultType)
+	ds.Meeting_PollIDs(id).Lazy(&c.PollIDs)
+	ds.Meeting_PollSortPollResultByVotes(id).Lazy(&c.PollSortPollResultByVotes)
+	ds.Meeting_PresentUserIDs(id).Lazy(&c.PresentUserIDs)
+	ds.Meeting_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
+	ds.Meeting_ProjectorCountdownDefaultTime(id).Lazy(&c.ProjectorCountdownDefaultTime)
+	ds.Meeting_ProjectorCountdownIDs(id).Lazy(&c.ProjectorCountdownIDs)
+	ds.Meeting_ProjectorCountdownWarningTime(id).Lazy(&c.ProjectorCountdownWarningTime)
+	ds.Meeting_ProjectorIDs(id).Lazy(&c.ProjectorIDs)
+	ds.Meeting_ProjectorMessageIDs(id).Lazy(&c.ProjectorMessageIDs)
+	ds.Meeting_ReferenceProjectorID(id).Lazy(&c.ReferenceProjectorID)
+	ds.Meeting_SpeakerIDs(id).Lazy(&c.SpeakerIDs)
+	ds.Meeting_StartTime(id).Lazy(&c.StartTime)
+	ds.Meeting_StructureLevelIDs(id).Lazy(&c.StructureLevelIDs)
+	ds.Meeting_StructureLevelListOfSpeakersIDs(id).Lazy(&c.StructureLevelListOfSpeakersIDs)
+	ds.Meeting_TagIDs(id).Lazy(&c.TagIDs)
+	ds.Meeting_TemplateForOrganizationID(id).Lazy(&c.TemplateForOrganizationID)
+	ds.Meeting_TopicIDs(id).Lazy(&c.TopicIDs)
+	ds.Meeting_TopicPollDefaultGroupIDs(id).Lazy(&c.TopicPollDefaultGroupIDs)
+	ds.Meeting_UserIDs(id).Lazy(&c.UserIDs)
+	ds.Meeting_UsersAllowSelfSetPresent(id).Lazy(&c.UsersAllowSelfSetPresent)
+	ds.Meeting_UsersEmailBody(id).Lazy(&c.UsersEmailBody)
+	ds.Meeting_UsersEmailReplyto(id).Lazy(&c.UsersEmailReplyto)
+	ds.Meeting_UsersEmailSender(id).Lazy(&c.UsersEmailSender)
+	ds.Meeting_UsersEmailSubject(id).Lazy(&c.UsersEmailSubject)
+	ds.Meeting_UsersEnablePresenceView(id).Lazy(&c.UsersEnablePresenceView)
+	ds.Meeting_UsersEnableVoteDelegations(id).Lazy(&c.UsersEnableVoteDelegations)
+	ds.Meeting_UsersEnableVoteWeight(id).Lazy(&c.UsersEnableVoteWeight)
+	ds.Meeting_UsersForbidDelegatorAsSubmitter(id).Lazy(&c.UsersForbidDelegatorAsSubmitter)
+	ds.Meeting_UsersForbidDelegatorAsSupporter(id).Lazy(&c.UsersForbidDelegatorAsSupporter)
+	ds.Meeting_UsersForbidDelegatorInListOfSpeakers(id).Lazy(&c.UsersForbidDelegatorInListOfSpeakers)
+	ds.Meeting_UsersForbidDelegatorToVote(id).Lazy(&c.UsersForbidDelegatorToVote)
+	ds.Meeting_UsersPdfWelcometext(id).Lazy(&c.UsersPdfWelcometext)
+	ds.Meeting_UsersPdfWelcometitle(id).Lazy(&c.UsersPdfWelcometitle)
+	ds.Meeting_UsersPdfWlanEncryption(id).Lazy(&c.UsersPdfWlanEncryption)
+	ds.Meeting_UsersPdfWlanPassword(id).Lazy(&c.UsersPdfWlanPassword)
+	ds.Meeting_UsersPdfWlanSsid(id).Lazy(&c.UsersPdfWlanSsid)
+	ds.Meeting_VoteIDs(id).Lazy(&c.VoteIDs)
+	ds.Meeting_WelcomeText(id).Lazy(&c.WelcomeText)
+	ds.Meeting_WelcomeTitle(id).Lazy(&c.WelcomeTitle)
+}
+
+func (c *Meeting) AdminGroup() Maybe[*ValueCollection[Group, *Group]] {
+	var result Maybe[*ValueCollection[Group, *Group]]
+	id, hasValue := c.AdminGroupID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Group, *Group]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) AgendaItemList() []*ValueCollection[AgendaItem, *AgendaItem] {
+	result := make([]*ValueCollection[AgendaItem, *AgendaItem], len(c.AgendaItemIDs))
+	for i, id := range c.AgendaItemIDs {
+		result[i] = &ValueCollection[AgendaItem, *AgendaItem]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) AllProjectionList() []*ValueCollection[Projection, *Projection] {
+	result := make([]*ValueCollection[Projection, *Projection], len(c.AllProjectionIDs))
+	for i, id := range c.AllProjectionIDs {
+		result[i] = &ValueCollection[Projection, *Projection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) AnonymousGroup() Maybe[*ValueCollection[Group, *Group]] {
+	var result Maybe[*ValueCollection[Group, *Group]]
+	id, hasValue := c.AnonymousGroupID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Group, *Group]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) AssignmentCandidateList() []*ValueCollection[AssignmentCandidate, *AssignmentCandidate] {
+	result := make([]*ValueCollection[AssignmentCandidate, *AssignmentCandidate], len(c.AssignmentCandidateIDs))
+	for i, id := range c.AssignmentCandidateIDs {
+		result[i] = &ValueCollection[AssignmentCandidate, *AssignmentCandidate]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) AssignmentList() []*ValueCollection[Assignment, *Assignment] {
+	result := make([]*ValueCollection[Assignment, *Assignment], len(c.AssignmentIDs))
+	for i, id := range c.AssignmentIDs {
+		result[i] = &ValueCollection[Assignment, *Assignment]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) AssignmentPollDefaultGroupList() []*ValueCollection[Group, *Group] {
+	result := make([]*ValueCollection[Group, *Group], len(c.AssignmentPollDefaultGroupIDs))
+	for i, id := range c.AssignmentPollDefaultGroupIDs {
+		result[i] = &ValueCollection[Group, *Group]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) ChatGroupList() []*ValueCollection[ChatGroup, *ChatGroup] {
+	result := make([]*ValueCollection[ChatGroup, *ChatGroup], len(c.ChatGroupIDs))
+	for i, id := range c.ChatGroupIDs {
+		result[i] = &ValueCollection[ChatGroup, *ChatGroup]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) ChatMessageList() []*ValueCollection[ChatMessage, *ChatMessage] {
+	result := make([]*ValueCollection[ChatMessage, *ChatMessage], len(c.ChatMessageIDs))
+	for i, id := range c.ChatMessageIDs {
+		result[i] = &ValueCollection[ChatMessage, *ChatMessage]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) Committee() *ValueCollection[Committee, *Committee] {
+	return &ValueCollection[Committee, *Committee]{
+		id:    c.CommitteeID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Meeting) DefaultGroup() *ValueCollection[Group, *Group] {
+	return &ValueCollection[Group, *Group]{
+		id:    c.DefaultGroupID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Meeting) DefaultMeetingForCommittee() Maybe[*ValueCollection[Committee, *Committee]] {
+	var result Maybe[*ValueCollection[Committee, *Committee]]
+	id, hasValue := c.DefaultMeetingForCommitteeID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Committee, *Committee]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) DefaultProjectorAgendaItemListList() []*ValueCollection[Projector, *Projector] {
+	result := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorAgendaItemListIDs))
+	for i, id := range c.DefaultProjectorAgendaItemListIDs {
+		result[i] = &ValueCollection[Projector, *Projector]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) DefaultProjectorAmendmentList() []*ValueCollection[Projector, *Projector] {
+	result := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorAmendmentIDs))
+	for i, id := range c.DefaultProjectorAmendmentIDs {
+		result[i] = &ValueCollection[Projector, *Projector]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) DefaultProjectorAssignmentList() []*ValueCollection[Projector, *Projector] {
+	result := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorAssignmentIDs))
+	for i, id := range c.DefaultProjectorAssignmentIDs {
+		result[i] = &ValueCollection[Projector, *Projector]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) DefaultProjectorAssignmentPollList() []*ValueCollection[Projector, *Projector] {
+	result := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorAssignmentPollIDs))
+	for i, id := range c.DefaultProjectorAssignmentPollIDs {
+		result[i] = &ValueCollection[Projector, *Projector]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) DefaultProjectorCountdownList() []*ValueCollection[Projector, *Projector] {
+	result := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorCountdownIDs))
+	for i, id := range c.DefaultProjectorCountdownIDs {
+		result[i] = &ValueCollection[Projector, *Projector]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) DefaultProjectorCurrentListOfSpeakersList() []*ValueCollection[Projector, *Projector] {
+	result := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorCurrentListOfSpeakersIDs))
+	for i, id := range c.DefaultProjectorCurrentListOfSpeakersIDs {
+		result[i] = &ValueCollection[Projector, *Projector]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) DefaultProjectorListOfSpeakersList() []*ValueCollection[Projector, *Projector] {
+	result := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorListOfSpeakersIDs))
+	for i, id := range c.DefaultProjectorListOfSpeakersIDs {
+		result[i] = &ValueCollection[Projector, *Projector]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) DefaultProjectorMediafileList() []*ValueCollection[Projector, *Projector] {
+	result := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorMediafileIDs))
+	for i, id := range c.DefaultProjectorMediafileIDs {
+		result[i] = &ValueCollection[Projector, *Projector]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) DefaultProjectorMessageList() []*ValueCollection[Projector, *Projector] {
+	result := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorMessageIDs))
+	for i, id := range c.DefaultProjectorMessageIDs {
+		result[i] = &ValueCollection[Projector, *Projector]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) DefaultProjectorMotionBlockList() []*ValueCollection[Projector, *Projector] {
+	result := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorMotionBlockIDs))
+	for i, id := range c.DefaultProjectorMotionBlockIDs {
+		result[i] = &ValueCollection[Projector, *Projector]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) DefaultProjectorMotionList() []*ValueCollection[Projector, *Projector] {
+	result := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorMotionIDs))
+	for i, id := range c.DefaultProjectorMotionIDs {
+		result[i] = &ValueCollection[Projector, *Projector]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) DefaultProjectorMotionPollList() []*ValueCollection[Projector, *Projector] {
+	result := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorMotionPollIDs))
+	for i, id := range c.DefaultProjectorMotionPollIDs {
+		result[i] = &ValueCollection[Projector, *Projector]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) DefaultProjectorPollList() []*ValueCollection[Projector, *Projector] {
+	result := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorPollIDs))
+	for i, id := range c.DefaultProjectorPollIDs {
+		result[i] = &ValueCollection[Projector, *Projector]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) DefaultProjectorTopicList() []*ValueCollection[Projector, *Projector] {
+	result := make([]*ValueCollection[Projector, *Projector], len(c.DefaultProjectorTopicIDs))
+	for i, id := range c.DefaultProjectorTopicIDs {
+		result[i] = &ValueCollection[Projector, *Projector]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) FontBold() Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]] {
+	var result Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
+	id, hasValue := c.FontBoldID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) FontBoldItalic() Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]] {
+	var result Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
+	id, hasValue := c.FontBoldItalicID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) FontChyronSpeakerName() Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]] {
+	var result Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
+	id, hasValue := c.FontChyronSpeakerNameID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) FontItalic() Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]] {
+	var result Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
+	id, hasValue := c.FontItalicID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) FontMonospace() Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]] {
+	var result Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
+	id, hasValue := c.FontMonospaceID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) FontProjectorH1() Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]] {
+	var result Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
+	id, hasValue := c.FontProjectorH1ID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) FontProjectorH2() Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]] {
+	var result Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
+	id, hasValue := c.FontProjectorH2ID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) FontRegular() Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]] {
+	var result Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
+	id, hasValue := c.FontRegularID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) ForwardedMotionList() []*ValueCollection[Motion, *Motion] {
+	result := make([]*ValueCollection[Motion, *Motion], len(c.ForwardedMotionIDs))
+	for i, id := range c.ForwardedMotionIDs {
+		result[i] = &ValueCollection[Motion, *Motion]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) GroupList() []*ValueCollection[Group, *Group] {
+	result := make([]*ValueCollection[Group, *Group], len(c.GroupIDs))
+	for i, id := range c.GroupIDs {
+		result[i] = &ValueCollection[Group, *Group]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) IsActiveInOrganization() Maybe[*ValueCollection[Organization, *Organization]] {
+	var result Maybe[*ValueCollection[Organization, *Organization]]
+	id, hasValue := c.IsActiveInOrganizationID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Organization, *Organization]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) IsArchivedInOrganization() Maybe[*ValueCollection[Organization, *Organization]] {
+	var result Maybe[*ValueCollection[Organization, *Organization]]
+	id, hasValue := c.IsArchivedInOrganizationID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Organization, *Organization]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) ListOfSpeakersCountdown() Maybe[*ValueCollection[ProjectorCountdown, *ProjectorCountdown]] {
+	var result Maybe[*ValueCollection[ProjectorCountdown, *ProjectorCountdown]]
+	id, hasValue := c.ListOfSpeakersCountdownID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[ProjectorCountdown, *ProjectorCountdown]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) ListOfSpeakersList() []*ValueCollection[ListOfSpeakers, *ListOfSpeakers] {
+	result := make([]*ValueCollection[ListOfSpeakers, *ListOfSpeakers], len(c.ListOfSpeakersIDs))
+	for i, id := range c.ListOfSpeakersIDs {
+		result[i] = &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) LogoPdfBallotPaper() Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]] {
+	var result Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
+	id, hasValue := c.LogoPdfBallotPaperID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) LogoPdfFooterL() Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]] {
+	var result Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
+	id, hasValue := c.LogoPdfFooterLID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) LogoPdfFooterR() Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]] {
+	var result Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
+	id, hasValue := c.LogoPdfFooterRID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) LogoPdfHeaderL() Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]] {
+	var result Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
+	id, hasValue := c.LogoPdfHeaderLID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) LogoPdfHeaderR() Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]] {
+	var result Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
+	id, hasValue := c.LogoPdfHeaderRID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) LogoProjectorHeader() Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]] {
+	var result Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
+	id, hasValue := c.LogoProjectorHeaderID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) LogoProjectorMain() Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]] {
+	var result Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
+	id, hasValue := c.LogoProjectorMainID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) LogoWebHeader() Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]] {
+	var result Maybe[*ValueCollection[MeetingMediafile, *MeetingMediafile]]
+	id, hasValue := c.LogoWebHeaderID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) MediafileList() []*ValueCollection[Mediafile, *Mediafile] {
+	result := make([]*ValueCollection[Mediafile, *Mediafile], len(c.MediafileIDs))
+	for i, id := range c.MediafileIDs {
+		result[i] = &ValueCollection[Mediafile, *Mediafile]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) MeetingMediafileList() []*ValueCollection[MeetingMediafile, *MeetingMediafile] {
+	result := make([]*ValueCollection[MeetingMediafile, *MeetingMediafile], len(c.MeetingMediafileIDs))
+	for i, id := range c.MeetingMediafileIDs {
+		result[i] = &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) MeetingUserList() []*ValueCollection[MeetingUser, *MeetingUser] {
+	result := make([]*ValueCollection[MeetingUser, *MeetingUser], len(c.MeetingUserIDs))
+	for i, id := range c.MeetingUserIDs {
+		result[i] = &ValueCollection[MeetingUser, *MeetingUser]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) MotionBlockList() []*ValueCollection[MotionBlock, *MotionBlock] {
+	result := make([]*ValueCollection[MotionBlock, *MotionBlock], len(c.MotionBlockIDs))
+	for i, id := range c.MotionBlockIDs {
+		result[i] = &ValueCollection[MotionBlock, *MotionBlock]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) MotionCategoryList() []*ValueCollection[MotionCategory, *MotionCategory] {
+	result := make([]*ValueCollection[MotionCategory, *MotionCategory], len(c.MotionCategoryIDs))
+	for i, id := range c.MotionCategoryIDs {
+		result[i] = &ValueCollection[MotionCategory, *MotionCategory]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) MotionChangeRecommendationList() []*ValueCollection[MotionChangeRecommendation, *MotionChangeRecommendation] {
+	result := make([]*ValueCollection[MotionChangeRecommendation, *MotionChangeRecommendation], len(c.MotionChangeRecommendationIDs))
+	for i, id := range c.MotionChangeRecommendationIDs {
+		result[i] = &ValueCollection[MotionChangeRecommendation, *MotionChangeRecommendation]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) MotionCommentList() []*ValueCollection[MotionComment, *MotionComment] {
+	result := make([]*ValueCollection[MotionComment, *MotionComment], len(c.MotionCommentIDs))
+	for i, id := range c.MotionCommentIDs {
+		result[i] = &ValueCollection[MotionComment, *MotionComment]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) MotionCommentSectionList() []*ValueCollection[MotionCommentSection, *MotionCommentSection] {
+	result := make([]*ValueCollection[MotionCommentSection, *MotionCommentSection], len(c.MotionCommentSectionIDs))
+	for i, id := range c.MotionCommentSectionIDs {
+		result[i] = &ValueCollection[MotionCommentSection, *MotionCommentSection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) MotionEditorList() []*ValueCollection[MotionEditor, *MotionEditor] {
+	result := make([]*ValueCollection[MotionEditor, *MotionEditor], len(c.MotionEditorIDs))
+	for i, id := range c.MotionEditorIDs {
+		result[i] = &ValueCollection[MotionEditor, *MotionEditor]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) MotionList() []*ValueCollection[Motion, *Motion] {
+	result := make([]*ValueCollection[Motion, *Motion], len(c.MotionIDs))
+	for i, id := range c.MotionIDs {
+		result[i] = &ValueCollection[Motion, *Motion]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) MotionPollDefaultGroupList() []*ValueCollection[Group, *Group] {
+	result := make([]*ValueCollection[Group, *Group], len(c.MotionPollDefaultGroupIDs))
+	for i, id := range c.MotionPollDefaultGroupIDs {
+		result[i] = &ValueCollection[Group, *Group]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) MotionStateList() []*ValueCollection[MotionState, *MotionState] {
+	result := make([]*ValueCollection[MotionState, *MotionState], len(c.MotionStateIDs))
+	for i, id := range c.MotionStateIDs {
+		result[i] = &ValueCollection[MotionState, *MotionState]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) MotionSubmitterList() []*ValueCollection[MotionSubmitter, *MotionSubmitter] {
+	result := make([]*ValueCollection[MotionSubmitter, *MotionSubmitter], len(c.MotionSubmitterIDs))
+	for i, id := range c.MotionSubmitterIDs {
+		result[i] = &ValueCollection[MotionSubmitter, *MotionSubmitter]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) MotionWorkflowList() []*ValueCollection[MotionWorkflow, *MotionWorkflow] {
+	result := make([]*ValueCollection[MotionWorkflow, *MotionWorkflow], len(c.MotionWorkflowIDs))
+	for i, id := range c.MotionWorkflowIDs {
+		result[i] = &ValueCollection[MotionWorkflow, *MotionWorkflow]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) MotionWorkingGroupSpeakerList() []*ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker] {
+	result := make([]*ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker], len(c.MotionWorkingGroupSpeakerIDs))
+	for i, id := range c.MotionWorkingGroupSpeakerIDs {
+		result[i] = &ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) MotionsDefaultAmendmentWorkflow() *ValueCollection[MotionWorkflow, *MotionWorkflow] {
+	return &ValueCollection[MotionWorkflow, *MotionWorkflow]{
+		id:    c.MotionsDefaultAmendmentWorkflowID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Meeting) MotionsDefaultWorkflow() *ValueCollection[MotionWorkflow, *MotionWorkflow] {
+	return &ValueCollection[MotionWorkflow, *MotionWorkflow]{
+		id:    c.MotionsDefaultWorkflowID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Meeting) OptionList() []*ValueCollection[Option, *Option] {
+	result := make([]*ValueCollection[Option, *Option], len(c.OptionIDs))
+	for i, id := range c.OptionIDs {
+		result[i] = &ValueCollection[Option, *Option]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) OrganizationTagList() []*ValueCollection[OrganizationTag, *OrganizationTag] {
+	result := make([]*ValueCollection[OrganizationTag, *OrganizationTag], len(c.OrganizationTagIDs))
+	for i, id := range c.OrganizationTagIDs {
+		result[i] = &ValueCollection[OrganizationTag, *OrganizationTag]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) PersonalNoteList() []*ValueCollection[PersonalNote, *PersonalNote] {
+	result := make([]*ValueCollection[PersonalNote, *PersonalNote], len(c.PersonalNoteIDs))
+	for i, id := range c.PersonalNoteIDs {
+		result[i] = &ValueCollection[PersonalNote, *PersonalNote]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) PointOfOrderCategoryList() []*ValueCollection[PointOfOrderCategory, *PointOfOrderCategory] {
+	result := make([]*ValueCollection[PointOfOrderCategory, *PointOfOrderCategory], len(c.PointOfOrderCategoryIDs))
+	for i, id := range c.PointOfOrderCategoryIDs {
+		result[i] = &ValueCollection[PointOfOrderCategory, *PointOfOrderCategory]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) PollCandidateList() []*ValueCollection[PollCandidate, *PollCandidate] {
+	result := make([]*ValueCollection[PollCandidate, *PollCandidate], len(c.PollCandidateIDs))
+	for i, id := range c.PollCandidateIDs {
+		result[i] = &ValueCollection[PollCandidate, *PollCandidate]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) PollCandidateListList() []*ValueCollection[PollCandidateList, *PollCandidateList] {
+	result := make([]*ValueCollection[PollCandidateList, *PollCandidateList], len(c.PollCandidateListIDs))
+	for i, id := range c.PollCandidateListIDs {
+		result[i] = &ValueCollection[PollCandidateList, *PollCandidateList]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) PollCountdown() Maybe[*ValueCollection[ProjectorCountdown, *ProjectorCountdown]] {
+	var result Maybe[*ValueCollection[ProjectorCountdown, *ProjectorCountdown]]
+	id, hasValue := c.PollCountdownID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[ProjectorCountdown, *ProjectorCountdown]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) PollDefaultGroupList() []*ValueCollection[Group, *Group] {
+	result := make([]*ValueCollection[Group, *Group], len(c.PollDefaultGroupIDs))
+	for i, id := range c.PollDefaultGroupIDs {
+		result[i] = &ValueCollection[Group, *Group]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) PollList() []*ValueCollection[Poll, *Poll] {
+	result := make([]*ValueCollection[Poll, *Poll], len(c.PollIDs))
+	for i, id := range c.PollIDs {
+		result[i] = &ValueCollection[Poll, *Poll]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) PresentUserList() []*ValueCollection[User, *User] {
+	result := make([]*ValueCollection[User, *User], len(c.PresentUserIDs))
+	for i, id := range c.PresentUserIDs {
+		result[i] = &ValueCollection[User, *User]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) ProjectionList() []*ValueCollection[Projection, *Projection] {
+	result := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
+	for i, id := range c.ProjectionIDs {
+		result[i] = &ValueCollection[Projection, *Projection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) ProjectorCountdownList() []*ValueCollection[ProjectorCountdown, *ProjectorCountdown] {
+	result := make([]*ValueCollection[ProjectorCountdown, *ProjectorCountdown], len(c.ProjectorCountdownIDs))
+	for i, id := range c.ProjectorCountdownIDs {
+		result[i] = &ValueCollection[ProjectorCountdown, *ProjectorCountdown]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) ProjectorList() []*ValueCollection[Projector, *Projector] {
+	result := make([]*ValueCollection[Projector, *Projector], len(c.ProjectorIDs))
+	for i, id := range c.ProjectorIDs {
+		result[i] = &ValueCollection[Projector, *Projector]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) ProjectorMessageList() []*ValueCollection[ProjectorMessage, *ProjectorMessage] {
+	result := make([]*ValueCollection[ProjectorMessage, *ProjectorMessage], len(c.ProjectorMessageIDs))
+	for i, id := range c.ProjectorMessageIDs {
+		result[i] = &ValueCollection[ProjectorMessage, *ProjectorMessage]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) ReferenceProjector() *ValueCollection[Projector, *Projector] {
+	return &ValueCollection[Projector, *Projector]{
+		id:    c.ReferenceProjectorID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Meeting) SpeakerList() []*ValueCollection[Speaker, *Speaker] {
+	result := make([]*ValueCollection[Speaker, *Speaker], len(c.SpeakerIDs))
+	for i, id := range c.SpeakerIDs {
+		result[i] = &ValueCollection[Speaker, *Speaker]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) StructureLevelList() []*ValueCollection[StructureLevel, *StructureLevel] {
+	result := make([]*ValueCollection[StructureLevel, *StructureLevel], len(c.StructureLevelIDs))
+	for i, id := range c.StructureLevelIDs {
+		result[i] = &ValueCollection[StructureLevel, *StructureLevel]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) StructureLevelListOfSpeakersList() []*ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers] {
+	result := make([]*ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers], len(c.StructureLevelListOfSpeakersIDs))
+	for i, id := range c.StructureLevelListOfSpeakersIDs {
+		result[i] = &ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) TagList() []*ValueCollection[Tag, *Tag] {
+	result := make([]*ValueCollection[Tag, *Tag], len(c.TagIDs))
+	for i, id := range c.TagIDs {
+		result[i] = &ValueCollection[Tag, *Tag]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) TemplateForOrganization() Maybe[*ValueCollection[Organization, *Organization]] {
+	var result Maybe[*ValueCollection[Organization, *Organization]]
+	id, hasValue := c.TemplateForOrganizationID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Organization, *Organization]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Meeting) TopicList() []*ValueCollection[Topic, *Topic] {
+	result := make([]*ValueCollection[Topic, *Topic], len(c.TopicIDs))
+	for i, id := range c.TopicIDs {
+		result[i] = &ValueCollection[Topic, *Topic]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) TopicPollDefaultGroupList() []*ValueCollection[Group, *Group] {
+	result := make([]*ValueCollection[Group, *Group], len(c.TopicPollDefaultGroupIDs))
+	for i, id := range c.TopicPollDefaultGroupIDs {
+		result[i] = &ValueCollection[Group, *Group]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Meeting) VoteList() []*ValueCollection[Vote, *Vote] {
+	result := make([]*ValueCollection[Vote, *Vote], len(c.VoteIDs))
+	for i, id := range c.VoteIDs {
+		result[i] = &ValueCollection[Vote, *Vote]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) Meeting(id int) *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// MeetingMediafile has all fields from meeting_mediafile.
+type MeetingMediafile struct {
+	AccessGroupIDs                         []int
+	AttachmentIDs                          []string
+	ID                                     int
+	InheritedAccessGroupIDs                []int
+	IsPublic                               bool
+	ListOfSpeakersID                       Maybe[int]
+	MediafileID                            int
+	MeetingID                              int
+	ProjectionIDs                          []int
+	UsedAsFontBoldInMeetingID              Maybe[int]
+	UsedAsFontBoldItalicInMeetingID        Maybe[int]
+	UsedAsFontChyronSpeakerNameInMeetingID Maybe[int]
+	UsedAsFontItalicInMeetingID            Maybe[int]
+	UsedAsFontMonospaceInMeetingID         Maybe[int]
+	UsedAsFontProjectorH1InMeetingID       Maybe[int]
+	UsedAsFontProjectorH2InMeetingID       Maybe[int]
+	UsedAsFontRegularInMeetingID           Maybe[int]
+	UsedAsLogoPdfBallotPaperInMeetingID    Maybe[int]
+	UsedAsLogoPdfFooterLInMeetingID        Maybe[int]
+	UsedAsLogoPdfFooterRInMeetingID        Maybe[int]
+	UsedAsLogoPdfHeaderLInMeetingID        Maybe[int]
+	UsedAsLogoPdfHeaderRInMeetingID        Maybe[int]
+	UsedAsLogoProjectorHeaderInMeetingID   Maybe[int]
+	UsedAsLogoProjectorMainInMeetingID     Maybe[int]
+	UsedAsLogoWebHeaderInMeetingID         Maybe[int]
+	fetch                                  *Fetch
+}
+
+func (c *MeetingMediafile) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.MeetingMediafile_AccessGroupIDs(id).Lazy(&c.AccessGroupIDs)
+	ds.MeetingMediafile_AttachmentIDs(id).Lazy(&c.AttachmentIDs)
+	ds.MeetingMediafile_ID(id).Lazy(&c.ID)
+	ds.MeetingMediafile_InheritedAccessGroupIDs(id).Lazy(&c.InheritedAccessGroupIDs)
+	ds.MeetingMediafile_IsPublic(id).Lazy(&c.IsPublic)
+	ds.MeetingMediafile_ListOfSpeakersID(id).Lazy(&c.ListOfSpeakersID)
+	ds.MeetingMediafile_MediafileID(id).Lazy(&c.MediafileID)
+	ds.MeetingMediafile_MeetingID(id).Lazy(&c.MeetingID)
+	ds.MeetingMediafile_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
+	ds.MeetingMediafile_UsedAsFontBoldInMeetingID(id).Lazy(&c.UsedAsFontBoldInMeetingID)
+	ds.MeetingMediafile_UsedAsFontBoldItalicInMeetingID(id).Lazy(&c.UsedAsFontBoldItalicInMeetingID)
+	ds.MeetingMediafile_UsedAsFontChyronSpeakerNameInMeetingID(id).Lazy(&c.UsedAsFontChyronSpeakerNameInMeetingID)
+	ds.MeetingMediafile_UsedAsFontItalicInMeetingID(id).Lazy(&c.UsedAsFontItalicInMeetingID)
+	ds.MeetingMediafile_UsedAsFontMonospaceInMeetingID(id).Lazy(&c.UsedAsFontMonospaceInMeetingID)
+	ds.MeetingMediafile_UsedAsFontProjectorH1InMeetingID(id).Lazy(&c.UsedAsFontProjectorH1InMeetingID)
+	ds.MeetingMediafile_UsedAsFontProjectorH2InMeetingID(id).Lazy(&c.UsedAsFontProjectorH2InMeetingID)
+	ds.MeetingMediafile_UsedAsFontRegularInMeetingID(id).Lazy(&c.UsedAsFontRegularInMeetingID)
+	ds.MeetingMediafile_UsedAsLogoPdfBallotPaperInMeetingID(id).Lazy(&c.UsedAsLogoPdfBallotPaperInMeetingID)
+	ds.MeetingMediafile_UsedAsLogoPdfFooterLInMeetingID(id).Lazy(&c.UsedAsLogoPdfFooterLInMeetingID)
+	ds.MeetingMediafile_UsedAsLogoPdfFooterRInMeetingID(id).Lazy(&c.UsedAsLogoPdfFooterRInMeetingID)
+	ds.MeetingMediafile_UsedAsLogoPdfHeaderLInMeetingID(id).Lazy(&c.UsedAsLogoPdfHeaderLInMeetingID)
+	ds.MeetingMediafile_UsedAsLogoPdfHeaderRInMeetingID(id).Lazy(&c.UsedAsLogoPdfHeaderRInMeetingID)
+	ds.MeetingMediafile_UsedAsLogoProjectorHeaderInMeetingID(id).Lazy(&c.UsedAsLogoProjectorHeaderInMeetingID)
+	ds.MeetingMediafile_UsedAsLogoProjectorMainInMeetingID(id).Lazy(&c.UsedAsLogoProjectorMainInMeetingID)
+	ds.MeetingMediafile_UsedAsLogoWebHeaderInMeetingID(id).Lazy(&c.UsedAsLogoWebHeaderInMeetingID)
+}
+
+func (c *MeetingMediafile) AccessGroupList() []*ValueCollection[Group, *Group] {
+	result := make([]*ValueCollection[Group, *Group], len(c.AccessGroupIDs))
+	for i, id := range c.AccessGroupIDs {
+		result[i] = &ValueCollection[Group, *Group]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MeetingMediafile) InheritedAccessGroupList() []*ValueCollection[Group, *Group] {
+	result := make([]*ValueCollection[Group, *Group], len(c.InheritedAccessGroupIDs))
+	for i, id := range c.InheritedAccessGroupIDs {
+		result[i] = &ValueCollection[Group, *Group]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MeetingMediafile) ListOfSpeakers() Maybe[*ValueCollection[ListOfSpeakers, *ListOfSpeakers]] {
+	var result Maybe[*ValueCollection[ListOfSpeakers, *ListOfSpeakers]]
+	id, hasValue := c.ListOfSpeakersID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MeetingMediafile) Mediafile() *ValueCollection[Mediafile, *Mediafile] {
+	return &ValueCollection[Mediafile, *Mediafile]{
+		id:    c.MediafileID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MeetingMediafile) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MeetingMediafile) ProjectionList() []*ValueCollection[Projection, *Projection] {
+	result := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
+	for i, id := range c.ProjectionIDs {
+		result[i] = &ValueCollection[Projection, *Projection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MeetingMediafile) UsedAsFontBoldInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsFontBoldInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MeetingMediafile) UsedAsFontBoldItalicInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsFontBoldItalicInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MeetingMediafile) UsedAsFontChyronSpeakerNameInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsFontChyronSpeakerNameInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MeetingMediafile) UsedAsFontItalicInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsFontItalicInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MeetingMediafile) UsedAsFontMonospaceInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsFontMonospaceInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MeetingMediafile) UsedAsFontProjectorH1InMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsFontProjectorH1InMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MeetingMediafile) UsedAsFontProjectorH2InMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsFontProjectorH2InMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MeetingMediafile) UsedAsFontRegularInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsFontRegularInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MeetingMediafile) UsedAsLogoPdfBallotPaperInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsLogoPdfBallotPaperInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MeetingMediafile) UsedAsLogoPdfFooterLInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsLogoPdfFooterLInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MeetingMediafile) UsedAsLogoPdfFooterRInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsLogoPdfFooterRInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MeetingMediafile) UsedAsLogoPdfHeaderLInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsLogoPdfHeaderLInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MeetingMediafile) UsedAsLogoPdfHeaderRInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsLogoPdfHeaderRInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MeetingMediafile) UsedAsLogoProjectorHeaderInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsLogoProjectorHeaderInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MeetingMediafile) UsedAsLogoProjectorMainInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsLogoProjectorMainInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MeetingMediafile) UsedAsLogoWebHeaderInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsLogoWebHeaderInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (r *Fetch) MeetingMediafile(id int) *ValueCollection[MeetingMediafile, *MeetingMediafile] {
+	return &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// MeetingUser has all fields from meeting_user.
+type MeetingUser struct {
+	AboutMe                      string
+	AssignmentCandidateIDs       []int
+	ChatMessageIDs               []int
+	Comment                      string
+	GroupIDs                     []int
+	ID                           int
+	LockedOut                    bool
+	MeetingID                    int
+	MotionEditorIDs              []int
+	MotionSubmitterIDs           []int
+	MotionWorkingGroupSpeakerIDs []int
+	Number                       string
+	PersonalNoteIDs              []int
+	SpeakerIDs                   []int
+	StructureLevelIDs            []int
+	SupportedMotionIDs           []int
+	UserID                       int
+	VoteDelegatedToID            Maybe[int]
+	VoteDelegationsFromIDs       []int
+	VoteWeight                   string
+	fetch                        *Fetch
+}
+
+func (c *MeetingUser) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.MeetingUser_AboutMe(id).Lazy(&c.AboutMe)
+	ds.MeetingUser_AssignmentCandidateIDs(id).Lazy(&c.AssignmentCandidateIDs)
+	ds.MeetingUser_ChatMessageIDs(id).Lazy(&c.ChatMessageIDs)
+	ds.MeetingUser_Comment(id).Lazy(&c.Comment)
+	ds.MeetingUser_GroupIDs(id).Lazy(&c.GroupIDs)
+	ds.MeetingUser_ID(id).Lazy(&c.ID)
+	ds.MeetingUser_LockedOut(id).Lazy(&c.LockedOut)
+	ds.MeetingUser_MeetingID(id).Lazy(&c.MeetingID)
+	ds.MeetingUser_MotionEditorIDs(id).Lazy(&c.MotionEditorIDs)
+	ds.MeetingUser_MotionSubmitterIDs(id).Lazy(&c.MotionSubmitterIDs)
+	ds.MeetingUser_MotionWorkingGroupSpeakerIDs(id).Lazy(&c.MotionWorkingGroupSpeakerIDs)
+	ds.MeetingUser_Number(id).Lazy(&c.Number)
+	ds.MeetingUser_PersonalNoteIDs(id).Lazy(&c.PersonalNoteIDs)
+	ds.MeetingUser_SpeakerIDs(id).Lazy(&c.SpeakerIDs)
+	ds.MeetingUser_StructureLevelIDs(id).Lazy(&c.StructureLevelIDs)
+	ds.MeetingUser_SupportedMotionIDs(id).Lazy(&c.SupportedMotionIDs)
+	ds.MeetingUser_UserID(id).Lazy(&c.UserID)
+	ds.MeetingUser_VoteDelegatedToID(id).Lazy(&c.VoteDelegatedToID)
+	ds.MeetingUser_VoteDelegationsFromIDs(id).Lazy(&c.VoteDelegationsFromIDs)
+	ds.MeetingUser_VoteWeight(id).Lazy(&c.VoteWeight)
+}
+
+func (c *MeetingUser) AssignmentCandidateList() []*ValueCollection[AssignmentCandidate, *AssignmentCandidate] {
+	result := make([]*ValueCollection[AssignmentCandidate, *AssignmentCandidate], len(c.AssignmentCandidateIDs))
+	for i, id := range c.AssignmentCandidateIDs {
+		result[i] = &ValueCollection[AssignmentCandidate, *AssignmentCandidate]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MeetingUser) ChatMessageList() []*ValueCollection[ChatMessage, *ChatMessage] {
+	result := make([]*ValueCollection[ChatMessage, *ChatMessage], len(c.ChatMessageIDs))
+	for i, id := range c.ChatMessageIDs {
+		result[i] = &ValueCollection[ChatMessage, *ChatMessage]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MeetingUser) GroupList() []*ValueCollection[Group, *Group] {
+	result := make([]*ValueCollection[Group, *Group], len(c.GroupIDs))
+	for i, id := range c.GroupIDs {
+		result[i] = &ValueCollection[Group, *Group]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MeetingUser) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MeetingUser) MotionEditorList() []*ValueCollection[MotionEditor, *MotionEditor] {
+	result := make([]*ValueCollection[MotionEditor, *MotionEditor], len(c.MotionEditorIDs))
+	for i, id := range c.MotionEditorIDs {
+		result[i] = &ValueCollection[MotionEditor, *MotionEditor]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MeetingUser) MotionSubmitterList() []*ValueCollection[MotionSubmitter, *MotionSubmitter] {
+	result := make([]*ValueCollection[MotionSubmitter, *MotionSubmitter], len(c.MotionSubmitterIDs))
+	for i, id := range c.MotionSubmitterIDs {
+		result[i] = &ValueCollection[MotionSubmitter, *MotionSubmitter]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MeetingUser) MotionWorkingGroupSpeakerList() []*ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker] {
+	result := make([]*ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker], len(c.MotionWorkingGroupSpeakerIDs))
+	for i, id := range c.MotionWorkingGroupSpeakerIDs {
+		result[i] = &ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MeetingUser) PersonalNoteList() []*ValueCollection[PersonalNote, *PersonalNote] {
+	result := make([]*ValueCollection[PersonalNote, *PersonalNote], len(c.PersonalNoteIDs))
+	for i, id := range c.PersonalNoteIDs {
+		result[i] = &ValueCollection[PersonalNote, *PersonalNote]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MeetingUser) SpeakerList() []*ValueCollection[Speaker, *Speaker] {
+	result := make([]*ValueCollection[Speaker, *Speaker], len(c.SpeakerIDs))
+	for i, id := range c.SpeakerIDs {
+		result[i] = &ValueCollection[Speaker, *Speaker]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MeetingUser) StructureLevelList() []*ValueCollection[StructureLevel, *StructureLevel] {
+	result := make([]*ValueCollection[StructureLevel, *StructureLevel], len(c.StructureLevelIDs))
+	for i, id := range c.StructureLevelIDs {
+		result[i] = &ValueCollection[StructureLevel, *StructureLevel]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MeetingUser) SupportedMotionList() []*ValueCollection[Motion, *Motion] {
+	result := make([]*ValueCollection[Motion, *Motion], len(c.SupportedMotionIDs))
+	for i, id := range c.SupportedMotionIDs {
+		result[i] = &ValueCollection[Motion, *Motion]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MeetingUser) User() *ValueCollection[User, *User] {
+	return &ValueCollection[User, *User]{
+		id:    c.UserID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MeetingUser) VoteDelegatedTo() Maybe[*ValueCollection[MeetingUser, *MeetingUser]] {
+	var result Maybe[*ValueCollection[MeetingUser, *MeetingUser]]
+	id, hasValue := c.VoteDelegatedToID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingUser, *MeetingUser]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MeetingUser) VoteDelegationsFromList() []*ValueCollection[MeetingUser, *MeetingUser] {
+	result := make([]*ValueCollection[MeetingUser, *MeetingUser], len(c.VoteDelegationsFromIDs))
+	for i, id := range c.VoteDelegationsFromIDs {
+		result[i] = &ValueCollection[MeetingUser, *MeetingUser]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) MeetingUser(id int) *ValueCollection[MeetingUser, *MeetingUser] {
+	return &ValueCollection[MeetingUser, *MeetingUser]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// Motion has all fields from motion.
+type Motion struct {
+	AdditionalSubmitter                          string
+	AgendaItemID                                 Maybe[int]
+	AllDerivedMotionIDs                          []int
+	AllOriginIDs                                 []int
+	AmendmentIDs                                 []int
+	AmendmentParagraphs                          json.RawMessage
+	AttachmentMeetingMediafileIDs                []int
+	BlockID                                      Maybe[int]
+	CategoryID                                   Maybe[int]
+	CategoryWeight                               int
+	ChangeRecommendationIDs                      []int
+	CommentIDs                                   []int
+	Created                                      int
+	DerivedMotionIDs                             []int
+	EditorIDs                                    []int
+	Forwarded                                    int
+	ID                                           int
+	IDenticalMotionIDs                           []int
+	LastModified                                 int
+	LeadMotionID                                 Maybe[int]
+	ListOfSpeakersID                             int
+	MeetingID                                    int
+	ModifiedFinalVersion                         string
+	Number                                       string
+	NumberValue                                  int
+	OptionIDs                                    []int
+	OriginID                                     Maybe[int]
+	OriginMeetingID                              Maybe[int]
+	PersonalNoteIDs                              []int
+	PollIDs                                      []int
+	ProjectionIDs                                []int
+	Reason                                       string
+	RecommendationExtension                      string
+	RecommendationExtensionReferenceIDs          []string
+	RecommendationID                             Maybe[int]
+	ReferencedInMotionRecommendationExtensionIDs []int
+	ReferencedInMotionStateExtensionIDs          []int
+	SequentialNumber                             int
+	SortChildIDs                                 []int
+	SortParentID                                 Maybe[int]
+	SortWeight                                   int
+	StartLineNumber                              int
+	StateExtension                               string
+	StateExtensionReferenceIDs                   []string
+	StateID                                      int
+	SubmitterIDs                                 []int
+	SupporterMeetingUserIDs                      []int
+	TagIDs                                       []int
+	Text                                         string
+	TextHash                                     string
+	Title                                        string
+	WorkflowTimestamp                            int
+	WorkingGroupSpeakerIDs                       []int
+	fetch                                        *Fetch
+}
+
+func (c *Motion) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.Motion_AdditionalSubmitter(id).Lazy(&c.AdditionalSubmitter)
+	ds.Motion_AgendaItemID(id).Lazy(&c.AgendaItemID)
+	ds.Motion_AllDerivedMotionIDs(id).Lazy(&c.AllDerivedMotionIDs)
+	ds.Motion_AllOriginIDs(id).Lazy(&c.AllOriginIDs)
+	ds.Motion_AmendmentIDs(id).Lazy(&c.AmendmentIDs)
+	ds.Motion_AmendmentParagraphs(id).Lazy(&c.AmendmentParagraphs)
+	ds.Motion_AttachmentMeetingMediafileIDs(id).Lazy(&c.AttachmentMeetingMediafileIDs)
+	ds.Motion_BlockID(id).Lazy(&c.BlockID)
+	ds.Motion_CategoryID(id).Lazy(&c.CategoryID)
+	ds.Motion_CategoryWeight(id).Lazy(&c.CategoryWeight)
+	ds.Motion_ChangeRecommendationIDs(id).Lazy(&c.ChangeRecommendationIDs)
+	ds.Motion_CommentIDs(id).Lazy(&c.CommentIDs)
+	ds.Motion_Created(id).Lazy(&c.Created)
+	ds.Motion_DerivedMotionIDs(id).Lazy(&c.DerivedMotionIDs)
+	ds.Motion_EditorIDs(id).Lazy(&c.EditorIDs)
+	ds.Motion_Forwarded(id).Lazy(&c.Forwarded)
+	ds.Motion_ID(id).Lazy(&c.ID)
+	ds.Motion_IDenticalMotionIDs(id).Lazy(&c.IDenticalMotionIDs)
+	ds.Motion_LastModified(id).Lazy(&c.LastModified)
+	ds.Motion_LeadMotionID(id).Lazy(&c.LeadMotionID)
+	ds.Motion_ListOfSpeakersID(id).Lazy(&c.ListOfSpeakersID)
+	ds.Motion_MeetingID(id).Lazy(&c.MeetingID)
+	ds.Motion_ModifiedFinalVersion(id).Lazy(&c.ModifiedFinalVersion)
+	ds.Motion_Number(id).Lazy(&c.Number)
+	ds.Motion_NumberValue(id).Lazy(&c.NumberValue)
+	ds.Motion_OptionIDs(id).Lazy(&c.OptionIDs)
+	ds.Motion_OriginID(id).Lazy(&c.OriginID)
+	ds.Motion_OriginMeetingID(id).Lazy(&c.OriginMeetingID)
+	ds.Motion_PersonalNoteIDs(id).Lazy(&c.PersonalNoteIDs)
+	ds.Motion_PollIDs(id).Lazy(&c.PollIDs)
+	ds.Motion_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
+	ds.Motion_Reason(id).Lazy(&c.Reason)
+	ds.Motion_RecommendationExtension(id).Lazy(&c.RecommendationExtension)
+	ds.Motion_RecommendationExtensionReferenceIDs(id).Lazy(&c.RecommendationExtensionReferenceIDs)
+	ds.Motion_RecommendationID(id).Lazy(&c.RecommendationID)
+	ds.Motion_ReferencedInMotionRecommendationExtensionIDs(id).Lazy(&c.ReferencedInMotionRecommendationExtensionIDs)
+	ds.Motion_ReferencedInMotionStateExtensionIDs(id).Lazy(&c.ReferencedInMotionStateExtensionIDs)
+	ds.Motion_SequentialNumber(id).Lazy(&c.SequentialNumber)
+	ds.Motion_SortChildIDs(id).Lazy(&c.SortChildIDs)
+	ds.Motion_SortParentID(id).Lazy(&c.SortParentID)
+	ds.Motion_SortWeight(id).Lazy(&c.SortWeight)
+	ds.Motion_StartLineNumber(id).Lazy(&c.StartLineNumber)
+	ds.Motion_StateExtension(id).Lazy(&c.StateExtension)
+	ds.Motion_StateExtensionReferenceIDs(id).Lazy(&c.StateExtensionReferenceIDs)
+	ds.Motion_StateID(id).Lazy(&c.StateID)
+	ds.Motion_SubmitterIDs(id).Lazy(&c.SubmitterIDs)
+	ds.Motion_SupporterMeetingUserIDs(id).Lazy(&c.SupporterMeetingUserIDs)
+	ds.Motion_TagIDs(id).Lazy(&c.TagIDs)
+	ds.Motion_Text(id).Lazy(&c.Text)
+	ds.Motion_TextHash(id).Lazy(&c.TextHash)
+	ds.Motion_Title(id).Lazy(&c.Title)
+	ds.Motion_WorkflowTimestamp(id).Lazy(&c.WorkflowTimestamp)
+	ds.Motion_WorkingGroupSpeakerIDs(id).Lazy(&c.WorkingGroupSpeakerIDs)
+}
+
+func (c *Motion) AgendaItem() Maybe[*ValueCollection[AgendaItem, *AgendaItem]] {
+	var result Maybe[*ValueCollection[AgendaItem, *AgendaItem]]
+	id, hasValue := c.AgendaItemID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[AgendaItem, *AgendaItem]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Motion) AllDerivedMotionList() []*ValueCollection[Motion, *Motion] {
+	result := make([]*ValueCollection[Motion, *Motion], len(c.AllDerivedMotionIDs))
+	for i, id := range c.AllDerivedMotionIDs {
+		result[i] = &ValueCollection[Motion, *Motion]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) AllOriginList() []*ValueCollection[Motion, *Motion] {
+	result := make([]*ValueCollection[Motion, *Motion], len(c.AllOriginIDs))
+	for i, id := range c.AllOriginIDs {
+		result[i] = &ValueCollection[Motion, *Motion]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) AmendmentList() []*ValueCollection[Motion, *Motion] {
+	result := make([]*ValueCollection[Motion, *Motion], len(c.AmendmentIDs))
+	for i, id := range c.AmendmentIDs {
+		result[i] = &ValueCollection[Motion, *Motion]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) AttachmentMeetingMediafileList() []*ValueCollection[MeetingMediafile, *MeetingMediafile] {
+	result := make([]*ValueCollection[MeetingMediafile, *MeetingMediafile], len(c.AttachmentMeetingMediafileIDs))
+	for i, id := range c.AttachmentMeetingMediafileIDs {
+		result[i] = &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) Block() Maybe[*ValueCollection[MotionBlock, *MotionBlock]] {
+	var result Maybe[*ValueCollection[MotionBlock, *MotionBlock]]
+	id, hasValue := c.BlockID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MotionBlock, *MotionBlock]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Motion) Category() Maybe[*ValueCollection[MotionCategory, *MotionCategory]] {
+	var result Maybe[*ValueCollection[MotionCategory, *MotionCategory]]
+	id, hasValue := c.CategoryID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MotionCategory, *MotionCategory]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Motion) ChangeRecommendationList() []*ValueCollection[MotionChangeRecommendation, *MotionChangeRecommendation] {
+	result := make([]*ValueCollection[MotionChangeRecommendation, *MotionChangeRecommendation], len(c.ChangeRecommendationIDs))
+	for i, id := range c.ChangeRecommendationIDs {
+		result[i] = &ValueCollection[MotionChangeRecommendation, *MotionChangeRecommendation]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) CommentList() []*ValueCollection[MotionComment, *MotionComment] {
+	result := make([]*ValueCollection[MotionComment, *MotionComment], len(c.CommentIDs))
+	for i, id := range c.CommentIDs {
+		result[i] = &ValueCollection[MotionComment, *MotionComment]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) DerivedMotionList() []*ValueCollection[Motion, *Motion] {
+	result := make([]*ValueCollection[Motion, *Motion], len(c.DerivedMotionIDs))
+	for i, id := range c.DerivedMotionIDs {
+		result[i] = &ValueCollection[Motion, *Motion]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) EditorList() []*ValueCollection[MotionEditor, *MotionEditor] {
+	result := make([]*ValueCollection[MotionEditor, *MotionEditor], len(c.EditorIDs))
+	for i, id := range c.EditorIDs {
+		result[i] = &ValueCollection[MotionEditor, *MotionEditor]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) IDenticalMotionList() []*ValueCollection[Motion, *Motion] {
+	result := make([]*ValueCollection[Motion, *Motion], len(c.IDenticalMotionIDs))
+	for i, id := range c.IDenticalMotionIDs {
+		result[i] = &ValueCollection[Motion, *Motion]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) LeadMotion() Maybe[*ValueCollection[Motion, *Motion]] {
+	var result Maybe[*ValueCollection[Motion, *Motion]]
+	id, hasValue := c.LeadMotionID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Motion, *Motion]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Motion) ListOfSpeakers() *ValueCollection[ListOfSpeakers, *ListOfSpeakers] {
+	return &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
+		id:    c.ListOfSpeakersID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Motion) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Motion) OptionList() []*ValueCollection[Option, *Option] {
+	result := make([]*ValueCollection[Option, *Option], len(c.OptionIDs))
+	for i, id := range c.OptionIDs {
+		result[i] = &ValueCollection[Option, *Option]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) Origin() Maybe[*ValueCollection[Motion, *Motion]] {
+	var result Maybe[*ValueCollection[Motion, *Motion]]
+	id, hasValue := c.OriginID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Motion, *Motion]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Motion) OriginMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.OriginMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Motion) PersonalNoteList() []*ValueCollection[PersonalNote, *PersonalNote] {
+	result := make([]*ValueCollection[PersonalNote, *PersonalNote], len(c.PersonalNoteIDs))
+	for i, id := range c.PersonalNoteIDs {
+		result[i] = &ValueCollection[PersonalNote, *PersonalNote]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) PollList() []*ValueCollection[Poll, *Poll] {
+	result := make([]*ValueCollection[Poll, *Poll], len(c.PollIDs))
+	for i, id := range c.PollIDs {
+		result[i] = &ValueCollection[Poll, *Poll]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) ProjectionList() []*ValueCollection[Projection, *Projection] {
+	result := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
+	for i, id := range c.ProjectionIDs {
+		result[i] = &ValueCollection[Projection, *Projection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) Recommendation() Maybe[*ValueCollection[MotionState, *MotionState]] {
+	var result Maybe[*ValueCollection[MotionState, *MotionState]]
+	id, hasValue := c.RecommendationID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MotionState, *MotionState]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Motion) ReferencedInMotionRecommendationExtensionList() []*ValueCollection[Motion, *Motion] {
+	result := make([]*ValueCollection[Motion, *Motion], len(c.ReferencedInMotionRecommendationExtensionIDs))
+	for i, id := range c.ReferencedInMotionRecommendationExtensionIDs {
+		result[i] = &ValueCollection[Motion, *Motion]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) ReferencedInMotionStateExtensionList() []*ValueCollection[Motion, *Motion] {
+	result := make([]*ValueCollection[Motion, *Motion], len(c.ReferencedInMotionStateExtensionIDs))
+	for i, id := range c.ReferencedInMotionStateExtensionIDs {
+		result[i] = &ValueCollection[Motion, *Motion]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) SortChildList() []*ValueCollection[Motion, *Motion] {
+	result := make([]*ValueCollection[Motion, *Motion], len(c.SortChildIDs))
+	for i, id := range c.SortChildIDs {
+		result[i] = &ValueCollection[Motion, *Motion]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) SortParent() Maybe[*ValueCollection[Motion, *Motion]] {
+	var result Maybe[*ValueCollection[Motion, *Motion]]
+	id, hasValue := c.SortParentID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Motion, *Motion]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Motion) State() *ValueCollection[MotionState, *MotionState] {
+	return &ValueCollection[MotionState, *MotionState]{
+		id:    c.StateID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Motion) SubmitterList() []*ValueCollection[MotionSubmitter, *MotionSubmitter] {
+	result := make([]*ValueCollection[MotionSubmitter, *MotionSubmitter], len(c.SubmitterIDs))
+	for i, id := range c.SubmitterIDs {
+		result[i] = &ValueCollection[MotionSubmitter, *MotionSubmitter]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) SupporterMeetingUserList() []*ValueCollection[MeetingUser, *MeetingUser] {
+	result := make([]*ValueCollection[MeetingUser, *MeetingUser], len(c.SupporterMeetingUserIDs))
+	for i, id := range c.SupporterMeetingUserIDs {
+		result[i] = &ValueCollection[MeetingUser, *MeetingUser]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) TagList() []*ValueCollection[Tag, *Tag] {
+	result := make([]*ValueCollection[Tag, *Tag], len(c.TagIDs))
+	for i, id := range c.TagIDs {
+		result[i] = &ValueCollection[Tag, *Tag]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Motion) WorkingGroupSpeakerList() []*ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker] {
+	result := make([]*ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker], len(c.WorkingGroupSpeakerIDs))
+	for i, id := range c.WorkingGroupSpeakerIDs {
+		result[i] = &ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) Motion(id int) *ValueCollection[Motion, *Motion] {
+	return &ValueCollection[Motion, *Motion]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// MotionBlock has all fields from motion_block.
+type MotionBlock struct {
+	AgendaItemID     Maybe[int]
+	ID               int
+	Internal         bool
+	ListOfSpeakersID int
+	MeetingID        int
+	MotionIDs        []int
+	ProjectionIDs    []int
+	SequentialNumber int
+	Title            string
+	fetch            *Fetch
+}
+
+func (c *MotionBlock) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.MotionBlock_AgendaItemID(id).Lazy(&c.AgendaItemID)
+	ds.MotionBlock_ID(id).Lazy(&c.ID)
+	ds.MotionBlock_Internal(id).Lazy(&c.Internal)
+	ds.MotionBlock_ListOfSpeakersID(id).Lazy(&c.ListOfSpeakersID)
+	ds.MotionBlock_MeetingID(id).Lazy(&c.MeetingID)
+	ds.MotionBlock_MotionIDs(id).Lazy(&c.MotionIDs)
+	ds.MotionBlock_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
+	ds.MotionBlock_SequentialNumber(id).Lazy(&c.SequentialNumber)
+	ds.MotionBlock_Title(id).Lazy(&c.Title)
+}
+
+func (c *MotionBlock) AgendaItem() Maybe[*ValueCollection[AgendaItem, *AgendaItem]] {
+	var result Maybe[*ValueCollection[AgendaItem, *AgendaItem]]
+	id, hasValue := c.AgendaItemID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[AgendaItem, *AgendaItem]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MotionBlock) ListOfSpeakers() *ValueCollection[ListOfSpeakers, *ListOfSpeakers] {
+	return &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
+		id:    c.ListOfSpeakersID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MotionBlock) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MotionBlock) MotionList() []*ValueCollection[Motion, *Motion] {
+	result := make([]*ValueCollection[Motion, *Motion], len(c.MotionIDs))
+	for i, id := range c.MotionIDs {
+		result[i] = &ValueCollection[Motion, *Motion]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MotionBlock) ProjectionList() []*ValueCollection[Projection, *Projection] {
+	result := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
+	for i, id := range c.ProjectionIDs {
+		result[i] = &ValueCollection[Projection, *Projection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) MotionBlock(id int) *ValueCollection[MotionBlock, *MotionBlock] {
+	return &ValueCollection[MotionBlock, *MotionBlock]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// MotionCategory has all fields from motion_category.
+type MotionCategory struct {
+	ChildIDs         []int
+	ID               int
+	Level            int
+	MeetingID        int
+	MotionIDs        []int
+	Name             string
+	ParentID         Maybe[int]
+	Prefix           string
+	SequentialNumber int
+	Weight           int
+	fetch            *Fetch
+}
+
+func (c *MotionCategory) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.MotionCategory_ChildIDs(id).Lazy(&c.ChildIDs)
+	ds.MotionCategory_ID(id).Lazy(&c.ID)
+	ds.MotionCategory_Level(id).Lazy(&c.Level)
+	ds.MotionCategory_MeetingID(id).Lazy(&c.MeetingID)
+	ds.MotionCategory_MotionIDs(id).Lazy(&c.MotionIDs)
+	ds.MotionCategory_Name(id).Lazy(&c.Name)
+	ds.MotionCategory_ParentID(id).Lazy(&c.ParentID)
+	ds.MotionCategory_Prefix(id).Lazy(&c.Prefix)
+	ds.MotionCategory_SequentialNumber(id).Lazy(&c.SequentialNumber)
+	ds.MotionCategory_Weight(id).Lazy(&c.Weight)
+}
+
+func (c *MotionCategory) ChildList() []*ValueCollection[MotionCategory, *MotionCategory] {
+	result := make([]*ValueCollection[MotionCategory, *MotionCategory], len(c.ChildIDs))
+	for i, id := range c.ChildIDs {
+		result[i] = &ValueCollection[MotionCategory, *MotionCategory]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MotionCategory) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MotionCategory) MotionList() []*ValueCollection[Motion, *Motion] {
+	result := make([]*ValueCollection[Motion, *Motion], len(c.MotionIDs))
+	for i, id := range c.MotionIDs {
+		result[i] = &ValueCollection[Motion, *Motion]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MotionCategory) Parent() Maybe[*ValueCollection[MotionCategory, *MotionCategory]] {
+	var result Maybe[*ValueCollection[MotionCategory, *MotionCategory]]
+	id, hasValue := c.ParentID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MotionCategory, *MotionCategory]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (r *Fetch) MotionCategory(id int) *ValueCollection[MotionCategory, *MotionCategory] {
+	return &ValueCollection[MotionCategory, *MotionCategory]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// MotionChangeRecommendation has all fields from motion_change_recommendation.
+type MotionChangeRecommendation struct {
+	CreationTime     int
+	ID               int
+	Internal         bool
+	LineFrom         int
+	LineTo           int
+	MeetingID        int
+	MotionID         int
+	OtherDescription string
+	Rejected         bool
+	Text             string
+	Type             string
+	fetch            *Fetch
+}
+
+func (c *MotionChangeRecommendation) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.MotionChangeRecommendation_CreationTime(id).Lazy(&c.CreationTime)
+	ds.MotionChangeRecommendation_ID(id).Lazy(&c.ID)
+	ds.MotionChangeRecommendation_Internal(id).Lazy(&c.Internal)
+	ds.MotionChangeRecommendation_LineFrom(id).Lazy(&c.LineFrom)
+	ds.MotionChangeRecommendation_LineTo(id).Lazy(&c.LineTo)
+	ds.MotionChangeRecommendation_MeetingID(id).Lazy(&c.MeetingID)
+	ds.MotionChangeRecommendation_MotionID(id).Lazy(&c.MotionID)
+	ds.MotionChangeRecommendation_OtherDescription(id).Lazy(&c.OtherDescription)
+	ds.MotionChangeRecommendation_Rejected(id).Lazy(&c.Rejected)
+	ds.MotionChangeRecommendation_Text(id).Lazy(&c.Text)
+	ds.MotionChangeRecommendation_Type(id).Lazy(&c.Type)
+}
+
+func (c *MotionChangeRecommendation) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MotionChangeRecommendation) Motion() *ValueCollection[Motion, *Motion] {
+	return &ValueCollection[Motion, *Motion]{
+		id:    c.MotionID,
+		fetch: c.fetch,
+	}
+}
+
+func (r *Fetch) MotionChangeRecommendation(id int) *ValueCollection[MotionChangeRecommendation, *MotionChangeRecommendation] {
+	return &ValueCollection[MotionChangeRecommendation, *MotionChangeRecommendation]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// MotionComment has all fields from motion_comment.
+type MotionComment struct {
+	Comment   string
+	ID        int
+	MeetingID int
+	MotionID  int
+	SectionID int
+	fetch     *Fetch
+}
+
+func (c *MotionComment) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.MotionComment_Comment(id).Lazy(&c.Comment)
+	ds.MotionComment_ID(id).Lazy(&c.ID)
+	ds.MotionComment_MeetingID(id).Lazy(&c.MeetingID)
+	ds.MotionComment_MotionID(id).Lazy(&c.MotionID)
+	ds.MotionComment_SectionID(id).Lazy(&c.SectionID)
+}
+
+func (c *MotionComment) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MotionComment) Motion() *ValueCollection[Motion, *Motion] {
+	return &ValueCollection[Motion, *Motion]{
+		id:    c.MotionID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MotionComment) Section() *ValueCollection[MotionCommentSection, *MotionCommentSection] {
+	return &ValueCollection[MotionCommentSection, *MotionCommentSection]{
+		id:    c.SectionID,
+		fetch: c.fetch,
+	}
+}
+
+func (r *Fetch) MotionComment(id int) *ValueCollection[MotionComment, *MotionComment] {
+	return &ValueCollection[MotionComment, *MotionComment]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// MotionCommentSection has all fields from motion_comment_section.
+type MotionCommentSection struct {
+	CommentIDs        []int
+	ID                int
+	MeetingID         int
+	Name              string
+	ReadGroupIDs      []int
+	SequentialNumber  int
+	SubmitterCanWrite bool
+	Weight            int
+	WriteGroupIDs     []int
+	fetch             *Fetch
+}
+
+func (c *MotionCommentSection) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.MotionCommentSection_CommentIDs(id).Lazy(&c.CommentIDs)
+	ds.MotionCommentSection_ID(id).Lazy(&c.ID)
+	ds.MotionCommentSection_MeetingID(id).Lazy(&c.MeetingID)
+	ds.MotionCommentSection_Name(id).Lazy(&c.Name)
+	ds.MotionCommentSection_ReadGroupIDs(id).Lazy(&c.ReadGroupIDs)
+	ds.MotionCommentSection_SequentialNumber(id).Lazy(&c.SequentialNumber)
+	ds.MotionCommentSection_SubmitterCanWrite(id).Lazy(&c.SubmitterCanWrite)
+	ds.MotionCommentSection_Weight(id).Lazy(&c.Weight)
+	ds.MotionCommentSection_WriteGroupIDs(id).Lazy(&c.WriteGroupIDs)
+}
+
+func (c *MotionCommentSection) CommentList() []*ValueCollection[MotionComment, *MotionComment] {
+	result := make([]*ValueCollection[MotionComment, *MotionComment], len(c.CommentIDs))
+	for i, id := range c.CommentIDs {
+		result[i] = &ValueCollection[MotionComment, *MotionComment]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MotionCommentSection) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MotionCommentSection) ReadGroupList() []*ValueCollection[Group, *Group] {
+	result := make([]*ValueCollection[Group, *Group], len(c.ReadGroupIDs))
+	for i, id := range c.ReadGroupIDs {
+		result[i] = &ValueCollection[Group, *Group]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MotionCommentSection) WriteGroupList() []*ValueCollection[Group, *Group] {
+	result := make([]*ValueCollection[Group, *Group], len(c.WriteGroupIDs))
+	for i, id := range c.WriteGroupIDs {
+		result[i] = &ValueCollection[Group, *Group]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) MotionCommentSection(id int) *ValueCollection[MotionCommentSection, *MotionCommentSection] {
+	return &ValueCollection[MotionCommentSection, *MotionCommentSection]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// MotionEditor has all fields from motion_editor.
+type MotionEditor struct {
+	ID            int
+	MeetingID     int
+	MeetingUserID int
+	MotionID      int
+	Weight        int
+	fetch         *Fetch
+}
+
+func (c *MotionEditor) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.MotionEditor_ID(id).Lazy(&c.ID)
+	ds.MotionEditor_MeetingID(id).Lazy(&c.MeetingID)
+	ds.MotionEditor_MeetingUserID(id).Lazy(&c.MeetingUserID)
+	ds.MotionEditor_MotionID(id).Lazy(&c.MotionID)
+	ds.MotionEditor_Weight(id).Lazy(&c.Weight)
+}
+
+func (c *MotionEditor) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MotionEditor) MeetingUser() *ValueCollection[MeetingUser, *MeetingUser] {
+	return &ValueCollection[MeetingUser, *MeetingUser]{
+		id:    c.MeetingUserID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MotionEditor) Motion() *ValueCollection[Motion, *Motion] {
+	return &ValueCollection[Motion, *Motion]{
+		id:    c.MotionID,
+		fetch: c.fetch,
+	}
+}
+
+func (r *Fetch) MotionEditor(id int) *ValueCollection[MotionEditor, *MotionEditor] {
+	return &ValueCollection[MotionEditor, *MotionEditor]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// MotionState has all fields from motion_state.
+type MotionState struct {
+	AllowCreatePoll                  bool
+	AllowMotionForwarding            bool
+	AllowSubmitterEdit               bool
+	AllowSupport                     bool
+	CssClass                         string
+	FirstStateOfWorkflowID           Maybe[int]
+	ID                               int
+	IsInternal                       bool
+	MeetingID                        int
+	MergeAmendmentIntoFinal          string
+	MotionIDs                        []int
+	MotionRecommendationIDs          []int
+	Name                             string
+	NextStateIDs                     []int
+	PreviousStateIDs                 []int
+	RecommendationLabel              string
+	Restrictions                     []string
+	SetNumber                        bool
+	SetWorkflowTimestamp             bool
+	ShowRecommendationExtensionField bool
+	ShowStateExtensionField          bool
+	SubmitterWithdrawBackIDs         []int
+	SubmitterWithdrawStateID         Maybe[int]
+	Weight                           int
+	WorkflowID                       int
+	fetch                            *Fetch
+}
+
+func (c *MotionState) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.MotionState_AllowCreatePoll(id).Lazy(&c.AllowCreatePoll)
+	ds.MotionState_AllowMotionForwarding(id).Lazy(&c.AllowMotionForwarding)
+	ds.MotionState_AllowSubmitterEdit(id).Lazy(&c.AllowSubmitterEdit)
+	ds.MotionState_AllowSupport(id).Lazy(&c.AllowSupport)
+	ds.MotionState_CssClass(id).Lazy(&c.CssClass)
+	ds.MotionState_FirstStateOfWorkflowID(id).Lazy(&c.FirstStateOfWorkflowID)
+	ds.MotionState_ID(id).Lazy(&c.ID)
+	ds.MotionState_IsInternal(id).Lazy(&c.IsInternal)
+	ds.MotionState_MeetingID(id).Lazy(&c.MeetingID)
+	ds.MotionState_MergeAmendmentIntoFinal(id).Lazy(&c.MergeAmendmentIntoFinal)
+	ds.MotionState_MotionIDs(id).Lazy(&c.MotionIDs)
+	ds.MotionState_MotionRecommendationIDs(id).Lazy(&c.MotionRecommendationIDs)
+	ds.MotionState_Name(id).Lazy(&c.Name)
+	ds.MotionState_NextStateIDs(id).Lazy(&c.NextStateIDs)
+	ds.MotionState_PreviousStateIDs(id).Lazy(&c.PreviousStateIDs)
+	ds.MotionState_RecommendationLabel(id).Lazy(&c.RecommendationLabel)
+	ds.MotionState_Restrictions(id).Lazy(&c.Restrictions)
+	ds.MotionState_SetNumber(id).Lazy(&c.SetNumber)
+	ds.MotionState_SetWorkflowTimestamp(id).Lazy(&c.SetWorkflowTimestamp)
+	ds.MotionState_ShowRecommendationExtensionField(id).Lazy(&c.ShowRecommendationExtensionField)
+	ds.MotionState_ShowStateExtensionField(id).Lazy(&c.ShowStateExtensionField)
+	ds.MotionState_SubmitterWithdrawBackIDs(id).Lazy(&c.SubmitterWithdrawBackIDs)
+	ds.MotionState_SubmitterWithdrawStateID(id).Lazy(&c.SubmitterWithdrawStateID)
+	ds.MotionState_Weight(id).Lazy(&c.Weight)
+	ds.MotionState_WorkflowID(id).Lazy(&c.WorkflowID)
+}
+
+func (c *MotionState) FirstStateOfWorkflow() Maybe[*ValueCollection[MotionWorkflow, *MotionWorkflow]] {
+	var result Maybe[*ValueCollection[MotionWorkflow, *MotionWorkflow]]
+	id, hasValue := c.FirstStateOfWorkflowID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MotionWorkflow, *MotionWorkflow]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MotionState) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MotionState) MotionList() []*ValueCollection[Motion, *Motion] {
+	result := make([]*ValueCollection[Motion, *Motion], len(c.MotionIDs))
+	for i, id := range c.MotionIDs {
+		result[i] = &ValueCollection[Motion, *Motion]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MotionState) MotionRecommendationList() []*ValueCollection[Motion, *Motion] {
+	result := make([]*ValueCollection[Motion, *Motion], len(c.MotionRecommendationIDs))
+	for i, id := range c.MotionRecommendationIDs {
+		result[i] = &ValueCollection[Motion, *Motion]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MotionState) NextStateList() []*ValueCollection[MotionState, *MotionState] {
+	result := make([]*ValueCollection[MotionState, *MotionState], len(c.NextStateIDs))
+	for i, id := range c.NextStateIDs {
+		result[i] = &ValueCollection[MotionState, *MotionState]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MotionState) PreviousStateList() []*ValueCollection[MotionState, *MotionState] {
+	result := make([]*ValueCollection[MotionState, *MotionState], len(c.PreviousStateIDs))
+	for i, id := range c.PreviousStateIDs {
+		result[i] = &ValueCollection[MotionState, *MotionState]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MotionState) SubmitterWithdrawBackList() []*ValueCollection[MotionState, *MotionState] {
+	result := make([]*ValueCollection[MotionState, *MotionState], len(c.SubmitterWithdrawBackIDs))
+	for i, id := range c.SubmitterWithdrawBackIDs {
+		result[i] = &ValueCollection[MotionState, *MotionState]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *MotionState) SubmitterWithdrawState() Maybe[*ValueCollection[MotionState, *MotionState]] {
+	var result Maybe[*ValueCollection[MotionState, *MotionState]]
+	id, hasValue := c.SubmitterWithdrawStateID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MotionState, *MotionState]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MotionState) Workflow() *ValueCollection[MotionWorkflow, *MotionWorkflow] {
+	return &ValueCollection[MotionWorkflow, *MotionWorkflow]{
+		id:    c.WorkflowID,
+		fetch: c.fetch,
+	}
+}
+
+func (r *Fetch) MotionState(id int) *ValueCollection[MotionState, *MotionState] {
+	return &ValueCollection[MotionState, *MotionState]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// MotionSubmitter has all fields from motion_submitter.
+type MotionSubmitter struct {
+	ID            int
+	MeetingID     int
+	MeetingUserID int
+	MotionID      int
+	Weight        int
+	fetch         *Fetch
+}
+
+func (c *MotionSubmitter) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.MotionSubmitter_ID(id).Lazy(&c.ID)
+	ds.MotionSubmitter_MeetingID(id).Lazy(&c.MeetingID)
+	ds.MotionSubmitter_MeetingUserID(id).Lazy(&c.MeetingUserID)
+	ds.MotionSubmitter_MotionID(id).Lazy(&c.MotionID)
+	ds.MotionSubmitter_Weight(id).Lazy(&c.Weight)
+}
+
+func (c *MotionSubmitter) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MotionSubmitter) MeetingUser() *ValueCollection[MeetingUser, *MeetingUser] {
+	return &ValueCollection[MeetingUser, *MeetingUser]{
+		id:    c.MeetingUserID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MotionSubmitter) Motion() *ValueCollection[Motion, *Motion] {
+	return &ValueCollection[Motion, *Motion]{
+		id:    c.MotionID,
+		fetch: c.fetch,
+	}
+}
+
+func (r *Fetch) MotionSubmitter(id int) *ValueCollection[MotionSubmitter, *MotionSubmitter] {
+	return &ValueCollection[MotionSubmitter, *MotionSubmitter]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// MotionWorkflow has all fields from motion_workflow.
+type MotionWorkflow struct {
+	DefaultAmendmentWorkflowMeetingID Maybe[int]
+	DefaultWorkflowMeetingID          Maybe[int]
+	FirstStateID                      int
+	ID                                int
+	MeetingID                         int
+	Name                              string
+	SequentialNumber                  int
+	StateIDs                          []int
+	fetch                             *Fetch
+}
+
+func (c *MotionWorkflow) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.MotionWorkflow_DefaultAmendmentWorkflowMeetingID(id).Lazy(&c.DefaultAmendmentWorkflowMeetingID)
+	ds.MotionWorkflow_DefaultWorkflowMeetingID(id).Lazy(&c.DefaultWorkflowMeetingID)
+	ds.MotionWorkflow_FirstStateID(id).Lazy(&c.FirstStateID)
+	ds.MotionWorkflow_ID(id).Lazy(&c.ID)
+	ds.MotionWorkflow_MeetingID(id).Lazy(&c.MeetingID)
+	ds.MotionWorkflow_Name(id).Lazy(&c.Name)
+	ds.MotionWorkflow_SequentialNumber(id).Lazy(&c.SequentialNumber)
+	ds.MotionWorkflow_StateIDs(id).Lazy(&c.StateIDs)
+}
+
+func (c *MotionWorkflow) DefaultAmendmentWorkflowMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.DefaultAmendmentWorkflowMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MotionWorkflow) DefaultWorkflowMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.DefaultWorkflowMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *MotionWorkflow) FirstState() *ValueCollection[MotionState, *MotionState] {
+	return &ValueCollection[MotionState, *MotionState]{
+		id:    c.FirstStateID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MotionWorkflow) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MotionWorkflow) StateList() []*ValueCollection[MotionState, *MotionState] {
+	result := make([]*ValueCollection[MotionState, *MotionState], len(c.StateIDs))
+	for i, id := range c.StateIDs {
+		result[i] = &ValueCollection[MotionState, *MotionState]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) MotionWorkflow(id int) *ValueCollection[MotionWorkflow, *MotionWorkflow] {
+	return &ValueCollection[MotionWorkflow, *MotionWorkflow]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// MotionWorkingGroupSpeaker has all fields from motion_working_group_speaker.
+type MotionWorkingGroupSpeaker struct {
+	ID            int
+	MeetingID     int
+	MeetingUserID int
+	MotionID      int
+	Weight        int
+	fetch         *Fetch
+}
+
+func (c *MotionWorkingGroupSpeaker) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.MotionWorkingGroupSpeaker_ID(id).Lazy(&c.ID)
+	ds.MotionWorkingGroupSpeaker_MeetingID(id).Lazy(&c.MeetingID)
+	ds.MotionWorkingGroupSpeaker_MeetingUserID(id).Lazy(&c.MeetingUserID)
+	ds.MotionWorkingGroupSpeaker_MotionID(id).Lazy(&c.MotionID)
+	ds.MotionWorkingGroupSpeaker_Weight(id).Lazy(&c.Weight)
+}
+
+func (c *MotionWorkingGroupSpeaker) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MotionWorkingGroupSpeaker) MeetingUser() *ValueCollection[MeetingUser, *MeetingUser] {
+	return &ValueCollection[MeetingUser, *MeetingUser]{
+		id:    c.MeetingUserID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *MotionWorkingGroupSpeaker) Motion() *ValueCollection[Motion, *Motion] {
+	return &ValueCollection[Motion, *Motion]{
+		id:    c.MotionID,
+		fetch: c.fetch,
+	}
+}
+
+func (r *Fetch) MotionWorkingGroupSpeaker(id int) *ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker] {
+	return &ValueCollection[MotionWorkingGroupSpeaker, *MotionWorkingGroupSpeaker]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// Option has all fields from option.
+type Option struct {
+	Abstain                    string
+	ContentObjectID            Maybe[string]
+	ID                         int
+	MeetingID                  int
+	No                         string
+	PollID                     Maybe[int]
+	Text                       string
+	UsedAsGlobalOptionInPollID Maybe[int]
+	VoteIDs                    []int
+	Weight                     int
+	Yes                        string
+	fetch                      *Fetch
+}
+
+func (c *Option) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.Option_Abstain(id).Lazy(&c.Abstain)
+	ds.Option_ContentObjectID(id).Lazy(&c.ContentObjectID)
+	ds.Option_ID(id).Lazy(&c.ID)
+	ds.Option_MeetingID(id).Lazy(&c.MeetingID)
+	ds.Option_No(id).Lazy(&c.No)
+	ds.Option_PollID(id).Lazy(&c.PollID)
+	ds.Option_Text(id).Lazy(&c.Text)
+	ds.Option_UsedAsGlobalOptionInPollID(id).Lazy(&c.UsedAsGlobalOptionInPollID)
+	ds.Option_VoteIDs(id).Lazy(&c.VoteIDs)
+	ds.Option_Weight(id).Lazy(&c.Weight)
+	ds.Option_Yes(id).Lazy(&c.Yes)
+}
+
+func (c *Option) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Option) Poll() Maybe[*ValueCollection[Poll, *Poll]] {
+	var result Maybe[*ValueCollection[Poll, *Poll]]
+	id, hasValue := c.PollID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Poll, *Poll]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Option) UsedAsGlobalOptionInPoll() Maybe[*ValueCollection[Poll, *Poll]] {
+	var result Maybe[*ValueCollection[Poll, *Poll]]
+	id, hasValue := c.UsedAsGlobalOptionInPollID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Poll, *Poll]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Option) VoteList() []*ValueCollection[Vote, *Vote] {
+	result := make([]*ValueCollection[Vote, *Vote], len(c.VoteIDs))
+	for i, id := range c.VoteIDs {
+		result[i] = &ValueCollection[Vote, *Vote]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) Option(id int) *ValueCollection[Option, *Option] {
+	return &ValueCollection[Option, *Option]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// Organization has all fields from organization.
+type Organization struct {
+	ActiveMeetingIDs           []int
+	ArchivedMeetingIDs         []int
+	CommitteeIDs               []int
+	DefaultLanguage            string
+	Description                string
+	EnableAnonymous            bool
+	EnableChat                 bool
+	EnableElectronicVoting     bool
+	GenderIDs                  []int
+	ID                         int
+	LegalNotice                string
+	LimitOfMeetings            int
+	LimitOfUsers               int
+	LoginText                  string
+	MediafileIDs               []int
+	Name                       string
+	OrganizationTagIDs         []int
+	PrivacyPolicy              string
+	PublishedMediafileIDs      []int
+	RequireDuplicateFrom       bool
+	ResetPasswordVerboseErrors bool
+	SamlAttrMapping            json.RawMessage
+	SamlEnabled                bool
+	SamlLoginButtonText        string
+	SamlMetadataIDp            string
+	SamlMetadataSp             string
+	SamlPrivateKey             string
+	TemplateMeetingIDs         []int
+	ThemeID                    int
+	ThemeIDs                   []int
+	Url                        string
+	UserIDs                    []int
+	UsersEmailBody             string
+	UsersEmailReplyto          string
+	UsersEmailSender           string
+	UsersEmailSubject          string
+	VoteDecryptPublicMainKey   string
+	fetch                      *Fetch
+}
+
+func (c *Organization) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.Organization_ActiveMeetingIDs(id).Lazy(&c.ActiveMeetingIDs)
+	ds.Organization_ArchivedMeetingIDs(id).Lazy(&c.ArchivedMeetingIDs)
+	ds.Organization_CommitteeIDs(id).Lazy(&c.CommitteeIDs)
+	ds.Organization_DefaultLanguage(id).Lazy(&c.DefaultLanguage)
+	ds.Organization_Description(id).Lazy(&c.Description)
+	ds.Organization_EnableAnonymous(id).Lazy(&c.EnableAnonymous)
+	ds.Organization_EnableChat(id).Lazy(&c.EnableChat)
+	ds.Organization_EnableElectronicVoting(id).Lazy(&c.EnableElectronicVoting)
+	ds.Organization_GenderIDs(id).Lazy(&c.GenderIDs)
+	ds.Organization_ID(id).Lazy(&c.ID)
+	ds.Organization_LegalNotice(id).Lazy(&c.LegalNotice)
+	ds.Organization_LimitOfMeetings(id).Lazy(&c.LimitOfMeetings)
+	ds.Organization_LimitOfUsers(id).Lazy(&c.LimitOfUsers)
+	ds.Organization_LoginText(id).Lazy(&c.LoginText)
+	ds.Organization_MediafileIDs(id).Lazy(&c.MediafileIDs)
+	ds.Organization_Name(id).Lazy(&c.Name)
+	ds.Organization_OrganizationTagIDs(id).Lazy(&c.OrganizationTagIDs)
+	ds.Organization_PrivacyPolicy(id).Lazy(&c.PrivacyPolicy)
+	ds.Organization_PublishedMediafileIDs(id).Lazy(&c.PublishedMediafileIDs)
+	ds.Organization_RequireDuplicateFrom(id).Lazy(&c.RequireDuplicateFrom)
+	ds.Organization_ResetPasswordVerboseErrors(id).Lazy(&c.ResetPasswordVerboseErrors)
+	ds.Organization_SamlAttrMapping(id).Lazy(&c.SamlAttrMapping)
+	ds.Organization_SamlEnabled(id).Lazy(&c.SamlEnabled)
+	ds.Organization_SamlLoginButtonText(id).Lazy(&c.SamlLoginButtonText)
+	ds.Organization_SamlMetadataIDp(id).Lazy(&c.SamlMetadataIDp)
+	ds.Organization_SamlMetadataSp(id).Lazy(&c.SamlMetadataSp)
+	ds.Organization_SamlPrivateKey(id).Lazy(&c.SamlPrivateKey)
+	ds.Organization_TemplateMeetingIDs(id).Lazy(&c.TemplateMeetingIDs)
+	ds.Organization_ThemeID(id).Lazy(&c.ThemeID)
+	ds.Organization_ThemeIDs(id).Lazy(&c.ThemeIDs)
+	ds.Organization_Url(id).Lazy(&c.Url)
+	ds.Organization_UserIDs(id).Lazy(&c.UserIDs)
+	ds.Organization_UsersEmailBody(id).Lazy(&c.UsersEmailBody)
+	ds.Organization_UsersEmailReplyto(id).Lazy(&c.UsersEmailReplyto)
+	ds.Organization_UsersEmailSender(id).Lazy(&c.UsersEmailSender)
+	ds.Organization_UsersEmailSubject(id).Lazy(&c.UsersEmailSubject)
+	ds.Organization_VoteDecryptPublicMainKey(id).Lazy(&c.VoteDecryptPublicMainKey)
+}
+
+func (c *Organization) ActiveMeetingList() []*ValueCollection[Meeting, *Meeting] {
+	result := make([]*ValueCollection[Meeting, *Meeting], len(c.ActiveMeetingIDs))
+	for i, id := range c.ActiveMeetingIDs {
+		result[i] = &ValueCollection[Meeting, *Meeting]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Organization) ArchivedMeetingList() []*ValueCollection[Meeting, *Meeting] {
+	result := make([]*ValueCollection[Meeting, *Meeting], len(c.ArchivedMeetingIDs))
+	for i, id := range c.ArchivedMeetingIDs {
+		result[i] = &ValueCollection[Meeting, *Meeting]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Organization) CommitteeList() []*ValueCollection[Committee, *Committee] {
+	result := make([]*ValueCollection[Committee, *Committee], len(c.CommitteeIDs))
+	for i, id := range c.CommitteeIDs {
+		result[i] = &ValueCollection[Committee, *Committee]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Organization) GenderList() []*ValueCollection[Gender, *Gender] {
+	result := make([]*ValueCollection[Gender, *Gender], len(c.GenderIDs))
+	for i, id := range c.GenderIDs {
+		result[i] = &ValueCollection[Gender, *Gender]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Organization) MediafileList() []*ValueCollection[Mediafile, *Mediafile] {
+	result := make([]*ValueCollection[Mediafile, *Mediafile], len(c.MediafileIDs))
+	for i, id := range c.MediafileIDs {
+		result[i] = &ValueCollection[Mediafile, *Mediafile]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Organization) OrganizationTagList() []*ValueCollection[OrganizationTag, *OrganizationTag] {
+	result := make([]*ValueCollection[OrganizationTag, *OrganizationTag], len(c.OrganizationTagIDs))
+	for i, id := range c.OrganizationTagIDs {
+		result[i] = &ValueCollection[OrganizationTag, *OrganizationTag]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Organization) PublishedMediafileList() []*ValueCollection[Mediafile, *Mediafile] {
+	result := make([]*ValueCollection[Mediafile, *Mediafile], len(c.PublishedMediafileIDs))
+	for i, id := range c.PublishedMediafileIDs {
+		result[i] = &ValueCollection[Mediafile, *Mediafile]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Organization) TemplateMeetingList() []*ValueCollection[Meeting, *Meeting] {
+	result := make([]*ValueCollection[Meeting, *Meeting], len(c.TemplateMeetingIDs))
+	for i, id := range c.TemplateMeetingIDs {
+		result[i] = &ValueCollection[Meeting, *Meeting]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Organization) Theme() *ValueCollection[Theme, *Theme] {
+	return &ValueCollection[Theme, *Theme]{
+		id:    c.ThemeID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Organization) ThemeList() []*ValueCollection[Theme, *Theme] {
+	result := make([]*ValueCollection[Theme, *Theme], len(c.ThemeIDs))
+	for i, id := range c.ThemeIDs {
+		result[i] = &ValueCollection[Theme, *Theme]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Organization) UserList() []*ValueCollection[User, *User] {
+	result := make([]*ValueCollection[User, *User], len(c.UserIDs))
+	for i, id := range c.UserIDs {
+		result[i] = &ValueCollection[User, *User]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) Organization(id int) *ValueCollection[Organization, *Organization] {
+	return &ValueCollection[Organization, *Organization]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// OrganizationTag has all fields from organization_tag.
+type OrganizationTag struct {
+	Color          string
+	ID             int
+	Name           string
+	OrganizationID int
+	TaggedIDs      []string
+	fetch          *Fetch
+}
+
+func (c *OrganizationTag) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.OrganizationTag_Color(id).Lazy(&c.Color)
+	ds.OrganizationTag_ID(id).Lazy(&c.ID)
+	ds.OrganizationTag_Name(id).Lazy(&c.Name)
+	ds.OrganizationTag_OrganizationID(id).Lazy(&c.OrganizationID)
+	ds.OrganizationTag_TaggedIDs(id).Lazy(&c.TaggedIDs)
+}
+
+func (c *OrganizationTag) Organization() *ValueCollection[Organization, *Organization] {
+	return &ValueCollection[Organization, *Organization]{
+		id:    c.OrganizationID,
+		fetch: c.fetch,
+	}
+}
+
+func (r *Fetch) OrganizationTag(id int) *ValueCollection[OrganizationTag, *OrganizationTag] {
+	return &ValueCollection[OrganizationTag, *OrganizationTag]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// PersonalNote has all fields from personal_note.
+type PersonalNote struct {
+	ContentObjectID Maybe[string]
+	ID              int
+	MeetingID       int
+	MeetingUserID   int
+	Note            string
+	Star            bool
+	fetch           *Fetch
+}
+
+func (c *PersonalNote) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.PersonalNote_ContentObjectID(id).Lazy(&c.ContentObjectID)
+	ds.PersonalNote_ID(id).Lazy(&c.ID)
+	ds.PersonalNote_MeetingID(id).Lazy(&c.MeetingID)
+	ds.PersonalNote_MeetingUserID(id).Lazy(&c.MeetingUserID)
+	ds.PersonalNote_Note(id).Lazy(&c.Note)
+	ds.PersonalNote_Star(id).Lazy(&c.Star)
+}
+
+func (c *PersonalNote) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *PersonalNote) MeetingUser() *ValueCollection[MeetingUser, *MeetingUser] {
+	return &ValueCollection[MeetingUser, *MeetingUser]{
+		id:    c.MeetingUserID,
+		fetch: c.fetch,
+	}
+}
+
+func (r *Fetch) PersonalNote(id int) *ValueCollection[PersonalNote, *PersonalNote] {
+	return &ValueCollection[PersonalNote, *PersonalNote]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// PointOfOrderCategory has all fields from point_of_order_category.
+type PointOfOrderCategory struct {
+	ID         int
+	MeetingID  int
+	Rank       int
+	SpeakerIDs []int
+	Text       string
+	fetch      *Fetch
+}
+
+func (c *PointOfOrderCategory) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.PointOfOrderCategory_ID(id).Lazy(&c.ID)
+	ds.PointOfOrderCategory_MeetingID(id).Lazy(&c.MeetingID)
+	ds.PointOfOrderCategory_Rank(id).Lazy(&c.Rank)
+	ds.PointOfOrderCategory_SpeakerIDs(id).Lazy(&c.SpeakerIDs)
+	ds.PointOfOrderCategory_Text(id).Lazy(&c.Text)
+}
+
+func (c *PointOfOrderCategory) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *PointOfOrderCategory) SpeakerList() []*ValueCollection[Speaker, *Speaker] {
+	result := make([]*ValueCollection[Speaker, *Speaker], len(c.SpeakerIDs))
+	for i, id := range c.SpeakerIDs {
+		result[i] = &ValueCollection[Speaker, *Speaker]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) PointOfOrderCategory(id int) *ValueCollection[PointOfOrderCategory, *PointOfOrderCategory] {
+	return &ValueCollection[PointOfOrderCategory, *PointOfOrderCategory]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// Poll has all fields from poll.
+type Poll struct {
+	Backend               string
+	ContentObjectID       string
+	CryptKey              string
+	CryptSignature        string
+	Description           string
+	EntitledGroupIDs      []int
+	EntitledUsersAtStop   json.RawMessage
+	GlobalAbstain         bool
+	GlobalNo              bool
+	GlobalOptionID        Maybe[int]
+	GlobalYes             bool
+	ID                    int
+	IsPseudoanonymized    bool
+	MaxVotesAmount        int
+	MaxVotesPerOption     int
+	MeetingID             int
+	MinVotesAmount        int
+	OnehundredPercentBase string
+	OptionIDs             []int
+	Pollmethod            string
+	ProjectionIDs         []int
+	SequentialNumber      int
+	State                 string
+	Title                 string
+	Type                  string
+	VoteCount             int
+	VotedIDs              []int
+	VotesRaw              string
+	VotesSignature        string
+	Votescast             string
+	Votesinvalid          string
+	Votesvalid            string
+	fetch                 *Fetch
+}
+
+func (c *Poll) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.Poll_Backend(id).Lazy(&c.Backend)
+	ds.Poll_ContentObjectID(id).Lazy(&c.ContentObjectID)
+	ds.Poll_CryptKey(id).Lazy(&c.CryptKey)
+	ds.Poll_CryptSignature(id).Lazy(&c.CryptSignature)
+	ds.Poll_Description(id).Lazy(&c.Description)
+	ds.Poll_EntitledGroupIDs(id).Lazy(&c.EntitledGroupIDs)
+	ds.Poll_EntitledUsersAtStop(id).Lazy(&c.EntitledUsersAtStop)
+	ds.Poll_GlobalAbstain(id).Lazy(&c.GlobalAbstain)
+	ds.Poll_GlobalNo(id).Lazy(&c.GlobalNo)
+	ds.Poll_GlobalOptionID(id).Lazy(&c.GlobalOptionID)
+	ds.Poll_GlobalYes(id).Lazy(&c.GlobalYes)
+	ds.Poll_ID(id).Lazy(&c.ID)
+	ds.Poll_IsPseudoanonymized(id).Lazy(&c.IsPseudoanonymized)
+	ds.Poll_MaxVotesAmount(id).Lazy(&c.MaxVotesAmount)
+	ds.Poll_MaxVotesPerOption(id).Lazy(&c.MaxVotesPerOption)
+	ds.Poll_MeetingID(id).Lazy(&c.MeetingID)
+	ds.Poll_MinVotesAmount(id).Lazy(&c.MinVotesAmount)
+	ds.Poll_OnehundredPercentBase(id).Lazy(&c.OnehundredPercentBase)
+	ds.Poll_OptionIDs(id).Lazy(&c.OptionIDs)
+	ds.Poll_Pollmethod(id).Lazy(&c.Pollmethod)
+	ds.Poll_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
+	ds.Poll_SequentialNumber(id).Lazy(&c.SequentialNumber)
+	ds.Poll_State(id).Lazy(&c.State)
+	ds.Poll_Title(id).Lazy(&c.Title)
+	ds.Poll_Type(id).Lazy(&c.Type)
+	ds.Poll_VoteCount(id).Lazy(&c.VoteCount)
+	ds.Poll_VotedIDs(id).Lazy(&c.VotedIDs)
+	ds.Poll_VotesRaw(id).Lazy(&c.VotesRaw)
+	ds.Poll_VotesSignature(id).Lazy(&c.VotesSignature)
+	ds.Poll_Votescast(id).Lazy(&c.Votescast)
+	ds.Poll_Votesinvalid(id).Lazy(&c.Votesinvalid)
+	ds.Poll_Votesvalid(id).Lazy(&c.Votesvalid)
+}
+
+func (c *Poll) EntitledGroupList() []*ValueCollection[Group, *Group] {
+	result := make([]*ValueCollection[Group, *Group], len(c.EntitledGroupIDs))
+	for i, id := range c.EntitledGroupIDs {
+		result[i] = &ValueCollection[Group, *Group]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Poll) GlobalOption() Maybe[*ValueCollection[Option, *Option]] {
+	var result Maybe[*ValueCollection[Option, *Option]]
+	id, hasValue := c.GlobalOptionID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Option, *Option]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Poll) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Poll) OptionList() []*ValueCollection[Option, *Option] {
+	result := make([]*ValueCollection[Option, *Option], len(c.OptionIDs))
+	for i, id := range c.OptionIDs {
+		result[i] = &ValueCollection[Option, *Option]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Poll) ProjectionList() []*ValueCollection[Projection, *Projection] {
+	result := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
+	for i, id := range c.ProjectionIDs {
+		result[i] = &ValueCollection[Projection, *Projection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Poll) VotedList() []*ValueCollection[User, *User] {
+	result := make([]*ValueCollection[User, *User], len(c.VotedIDs))
+	for i, id := range c.VotedIDs {
+		result[i] = &ValueCollection[User, *User]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) Poll(id int) *ValueCollection[Poll, *Poll] {
+	return &ValueCollection[Poll, *Poll]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// PollCandidate has all fields from poll_candidate.
+type PollCandidate struct {
+	ID                  int
+	MeetingID           int
+	PollCandidateListID int
+	UserID              Maybe[int]
+	Weight              int
+	fetch               *Fetch
+}
+
+func (c *PollCandidate) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.PollCandidate_ID(id).Lazy(&c.ID)
+	ds.PollCandidate_MeetingID(id).Lazy(&c.MeetingID)
+	ds.PollCandidate_PollCandidateListID(id).Lazy(&c.PollCandidateListID)
+	ds.PollCandidate_UserID(id).Lazy(&c.UserID)
+	ds.PollCandidate_Weight(id).Lazy(&c.Weight)
+}
+
+func (c *PollCandidate) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *PollCandidate) PollCandidateList() *ValueCollection[PollCandidateList, *PollCandidateList] {
+	return &ValueCollection[PollCandidateList, *PollCandidateList]{
+		id:    c.PollCandidateListID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *PollCandidate) User() Maybe[*ValueCollection[User, *User]] {
+	var result Maybe[*ValueCollection[User, *User]]
+	id, hasValue := c.UserID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[User, *User]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (r *Fetch) PollCandidate(id int) *ValueCollection[PollCandidate, *PollCandidate] {
+	return &ValueCollection[PollCandidate, *PollCandidate]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// PollCandidateList has all fields from poll_candidate_list.
+type PollCandidateList struct {
+	ID               int
+	MeetingID        int
+	OptionID         int
+	PollCandidateIDs []int
+	fetch            *Fetch
+}
+
+func (c *PollCandidateList) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.PollCandidateList_ID(id).Lazy(&c.ID)
+	ds.PollCandidateList_MeetingID(id).Lazy(&c.MeetingID)
+	ds.PollCandidateList_OptionID(id).Lazy(&c.OptionID)
+	ds.PollCandidateList_PollCandidateIDs(id).Lazy(&c.PollCandidateIDs)
+}
+
+func (c *PollCandidateList) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *PollCandidateList) Option() *ValueCollection[Option, *Option] {
+	return &ValueCollection[Option, *Option]{
+		id:    c.OptionID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *PollCandidateList) PollCandidateList() []*ValueCollection[PollCandidate, *PollCandidate] {
+	result := make([]*ValueCollection[PollCandidate, *PollCandidate], len(c.PollCandidateIDs))
+	for i, id := range c.PollCandidateIDs {
+		result[i] = &ValueCollection[PollCandidate, *PollCandidate]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) PollCandidateList(id int) *ValueCollection[PollCandidateList, *PollCandidateList] {
+	return &ValueCollection[PollCandidateList, *PollCandidateList]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// Projection has all fields from projection.
+type Projection struct {
+	Content            json.RawMessage
+	ContentObjectID    string
+	CurrentProjectorID Maybe[int]
+	HistoryProjectorID Maybe[int]
+	ID                 int
+	MeetingID          int
+	Options            json.RawMessage
+	PreviewProjectorID Maybe[int]
+	Stable             bool
+	Type               string
+	Weight             int
+	fetch              *Fetch
+}
+
+func (c *Projection) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.Projection_Content(id).Lazy(&c.Content)
+	ds.Projection_ContentObjectID(id).Lazy(&c.ContentObjectID)
+	ds.Projection_CurrentProjectorID(id).Lazy(&c.CurrentProjectorID)
+	ds.Projection_HistoryProjectorID(id).Lazy(&c.HistoryProjectorID)
+	ds.Projection_ID(id).Lazy(&c.ID)
+	ds.Projection_MeetingID(id).Lazy(&c.MeetingID)
+	ds.Projection_Options(id).Lazy(&c.Options)
+	ds.Projection_PreviewProjectorID(id).Lazy(&c.PreviewProjectorID)
+	ds.Projection_Stable(id).Lazy(&c.Stable)
+	ds.Projection_Type(id).Lazy(&c.Type)
+	ds.Projection_Weight(id).Lazy(&c.Weight)
+}
+
+func (c *Projection) CurrentProjector() Maybe[*ValueCollection[Projector, *Projector]] {
+	var result Maybe[*ValueCollection[Projector, *Projector]]
+	id, hasValue := c.CurrentProjectorID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Projector, *Projector]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Projection) HistoryProjector() Maybe[*ValueCollection[Projector, *Projector]] {
+	var result Maybe[*ValueCollection[Projector, *Projector]]
+	id, hasValue := c.HistoryProjectorID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Projector, *Projector]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Projection) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Projection) PreviewProjector() Maybe[*ValueCollection[Projector, *Projector]] {
+	var result Maybe[*ValueCollection[Projector, *Projector]]
+	id, hasValue := c.PreviewProjectorID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Projector, *Projector]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (r *Fetch) Projection(id int) *ValueCollection[Projection, *Projection] {
+	return &ValueCollection[Projection, *Projection]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// Projector has all fields from projector.
+type Projector struct {
+	AspectRatioDenominator                                    int
+	AspectRatioNumerator                                      int
+	BackgroundColor                                           string
+	ChyronBackgroundColor                                     string
+	ChyronBackgroundColor2                                    string
+	ChyronFontColor                                           string
+	ChyronFontColor2                                          string
+	Color                                                     string
+	CurrentProjectionIDs                                      []int
+	HeaderBackgroundColor                                     string
+	HeaderFontColor                                           string
+	HeaderH1Color                                             string
+	HistoryProjectionIDs                                      []int
+	ID                                                        int
+	IsInternal                                                bool
+	MeetingID                                                 int
+	Name                                                      string
+	PreviewProjectionIDs                                      []int
+	Scale                                                     int
+	Scroll                                                    int
+	SequentialNumber                                          int
+	ShowClock                                                 bool
+	ShowHeaderFooter                                          bool
+	ShowLogo                                                  bool
+	ShowTitle                                                 bool
+	UsedAsDefaultProjectorForAgendaItemListInMeetingID        Maybe[int]
+	UsedAsDefaultProjectorForAmendmentInMeetingID             Maybe[int]
+	UsedAsDefaultProjectorForAssignmentInMeetingID            Maybe[int]
+	UsedAsDefaultProjectorForAssignmentPollInMeetingID        Maybe[int]
+	UsedAsDefaultProjectorForCountdownInMeetingID             Maybe[int]
+	UsedAsDefaultProjectorForCurrentListOfSpeakersInMeetingID Maybe[int]
+	UsedAsDefaultProjectorForListOfSpeakersInMeetingID        Maybe[int]
+	UsedAsDefaultProjectorForMediafileInMeetingID             Maybe[int]
+	UsedAsDefaultProjectorForMessageInMeetingID               Maybe[int]
+	UsedAsDefaultProjectorForMotionBlockInMeetingID           Maybe[int]
+	UsedAsDefaultProjectorForMotionInMeetingID                Maybe[int]
+	UsedAsDefaultProjectorForMotionPollInMeetingID            Maybe[int]
+	UsedAsDefaultProjectorForPollInMeetingID                  Maybe[int]
+	UsedAsDefaultProjectorForTopicInMeetingID                 Maybe[int]
+	UsedAsReferenceProjectorMeetingID                         Maybe[int]
+	Width                                                     int
+	fetch                                                     *Fetch
+}
+
+func (c *Projector) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.Projector_AspectRatioDenominator(id).Lazy(&c.AspectRatioDenominator)
+	ds.Projector_AspectRatioNumerator(id).Lazy(&c.AspectRatioNumerator)
+	ds.Projector_BackgroundColor(id).Lazy(&c.BackgroundColor)
+	ds.Projector_ChyronBackgroundColor(id).Lazy(&c.ChyronBackgroundColor)
+	ds.Projector_ChyronBackgroundColor2(id).Lazy(&c.ChyronBackgroundColor2)
+	ds.Projector_ChyronFontColor(id).Lazy(&c.ChyronFontColor)
+	ds.Projector_ChyronFontColor2(id).Lazy(&c.ChyronFontColor2)
+	ds.Projector_Color(id).Lazy(&c.Color)
+	ds.Projector_CurrentProjectionIDs(id).Lazy(&c.CurrentProjectionIDs)
+	ds.Projector_HeaderBackgroundColor(id).Lazy(&c.HeaderBackgroundColor)
+	ds.Projector_HeaderFontColor(id).Lazy(&c.HeaderFontColor)
+	ds.Projector_HeaderH1Color(id).Lazy(&c.HeaderH1Color)
+	ds.Projector_HistoryProjectionIDs(id).Lazy(&c.HistoryProjectionIDs)
+	ds.Projector_ID(id).Lazy(&c.ID)
+	ds.Projector_IsInternal(id).Lazy(&c.IsInternal)
+	ds.Projector_MeetingID(id).Lazy(&c.MeetingID)
+	ds.Projector_Name(id).Lazy(&c.Name)
+	ds.Projector_PreviewProjectionIDs(id).Lazy(&c.PreviewProjectionIDs)
+	ds.Projector_Scale(id).Lazy(&c.Scale)
+	ds.Projector_Scroll(id).Lazy(&c.Scroll)
+	ds.Projector_SequentialNumber(id).Lazy(&c.SequentialNumber)
+	ds.Projector_ShowClock(id).Lazy(&c.ShowClock)
+	ds.Projector_ShowHeaderFooter(id).Lazy(&c.ShowHeaderFooter)
+	ds.Projector_ShowLogo(id).Lazy(&c.ShowLogo)
+	ds.Projector_ShowTitle(id).Lazy(&c.ShowTitle)
+	ds.Projector_UsedAsDefaultProjectorForAgendaItemListInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForAgendaItemListInMeetingID)
+	ds.Projector_UsedAsDefaultProjectorForAmendmentInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForAmendmentInMeetingID)
+	ds.Projector_UsedAsDefaultProjectorForAssignmentInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForAssignmentInMeetingID)
+	ds.Projector_UsedAsDefaultProjectorForAssignmentPollInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForAssignmentPollInMeetingID)
+	ds.Projector_UsedAsDefaultProjectorForCountdownInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForCountdownInMeetingID)
+	ds.Projector_UsedAsDefaultProjectorForCurrentListOfSpeakersInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForCurrentListOfSpeakersInMeetingID)
+	ds.Projector_UsedAsDefaultProjectorForListOfSpeakersInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForListOfSpeakersInMeetingID)
+	ds.Projector_UsedAsDefaultProjectorForMediafileInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForMediafileInMeetingID)
+	ds.Projector_UsedAsDefaultProjectorForMessageInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForMessageInMeetingID)
+	ds.Projector_UsedAsDefaultProjectorForMotionBlockInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForMotionBlockInMeetingID)
+	ds.Projector_UsedAsDefaultProjectorForMotionInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForMotionInMeetingID)
+	ds.Projector_UsedAsDefaultProjectorForMotionPollInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForMotionPollInMeetingID)
+	ds.Projector_UsedAsDefaultProjectorForPollInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForPollInMeetingID)
+	ds.Projector_UsedAsDefaultProjectorForTopicInMeetingID(id).Lazy(&c.UsedAsDefaultProjectorForTopicInMeetingID)
+	ds.Projector_UsedAsReferenceProjectorMeetingID(id).Lazy(&c.UsedAsReferenceProjectorMeetingID)
+	ds.Projector_Width(id).Lazy(&c.Width)
+}
+
+func (c *Projector) CurrentProjectionList() []*ValueCollection[Projection, *Projection] {
+	result := make([]*ValueCollection[Projection, *Projection], len(c.CurrentProjectionIDs))
+	for i, id := range c.CurrentProjectionIDs {
+		result[i] = &ValueCollection[Projection, *Projection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Projector) HistoryProjectionList() []*ValueCollection[Projection, *Projection] {
+	result := make([]*ValueCollection[Projection, *Projection], len(c.HistoryProjectionIDs))
+	for i, id := range c.HistoryProjectionIDs {
+		result[i] = &ValueCollection[Projection, *Projection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Projector) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Projector) PreviewProjectionList() []*ValueCollection[Projection, *Projection] {
+	result := make([]*ValueCollection[Projection, *Projection], len(c.PreviewProjectionIDs))
+	for i, id := range c.PreviewProjectionIDs {
+		result[i] = &ValueCollection[Projection, *Projection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Projector) UsedAsDefaultProjectorForAgendaItemListInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsDefaultProjectorForAgendaItemListInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Projector) UsedAsDefaultProjectorForAmendmentInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsDefaultProjectorForAmendmentInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Projector) UsedAsDefaultProjectorForAssignmentInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsDefaultProjectorForAssignmentInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Projector) UsedAsDefaultProjectorForAssignmentPollInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsDefaultProjectorForAssignmentPollInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Projector) UsedAsDefaultProjectorForCountdownInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsDefaultProjectorForCountdownInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Projector) UsedAsDefaultProjectorForCurrentListOfSpeakersInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsDefaultProjectorForCurrentListOfSpeakersInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Projector) UsedAsDefaultProjectorForListOfSpeakersInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsDefaultProjectorForListOfSpeakersInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Projector) UsedAsDefaultProjectorForMediafileInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsDefaultProjectorForMediafileInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Projector) UsedAsDefaultProjectorForMessageInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsDefaultProjectorForMessageInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Projector) UsedAsDefaultProjectorForMotionBlockInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsDefaultProjectorForMotionBlockInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Projector) UsedAsDefaultProjectorForMotionInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsDefaultProjectorForMotionInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Projector) UsedAsDefaultProjectorForMotionPollInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsDefaultProjectorForMotionPollInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Projector) UsedAsDefaultProjectorForPollInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsDefaultProjectorForPollInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Projector) UsedAsDefaultProjectorForTopicInMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsDefaultProjectorForTopicInMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Projector) UsedAsReferenceProjectorMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsReferenceProjectorMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (r *Fetch) Projector(id int) *ValueCollection[Projector, *Projector] {
+	return &ValueCollection[Projector, *Projector]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// ProjectorCountdown has all fields from projector_countdown.
+type ProjectorCountdown struct {
+	CountdownTime                          float32
+	DefaultTime                            int
+	Description                            string
+	ID                                     int
+	MeetingID                              int
+	ProjectionIDs                          []int
+	Running                                bool
+	Title                                  string
+	UsedAsListOfSpeakersCountdownMeetingID Maybe[int]
+	UsedAsPollCountdownMeetingID           Maybe[int]
+	fetch                                  *Fetch
+}
+
+func (c *ProjectorCountdown) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.ProjectorCountdown_CountdownTime(id).Lazy(&c.CountdownTime)
+	ds.ProjectorCountdown_DefaultTime(id).Lazy(&c.DefaultTime)
+	ds.ProjectorCountdown_Description(id).Lazy(&c.Description)
+	ds.ProjectorCountdown_ID(id).Lazy(&c.ID)
+	ds.ProjectorCountdown_MeetingID(id).Lazy(&c.MeetingID)
+	ds.ProjectorCountdown_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
+	ds.ProjectorCountdown_Running(id).Lazy(&c.Running)
+	ds.ProjectorCountdown_Title(id).Lazy(&c.Title)
+	ds.ProjectorCountdown_UsedAsListOfSpeakersCountdownMeetingID(id).Lazy(&c.UsedAsListOfSpeakersCountdownMeetingID)
+	ds.ProjectorCountdown_UsedAsPollCountdownMeetingID(id).Lazy(&c.UsedAsPollCountdownMeetingID)
+}
+
+func (c *ProjectorCountdown) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *ProjectorCountdown) ProjectionList() []*ValueCollection[Projection, *Projection] {
+	result := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
+	for i, id := range c.ProjectionIDs {
+		result[i] = &ValueCollection[Projection, *Projection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *ProjectorCountdown) UsedAsListOfSpeakersCountdownMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsListOfSpeakersCountdownMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *ProjectorCountdown) UsedAsPollCountdownMeeting() Maybe[*ValueCollection[Meeting, *Meeting]] {
+	var result Maybe[*ValueCollection[Meeting, *Meeting]]
+	id, hasValue := c.UsedAsPollCountdownMeetingID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Meeting, *Meeting]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (r *Fetch) ProjectorCountdown(id int) *ValueCollection[ProjectorCountdown, *ProjectorCountdown] {
+	return &ValueCollection[ProjectorCountdown, *ProjectorCountdown]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// ProjectorMessage has all fields from projector_message.
+type ProjectorMessage struct {
+	ID            int
+	MeetingID     int
+	Message       string
+	ProjectionIDs []int
+	fetch         *Fetch
+}
+
+func (c *ProjectorMessage) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.ProjectorMessage_ID(id).Lazy(&c.ID)
+	ds.ProjectorMessage_MeetingID(id).Lazy(&c.MeetingID)
+	ds.ProjectorMessage_Message(id).Lazy(&c.Message)
+	ds.ProjectorMessage_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
+}
+
+func (c *ProjectorMessage) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *ProjectorMessage) ProjectionList() []*ValueCollection[Projection, *Projection] {
+	result := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
+	for i, id := range c.ProjectionIDs {
+		result[i] = &ValueCollection[Projection, *Projection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) ProjectorMessage(id int) *ValueCollection[ProjectorMessage, *ProjectorMessage] {
+	return &ValueCollection[ProjectorMessage, *ProjectorMessage]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// Speaker has all fields from speaker.
+type Speaker struct {
+	BeginTime                      int
+	EndTime                        int
+	ID                             int
+	ListOfSpeakersID               int
+	MeetingID                      int
+	MeetingUserID                  Maybe[int]
+	Note                           string
+	PauseTime                      int
+	PointOfOrder                   bool
+	PointOfOrderCategoryID         Maybe[int]
+	SpeechState                    string
+	StructureLevelListOfSpeakersID Maybe[int]
+	TotalPause                     int
+	UnpauseTime                    int
+	Weight                         int
+	fetch                          *Fetch
+}
+
+func (c *Speaker) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.Speaker_BeginTime(id).Lazy(&c.BeginTime)
+	ds.Speaker_EndTime(id).Lazy(&c.EndTime)
+	ds.Speaker_ID(id).Lazy(&c.ID)
+	ds.Speaker_ListOfSpeakersID(id).Lazy(&c.ListOfSpeakersID)
+	ds.Speaker_MeetingID(id).Lazy(&c.MeetingID)
+	ds.Speaker_MeetingUserID(id).Lazy(&c.MeetingUserID)
+	ds.Speaker_Note(id).Lazy(&c.Note)
+	ds.Speaker_PauseTime(id).Lazy(&c.PauseTime)
+	ds.Speaker_PointOfOrder(id).Lazy(&c.PointOfOrder)
+	ds.Speaker_PointOfOrderCategoryID(id).Lazy(&c.PointOfOrderCategoryID)
+	ds.Speaker_SpeechState(id).Lazy(&c.SpeechState)
+	ds.Speaker_StructureLevelListOfSpeakersID(id).Lazy(&c.StructureLevelListOfSpeakersID)
+	ds.Speaker_TotalPause(id).Lazy(&c.TotalPause)
+	ds.Speaker_UnpauseTime(id).Lazy(&c.UnpauseTime)
+	ds.Speaker_Weight(id).Lazy(&c.Weight)
+}
+
+func (c *Speaker) ListOfSpeakers() *ValueCollection[ListOfSpeakers, *ListOfSpeakers] {
+	return &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
+		id:    c.ListOfSpeakersID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Speaker) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Speaker) MeetingUser() Maybe[*ValueCollection[MeetingUser, *MeetingUser]] {
+	var result Maybe[*ValueCollection[MeetingUser, *MeetingUser]]
+	id, hasValue := c.MeetingUserID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[MeetingUser, *MeetingUser]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Speaker) PointOfOrderCategory() Maybe[*ValueCollection[PointOfOrderCategory, *PointOfOrderCategory]] {
+	var result Maybe[*ValueCollection[PointOfOrderCategory, *PointOfOrderCategory]]
+	id, hasValue := c.PointOfOrderCategoryID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[PointOfOrderCategory, *PointOfOrderCategory]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Speaker) StructureLevelListOfSpeakers() Maybe[*ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]] {
+	var result Maybe[*ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]]
+	id, hasValue := c.StructureLevelListOfSpeakersID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (r *Fetch) Speaker(id int) *ValueCollection[Speaker, *Speaker] {
+	return &ValueCollection[Speaker, *Speaker]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// StructureLevel has all fields from structure_level.
+type StructureLevel struct {
+	Color                           string
+	DefaultTime                     int
+	ID                              int
+	MeetingID                       int
+	MeetingUserIDs                  []int
+	Name                            string
+	StructureLevelListOfSpeakersIDs []int
+	fetch                           *Fetch
+}
+
+func (c *StructureLevel) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.StructureLevel_Color(id).Lazy(&c.Color)
+	ds.StructureLevel_DefaultTime(id).Lazy(&c.DefaultTime)
+	ds.StructureLevel_ID(id).Lazy(&c.ID)
+	ds.StructureLevel_MeetingID(id).Lazy(&c.MeetingID)
+	ds.StructureLevel_MeetingUserIDs(id).Lazy(&c.MeetingUserIDs)
+	ds.StructureLevel_Name(id).Lazy(&c.Name)
+	ds.StructureLevel_StructureLevelListOfSpeakersIDs(id).Lazy(&c.StructureLevelListOfSpeakersIDs)
+}
+
+func (c *StructureLevel) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *StructureLevel) MeetingUserList() []*ValueCollection[MeetingUser, *MeetingUser] {
+	result := make([]*ValueCollection[MeetingUser, *MeetingUser], len(c.MeetingUserIDs))
+	for i, id := range c.MeetingUserIDs {
+		result[i] = &ValueCollection[MeetingUser, *MeetingUser]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *StructureLevel) StructureLevelListOfSpeakersList() []*ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers] {
+	result := make([]*ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers], len(c.StructureLevelListOfSpeakersIDs))
+	for i, id := range c.StructureLevelListOfSpeakersIDs {
+		result[i] = &ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) StructureLevel(id int) *ValueCollection[StructureLevel, *StructureLevel] {
+	return &ValueCollection[StructureLevel, *StructureLevel]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// StructureLevelListOfSpeakers has all fields from structure_level_list_of_speakers.
+type StructureLevelListOfSpeakers struct {
+	AdditionalTime   float32
+	CurrentStartTime int
+	ID               int
+	InitialTime      int
+	ListOfSpeakersID int
+	MeetingID        int
+	RemainingTime    float32
+	SpeakerIDs       []int
+	StructureLevelID int
+	fetch            *Fetch
+}
+
+func (c *StructureLevelListOfSpeakers) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.StructureLevelListOfSpeakers_AdditionalTime(id).Lazy(&c.AdditionalTime)
+	ds.StructureLevelListOfSpeakers_CurrentStartTime(id).Lazy(&c.CurrentStartTime)
+	ds.StructureLevelListOfSpeakers_ID(id).Lazy(&c.ID)
+	ds.StructureLevelListOfSpeakers_InitialTime(id).Lazy(&c.InitialTime)
+	ds.StructureLevelListOfSpeakers_ListOfSpeakersID(id).Lazy(&c.ListOfSpeakersID)
+	ds.StructureLevelListOfSpeakers_MeetingID(id).Lazy(&c.MeetingID)
+	ds.StructureLevelListOfSpeakers_RemainingTime(id).Lazy(&c.RemainingTime)
+	ds.StructureLevelListOfSpeakers_SpeakerIDs(id).Lazy(&c.SpeakerIDs)
+	ds.StructureLevelListOfSpeakers_StructureLevelID(id).Lazy(&c.StructureLevelID)
+}
+
+func (c *StructureLevelListOfSpeakers) ListOfSpeakers() *ValueCollection[ListOfSpeakers, *ListOfSpeakers] {
+	return &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
+		id:    c.ListOfSpeakersID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *StructureLevelListOfSpeakers) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *StructureLevelListOfSpeakers) SpeakerList() []*ValueCollection[Speaker, *Speaker] {
+	result := make([]*ValueCollection[Speaker, *Speaker], len(c.SpeakerIDs))
+	for i, id := range c.SpeakerIDs {
+		result[i] = &ValueCollection[Speaker, *Speaker]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *StructureLevelListOfSpeakers) StructureLevel() *ValueCollection[StructureLevel, *StructureLevel] {
+	return &ValueCollection[StructureLevel, *StructureLevel]{
+		id:    c.StructureLevelID,
+		fetch: c.fetch,
+	}
+}
+
+func (r *Fetch) StructureLevelListOfSpeakers(id int) *ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers] {
+	return &ValueCollection[StructureLevelListOfSpeakers, *StructureLevelListOfSpeakers]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// Tag has all fields from tag.
+type Tag struct {
+	ID        int
+	MeetingID int
+	Name      string
+	TaggedIDs []string
+	fetch     *Fetch
+}
+
+func (c *Tag) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.Tag_ID(id).Lazy(&c.ID)
+	ds.Tag_MeetingID(id).Lazy(&c.MeetingID)
+	ds.Tag_Name(id).Lazy(&c.Name)
+	ds.Tag_TaggedIDs(id).Lazy(&c.TaggedIDs)
+}
+
+func (c *Tag) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (r *Fetch) Tag(id int) *ValueCollection[Tag, *Tag] {
+	return &ValueCollection[Tag, *Tag]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// Theme has all fields from theme.
+type Theme struct {
+	Abstain                string
+	Accent100              string
+	Accent200              string
+	Accent300              string
+	Accent400              string
+	Accent50               string
+	Accent500              string
+	Accent600              string
+	Accent700              string
+	Accent800              string
+	Accent900              string
+	AccentA100             string
+	AccentA200             string
+	AccentA400             string
+	AccentA700             string
+	Headbar                string
+	ID                     int
+	Name                   string
+	No                     string
+	OrganizationID         int
+	Primary100             string
+	Primary200             string
+	Primary300             string
+	Primary400             string
+	Primary50              string
+	Primary500             string
+	Primary600             string
+	Primary700             string
+	Primary800             string
+	Primary900             string
+	PrimaryA100            string
+	PrimaryA200            string
+	PrimaryA400            string
+	PrimaryA700            string
+	ThemeForOrganizationID Maybe[int]
+	Warn100                string
+	Warn200                string
+	Warn300                string
+	Warn400                string
+	Warn50                 string
+	Warn500                string
+	Warn600                string
+	Warn700                string
+	Warn800                string
+	Warn900                string
+	WarnA100               string
+	WarnA200               string
+	WarnA400               string
+	WarnA700               string
+	Yes                    string
+	fetch                  *Fetch
+}
+
+func (c *Theme) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.Theme_Abstain(id).Lazy(&c.Abstain)
+	ds.Theme_Accent100(id).Lazy(&c.Accent100)
+	ds.Theme_Accent200(id).Lazy(&c.Accent200)
+	ds.Theme_Accent300(id).Lazy(&c.Accent300)
+	ds.Theme_Accent400(id).Lazy(&c.Accent400)
+	ds.Theme_Accent50(id).Lazy(&c.Accent50)
+	ds.Theme_Accent500(id).Lazy(&c.Accent500)
+	ds.Theme_Accent600(id).Lazy(&c.Accent600)
+	ds.Theme_Accent700(id).Lazy(&c.Accent700)
+	ds.Theme_Accent800(id).Lazy(&c.Accent800)
+	ds.Theme_Accent900(id).Lazy(&c.Accent900)
+	ds.Theme_AccentA100(id).Lazy(&c.AccentA100)
+	ds.Theme_AccentA200(id).Lazy(&c.AccentA200)
+	ds.Theme_AccentA400(id).Lazy(&c.AccentA400)
+	ds.Theme_AccentA700(id).Lazy(&c.AccentA700)
+	ds.Theme_Headbar(id).Lazy(&c.Headbar)
+	ds.Theme_ID(id).Lazy(&c.ID)
+	ds.Theme_Name(id).Lazy(&c.Name)
+	ds.Theme_No(id).Lazy(&c.No)
+	ds.Theme_OrganizationID(id).Lazy(&c.OrganizationID)
+	ds.Theme_Primary100(id).Lazy(&c.Primary100)
+	ds.Theme_Primary200(id).Lazy(&c.Primary200)
+	ds.Theme_Primary300(id).Lazy(&c.Primary300)
+	ds.Theme_Primary400(id).Lazy(&c.Primary400)
+	ds.Theme_Primary50(id).Lazy(&c.Primary50)
+	ds.Theme_Primary500(id).Lazy(&c.Primary500)
+	ds.Theme_Primary600(id).Lazy(&c.Primary600)
+	ds.Theme_Primary700(id).Lazy(&c.Primary700)
+	ds.Theme_Primary800(id).Lazy(&c.Primary800)
+	ds.Theme_Primary900(id).Lazy(&c.Primary900)
+	ds.Theme_PrimaryA100(id).Lazy(&c.PrimaryA100)
+	ds.Theme_PrimaryA200(id).Lazy(&c.PrimaryA200)
+	ds.Theme_PrimaryA400(id).Lazy(&c.PrimaryA400)
+	ds.Theme_PrimaryA700(id).Lazy(&c.PrimaryA700)
+	ds.Theme_ThemeForOrganizationID(id).Lazy(&c.ThemeForOrganizationID)
+	ds.Theme_Warn100(id).Lazy(&c.Warn100)
+	ds.Theme_Warn200(id).Lazy(&c.Warn200)
+	ds.Theme_Warn300(id).Lazy(&c.Warn300)
+	ds.Theme_Warn400(id).Lazy(&c.Warn400)
+	ds.Theme_Warn50(id).Lazy(&c.Warn50)
+	ds.Theme_Warn500(id).Lazy(&c.Warn500)
+	ds.Theme_Warn600(id).Lazy(&c.Warn600)
+	ds.Theme_Warn700(id).Lazy(&c.Warn700)
+	ds.Theme_Warn800(id).Lazy(&c.Warn800)
+	ds.Theme_Warn900(id).Lazy(&c.Warn900)
+	ds.Theme_WarnA100(id).Lazy(&c.WarnA100)
+	ds.Theme_WarnA200(id).Lazy(&c.WarnA200)
+	ds.Theme_WarnA400(id).Lazy(&c.WarnA400)
+	ds.Theme_WarnA700(id).Lazy(&c.WarnA700)
+	ds.Theme_Yes(id).Lazy(&c.Yes)
+}
+
+func (c *Theme) Organization() *ValueCollection[Organization, *Organization] {
+	return &ValueCollection[Organization, *Organization]{
+		id:    c.OrganizationID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Theme) ThemeForOrganization() Maybe[*ValueCollection[Organization, *Organization]] {
+	var result Maybe[*ValueCollection[Organization, *Organization]]
+	id, hasValue := c.ThemeForOrganizationID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Organization, *Organization]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (r *Fetch) Theme(id int) *ValueCollection[Theme, *Theme] {
+	return &ValueCollection[Theme, *Theme]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// Topic has all fields from topic.
+type Topic struct {
+	AgendaItemID                  int
+	AttachmentMeetingMediafileIDs []int
+	ID                            int
+	ListOfSpeakersID              int
+	MeetingID                     int
+	PollIDs                       []int
+	ProjectionIDs                 []int
+	SequentialNumber              int
+	Text                          string
+	Title                         string
+	fetch                         *Fetch
+}
+
+func (c *Topic) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.Topic_AgendaItemID(id).Lazy(&c.AgendaItemID)
+	ds.Topic_AttachmentMeetingMediafileIDs(id).Lazy(&c.AttachmentMeetingMediafileIDs)
+	ds.Topic_ID(id).Lazy(&c.ID)
+	ds.Topic_ListOfSpeakersID(id).Lazy(&c.ListOfSpeakersID)
+	ds.Topic_MeetingID(id).Lazy(&c.MeetingID)
+	ds.Topic_PollIDs(id).Lazy(&c.PollIDs)
+	ds.Topic_ProjectionIDs(id).Lazy(&c.ProjectionIDs)
+	ds.Topic_SequentialNumber(id).Lazy(&c.SequentialNumber)
+	ds.Topic_Text(id).Lazy(&c.Text)
+	ds.Topic_Title(id).Lazy(&c.Title)
+}
+
+func (c *Topic) AgendaItem() *ValueCollection[AgendaItem, *AgendaItem] {
+	return &ValueCollection[AgendaItem, *AgendaItem]{
+		id:    c.AgendaItemID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Topic) AttachmentMeetingMediafileList() []*ValueCollection[MeetingMediafile, *MeetingMediafile] {
+	result := make([]*ValueCollection[MeetingMediafile, *MeetingMediafile], len(c.AttachmentMeetingMediafileIDs))
+	for i, id := range c.AttachmentMeetingMediafileIDs {
+		result[i] = &ValueCollection[MeetingMediafile, *MeetingMediafile]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Topic) ListOfSpeakers() *ValueCollection[ListOfSpeakers, *ListOfSpeakers] {
+	return &ValueCollection[ListOfSpeakers, *ListOfSpeakers]{
+		id:    c.ListOfSpeakersID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Topic) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Topic) PollList() []*ValueCollection[Poll, *Poll] {
+	result := make([]*ValueCollection[Poll, *Poll], len(c.PollIDs))
+	for i, id := range c.PollIDs {
+		result[i] = &ValueCollection[Poll, *Poll]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *Topic) ProjectionList() []*ValueCollection[Projection, *Projection] {
+	result := make([]*ValueCollection[Projection, *Projection], len(c.ProjectionIDs))
+	for i, id := range c.ProjectionIDs {
+		result[i] = &ValueCollection[Projection, *Projection]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) Topic(id int) *ValueCollection[Topic, *Topic] {
+	return &ValueCollection[Topic, *Topic]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// User has all fields from user.
+type User struct {
+	CanChangeOwnPassword        bool
+	CommitteeIDs                []int
+	CommitteeManagementIDs      []int
+	DefaultPassword             string
+	DefaultVoteWeight           string
+	DelegatedVoteIDs            []int
+	Email                       string
+	FirstName                   string
+	ForwardingCommitteeIDs      []int
+	GenderID                    Maybe[int]
+	ID                          int
+	IsActive                    bool
+	IsDemoUser                  bool
+	IsPhysicalPerson            bool
+	IsPresentInMeetingIDs       []int
+	LastEmailSent               int
+	LastLogin                   int
+	LastName                    string
+	MeetingIDs                  []int
+	MeetingUserIDs              []int
+	MemberNumber                string
+	OptionIDs                   []int
+	OrganizationID              int
+	OrganizationManagementLevel string
+	Password                    string
+	PollCandidateIDs            []int
+	PollVotedIDs                []int
+	Pronoun                     string
+	SamlID                      string
+	Title                       string
+	Username                    string
+	VoteIDs                     []int
+	fetch                       *Fetch
+}
+
+func (c *User) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.User_CanChangeOwnPassword(id).Lazy(&c.CanChangeOwnPassword)
+	ds.User_CommitteeIDs(id).Lazy(&c.CommitteeIDs)
+	ds.User_CommitteeManagementIDs(id).Lazy(&c.CommitteeManagementIDs)
+	ds.User_DefaultPassword(id).Lazy(&c.DefaultPassword)
+	ds.User_DefaultVoteWeight(id).Lazy(&c.DefaultVoteWeight)
+	ds.User_DelegatedVoteIDs(id).Lazy(&c.DelegatedVoteIDs)
+	ds.User_Email(id).Lazy(&c.Email)
+	ds.User_FirstName(id).Lazy(&c.FirstName)
+	ds.User_ForwardingCommitteeIDs(id).Lazy(&c.ForwardingCommitteeIDs)
+	ds.User_GenderID(id).Lazy(&c.GenderID)
+	ds.User_ID(id).Lazy(&c.ID)
+	ds.User_IsActive(id).Lazy(&c.IsActive)
+	ds.User_IsDemoUser(id).Lazy(&c.IsDemoUser)
+	ds.User_IsPhysicalPerson(id).Lazy(&c.IsPhysicalPerson)
+	ds.User_IsPresentInMeetingIDs(id).Lazy(&c.IsPresentInMeetingIDs)
+	ds.User_LastEmailSent(id).Lazy(&c.LastEmailSent)
+	ds.User_LastLogin(id).Lazy(&c.LastLogin)
+	ds.User_LastName(id).Lazy(&c.LastName)
+	ds.User_MeetingIDs(id).Lazy(&c.MeetingIDs)
+	ds.User_MeetingUserIDs(id).Lazy(&c.MeetingUserIDs)
+	ds.User_MemberNumber(id).Lazy(&c.MemberNumber)
+	ds.User_OptionIDs(id).Lazy(&c.OptionIDs)
+	ds.User_OrganizationID(id).Lazy(&c.OrganizationID)
+	ds.User_OrganizationManagementLevel(id).Lazy(&c.OrganizationManagementLevel)
+	ds.User_Password(id).Lazy(&c.Password)
+	ds.User_PollCandidateIDs(id).Lazy(&c.PollCandidateIDs)
+	ds.User_PollVotedIDs(id).Lazy(&c.PollVotedIDs)
+	ds.User_Pronoun(id).Lazy(&c.Pronoun)
+	ds.User_SamlID(id).Lazy(&c.SamlID)
+	ds.User_Title(id).Lazy(&c.Title)
+	ds.User_Username(id).Lazy(&c.Username)
+	ds.User_VoteIDs(id).Lazy(&c.VoteIDs)
+}
+
+func (c *User) CommitteeList() []*ValueCollection[Committee, *Committee] {
+	result := make([]*ValueCollection[Committee, *Committee], len(c.CommitteeIDs))
+	for i, id := range c.CommitteeIDs {
+		result[i] = &ValueCollection[Committee, *Committee]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *User) CommitteeManagementList() []*ValueCollection[Committee, *Committee] {
+	result := make([]*ValueCollection[Committee, *Committee], len(c.CommitteeManagementIDs))
+	for i, id := range c.CommitteeManagementIDs {
+		result[i] = &ValueCollection[Committee, *Committee]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *User) DelegatedVoteList() []*ValueCollection[Vote, *Vote] {
+	result := make([]*ValueCollection[Vote, *Vote], len(c.DelegatedVoteIDs))
+	for i, id := range c.DelegatedVoteIDs {
+		result[i] = &ValueCollection[Vote, *Vote]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *User) ForwardingCommitteeList() []*ValueCollection[Committee, *Committee] {
+	result := make([]*ValueCollection[Committee, *Committee], len(c.ForwardingCommitteeIDs))
+	for i, id := range c.ForwardingCommitteeIDs {
+		result[i] = &ValueCollection[Committee, *Committee]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *User) Gender() Maybe[*ValueCollection[Gender, *Gender]] {
+	var result Maybe[*ValueCollection[Gender, *Gender]]
+	id, hasValue := c.GenderID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[Gender, *Gender]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *User) IsPresentInMeetingList() []*ValueCollection[Meeting, *Meeting] {
+	result := make([]*ValueCollection[Meeting, *Meeting], len(c.IsPresentInMeetingIDs))
+	for i, id := range c.IsPresentInMeetingIDs {
+		result[i] = &ValueCollection[Meeting, *Meeting]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *User) MeetingUserList() []*ValueCollection[MeetingUser, *MeetingUser] {
+	result := make([]*ValueCollection[MeetingUser, *MeetingUser], len(c.MeetingUserIDs))
+	for i, id := range c.MeetingUserIDs {
+		result[i] = &ValueCollection[MeetingUser, *MeetingUser]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *User) OptionList() []*ValueCollection[Option, *Option] {
+	result := make([]*ValueCollection[Option, *Option], len(c.OptionIDs))
+	for i, id := range c.OptionIDs {
+		result[i] = &ValueCollection[Option, *Option]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *User) Organization() *ValueCollection[Organization, *Organization] {
+	return &ValueCollection[Organization, *Organization]{
+		id:    c.OrganizationID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *User) PollCandidateList() []*ValueCollection[PollCandidate, *PollCandidate] {
+	result := make([]*ValueCollection[PollCandidate, *PollCandidate], len(c.PollCandidateIDs))
+	for i, id := range c.PollCandidateIDs {
+		result[i] = &ValueCollection[PollCandidate, *PollCandidate]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *User) PollVotedList() []*ValueCollection[Poll, *Poll] {
+	result := make([]*ValueCollection[Poll, *Poll], len(c.PollVotedIDs))
+	for i, id := range c.PollVotedIDs {
+		result[i] = &ValueCollection[Poll, *Poll]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (c *User) VoteList() []*ValueCollection[Vote, *Vote] {
+	result := make([]*ValueCollection[Vote, *Vote], len(c.VoteIDs))
+	for i, id := range c.VoteIDs {
+		result[i] = &ValueCollection[Vote, *Vote]{
+			id:    id,
+			fetch: c.fetch,
+		}
+	}
+	return result
+}
+
+func (r *Fetch) User(id int) *ValueCollection[User, *User] {
+	return &ValueCollection[User, *User]{
+		id:    id,
+		fetch: r,
+	}
+}
+
+// Vote has all fields from vote.
+type Vote struct {
+	DelegatedUserID Maybe[int]
+	ID              int
+	MeetingID       int
+	OptionID        int
+	UserID          Maybe[int]
+	UserToken       string
+	Value           string
+	Weight          string
+	fetch           *Fetch
+}
+
+func (c *Vote) lazy(ds *Fetch, id int) {
+	c.fetch = ds
+	ds.Vote_DelegatedUserID(id).Lazy(&c.DelegatedUserID)
+	ds.Vote_ID(id).Lazy(&c.ID)
+	ds.Vote_MeetingID(id).Lazy(&c.MeetingID)
+	ds.Vote_OptionID(id).Lazy(&c.OptionID)
+	ds.Vote_UserID(id).Lazy(&c.UserID)
+	ds.Vote_UserToken(id).Lazy(&c.UserToken)
+	ds.Vote_Value(id).Lazy(&c.Value)
+	ds.Vote_Weight(id).Lazy(&c.Weight)
+}
+
+func (c *Vote) DelegatedUser() Maybe[*ValueCollection[User, *User]] {
+	var result Maybe[*ValueCollection[User, *User]]
+	id, hasValue := c.DelegatedUserID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[User, *User]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (c *Vote) Meeting() *ValueCollection[Meeting, *Meeting] {
+	return &ValueCollection[Meeting, *Meeting]{
+		id:    c.MeetingID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Vote) Option() *ValueCollection[Option, *Option] {
+	return &ValueCollection[Option, *Option]{
+		id:    c.OptionID,
+		fetch: c.fetch,
+	}
+}
+
+func (c *Vote) User() Maybe[*ValueCollection[User, *User]] {
+	var result Maybe[*ValueCollection[User, *User]]
+	id, hasValue := c.UserID.Value()
+	if !hasValue {
+		return result
+	}
+	value := &ValueCollection[User, *User]{
+		id:    id,
+		fetch: c.fetch,
+	}
+	result.Set(value)
+	return result
+}
+
+func (r *Fetch) Vote(id int) *ValueCollection[Vote, *Vote] {
+	return &ValueCollection[Vote, *Vote]{
+		id:    id,
+		fetch: r,
+	}
 }

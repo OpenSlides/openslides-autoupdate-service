@@ -5,12 +5,14 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	_ "embed"
 	"fmt"
 	"go/format"
 	"io"
 	"log"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 	"text/template"
@@ -27,6 +29,9 @@ var tmplHeader string
 //go:embed field.go.tmpl
 var tmplField string
 
+//go:embed collection.go.tmpl
+var tmplCollection string
+
 func main() {
 	if err := run(os.Stdout); err != nil {
 		log.Fatalf("Error: %v", err)
@@ -34,6 +39,11 @@ func main() {
 }
 
 func run(w io.Writer) error {
+	fromYml, err := parseModelsYml()
+	if err != nil {
+		return fmt.Errorf("parse models.yml: %w", err)
+	}
+
 	buf := new(bytes.Buffer)
 
 	if err := genHeader(buf); err != nil {
@@ -44,8 +54,12 @@ func run(w io.Writer) error {
 		return fmt.Errorf("generate value types: %w", err)
 	}
 
-	if err := genFieldMethods(buf); err != nil {
+	if err := genFieldMethods(buf, fromYml); err != nil {
 		return fmt.Errorf("generate field methods: %w", err)
+	}
+
+	if err := genCollections(buf, fromYml); err != nil {
+		return fmt.Errorf("generate collections: %w", err)
 	}
 
 	formated, err := format.Source(buf.Bytes())
@@ -75,19 +89,19 @@ func genHeader(buf *bytes.Buffer) error {
 	return nil
 }
 
-func genValueTypes(buf *bytes.Buffer) error {
-	typesToGo := map[string]string{
-		"ValueInt":         "int",
-		"ValueMaybeInt":    "Maybe[int]",
-		"ValueString":      "string",
-		"ValueMaybeString": "Maybe[string]",
-		"ValueBool":        "bool",
-		"ValueFloat":       "float32",
-		"ValueJSON":        "json.RawMessage",
-		"ValueIntSlice":    "[]int",
-		"ValueStringSlice": "[]string",
-	}
+var typesToGo = map[string]string{
+	"ValueInt":         "int",
+	"ValueMaybeInt":    "Maybe[int]",
+	"ValueString":      "string",
+	"ValueMaybeString": "Maybe[string]",
+	"ValueBool":        "bool",
+	"ValueFloat":       "float32",
+	"ValueJSON":        "json.RawMessage",
+	"ValueIntSlice":    "[]int",
+	"ValueStringSlice": "[]string",
+}
 
+func genValueTypes(buf *bytes.Buffer) error {
 	// Make sure the types are in the same order every time go generate runs.
 	var types []string
 	for k := range typesToGo {
@@ -134,16 +148,10 @@ func zeroValue(t string) string {
 	return "unknown type " + t
 }
 
-func genFieldMethods(buf *bytes.Buffer) error {
-	r, err := openModelYML()
+func genFieldMethods(buf *bytes.Buffer, fromYML map[string]models.Model) error {
+	fields, err := toFields(fromYML)
 	if err != nil {
-		log.Fatalf("Can not load models defition: %v", err)
-	}
-	defer r.Close()
-
-	fields, err := parse(r)
-	if err != nil {
-		log.Fatalf("Can not parse model definition: %v", err)
+		return fmt.Errorf("generate field definitions: %w", err)
 	}
 
 	tmpl, err := template.New("field.go").Parse(tmplField)
@@ -160,19 +168,31 @@ func genFieldMethods(buf *bytes.Buffer) error {
 	return nil
 }
 
+func genCollections(buf *bytes.Buffer, fromYML map[string]models.Model) error {
+	collections := toCollections(fromYML)
+
+	tmpl, err := template.New("collection.go").Parse(tmplCollection)
+	if err != nil {
+		return fmt.Errorf("parsing template: %w", err)
+	}
+
+	for _, collection := range collections {
+		if err := tmpl.Execute(buf, collection); err != nil {
+			return fmt.Errorf("executing template: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func openModelYML() (io.ReadCloser, error) {
 	return os.Open("../../../meta/models.yml")
 }
 
-// parse returns all fields from the models.yml with there go-type as string.
-func parse(r io.Reader) ([]field, error) {
-	inData, err := models.Unmarshal(r)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshalling models.yml: %w", err)
-	}
-
+// toFields returns all fields from the models.yml with there go-type as string.
+func toFields(raw map[string]models.Model) ([]field, error) {
 	var fields []field
-	for collectionName, collection := range inData {
+	for collectionName, collection := range raw {
 		for fieldName, modelField := range collection.Fields {
 			f := field{}
 			f.GoName = goName(collectionName) + "_" + goName(fieldName)
@@ -196,6 +216,116 @@ func parse(r io.Reader) ([]field, error) {
 	})
 
 	return fields, nil
+}
+
+// Collection represents a models Collection for the collection.go.tmpl
+type Collection struct {
+	GoName     string
+	ModelsName string
+	Fields     []CollectionField
+	Relations  []CollectionRelation
+}
+
+// CollectionField is one field of a Collection.
+type CollectionField struct {
+	Name      string
+	Type      string
+	FetchName string
+}
+
+// CollectionRelation is one Relation, needed for method generation.
+type CollectionRelation struct {
+	ResultType string
+	IsList     bool
+	Type       string
+	FieldName  string
+	MethodName string
+	Required   bool
+}
+
+func toCollections(raw map[string]models.Model) []Collection {
+	var collections []Collection
+	for collectionName, collection := range raw {
+		col := Collection{
+			GoName:     goName(collectionName),
+			ModelsName: collectionName,
+		}
+		for fieldName, modelField := range collection.Fields {
+			col.Fields = append(
+				col.Fields,
+				CollectionField{
+					Name:      goName(fieldName),
+					Type:      typesToGo[valueType(modelField.Type, modelField.Required)],
+					FetchName: goName(collectionName) + "_" + goName(fieldName),
+				},
+			)
+
+			relation := modelField.Relation()
+			if relation == nil {
+				continue
+			}
+
+			if strings.Contains(modelField.Type, "generic") {
+				// TODO: Add generic
+				//fmt.Println(collectionName, fieldName)
+				continue
+			}
+
+			toType := goName(relation.ToCollections()[0].Collection)
+
+			resultType := fmt.Sprintf("*ValueCollection[%s, *%s]", toType, toType)
+			if !relation.List() && !modelField.Required {
+				resultType = fmt.Sprintf("Maybe[%s]", resultType)
+			}
+			if relation.List() {
+				resultType = "[]" + resultType
+			}
+
+			col.Relations = append(
+				col.Relations,
+				CollectionRelation{
+					ResultType: resultType,
+					IsList:     relation.List(),
+					FieldName:  goName(fieldName),
+					MethodName: withoutID(goName(fieldName)),
+					Type:       toType,
+					Required:   modelField.Required,
+				},
+			)
+
+		}
+
+		// TODO: find a way to sort in in the order defined my models.yml
+		slices.SortFunc(col.Fields, func(a, b CollectionField) int {
+			return cmp.Compare(a.Name, b.Name)
+		})
+		slices.SortFunc(col.Relations, func(a, b CollectionRelation) int {
+			return cmp.Compare(a.FieldName, b.FieldName)
+		})
+
+		collections = append(collections, col)
+	}
+
+	// TODO: find a way to sort in in the order defined my models.yml
+	slices.SortFunc(collections, func(a, b Collection) int {
+		return cmp.Compare(a.GoName, b.GoName)
+	})
+	return collections
+}
+
+func parseModelsYml() (map[string]models.Model, error) {
+	r, err := openModelYML()
+	if err != nil {
+		return nil, fmt.Errorf("open models.yml: %v", err)
+	}
+	defer r.Close()
+
+	inData, err := models.Unmarshal(r)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshalling models.yml: %w", err)
+	}
+
+	return inData, nil
 }
 
 type field struct {
@@ -223,6 +353,15 @@ func goName(name string) string {
 
 	name = strings.ReplaceAll(name, "Id", "ID")
 	return name
+}
+
+func withoutID(in string) string {
+	result := strings.TrimSuffix(strings.TrimSuffix(in, "ID"), "IDs")
+
+	if strings.HasSuffix(in, "IDs") {
+		return result + "List"
+	}
+	return result
 }
 
 func firstLower(s string) string {
