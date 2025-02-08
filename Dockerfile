@@ -8,7 +8,6 @@ RUN go mod download
 
 COPY main.go main.go
 COPY internal internal
-COPY pkg pkg
 
 # Build service in seperate stage.
 FROM base as builder

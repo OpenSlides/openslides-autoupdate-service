@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/flow"
 )
 
 // Builder builds the keys. It is not save for concourent use. There is one
