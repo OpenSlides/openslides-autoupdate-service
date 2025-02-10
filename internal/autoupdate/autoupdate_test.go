@@ -6,8 +6,8 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
+	"github.com/OpenSlides/openslides-go/datastore/dsmock"
+	"github.com/OpenSlides/openslides-go/environment"
 )
 
 func TestSingleDataEmptyValues(t *testing.T) {

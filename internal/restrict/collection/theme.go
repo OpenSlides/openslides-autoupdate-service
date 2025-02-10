@@ -3,7 +3,7 @@ package collection
 import (
 	"context"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
 )
 
 // Theme handels the restrictions for the theme collection.

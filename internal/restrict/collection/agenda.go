@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore"
+	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
 )
 
 // AgendaItem handels permission for the agenda.

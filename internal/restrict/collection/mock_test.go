@@ -9,10 +9,10 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
+	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/dsmock"
+	"github.com/OpenSlides/openslides-go/set"
 )
 
 type testData struct {

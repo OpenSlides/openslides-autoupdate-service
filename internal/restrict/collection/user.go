@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
+	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/set"
 )
 
 // User handels the restrictions for the user collection.

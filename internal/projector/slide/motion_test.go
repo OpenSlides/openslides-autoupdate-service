@@ -7,8 +7,8 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/dsmock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -115,7 +115,7 @@ func TestMotion(t *testing.T) {
         4:
             recommendation_label: RecommendationLabel_state4
             show_recommendation_extension_field: true
-    
+
     motion_submitter:
         1:
             weight: 100
@@ -129,7 +129,7 @@ func TestMotion(t *testing.T) {
             weight: 30
             meeting_user_id: 120
             motion_id: 1
-    
+
     meeting_user:
         130:
             user_id: 13

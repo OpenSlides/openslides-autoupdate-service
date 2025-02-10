@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
+	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/set"
 )
 
 // Topic handels the restrictions for the topic collection.
