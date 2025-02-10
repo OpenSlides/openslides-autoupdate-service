@@ -18,7 +18,6 @@ func Slides() *projector.SlideStore {
 	Motion(s)
 	MotionBlock(s)
 	Poll(s)
-	PollSingleVotes(s)
 	ProjectorCountdown(s)
 	ProjectorMessage(s)
 	Topic(s)

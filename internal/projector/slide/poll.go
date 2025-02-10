@@ -5,11 +5,53 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 )
+
+type pollVoteRepr struct {
+	UserId *int          `json:"user_id"`
+	User   *pollUserRepr `json:"user"`
+	Value  string        `json:"value"`
+}
+
+func pollVoteFromMap(in map[string]json.RawMessage) (*pollVoteRepr, error) {
+	bs, err := json.Marshal(in)
+	if err != nil {
+		return nil, fmt.Errorf("encoding vote data: %w", err)
+	}
+
+	var vr pollVoteRepr
+	if err := json.Unmarshal(bs, &vr); err != nil {
+		return nil, fmt.Errorf("decoding vote data: %w", err)
+	}
+
+	return &vr, nil
+}
+
+type pollUserRepr struct {
+	Id        int     `json:"id"`
+	Title     *string `json:"title,omitempty"`
+	FirstName *string `json:"first_name,omitempty"`
+	LastName  *string `json:"last_name,omitempty"`
+}
+
+func pollUserFromMap(in map[string]json.RawMessage) (*pollUserRepr, error) {
+	bs, err := json.Marshal(in)
+	if err != nil {
+		return nil, fmt.Errorf("encoding user data: %w", err)
+	}
+
+	var ur pollUserRepr
+	if err := json.Unmarshal(bs, &ur); err != nil {
+		return nil, fmt.Errorf("decoding user data: %w", err)
+	}
+
+	return &ur, nil
+}
 
 type optionRepr struct {
 	Text            string          `json:"text,omitempty"`
@@ -18,6 +60,7 @@ type optionRepr struct {
 	Yes             *string         `json:"yes,omitempty"`     // Python-DecimalField
 	No              *string         `json:"no,omitempty"`      // Python-DecimalField
 	Abstain         *string         `json:"abstain,omitempty"` // Python-DecimalField
+	Votes           []*pollVoteRepr `json:"votes,omitempty"`
 	id              *int
 	weight          *int
 }
@@ -171,18 +214,6 @@ func pollSlideDataFunction(ctx context.Context, fetch *datastore.Fetcher, p7on *
 	return poll, err
 }
 
-// Poll renders the poll slide.
-func Poll(store *projector.SlideStore) {
-	store.RegisterSliderFunc("poll", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
-		poll, err := pollSlideDataFunction(ctx, fetch, p7on, store)
-		responseValue, err := json.Marshal(poll)
-		if err != nil {
-			return nil, fmt.Errorf("encoding response slide poll: %w", err)
-		}
-		return responseValue, err
-	})
-}
-
 func getOptions(ctx context.Context, fetch *datastore.Fetcher, store *projector.SlideStore, optionIDS []int, state string, meetingID int) (options []*optionRepr, err error) {
 	fetchFields := []string{
 		"text",
@@ -228,6 +259,48 @@ func getOptions(ctx context.Context, fetch *datastore.Fetcher, store *projector.
 	return options, nil
 }
 
+func getPollUser(ctx context.Context, fetch *datastore.Fetcher, userID int) (user *pollUserRepr, err error) {
+	data := fetch.Object(ctx, fmt.Sprintf("user/%d", userID), "id", "title", "first_name", "last_name")
+	user, err = pollUserFromMap(data)
+	if err != nil {
+		return nil, fmt.Errorf("get user data: %w", err)
+	}
+
+	return user, nil
+}
+
+func getVotes(ctx context.Context, fetch *datastore.Fetcher, optionID int) (votes []*pollVoteRepr, err error) {
+	voteIDs := datastore.Ints(ctx, fetch.FetchIfExist, "option/%d/vote_ids", optionID)
+
+	fetchFields := []string{
+		"id",
+		"user_id",
+		"value",
+	}
+
+	for _, voteID := range voteIDs {
+		data := fetch.Object(ctx, fmt.Sprintf("vote/%d", voteID), fetchFields...)
+		vote, err := pollVoteFromMap(data)
+		if err != nil {
+			return nil, fmt.Errorf("get option data: %w", err)
+		}
+
+		if vote.UserId != nil {
+			vote.User, err = getPollUser(ctx, fetch, *vote.UserId)
+			if err != nil {
+				return nil, fmt.Errorf("get user data: %w", err)
+			}
+		}
+
+		votes = append(votes, vote)
+	}
+	if err := fetch.Err(); err != nil {
+		return nil, err
+	}
+
+	return votes, nil
+}
+
 func getGlobalOption(ctx context.Context, fetch *datastore.Fetcher, store *projector.SlideStore, globalOptionID int) (*optionGlobRepr, error) {
 	data := fetch.Object(ctx, fmt.Sprintf("option/%d", globalOptionID), "yes", "no", "abstain")
 	globalOption, err := optionGlobFromMap(data)
@@ -251,43 +324,79 @@ func getTitleInfoFromContentObject(ctx context.Context, fetch *datastore.Fetcher
 	return titleInfo, nil
 }
 
-// PollSingleVotes renders the poll_single_votes slide.
-func PollSingleVotes(store *projector.SlideStore) {
-	store.RegisterSliderFunc("poll_single_votes", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
+// Poll renders the poll slide.
+func Poll(store *projector.SlideStore) {
+	store.RegisterSliderFunc("poll", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
 		poll, err := pollSlideDataFunction(ctx, fetch, p7on, store)
-		if err != nil {
-			return nil, err
-		}
-		if poll.EntitledUsersAtStop != nil {
-			var pollUserData []map[string]interface{}
-			if err := json.Unmarshal(*poll.EntitledUsersAtStop, &pollUserData); err != nil {
-				return nil, fmt.Errorf("reading entitled users")
-			}
 
-			var newUserData []map[string]interface{}
-			for _, userDate := range pollUserData {
-				var userID int
-				if userDate["user_merged_into_id"] != nil {
-					userID = userDate["user_merged_into_id"].(int)
-				} else if userDate["user_id"] != nil {
-					userID = userDate["user_id"].(int)
-				} else {
-					continue
-				}
-				userDate["user_data"], err = NewUser(ctx, fetch, userID, p7on.MeetingID)
-				newUserData = append(newUserData, userDate)
+		if p7on.Type == "poll_single_votes" {
+			if err := PollSingleVotes(store, ctx, fetch, p7on, poll); err != nil {
+				return nil, fmt.Errorf("adding single votes additional info : %w", err)
 			}
-			var pollUserDataJSON, err = json.Marshal(newUserData)
-			if err != nil {
-				return nil, fmt.Errorf("encoding entitled users interpretation")
-			}
-			var pollUserDataJSONRaw = json.RawMessage(pollUserDataJSON)
-			poll.EntitledUsersAtStop = &pollUserDataJSONRaw
 		}
+
 		responseValue, err := json.Marshal(poll)
 		if err != nil {
 			return nil, fmt.Errorf("encoding response slide poll: %w", err)
 		}
 		return responseValue, err
 	})
+}
+
+// PollSingleVotes renders the poll_single_votes slide.
+func PollSingleVotes(store *projector.SlideStore, ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection, poll *dbPoll) error {
+	for i, option := range poll.Options {
+		votes, err := getVotes(ctx, fetch, *option.id)
+		if err != nil {
+			return fmt.Errorf("reading option votes: %w", err)
+		}
+
+		poll.Options[i].Votes = votes
+	}
+
+	if poll.EntitledUsersAtStop != nil {
+		var pollUserData []map[string]json.RawMessage
+		if err := json.Unmarshal(*poll.EntitledUsersAtStop, &pollUserData); err != nil {
+			return fmt.Errorf("reading entitled users")
+		}
+
+		var newUserData []map[string]interface{}
+		for _, userDate := range pollUserData {
+			entry := make(map[string]interface{}, len(userDate))
+			for key, val := range userDate {
+				if i, err := strconv.ParseInt(string(val), 10, 64); err == nil {
+					entry[key] = int(i)
+				} else {
+					entry[key] = val
+				}
+			}
+
+			var userID int
+			if _, ok := entry["user_merged_into_id"]; ok {
+				userID = entry["user_merged_into_id"].(int)
+			} else if _, ok := entry["user_id"]; ok {
+				userID = entry["user_id"].(int)
+			} else {
+				continue
+			}
+
+			user, err := getPollUser(ctx, fetch, userID)
+			if err != nil {
+				return fmt.Errorf("encoding entitled users interpretation")
+			}
+
+			entry["user"] = user
+			newUserData = append(newUserData, entry)
+		}
+
+		var pollUserDataJSON, err = json.Marshal(newUserData)
+		if err != nil {
+			return fmt.Errorf("encoding entitled users interpretation")
+		}
+
+		var pollUserDataJSONRaw = json.RawMessage(pollUserDataJSON)
+		poll.EntitledUsersAtStop = &pollUserDataJSONRaw
+	}
+
+	return nil
 }
