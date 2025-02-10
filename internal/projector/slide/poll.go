@@ -13,7 +13,7 @@ import (
 )
 
 type pollVoteRepr struct {
-	UserId *int          `json:"user_id"`
+	UserID *int          `json:"user_id"`
 	User   *pollUserRepr `json:"user"`
 	Value  string        `json:"value"`
 }
@@ -33,7 +33,7 @@ func pollVoteFromMap(in map[string]json.RawMessage) (*pollVoteRepr, error) {
 }
 
 type pollUserRepr struct {
-	Id        int     `json:"id"`
+	ID        int     `json:"id"`
 	Title     *string `json:"title,omitempty"`
 	FirstName *string `json:"first_name,omitempty"`
 	LastName  *string `json:"last_name,omitempty"`
@@ -285,8 +285,8 @@ func getVotes(ctx context.Context, fetch *datastore.Fetcher, optionID int) (vote
 			return nil, fmt.Errorf("get option data: %w", err)
 		}
 
-		if vote.UserId != nil {
-			vote.User, err = getPollUser(ctx, fetch, *vote.UserId)
+		if vote.UserID != nil {
+			vote.User, err = getPollUser(ctx, fetch, *vote.UserID)
 			if err != nil {
 				return nil, fmt.Errorf("get user data: %w", err)
 			}
@@ -330,7 +330,7 @@ func Poll(store *projector.SlideStore) {
 		poll, err := pollSlideDataFunction(ctx, fetch, p7on, store)
 
 		if p7on.Type == "poll_single_votes" {
-			if err := PollSingleVotes(store, ctx, fetch, p7on, poll); err != nil {
+			if err := PollSingleVotes(ctx, store, fetch, p7on, poll); err != nil {
 				return nil, fmt.Errorf("adding single votes additional info : %w", err)
 			}
 		}
@@ -344,7 +344,7 @@ func Poll(store *projector.SlideStore) {
 }
 
 // PollSingleVotes renders the poll_single_votes slide.
-func PollSingleVotes(store *projector.SlideStore, ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection, poll *dbPoll) error {
+func PollSingleVotes(ctx context.Context, store *projector.SlideStore, fetch *datastore.Fetcher, p7on *projector.Projection, poll *dbPoll) error {
 	for i, option := range poll.Options {
 		votes, err := getVotes(ctx, fetch, *option.id)
 		if err != nil {
