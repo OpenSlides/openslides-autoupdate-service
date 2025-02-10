@@ -220,8 +220,8 @@ func TestPollSingleVotes(t *testing.T) {
 	slide.Motion(s)
 	slide.Topic(s)
 
-	pollSlide := s.GetSlider("poll_single_votes")
-	assert.NotNilf(t, pollSlide, "Slide with name `poll_single_votes` not found.")
+	pollSlide := s.GetSlider("poll")
+	assert.NotNilf(t, pollSlide, "Slide with name `poll` not found.")
 
 	data := dsmock.YAMLData(`
 	user:
@@ -246,14 +246,6 @@ func TestPollSingleVotes(t *testing.T) {
 			username: SirSinclair
 			meeting_user_ids: [1111]
 			meeting_ids: [1]
-	meeting_user:
-		1111:
-			user_id: 1
-			structure_level_ids: [1]
-		1112:
-			user_id:2
-		1116:
-			user_id:3
 	structure_level:
 		1:
 			name: Birmingham
@@ -381,24 +373,23 @@ func TestPollSingleVotes(t *testing.T) {
 						"present": true,
 						"user_id": 1,
 						"vote_delegated_to_user_id": 2,
-						"user_data": {
-							"title": Billy
-							"first_name": Bob
-							"last_name": Buckingham
-							"username": BillyBobBuckingham
-							"level": Birmingham
+						"user": {
+							"id": 1,
+							"title": "Billy",
+							"first_name": "Bob",
+							"last_name": "Buckingham"
 						}
 					},
 					{
 						"voted": false,
 						"present": true,
 						"user_id": 4,
-						"user_merged_into_id": 6
-						"user_data": {
-							"title": Sir
-							"first_name": Shawn Stanley Sheldon
-							"last_name": Sinclair
-							"username": SirSinclair
+						"user_merged_into_id": 6,
+						"user": {
+							"id": 6,
+							"title": "Sir",
+							"first_name": "Shawn Stanley Sheldon",
+							"last_name": "Sinclair"
 						}
 					}
 				],
@@ -470,6 +461,7 @@ func TestPollSingleVotes(t *testing.T) {
 
 			p7on := &projector.Projection{
 				ContentObjectID: "poll/1",
+				Type:            "poll_single_votes",
 			}
 
 			bs, err := pollSlide.Slide(context.Background(), fetch, p7on)
