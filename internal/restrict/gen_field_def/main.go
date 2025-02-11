@@ -12,7 +12,7 @@ import (
 	"sort"
 	"text/template"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/models"
+	"github.com/OpenSlides/openslides-go/models"
 )
 
 func main() {
