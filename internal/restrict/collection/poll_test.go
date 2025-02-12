@@ -39,11 +39,11 @@ func TestPollModeA(t *testing.T) {
 		`---
 		poll/1:
 			content_object_id: motion/2
-		
+
 		motion/2:
 			meeting_id: 30
 			state_id: 3
-		
+
 		motion_state/3/id: 3
 		`,
 		withPerms(30, perm.MotionCanSee),
@@ -57,11 +57,11 @@ func TestPollModeA(t *testing.T) {
 		`---
 		poll/1:
 			content_object_id: motion/2
-		
+
 		motion/2:
 			meeting_id: 30
 			state_id: 3
-		
+
 		motion_state/3/id: 3
 		`,
 	)
@@ -74,7 +74,7 @@ func TestPollModeA(t *testing.T) {
 		`---
 		poll/1:
 			content_object_id: assignment/1
-		
+
 		assignment/1:
 			meeting_id: 30
 		`,
@@ -89,11 +89,11 @@ func TestPollModeA(t *testing.T) {
 		`---
 		poll/1:
 			content_object_id: assignment/1
-		
+
 		assignment/1:
 			meeting_id: 30
 			list_of_speakers_id: 300
-		
+
 		list_of_speakers/300/meeting_id: 30
 		`,
 	)
@@ -107,7 +107,7 @@ func TestPollModeA(t *testing.T) {
 		poll/1:
 			meeting_id: 30
 			content_object_id: topic/5
-		
+
 		topic/5:
 			meeting_id: 30
 			agenda_item_id: 3
@@ -126,7 +126,7 @@ func TestPollModeA(t *testing.T) {
 		poll/1:
 			meeting_id: 30
 			content_object_id: topic/5
-		
+
 		topic/5:
 			meeting_id: 30
 			agenda_item_id: 3
@@ -148,11 +148,11 @@ func TestPollModeB(t *testing.T) {
 		poll/1:
 			content_object_id: motion/2
 			state: published
-		
+
 		motion/2:
 			meeting_id: 30
 			state_id: 3
-			
+
 		motion_state/3/id: 3
 		`,
 		withPerms(30, perm.MotionCanSee),
@@ -167,11 +167,11 @@ func TestPollModeB(t *testing.T) {
 		poll/1:
 			content_object_id: motion/2
 			state: published
-		
+
 		motion/2:
 			meeting_id: 30
 			state_id: 3
-			
+
 		motion_state/3/id: 3
 		`,
 	)
@@ -185,7 +185,7 @@ func TestPollModeB(t *testing.T) {
 		poll/1:
 			content_object_id: motion/1
 			state: finished
-		
+
 		motion/1:
 			meeting_id: 30
 		`,
@@ -201,7 +201,7 @@ func TestPollModeB(t *testing.T) {
 		poll/1:
 			content_object_id: motion/1
 			state: finished
-		
+
 		motion/1:
 			meeting_id: 30
 		`,
@@ -216,7 +216,7 @@ func TestPollModeB(t *testing.T) {
 		poll/1:
 			content_object_id: assignment/1
 			state: finished
-		
+
 		assignment/1:
 			meeting_id: 30
 		`,
@@ -232,7 +232,7 @@ func TestPollModeB(t *testing.T) {
 		poll/1:
 			content_object_id: assignment/1
 			state: finished
-		
+
 		assignment/1:
 			meeting_id: 30
 		`,
@@ -389,6 +389,36 @@ func TestPollModeC(t *testing.T) {
 		`,
 		withPerms(30, perm.UserCanSee, perm.ListOfSpeakersCanManage),
 	)
+
+	testCase(
+		"Poll.can_see_progress but wrong state",
+		t,
+		f,
+		false,
+		`---
+		poll/1:
+			content_object_id: topic/5
+			state: finished
+			meeting_id: 30
+		topic/5/meeting_id: 30
+		`,
+		withPerms(30, perm.PollCanSeeProgress),
+	)
+
+	testCase(
+		"Poll.can_see_progress with correct state",
+		t,
+		f,
+		true,
+		`---
+		poll/1:
+			content_object_id: topic/5
+			state: started
+			meeting_id: 30
+		topic/5/meeting_id: 30
+		`,
+		withPerms(30, perm.PollCanSeeProgress),
+	)
 }
 
 func TestPollModeD(t *testing.T) {
@@ -404,11 +434,11 @@ func TestPollModeD(t *testing.T) {
 			content_object_id: motion/2
 			state: published
 			meeting_id: 30
-		
+
 		motion/2:
 			meeting_id: 30
 			state_id: 3
-		
+
 		motion_state/3/id: 3
 		`,
 		withPerms(30, perm.MotionCanSee),
@@ -424,7 +454,7 @@ func TestPollModeD(t *testing.T) {
 			content_object_id: motion/1
 			state: published
 			meeting_id: 30
-		
+
 		motion/1:
 			meeting_id: 30
 		`,
@@ -440,7 +470,7 @@ func TestPollModeD(t *testing.T) {
 			content_object_id: motion/1
 			state: finished
 			meeting_id: 30
-		
+
 		motion/1:
 			meeting_id: 30
 		`,
@@ -457,7 +487,7 @@ func TestPollModeD(t *testing.T) {
 			content_object_id: motion/1
 			state: finished
 			meeting_id: 30
-		
+
 		motion/1:
 			meeting_id: 30
 		`,
@@ -473,7 +503,7 @@ func TestPollModeD(t *testing.T) {
 			content_object_id: motion/1
 			state: finished
 			meeting_id: 30
-		
+
 		motion/1:
 			meeting_id: 30
 		`,

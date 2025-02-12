@@ -11,25 +11,22 @@ func TestMeetingModeA(t *testing.T) {
 	m := collection.Meeting{}.Modes("A")
 
 	testCase(
-		"locked meeting, orga manager",
+		"locked meeting, superadmin",
 		t,
 		m,
 		true,
 		`
-		user/1/organization_management_level: can_manage_organization
 		meeting/30/locked_from_inside: true
 		`,
 		withElementID(30),
 	)
 
 	testCase(
-		"locked meeting, user manager",
+		"No permission",
 		t,
 		m,
-		false,
+		true,
 		`
-		user/1/organization_management_level: can_manage_users
-		meeting/30/locked_from_inside: true
 		`,
 		withElementID(30),
 	)
@@ -381,6 +378,34 @@ func TestMeetingModeE(t *testing.T) {
 		false,
 		`
 		user/1/organization_management_level: can_manage_organization
+		meeting/30/locked_from_inside: true
+		`,
+		withElementID(30),
+	)
+}
+
+func TestMeetingModeF(t *testing.T) {
+	m := collection.Meeting{}.Modes("F")
+
+	testCase(
+		"locked meeting, orga manager",
+		t,
+		m,
+		true,
+		`
+		user/1/organization_management_level: can_manage_organization
+		meeting/30/locked_from_inside: true
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"locked meeting, user manager",
+		t,
+		m,
+		false,
+		`
+		user/1/organization_management_level: can_manage_users
 		meeting/30/locked_from_inside: true
 		`,
 		withElementID(30),
