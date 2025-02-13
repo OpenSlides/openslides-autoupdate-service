@@ -3,9 +3,9 @@ module github.com/OpenSlides/openslides-autoupdate-service
 go 1.24.0
 
 require (
-	github.com/OpenSlides/openslides-go v0.0.0-20250208115145-224e32f4262d
+	github.com/OpenSlides/openslides-go v0.0.0-20250208121842-319b8084179d
 	github.com/alecthomas/kong v1.8.0
-	github.com/goccy/go-yaml v1.15.20
+	github.com/goccy/go-yaml v1.15.22
 	github.com/klauspost/compress v1.17.11
 	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1
 	github.com/ostcar/topic v0.4.1
@@ -26,9 +26,9 @@ require (
 	github.com/opencontainers/runc v1.1.14 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
-	golang.org/x/crypto v0.32.0 // indirect
+	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
