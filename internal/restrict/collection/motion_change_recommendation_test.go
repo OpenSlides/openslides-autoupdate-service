@@ -135,7 +135,7 @@ func TestMotionChangeRecommendationModeA(t *testing.T) {
 		true,
 		`---
         motion:
-            1:
+            3:
                 meeting_id: 30
                 state_id: 10
                 all_derived_motion_ids: [10]
@@ -145,7 +145,7 @@ func TestMotionChangeRecommendationModeA(t *testing.T) {
 
         motion_change_recommendation/1:
             meeting_id: 30
-            motion_id: 10
+            motion_id: 3
 
         motion_state/10/id: 10
         `,
