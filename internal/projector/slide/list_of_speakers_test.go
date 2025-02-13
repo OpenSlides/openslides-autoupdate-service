@@ -7,8 +7,8 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/dsmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -51,7 +51,7 @@ func TestListOfSpeakers(t *testing.T) {
 			note:           Seq1Waiting
 			point_of_order: true
 			weight:         5
-		
+
 		3:
 			# Current
 			meeting_user_id:        200
@@ -60,8 +60,8 @@ func TestListOfSpeakers(t *testing.T) {
 			point_of_order: false
 			weight:         20
 			begin_time:     100
-			
-		
+
+
 		4:
 			# Finished
 			meeting_user_id:        300
@@ -71,7 +71,7 @@ func TestListOfSpeakers(t *testing.T) {
 			weight:         30
 			begin_time:     20
 			end_time:       23
-			
+
 		5:
 			# Finished
 			meeting_user_id:        310
@@ -102,25 +102,25 @@ func TestListOfSpeakers(t *testing.T) {
 	meeting_user:
 		100:
 			user_id: 10
-		
+
 		110:
 			user_id: 11
 
 		200:
 			user_id: 20
-		
+
 		300:
 			user_id: 30
 
 		310:
 			user_id: 31
-		
+
 		320:
 			user_id: 32
-		
+
 		330:
 			user_id: 33
-		
+
 	user:
 		10:
 			username: jonny123
@@ -317,7 +317,7 @@ func getDataForCurrentList() map[dskey.Key][]byte {
 				note:           Lonesome speaker
 				point_of_order: false
 				weight:         10
-		
+
 		meeting_user/100/user_id: 10
 		user/10/username: jonny123
 		agenda_item/1/item_number: ItemNr. MotionBlock1
@@ -411,7 +411,7 @@ func TestCurrentSpeakerChyron(t *testing.T) {
 			first_name: Don
 			last_name: Snyder
 			meeting_user_ids: [100]
-		
+
 		meeting_user/100:
 			meeting_id: 6
 			structure_level_ids: [4,8]

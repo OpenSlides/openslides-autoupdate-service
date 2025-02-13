@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	restrict "github.com/OpenSlides/openslides-autoupdate-service/internal/restrict"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/dsmock"
 )
 
 func TestRestrict(t *testing.T) {
@@ -26,7 +26,7 @@ func TestRestrict(t *testing.T) {
 
 	user/1:
 		meeting_user_ids: [10,11]
-	
+
 	meeting_user:
 		10:
 			meeting_id: 30
@@ -74,7 +74,7 @@ func TestRestrict(t *testing.T) {
 			tagged_ids: ["agenda_item/1","agenda_item/10"]
 		2:
 			meeting_id: 2
-	
+
 	topic/1:
 		id: 1
 		meeting_id: 30
