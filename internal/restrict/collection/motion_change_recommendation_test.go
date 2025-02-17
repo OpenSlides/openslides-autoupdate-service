@@ -19,6 +19,11 @@ func TestMotionChangeRecommendationModeA(t *testing.T) {
 		motion_change_recommendation/1:
 			id: 1
 			meeting_id: 30
+			motion_id: 50
+
+		motion/50:
+			meeting_id: 30
+			state_id: 40
 		`,
 	)
 
@@ -28,7 +33,15 @@ func TestMotionChangeRecommendationModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		motion_change_recommendation/1/meeting_id: 30
+		motion_change_recommendation/1:
+			meeting_id: 30
+			motion_id: 50
+
+		motion/50:
+			meeting_id: 30
+			state_id: 40
+
+		motion_state/40/restrictions: []
 		`,
 		withPerms(30, perm.MotionCanManage),
 	)
@@ -39,7 +52,15 @@ func TestMotionChangeRecommendationModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		motion_change_recommendation/1/meeting_id: 30
+		motion_change_recommendation/1:
+			meeting_id: 30
+			motion_id: 50
+
+		motion/50:
+			meeting_id: 30
+			state_id: 40
+
+		motion_state/40/restrictions: []
 		`,
 		withPerms(30, perm.MotionCanManageMetadata),
 	)
@@ -57,6 +78,7 @@ func TestMotionChangeRecommendationModeA(t *testing.T) {
 
 		motion/15:
 			state_id: 10
+			meeting_id: 30
 
 		motion_state/10:
 			is_internal: false
@@ -77,7 +99,8 @@ func TestMotionChangeRecommendationModeA(t *testing.T) {
 
 		motion/15:
 			state_id: 10
-		
+			meeting_id: 30
+
 		motion_state/10:
 			is_internal: true
 		`,
@@ -97,10 +120,36 @@ func TestMotionChangeRecommendationModeA(t *testing.T) {
 
 		motion/15:
 			state_id: 10
-		
+			meeting_id: 30
+
 		motion_state/10:
 			is_internal: false
 		`,
 		withPerms(30, perm.MotionCanSee),
+	)
+
+	testCase(
+		"can see change recommendation of forwarded motion",
+		t,
+		f,
+		true,
+		`---
+        motion:
+            3:
+                meeting_id: 30
+                state_id: 10
+                all_derived_motion_ids: [10]
+            10:
+                meeting_id: 31
+                state_id: 10
+
+        motion_change_recommendation/1:
+            meeting_id: 30
+            motion_id: 3
+
+        motion_state/10/id: 10
+        `,
+		withPerms(31, perm.MotionCanSeeOrigin),
+		withElementID(1),
 	)
 }
