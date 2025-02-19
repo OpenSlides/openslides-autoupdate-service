@@ -1,5 +1,5 @@
 FROM golang:1.24.0-alpine as base
-WORKDIR /root
+WORKDIR /root/openslides-autoupdate-service
 
 RUN apk add git
 
@@ -28,7 +28,8 @@ FROM base as development
 RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
 EXPOSE 9012
 
-CMD CompileDaemon -log-prefix=false -build="go build" -command="./openslides-autoupdate-service"
+WORKDIR /root
+CMD CompileDaemon -log-prefix=false -build="go build -o autoupdate-service ./openslides-autoupdate-service" -command="./autoupdate-service"
 
 
 # Productive build
@@ -39,7 +40,7 @@ LABEL org.opencontainers.image.description="The Autoupdate Service is a http end
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-autoupdate-service"
 
-COPY --from=builder /root/openslides-autoupdate-service .
+COPY --from=builder /root/openslides-autoupdate-service/openslides-autoupdate-service .
 EXPOSE 9012
 ENTRYPOINT ["/openslides-autoupdate-service"]
 HEALTHCHECK CMD ["/openslides-autoupdate-service", "health"]
