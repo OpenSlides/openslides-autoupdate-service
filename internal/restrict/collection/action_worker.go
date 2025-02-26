@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
 )
 
 // ActionWorker handles permission for action_worker.

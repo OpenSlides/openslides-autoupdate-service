@@ -3,7 +3,7 @@ package keysbuilder_test
 import (
 	"sort"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
 )
 
 func cmpSlice(one, two []string) bool {

@@ -9,10 +9,10 @@ import (
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsmock"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/set"
+	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/dsmock"
+	"github.com/OpenSlides/openslides-go/set"
 )
 
 type testData struct {
@@ -42,7 +42,7 @@ func testCase(name string, t *testing.T, f collection.FieldRestricter, expect bo
 	td.data[dskey.MustKey("organization/1/id")] = []byte("1")
 
 	if td.requestUserID != 0 {
-		userIDKey, err := dskey.FromString("user/%d/id", td.requestUserID)
+		userIDKey, err := dskey.FromStringf("user/%d/id", td.requestUserID)
 		if err != nil {
 			t.Fatalf("invalid key %v", fmt.Sprintf("user/%d/id", td.requestUserID))
 		}
@@ -67,7 +67,7 @@ func testCaseMulti(name string, t *testing.T, f collection.FieldRestricter, ids,
 		o(&td)
 	}
 
-	userIDKey := dskey.MustKey("user/%d/id", td.requestUserID)
+	userIDKey := dskey.MustKeyf("user/%d/id", td.requestUserID)
 
 	td.data[userIDKey] = []byte(strconv.Itoa(td.requestUserID))
 
@@ -133,14 +133,14 @@ func withPerms(meetingID int, perms ...perm.TPermission) testCaseOption {
 		meetingUserID := td.requestUserID * 10
 		groupID := 1337
 
-		userMeetingUserIDsKey := dskey.MustKey("user/%d/meeting_user_ids", td.requestUserID)
-		meetingUserGroupIDsKey := dskey.MustKey("meeting_user/%d/group_ids", meetingUserID)
-		meeetingUserMeetingIDKey := dskey.MustKey("meeting_user/%d/meeting_id", meetingUserID)
-		meetingUserIDKey := dskey.MustKey("meeting_user/%d/id", meetingUserID)
+		userMeetingUserIDsKey := dskey.MustKeyf("user/%d/meeting_user_ids", td.requestUserID)
+		meetingUserGroupIDsKey := dskey.MustKeyf("meeting_user/%d/group_ids", meetingUserID)
+		meeetingUserMeetingIDKey := dskey.MustKeyf("meeting_user/%d/meeting_id", meetingUserID)
+		meetingUserIDKey := dskey.MustKeyf("meeting_user/%d/id", meetingUserID)
 
-		groupIDKey := dskey.MustKey("group/%d/id", groupID)
-		groupPermissionKey := dskey.MustKey("group/%d/permissions", groupID)
-		meetingIDKey := dskey.MustKey("meeting/%d/id", meetingID)
+		groupIDKey := dskey.MustKeyf("group/%d/id", groupID)
+		groupPermissionKey := dskey.MustKeyf("group/%d/permissions", groupID)
+		meetingIDKey := dskey.MustKeyf("meeting/%d/id", meetingID)
 
 		td.data[userMeetingUserIDsKey] = jsonAppend(td.data[userMeetingUserIDsKey], meetingUserID)
 		td.data[meetingUserGroupIDsKey] = jsonAppend(td.data[meetingUserGroupIDsKey], groupID)

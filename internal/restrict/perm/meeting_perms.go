@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/datastore"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
 )
 
 // MeetingPermission is a cache for different Permission objects for each

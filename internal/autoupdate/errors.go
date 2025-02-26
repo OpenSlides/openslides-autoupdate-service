@@ -3,7 +3,7 @@ package autoupdate
 import (
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/dskey"
 )
 
 type permissionDeniedError struct {

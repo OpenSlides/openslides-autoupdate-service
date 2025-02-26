@@ -1,4 +1,4 @@
-FROM golang:1.23.5-alpine as base
+FROM golang:1.24.0-alpine as base
 WORKDIR /root
 
 RUN apk add git
@@ -8,7 +8,6 @@ RUN go mod download
 
 COPY main.go main.go
 COPY internal internal
-COPY pkg pkg
 
 # Build service in seperate stage.
 FROM base as builder
