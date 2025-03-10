@@ -9,10 +9,10 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/cache"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/datastore/flow"
-	"github.com/OpenSlides/openslides-autoupdate-service/pkg/environment"
+	"github.com/OpenSlides/openslides-go/datastore"
+	"github.com/OpenSlides/openslides-go/datastore/cache"
+	"github.com/OpenSlides/openslides-go/datastore/flow"
+	"github.com/OpenSlides/openslides-go/environment"
 )
 
 // Flow is the connection to the database for the autoupdate service.
@@ -46,7 +46,7 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater, skipVote
 	if !skipVoteService {
 		dataFlow = flow.Combine(
 			postgres,
-			map[string]flow.Flow{"poll/vote_count": vote},
+			map[string]flow.Flow{"poll/has_voted_user_ids": vote},
 		)
 
 		eventer := func() (<-chan time.Time, func() bool) {

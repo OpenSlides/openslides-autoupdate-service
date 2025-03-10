@@ -646,6 +646,8 @@ var restrictionModes = map[string]string{
 	"meeting/motion_poll_default_method":                            "B",
 	"meeting/motion_poll_default_onehundred_percent_base":           "B",
 	"meeting/motion_poll_default_type":                              "B",
+	"meeting/motion_poll_projection_max_columns":                    "B",
+	"meeting/motion_poll_projection_name_order_first":               "B",
 	"meeting/motion_state_ids":                                      "B",
 	"meeting/motion_submitter_ids":                                  "B",
 	"meeting/motion_workflow_ids":                                   "B",
@@ -1084,7 +1086,7 @@ var restrictionModes = map[string]string{
 	"poll/votes_signature":         "B",
 	"poll/votesinvalid":            "B",
 	"poll/votesvalid":              "B",
-	"poll/vote_count":              "C",
+	"poll/has_voted_user_ids":      "C",
 	"poll/votescast":               "D",
 
 	// poll_candidate
