@@ -48,6 +48,8 @@ func TestMotionStateModeA(t *testing.T) {
 			motion_ids: [1]
 			
 		motion_state/7/id: 7
+
+		meeting/30/locked_from_inside: false
 		`,
 		withPerms(31, perm.MotionCanSeeOrigin),
 		withElementID(3),

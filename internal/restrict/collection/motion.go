@@ -87,6 +87,15 @@ func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, motionIDs ...int) ([
 					return true, nil
 				}
 
+				lockedMeeting, err := ds.Meeting_LockedFromInside(meetingID).Value(ctx)
+				if err != nil {
+					return false, fmt.Errorf("fetching locked_from_inside: %w", err)
+				}
+
+				if lockedMeeting {
+					return false, nil
+				}
+
 				derivedIDs, err := ds.Motion_AllDerivedMotionIDs(id).Value(ctx)
 				if err != nil {
 					return false, fmt.Errorf("fetching all_derived_ids: %w", err)
@@ -113,8 +122,8 @@ func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, motionIDs ...int) ([
 				}
 
 				return false, nil
-
 			})
+
 			if err != nil {
 				return nil, fmt.Errorf("checking condition 1: %w", err)
 			}

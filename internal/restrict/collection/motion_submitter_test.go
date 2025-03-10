@@ -24,6 +24,8 @@ func TestMotionSubmitterModeA(t *testing.T) {
 			state_id: 3
 		
 		motion_state/3/id: 3
+
+		meeting/30/locked_from_inside: false
 		`,
 	)
 

@@ -24,6 +24,8 @@ func TestMotionChangeRecommendationModeA(t *testing.T) {
 		motion/50:
 			meeting_id: 30
 			state_id: 40
+
+		meeting/30/locked_from_inside: false
 		`,
 	)
 
@@ -148,6 +150,8 @@ func TestMotionChangeRecommendationModeA(t *testing.T) {
             motion_id: 3
 
         motion_state/10/id: 10
+
+				meeting/30/locked_from_inside: false
         `,
 		withPerms(31, perm.MotionCanSeeOrigin),
 		withElementID(1),
