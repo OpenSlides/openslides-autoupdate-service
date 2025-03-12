@@ -23,8 +23,8 @@ import (
 //
 //	and - for amendments (lead_motion_id != null) - the user can also see the lead motion.
 //
-// Mode A: The user can see the motion or can see a referenced motion in
-// motion/all_origin_ids and motion/all_derived_motion_ids.
+// Mode A: The user can see the motion or the containing meeting is not closed and the user
+// can see a referenced motion in motion/all_origin_ids and motion/all_derived_motion_ids.
 //
 // Mode B: The user has the permission motion.can_manage_metadata in the
 // motion's meeting.
@@ -82,14 +82,14 @@ func (m Motion) see(ctx context.Context, ds *dsfetch.Fetch, motionIDs ...int) ([
 				return nil, fmt.Errorf("getting permissions: %w", err)
 			}
 
+			lockedMeeting, err := ds.Meeting_LockedFromInside(meetingID).Value(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("fetching locked_from_inside: %w", err)
+			}
+
 			step1Allowed, err := eachCondition(ids, func(id int) (bool, error) {
 				if perms.Has(perm.MotionCanSee) {
 					return true, nil
-				}
-
-				lockedMeeting, err := ds.Meeting_LockedFromInside(meetingID).Value(ctx)
-				if err != nil {
-					return false, fmt.Errorf("fetching locked_from_inside: %w", err)
 				}
 
 				if lockedMeeting {

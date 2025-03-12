@@ -151,7 +151,7 @@ func TestMotionChangeRecommendationModeA(t *testing.T) {
 
         motion_state/10/id: 10
 
-				meeting/30/locked_from_inside: false
+        meeting/30/locked_from_inside: false
         `,
 		withPerms(31, perm.MotionCanSeeOrigin),
 		withElementID(1),
