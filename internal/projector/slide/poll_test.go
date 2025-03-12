@@ -461,7 +461,7 @@ func TestPollSingleVotes(t *testing.T) {
 
 			p7on := &projector.Projection{
 				ContentObjectID: "poll/1",
-				Type:            "poll_single_votes",
+				Options:         []byte(`{"single_votes":true}`),
 			}
 
 			bs, err := pollSlide.Slide(context.Background(), fetch, p7on)
