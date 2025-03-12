@@ -19,6 +19,8 @@ func TestMotionModeC(t *testing.T) {
 		motion/1:
 			id: 1
 			meeting_id: 30
+
+		meeting/30/locked_from_inside: false
 		`,
 	)
 
@@ -54,6 +56,8 @@ func TestMotionModeC(t *testing.T) {
 				state_id: 3
 
 		motion_state/3/id: 3
+
+		meeting/30/locked_from_inside: false
 		`,
 		withPerms(31, perm.MotionCanSee),
 	)
@@ -75,6 +79,31 @@ func TestMotionModeC(t *testing.T) {
 				state_id: 3
 
 		motion_state/3/id: 3
+
+		meeting/30/locked_from_inside: false
+		`,
+		withPerms(31, perm.MotionCanSeeOrigin),
+	)
+
+	testCase(
+		"motion/all_derived_motion_ids with motion.can_see_origin and locked meeting",
+		t,
+		f,
+		false,
+		`---
+		motion:
+			1:
+				meeting_id: 30
+				state_id: 3
+				all_derived_motion_ids: [10]
+
+			10:
+				meeting_id: 31
+				state_id: 3
+
+		motion_state/3/id: 3
+
+		meeting/30/locked_from_inside: true
 		`,
 		withPerms(31, perm.MotionCanSeeOrigin),
 	)
@@ -310,6 +339,8 @@ func TestMotionModeC(t *testing.T) {
 			state_id: 10
 
 		motion_state/10/id: 10
+
+		meeting/30/locked_from_inside: true
 		`,
 	)
 
@@ -605,7 +636,7 @@ func TestMotionModeE(t *testing.T) {
 			meeting_id: 30
 			state_id: 3
 
-		motion_state/3/is_internal: true
+		motion_state/3/is_internal: false
 		`,
 		withPerms(30, perm.MotionCanManageMetadata),
 	)
