@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/OpenSlides/openslides-go v0.0.0-20250306125808-2e7a380eaa6e
-	github.com/alecthomas/kong v1.8.1
+	github.com/alecthomas/kong v1.9.0
 	github.com/goccy/go-yaml v1.15.23
 	github.com/klauspost/compress v1.18.0
 	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1
