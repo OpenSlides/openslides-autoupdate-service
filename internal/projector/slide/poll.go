@@ -329,9 +329,18 @@ func Poll(store *projector.SlideStore) {
 	store.RegisterSliderFunc("poll", func(ctx context.Context, fetch *datastore.Fetcher, p7on *projector.Projection) (encoded []byte, err error) {
 		poll, err := pollSlideDataFunction(ctx, fetch, p7on, store)
 
-		if p7on.Type == "poll_single_votes" {
-			if err := PollSingleVotes(ctx, store, fetch, p7on, poll); err != nil {
-				return nil, fmt.Errorf("adding single votes additional info : %w", err)
+		var options struct {
+			SingleVotes bool `json:"single_votes"`
+		}
+		if p7on.Options != nil {
+			if err := json.Unmarshal(p7on.Options, &options); err != nil {
+				return nil, fmt.Errorf("decoding projection options: %w", err)
+			}
+
+			if options.SingleVotes {
+				if err := PollSingleVotes(ctx, store, fetch, p7on, poll); err != nil {
+					return nil, fmt.Errorf("adding single votes additional info : %w", err)
+				}
 			}
 		}
 
