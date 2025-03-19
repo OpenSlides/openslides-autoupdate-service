@@ -280,7 +280,7 @@ func TestListOfSpeakers(t *testing.T) {
 
 func getDataForCurrentList() map[dskey.Key][]byte {
 	// This one is a bit complicated and will be used
-	// for tests current_list_of_speakers and, slightly modified,
+	// for tests current_los and, slightly modified,
 	// for current_speaker_chyron
 	//
 	// The slide gets a contentObjectID of meeting/6
@@ -332,8 +332,8 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 	slide.CurrentListOfSpeakers(s)
 	slide.MotionBlock(s)
 
-	slide := s.GetSlider("current_list_of_speakers")
-	require.NotNilf(t, slide, "Slide with name `current_list_of_speakers` not found.")
+	slide := s.GetSlider("current_los")
+	require.NotNilf(t, slide, "Slide with name `current_los` not found.")
 
 	data := getDataForCurrentList()
 	for _, tt := range []struct {
@@ -378,7 +378,7 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 			p7on := &projector.Projection{
 				ID:              1,
 				ContentObjectID: "meeting/6",
-				Type:            "current_list_of_speakers",
+				Type:            "current_los",
 				MeetingID:       6,
 			}
 
