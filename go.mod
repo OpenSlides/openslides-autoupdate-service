@@ -3,7 +3,7 @@ module github.com/OpenSlides/openslides-autoupdate-service
 go 1.24.0
 
 require (
-	github.com/OpenSlides/openslides-go v0.0.0-20250319153021-24df3dacf2b6
+	github.com/OpenSlides/openslides-go v0.0.0-20250325062824-88dd0bcc13ed
 	github.com/alecthomas/kong v1.9.0
 	github.com/goccy/go-yaml v1.16.0
 	github.com/klauspost/compress v1.18.0
@@ -19,7 +19,7 @@ require (
 	github.com/gomodule/redigo v1.9.2 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/pgx/v5 v5.7.2 // indirect
+	github.com/jackc/pgx/v5 v5.7.4 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/opencontainers/runc v1.1.14 // indirect
