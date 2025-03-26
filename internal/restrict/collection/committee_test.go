@@ -78,6 +78,20 @@ func TestCommitteeModeB(t *testing.T) {
 	)
 
 	testCase(
+		"CML can manage in parent",
+		t,
+		c.Modes("B"),
+		true,
+		`---
+		committee/5/id: 5
+		committee/6/all_child_ids: [5]
+		user/1:
+			committee_management_ids: [6]
+		`,
+		withElementID(5),
+	)
+
+	testCase(
 		"In committee",
 		t,
 		c.Modes("B"),
