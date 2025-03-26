@@ -262,9 +262,23 @@ func ManagementLevelCommittees(ctx context.Context, ds *dsfetch.Fetch, userID in
 		return nil, nil
 	}
 
-	commiteeIDs, err := ds.User_CommitteeManagementIDs(userID).Value(ctx)
+	committeeIDs, err := ds.User_CommitteeManagementIDs(userID).Value(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("fetching user/%d/committee_management_ids: %w", userID, err)
 	}
-	return commiteeIDs, nil
+
+	committeeParrentIDs := make([][]int, len(committeeIDs))
+	for i, id := range committeeIDs {
+		ds.Committee_AllParentIDs(id).Lazy(&committeeParrentIDs[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("fetch all committee parents: %w", err)
+	}
+
+	for _, parentIDs := range committeeParrentIDs {
+		committeeIDs = append(committeeIDs, parentIDs...)
+	}
+
+	return committeeIDs, nil
 }

@@ -156,6 +156,7 @@ func TestMeetingModeB(t *testing.T) {
 		`---
 		meeting/30/committee_id: 4
 		user/1/committee_management_ids: [4]
+		committee/4/all_parent_ids: []
 		`,
 		withElementID(30),
 	)
@@ -191,6 +192,7 @@ func TestMeetingModeB(t *testing.T) {
 		`---
 		meeting/30/committee_id: 4
 		user/1/committee_management_ids: [8]
+		committee/8/all_parent_ids: []
 		`,
 		withElementID(30),
 	)
@@ -218,6 +220,7 @@ func TestMeetingModeB(t *testing.T) {
 			committee_id: 4
 			template_for_organization_id: 16
 		user/1/committee_management_ids: [8]
+		committee/8/all_parent_ids: []
 		`,
 		withElementID(30),
 	)
