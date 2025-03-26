@@ -41,6 +41,14 @@ func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permis
 		if isOrgaAdmin {
 			return &Permission{admin: true}, nil
 		}
+
+		isCommitteeAdmin, err := HasCommitteeManagementLevel(ctx, ds, userID, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting committee management level: %w", err)
+		}
+		if isCommitteeAdmin {
+			return &Permission{admin: true}, nil
+		}
 	}
 
 	meetingUserIDs, err := ds.User_MeetingUserIDs(userID).Value(ctx)
