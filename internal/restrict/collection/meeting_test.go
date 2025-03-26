@@ -437,6 +437,35 @@ func TestMeetingModeF(t *testing.T) {
 		`
 		user/1/organization_management_level: can_manage_users
 		meeting/30/locked_from_inside: true
+		meeting/30/committee_id: 4
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"locked meeting, committee manager",
+		t,
+		m,
+		true,
+		`---
+		meeting/30/locked_from_inside: true
+		meeting/30/committee_id: 4
+		user/1/committee_management_ids: [4]
+		committee/4/all_child_ids: []
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"locked meeting, committee manager from parent",
+		t,
+		m,
+		true,
+		`---
+		meeting/30/locked_from_inside: true
+		meeting/30/committee_id: 5
+		user/1/committee_management_ids: [4]
+		committee/4/all_child_ids: [5]
 		`,
 		withElementID(30),
 	)
