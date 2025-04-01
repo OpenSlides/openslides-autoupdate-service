@@ -131,20 +131,18 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	var backgroundTasks []func(context.Context, func(error))
 	listenAddr := ":" + envAutoupdatePort.Value(lookup)
 
-	// Redis as message bus for datastore and logout events.
-	messageBus := redis.New(lookup)
-
 	publicAccessOnly, _ := strconv.ParseBool(envPublicAccessOnly.Value(lookup))
 
 	// Autoupdate data flow.
-	flow, flowBackground, err := autoupdate.NewFlow(lookup, messageBus, publicAccessOnly)
+	flow, flowBackground, err := autoupdate.NewFlow(lookup, publicAccessOnly)
 	if err != nil {
 		return nil, fmt.Errorf("init autoupdate data flow: %w", err)
 	}
 	backgroundTasks = append(backgroundTasks, flowBackground)
 
 	// Auth Service.
-	authService, authBackground, err := auth.New(lookup, messageBus)
+	authMessageBus := redis.New(lookup)
+	authService, authBackground, err := auth.New(lookup, authMessageBus)
 	if err != nil {
 		return nil, fmt.Errorf("init connection to auth: %w", err)
 	}
@@ -176,7 +174,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 		backgroundTasks = append(backgroundTasks, runMetirc)
 	}
 
-	metricStorage := messageBus
+	metricStorage := authMessageBus
 	if disable, _ := strconv.ParseBool(envDisableConnectionCount.Value(lookup)); disable || publicAccessOnly {
 		metricStorage = nil
 	}
