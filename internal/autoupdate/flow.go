@@ -2,6 +2,7 @@ package autoupdate
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -86,5 +87,5 @@ func (f *Flow) metric(values metric.Container) {
 }
 
 func (f *Flow) historyInformation(ctx context.Context, fqid string, w io.Writer) error {
-	return f.postgres.HistoryInformation(ctx, fqid, w)
+	return errors.New("TODO")
 }
