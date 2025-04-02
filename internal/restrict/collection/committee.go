@@ -16,7 +16,7 @@ import (
 // Mode A: The user can see the committee.
 //
 // Mode B: The user must have the OML `can_manage_organization` or higher or the
-// CML `can_manage` in the committee.
+// CML `can_manage` in the committee or an parent committee.
 type Committee struct{}
 
 // Name returns the collection name.

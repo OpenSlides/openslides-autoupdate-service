@@ -41,6 +41,14 @@ func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permis
 		if isOrgaAdmin {
 			return &Permission{admin: true}, nil
 		}
+
+		isCommitteeAdmin, err := HasCommitteeManagementLevel(ctx, ds, userID, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting committee management level: %w", err)
+		}
+		if isCommitteeAdmin {
+			return &Permission{admin: true}, nil
+		}
 	}
 
 	meetingUserIDs, err := ds.User_MeetingUserIDs(userID).Value(ctx)
@@ -254,9 +262,23 @@ func ManagementLevelCommittees(ctx context.Context, ds *dsfetch.Fetch, userID in
 		return nil, nil
 	}
 
-	commiteeIDs, err := ds.User_CommitteeManagementIDs(userID).Value(ctx)
+	committeeIDs, err := ds.User_CommitteeManagementIDs(userID).Value(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("fetching user/%d/committee_management_ids: %w", userID, err)
 	}
-	return commiteeIDs, nil
+
+	committeeChildIDs := make([][]int, len(committeeIDs))
+	for i, id := range committeeIDs {
+		ds.Committee_AllChildIDs(id).Lazy(&committeeChildIDs[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("fetch all committee children: %w", err)
+	}
+
+	for _, childIDs := range committeeChildIDs {
+		committeeIDs = append(committeeIDs, childIDs...)
+	}
+
+	return committeeIDs, nil
 }
