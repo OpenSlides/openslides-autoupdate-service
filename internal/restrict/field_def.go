@@ -930,6 +930,7 @@ var restrictionModes = map[string]string{
 	"motion_editor/weight":          "A",
 
 	// motion_state
+	"motion_state/allow_amendment_forwarding":          "A",
 	"motion_state/allow_create_poll":                   "A",
 	"motion_state/allow_motion_forwarding":             "A",
 	"motion_state/allow_submitter_edit":                "A",
