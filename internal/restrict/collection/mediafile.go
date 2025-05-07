@@ -134,6 +134,15 @@ func isAdminInAnyMeeting(ctx context.Context, ds *dsfetch.Fetch) (bool, error) {
 		return false, nil
 	}
 
+	isOrgaManager, err := perm.HasOrganizationManagementLevel(ctx, ds, userID, perm.OMLCanManageOrganization)
+	if err != nil {
+		return false, fmt.Errorf("checking for superadmin: %w", err)
+	}
+
+	if isOrgaManager {
+		return true, nil
+	}
+
 	meetingUserIDs, err := ds.User_MeetingUserIDs(userID).Value(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting meeting_user objects: %w", err)
@@ -146,7 +155,7 @@ func isAdminInAnyMeeting(ctx context.Context, ds *dsfetch.Fetch) (bool, error) {
 		}
 
 		adminGroups := make([]dsfetch.Maybe[int], len(groupIDs))
-		for i := 0; i < len(groupIDs); i++ {
+		for i := range groupIDs {
 			ds.Group_AdminGroupForMeetingID(groupIDs[i]).Lazy(&adminGroups[i])
 		}
 
