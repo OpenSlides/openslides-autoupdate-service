@@ -18,6 +18,7 @@ The Service uses the following environment variables:
 * `VOTE_PROTOCOL`: Protocol of the vote-service. The default is `http`.
 * `VOTE_HOST`: Host of the vote-service. The default is `localhost`.
 * `VOTE_PORT`: Port of the vote-service. The default is `9013`.
+* `DEBUG_HAS_VOTED_USER_IDS`: Enable Debug message for an error from May 2025. The default is `false`.
 * `AUTH_PROTOCOL`: Protocol of the auth service. The default is `http`.
 * `AUTH_HOST`: Host of the auth service. The default is `localhost`.
 * `AUTH_PORT`: Port of the auth service. The default is `9004`.
