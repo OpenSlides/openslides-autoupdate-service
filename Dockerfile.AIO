@@ -26,14 +26,14 @@ FROM base as builder
 RUN go build
 
 
+# Development Image
+FROM base as dev
 
-# Production Image
-FROM scratch as prod
-
-COPY --from=builder /root/openslides-autoupdate-service/openslides-autoupdate-service .
+RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
 EXPOSE 9012
-ENTRYPOINT ["/openslides-autoupdate-service"]
-HEALTHCHECK CMD ["/openslides-autoupdate-service", "health"]
+
+WORKDIR /root
+CMD CompileDaemon -log-prefix=false -build="go build -o autoupdate-service ./openslides-autoupdate-service" -command="./autoupdate-service"
 
 
 # Test Image
@@ -44,11 +44,12 @@ RUN apk add build-base
 CMD go vet ./... && go test -test.short ./...
 
 
-# Development Image
-FROM base as dev
 
-RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
+# Production Image
+FROM scratch as prod
+
+COPY --from=builder /root/openslides-autoupdate-service/openslides-autoupdate-service .
 EXPOSE 9012
+ENTRYPOINT ["/openslides-autoupdate-service"]
 
-WORKDIR /root
-CMD CompileDaemon -log-prefix=false -build="go build -o autoupdate-service ./openslides-autoupdate-service" -command="./autoupdate-service"
+HEALTHCHECK CMD ["/openslides-autoupdate-service", "health"]
