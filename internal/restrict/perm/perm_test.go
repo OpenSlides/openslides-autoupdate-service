@@ -2,6 +2,7 @@ package perm_test
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
@@ -50,4 +51,25 @@ func TestLockedOut(t *testing.T) {
 	if p.InGroup(30) {
 		t.Errorf("p.InGroup returned true, expected false for any group")
 	}
+}
+
+func TestManagementLevelCommittees(t *testing.T) {
+	ctx := t.Context()
+	ds := dsfetch.New(dsmock.Stub(dsmock.YAMLData(`---
+		committee/1/all_child_ids: [3,4]
+		user/4:
+			committee_management_ids: [1]
+	`)))
+
+	got, err := perm.ManagementLevelCommittees(ctx, ds, 4)
+	if err != nil {
+		t.Fatalf("Error: %v", err)
+	}
+
+	expect := []int{1, 3, 4}
+
+	if !reflect.DeepEqual(got, expect) {
+		t.Errorf("ManagmenentLevelCommittees() == %v, expected %v", got, expect)
+	}
+
 }
