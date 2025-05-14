@@ -18,7 +18,7 @@ import (
 //
 // Mode C: The user has the OML can_manage_users or higher.
 //
-// Mode E: The user is meeting admin in at least one meeting.
+// Mode E: The user is meeting admin in at least one meeting or has the OML can_manage_organization.
 //
 // Mode D: The user is superadmin.
 type Organization struct{}
@@ -69,7 +69,7 @@ func (Organization) modeC(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int
 }
 
 func (Organization) modeE(ctx context.Context, ds *dsfetch.Fetch, ids ...int) ([]int, error) {
-	isAdmin, err := isAdminInAnyMeeting(ctx, ds)
+	isAdmin, err := isAdminInAnyMeetingOrOrgaAdmin(ctx, ds)
 	if err != nil {
 		return nil, fmt.Errorf("checking is user meeting admin: %w", err)
 	}
