@@ -21,11 +21,6 @@ LABEL org.opencontainers.image.description="The Autoupdate Service is a http end
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-autoupdate-service"
 
-# Build service in seperate stage.
-FROM base as builder
-RUN go build
-
-
 # Development Image
 FROM base as dev
 
@@ -46,6 +41,10 @@ CMD go vet ./... && go test -test.short ./...
 
 
 # Production Image
+
+FROM base as builder
+RUN go build
+
 FROM scratch as prod
 
 COPY --from=builder /root/openslides-autoupdate-service/openslides-autoupdate-service .
