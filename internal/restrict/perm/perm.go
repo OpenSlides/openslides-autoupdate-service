@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
 )
@@ -39,6 +40,14 @@ func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permis
 			return nil, fmt.Errorf("getting organization management level: %w", err)
 		}
 		if isOrgaAdmin {
+			return &Permission{admin: true}, nil
+		}
+
+		isCommitteeAdmin, err := HasCommitteeManagementLevel(ctx, ds, userID, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting committee management level: %w", err)
+		}
+		if isCommitteeAdmin {
 			return &Permission{admin: true}, nil
 		}
 	}
@@ -137,10 +146,8 @@ func isAdmin(ctx context.Context, ds *dsfetch.Fetch, meetingID int, groupIDs []i
 		return false, nil
 	}
 
-	for _, id := range groupIDs {
-		if id == adminGroupID {
-			return true, nil
-		}
+	if slices.Contains(groupIDs, adminGroupID) {
+		return true, nil
 	}
 	return false, nil
 }
@@ -198,10 +205,8 @@ func (p *Permission) InGroup(groupIDs ...int) bool {
 	}
 
 	for _, cid := range groupIDs {
-		for _, id := range p.groupIDs {
-			if id == cid {
-				return true
-			}
+		if slices.Contains(p.groupIDs, cid) {
+			return true
 		}
 	}
 	return false
@@ -239,10 +244,8 @@ func HasCommitteeManagementLevel(ctx context.Context, ds *dsfetch.Fetch, userID 
 		return false, fmt.Errorf("fetching list of commitee_ids: %w", err)
 	}
 
-	for _, id := range ids {
-		if id == committeeID {
-			return true, nil
-		}
+	if slices.Contains(ids, committeeID) {
+		return true, nil
 	}
 	return false, nil
 }
@@ -254,9 +257,23 @@ func ManagementLevelCommittees(ctx context.Context, ds *dsfetch.Fetch, userID in
 		return nil, nil
 	}
 
-	commiteeIDs, err := ds.User_CommitteeManagementIDs(userID).Value(ctx)
+	committeeIDs, err := ds.User_CommitteeManagementIDs(userID).Value(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("fetching user/%d/committee_management_ids: %w", userID, err)
 	}
-	return commiteeIDs, nil
+
+	committeeChildIDs := make([][]int, len(committeeIDs))
+	for i, id := range committeeIDs {
+		ds.Committee_AllChildIDs(id).Lazy(&committeeChildIDs[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("fetch all committee children: %w", err)
+	}
+
+	for _, childIDs := range committeeChildIDs {
+		committeeIDs = append(committeeIDs, childIDs...)
+	}
+
+	return committeeIDs, nil
 }
