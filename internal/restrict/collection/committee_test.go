@@ -37,6 +37,20 @@ func TestCommitteeModeA(t *testing.T) {
 		user/1/organization_management_level: can_manage_users
 		`,
 	)
+
+	testCase(
+		"CML can manage in parent",
+		t,
+		c.Modes("A"),
+		true,
+		`---
+		committee/5/id: 5
+		committee/6/all_child_ids: [5]
+		user/1:
+			committee_management_ids: [6]
+		`,
+		withElementID(5),
+	)
 }
 
 func TestCommitteeModeB(t *testing.T) {
