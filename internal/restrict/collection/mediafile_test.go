@@ -433,4 +433,28 @@ func TestMediafileModeA(t *testing.T) {
 		group/3/id: 3
 		`,
 	)
+
+	testCase(
+		"mediafile without perm can_see as orga admin",
+		t,
+		m.Modes("A"),
+		true,
+		`---
+		user/1/organization_management_level: can_manage_organization
+
+		mediafile/1:
+			owner_id: meeting/7
+			meeting_mediafile_ids: [2]
+
+		meeting_mediafile/2:
+			meeting_id: 7
+			inherited_access_group_ids: [3]
+
+		meeting/7:
+			id: 7
+			committee_id: 300
+
+		group/3/id: 3
+		`,
+	)
 }
