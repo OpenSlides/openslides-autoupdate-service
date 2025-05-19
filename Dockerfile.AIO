@@ -45,6 +45,7 @@ CMD go vet ./... && go test -test.short ./...
 FROM base as builder
 RUN go build
 
+
 FROM scratch as prod
 
 COPY --from=builder /root/openslides-autoupdate-service/openslides-autoupdate-service .
