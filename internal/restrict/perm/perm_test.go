@@ -31,11 +31,12 @@ func TestHasSuperAdmin(t *testing.T) {
 func TestLockedOut(t *testing.T) {
 	ctx := context.Background()
 	ds := dsmock.Stub(dsmock.YAMLData(`---
-		meeting/3/id: 3
+		meeting/3/committee_id: 2
 		user/1/meeting_user_ids: [10]
-		meeting_user/10/meeting_id: 3
-		meeting_user/10/locked_out: true
-		meeting_user/10/group_ids: [30]
+		meeting_user/10:
+			meeting_id: 3
+			locked_out: true
+			group_ids: [30]
 		group/30/permissions: ["agenda_item.can_see"]
 	`))
 
@@ -71,5 +72,23 @@ func TestManagementLevelCommittees(t *testing.T) {
 	if !reflect.DeepEqual(got, expect) {
 		t.Errorf("ManagmenentLevelCommittees() == %v, expected %v", got, expect)
 	}
+}
 
+func TestCommitteeManagerPermission(t *testing.T) {
+	ctx := t.Context()
+	ds := dsfetch.New(dsmock.Stub(dsmock.YAMLData(`---
+		committee/1/all_child_ids: [3,4]
+		user/4:
+			committee_management_ids: [1]
+		meeting/5/committee_id: 3
+	`)))
+
+	p, err := perm.New(ctx, ds, 4, 5)
+	if err != nil {
+		t.Fatalf("perm.New(): %v", err)
+	}
+
+	if !p.Has(perm.MotionCanManage) {
+		t.Errorf("Committee Manager of higher committee does not have all permissions")
+	}
 }
