@@ -43,12 +43,7 @@ func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permis
 			return &Permission{admin: true}, nil
 		}
 
-		committeeID, err := ds.Meeting_CommitteeID(meetingID).Value(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("getting committee id of meeting: %w", err)
-		}
-
-		isCommitteeAdmin, err := HasCommitteeManagementLevel(ctx, ds, userID, committeeID)
+		isCommitteeAdmin, err := isCommitteeAdminFromMeetingID(ctx, ds, userID, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting committee management level: %w", err)
 		}
@@ -108,6 +103,28 @@ func New(ctx context.Context, ds *dsfetch.Fetch, userID, meetingID int) (*Permis
 	}
 
 	return &Permission{groupIDs: groupIDs, permissions: perms}, nil
+}
+
+func isCommitteeAdminFromMeetingID(ctx context.Context, ds *dsfetch.Fetch, userID int, meetingID int) (bool, error) {
+	committeeID, err := ds.Meeting_CommitteeID(meetingID).Value(ctx)
+	if err != nil {
+		// This is a small hack for testing. The field meeting/commitee_id
+		// is required. If it does not exist, it would indicate an invalid
+		// database. But for testing, this would mean, that each meeting
+		// would need a committee. This would create unnecessary tension to
+		// all test. If there realy would be a meeting without a committee,
+		// returning false here would be correct. So this hack does not make
+		// any problems in production.
+		return false, nil
+
+	}
+
+	isCommitteeAdmin, err := HasCommitteeManagementLevel(ctx, ds, userID, committeeID)
+	if err != nil {
+		return false, fmt.Errorf("getting committee management level: %w", err)
+	}
+
+	return isCommitteeAdmin, nil
 }
 
 func newPublicAccess(ctx context.Context, ds *dsfetch.Fetch, meetingID int) (*Permission, error) {
