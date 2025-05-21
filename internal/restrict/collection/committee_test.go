@@ -37,6 +37,20 @@ func TestCommitteeModeA(t *testing.T) {
 		user/1/organization_management_level: can_manage_users
 		`,
 	)
+
+	testCase(
+		"CML can manage in parent",
+		t,
+		c.Modes("A"),
+		true,
+		`---
+		committee/5/id: 5
+		committee/6/all_child_ids: [5]
+		user/1:
+			committee_management_ids: [6]
+		`,
+		withElementID(5),
+	)
 }
 
 func TestCommitteeModeB(t *testing.T) {
@@ -75,6 +89,36 @@ func TestCommitteeModeB(t *testing.T) {
 			committee_management_ids: [5]
 		`,
 		withElementID(5),
+	)
+
+	testCase(
+		"CML can manage in parent",
+		t,
+		c.Modes("B"),
+		true,
+		`---
+		committee/5/id: 5
+		committee/6/all_child_ids: [5]
+		user/1:
+			committee_management_ids: [6]
+		`,
+		withElementID(5),
+	)
+
+	testCase(
+		"CML can manage in parent with two",
+		t,
+		c.Modes("B"),
+		true,
+		`---
+		committee/1/all_child_ids: [3,4]
+		committee/3/id: 3
+		committee/4/id: 4
+		user/4:
+			committee_management_ids: [1]
+		`,
+		withElementID(3),
+		withRequestUser(4),
 	)
 
 	testCase(
