@@ -830,6 +830,7 @@ var restrictionModes = map[string]string{
 	"motion/derived_motion_ids":                                "A",
 	"motion/forwarded":                                         "A",
 	"motion/id":                                                "A",
+	"motion/marked_forwarded":                                  "A",
 	"motion/meeting_id":                                        "A",
 	"motion/origin_id":                                         "A",
 	"motion/origin_meeting_id":                                 "A",
