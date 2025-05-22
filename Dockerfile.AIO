@@ -21,6 +21,8 @@ LABEL org.opencontainers.image.description="The Autoupdate Service is a http end
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-autoupdate-service"
 
+HEALTHCHECK CMD ["/openslides-autoupdate-service", "health"]
+
 # Development Image
 FROM base as dev
 
@@ -56,5 +58,3 @@ LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-
 COPY --from=builder /root/openslides-autoupdate-service/openslides-autoupdate-service .
 EXPOSE 9012
 ENTRYPOINT ["/openslides-autoupdate-service"]
-
-HEALTHCHECK CMD ["/openslides-autoupdate-service", "health"]
