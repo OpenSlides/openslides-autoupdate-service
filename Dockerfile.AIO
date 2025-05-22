@@ -21,13 +21,13 @@ LABEL org.opencontainers.image.description="The Autoupdate Service is a http end
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-autoupdate-service"
 
+EXPOSE 9012
 HEALTHCHECK CMD ["/openslides-autoupdate-service", "health"]
 
 # Development Image
 FROM base as dev
 
 RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
-EXPOSE 9012
 
 WORKDIR /root
 CMD CompileDaemon -log-prefix=false -build="go build -o autoupdate-service ./openslides-autoupdate-service" -command="./autoupdate-service"
@@ -48,6 +48,7 @@ FROM base as builder
 RUN go build
 
 
+
 FROM scratch as prod
 
 LABEL org.opencontainers.image.title="OpenSlides Autoupdate Service"
@@ -56,5 +57,6 @@ LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-autoupdate-service"
 
 COPY --from=builder /root/openslides-autoupdate-service/openslides-autoupdate-service .
+
 EXPOSE 9012
 ENTRYPOINT ["/openslides-autoupdate-service"]
