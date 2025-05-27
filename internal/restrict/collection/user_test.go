@@ -84,6 +84,22 @@ func TestUserModeA(t *testing.T) {
 	)
 
 	testCase(
+		"Committee Manager of parent",
+		t,
+		f,
+		true,
+		`---
+		user/2/committee_ids: [7]
+		user/1:
+			committee_management_ids: [5]
+		committee/5/all_child_ids: [7]
+		committee/7/user_ids: [2]
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
 		"user.can_see in meeting",
 		t,
 		f,
@@ -250,11 +266,11 @@ func TestUserModeA(t *testing.T) {
 			supported_motion_ids: [7]
 			meeting_id: 30
 			user_id: 2
-		
+
 		motion/7:
 			meeting_id: 30
 			state_id: 5
-		
+
 		motion_state/5/id: 5
 		`,
 		withRequestUser(1),
@@ -325,7 +341,7 @@ func TestUserModeA(t *testing.T) {
 			assignment_candidate_ids: [4]
 			meeting_id: 30
 			user_id: 2
-		
+
 		assignment_candidate/4/assignment_id: 5
 		assignment/5/meeting_id: 30
 		`,
@@ -349,7 +365,7 @@ func TestUserModeA(t *testing.T) {
 			speaker_ids: [4]
 			meeting_id: 30
 			user_id: 2
-		
+
 		speaker/4:
 			list_of_speakers_id: 5
 			meeting_id: 30
@@ -382,13 +398,13 @@ func TestUserModeA(t *testing.T) {
 			user_id: 2
 
 		meeting_user/10/group_ids: [5]
-		
+
 		meeting/30/id: 30
-		
+
 		chat_message/4:
 			meeting_user_id: 20
 			chat_group_id: 3
-		
+
 		chat_group/3:
 			read_group_ids: [5]
 			meeting_id: 30
@@ -711,7 +727,7 @@ func TestUserModeB(t *testing.T) {
 		meeting_user/20:
 			vote_delegations_from_ids: [4]
 			meeting_id: 30
-		
+
 		vote/4/option_id: 5
 		option/5/poll_id: 6
 		poll/6:
@@ -740,13 +756,13 @@ func TestUserModeB(t *testing.T) {
 			meeting_id: 30
 
 		meeting_user/10/group_ids: [5]
-		
+
 		meeting/30/id: 30
-		
+
 		chat_message/4:
 			meeting_user_id: 20
 			chat_group_id: 3
-		
+
 		chat_group/3:
 			read_group_ids: [5]
 			meeting_id: 30
