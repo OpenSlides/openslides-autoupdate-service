@@ -129,6 +129,18 @@ func TestOrganizationModeE(t *testing.T) {
 		`,
 		withRequestUser(1),
 	)
+
+	testCase(
+		"committee admin",
+		t,
+		f,
+		true,
+		`---
+		user/1/committee_management_ids: [1]
+		`,
+		withRequestUser(1),
+	)
+
 }
 
 func TestOrganizationModeD(t *testing.T) {
