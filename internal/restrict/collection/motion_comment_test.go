@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-go/perm"
 )
 
 func TestMotionCommentModeA(t *testing.T) {
@@ -20,17 +20,17 @@ func TestMotionCommentModeA(t *testing.T) {
 			meeting_id: 30
 			motion_id: 5
 			section_id: 7
-		
+
 		motion/5:
 			meeting_id: 30
 			state_id: 3
-		
+
 		motion_state/3/id: 3
 
 		motion_comment_section/7:
 			read_group_ids: [2]
 			meeting_id: 30
-		
+
 		group/2/id: 2
 		meeting/30/id: 30
 		`,
@@ -46,17 +46,17 @@ func TestMotionCommentModeA(t *testing.T) {
 			meeting_id: 30
 			motion_id: 5
 			section_id: 7
-		
+
 		motion/5:
 			meeting_id: 30
 			state_id: 3
-		
+
 		motion_state/3/id: 3
 
 		motion_comment_section/7:
 			read_group_ids: []
 			meeting_id: 30
-		
+
 		group/2/id: 2
 		`,
 		withPerms(30, perm.MotionCanSee),
@@ -72,12 +72,12 @@ func TestMotionCommentModeA(t *testing.T) {
 			meeting_id: 30
 			motion_id: 5
 			section_id: 7
-		
+
 		motion/5:
 			meeting_id: 30
 			state_id: 3
 			submitter_ids: [4]
-		
+
 		motion_state/3/restrictions:
 		- is_submitter
 
@@ -87,7 +87,7 @@ func TestMotionCommentModeA(t *testing.T) {
 
 		motion_submitter/4/meeting_user_id: 20
 		meeting_user/20/user_id: 2
-		
+
 		group/2/id: 2
 		`,
 		withPerms(30, perm.MotionCanSee),
@@ -103,17 +103,17 @@ func TestMotionCommentModeA(t *testing.T) {
 			meeting_id: 30
 			motion_id: 5
 			section_id: 7
-		
+
 		motion/5:
 			meeting_id: 30
 			state_id: 3
-		
+
 		motion_state/3/id: 3
 
 		motion_comment_section/7:
 			meeting_id: 30
 			read_group_ids: [2]
-		
+
 		meeting_user/10/group_ids: [2]
 		group/2/id: 2
 		`,
@@ -130,17 +130,17 @@ func TestMotionCommentModeA(t *testing.T) {
 			meeting_id: 30
 			motion_id: 5
 			section_id: 7
-		
+
 		motion/5:
 			meeting_id: 30
 			state_id: 3
-		
+
 		motion_state/3/id: 3
 
 		motion_comment_section/7:
 			meeting_id: 30
 			write_group_ids: [2]
-		
+
 		meeting_user/10/group_ids: [2]
 		group/2/id: 2
 		`,
@@ -157,11 +157,11 @@ func TestMotionCommentModeA(t *testing.T) {
 			meeting_id: 30
 			motion_id: 5
 			section_id: 7
-		
+
 		motion/5:
 			meeting_id: 30
 			state_id: 3
-		
+
 		motion_state/3/id: 3
 
 		motion_comment_section/7:
@@ -181,7 +181,7 @@ func TestMotionCommentModeA(t *testing.T) {
 			meeting_id: 30
 			motion_id: 5
 			section_id: 7
-		
+
 		motion/5:
 			meeting_id: 30
 			state_id: 3
@@ -189,9 +189,9 @@ func TestMotionCommentModeA(t *testing.T) {
 
 		motion_submitter/13:
 			meeting_user_id: 10
-		
+
 		meeting_user/10/user_id: 1
-		
+
 		motion_state/3/id: 3
 
 		motion_comment_section/7:

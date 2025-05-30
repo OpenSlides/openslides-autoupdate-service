@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/perm"
 )
 
 // MotionChangeRecommendation handels restrictions of the collection motion_change_recommendation.
