@@ -1,7 +1,5 @@
 package restrict
 
-//go:generate  sh -c "go run gen_field_def/main.go > field_def.go"
-
 import (
 	"context"
 	"encoding/json"
@@ -422,7 +420,7 @@ func restrictModeName(collection, field string) (string, error) {
 	fieldMode, ok := metagen.RestrictionModes[collection+"/"+field]
 	if !ok {
 		// TODO LAST ERROR
-		return "", fmt.Errorf("fqfield %q is unknown, maybe run go generate ./... to fetch all fields from the models.yml", collection+"/"+field)
+		return "", fmt.Errorf("fqfield %q is unknown, maybe run go generate ./... in openlsides-go to fetch all fields from the models.yml", collection+"/"+field)
 	}
 	return fieldMode, nil
 }
@@ -432,7 +430,7 @@ func restrictModefunc(ctx context.Context, collectionName, fieldMode string) (co
 	restricter := collection.Collection(ctx, collectionName)
 	if _, ok := restricter.(collection.Unknown); ok {
 		// TODO LAST ERROR
-		return nil, fmt.Errorf("collection %q is not implemented, maybe run go generate ./... to fetch all fields from the models.yml", collectionName)
+		return nil, fmt.Errorf("collection %q is not implemented, maybe run go generate ./... in openslides-go to fetch all fields from the models.yml", collectionName)
 	}
 
 	modefunc := restricter.Modes(fieldMode)
