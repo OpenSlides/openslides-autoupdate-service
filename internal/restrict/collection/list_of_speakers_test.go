@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-go/perm"
 )
 
 func TestListOfSpeakersModeA(t *testing.T) {
@@ -16,7 +16,7 @@ func TestListOfSpeakersModeA(t *testing.T) {
 		f,
 		false,
 		`---
-		list_of_speakers/1: 
+		list_of_speakers/1:
 			meeting_id: 30
 			content_object_id: topic/5
 
@@ -30,7 +30,7 @@ func TestListOfSpeakersModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		list_of_speakers/1: 
+		list_of_speakers/1:
 			meeting_id: 30
 			content_object_id: topic/5
 
@@ -48,7 +48,7 @@ func TestListOfSpeakersModeA(t *testing.T) {
 		list_of_speakers/1:
 			meeting_id: 30
 			content_object_id: topic/5
-		
+
 		topic/5/meeting_id: 30
 		`,
 		withPerms(30, perm.AgendaItemCanSee),
@@ -63,7 +63,7 @@ func TestListOfSpeakersModeA(t *testing.T) {
 		list_of_speakers/1:
 			meeting_id: 30
 			content_object_id: topic/5
-		
+
 		topic/5/meeting_id: 30
 		`,
 		withPerms(30, perm.ListOfSpeakersCanSee, perm.AgendaItemCanSee),
@@ -75,7 +75,7 @@ func TestListOfSpeakersModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		list_of_speakers/1: 
+		list_of_speakers/1:
 			meeting_id: 30
 			content_object_id: topic/5
 
@@ -94,7 +94,7 @@ func TestListOfSpeakersModeB(t *testing.T) {
 		f,
 		false,
 		`---
-		list_of_speakers/1: 
+		list_of_speakers/1:
 			meeting_id: 30
 			content_object_id: topic/5
 
@@ -108,7 +108,7 @@ func TestListOfSpeakersModeB(t *testing.T) {
 		f,
 		true,
 		`---
-		list_of_speakers/1: 
+		list_of_speakers/1:
 			meeting_id: 30
 			content_object_id: topic/5
 

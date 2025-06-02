@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-go/perm"
 )
 
 func TestOptionModeA(t *testing.T) {
@@ -158,7 +158,7 @@ func TestOptionModeB(t *testing.T) {
 			meeting_id: 30
 			content_object_id: topic/5
 			state: published
-		topic/5:	
+		topic/5:
 			meeting_id: 30
 			agenda_item_id: 7
 		agenda_item/7/meeting_id: 30
