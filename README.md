@@ -16,7 +16,7 @@ The service needs some secrets to run. You can create them with:
 ```
 mkdir secrets
 printf "password" > secrets/postgres_password
-printf "my_token_key" > secrets/auth_token_key 
+printf "my_token_key" > secrets/auth_token_key
 printf "my_cookie_key" > secrets/auth_cookie_key
 ```
 
@@ -121,11 +121,6 @@ With the query parameter `single` the server writes the first response and
 closes the request immediately. So there are not autoupdates:
 
 `curl -N localhost:9012/system/autoupdate?k=user/1/username&single=1`
-
-With the query parameter `position=XX` it is possible to request the data at a
-specific position from the datastore. This implieds `single`:
-
-`curl -N localhost:9012/system/autoupdate?k=user/1/username&position=42`
 
 
 ### Updates via redis
@@ -279,9 +274,3 @@ fallback.
 ## Configuration
 
 The service is configurated with environment variables. See [all environment varialbes](environment.md).
-
-
-## Update models.yml
-
-To use a new models.yml update the meta repository in `meta`.
-Afterwards call `go generate ./...` to update the generated files.

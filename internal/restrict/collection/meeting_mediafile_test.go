@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-go/perm"
 )
 
 func TestMeetingMediafileModeA(t *testing.T) {
@@ -73,7 +73,7 @@ func TestMeetingMediafileModeA(t *testing.T) {
 		`---
 		meeting_mediafile/1:
 			meeting_id: 7
-		
+
 		meeting/7:
 			group_ids: [2]
 			committee_id: 8
@@ -138,7 +138,7 @@ func TestMeetingMediafileModeA(t *testing.T) {
 		meeting_mediafile/1:
 			meeting_id: 7
 			projection_ids: [4]
-		
+
 		meeting/7:
 			committee_id: 404
 			group_ids: [2]
@@ -163,7 +163,7 @@ func TestMeetingMediafileModeA(t *testing.T) {
 		meeting/7:
 			group_ids: [2]
 			committee_id: 404
-		
+
 		group/2/meeting_user_ids: [10]
 		meeting_user/10/user_id: 1
 
@@ -278,7 +278,7 @@ func TestMeetingMediafileModeA(t *testing.T) {
 
 		group/3/id: 3
 		group/3/meeting_user_ids: [10]
-		
+
 		user/1/meeting_user_ids: [10]
 		meeting_user/10/group_ids: [3]
 		meeting_user/10/meeting_id: 7
