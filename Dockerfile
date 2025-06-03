@@ -6,6 +6,7 @@ FROM golang:${GOLANG_IMAGE_VERSION}-alpine as base
 ## Setup
 ARG CONTEXT
 ARG GOLANG_IMAGE_VERSION
+
 WORKDIR /root/openslides-autoupdate-service
 ENV ${CONTEXT}=1
 
