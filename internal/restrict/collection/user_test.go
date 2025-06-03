@@ -84,6 +84,22 @@ func TestUserModeA(t *testing.T) {
 	)
 
 	testCase(
+		"Committee Manager of parent",
+		t,
+		f,
+		true,
+		`---
+		user/2/committee_ids: [7]
+		user/1:
+			committee_management_ids: [5]
+		committee/5/all_child_ids: [7]
+		committee/7/user_ids: [2]
+		`,
+		withRequestUser(1),
+		withElementID(2),
+	)
+
+	testCase(
 		"user.can_see in meeting",
 		t,
 		f,

@@ -15,12 +15,13 @@ import (
 //
 //	`meeting/enable_anonymous` and organization/1/enable_anonymous.
 //	The user is in the meeting.
-//	The user has the CML can_manage of the meeting's committee.
+//	The user has the CML can_manage of the meeting's committee or of a parent committee.
 //	The user has the CML can_manage of any meeting and the meeting is a template meeting.
 //	The user has the OML can_manage_organization.
 //
 // If `meeting/locked_from_inside` is set, only users in the meeting can see it.
-// If the user is locked out (meeting_user/locked_out) he can not see the meeting.
+// If the user is locked out (meeting_user/locked_out) he can not see the
+// meeting.
 //
 // Mode A: Anyone can see it. Even anonymous.
 //
@@ -32,7 +33,8 @@ import (
 //
 // Mode E: The user can see the meeting or is superadmin.
 //
-// Mode F: The user can see the meeting or is organization manager or higher.
+// Mode F: The user can see the meeting or is organization manager or higher or
+// committee manager of the committee or a parent committee of the committee.
 type Meeting struct{}
 
 // Name returns the collection name.
@@ -204,7 +206,34 @@ func (m Meeting) modeF(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int
 		return meetingIDs, nil
 	}
 
-	return Collection(ctx, m.Name()).Modes("B")(ctx, ds, meetingIDs...)
+	committeeAdminIDs, err := perm.ManagementLevelCommittees(ctx, ds, requestUser)
+	if err != nil {
+		return nil, fmt.Errorf("getting committee admin ids: %w", err)
+	}
+
+	committeeIDs := make([]int, len(meetingIDs))
+	for i, meetingID := range meetingIDs {
+		ds.Meeting_CommitteeID(meetingID).Lazy(&committeeIDs[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("fetching committee ids: %w", err)
+	}
+
+	var allowed []int
+	for i, meetingID := range meetingIDs {
+		if slices.Contains(committeeAdminIDs, committeeIDs[i]) {
+			allowed = append(allowed, meetingID)
+		}
+	}
+
+	fromSee, err := Collection(ctx, m.Name()).Modes("B")(ctx, ds, meetingIDs...)
+	if err != nil {
+		return nil, fmt.Errorf("check can see: %w", err)
+	}
+
+	allowed = append(allowed, fromSee...)
+	return allowed, nil
 }
 
 func (m Meeting) modeC(ctx context.Context, ds *dsfetch.Fetch, meetingIDs ...int) ([]int, error) {

@@ -3,6 +3,7 @@ package collection
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-go/perm"
@@ -10,13 +11,14 @@ import (
 
 // Committee handels permission for committees.
 //
-// See user can see a committee, if he is in committee/user_ids or have the OML
-// can_manage_users or higher.
+// See user can see a committee, if he is in committee/user_ids, have the OML
+// can_manage_users or higher or the CML `can_manage` in the committee or an
+// parent committee.
 //
 // Mode A: The user can see the committee.
 //
 // Mode B: The user must have the OML `can_manage_organization` or higher or the
-// CML `can_manage` in the committee.
+// CML `can_manage` in the committee or an parent committee.
 type Committee struct{}
 
 // Name returns the collection name.
@@ -56,15 +58,22 @@ func (c Committee) see(ctx context.Context, ds *dsfetch.Fetch, committeeIDs ...i
 	}
 
 	allowed, err := eachCondition(committeeIDs, func(committeeID int) (bool, error) {
+		cmlCanManage, err := perm.HasCommitteeManagementLevel(ctx, ds, requestUser, committeeID)
+		if err != nil {
+			return false, fmt.Errorf("checking committee management level: %w", err)
+		}
+
+		if cmlCanManage {
+			return true, nil
+		}
+
 		userIDs, err := ds.Committee_UserIDs(committeeID).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("getting committee users: %w", err)
 		}
 
-		for _, uid := range userIDs {
-			if uid == requestUser {
-				return true, nil
-			}
+		if slices.Contains(userIDs, requestUser) {
+			return true, nil
 		}
 		return false, nil
 	})
