@@ -149,6 +149,31 @@ func TestMotionModeC(t *testing.T) {
 	)
 
 	testCase(
+		"admin with restrict is_submitter not submitter",
+		t,
+		f,
+		true,
+		`---
+		motion/1:
+			meeting_id: 30
+			state_id: 3
+			submitter_ids: [4]
+
+		motion_state/3/restrictions:
+		- is_submitter
+
+		motion_submitter/4/meeting_user_id: 20
+		meeting_user/20/user_id: 2
+
+		meeting/30/admin_group_id: 13
+		user/1/meeting_user_ids: [10]
+		meeting_user/10:
+			group_ids: [13]
+			meeting_id: 30
+		`,
+	)
+
+	testCase(
 		"motion.can_see with restrict perm",
 		t,
 		f,
