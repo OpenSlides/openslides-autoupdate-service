@@ -5,11 +5,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/OpenSlides/openslides-go/metagen"
 	"github.com/OpenSlides/openslides-go/set"
 )
 
 func TestRestrictModeForAll(t *testing.T) {
-	for collectionField := range restrictionModes {
+	for collectionField := range metagen.RestrictionModes {
 		collection, field, found := strings.Cut(collectionField, "/")
 		if !found {
 			t.Fatalf("invalid field %s, expected one /", collectionField)
@@ -28,7 +29,7 @@ func TestRestrictModeForAll(t *testing.T) {
 
 func TestCollectionOrderContainsAll(t *testing.T) {
 	allCollection := set.New[string]()
-	for collectionField := range restrictionModes {
+	for collectionField := range metagen.RestrictionModes {
 		collection, _, found := strings.Cut(collectionField, "/")
 		if !found {
 			t.Fatalf("invalid field %s, expected one /", collectionField)
