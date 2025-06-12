@@ -53,7 +53,7 @@ jobs:
       - name: Build Prod
         uses: Janmtbehrens/OpenSlides/dev/actions/build-service@all-in-one
         with:
-          service: auth
+          service: autoupdate
           context: prod
 
       - name: Start With Docker
@@ -65,7 +65,7 @@ jobs:
       - name: Build Dev
         uses: Janmtbehrens/OpenSlides/dev/actions/build-service@all-in-one
         with:
-          service: auth
+          service: autoupdate
           context: dev
 
       - name: Start With Auto Restart
