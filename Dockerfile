@@ -41,6 +41,7 @@ FROM base as dev
 RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
 
 
+
 # Test Image
 FROM base as tests
 
