@@ -40,13 +40,6 @@ FROM base as dev
 
 RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
 
-WORKDIR /root
-
-## Command (workdir reset)
-COPY ./dev/command.sh ./
-RUN chmod +x command.sh
-CMD ["./command.sh"]
-
 
 # Test Image
 FROM base as tests
