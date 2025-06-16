@@ -35,7 +35,7 @@ FROM base as dev
 
 RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
 
-CMD ["CompileDaemon", "-log-prefix=false", "-build='go build'", "-command='./openslides-autoupdate-service'"]
+CMD CompileDaemon -log-prefix=false -build="go build" -command="./openslides-autoupdate-service"
 
 
 # Test Image
