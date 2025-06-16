@@ -1,11 +1,9 @@
 ARG CONTEXT=prod
-ARG GOLANG_IMAGE_VERSION=1.24.3
 
-FROM golang:${GOLANG_IMAGE_VERSION}-alpine as base
+FROM golang:1.24.3-alpine as base
 
 ## Setup
 ARG CONTEXT
-ARG GOLANG_IMAGE_VERSION
 
 WORKDIR /root/openslides-autoupdate-service
 ENV ${CONTEXT}=1
@@ -27,10 +25,7 @@ LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-
 
 EXPOSE 9012
 
-## Command
-COPY ./dev/command.sh ./
-RUN chmod +x command.sh
-CMD ["./command.sh"]
+## Healthcheck
 HEALTHCHECK CMD ["/openslides-autoupdate-service", "health"]
 
 
@@ -40,6 +35,7 @@ FROM base as dev
 
 RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
 
+CMD ["CompileDaemon", "-log-prefix=false", "-build='go build'", "-command='./openslides-autoupdate-service'"]
 
 
 # Test Image
@@ -47,6 +43,7 @@ FROM base as tests
 
 RUN apk add build-base --no-cache
 
+CMD go vet ./... && go test -test.short ./...
 
 
 # Production Image
