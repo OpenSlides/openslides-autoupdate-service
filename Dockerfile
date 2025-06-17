@@ -66,3 +66,5 @@ COPY --from=builder /root/openslides-autoupdate-service/openslides-autoupdate-se
 
 EXPOSE 9012
 ENTRYPOINT ["/openslides-autoupdate-service"]
+
+HEALTHCHECK CMD ["/openslides-autoupdate-service", "health"]

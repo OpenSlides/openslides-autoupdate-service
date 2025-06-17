@@ -25,6 +25,7 @@ jobs:
 
       - name: test
         run: go test -timeout 30s -race ./...
+
   readme-validation:
     # This Job confirms the validity and functionality of all functions presented in the README.md file
     name: Readme Validation
