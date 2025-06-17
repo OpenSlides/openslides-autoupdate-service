@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-go/perm"
 )
 
 func TestMotionSubmitterModeA(t *testing.T) {
@@ -18,11 +18,11 @@ func TestMotionSubmitterModeA(t *testing.T) {
 		`---
 		motion_submitter/1:
 			motion_id: 5
-		
+
 		motion/5:
 			meeting_id: 30
 			state_id: 3
-		
+
 		motion_state/3/id: 3
 
 		meeting/30/locked_from_inside: false
@@ -37,11 +37,11 @@ func TestMotionSubmitterModeA(t *testing.T) {
 		`---
 		motion_submitter/1:
 			motion_id: 5
-		
+
 		motion/5:
 			meeting_id: 30
 			state_id: 3
-		
+
 		motion_state/3/id: 3
 		`,
 		withPerms(30, perm.MotionCanSee),
@@ -59,11 +59,11 @@ func TestMotionSubmitterModeA(t *testing.T) {
 				motion_id: 5
 			2:
 				motion_id: 5
-		
+
 		motion/5:
 			meeting_id: 30
 			state_id: 3
-			
+
 		motion_state/3/id: 3
 		`,
 		withPerms(30, perm.MotionCanSee),
@@ -81,16 +81,16 @@ func TestMotionSubmitterModeA(t *testing.T) {
 				motion_id: 5
 			2:
 				motion_id: 6
-		
+
 		motion:
 			5:
 				meeting_id: 30
 				state_id: 3
-			
-			6: 
+
+			6:
 				meeting_id: 30
 				state_id: 3
-			
+
 		motion_state/3/id: 3
 		`,
 		withPerms(30, perm.MotionCanSee),
@@ -108,17 +108,17 @@ func TestMotionSubmitterModeA(t *testing.T) {
 				motion_id: 5
 			2:
 				motion_id: 6
-		
+
 		motion:
 			5:
 				meeting_id: 30
 				state_id: 3
 				submitter_ids: [4]
-			
-			6: 
+
+			6:
 				meeting_id: 30
 				state_id: 3
-			
+
 		motion_state/3/restrictions:
 			- is_submitter
 

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-go/perm"
 )
 
 func TestMotionModeC(t *testing.T) {
@@ -396,7 +396,7 @@ func TestMotionModeC(t *testing.T) {
 			meeting_id: 30
 			lead_motion_id: 1
 			state_id: 30
-		
+
 		motion_state/10/id: 10
 
 		motion_state/30/restrictions:
@@ -421,7 +421,7 @@ func TestMotionModeA(t *testing.T) {
 		motion/1:
 			id: 1
 			meeting_id: 30
-		
+
 		meeting/30/committee_id: 300
 		`,
 	)
@@ -435,7 +435,7 @@ func TestMotionModeA(t *testing.T) {
 		motion/1:
 			meeting_id: 30
 			state_id: 3
-		
+
 		motion_state/3/id: 3
 		`,
 		withPerms(30, perm.MotionCanSee),

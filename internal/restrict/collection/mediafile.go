@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/perm"
 )
 
 // Mediafile handels permissions for the collection mediafile.
@@ -15,7 +15,8 @@ import (
 // Mediafiles can be seen if:
 //
 //	The mediafile belongs to the organization (decided by owner_id) and the user has organization management permissions.
-//	The user is admin in a meeting and published_to_meetings_in_organization_id is not null.
+//	The user is admin in a meeting, can manage a committee or has organization management permissions and
+//	published_to_meetings_in_organization_id is not null.
 //	The user can see any of the meeting mediafiles of the mediafile.
 //	The field token is set to any non empty value.
 //
@@ -71,7 +72,7 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 		return nil, fmt.Errorf("getting organization management level: %w", err)
 	}
 
-	isMeetingAdmin, err := isAdminInAnyMeeting(ctx, ds)
+	isMeetingAdmin, err := isAdminInAnyMeetingOrCommitteeAdmin(ctx, ds)
 	if err != nil {
 		return nil, fmt.Errorf("checking if user is meeting admin: %w", err)
 	}
@@ -124,7 +125,7 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 	})
 }
 
-func isAdminInAnyMeeting(ctx context.Context, ds *dsfetch.Fetch) (bool, error) {
+func isAdminInAnyMeetingOrCommitteeAdmin(ctx context.Context, ds *dsfetch.Fetch) (bool, error) {
 	userID, err := perm.RequestUserFromContext(ctx)
 	if err != nil {
 		return false, fmt.Errorf("getting request user: %w", err)
@@ -132,6 +133,24 @@ func isAdminInAnyMeeting(ctx context.Context, ds *dsfetch.Fetch) (bool, error) {
 
 	if userID == 0 {
 		return false, nil
+	}
+
+	isOrgaManager, err := perm.HasOrganizationManagementLevel(ctx, ds, userID, perm.OMLCanManageOrganization)
+	if err != nil {
+		return false, fmt.Errorf("checking for superadmin: %w", err)
+	}
+
+	if isOrgaManager {
+		return true, nil
+	}
+
+	committeeIDs, err := ds.User_CommitteeManagementIDs(userID).Value(ctx)
+	if err != nil {
+		return false, fmt.Errorf("fetching user/%d/committee_management_ids: %w", userID, err)
+	}
+
+	if len(committeeIDs) > 0 {
+		return true, nil
 	}
 
 	meetingUserIDs, err := ds.User_MeetingUserIDs(userID).Value(ctx)
@@ -146,7 +165,7 @@ func isAdminInAnyMeeting(ctx context.Context, ds *dsfetch.Fetch) (bool, error) {
 		}
 
 		adminGroups := make([]dsfetch.Maybe[int], len(groupIDs))
-		for i := 0; i < len(groupIDs); i++ {
+		for i := range groupIDs {
 			ds.Group_AdminGroupForMeetingID(groupIDs[i]).Lazy(&adminGroups[i])
 		}
 

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-go/perm"
 )
 
 func TestStructureLevelModeA(t *testing.T) {

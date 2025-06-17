@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-go/perm"
 )
 
 func TestMediafileModeA(t *testing.T) {
@@ -163,7 +163,7 @@ func TestMediafileModeA(t *testing.T) {
 
 		meeting_mediafile/2:
 			meeting_id: 7
-		
+
 		meeting/7:
 			group_ids: [2]
 			committee_id: 8
@@ -261,11 +261,11 @@ func TestMediafileModeA(t *testing.T) {
 		meeting_mediafile/2:
 			meeting_id: 7
 			projection_ids: [4]
-		
+
 		meeting/7:
 			id: 7
 			committee_id: 404
-		
+
 		projection/4/current_projector_id: 5
 		`,
 	)
@@ -287,7 +287,7 @@ func TestMediafileModeA(t *testing.T) {
 		meeting/7:
 			id: 7
 			committee_id: 404
-		
+
 		projection/4/id: 4
 		`,
 		withPerms(7, perm.ProjectorCanSee),
@@ -379,7 +379,7 @@ func TestMediafileModeA(t *testing.T) {
 
 		group/3/id: 3
 		group/3/meeting_user_ids: [10]
-		
+
 		user/1/meeting_user_ids: [10]
 		meeting_user/10/group_ids: [3]
 		meeting_user/10/meeting_id: 7
@@ -431,6 +431,44 @@ func TestMediafileModeA(t *testing.T) {
 			committee_id: 300
 
 		group/3/id: 3
+		`,
+	)
+
+	testCase(
+		"mediafile without perm can_see as orga admin",
+		t,
+		m.Modes("A"),
+		true,
+		`---
+		user/1/organization_management_level: can_manage_organization
+
+		mediafile/1:
+			owner_id: meeting/7
+			meeting_mediafile_ids: [2]
+
+		meeting_mediafile/2:
+			meeting_id: 7
+			inherited_access_group_ids: [3]
+
+		meeting/7:
+			id: 7
+			committee_id: 300
+
+		group/3/id: 3
+		`,
+	)
+
+	testCase(
+		"mediafile without perm can_see as committee admin",
+		t,
+		m.Modes("A"),
+		true,
+		`---
+		user/1/committee_management_ids: [1]
+
+		mediafile/1:
+			owner_id: organization/1
+			published_to_meetings_in_organization_id: 1
 		`,
 	)
 }

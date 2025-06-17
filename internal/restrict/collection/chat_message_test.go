@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-go/perm"
 )
 
 func TestChatMessageModeA(t *testing.T) {
@@ -34,7 +34,7 @@ func TestChatMessageModeA(t *testing.T) {
 		chat_message/1/chat_group_id: 5
 		chat_group/5:
 			meeting_id: 30
-		
+
 		meeting/30/id: 30
 		`,
 		withPerms(30, perm.ChatCanManage),
@@ -50,7 +50,7 @@ func TestChatMessageModeA(t *testing.T) {
 		chat_group/5:
 			meeting_id: 30
 			read_group_ids: [4]
-		
+
 		meeting/30/id: 30
 		group/4/id: 4
 
@@ -73,8 +73,8 @@ func TestChatMessageModeA(t *testing.T) {
 
 		chat_group/5:
 			meeting_id: 30
-		
-		meeting/10/id: 10		
+
+		meeting/10/id: 10
 		`,
 	)
 
@@ -91,8 +91,8 @@ func TestChatMessageModeA(t *testing.T) {
 
 		chat_group/5:
 			meeting_id: 30
-		
-		meeting/10/id: 10		
+
+		meeting/10/id: 10
 		`,
 	)
 }
