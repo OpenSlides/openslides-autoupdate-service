@@ -26,6 +26,18 @@ jobs:
       - name: test
         run: go test -timeout 30s -race ./...
 
+  # This setups and runs the dev/run-tests.sh script
+  build-and-test-service:
+    name: Build and test development docker image with Docker Compose
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Test
+        uses: Janmtbehrens/OpenSlides/dev/actions/build-and-test-service@all-in-one
+        with:
+          service: backend
+
   readme-validation:
     # This Job confirms the validity and functionality of all functions presented in the README.md file
     name: Readme Validation
