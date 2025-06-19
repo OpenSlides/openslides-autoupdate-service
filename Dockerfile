@@ -5,7 +5,7 @@ FROM golang:1.24.3-alpine as base
 ## Setup
 ARG CONTEXT
 
-WORKDIR /root/openslides-autoupdate-service
+WORKDIR /app/openslides-autoupdate-service
 ENV ${CONTEXT}=1
 
 ## Install
@@ -62,7 +62,7 @@ LABEL org.opencontainers.image.description="The Autoupdate Service is a http end
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-autoupdate-service"
 
-COPY --from=builder /root/openslides-autoupdate-service/openslides-autoupdate-service .
+COPY --from=builder /app/openslides-autoupdate-service/openslides-autoupdate-service .
 
 EXPOSE 9012
 ENTRYPOINT ["/openslides-autoupdate-service"]
