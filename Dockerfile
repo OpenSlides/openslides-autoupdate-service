@@ -26,7 +26,7 @@ LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-
 EXPOSE 9012
 
 ## Healthcheck
-HEALTHCHECK CMD ["/openslides-autoupdate-service", "health"]
+HEALTHCHECK CMD ["/app/openslides-autoupdate-service/openslides-autoupdate-service", "health"]
 
 
 
