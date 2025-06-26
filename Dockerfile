@@ -6,7 +6,9 @@ FROM golang:1.24.3-alpine as base
 ARG CONTEXT
 
 WORKDIR /app/openslides-autoupdate-service
-ENV ${CONTEXT}=1
+# Used for easy target differentiation
+ARG ${CONTEXT}=1 
+ENV APP_CONTEXT=${CONTEXT}
 
 ## Install
 RUN apk add git --no-cache
@@ -56,6 +58,7 @@ RUN go build
 FROM scratch as prod
 
 WORKDIR /
+ENV APP_CONTEXT=prod
 
 LABEL org.opencontainers.image.title="OpenSlides Autoupdate Service"
 LABEL org.opencontainers.image.description="The Autoupdate Service is a http endpoint where the clients can connect to get the current data and also updates."
