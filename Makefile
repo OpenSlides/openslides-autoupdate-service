@@ -10,7 +10,7 @@ build-test:
 	bash ../dev/scripts/makefile/build-service.sh $(SERVICE) tests
 
 run-tests:
-	bash dev/run-tests.sh 
+	bash dev/run-tests.sh
 
 all: gofmt gotest golinter
 

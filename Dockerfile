@@ -6,8 +6,6 @@ FROM golang:1.24.3-alpine as base
 ARG CONTEXT
 
 WORKDIR /app/openslides-autoupdate-service
-# Used for easy target differentiation
-ARG ${CONTEXT}=1 
 ENV APP_CONTEXT=${CONTEXT}
 
 ## Install
@@ -30,15 +28,12 @@ EXPOSE 9012
 ## Healthcheck
 HEALTHCHECK CMD ["/app/openslides-autoupdate-service/openslides-autoupdate-service", "health"]
 
-
-
 # Development Image
 FROM base as dev
 
 RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
 
 CMD CompileDaemon -log-prefix=false -build="go build" -command="./openslides-autoupdate-service"
-
 
 # Test Image
 FROM base as tests
@@ -47,13 +42,10 @@ RUN apk add build-base --no-cache
 
 CMD go vet ./... && go test -test.short ./...
 
-
 # Production Image
 
 FROM base as builder
 RUN go build
-
-
 
 FROM scratch as prod
 
