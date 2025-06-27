@@ -131,4 +131,32 @@ func TestCommitteeModeB(t *testing.T) {
 		`,
 		withElementID(5),
 	)
+
+	testCase(
+		"In forward_to_committee_ids",
+		t,
+		c.Modes("B"),
+		true,
+		`---
+		committee/1/id: 1
+		committee/2/forward_to_committee_ids: [1]
+		user/1:
+			committee_management_ids: [1]
+		`,
+		withElementID(2),
+	)
+
+	testCase(
+		"In receive_forwardings_from_committee_ids",
+		t,
+		c.Modes("B"),
+		true,
+		`---
+		committee/1/id: 1
+		committee/2/receive_forwardings_from_committee_ids: [1]
+		user/1:
+			committee_management_ids: [1]
+		`,
+		withElementID(2),
+	)
 }
