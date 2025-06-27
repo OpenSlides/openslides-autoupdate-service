@@ -2,6 +2,7 @@ package autoupdate
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -33,8 +34,8 @@ type Flow struct {
 }
 
 // NewFlow initializes a flow for the autoupdate service.
-func NewFlow(lookup environment.Environmenter, messageBus flow.Updater, skipVoteService bool) (*Flow, func(context.Context, func(error)), error) {
-	postgres, err := datastore.NewFlowPostgres(lookup, messageBus)
+func NewFlow(lookup environment.Environmenter, skipVoteService bool) (*Flow, func(context.Context, func(error)), error) {
+	postgres, err := datastore.NewFlowPostgres(lookup)
 	if err != nil {
 		return nil, nil, fmt.Errorf("init postgres: %w", err)
 	}
@@ -86,5 +87,5 @@ func (f *Flow) metric(values metric.Container) {
 }
 
 func (f *Flow) historyInformation(ctx context.Context, fqid string, w io.Writer) error {
-	return f.postgres.HistoryInformation(ctx, fqid, w)
+	return errors.New("TODO")
 }
