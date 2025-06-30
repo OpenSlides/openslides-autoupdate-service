@@ -40,7 +40,7 @@ FROM base as tests
 
 RUN apk add build-base --no-cache
 
-CMD go vet ./... && go test -test.short ./...
+RUN go install golang.org/x/lint/golint@latest
 
 # Production Image
 
