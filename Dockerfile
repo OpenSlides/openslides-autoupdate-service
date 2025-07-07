@@ -18,11 +18,6 @@ COPY main.go main.go
 COPY internal internal
 
 ## External Information
-LABEL org.opencontainers.image.title="OpenSlides Autoupdate Service"
-LABEL org.opencontainers.image.description="The Autoupdate Service is a http endpoint where the clients can connect to get the current data and also updates."
-LABEL org.opencontainers.image.licenses="MIT"
-LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-autoupdate-service"
-
 EXPOSE 9012
 
 ## Healthcheck
@@ -49,7 +44,8 @@ RUN go build
 
 FROM scratch as prod
 
-WORKDIR /
+## Setup
+ARG CONTEXT
 ENV APP_CONTEXT=prod
 
 LABEL org.opencontainers.image.title="OpenSlides Autoupdate Service"
@@ -57,7 +53,7 @@ LABEL org.opencontainers.image.description="The Autoupdate Service is a http end
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-autoupdate-service"
 
-COPY --from=builder /app/openslides-autoupdate-service/openslides-autoupdate-service .
+COPY --from=builder /app/openslides-autoupdate-service/openslides-autoupdate-service /
 
 EXPOSE 9012
 ENTRYPOINT ["/openslides-autoupdate-service"]
