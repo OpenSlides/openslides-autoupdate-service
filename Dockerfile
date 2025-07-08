@@ -33,9 +33,18 @@ CMD CompileDaemon -log-prefix=false -build="go build" -command="./openslides-aut
 # Test Image
 FROM base as tests
 
-RUN apk add build-base --no-cache
+COPY dev/container-tests.sh ./dev/container-tests.sh
 
-CMD go vet ./... && go test -test.short ./...
+RUN apk add --no-cache \
+    build-base \
+    docker && \
+    go get -u github.com/ory/dockertest/v3 && \
+    go install golang.org/x/lint/golint@latest && \
+    chmod +x dev/container-tests.sh
+
+## Command
+STOPSIGNAL SIGKILL
+CMD ["sleep", "inf"]
 
 # Production Image
 
