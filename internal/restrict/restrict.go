@@ -1,7 +1,5 @@
 package restrict
 
-//go:generate  sh -c "go run gen_field_def/main.go > field_def.go"
-
 import (
 	"context"
 	"encoding/json"
@@ -12,12 +10,13 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/datastore/flow"
 	"github.com/OpenSlides/openslides-go/fastjson"
+	"github.com/OpenSlides/openslides-go/metagen"
 	"github.com/OpenSlides/openslides-go/oserror"
+	"github.com/OpenSlides/openslides-go/perm"
 	"github.com/OpenSlides/openslides-go/set"
 )
 
@@ -300,7 +299,7 @@ func manipulateRelations(key dskey.Key, value []byte, allowedRestrictions map[co
 }
 
 func isRelation(collectionField string, value []byte) (collection.CM, int, bool, error) {
-	toCollectionfield, ok := relationFields[collectionField]
+	toCollectionfield, ok := metagen.RelationFields[collectionField]
 	if !ok {
 		return collection.CM{}, 0, false, nil
 	}
@@ -320,7 +319,7 @@ func isRelation(collectionField string, value []byte) (collection.CM, int, bool,
 }
 
 func isRelationList(keyPrefix string, value []byte) (collection.CM, []int, bool, error) {
-	toCollectionfield, ok := relationListFields[keyPrefix]
+	toCollectionfield, ok := metagen.RelationListFields[keyPrefix]
 	if !ok {
 		return collection.CM{}, nil, false, nil
 	}
@@ -340,7 +339,7 @@ func isRelationList(keyPrefix string, value []byte) (collection.CM, []int, bool,
 }
 
 func isGenericRelation(keyPrefix string, value []byte) (collection.CM, int, bool, error) {
-	toCollectionfield, ok := genericRelationFields[keyPrefix]
+	toCollectionfield, ok := metagen.GenericRelationFields[keyPrefix]
 	if !ok {
 		return collection.CM{}, 0, false, nil
 	}
@@ -364,7 +363,7 @@ type collectionModeID struct {
 }
 
 func isGenericRelationList(keyPrefix string, value []byte) (map[string]collectionModeID, []string, bool, error) {
-	toCollectionfield, ok := genericRelationListFields[keyPrefix]
+	toCollectionfield, ok := metagen.GenericRelationListFields[keyPrefix]
 	if !ok {
 		return nil, nil, false, nil
 	}
@@ -418,10 +417,10 @@ func genericKeyToCollectionMode(genericID string, toCollectionFieldMap map[strin
 //
 // This is a string like "A" or "B" or any other name of a restriction mode.
 func restrictModeName(collection, field string) (string, error) {
-	fieldMode, ok := restrictionModes[collection+"/"+field]
+	fieldMode, ok := metagen.RestrictionModes[collection+"/"+field]
 	if !ok {
 		// TODO LAST ERROR
-		return "", fmt.Errorf("fqfield %q is unknown, maybe run go generate ./... to fetch all fields from the models.yml", collection+"/"+field)
+		return "", fmt.Errorf("fqfield %q is unknown, maybe run go generate ./... in openlsides-go to fetch all fields from the models.yml", collection+"/"+field)
 	}
 	return fieldMode, nil
 }
@@ -431,7 +430,7 @@ func restrictModefunc(ctx context.Context, collectionName, fieldMode string) (co
 	restricter := collection.Collection(ctx, collectionName)
 	if _, ok := restricter.(collection.Unknown); ok {
 		// TODO LAST ERROR
-		return nil, fmt.Errorf("collection %q is not implemented, maybe run go generate ./... to fetch all fields from the models.yml", collectionName)
+		return nil, fmt.Errorf("collection %q is not implemented, maybe run go generate ./... in openslides-go to fetch all fields from the models.yml", collectionName)
 	}
 
 	modefunc := restricter.Modes(fieldMode)

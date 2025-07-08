@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-go/perm"
 )
 
 func TestProjectionModeA(t *testing.T) {
@@ -70,7 +70,7 @@ func TestProjectionModeA(t *testing.T) {
 			meeting_id: 30
 			current_projector_id: 7
 
-		projector/7/meeting_id: 30	
+		projector/7/meeting_id: 30
 		`,
 		withPerms(30, perm.ProjectorCanSee),
 	)

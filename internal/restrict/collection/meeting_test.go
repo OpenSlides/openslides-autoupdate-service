@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-go/perm"
 )
 
 func TestMeetingModeA(t *testing.T) {
@@ -156,6 +156,20 @@ func TestMeetingModeB(t *testing.T) {
 		`---
 		meeting/30/committee_id: 4
 		user/1/committee_management_ids: [4]
+		committee/4/all_child_ids: []
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"CML can manage from parent",
+		t,
+		m.Modes("B"),
+		true,
+		`---
+		meeting/30/committee_id: 5
+		user/1/committee_management_ids: [4]
+		committee/4/all_child_ids: [5]
 		`,
 		withElementID(30),
 	)
@@ -191,6 +205,21 @@ func TestMeetingModeB(t *testing.T) {
 		`---
 		meeting/30/committee_id: 4
 		user/1/committee_management_ids: [8]
+		committee/8/all_child_ids: []
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"CML can manage child committee",
+		t,
+		m.Modes("B"),
+		false,
+		`---
+		meeting/30/committee_id: 4
+		user/1/committee_management_ids: [5]
+		committee/4/all_child_ids: [5]
+		committee/5/all_parent_ids: [4]
 		`,
 		withElementID(30),
 	)
@@ -218,6 +247,7 @@ func TestMeetingModeB(t *testing.T) {
 			committee_id: 4
 			template_for_organization_id: 16
 		user/1/committee_management_ids: [8]
+		committee/8/all_child_ids: []
 		`,
 		withElementID(30),
 	)
@@ -407,6 +437,35 @@ func TestMeetingModeF(t *testing.T) {
 		`
 		user/1/organization_management_level: can_manage_users
 		meeting/30/locked_from_inside: true
+		meeting/30/committee_id: 4
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"locked meeting, committee manager",
+		t,
+		m,
+		true,
+		`---
+		meeting/30/locked_from_inside: true
+		meeting/30/committee_id: 4
+		user/1/committee_management_ids: [4]
+		committee/4/all_child_ids: []
+		`,
+		withElementID(30),
+	)
+
+	testCase(
+		"locked meeting, committee manager from parent",
+		t,
+		m,
+		true,
+		`---
+		meeting/30/locked_from_inside: true
+		meeting/30/committee_id: 5
+		user/1/committee_management_ids: [4]
+		committee/4/all_child_ids: [5]
 		`,
 		withElementID(30),
 	)

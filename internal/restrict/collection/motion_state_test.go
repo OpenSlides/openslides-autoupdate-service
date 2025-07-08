@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
+	"github.com/OpenSlides/openslides-go/perm"
 )
 
 func TestMotionStateModeA(t *testing.T) {
@@ -46,7 +46,7 @@ func TestMotionStateModeA(t *testing.T) {
 		motion_state/3:
 			meeting_id: 30
 			motion_ids: [1]
-			
+
 		motion_state/7/id: 7
 
 		meeting/30/locked_from_inside: false

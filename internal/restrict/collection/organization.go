@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/perm"
 )
 
 // Organization handels restrictions of the collection organization.
@@ -18,7 +18,8 @@ import (
 //
 // Mode C: The user has the OML can_manage_users or higher.
 //
-// Mode E: The user is meeting admin in at least one meeting or has the OML can_manage_organization.
+// Mode E: The user is meeting admin in at least one meeting, has the OML can_manage_organization
+// or CML `can_manage` in any committee.
 //
 // Mode D: The user is superadmin.
 type Organization struct{}
@@ -69,7 +70,7 @@ func (Organization) modeC(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int
 }
 
 func (Organization) modeE(ctx context.Context, ds *dsfetch.Fetch, ids ...int) ([]int, error) {
-	isAdmin, err := isAdminInAnyMeetingOrOrgaAdmin(ctx, ds)
+	isAdmin, err := isAdminInAnyMeetingOrCommitteeAdmin(ctx, ds)
 	if err != nil {
 		return nil, fmt.Errorf("checking is user meeting admin: %w", err)
 	}

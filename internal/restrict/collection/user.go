@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/perm"
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/perm"
 	"github.com/OpenSlides/openslides-go/set"
 )
 
@@ -15,31 +15,32 @@ import (
 //
 // The user Y can see a user X, if at least one condition is true:
 //
-//	Y==X
-//	Y has the OML can_manage_users or higher.
-//	There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
-//	Y can see a meeting_user of X.
+//   - Y==X
+//   - Y has the OML can_manage_users or higher.
+//   - There exists a committee where Y has the CML can_manage and X is in
+//     committee/user_ids or in one of its child committees.
+//   - Y can see a meeting_user of X.
 //
 // Mode A: Y can see X.
 //
 // Mode B:
 //
-//	Y==X
-//	Y has the OML can_manage_users or higher.
-//	There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
-//	X is in a group of a meeting where Y has user.can_see_sensitive_data.
+//   - Y==X
+//   - Y has the OML can_manage_users or higher.
+//   - There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
+//   - X is in a group of a meeting where Y has user.can_see_sensitive_data.
 //
 // Mode D: Y can see these fields if at least one condition is true:
 //
-//	Y has the OML can_manage_users or higher.
-//	X is in a group of a meeting where Y has user.can_manage.
+//   - Y has the OML can_manage_users or higher.
+//   - X is in a group of a meeting where Y has user.can_manage.
 //
 // Mode E: Y can see these fields if at least one condition is true:
 //
-//	Y has the OML can_manage_users or higher.
-//	There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
-//	X is in a group of a meeting where Y has user.can_manage.
-//	Y==X.
+//   - Y has the OML can_manage_users or higher.
+//   - There exists a committee where Y has the CML can_manage and X is in committee/user_ids.
+//   - X is in a group of a meeting where Y has user.can_manage.
+//   - Y==X.
 //
 // Mode F: Y has the OML can_manage_users or higher.
 //
