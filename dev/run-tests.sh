@@ -13,5 +13,5 @@ IMAGE_TAG=openslides-autoupdate-tests
 trap 'docker stop $(docker ps -a -q --filter ancestor=${IMAGE_TAG})' EXIT
 
 # Execution
-if [ "$(docker images -q $IMAGE_TAG)" = "" ]; then make build-test; fi
+make build-test
 docker run --privileged -t ${IMAGE_TAG} ./dev/container-tests.sh
