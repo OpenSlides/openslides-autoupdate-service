@@ -26,18 +26,6 @@ jobs:
       - name: test
         run: go test -timeout 30s -race ./...
 
-  # This setups and runs the dev/run-tests.sh script
-  run-test-script:
-    name: Run-tests.sh Script
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Test
-        uses: OpenSlides/OpenSlides/dev/actions/build-and-test-service@main
-        with:
-          service: autoupdate
-
   readme-validation:
     # This Job confirms the validity and functionality of all functions presented in the README.md file
     name: Readme Validation
