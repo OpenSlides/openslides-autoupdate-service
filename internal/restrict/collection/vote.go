@@ -19,13 +19,7 @@ import (
 //		The user's id is equal to vote/user_id.
 //		The user's id is equal to vote/delegated_user_id.
 //
-// Group A: The user can see the vote.
-//
-// Group B: Depends on poll/state:
-//
-//	published: Accessible if the user can see the vote.
-//	finished: Accessible if the user can manage the associated poll.
-//	others: Not accessible for anyone.
+// Mode A: The user can see the vote.
 type Vote struct{}
 
 // Name returns the collection name.
@@ -48,8 +42,6 @@ func (v Vote) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
 		return v.see
-	case "B":
-		return v.modeB
 	}
 	return nil
 }
@@ -118,45 +110,5 @@ func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int
 		}
 
 		return false, nil
-	})
-}
-
-// TODO: Group by poll or option
-func (v Vote) modeB(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int, error) {
-	return eachCondition(voteIDs, func(voteID int) (bool, error) {
-		optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("fetching option_id: %w", err)
-		}
-
-		pollID, err := pollID(ctx, ds, optionID)
-		if err != nil {
-			return false, fmt.Errorf("getting poll id: %w", err)
-		}
-		state, err := ds.Poll_State(pollID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("getting poll id and state: %w", err)
-		}
-
-		switch state {
-		case "published":
-			see, err := v.see(ctx, ds, voteID)
-			if err != nil {
-				return false, fmt.Errorf("checking see vote: %w", err)
-			}
-
-			return len(see) == 1, nil
-
-		case "finished":
-			manage, err := Poll{}.manage(ctx, ds, pollID)
-			if err != nil {
-				return false, fmt.Errorf("checking manage poll %d: %w", pollID, err)
-			}
-
-			return len(manage) == 1, nil
-
-		default:
-			return false, nil
-		}
 	})
 }
