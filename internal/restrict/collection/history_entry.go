@@ -19,7 +19,7 @@ func (h HistoryEntry) Name() string {
 	return "history_entry"
 }
 
-// A HistoryEntry has no meeting.
+// MeetingID returns false since a HistoryEntry has no meeting.
 func (h HistoryEntry) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	return 0, false, nil
 }

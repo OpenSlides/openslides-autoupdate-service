@@ -20,7 +20,7 @@ func (h HistoryPosition) Name() string {
 	return "history_position"
 }
 
-// A HistoryPosition has no meeting.
+// MeetingID returns false since a HistoryPosition has no meeting.
 func (h HistoryPosition) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	return 0, false, nil
 }
