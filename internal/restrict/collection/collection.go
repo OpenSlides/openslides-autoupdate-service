@@ -157,6 +157,8 @@ var collectionMap = map[string]Restricter{
 	Committee{}.Name():                    Committee{},
 	Gender{}.Name():                       Gender{},
 	Group{}.Name():                        Group{},
+	HistoryEntry{}.Name():                 HistoryEntry{},
+	HistoryPosition{}.Name():              HistoryPosition{},
 	ImportPreview{}.Name():                ImportPreview{},
 	Mediafile{}.Name():                    Mediafile{},
 	Meeting{}.Name():                      Meeting{},
