@@ -27,6 +27,8 @@ run-tests:
 run-lint:
 	bash dev/run-lint.sh -l
 
+gofmt:
+	gofmt -l -s -w .
 
 ########################## Deprecation List ##########################
 
@@ -53,5 +55,3 @@ gotest: | deprecation-warning
 golinter: | deprecation-warning
 	golint -set_exit_status ./...
 
-gofmt: | deprecation-warning
-	gofmt -l -s -w .

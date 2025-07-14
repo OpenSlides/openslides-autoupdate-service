@@ -7,32 +7,33 @@ echo "###################### Run Linters #####################################"
 echo "########################################################################"
 
 # Parameters
-while getopts "lscp" FLAG; do
+while getopts "ls" FLAG; do
     case "${FLAG}" in
     l) LOCAL=true ;;
-    s) SKIP_BUILD=true ;;
-    c) SKIP_CONTAINER_UP=true ;;
-    p) PERSIST_CONTAINERS=true ;;
+    s) SKIP_SETUP=true ;;
     *) echo "Can't parse flag ${FLAG}" && break ;;
     esac
 done
 
 # Setup
+CONTAINER_NAME="autoupdate-tests"
 IMAGE_TAG=openslides-autoupdate-tests
-CATCH=0
-DOCKER_EXEC="docker exec autoupdate-test"
+DOCKER_EXEC="docker exec ${CONTAINER_NAME}"
 
 # Safe Exit
-trap 'if [ -z "$PERSIST_CONTAINERS" ] && [ -z "$SKIP_CONTAINER_UP" ]; then docker stop autoupdate-test && docker rm autoupdate-test; fi' EXIT
-
-# Optionally build image
-if [ -z "$SKIP_BUILD" ]; then make build-tests; fi
+trap 'if [ -z "$LOCAL" ] && [ -z "$SKIP_SETUP" ]; then docker stop $CONTAINER_NAME && docker rm $CONTAINER_NAME; fi' EXIT
 
 # Execution
 if [ -z "$LOCAL" ]
 then
+    # Setup
+    if [ -z "$SKIP_SETUP" ]
+    then
+        make build-tests >/dev/null 2>&1
+        docker run -d --name "${CONTAINER_NAME}" "${IMAGE_TAG}"
+    fi
+
     # Container Mode
-    if [ -z "$SKIP_CONTAINER_UP" ]; then docker run -d -t --name autoupdate-test ${IMAGE_TAG}; fi
     eval "$DOCKER_EXEC go vet ./..."
     eval "$DOCKER_EXEC golint -set_exit_status ./..."
     eval "$DOCKER_EXEC gofmt -l ."

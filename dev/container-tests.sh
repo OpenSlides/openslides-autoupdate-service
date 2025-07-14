@@ -8,8 +8,7 @@ trap 'kill $DOCKERD_PID' EXIT INT TERM ERR
 
 RETRY=0
 MAX=10
-until docker info >/dev/null 2>&1
-do
+until docker info >/dev/null 2>&1; do
   if [ "$RETRY" -ge "$MAX" ]
   then
     echo "Dockerd setup error"
