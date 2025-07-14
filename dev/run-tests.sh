@@ -23,7 +23,7 @@ trap 'docker stop autoupdate-test && docker rm autoupdate-test' EXIT
 
 # Execution
 if [ -z "$SKIP_BUILD" ]; then make build-tests; fi
-docker run --privileged -t ${IMAGE_TAG} ./dev/container-tests.sh
+docker run --privileged -t ${IMAGE_TAG} --name autoupdate-test ./dev/container-tests.sh
 
 # Linters
 bash "$LOCAL_PWD"/run-lint.sh -s -c

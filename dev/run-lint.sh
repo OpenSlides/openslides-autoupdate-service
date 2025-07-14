@@ -23,7 +23,7 @@ CATCH=0
 DOCKER_EXEC="docker exec autoupdate-test"
 
 # Safe Exit
-trap 'if [ -z "$PERSIST_CONTAINERS" ] && [ -z "$SKIP_CONTAINER_UP" ]; then docker stop autoupdate-test && docker rm autoupdate-test' EXIT
+trap 'if [ -z "$PERSIST_CONTAINERS" ] && [ -z "$SKIP_CONTAINER_UP" ]; then docker stop autoupdate-test && docker rm autoupdate-test; fi' EXIT
 
 # Optionally build image
 if [ -z "$SKIP_BUILD" ]; then make build-tests; fi
