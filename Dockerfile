@@ -1,6 +1,6 @@
 ARG CONTEXT=prod
 
-FROM golang:1.24.4-alpine as base
+FROM golang:1.24.5-alpine as base
 
 ## Setup
 ARG CONTEXT
@@ -18,11 +18,6 @@ COPY main.go main.go
 COPY internal internal
 
 ## External Information
-LABEL org.opencontainers.image.title="OpenSlides Autoupdate Service"
-LABEL org.opencontainers.image.description="The Autoupdate Service is a http endpoint where the clients can connect to get the current data and also updates."
-LABEL org.opencontainers.image.licenses="MIT"
-LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-autoupdate-service"
-
 EXPOSE 9012
 
 ## Healthcheck
@@ -38,11 +33,18 @@ CMD CompileDaemon -log-prefix=false -build="go build" -command="./openslides-aut
 # Test Image
 FROM base as tests
 
-RUN apk add build-base --no-cache
+COPY dev/container-tests.sh ./dev/container-tests.sh
 
-RUN go install golang.org/x/lint/golint@latest
+RUN apk add --no-cache \
+    build-base \
+    docker && \
+    go get -u github.com/ory/dockertest/v3 && \
+    go install golang.org/x/lint/golint@latest && \
+    chmod +x dev/container-tests.sh
 
-CMD ["sleep", "infinity"]
+## Command
+STOPSIGNAL SIGKILL
+CMD ["sleep", "inf"]
 
 # Production Image
 
@@ -51,7 +53,8 @@ RUN go build
 
 FROM scratch as prod
 
-WORKDIR /
+## Setup
+ARG CONTEXT
 ENV APP_CONTEXT=prod
 
 LABEL org.opencontainers.image.title="OpenSlides Autoupdate Service"
@@ -59,7 +62,7 @@ LABEL org.opencontainers.image.description="The Autoupdate Service is a http end
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-autoupdate-service"
 
-COPY --from=builder /app/openslides-autoupdate-service/openslides-autoupdate-service .
+COPY --from=builder /app/openslides-autoupdate-service/openslides-autoupdate-service /
 
 EXPOSE 9012
 ENTRYPOINT ["/openslides-autoupdate-service"]
