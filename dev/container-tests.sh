@@ -7,14 +7,17 @@ DOCKERD_PID=$!
 trap 'kill $DOCKERD_PID' EXIT INT TERM ERR
 
 RETRY=0
-until docker info >/dev/null 2>&1; do
-  if [ "$RETRY" -ge 10 ]; then
+MAX=10
+until docker info >/dev/null 2>&1
+do
+  if [ "$RETRY" -ge "$MAX" ]
+  then
     echo "Dockerd setup error"
     exit 1
   fi
-  echo "Waiting for dockerd"
   sleep 1
-  RETRY=$(tries + 1)
+  RETRY=$((RETRY + 1))
+  echo "Waiting for dockerd $RETRY/$MAX"
 done
 
 echo "Started dockerd"
