@@ -15,9 +15,7 @@ build-tests:
 
 # Development
 
-.PHONY: dev%
-
-dev%:
+dev dev-help dev-standalone dev-detached dev-attached dev-stop dev-exec dev-enter:
 	bash $(MAKEFILE_PATH)/make-dev.sh "$@" "$(SERVICE)" "$(DOCKER_COMPOSE_FILE)" "$(ARGS)" "$(USED_SHELL)"
 
 # Tests
