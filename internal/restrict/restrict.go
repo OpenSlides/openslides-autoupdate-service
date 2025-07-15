@@ -517,6 +517,6 @@ var collectionOrder = map[string]int{
 	"motion_working_group_speaker":     56,
 	"motion_editor":                    57,
 	"gender":                           58,
-	"history_position":                 59,
-	"history_entry":                    60,
+	"history_entry":                    59,
+	"history_position":                 60,
 }

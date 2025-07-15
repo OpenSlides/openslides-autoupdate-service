@@ -5,11 +5,14 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/perm"
 )
 
 // HistoryEntry handles restrictions of the collection history_entry.
 //
-// The user can see the related history position.
+// For entries, that belong to a meeting (like motion), a user requires the
+// permission `meeting.can_see_history`. For other entries (like for an user),
+// only organization admins can see them.
 //
 // Mode A: The user can see the the history entry.
 type HistoryEntry struct{}
@@ -34,14 +37,37 @@ func (h HistoryEntry) Modes(mode string) FieldRestricter {
 }
 
 func (h HistoryEntry) see(ctx context.Context, ds *dsfetch.Fetch, ids ...int) ([]int, error) {
-	return eachRelationField(ctx, ds.HistoryEntry_PositionID, ids, func(positionID int, ids []int) ([]int, error) {
-		allowed, err := Collection(ctx, HistoryPosition{}.Name()).Modes("A")(ctx, ds, positionID)
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+
+	isOrgaAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
+	if err != nil {
+		return nil, fmt.Errorf("checking for superadmin: %w", err)
+	}
+
+	return eachContentObjectCollection(ctx, ds.HistoryEntry_ModelID, ids, func(collection string, modelID int, ids []int) ([]int, error) {
+		meetingID, hasMeeting, err := Collection(ctx, collection).MeetingID(ctx, ds, modelID)
 		if err != nil {
-			return nil, fmt.Errorf("checking history position: %w", err)
+			return nil, fmt.Errorf("get meeting of %s/%d: %w", collection, modelID, err)
 		}
-		if len(allowed) > 0 {
+		if !hasMeeting {
+			if isOrgaAdmin {
+				return ids, nil
+			}
+			return nil, nil
+		}
+
+		perms, err := perm.FromContext(ctx, meetingID)
+		if err != nil {
+			return nil, fmt.Errorf("getting permissions: %w", err)
+		}
+
+		if perms.Has(perm.MeetingCanSeeHistory) {
 			return ids, nil
 		}
+
 		return nil, nil
 	})
 }

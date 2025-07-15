@@ -5,12 +5,11 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
-	"github.com/OpenSlides/openslides-go/perm"
 )
 
 // HistoryPosition handles restrictions of the collection history_position.
 //
-// Only a superadmin can see it.
+// A user can see the position, if he can see one of its entries.
 //
 // Mode A: The user can see the the history position.
 type HistoryPosition struct{}
@@ -35,19 +34,25 @@ func (h HistoryPosition) Modes(mode string) FieldRestricter {
 }
 
 func (h HistoryPosition) see(ctx context.Context, ds *dsfetch.Fetch, historyPositionIDs ...int) ([]int, error) {
-	requestUser, err := perm.RequestUserFromContext(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getting request user: %w", err)
+	ids := make([][]int, len(historyPositionIDs))
+	for i, id := range historyPositionIDs {
+		ds.HistoryPosition_EntryIDs(id).Lazy(&ids[i])
 	}
 
-	isSuperadmin, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLSuperadmin)
-	if err != nil {
-		return nil, fmt.Errorf("checking for superadmin: %w", err)
+	if err := ds.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("fetching history: %w", err)
 	}
 
-	if isSuperadmin {
-		return historyPositionIDs, nil
-	}
+	allowed := make([]int, 0, len(historyPositionIDs))
+	for i, id := range historyPositionIDs {
+		allowedEntries, err := Collection(ctx, HistoryEntry{}.Name()).Modes("A")(ctx, ds, ids[i]...)
+		if err != nil {
+			return nil, fmt.Errorf("checking history entries: %w", err)
+		}
 
-	return nil, nil
+		if len(allowedEntries) > 0 {
+			allowed = append(allowed, id)
+		}
+	}
+	return allowed, nil
 }
