@@ -551,6 +551,16 @@ func TestPollLiveVote(t *testing.T) {
 	        meeting_id: 111
 	        live_votes: {1: 3, 6: 5, 2: 6}
 	        live_voting_enabled: true
+	vote:
+	    3:
+		    user_id: 1
+		    option_id: 1
+	    5:
+		    user_id: 6
+		    option_id: 1
+	    6:
+		    user_id: 2
+		    option_id: 2
 	motion:
 	    1:
 	        title: Motion title 1
@@ -626,7 +636,21 @@ func TestPollLiveVote(t *testing.T) {
                             "collection":"topic",
                             "title":"Topic title 2",
                             "agenda_item_number":"itemNr. Topic2"
-                        }
+                        },
+                        "votes": [{
+                            "user": {
+						        "id": 1,
+						        "title": "Billy",
+						        "first_name": "Bob",
+						        "last_name": "Buckingham"
+						    }
+                        }, {
+                            "user": {
+						        "id": 2,
+						        "first_name": "Johnny",
+						        "last_name": "Johnson"
+						    },
+                        }]
                     },
                     {
                         "content_object_id":"topic/1",
@@ -636,34 +660,25 @@ func TestPollLiveVote(t *testing.T) {
                             "collection":"topic",
                             "title":"Topic title 1",
                             "agenda_item_number":"itemNr. Topic1"
-                        }
+                        },
+                        "votes": [{
+                            "user": {
+						        "id": 6,
+						        "title": "Sir",
+						        "first_name": "Shawn Stanley Sheldon",
+						        "last_name": "Sinclair"
+						    },
+                        }]
                     }
                 ],
                 "live_votes": {
                     "1": {
-                        "user_data": {
-						    "id": 1,
-						    "title": "Billy",
-						    "first_name": "Bob",
-						    "last_name": "Buckingham"
-						},
 						"vote_id": 3
 					},
                     "2": {
-                        "user_data": {
-						    "id": 2,
-						    "first_name": "Johnny",
-						    "last_name": "Johnson"
-						},
 						"vote_id": 6
 					},
                     "6": {
-                        "user_data": {
-						    "id": 6,
-						    "title": "Sir",
-						    "first_name": "Shawn Stanley Sheldon",
-						    "last_name": "Sinclair"
-						},
 						"vote_id": 5
 					}
                 },
