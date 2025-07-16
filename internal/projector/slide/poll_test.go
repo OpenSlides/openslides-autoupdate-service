@@ -530,6 +530,9 @@ func TestPollLiveVote(t *testing.T) {
 			meeting_user_ids: [1111, 1112, 1116]
 			user_ids: [1,2,6]
 			structure_level_ids: [1, 2]
+	group:
+	    1:
+	        meeting_user_ids: [1111, 1112, 1113]
 	poll:
 	    1:
 	        content_object_id: motion/1
@@ -540,6 +543,7 @@ func TestPollLiveVote(t *testing.T) {
 	        global_yes: false
 	        global_no: true
 	        global_abstain: false
+	        entitled_group_ids: [1]
 	        option_ids: [1, 2]
 	        is_pseudoanonymized: false
 	        pollmethod: YNA
@@ -549,18 +553,8 @@ func TestPollLiveVote(t *testing.T) {
 	        votescast: "2.000000"
 	        global_option_id: 3
 	        meeting_id: 111
-	        live_votes: {1: 3, 6: 5, 2: 6}
+	        live_votes: {1: "{\"value\": {\"31\": \"Y\"}, \"weight\": \"1.000000\"}"}
 	        live_voting_enabled: true
-	vote:
-	    3:
-		    user_id: 1
-		    option_id: 1
-	    5:
-		    user_id: 6
-		    option_id: 1
-	    6:
-		    user_id: 2
-		    option_id: 2
 	motion:
 	    1:
 	        title: Motion title 1
@@ -574,7 +568,6 @@ func TestPollLiveVote(t *testing.T) {
 	        no: "5.000000"
 	        abstain: "6.000000"
 	        weight: 10
-	        vote_ids: [3, 5]
 	    2:
 	        text: Option text
 	        content_object_id: topic/2
@@ -582,7 +575,6 @@ func TestPollLiveVote(t *testing.T) {
 	        no: "4.000000"
 	        abstain: "3.000000"
 	        weight: 3
-	        vote_ids: [6]
 	    3:
 	        yes: "14.000000"
 	        no: "15.000000"
@@ -636,21 +628,7 @@ func TestPollLiveVote(t *testing.T) {
                             "collection":"topic",
                             "title":"Topic title 2",
                             "agenda_item_number":"itemNr. Topic2"
-                        },
-                        "votes": [{
-                            "user": {
-						        "id": 1,
-						        "title": "Billy",
-						        "first_name": "Bob",
-						        "last_name": "Buckingham"
-						    }
-                        }, {
-                            "user": {
-						        "id": 2,
-						        "first_name": "Johnny",
-						        "last_name": "Johnson"
-						    },
-                        }]
+                        }
                     },
                     {
                         "content_object_id":"topic/1",
@@ -660,26 +638,43 @@ func TestPollLiveVote(t *testing.T) {
                             "collection":"topic",
                             "title":"Topic title 1",
                             "agenda_item_number":"itemNr. Topic1"
-                        },
-                        "votes": [{
-                            "user": {
-						        "id": 6,
-						        "title": "Sir",
-						        "first_name": "Shawn Stanley Sheldon",
-						        "last_name": "Sinclair"
-						    },
-                        }]
+                        }
                     }
                 ],
-                "live_votes": {
+                "entitled_structure_levels": {
+                    "1": "Birmingham",
+                    "2": "Fooo"
+                },
+                "entitled_users": {
                     "1": {
-						"vote_id": 3
+                        "present": false,
+						"votes": {"31": "Y"},
+						"weight": "1.000000",
+						"user_data": {
+							"id": 1,
+							"title": "Billy",
+							"first_name": "Bob",
+							"last_name": "Buckingham"
+						}
 					},
                     "2": {
-						"vote_id": 6
+                        "present": false,
+                        "structure_level_id": 2,
+						"user_data": {
+							"id": 2,
+							"first_name": "Johnny",
+							"last_name": "Johnson"
+						}
 					},
                     "6": {
-						"vote_id": 5
+                        "present": false,
+                        "structure_level_id": 1,
+						"user_data": {
+							"id": 6,
+							"title": "Sir",
+							"first_name": "Shawn Stanley Sheldon",
+							"last_name": "Sinclair"
+						}
 					}
                 },
                 "is_pseudoanonymized":false,

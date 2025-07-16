@@ -444,7 +444,7 @@ func PollNominalLiveVoting(ctx context.Context, store *projector.SlideStore, fet
 		Vote           *json.RawMessage `json:"votes,omitempty"`
 		StructureLevel *int             `json:"structure_level_id,omitempty"`
 		Present        bool             `json:"present"`
-		Weight         *string          `json:"weight"`
+		Weight         *string          `json:"weight,omitempty"`
 	}
 
 	liveVotingEntitledUsers := map[int]*liveVoteEntitledUser{}
@@ -497,8 +497,10 @@ func PollNominalLiveVoting(ctx context.Context, store *projector.SlideStore, fet
 				return fmt.Errorf("parsing vote data: %w", err)
 			}
 
-			liveVotingEntitledUsers[userID].Weight = &vote.Weight
-			liveVotingEntitledUsers[userID].Vote = &vote.Value
+			if entry, ok := liveVotingEntitledUsers[userID]; ok {
+				entry.Weight = &vote.Weight
+				entry.Vote = &vote.Value
+			}
 		}
 	}
 
