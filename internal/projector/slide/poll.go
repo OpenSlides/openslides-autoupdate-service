@@ -428,6 +428,7 @@ func PollSingleVotes(ctx context.Context, store *projector.SlideStore, fetch *da
 	return nil
 }
 
+// PollNominalLiveVoting renders the poll_single_votes slide for live voting.
 func PollNominalLiveVoting(ctx context.Context, store *projector.SlideStore, fetch *datastore.Fetcher, p7on *projector.Projection, poll *dbPoll) error {
 	meetingUserIDs := map[int]struct{}{}
 	entitledGroupIDs := datastore.Ints(ctx, fetch.FetchIfExist, "poll/%d/entitled_group_ids", poll.ID)
@@ -474,31 +475,31 @@ func PollNominalLiveVoting(ctx context.Context, store *projector.SlideStore, fet
 		}
 
 		liveVotingEntitledUsers[userID].User = user
-
-		break
 	}
 
-	var pollLiveVoteData map[int]string
-	if err := json.Unmarshal(*poll.PollWork.LiveVotes, &pollLiveVoteData); err != nil {
-		return fmt.Errorf("reading live vote data: %w", err)
-	}
-
-	for userID, data := range pollLiveVoteData {
-		if len(data) == 0 {
-			continue
+	if poll.PollWork != nil && poll.PollWork.LiveVotes != nil {
+		var pollLiveVoteData map[int]string
+		if err := json.Unmarshal(*poll.PollWork.LiveVotes, &pollLiveVoteData); err != nil {
+			return fmt.Errorf("reading live vote data: %w", err)
 		}
 
-		var vote struct {
-			Value  json.RawMessage `json:"value"`
-			Weight string          `json:"weight"`
-		}
+		for userID, data := range pollLiveVoteData {
+			if len(data) == 0 {
+				continue
+			}
 
-		if err := json.Unmarshal([]byte(data), &vote); err != nil {
-			return fmt.Errorf("parsing vote data: %w", err)
-		}
+			var vote struct {
+				Value  json.RawMessage `json:"value"`
+				Weight string          `json:"weight"`
+			}
 
-		liveVotingEntitledUsers[userID].Weight = &vote.Weight
-		liveVotingEntitledUsers[userID].Vote = &vote.Value
+			if err := json.Unmarshal([]byte(data), &vote); err != nil {
+				return fmt.Errorf("parsing vote data: %w", err)
+			}
+
+			liveVotingEntitledUsers[userID].Weight = &vote.Weight
+			liveVotingEntitledUsers[userID].Vote = &vote.Value
+		}
 	}
 
 	poll.EntitledStructureLevels = structureLevels
