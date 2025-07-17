@@ -1,6 +1,4 @@
 override SERVICE=autoupdate
-override MAKEFILE_PATH=../dev/scripts/makefile
-override DOCKER_COMPOSE_FILE=
 
 # Build images for different contexts
 
@@ -12,13 +10,6 @@ build-dev:
 
 build-tests:
 	docker build ./ --tag "openslides-$(SERVICE)-tests" --build-arg CONTEXT="tests" --target "tests"
-
-# Development
-
-.PHONY: dev
-
-dev dev-help dev-standalone dev-detached dev-attached dev-stop dev-exec dev-enter:
-	bash $(MAKEFILE_PATH)/make-dev.sh "$@" "$(SERVICE)" "$(DOCKER_COMPOSE_FILE)" "$(ARGS)" "$(USED_SHELL)"
 
 # Tests
 run-tests:
