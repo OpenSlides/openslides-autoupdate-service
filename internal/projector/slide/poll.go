@@ -463,9 +463,9 @@ func PollNominalLiveVoting(ctx context.Context, store *projector.SlideStore, fet
 
 		structureLevelIDs := datastore.Ints(ctx, fetch.FetchIfExist, "meeting_user/%d/structure_level_ids", muID)
 		if len(structureLevelIDs) > 0 {
+			liveVotingEntitledUsers[userID].StructureLevel = &structureLevelIDs[0]
 			if _, ok := structureLevels[structureLevelIDs[0]]; !ok {
 				structureLevels[structureLevelIDs[0]] = datastore.String(ctx, fetch.FetchIfExist, "structure_level/%d/name", structureLevelIDs[0])
-				liveVotingEntitledUsers[userID].StructureLevel = &structureLevelIDs[0]
 			}
 		}
 
