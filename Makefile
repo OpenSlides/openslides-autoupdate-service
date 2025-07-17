@@ -33,18 +33,21 @@ gofmt:
 ########################## Deprecation List ##########################
 
 deprecation-warning:
-	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh
+	@echo "\033[1;33m DEPRECATION WARNING: This make command is deprecated and will be removed soon! \033[0m"
+
+deprecation-warning-alternative: | deprecation-warning
+	@echo "\033[1;33m Please use the following command instead: $(ALTERNATIVE) \033[0m"
 
 stop-dev:
-	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh "dev-stop"
+	@make deprecation-warning-alternative ALTERNATIVE="dev-stop"
 	$(DC_DEV) down --volumes --remove-orphans
 
 build-test:
-	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh "build-tests"
+	@make deprecation-warning-alternative ALTERNATIVE="build-tests"
 	make build-tests
 
 all:
-	bash $(MAKEFILE_PATH)/make-deprecation-warning.sh "run-tests for tests and lints inside a container or run-lint for local linting"
+	@make deprecation-warning-alternative ALTERNATIVE="run-tests for tests and lints inside a container or run-lint for local linting"
 	make gofmt
 	make gotest
 	make golinter
