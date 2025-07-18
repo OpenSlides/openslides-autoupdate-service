@@ -155,6 +155,13 @@ func (f *Fetcher) Err() error {
 // fetch.Fetch() or fetch.FetchIfExist().
 type FetchFunc func(ctx context.Context, value interface{}, keyFmt string, a ...interface{})
 
+// Bool fetches an boolean from the datastore.
+func Bool(ctx context.Context, fetch FetchFunc, keyFmt string, a ...interface{}) bool {
+	var value bool
+	fetch(ctx, &value, keyFmt, a...)
+	return value
+}
+
 // Int fetches an integer from the datastore.
 func Int(ctx context.Context, fetch FetchFunc, keyFmt string, a ...interface{}) int {
 	var value int

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -111,32 +112,36 @@ func optionGlobFromMap(in map[string]json.RawMessage) (*optionGlobRepr, error) {
 
 // Contains fields to be read, but never exported
 type dbPollWork struct {
-	OptionIDS      []int `json:"option_ids"`
-	MeetingID      int   `json:"meeting_id"`
-	GlobalOptionID int   `json:"global_option_id"`
+	OptionIDS      []int            `json:"option_ids"`
+	MeetingID      int              `json:"meeting_id"`
+	GlobalOptionID int              `json:"global_option_id"`
+	LiveVotes      *json.RawMessage `json:"live_votes"`
 }
 
 type dbPoll struct {
-	ID                    int              `json:"id"`
-	ContentObjectID       string           `json:"content_object_id"`
-	TitleInformation      json.RawMessage  `json:"title_information"`
-	Title                 string           `json:"title"`
-	Description           string           `json:"description"`
-	Type                  string           `json:"type"`
-	State                 string           `json:"state"`
-	GlobalYes             bool             `json:"global_yes"`
-	GlobalNo              bool             `json:"global_no"`
-	GlobalAbstain         bool             `json:"global_abstain"`
-	Options               []*optionRepr    `json:"options"`
-	EntitledUsersAtStop   *json.RawMessage `json:"entitled_users_at_stop,omitempty"`
-	IsPseudoanonymized    *bool            `json:"is_pseudoanonymized,omitempty"`
-	Pollmethod            *string          `json:"pollmethod,omitempty"`
-	OnehundredPercentBase *string          `json:"onehundred_percent_base,omitempty"`
-	Votesvalid            *string          `json:"votesvalid,omitempty"`   // Python-DecimalField
-	Votesinvalid          *string          `json:"votesinvalid,omitempty"` // Python-DecimalField
-	Votescast             *string          `json:"votescast,omitempty"`    // Python-DecimalField
-	GlobalOption          *optionGlobRepr  `json:"global_option,omitempty"`
-	PollWork              *dbPollWork      `json:",omitempty"`
+	ID                      int              `json:"id"`
+	ContentObjectID         string           `json:"content_object_id"`
+	TitleInformation        json.RawMessage  `json:"title_information"`
+	Title                   string           `json:"title"`
+	Description             string           `json:"description"`
+	Type                    string           `json:"type"`
+	State                   string           `json:"state"`
+	GlobalYes               bool             `json:"global_yes"`
+	GlobalNo                bool             `json:"global_no"`
+	GlobalAbstain           bool             `json:"global_abstain"`
+	Options                 []*optionRepr    `json:"options"`
+	EntitledUsers           *json.RawMessage `json:"entitled_users,omitempty"`
+	EntitledUsersAtStop     *json.RawMessage `json:"entitled_users_at_stop,omitempty"`
+	EntitledStructureLevels map[int]string   `json:"entitled_structure_levels,omitempty"`
+	LiveVotingEnabled       bool             `json:"live_voting_enabled"`
+	IsPseudoanonymized      *bool            `json:"is_pseudoanonymized,omitempty"`
+	Pollmethod              *string          `json:"pollmethod,omitempty"`
+	OnehundredPercentBase   *string          `json:"onehundred_percent_base,omitempty"`
+	Votesvalid              *string          `json:"votesvalid,omitempty"`   // Python-DecimalField
+	Votesinvalid            *string          `json:"votesinvalid,omitempty"` // Python-DecimalField
+	Votescast               *string          `json:"votescast,omitempty"`    // Python-DecimalField
+	GlobalOption            *optionGlobRepr  `json:"global_option,omitempty"`
+	PollWork                *dbPollWork      `json:"-"`
 }
 
 func pollFromMap(in map[string]json.RawMessage, state string) (*dbPoll, error) {
@@ -164,6 +169,7 @@ func pollSlideDataFunction(ctx context.Context, fetch *datastore.Fetcher, p7on *
 		"title",
 		"description",
 		"type",
+		"live_voting_enabled",
 		"state",
 		"global_yes",
 		"global_no",
@@ -183,7 +189,15 @@ func pollSlideDataFunction(ctx context.Context, fetch *datastore.Fetcher, p7on *
 			"votescast",
 			"global_option_id",
 		}...)
+	} else if datastore.Bool(ctx, fetch.FetchIfExist, "%s/%s", p7on.ContentObjectID, "live_voting_enabled") {
+		fetchFields = append(fetchFields, []string{
+			"live_votes",
+			"is_pseudoanonymized",
+			"pollmethod",
+			"onehundred_percent_base",
+		}...)
 	}
+
 	data := fetch.Object(ctx, p7on.ContentObjectID, fetchFields...)
 
 	poll, err := pollFromMap(data, state)
@@ -210,7 +224,6 @@ func pollSlideDataFunction(ctx context.Context, fetch *datastore.Fetcher, p7on *
 		return nil, err
 	}
 
-	poll.PollWork = nil // don't export
 	return poll, err
 }
 
@@ -366,7 +379,7 @@ func PollSingleVotes(ctx context.Context, store *projector.SlideStore, fetch *da
 	if poll.EntitledUsersAtStop != nil {
 		var pollUserData []map[string]json.RawMessage
 		if err := json.Unmarshal(*poll.EntitledUsersAtStop, &pollUserData); err != nil {
-			return fmt.Errorf("reading entitled users")
+			return fmt.Errorf("reading entitled users: %w", err)
 		}
 
 		var newUserData []map[string]interface{}
@@ -391,7 +404,7 @@ func PollSingleVotes(ctx context.Context, store *projector.SlideStore, fetch *da
 
 			user, err := getPollUser(ctx, fetch, userID)
 			if err != nil {
-				return fmt.Errorf("encoding entitled users interpretation")
+				return fmt.Errorf("encoding entitled users interpretation: %w", err)
 			}
 
 			entry["user"] = user
@@ -400,12 +413,106 @@ func PollSingleVotes(ctx context.Context, store *projector.SlideStore, fetch *da
 
 		var pollUserDataJSON, err = json.Marshal(newUserData)
 		if err != nil {
-			return fmt.Errorf("encoding entitled users interpretation")
+			return fmt.Errorf("encoding entitled users interpretation: %w", err)
 		}
 
 		var pollUserDataJSONRaw = json.RawMessage(pollUserDataJSON)
 		poll.EntitledUsersAtStop = &pollUserDataJSONRaw
+	} else if poll.LiveVotingEnabled {
+		err := PollNominalLiveVoting(ctx, store, fetch, p7on, poll)
+		if err != nil {
+			return fmt.Errorf("encoding live vote data: %w", err)
+		}
 	}
+
+	return nil
+}
+
+// PollNominalLiveVoting renders the poll_single_votes slide for live voting.
+func PollNominalLiveVoting(ctx context.Context, store *projector.SlideStore, fetch *datastore.Fetcher, p7on *projector.Projection, poll *dbPoll) error {
+	meetingUserIDs := map[int]struct{}{}
+	entitledGroupIDs := datastore.Ints(ctx, fetch.FetchIfExist, "poll/%d/entitled_group_ids", poll.ID)
+	for _, groupID := range entitledGroupIDs {
+		gMeetingUserIDs := datastore.Ints(ctx, fetch.FetchIfExist, "group/%d/meeting_user_ids", groupID)
+		for _, meetingUserID := range gMeetingUserIDs {
+			meetingUserIDs[meetingUserID] = struct{}{}
+		}
+	}
+
+	type liveVoteEntitledUser struct {
+		User           *pollUserRepr    `json:"user_data"`
+		Vote           *json.RawMessage `json:"votes,omitempty"`
+		StructureLevel *int             `json:"structure_level_id,omitempty"`
+		Present        bool             `json:"present"`
+		Weight         *string          `json:"weight,omitempty"`
+	}
+
+	liveVotingEntitledUsers := map[int]*liveVoteEntitledUser{}
+	structureLevels := map[int]string{}
+	for muID := range meetingUserIDs {
+		meetingID := datastore.Int(ctx, fetch.FetchIfExist, "meeting_user/%d/meeting_id", muID)
+		userID := datastore.Int(ctx, fetch.FetchIfExist, "meeting_user/%d/user_id", muID)
+		liveVotingEntitledUsers[userID] = &liveVoteEntitledUser{
+			Present: false,
+		}
+
+		presentMeetingIDs := datastore.Ints(ctx, fetch.FetchIfExist, "user/%d/is_present_in_meeting_ids", userID)
+		if slices.Contains(presentMeetingIDs, meetingID) {
+			liveVotingEntitledUsers[userID].Present = true
+		}
+
+		structureLevelIDs := datastore.Ints(ctx, fetch.FetchIfExist, "meeting_user/%d/structure_level_ids", muID)
+		if len(structureLevelIDs) > 0 {
+			liveVotingEntitledUsers[userID].StructureLevel = &structureLevelIDs[0]
+			if _, ok := structureLevels[structureLevelIDs[0]]; !ok {
+				structureLevels[structureLevelIDs[0]] = datastore.String(ctx, fetch.FetchIfExist, "structure_level/%d/name", structureLevelIDs[0])
+			}
+		}
+
+		user, err := getPollUser(ctx, fetch, userID)
+		if err != nil {
+			return fmt.Errorf("encoding live votes interpretation: %w", err)
+		}
+
+		liveVotingEntitledUsers[userID].User = user
+	}
+
+	if poll.PollWork != nil && poll.PollWork.LiveVotes != nil {
+		var pollLiveVoteData map[int]string
+		if err := json.Unmarshal(*poll.PollWork.LiveVotes, &pollLiveVoteData); err != nil {
+			return fmt.Errorf("reading live vote data: %w", err)
+		}
+
+		for userID, data := range pollLiveVoteData {
+			if len(data) == 0 {
+				continue
+			}
+
+			var vote struct {
+				Value  json.RawMessage `json:"value"`
+				Weight string          `json:"weight"`
+			}
+
+			if err := json.Unmarshal([]byte(data), &vote); err != nil {
+				return fmt.Errorf("parsing vote data: %w", err)
+			}
+
+			if entry, ok := liveVotingEntitledUsers[userID]; ok {
+				entry.Weight = &vote.Weight
+				entry.Vote = &vote.Value
+			}
+		}
+	}
+
+	poll.EntitledStructureLevels = structureLevels
+
+	var liveVotesDataJSON, err = json.Marshal(liveVotingEntitledUsers)
+	if err != nil {
+		return fmt.Errorf("encoding entitled users interpretation")
+	}
+
+	var liveVotesDataJSONRaw = json.RawMessage(liveVotesDataJSON)
+	poll.EntitledUsers = &liveVotesDataJSONRaw
 
 	return nil
 }
