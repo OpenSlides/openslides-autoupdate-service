@@ -80,7 +80,7 @@ jobs:
 
       - name: Start With Docker
         run: |
-          timeout --preserve-status --signal=SIGINT 5s docker run --network host -v $PWD/secrets:/run/secrets openslides-autoupdate
+          docker run --network host -v $PWD/secrets:/run/secrets openslides-autoupdate
         env:
           DOCKER_BUILDKIT: 1
 
@@ -89,6 +89,6 @@ jobs:
 
       - name: Start With Auto Restart
         run: |
-          timeout --preserve-status --signal=SIGINT 5s docker run --network host --env TIMEOUT_DEV=true --env OPENSLIDES_DEVELOPMENT=true openslides-autoupdate-dev
+          docker run --network host --env TIMEOUT_DEV=true --env OPENSLIDES_DEVELOPMENT=true openslides-autoupdate-dev
         env:
           DOCKER_BUILDKIT: 1
