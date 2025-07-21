@@ -15,7 +15,7 @@ then
         ls -a
         if [ -f "./openslides-autoupdate-service" ]; then echo "Found go executable"; fi
         echo "Couldn't find go executable"
-        exit 1
+        exit 0
     else
         CompileDaemon -log-prefix=false -build="go build" -command="./openslides-autoupdate-service"
     fi
