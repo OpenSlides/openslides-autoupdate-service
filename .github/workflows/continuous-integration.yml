@@ -32,12 +32,12 @@ jobs:
     runs-on: ubuntu-latest
     services:
       redis:
-        image: redis
+        image: redis:alpine
         ports:
           - 6379:6379
 
       postgres:
-        image: postgres
+        image: postgres:15
         env:
           POSTGRES_USER: openslides
           POSTGRES_PASSWORD: password
