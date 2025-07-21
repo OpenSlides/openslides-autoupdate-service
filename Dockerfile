@@ -31,8 +31,6 @@ CMD ["./command.sh"]
 # Development Image
 FROM base as dev
 
-CMD CompileDaemon -log-prefix=false -build="go build" -command="./openslides-autoupdate-service"
-
 RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
 
 
