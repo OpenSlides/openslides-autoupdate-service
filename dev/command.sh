@@ -11,7 +11,9 @@ then
         # Sleep for 15 seconds, then check if build executable exists
         sleep "$DEV_TIMEOUT"
 
-        if [ -f "./openslides-autoupdate-service" ]; then echo "Found go executable" && exit 0; fi
+        echo "Done sleeping"
+        ls -a
+        if [ -f "./openslides-autoupdate-service" ]; then echo "Found go executable"; fi
         echo "Couldn't find go executable"
         exit 1
     else
