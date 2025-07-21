@@ -89,7 +89,7 @@ jobs:
 
       - name: Start With Auto Restart
         run: |
-          timeout --preserve-status --signal=SIGINT 25s docker run --network host --env OPENSLIDES_DEVELOPMENT=true openslides-icc-dev
+          timeout --preserve-status --signal=SIGINT 25s docker run --network host --env OPENSLIDES_DEVELOPMENT=true openslides-autoupdate-dev
         env:
           DOCKER_BUILDKIT: 1
 
