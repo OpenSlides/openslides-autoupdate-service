@@ -23,12 +23,16 @@ EXPOSE 9012
 ## Healthcheck
 HEALTHCHECK CMD ["/app/openslides-autoupdate-service/openslides-autoupdate-service", "health"]
 
+## Command
+COPY ./dev/command.sh ./
+RUN chmod +x command.sh
+CMD ["./command.sh"]
+
 # Development Image
 FROM base as dev
 
 RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
 
-CMD CompileDaemon -log-prefix=false -build="go build" -command="./openslides-autoupdate-service"
 
 # Test Image
 FROM base as tests
@@ -44,7 +48,6 @@ RUN apk add --no-cache \
 
 ## Command
 STOPSIGNAL SIGKILL
-CMD ["sleep", "inf"]
 
 # Production Image
 
