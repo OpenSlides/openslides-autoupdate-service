@@ -28,7 +28,7 @@ jobs:
 
   readme-validation:
     # This Job confirms the validity and functionality of all functions presented in the README.md file
-    name: Readme Validation
+    name: Readme
     runs-on: ubuntu-latest
     services:
       redis:
