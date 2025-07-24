@@ -1,6 +1,17 @@
 ARG CONTEXT=prod
 
+ARG CONTEXT=prod
+
 FROM golang:1.24.5-alpine as base
+
+## Setup
+ARG CONTEXT
+
+WORKDIR /app/openslides-autoupdate-service
+ENV APP_CONTEXT=${CONTEXT}
+
+## Install
+RUN apk add git --no-cache
 
 ## Setup
 ARG CONTEXT
@@ -59,6 +70,11 @@ FROM scratch as prod
 ## Setup
 ARG CONTEXT
 ENV APP_CONTEXT=prod
+FROM scratch as prod
+
+## Setup
+ARG CONTEXT
+ENV APP_CONTEXT=prod
 
 LABEL org.opencontainers.image.title="OpenSlides Autoupdate Service"
 LABEL org.opencontainers.image.description="The Autoupdate Service is a http endpoint where the clients can connect to get the current data and also updates."
@@ -67,7 +83,10 @@ LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-
 
 COPY --from=builder /app/openslides-autoupdate-service/openslides-autoupdate-service /
 
+COPY --from=builder /app/openslides-autoupdate-service/openslides-autoupdate-service /
+
 EXPOSE 9012
 ENTRYPOINT ["/openslides-autoupdate-service"]
+
 
 HEALTHCHECK CMD ["/openslides-autoupdate-service", "health"]
