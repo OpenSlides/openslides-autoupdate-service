@@ -105,7 +105,7 @@ func autoupdateHandler(auth Authenticater, connecter Connecter) http.Handler {
 
 		body, hashes, isLongPolling, err := parseBody(r)
 		if err != nil {
-			if !errors.Is(err, io.EOF) {
+			if !(errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF)) {
 				// EOF errors happen, when clients close the conections. No need
 				// to inform about it
 				handleErrorWithStatus(w, fmt.Errorf("parse Body: %w", err))
