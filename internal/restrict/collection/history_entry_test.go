@@ -16,34 +16,40 @@ func TestHistoryEntry(t *testing.T) {
 		mode,
 		false,
 		`---
-		history_entry/1:
-			model_id: user/5
+		history_entry/1/meeting_id: 5
 		`,
 	)
 
 	testCase(
-		"orga admin",
+		"orga admin on meeting collection",
 		t,
 		mode,
 		true,
 		`---
-		history_entry/1:
-			model_id: user/5
-
+		history_entry/1/meeting_id: 5
 		user/1/organization_management_level: can_manage_organization
 		`,
 	)
 
 	testCase(
-		"meeting specific collection with perm",
+		"orga admin on non meeting collection",
 		t,
 		mode,
 		true,
 		`---
-		history_entry/1:
-			model_id: motion/5
-		motion/5/meeting_id: 77
+		history_entry/1/meeting_id: null
+		user/1/organization_management_level: can_manage_organization
 		`,
-		withPerms(77, perm.MeetingCanSeeHistory),
+	)
+
+	testCase(
+		"with perm on meeting collection",
+		t,
+		mode,
+		true,
+		`---
+		history_entry/1/meeting_id: 5
+		`,
+		withPerms(5, perm.MeetingCanSeeHistory),
 	)
 }

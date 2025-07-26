@@ -10,9 +10,9 @@ import (
 
 // HistoryEntry handles restrictions of the collection history_entry.
 //
-// For entries, that belong to a meeting (like motion), a user requires the
-// permission `meeting.can_see_history`. For other entries (like for an user),
-// only organization admins can see them.
+// If the field meeting_id is set, a user requires the permission
+// `meeting.can_see_history`. If the field is not set, only organization admins
+// can see them.
 //
 // Mode A: The user can see the the history entry.
 type HistoryEntry struct{}
@@ -24,7 +24,13 @@ func (h HistoryEntry) Name() string {
 
 // MeetingID returns false since a HistoryEntry has no meeting.
 func (h HistoryEntry) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
-	return 0, false, nil
+	mayMeetingID, err := ds.HistoryEntry_MeetingID(id).Value(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("getting meeting id: %w", err)
+	}
+
+	meetingID, ok := mayMeetingID.Value()
+	return meetingID, ok, nil
 }
 
 // Modes returns the field restricters for the collection.
@@ -47,18 +53,11 @@ func (h HistoryEntry) see(ctx context.Context, ds *dsfetch.Fetch, ids ...int) ([
 		return nil, fmt.Errorf("checking for superadmin: %w", err)
 	}
 
-	return eachContentObjectCollection(ctx, ds.HistoryEntry_ModelID, ids, func(collection string, modelID int, ids []int) ([]int, error) {
-		meetingID, hasMeeting, err := Collection(ctx, collection).MeetingID(ctx, ds, modelID)
-		if err != nil {
-			return nil, fmt.Errorf("get meeting of %s/%d: %w", collection, modelID, err)
-		}
-		if !hasMeeting {
-			if isOrgaAdmin {
-				return ids, nil
-			}
-			return nil, nil
-		}
+	if isOrgaAdmin {
+		return ids, nil
+	}
 
+	return eachMeeting(ctx, ds, h, ids, func(meetingID int, ids []int) ([]int, error) {
 		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
 			return nil, fmt.Errorf("getting permissions: %w", err)
