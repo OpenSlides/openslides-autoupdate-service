@@ -29,9 +29,8 @@ deprecation-warning:
 deprecation-warning-alternative: | deprecation-warning
 	@echo "\033[1;33m Please use the following command instead: $(ALTERNATIVE) \033[0m"
 
-stop-dev:
-	@make deprecation-warning-alternative ALTERNATIVE="dev-stop"
-	$(DC_DEV) down --volumes --remove-orphans
+run-dev run-dev-attach run-dev-attached run-dev-standalone run-bash run-dev-interactive stop-dev:
+	@make deprecation-warning-alternative ALTERNATIVE="run-dev and derivative maketargets are now only available in main repository. (use 'make dev-help' in main repository for more information)"
 
 build-test:
 	@make deprecation-warning-alternative ALTERNATIVE="build-tests"
