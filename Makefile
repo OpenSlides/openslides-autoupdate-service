@@ -47,4 +47,3 @@ gotest: | deprecation-warning
 
 golinter: | deprecation-warning
 	golint -set_exit_status ./...
-
