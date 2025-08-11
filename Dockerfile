@@ -70,11 +70,6 @@ FROM scratch as prod
 ## Setup
 ARG CONTEXT
 ENV APP_CONTEXT=prod
-FROM scratch as prod
-
-## Setup
-ARG CONTEXT
-ENV APP_CONTEXT=prod
 
 LABEL org.opencontainers.image.title="OpenSlides Autoupdate Service"
 LABEL org.opencontainers.image.description="The Autoupdate Service is a http endpoint where the clients can connect to get the current data and also updates."
