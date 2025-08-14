@@ -413,22 +413,24 @@ func PollSingleVotes(ctx context.Context, store *projector.SlideStore, fetch *da
 				continue
 			}
 
+			muID := meetingUserIDs[userID]
+			if muID != 0 {
+				structureLevelIDs := datastore.Ints(ctx, fetch.FetchIfExist, "meeting_user/%d/structure_level_ids", muID)
+				if len(structureLevelIDs) > 0 {
+					entry["structure_level_id"] = &structureLevelIDs[0]
+					if _, ok := structureLevels[structureLevelIDs[0]]; !ok {
+						structureLevels[structureLevelIDs[0]] = datastore.String(ctx, fetch.FetchIfExist, "structure_level/%d/name", structureLevelIDs[0])
+					}
+				}
+				entry["meeting_user_id"] = muID
+			}
+
 			user, err := getPollUser(ctx, fetch, userID)
 			if err != nil {
 				return fmt.Errorf("encoding entitled users interpretation: %w", err)
 			}
 
-			muID := meetingUserIDs[userID]
-			structureLevelIDs := datastore.Ints(ctx, fetch.FetchIfExist, "meeting_user/%d/structure_level_ids", muID)
-			if len(structureLevelIDs) > 0 {
-				entry["structure_level_id"] = &structureLevelIDs[0]
-				if _, ok := structureLevels[structureLevelIDs[0]]; !ok {
-					structureLevels[structureLevelIDs[0]] = datastore.String(ctx, fetch.FetchIfExist, "structure_level/%d/name", structureLevelIDs[0])
-				}
-			}
-
 			entry["user"] = user
-			entry["meeting_user_id"] = muID
 			newUserData = append(newUserData, entry)
 		}
 
