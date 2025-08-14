@@ -377,11 +377,22 @@ func PollSingleVotes(ctx context.Context, store *projector.SlideStore, fetch *da
 	}
 
 	if poll.EntitledUsersAtStop != nil {
+		meetingUserIDs := map[int]int{}
+		entitledGroupIDs := datastore.Ints(ctx, fetch.FetchIfExist, "poll/%d/entitled_group_ids", poll.ID)
+		for _, groupID := range entitledGroupIDs {
+			gMeetingUserIDs := datastore.Ints(ctx, fetch.FetchIfExist, "group/%d/meeting_user_ids", groupID)
+			for _, meetingUserID := range gMeetingUserIDs {
+				userID := datastore.Int(ctx, fetch.FetchIfExist, "meeting_user/%d/user_id", meetingUserID)
+				meetingUserIDs[userID] = meetingUserID
+			}
+		}
+
 		var pollUserData []map[string]json.RawMessage
 		if err := json.Unmarshal(*poll.EntitledUsersAtStop, &pollUserData); err != nil {
 			return fmt.Errorf("reading entitled users: %w", err)
 		}
 
+		structureLevels := map[int]string{}
 		var newUserData []map[string]interface{}
 		for _, userDate := range pollUserData {
 			entry := make(map[string]interface{}, len(userDate))
@@ -407,7 +418,17 @@ func PollSingleVotes(ctx context.Context, store *projector.SlideStore, fetch *da
 				return fmt.Errorf("encoding entitled users interpretation: %w", err)
 			}
 
+			muID := meetingUserIDs[userID]
+			structureLevelIDs := datastore.Ints(ctx, fetch.FetchIfExist, "meeting_user/%d/structure_level_ids", muID)
+			if len(structureLevelIDs) > 0 {
+				entry["structure_level_id"] = &structureLevelIDs[0]
+				if _, ok := structureLevels[structureLevelIDs[0]]; !ok {
+					structureLevels[structureLevelIDs[0]] = datastore.String(ctx, fetch.FetchIfExist, "structure_level/%d/name", structureLevelIDs[0])
+				}
+			}
+
 			entry["user"] = user
+			entry["meeting_user_id"] = muID
 			newUserData = append(newUserData, entry)
 		}
 
@@ -418,6 +439,7 @@ func PollSingleVotes(ctx context.Context, store *projector.SlideStore, fetch *da
 
 		var pollUserDataJSONRaw = json.RawMessage(pollUserDataJSON)
 		poll.EntitledUsersAtStop = &pollUserDataJSONRaw
+		poll.EntitledStructureLevels = structureLevels
 	} else if poll.LiveVotingEnabled {
 		err := PollNominalLiveVoting(ctx, store, fetch, p7on, poll)
 		if err != nil {
