@@ -2,7 +2,7 @@ ARG CONTEXT=prod
 
 ARG CONTEXT=prod
 
-FROM golang:1.24.5-alpine as base
+FROM golang:1.24.5-alpine AS base
 
 ## Setup
 ARG CONTEXT
@@ -40,13 +40,13 @@ RUN chmod +x command.sh
 CMD ["./command.sh"]
 
 # Development Image
-FROM base as dev
+FROM base AS dev
 
 RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
 
 
 # Test Image
-FROM base as tests
+FROM base AS tests
 
 COPY dev/container-tests.sh ./dev/container-tests.sh
 
@@ -62,10 +62,10 @@ STOPSIGNAL SIGKILL
 
 # Production Image
 
-FROM base as builder
+FROM base AS builder
 RUN go build
 
-FROM scratch as prod
+FROM scratch AS prod
 
 ## Setup
 ARG CONTEXT
