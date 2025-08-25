@@ -11,6 +11,15 @@ ENV APP_CONTEXT=${CONTEXT}
 ## Install
 RUN apk add git --no-cache
 
+## Setup
+ARG CONTEXT
+
+WORKDIR /app/openslides-autoupdate-service
+ENV APP_CONTEXT=${CONTEXT}
+
+## Install
+RUN apk add git --no-cache
+
 COPY go.mod go.sum ./
 RUN go mod download
 
@@ -23,15 +32,19 @@ EXPOSE 9012
 ## Healthcheck
 HEALTHCHECK CMD ["/app/openslides-autoupdate-service/openslides-autoupdate-service", "health"]
 
+## Command
+COPY ./dev/command.sh ./
+RUN chmod +x command.sh
+CMD ["./command.sh"]
+
 # Development Image
-FROM base as dev
+FROM base AS dev
 
 RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
 
-CMD CompileDaemon -log-prefix=false -build="go build" -command="./openslides-autoupdate-service"
 
 # Test Image
-FROM base as tests
+FROM base AS tests
 
 COPY dev/container-tests.sh ./dev/container-tests.sh
 
@@ -44,14 +57,13 @@ RUN apk add --no-cache \
 
 ## Command
 STOPSIGNAL SIGKILL
-CMD ["sleep", "inf"]
 
 # Production Image
 
-FROM base as builder
+FROM base AS builder
 RUN go build
 
-FROM scratch as prod
+FROM scratch AS prod
 
 ## Setup
 ARG CONTEXT
@@ -64,7 +76,10 @@ LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-
 
 COPY --from=builder /app/openslides-autoupdate-service/openslides-autoupdate-service /
 
+COPY --from=builder /app/openslides-autoupdate-service/openslides-autoupdate-service /
+
 EXPOSE 9012
 ENTRYPOINT ["/openslides-autoupdate-service"]
+
 
 HEALTHCHECK CMD ["/openslides-autoupdate-service", "health"]
