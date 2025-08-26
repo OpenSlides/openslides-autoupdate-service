@@ -11,15 +11,6 @@ ENV APP_CONTEXT=${CONTEXT}
 ## Install
 RUN apk add git --no-cache
 
-## Setup
-ARG CONTEXT
-
-WORKDIR /app/openslides-autoupdate-service
-ENV APP_CONTEXT=${CONTEXT}
-
-## Install
-RUN apk add git --no-cache
-
 COPY go.mod go.sum ./
 RUN go mod download
 
@@ -73,8 +64,6 @@ LABEL org.opencontainers.image.title="OpenSlides Autoupdate Service"
 LABEL org.opencontainers.image.description="The Autoupdate Service is a http endpoint where the clients can connect to get the current data and also updates."
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-autoupdate-service"
-
-COPY --from=builder /app/openslides-autoupdate-service/openslides-autoupdate-service /
 
 COPY --from=builder /app/openslides-autoupdate-service/openslides-autoupdate-service /
 
