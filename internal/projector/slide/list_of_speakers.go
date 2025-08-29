@@ -47,6 +47,7 @@ type dbSpeaker struct {
 	BeginTime    int            `json:"begin_time,omitempty"`
 	PauseTime    int            `json:"pause_time,omitempty"`
 	PointOfOrder bool           `json:"point_of_order"`
+	Answer       bool           `json:"answer"`
 	SpeakerWork  *dbSpeakerWork `json:",omitempty"`
 }
 
@@ -660,6 +661,7 @@ func getSpeakerLists(ctx context.Context, los *dbListOfSpeakers, meetingID int, 
 		"speech_state",
 		"note",
 		"point_of_order",
+		"answer",
 		"weight",
 		"begin_time",
 		"pause_time",
