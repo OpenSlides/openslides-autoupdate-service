@@ -50,26 +50,6 @@ docker build . --tag openslides-autoupdate
 docker run --network host -v $PWD/secrets:/run/secrets openslides-autoupdate
 ```
 
-
-### With Auto Restart
-
-To restart the service when ever a source file has shanged, the tool
-[CompileDaemon](https://github.com/githubnemo/CompileDaemon) can help.
-
-```
-go install github.com/githubnemo/CompileDaemon@latest
-CompileDaemon -log-prefix=false -build "go build" -command "./openslides-autoupdate-service"
-```
-
-The make target `build-dev` creates a docker image that uses this tool. The
-environment varialbe `OPENSLIDES_DEVELOPMENT` is used to use default auth keys.
-
-```
-make build-dev
-docker run --network host --env OPENSLIDES_DEVELOPMENT=true openslides-autoupdate-dev
-```
-
-
 ## Test
 
 ### With Golang
