@@ -248,6 +248,7 @@ type structureLevelRepr struct {
 	Color            string `json:"color"`
 	SpeechState      string `json:"speech_state"`
 	PointOfOrder     bool   `json:"point_of_order"`
+	Answer           bool   `json:"answer"`
 	RemainingTime    *int   `json:"remaining_time,omitempty"`
 	CurrentStartTime int    `json:"current_start_time"`
 }
@@ -345,6 +346,7 @@ func CurrentSpeakingStructureLevel(store *projector.SlideStore) {
 			out := structureLevelRepr{
 				SpeechState:  speaker.SpeechState,
 				PointOfOrder: speaker.PointOfOrder,
+				Answer:       speaker.Answer,
 			}
 
 			if slsID != 0 {
@@ -369,7 +371,7 @@ func CurrentSpeakingStructureLevel(store *projector.SlideStore) {
 
 			if speaker.SpeechState == "interposed_question" || speaker.SpeechState == "intervention" || speaker.PointOfOrder || slsID == 0 {
 				out.RemainingTime = nil
-				if speaker.SpeechState == "intervention" {
+				if speaker.SpeechState == "intervention" && !speaker.Answer {
 					meetingID := datastore.Int(ctx, fetch.FetchIfExist, "list_of_speakers/%d/meeting_id", losID)
 					if err := fetch.Err(); err != nil {
 						return nil, fmt.Errorf("Error loading meeting id from los %d %w", losID, err)
@@ -487,6 +489,7 @@ func getStructureLevelData(ctx context.Context, fetch *datastore.Fetcher, losID 
 		"weight",
 		"speech_state",
 		"structure_level_list_of_speakers_id",
+		"answer",
 	}
 
 	var fallbackSpeaker *dbSpeaker
