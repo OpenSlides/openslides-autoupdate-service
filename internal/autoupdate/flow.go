@@ -3,7 +3,6 @@ package autoupdate
 import (
 	"context"
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
@@ -83,8 +82,4 @@ func (f *Flow) ResetCache() {
 func (f *Flow) metric(values metric.Container) {
 	values.Add("datastore_cache_key_len", f.cache.Len())
 	values.Add("datastore_cache_size", f.cache.Size())
-}
-
-func (f *Flow) historyInformation(ctx context.Context, fqid string, w io.Writer) error {
-	return f.postgres.HistoryInformation(ctx, fqid, w)
 }
