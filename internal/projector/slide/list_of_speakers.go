@@ -385,6 +385,10 @@ func CurrentSpeakingStructureLevel(store *projector.SlideStore) {
 				if speaker.PauseTime != 0 {
 					if out.RemainingTime == nil {
 						out.CurrentStartTime = 0
+						if speaker.SpeechState == "intervention" {
+							timeSpoken := speaker.PauseTime - (speaker.BeginTime + speaker.SpeakerWork.TotalPause)
+							out.RemainingTime = &timeSpoken
+						}
 					} else {
 						out.CurrentStartTime = 0
 						*out.RemainingTime -= speaker.PauseTime - (speaker.BeginTime + speaker.SpeakerWork.TotalPause)
