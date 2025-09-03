@@ -1,4 +1,4 @@
-FROM golang:1.24.4-alpine as base
+FROM golang:1.25.0-alpine as base
 WORKDIR /root/openslides-autoupdate-service
 
 RUN apk add git
