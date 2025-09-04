@@ -2,9 +2,7 @@ package autoupdate
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
@@ -47,7 +45,7 @@ func NewFlow(lookup environment.Environmenter, skipVoteService bool) (*Flow, fun
 	if !skipVoteService {
 		dataFlow = flow.Combine(
 			postgres,
-			map[string]flow.Flow{"poll/has_voted_user_ids": vote},
+			map[string]flow.Flow{"poll/live_votes": vote},
 		)
 
 		eventer := func() (<-chan time.Time, func() bool) {
@@ -84,8 +82,4 @@ func (f *Flow) ResetCache() {
 func (f *Flow) metric(values metric.Container) {
 	values.Add("datastore_cache_key_len", f.cache.Len())
 	values.Add("datastore_cache_size", f.cache.Size())
-}
-
-func (f *Flow) historyInformation(ctx context.Context, fqid string, w io.Writer) error {
-	return errors.New("TODO")
 }

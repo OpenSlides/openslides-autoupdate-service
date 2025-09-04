@@ -53,7 +53,6 @@ func Run(
 	HandleAutoupdate(mux, auth, autoupdate, connectionCount)
 	HandleInternalAutoupdate(mux, auth, autoupdate)
 	HandleShowConnectionCount(mux, autoupdate, auth, connectionCount)
-	HandleHistoryInformation(mux, auth, autoupdate)
 	HandleProfile(mux)
 
 	srv := &http.Server{
@@ -105,7 +104,11 @@ func autoupdateHandler(auth Authenticater, connecter Connecter) http.Handler {
 
 		body, hashes, isLongPolling, err := parseBody(r)
 		if err != nil {
-			handleErrorWithStatus(w, fmt.Errorf("parse Body: %w", err))
+			if !(errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF)) {
+				// EOF errors happen, when clients close the conections. No need
+				// to inform about it
+				handleErrorWithStatus(w, fmt.Errorf("parse Body: %w", err))
+			}
 			return
 		}
 
@@ -320,33 +323,6 @@ func HandleShowConnectionCount(mux *http.ServeMux, autoupdate *autoupdate.Autoup
 	})
 
 	mux.Handle(prefixPublic+"/connection_count", authMiddleware(handler, auth))
-}
-
-// HistoryInformationer is an object, that can write the history information for
-// an object.
-type HistoryInformationer interface {
-	HistoryInformation(ctx context.Context, uid int, fqid string, w io.Writer) error
-}
-
-// HandleHistoryInformation registers the route to return the history information info
-// for an fqid.
-func HandleHistoryInformation(mux *http.ServeMux, auth Authenticater, hi HistoryInformationer) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		uid := auth.FromContext(r.Context())
-
-		fqid := r.URL.Query().Get("fqid")
-		if fqid == "" {
-			handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("history information needs an fqid")})
-			return
-		}
-
-		if err := hi.HistoryInformation(r.Context(), uid, fqid, w); err != nil {
-			handleErrorWithStatus(w, fmt.Errorf("getting history information: %w", err))
-			return
-		}
-	})
-
-	mux.Handle(prefixPublic+"/history_information", authMiddleware(handler, auth))
 }
 
 func handleLongpolling(ctx context.Context, w http.ResponseWriter, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool, hashes string) (bool, error) {

@@ -212,10 +212,26 @@ func TestPollModeB(t *testing.T) {
 	)
 
 	testCase(
-		"finished can manage assignment",
+		"finished can manage assignment polls",
 		t,
 		f,
 		true,
+		`---
+		poll/1:
+			content_object_id: assignment/1
+			state: finished
+
+		assignment/1:
+			meeting_id: 30
+		`,
+		withPerms(30, perm.AssignmentCanManagePolls),
+	)
+
+	testCase(
+		"finished can manage assignment",
+		t,
+		f,
+		false,
 		`---
 		poll/1:
 			content_object_id: assignment/1

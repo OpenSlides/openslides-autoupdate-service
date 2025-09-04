@@ -19,7 +19,7 @@ import (
 // If the user can manage the poll depends on the content object:
 //
 //	motion: The user needs motion.can_manage_polls.
-//	assignment: The user needs assignment.can_manage.
+//	assignment: The user needs assignment.can_manage_polls.
 //	topic: The user needs poll.can_manage.
 //
 // Mode A: The user can see the poll.
@@ -134,7 +134,7 @@ func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]
 				return nil, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
 			}
 
-			if perms.Has(perm.AssignmentCanManage) {
+			if perms.Has(perm.AssignmentCanManagePolls) {
 				return ids, nil
 			}
 			return nil, nil

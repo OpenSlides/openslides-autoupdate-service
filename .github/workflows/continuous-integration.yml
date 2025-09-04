@@ -1,18 +1,43 @@
-name: Check Commands in README.md
+name: CI - Build and Test Service
+
 on: [pull_request]
 jobs:
-  readme:
+  continuous-tests:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v5
+
+      - name: go fmt
+        run: test -z $(gofmt -l .)
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: golint
+        run: go install golang.org/x/lint/golint@latest && golint -set_exit_status ./...
+
+      - name: test
+        run: go test -timeout 30s -race ./...
+
+  readme-validation:
+    # This Job confirms the validity and functionality of all functions presented in the README.md file
     name: Readme
     runs-on: ubuntu-latest
-
     services:
       redis:
-        image: redis
+        image: redis:alpine
         ports:
           - 6379:6379
 
       postgres:
-        image: postgres
+        image: postgres:15
         env:
           POSTGRES_USER: openslides
           POSTGRES_PASSWORD: password
@@ -29,11 +54,11 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
+          go-version: "1.25"
         id: go
 
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: create secrets
         run: |
@@ -50,16 +75,20 @@ jobs:
           export AUTH_COOKIE_KEY_FILE=secrets/auth_cookie_key
           timeout --preserve-status --signal=SIGINT 2s ./openslides-autoupdate-service
 
+      - name: Build Prod
+        run: make build-prod
+
       - name: Start With Docker
         run: |
-          docker build . --tag openslides-autoupdate
           timeout --preserve-status --signal=SIGINT 5s docker run --network host -v $PWD/secrets:/run/secrets openslides-autoupdate
         env:
           DOCKER_BUILDKIT: 1
 
+      - name: Build Dev
+        run: make build-dev
+
       - name: Start With Auto Restart
         run: |
-          make build-dev
           timeout --preserve-status --signal=SIGINT 5s docker run --network host --env OPENSLIDES_DEVELOPMENT=true openslides-autoupdate-dev
         env:
           DOCKER_BUILDKIT: 1
