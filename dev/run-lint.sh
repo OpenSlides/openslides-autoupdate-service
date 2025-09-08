@@ -21,7 +21,7 @@ IMAGE_TAG=openslides-autoupdate-tests
 DOCKER_EXEC="docker exec ${CONTAINER_NAME}"
 
 # Safe Exit
-trap 'if [ -z "$LOCAL" ] && [ -z "$SKIP_SETUP" ]; then docker stop $CONTAINER_NAME && docker rm $CONTAINER_NAME; fi' EXIT
+trap 'if [ -z "$LOCAL" ] && [ -z "$SKIP_SETUP" ]; then docker stop $CONTAINER_NAME &> /dev/null && docker rm $CONTAINER_NAME &> /dev/null; fi' EXIT
 
 # Execution
 if [ -z "$LOCAL" ]
