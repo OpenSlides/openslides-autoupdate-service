@@ -157,6 +157,8 @@ var collectionMap = map[string]Restricter{
 	Committee{}.Name():                    Committee{},
 	Gender{}.Name():                       Gender{},
 	Group{}.Name():                        Group{},
+	HistoryEntry{}.Name():                 HistoryEntry{},
+	HistoryPosition{}.Name():              HistoryPosition{},
 	ImportPreview{}.Name():                ImportPreview{},
 	Mediafile{}.Name():                    Mediafile{},
 	Meeting{}.Name():                      Meeting{},
@@ -233,7 +235,8 @@ func eachMeeting(ctx context.Context, ds *dsfetch.Fetch, r Restricter, ids []int
 			return nil, fmt.Errorf("getting meeting id of element %d: %w", id, err)
 		}
 		if !hasMeeting {
-			return nil, fmt.Errorf("calling eachMeeting for object, that has no meeting")
+			// Skip objects, that do not have an meeting.
+			continue
 		}
 		if meetingID == 0 {
 			// TODO Last Error
