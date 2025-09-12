@@ -369,10 +369,9 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 		return fmt.Errorf("getting connection: %w", err)
 	}
 
-	for f, ok := conn.Next(); ok; f, ok = conn.Next() {
+	for data, err := range conn.Messages(ctx) {
 		// This blocks, until there is new data. It also unblocks, when the
 		// client context is done.
-		data, err := f(ctx)
 		if err != nil {
 			return fmt.Errorf("getting next message: %w", err)
 		}
