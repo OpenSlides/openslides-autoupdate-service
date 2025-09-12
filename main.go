@@ -29,6 +29,7 @@ var (
 	envMetricSaveInterval     = environment.NewVariable("METRIC_SAVE_INTERVAL", "5m", "Interval, how often the metric should be saved to redis. Redis will ignore entries, that are twice at old then the save interval.")
 	envDisableConnectionCount = environment.NewVariable("DISABLE_CONNECTION_COUNT", "false", "Do not count connections.")
 	envPublicAccessOnly       = environment.NewVariable("OPENSLIDES_PUBLIC_ACCESS_ONLY", "false", "Start for only public access. Does not write to redis or connect to the vote-service.")
+	envHeartbeat              = environment.NewVariable("OPENSLIDES_HEARTBEAT", "5m", "Send a heartbeat message when there is no message for that time.")
 )
 
 var cli struct {
@@ -181,6 +182,11 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 		metricStorage = nil
 	}
 
+	heartBeatTime, err := environment.ParseDuration(envHeartbeat.Value(lookup))
+	if err != nil {
+		return nil, fmt.Errorf("invalid value for `OPENSLIDES_HEARTBEAT`, expected duration got %s: %w", envMetricInterval.Value(lookup), err)
+	}
+
 	service := func(ctx context.Context) error {
 		for _, bg := range backgroundTasks {
 			go bg(ctx, oserror.Handle)
@@ -188,7 +194,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 
 		// Start http server.
 		fmt.Printf("Listen on %s\n", listenAddr)
-		return http.Run(ctx, listenAddr, authService, auService, metricStorage, metricSaveInterval)
+		return http.Run(ctx, listenAddr, authService, auService, metricStorage, metricSaveInterval, heartBeatTime)
 	}
 
 	return service, nil

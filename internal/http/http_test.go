@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	ahttp "github.com/OpenSlides/openslides-autoupdate-service/internal/http"
@@ -65,7 +66,7 @@ func TestKeysHandler(t *testing.T) {
 		},
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, [2]*ahttp.ConnectionCount{})
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, [2]*ahttp.ConnectionCount{}, time.Hour)
 
 	req := httptest.NewRequest("GET", "/system/autoupdate?k=user/1/username,user/2/username", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()
@@ -100,7 +101,7 @@ func TestComplexHandler(t *testing.T) {
 		},
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, [2]*ahttp.ConnectionCount{})
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, [2]*ahttp.ConnectionCount{}, time.Hour)
 
 	req := httptest.NewRequest(
 		"GET",
@@ -154,7 +155,7 @@ func TestErrors(t *testing.T) {
 		},
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, [2]*ahttp.ConnectionCount{})
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, [2]*ahttp.ConnectionCount{}, time.Hour)
 
 	for _, tt := range []struct {
 		name    string
