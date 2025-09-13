@@ -31,7 +31,7 @@ func TestConnect(t *testing.T) {
 }
 
 func TestConnectionAfterDisconnect(t *testing.T) {
-	ctx, disconnect := context.WithCancel(context.Background())
+	ctx, disconnect := context.WithCancel(t.Context())
 	next, _, _ := getConnection(ctx)
 
 	if _, err, _ := next(); err != nil {
@@ -145,7 +145,8 @@ func TestConnectionEmptyData(t *testing.T) {
 			if err != nil {
 				t.Fatalf("creating conection: %v", err)
 			}
-			next, _ := iter.Pull2(conn.Messages(t.Context()))
+			next, stop := iter.Pull2(conn.Messages(t.Context()))
+			defer stop()
 
 			if _, err, _ := next(); err != nil {
 				t.Errorf("next(): %v", err)
@@ -199,7 +200,8 @@ func TestConnectionEmptyData(t *testing.T) {
 		if err != nil {
 			t.Fatalf("creating conection: %v", err)
 		}
-		next, _ := iter.Pull2(conn.Messages(t.Context()))
+		next, stop := iter.Pull2(conn.Messages(t.Context()))
+		defer stop()
 
 		if _, err, _ := next(); err != nil {
 			t.Errorf("next() returned an error: %v", err)
@@ -244,7 +246,8 @@ func TestConntectionFilterOnlyOneKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("creating conection: %v", err)
 	}
-	next, _ := iter.Pull2(conn.Messages(ctx))
+	next, stop := iter.Pull2(conn.Messages(ctx))
+	defer stop()
 
 	if _, err, _ := next(); err != nil {
 		t.Errorf("next(): %v", err)
@@ -277,11 +280,12 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 	s, _, _ := autoupdate.New(environment.ForTests{}, ds, RestrictNotAllowed)
 	kb, _ := keysbuilder.FromKeys(userNameKey.String())
 
-	conn, err := s.Connect(context.Background(), 1, kb)
+	conn, err := s.Connect(t.Context(), 1, kb)
 	if err != nil {
 		t.Fatalf("creating conection: %v", err)
 	}
-	next, _ := iter.Pull2(conn.Messages(t.Context()))
+	next, stop := iter.Pull2(conn.Messages(t.Context()))
+	defer stop()
 
 	t.Run("first call", func(t *testing.T) {
 		var data map[dskey.Key][]byte
@@ -338,8 +342,7 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 //
 // See: https://github.com/OpenSlides/openslides-autoupdate-service/issues/321
 func TestKeyNotRequestedAnymore(t *testing.T) {
-	shutdownCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	datastore := dsmock.NewFlow(dsmock.YAMLData(`---
 		organization/1/organization_tag_ids: [1,2]
@@ -349,7 +352,7 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 	`))
 
 	s, bg, _ := autoupdate.New(environment.ForTests{}, datastore, RestrictAllowed)
-	go bg(shutdownCtx, oserror.Handle)
+	go bg(ctx, oserror.Handle)
 	kb, err := keysbuilder.FromJSON(strings.NewReader(`{
 		"collection":"organization",
 		"ids":[
@@ -369,11 +372,12 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 		t.Fatalf("Can not build request: %v", err)
 	}
 
-	conn, err := s.Connect(shutdownCtx, 1, kb)
+	conn, err := s.Connect(ctx, 1, kb)
 	if err != nil {
 		t.Fatalf("creating conection: %v", err)
 	}
-	next, _ := iter.Pull2(conn.Messages(t.Context()))
+	next, stop := iter.Pull2(conn.Messages(t.Context()))
+	defer stop()
 
 	if _, err, _ := next(); err != nil {
 		t.Fatalf("Getting first data: %v", err)
@@ -409,8 +413,7 @@ func TestKeyNotRequestedAnymore(t *testing.T) {
 //
 // https://github.com/OpenSlides/openslides-autoupdate-service/issues/382
 func TestKeyRequestedAgain(t *testing.T) {
-	shutdownCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	datastore := dsmock.NewFlow(dsmock.YAMLData(`---
 		organization/1/organization_tag_ids: [1,2]
@@ -420,7 +423,7 @@ func TestKeyRequestedAgain(t *testing.T) {
 	`))
 
 	s, bg, _ := autoupdate.New(environment.ForTests{}, datastore, RestrictAllowed)
-	go bg(shutdownCtx, oserror.Handle)
+	go bg(ctx, oserror.Handle)
 	kb, err := keysbuilder.FromJSON(strings.NewReader(`{
 		"collection":"organization",
 		"ids":[
@@ -440,11 +443,12 @@ func TestKeyRequestedAgain(t *testing.T) {
 		t.Fatalf("Can not build request: %v", err)
 	}
 
-	conn, err := s.Connect(shutdownCtx, 1, kb)
+	conn, err := s.Connect(ctx, 1, kb)
 	if err != nil {
 		t.Fatalf("creating conection: %v", err)
 	}
-	next, _ := iter.Pull2(conn.Messages(t.Context()))
+	next, stop := iter.Pull2(conn.Messages(t.Context()))
+	defer stop()
 
 	// Receive the initial data
 	if _, err, _ := next(); err != nil {

@@ -15,7 +15,7 @@ type Connection interface {
 	NextWithFilter(ctx context.Context, filterHashes string) (map[dskey.Key][]byte, string, error)
 }
 
-// Connection holds the state of a client. It has to be created by colling
+// connection holds the state of a client. It has to be created by colling
 // Connect() on a autoupdate.Service instance.
 type connection struct {
 	autoupdate   *Autoupdate
