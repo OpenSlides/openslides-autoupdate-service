@@ -217,13 +217,6 @@ func (MeetingUser) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []Use
 		},
 
 		{
-			"option",
-			ds.User_OptionIDs,
-			Collection(ctx, Option{}.Name()).Modes("A"),
-			true,
-		},
-
-		{
 			"assignment candidate",
 			ds.MeetingUser_AssignmentCandidateIDs,
 			Collection(ctx, AssignmentCandidate{}.Name()).Modes("A"),
@@ -241,13 +234,6 @@ func (MeetingUser) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []Use
 			"poll voted",
 			ds.User_PollVotedIDs,
 			Collection(ctx, Poll{}.Name()).Modes("A"),
-			true,
-		},
-
-		{
-			"vote user",
-			ds.User_VoteIDs,
-			Collection(ctx, Vote{}.Name()).Modes("A"),
 			true,
 		},
 
