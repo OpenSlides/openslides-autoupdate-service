@@ -391,8 +391,7 @@ func sendMessages(
 		return fmt.Errorf("getting connection: %w", err)
 	}
 
-	// TODO: Use environment variable
-	for data, err := range insertKeepAlive(conn.Messages(ctx), time.Second) {
+	for data, err := range insertKeepAlive(conn.Messages(ctx), heartbeat) {
 		// This blocks, until there is new data. It also unblocks, when the
 		// client context is done.
 		if err != nil {

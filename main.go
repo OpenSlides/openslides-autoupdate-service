@@ -29,7 +29,7 @@ var (
 	envMetricSaveInterval     = environment.NewVariable("METRIC_SAVE_INTERVAL", "5m", "Interval, how often the metric should be saved to redis. Redis will ignore entries, that are twice at old then the save interval.")
 	envDisableConnectionCount = environment.NewVariable("DISABLE_CONNECTION_COUNT", "false", "Do not count connections.")
 	envPublicAccessOnly       = environment.NewVariable("OPENSLIDES_PUBLIC_ACCESS_ONLY", "false", "Start for only public access. Does not write to redis or connect to the vote-service.")
-	envHeartbeat              = environment.NewVariable("OPENSLIDES_HEARTBEAT", "5m", "Send a heartbeat message when there is no message for that time.")
+	envHeartbeatInterval      = environment.NewVariable("OPENSLIDES_HEARTBEAT_INTERVAL", "5m", "Interval, how often a heartbeat message should be send on open connections.")
 )
 
 var cli struct {
@@ -182,7 +182,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 		metricStorage = nil
 	}
 
-	heartBeatTime, err := environment.ParseDuration(envHeartbeat.Value(lookup))
+	heartBeatTime, err := environment.ParseDuration(envHeartbeatInterval.Value(lookup))
 	if err != nil {
 		return nil, fmt.Errorf("invalid value for `OPENSLIDES_HEARTBEAT`, expected duration got %s: %w", envMetricInterval.Value(lookup), err)
 	}
