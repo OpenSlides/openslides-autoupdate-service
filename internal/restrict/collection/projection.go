@@ -60,7 +60,7 @@ func (p Projection) see(ctx context.Context, ds *dsfetch.Fetch, projectionIDs ..
 		}
 
 		if err := ds.Execute(ctx); err != nil {
-			return nil, fmt.Errorf("reading current_projector_id")
+			return nil, fmt.Errorf("reading current_projector_id: %w", err)
 		}
 
 		var allowed []int
