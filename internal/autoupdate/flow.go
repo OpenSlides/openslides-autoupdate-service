@@ -73,6 +73,7 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater, skipVote
 	return &flow, background, nil
 }
 
+// Snapshot retuns an immutable getter that will not change.
 func (f *Flow) Snapshot() flow.Getter {
 	return f.cache.Snapshot()
 }
