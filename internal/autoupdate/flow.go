@@ -58,7 +58,7 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater, skipVote
 		}
 	}
 
-	cache := cache.New(dataFlow)
+	cache := cache.New(dataFlow, cache.WithFullMessagebus)
 	projector := projector.NewProjector(cache, slide.Slides())
 
 	flow := Flow{
@@ -71,6 +71,11 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater, skipVote
 	metric.Register(flow.metric)
 
 	return &flow, background, nil
+}
+
+// Snapshot retuns an immutable getter that will not change.
+func (f *Flow) Snapshot(notFoundHandler flow.Getter) flow.Getter {
+	return f.cache.Snapshot(notFoundHandler)
 }
 
 // ResetCache clears the cache.

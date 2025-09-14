@@ -3,9 +3,11 @@ package autoupdate
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/datastore/dsrecorder"
+	"github.com/OpenSlides/openslides-go/datastore/flow"
 )
 
 // Connection holds the connection to data and has the ability to return the next.
@@ -73,7 +75,6 @@ func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, error)
 			// Blocks until new data or the context is done.
 			tid, changedKeys, err := c.autoupdate.topic.Receive(ctx, c.tid)
 			if err != nil {
-				// TODO EXTERMAL ERROR
 				return nil, fmt.Errorf("get updated keys: %w", err)
 			}
 			c.tid = tid
@@ -86,15 +87,17 @@ func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, error)
 				}
 			}
 
-			if foundKey {
-				data, err := c.updatedData(ctx)
-				if err != nil {
-					return nil, fmt.Errorf("creating later data: %w", err)
-				}
+			if !foundKey {
+				continue
+			}
 
-				if len(data) > 0 {
-					return data, nil
-				}
+			data, err := c.updatedData(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("creating later data: %w", err)
+			}
+
+			if len(data) > 0 {
+				return data, nil
 			}
 		}
 	}, true
@@ -138,7 +141,61 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 		defer done()
 	}
 
-	recorder := dsrecorder.New(c.autoupdate.flow)
+	type snapshotter interface {
+		Snapshot(notFoundHandler flow.Getter) flow.Getter
+	}
+
+	if snapy, ok := c.autoupdate.flow.(snapshotter); ok {
+		recorder := dsrecorder.New(c.autoupdate.flow)
+		data, err := c.updatedDataWithGetter(ctx, snapy.Snapshot(recorder))
+		if err != nil {
+			return nil, fmt.Errorf("update data with snapshot: %w", err)
+		}
+
+		if keys := recorder.Keys(); len(keys) > 0 {
+			// TODO: Either remove log or only activate log with environment variable
+			fmt.Printf("%d Keys not in snapshot: %v\n", len(keys), printKeys(keys))
+		}
+
+		return data, nil
+	}
+
+	data, err := c.updatedDataWithGetter(ctx, c.autoupdate.flow)
+	if err != nil {
+		return nil, fmt.Errorf("update with no snapshotter: %w", err)
+	}
+
+	return data, nil
+}
+
+func printKeys(keys map[dskey.Key]struct{}) string {
+	if len(keys) == 0 {
+		return ""
+	}
+
+	var keyStrings []string
+	count := 0
+	maxKeys := 10
+
+	for key := range keys {
+		if count >= maxKeys {
+			break
+		}
+		keyStrings = append(keyStrings, key.String())
+		count++
+	}
+
+	result := strings.Join(keyStrings, ", ")
+
+	if len(keys) > maxKeys {
+		result += "..."
+	}
+
+	return result
+}
+
+func (c *connection) updatedDataWithGetter(ctx context.Context, getter flow.Getter) (map[dskey.Key][]byte, error) {
+	recorder := dsrecorder.New(getter)
 	ctx, restricter := c.autoupdate.restricter(ctx, recorder, c.uid)
 
 	keys, err := c.kb.Update(ctx, restricter)
