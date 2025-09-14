@@ -147,24 +147,25 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 	}
 
 	if snapy, ok := c.autoupdate.flow.(snapshotter); ok {
-		data, err := c.updatedDataWithGetter(ctx, snapy.Snapshot())
-		if errors.Is(err, cache.ErrIncompleteSnapshot) {
-			// The cache did not have all the necessary data. Recall the
-			// restricter with the normal flow. This makes sure, that the cache
-			// has all data, but it could be inconsistence. So call it once more
-			// with a new snapshot, to make sure, it is consistent.
-			if _, err := c.updatedDataWithGetter(ctx, c.autoupdate.flow); err != nil {
-				return nil, fmt.Errorf("update all data with normal flow: %w", err)
-			}
-
-			data, err = c.updatedDataWithGetter(ctx, snapy.Snapshot())
+		for range 10 {
+			data, err := c.updatedDataWithGetter(ctx, snapy.Snapshot())
 			if err != nil {
-				return nil, fmt.Errorf("update data with second snapshot: %w", err)
+				if errors.Is(err, cache.ErrIncompleteSnapshot) {
+					// The cache did not have all the necessary data. Recall the
+					// restricter with the normal flow. This makes sure, that the cache
+					// has all data, but it could be inconsistence. So call it once more
+					// with a new snapshot, to make sure, it is consistent.
+					if _, err := c.updatedDataWithGetter(ctx, c.autoupdate.flow); err != nil {
+						return nil, fmt.Errorf("update all data with normal flow: %w", err)
+					}
+					continue
+				}
+				return nil, fmt.Errorf("update data with snapshot: %w", err)
 			}
-		} else if err != nil {
-			return nil, fmt.Errorf("update data with first snapshot: %w", err)
+			return data, nil
 		}
-		return data, nil
+		return nil, fmt.Errorf("update data with snapshot failed for more then 10 times")
+
 	}
 
 	data, err := c.updatedDataWithGetter(ctx, c.autoupdate.flow)
