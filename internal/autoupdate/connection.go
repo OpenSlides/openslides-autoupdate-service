@@ -3,6 +3,7 @@ package autoupdate
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/datastore/dsrecorder"
@@ -145,9 +146,15 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 	}
 
 	if snapy, ok := c.autoupdate.flow.(snapshotter); ok {
-		data, err := c.updatedDataWithGetter(ctx, snapy.Snapshot(c.autoupdate.flow))
+		recorder := dsrecorder.New(c.autoupdate.flow)
+		data, err := c.updatedDataWithGetter(ctx, snapy.Snapshot(recorder))
 		if err != nil {
 			return nil, fmt.Errorf("update data with snapshot: %w", err)
+		}
+
+		if keys := recorder.Keys(); len(keys) > 0 {
+			// TODO: Either remove log or only activate log with environment variable
+			fmt.Printf("%d Keys not in snapshot: %v\n", len(keys), printKeys(keys))
 		}
 
 		return data, nil
@@ -159,7 +166,32 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 	}
 
 	return data, nil
+}
 
+func printKeys(keys map[dskey.Key]struct{}) string {
+	if len(keys) == 0 {
+		return ""
+	}
+
+	var keyStrings []string
+	count := 0
+	maxKeys := 10
+
+	for key := range keys {
+		if count >= maxKeys {
+			break
+		}
+		keyStrings = append(keyStrings, key.String())
+		count++
+	}
+
+	result := strings.Join(keyStrings, ", ")
+
+	if len(keys) > maxKeys {
+		result += "..."
+	}
+
+	return result
 }
 
 func (c *connection) updatedDataWithGetter(ctx context.Context, getter flow.Getter) (map[dskey.Key][]byte, error) {
