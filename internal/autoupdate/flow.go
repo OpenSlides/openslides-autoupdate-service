@@ -58,7 +58,7 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater, skipVote
 		}
 	}
 
-	cache := cache.New(dataFlow)
+	cache := cache.New(dataFlow, cache.WithFullMessagebus)
 	projector := projector.NewProjector(cache, slide.Slides())
 
 	flow := Flow{
