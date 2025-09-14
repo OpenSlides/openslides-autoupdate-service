@@ -2,10 +2,8 @@ package autoupdate
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"github.com/OpenSlides/openslides-go/datastore/cache"
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/datastore/dsrecorder"
 	"github.com/OpenSlides/openslides-go/datastore/flow"
@@ -143,29 +141,16 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 	}
 
 	type snapshotter interface {
-		Snapshot() flow.Getter
+		Snapshot(notFoundHandler flow.Getter) flow.Getter
 	}
 
 	if snapy, ok := c.autoupdate.flow.(snapshotter); ok {
-		for range 10 {
-			data, err := c.updatedDataWithGetter(ctx, snapy.Snapshot())
-			if err != nil {
-				if errors.Is(err, cache.ErrIncompleteSnapshot) {
-					// The cache did not have all the necessary data. Recall the
-					// restricter with the normal flow. This makes sure, that the cache
-					// has all data, but it could be inconsistence. So call it once more
-					// with a new snapshot, to make sure, it is consistent.
-					if _, err := c.updatedDataWithGetter(ctx, c.autoupdate.flow); err != nil {
-						return nil, fmt.Errorf("update all data with normal flow: %w", err)
-					}
-					continue
-				}
-				return nil, fmt.Errorf("update data with snapshot: %w", err)
-			}
-			return data, nil
+		data, err := c.updatedDataWithGetter(ctx, snapy.Snapshot(c.autoupdate.flow))
+		if err != nil {
+			return nil, fmt.Errorf("update data with snapshot: %w", err)
 		}
-		return nil, fmt.Errorf("update data with snapshot failed for more then 10 times")
 
+		return data, nil
 	}
 
 	data, err := c.updatedDataWithGetter(ctx, c.autoupdate.flow)
