@@ -73,6 +73,10 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater, skipVote
 	return &flow, background, nil
 }
 
+func (f *Flow) Snapshot() flow.Getter {
+	return f.cache.Snapshot()
+}
+
 // ResetCache clears the cache.
 func (f *Flow) ResetCache() {
 	f.cache.Reset()

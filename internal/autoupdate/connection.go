@@ -2,10 +2,13 @@ package autoupdate
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/OpenSlides/openslides-go/datastore/cache"
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/datastore/dsrecorder"
+	"github.com/OpenSlides/openslides-go/datastore/flow"
 )
 
 // Connection holds the connection to data and has the ability to return the next.
@@ -73,7 +76,6 @@ func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, error)
 			// Blocks until new data or the context is done.
 			tid, changedKeys, err := c.autoupdate.topic.Receive(ctx, c.tid)
 			if err != nil {
-				// TODO EXTERMAL ERROR
 				return nil, fmt.Errorf("get updated keys: %w", err)
 			}
 			c.tid = tid
@@ -86,15 +88,17 @@ func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, error)
 				}
 			}
 
-			if foundKey {
-				data, err := c.updatedData(ctx)
-				if err != nil {
-					return nil, fmt.Errorf("creating later data: %w", err)
-				}
+			if !foundKey {
+				continue
+			}
 
-				if len(data) > 0 {
-					return data, nil
-				}
+			data, err := c.updatedData(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("creating later data: %w", err)
+			}
+
+			if len(data) > 0 {
+				return data, nil
 			}
 		}
 	}, true
@@ -138,7 +142,42 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 		defer done()
 	}
 
-	recorder := dsrecorder.New(c.autoupdate.flow)
+	type snapshotter interface {
+		Snapshot() flow.Getter
+	}
+
+	if snapy, ok := c.autoupdate.flow.(snapshotter); ok {
+		data, err := c.updatedDataWithGetter(ctx, snapy.Snapshot())
+		if errors.Is(err, cache.ErrIncompleteSnapshot) {
+			// The cache did not have all the necessary data. Recall the
+			// restricter with the normal flow. This makes sure, that the cache
+			// has all data, but it could be inconsistence. So call it once more
+			// with a new snapshot, to make sure, it is consistent.
+			if _, err := c.updatedDataWithGetter(ctx, c.autoupdate.flow); err != nil {
+				return nil, fmt.Errorf("update all data with normal flow: %w", err)
+			}
+
+			data, err = c.updatedDataWithGetter(ctx, snapy.Snapshot())
+			if err != nil {
+				return nil, fmt.Errorf("update data with second snapshot: %w", err)
+			}
+		} else if err != nil {
+			return nil, fmt.Errorf("update data with first snapshot: %w", err)
+		}
+		return data, nil
+	}
+
+	data, err := c.updatedDataWithGetter(ctx, c.autoupdate.flow)
+	if err != nil {
+		return nil, fmt.Errorf("update with no snapshotter: %w", err)
+	}
+
+	return data, nil
+
+}
+
+func (c *connection) updatedDataWithGetter(ctx context.Context, getter flow.Getter) (map[dskey.Key][]byte, error) {
+	recorder := dsrecorder.New(getter)
 	ctx, restricter := c.autoupdate.restricter(ctx, recorder, c.uid)
 
 	keys, err := c.kb.Update(ctx, restricter)
