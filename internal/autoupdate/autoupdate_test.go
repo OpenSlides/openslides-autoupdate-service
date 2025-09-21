@@ -1,7 +1,6 @@
 package autoupdate_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
@@ -11,8 +10,7 @@ import (
 )
 
 func TestSingleDataEmptyValues(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	flow := dsmock.NewFlow(dsmock.YAMLData(`---
 		user/1/organization_management_level: superadmin

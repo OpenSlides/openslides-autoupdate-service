@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"iter"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	ahttp "github.com/OpenSlides/openslides-autoupdate-service/internal/http"
@@ -19,49 +21,52 @@ var (
 	myKey1, _ = dskey.FromParts("user", 1, "username")
 )
 
-type nexterMock struct {
-	f func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool)
+type connectionMock struct {
+	f func(ctx context.Context) (map[dskey.Key][]byte, error)
 }
 
-func (n *nexterMock) Next() (func(context.Context) (map[dskey.Key][]byte, error), bool) {
-	return n.f()
+func (n *connectionMock) Messages(ctx context.Context) iter.Seq2[map[dskey.Key][]byte, error] {
+	return func(yield func(map[dskey.Key][]byte, error) bool) {
+		data, err := n.f(ctx)
+		if !yield(data, err) {
+			return
+		}
+	}
 }
 
-func (n *nexterMock) NextWithFilter(context.Context, string) (map[dskey.Key][]byte, string, error) {
+func (n *connectionMock) NextWithFilter(context.Context, string) (map[dskey.Key][]byte, string, error) {
 	return nil, "", fmt.Errorf("Not Implemented")
 }
 
 type connecterMock struct {
-	f func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool)
+	f func(ctx context.Context) (map[dskey.Key][]byte, error)
 }
 
 func (c *connecterMock) Connect(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (autoupdate.Connection, error) {
-	return &nexterMock{f: c.f}, nil
+	return &connectionMock{f: c.f}, nil
 }
 
 func (c *connecterMock) SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (map[dskey.Key][]byte, error) {
-	next, _ := c.f()
-	return next(ctx)
+	return c.f(ctx)
 }
 
 func TestKeysHandler(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	mux := http.NewServeMux()
 
-	f := func(ctx context.Context) (map[dskey.Key][]byte, error) {
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-		cancel()
-		return map[dskey.Key][]byte{myKey1: []byte(`"bar"`)}, nil
-	}
 	connecter := &connecterMock{
-		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
+		f: func(ctx context.Context) (map[dskey.Key][]byte, error) {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			cancel()
+			return map[dskey.Key][]byte{myKey1: []byte(`"bar"`)}, nil
+		},
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, [2]*ahttp.ConnectionCount{})
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, [2]*ahttp.ConnectionCount{}, time.Hour)
 
 	req := httptest.NewRequest("GET", "/system/autoupdate?k=user/1/username,user/2/username", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()
@@ -81,23 +86,22 @@ func TestKeysHandler(t *testing.T) {
 }
 
 func TestComplexHandler(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	mux := http.NewServeMux()
-	f := func(ctx context.Context) (map[dskey.Key][]byte, error) {
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-		cancel()
-		return map[dskey.Key][]byte{myKey1: []byte(`"bar"`)}, nil
-	}
 
 	connecter := &connecterMock{
-		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
+		f: func(ctx context.Context) (map[dskey.Key][]byte, error) {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			cancel()
+			return map[dskey.Key][]byte{myKey1: []byte(`"bar"`)}, nil
+		},
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, [2]*ahttp.ConnectionCount{})
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, [2]*ahttp.ConnectionCount{}, time.Hour)
 
 	req := httptest.NewRequest(
 		"GET",
@@ -141,18 +145,17 @@ func TestHealth(t *testing.T) {
 
 func TestErrors(t *testing.T) {
 	mux := http.NewServeMux()
-	f := func(ctx context.Context) (map[dskey.Key][]byte, error) {
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-		return map[dskey.Key][]byte{myKey1: []byte(`"bar"`)}, nil
-	}
 
 	connecter := &connecterMock{
-		f: func() (func(ctx context.Context) (map[dskey.Key][]byte, error), bool) { return f, true },
+		f: func(ctx context.Context) (map[dskey.Key][]byte, error) {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			return map[dskey.Key][]byte{myKey1: []byte(`"bar"`)}, nil
+		},
 	}
 
-	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, [2]*ahttp.ConnectionCount{})
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, [2]*ahttp.ConnectionCount{}, time.Hour)
 
 	for _, tt := range []struct {
 		name    string

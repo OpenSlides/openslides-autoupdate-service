@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"iter"
 	"mime"
 	"mime/multipart"
 	"net"
@@ -40,18 +41,20 @@ func Run(
 	auth Authenticater,
 	autoupdate *autoupdate.Autoupdate,
 	redisConnection *redis.Redis,
-	saveIntercal time.Duration,
+	saveInterval time.Duration,
+	heartbeat time.Duration,
+
 ) error {
 	var connectionCount [2]*ConnectionCount
-	connectionCount[0] = newConnectionCount(ctx, redisConnection, saveIntercal, "connections_stream")
-	connectionCount[1] = newConnectionCount(ctx, redisConnection, saveIntercal, "connections_longpolling")
+	connectionCount[0] = newConnectionCount(ctx, redisConnection, saveInterval, "connections_stream")
+	connectionCount[1] = newConnectionCount(ctx, redisConnection, saveInterval, "connections_longpolling")
 	metric.Register(connectionCount[0].Metric)
 	metric.Register(connectionCount[1].Metric)
 
 	mux := http.NewServeMux()
 	HandleHealth(mux)
-	HandleAutoupdate(mux, auth, autoupdate, connectionCount)
-	HandleInternalAutoupdate(mux, auth, autoupdate)
+	HandleAutoupdate(mux, auth, autoupdate, connectionCount, heartbeat)
+	HandleInternalAutoupdate(mux, auth, autoupdate, heartbeat)
 	HandleShowConnectionCount(mux, autoupdate, auth, connectionCount)
 	HandleProfile(mux)
 
@@ -87,7 +90,7 @@ type Connecter interface {
 	SingleData(ctx context.Context, userID int, kb autoupdate.KeysBuilder) (map[dskey.Key][]byte, error)
 }
 
-func autoupdateHandler(auth Authenticater, connecter Connecter) http.Handler {
+func autoupdateHandler(auth Authenticater, connecter Connecter, heartbeat time.Duration) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Cache-Control", "no-store, max-age=0")
@@ -150,7 +153,7 @@ func autoupdateHandler(auth Authenticater, connecter Connecter) http.Handler {
 			return
 		}
 
-		if err := sendMessages(ctx, w, uid, builder, connecter, compress); err != nil {
+		if err := sendMessages(ctx, w, uid, builder, connecter, compress, heartbeat); err != nil {
 			handleErrorWithoutStatus(w, err)
 			return
 		}
@@ -209,13 +212,19 @@ func parseBodyNormal(r *http.Request) ([]byte, string, bool, error) {
 
 // HandleAutoupdate builds the requested keys from the body of a request. The
 // body has to be in the format specified in the keysbuilder package.
-func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter, connectionCount [2]*ConnectionCount) {
+func HandleAutoupdate(
+	mux *http.ServeMux,
+	auth Authenticater,
+	connecter Connecter,
+	connectionCount [2]*ConnectionCount,
+	heartbeat time.Duration,
+) {
 	mux.Handle(
 		prefixPublic,
 		validRequest(
 			authMiddleware(
 				connectionCountMiddleware(
-					autoupdateHandler(auth, connecter),
+					autoupdateHandler(auth, connecter, heartbeat),
 					auth,
 					connectionCount,
 				),
@@ -229,12 +238,17 @@ func HandleAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecte
 // uses the user_id from an argument.
 //
 // /internal/autoupdate?user_id=23&single=1&k=user/1/username
-func HandleInternalAutoupdate(mux *http.ServeMux, auth Authenticater, connecter Connecter) {
+func HandleInternalAutoupdate(
+	mux *http.ServeMux,
+	auth Authenticater,
+	connecter Connecter,
+	heartbeat time.Duration,
+) {
 	mux.Handle(
 		prefixInternal,
 		validRequest(
 			internalAuthMiddleware(
-				autoupdateHandler(auth, connecter),
+				autoupdateHandler(auth, connecter, heartbeat),
 				auth,
 			),
 		),
@@ -363,16 +377,23 @@ func handleLongpolling(ctx context.Context, w http.ResponseWriter, uid int, kb a
 	return true, nil
 }
 
-func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysBuilder, connecter Connecter, compress bool) error {
+func sendMessages(
+	ctx context.Context,
+	w io.Writer,
+	uid int,
+	kb autoupdate.KeysBuilder,
+	connecter Connecter,
+	compress bool,
+	heartbeat time.Duration,
+) error {
 	conn, err := connecter.Connect(ctx, uid, kb)
 	if err != nil {
 		return fmt.Errorf("getting connection: %w", err)
 	}
 
-	for f, ok := conn.Next(); ok; f, ok = conn.Next() {
+	for data, err := range insertKeepAlive(conn.Messages(ctx), heartbeat) {
 		// This blocks, until there is new data. It also unblocks, when the
 		// client context is done.
-		data, err := f(ctx)
 		if err != nil {
 			return fmt.Errorf("getting next message: %w", err)
 		}
@@ -384,6 +405,53 @@ func sendMessages(ctx context.Context, w io.Writer, uid int, kb autoupdate.KeysB
 
 	}
 	return ctx.Err()
+}
+
+// insertKeepAlive sends a empty message, if there is no message after
+// heartbeat.
+//
+// This is a workaround for a firefox bug. Can be removed when we find a better
+// method to close old connections.
+func insertKeepAlive(in iter.Seq2[map[dskey.Key][]byte, error], heartbeat time.Duration) iter.Seq2[map[dskey.Key][]byte, error] {
+	return func(yield func(key map[dskey.Key][]byte, value error) bool) {
+		dataCh := make(chan struct {
+			data map[dskey.Key][]byte
+			err  error
+		})
+
+		go func() {
+			defer close(dataCh)
+			for data, err := range in {
+				dataCh <- struct {
+					data map[dskey.Key][]byte
+					err  error
+				}{data, err}
+			}
+		}()
+
+		timer := time.NewTimer(heartbeat)
+		defer timer.Stop()
+
+		for {
+			select {
+			case item, ok := <-dataCh:
+				if !ok {
+					return
+				}
+				timer.Reset(heartbeat)
+
+				if !yield(item.data, item.err) {
+					return
+				}
+
+			case <-timer.C:
+				if !yield(map[dskey.Key][]byte{}, nil) {
+					return
+				}
+				timer.Reset(heartbeat)
+			}
+		}
+	}
 }
 
 // HandleHealth tells, if the service is running.
