@@ -146,7 +146,9 @@ func TestConnectionEmptyData(t *testing.T) {
 				t.Fatalf("creating conection: %v", err)
 			}
 			next, stop := iter.Pull2(conn.Messages(t.Context()))
-			defer stop()
+			// Ingore stop, since the iterator is stoped when t.Context() is
+			// closed. Waiting for stop would halt forever.
+			_ = stop
 
 			if _, err, _ := next(); err != nil {
 				t.Errorf("next(): %v", err)
@@ -201,7 +203,9 @@ func TestConnectionEmptyData(t *testing.T) {
 			t.Fatalf("creating conection: %v", err)
 		}
 		next, stop := iter.Pull2(conn.Messages(t.Context()))
-		defer stop()
+		// Ingore stop, since the iterator is stoped when t.Context() is
+		// closed. Waiting for stop would halt forever.
+		_ = stop
 
 		if _, err, _ := next(); err != nil {
 			t.Errorf("next() returned an error: %v", err)
@@ -285,7 +289,9 @@ func TestNextNoReturnWhenDataIsRestricted(t *testing.T) {
 		t.Fatalf("creating conection: %v", err)
 	}
 	next, stop := iter.Pull2(conn.Messages(t.Context()))
-	defer stop()
+	// Ingore stop, since the iterator is stoped when t.Context() is
+	// closed. Waiting for stop would halt forever.
+	_ = stop
 
 	t.Run("first call", func(t *testing.T) {
 		var data map[dskey.Key][]byte
