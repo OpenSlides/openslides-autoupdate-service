@@ -135,11 +135,10 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	publicAccessOnly, _ := strconv.ParseBool(envPublicAccessOnly.Value(lookup))
 
 	// Autoupdate data flow.
-	flow, flowBackground, err := autoupdate.NewFlow(lookup, publicAccessOnly)
+	flow, err := autoupdate.NewFlow(lookup)
 	if err != nil {
 		return nil, fmt.Errorf("init autoupdate data flow: %w", err)
 	}
-	backgroundTasks = append(backgroundTasks, flowBackground)
 
 	// Auth Service.
 	authMessageBus := redis.New(lookup)
