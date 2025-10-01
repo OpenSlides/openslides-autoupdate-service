@@ -6,37 +6,27 @@ import (
 
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-go/perm"
-	"github.com/OpenSlides/openslides-go/set"
 )
 
-// Poll handels restrictions of the collection poll.
-// If the user can see a poll depends on the content object:
+// Poll handels restrictions of the collection poll. If the user can see a poll
+// depends on the content_object:
 //
 //	motion: The user can see the linked motion.
 //	assignment: The user can see the linked assignment.
 //	topic: The user can see the topic.
 //
-// If the user can manage the poll depends on the content object:
+// If the user can manage the poll also depends on the content_object:
 //
 //	motion: The user needs motion.can_manage_polls.
 //	assignment: The user needs assignment.can_manage_polls.
 //	topic: The user needs poll.can_manage.
 //
-// Mode A: The user can see the poll.
+// Mode A: Contains the fields to know, that the poll exists and how it is
+// configured. It is allowed, if the user can see the poll.
 //
-// Mode B: Depends on poll/state:
-//
-//	published: Accessible if the user can see the poll.
-//	finished: Accessible if the user can manage the poll.
-//	others: Not accessible for anyone.
-//
-// Mode C: The poll is in the started state and
-//
-//	the user can manage the poll or
-//	the user has the permissions `user.can_see` and `list_of_speakers.can_manage` or
-//	the user has the permission `poll.can_see_progress`.
-//
-// Mode D: Same as Mode B, but for `finished`: Accessible if the user can manage the poll or the user has list_of_speakers.can_manage.
+// Mode B: Contains the fields to see the result of a poll. If the poll is
+// published, the user has to be able to see the poll. If it is not published,
+// he needs the permission to manage the poll.
 type Poll struct{}
 
 // Name returns the collection name.
@@ -61,46 +51,42 @@ func (p Poll) Modes(mode string) FieldRestricter {
 		return p.see
 	case "B":
 		return p.modeB
-	case "C":
-		return p.modeC
-	case "D":
-		return p.modeD
 	}
 	return nil
 }
 
 func (p Poll) see(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]int, error) {
-	return eachContentObjectCollection(ctx, ds.Poll_ContentObjectID, pollIDs, func(objectCollection string, objectID int, ids []int) ([]int, error) {
-		var collection interface {
-			see(context.Context, *dsfetch.Fetch, ...int) ([]int, error)
-		}
+	return eachContentObjectCollection(
+		ctx,
+		ds.Poll_ContentObjectID,
+		pollIDs, func(objectCollection string, objectID int, ids []int) ([]int, error) {
+			var collection FieldRestricter
 
-		switch objectCollection {
-		case "motion":
-			collection = Motion{}
+			switch objectCollection {
+			case "motion":
+				collection = Collection(ctx, Motion{}.Name()).Modes("C")
 
-		case "assignment":
-			collection = Assignment{}
+			case "assignment":
+				collection = Collection(ctx, Assignment{}.Name()).Modes("A")
 
-		case "topic":
-			collection = Topic{}
+			case "topic":
+				collection = Collection(ctx, Topic{}.Name()).Modes("A")
 
-		default:
-			// TODO LAST ERROR
-			return nil, fmt.Errorf("unsupported collection: %s", objectCollection)
-		}
+			default:
+				return nil, fmt.Errorf("unsupported collection: %s", objectCollection)
+			}
 
-		see, err := collection.see(ctx, ds, objectID)
-		if err != nil {
-			return nil, fmt.Errorf("checking see of content object %d: %w", objectID, err)
-		}
+			see, err := collection(ctx, ds, objectID)
+			if err != nil {
+				return nil, fmt.Errorf("checking see of content object %d: %w", objectID, err)
+			}
 
-		if len(see) == 1 {
-			return ids, nil
-		}
+			if len(see) == 1 {
+				return ids, nil
+			}
 
-		return nil, nil
-	})
+			return nil, nil
+		})
 }
 
 func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]int, error) {
@@ -156,88 +142,42 @@ func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]
 			return nil, nil
 
 		default:
-			// TODO LAST ERROR
 			return nil, fmt.Errorf("unsupported collection: %s", objectCollection)
 		}
 	})
 }
 
 func (p Poll) modeB(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]int, error) {
-	return eachStringField(ctx, ds.Poll_State, pollIDs, func(state string, ids []int) ([]int, error) {
-		switch state {
-		case "published":
-			see, err := p.see(ctx, ds, ids...)
+	published := make([]bool, len(pollIDs))
+	for i, pollID := range pollIDs {
+		ds.Poll_Published(pollID).Lazy(&published[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("fetching poll/publish: %w", err)
+	}
+
+	allowed := make([]int, 0, len(pollIDs))
+	for i, pollID := range pollIDs {
+		if published[i] {
+			see, err := p.see(ctx, ds, pollID)
 			if err != nil {
 				return nil, fmt.Errorf("checking see: %w", err)
 			}
-			return see, nil
-
-		case "finished":
-			manage, err := p.manage(ctx, ds, ids...)
-			if err != nil {
-				return nil, fmt.Errorf("checking manage: %w", err)
+			if len(see) > 0 {
+				allowed = append(allowed, pollID)
 			}
-			return manage, nil
-
-		default:
-			return nil, nil
-		}
-	})
-}
-
-func (p Poll) modeC(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]int, error) {
-	return eachStringField(ctx, ds.Poll_State, pollIDs, func(state string, ids []int) ([]int, error) {
-		if state != "started" {
-			return nil, nil
+			continue
 		}
 
-		return eachMeeting(ctx, ds, p, ids, func(meetingID int, ids []int) ([]int, error) {
-			perms, err := perm.FromContext(ctx, meetingID)
-			if err != nil {
-				return nil, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
-			}
-
-			if perms.Has(perm.UserCanSee) && perms.Has(perm.ListOfSpeakersCanManage) || perms.Has(perm.PollCanSeeProgress) {
-				return ids, nil
-			}
-
-			return p.manage(ctx, ds, ids...)
-		})
-	})
-}
-
-func (p Poll) modeD(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]int, error) {
-	return eachStringField(ctx, ds.Poll_State, pollIDs, func(state string, pollIDs []int) ([]int, error) {
-		switch state {
-		case "published":
-			see, err := p.see(ctx, ds, pollIDs...)
-			if err != nil {
-				return nil, fmt.Errorf("checking see: %w", err)
-			}
-			return see, nil
-
-		case "finished":
-			allowed, err := p.manage(ctx, ds, pollIDs...)
-			if err != nil {
-				return nil, fmt.Errorf("checking manage: %w", err)
-			}
-
-			if len(allowed) == len(pollIDs) {
-				return allowed, nil
-			}
-
-			notAllowed := set.New(pollIDs...)
-			notAllowed.Remove(allowed...)
-
-			allowed2, err := meetingPerm(ctx, ds, p, notAllowed.List(), perm.ListOfSpeakersCanManage)
-			if err != nil {
-				return nil, fmt.Errorf("checking list of speaker permission: %w", err)
-			}
-
-			return append(allowed, allowed2...), nil
-
-		default:
-			return nil, nil
+		manage, err := p.manage(ctx, ds, pollID)
+		if err != nil {
+			return nil, fmt.Errorf("checking manage: %w", err)
 		}
-	})
+		if len(manage) > 0 {
+			allowed = append(allowed, pollID)
+		}
+	}
+
+	return allowed, nil
 }
