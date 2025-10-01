@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
 	"github.com/OpenSlides/openslides-go/datastore"
 	"github.com/OpenSlides/openslides-go/datastore/cache"
 	"github.com/OpenSlides/openslides-go/datastore/flow"
@@ -16,9 +14,7 @@ import (
 type Flow struct {
 	flow.Flow
 
-	cache     *cache.Cache
-	projector *projector.Projector
-	postgres  *datastore.FlowPostgres
+	cache *cache.Cache
 }
 
 // NewFlow initializes a flow for the autoupdate service.
@@ -29,13 +25,10 @@ func NewFlow(lookup environment.Environmenter) (*Flow, error) {
 	}
 
 	cache := cache.New(postgres)
-	projector := projector.NewProjector(cache, slide.Slides())
 
 	flow := Flow{
-		Flow:      projector,
-		cache:     cache,
-		projector: projector,
-		postgres:  postgres,
+		Flow:  cache,
+		cache: cache,
 	}
 
 	metric.Register(flow.metric)
@@ -46,7 +39,6 @@ func NewFlow(lookup environment.Environmenter) (*Flow, error) {
 // ResetCache clears the cache.
 func (f *Flow) ResetCache() {
 	f.cache.Reset()
-	f.projector.Reset()
 }
 
 func (f *Flow) metric(values metric.Container) {
