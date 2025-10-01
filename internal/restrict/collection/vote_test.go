@@ -17,10 +17,10 @@ func TestVoteModeA(t *testing.T) {
 		false,
 		`---
 		vote/1:
-			option_id: 2
-			user_id: 5
-			delegated_user_id: 6
-		option/2/poll_id: 3
+			poll_id: 3
+			represented_user_id: 5
+			acting_user_id: 6
+			meeting_id: 30
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -39,13 +39,13 @@ func TestVoteModeA(t *testing.T) {
 		true,
 		`---
 		vote/1:
-			option_id: 2
-			user_id: 5
-			delegated_user_id: 6
-		option/2/poll_id: 3
+			poll_id: 3
+			represented_user_id: 5
+			acting_user_id: 6
+			meeting_id: 30
 		poll/3:
 			meeting_id: 30
-			state: published
+			published: true
 			content_object_id: topic/5
 		topic/5:
 			meeting_id: 30
@@ -62,13 +62,13 @@ func TestVoteModeA(t *testing.T) {
 		false,
 		`---
 		vote/1:
-			option_id: 2
-			user_id: 5
-			delegated_user_id: 6
-		option/2/poll_id: 3
+			poll_id: 3
+			represented_user_id: 5
+			acting_user_id: 6
+			meeting_id: 30
 		poll/3:
 			meeting_id: 30
-			state: published
+			published: true
 			content_object_id: topic/5
 		topic/5:
 			meeting_id: 30
@@ -78,16 +78,16 @@ func TestVoteModeA(t *testing.T) {
 	)
 
 	testCase(
-		"can manage poll",
+		"can see progress",
 		t,
 		f,
 		true,
 		`---
 		vote/1:
-			option_id: 2
-			user_id: 5
-			delegated_user_id: 6
-		option/2/poll_id: 3
+			poll_id: 3
+			represented_user_id: 5
+			acting_user_id: 6
+			meeting_id: 30
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -96,7 +96,7 @@ func TestVoteModeA(t *testing.T) {
 			agenda_item_id: 40
 		agenda_item/40/meeting_id: 30
 		`,
-		withPerms(30, perm.PollCanManage, perm.AgendaItemCanSee),
+		withPerms(30, perm.PollCanSeeProgress, perm.AgendaItemCanSee),
 	)
 
 	testCase(
@@ -106,10 +106,10 @@ func TestVoteModeA(t *testing.T) {
 		true,
 		`---
 		vote/1:
-			option_id: 2
-			user_id: 5
-			delegated_user_id: 6
-		option/2/poll_id: 3
+			poll_id: 3
+			represented_user_id: 5
+			acting_user_id: 6
+			meeting_id: 30
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -129,10 +129,10 @@ func TestVoteModeA(t *testing.T) {
 		true,
 		`---
 		vote/1:
-			option_id: 2
-			user_id: 5
-			delegated_user_id: 6
-		option/2/poll_id: 3
+			poll_id: 3
+			represented_user_id: 5
+			acting_user_id: 6
+			meeting_id: 30
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -150,31 +150,19 @@ func TestVoteModeB(t *testing.T) {
 	f := collection.Vote{}.Modes("B")
 
 	testCase(
-		"other state",
-		t,
-		f,
-		false,
-		`---
-		vote/1/option_id: 2
-		option/2/poll_id: 3
-		poll/3/meeting_id: 30
-		`,
-	)
-
-	testCase(
-		"state published",
+		"poll is published",
 		t,
 		f,
 		true,
 		`---
 		vote/1:
-			option_id: 2
-			user_id: 5
-			delegated_user_id: 6
-		option/2/poll_id: 3
+			poll_id: 3
+			represented_user_id: 5
+			acting_user_id: 6
+			meeting_id: 30
 		poll/3:
 			meeting_id: 30
-			state: published
+			published: true
 			content_object_id: topic/5
 		topic/5:
 			meeting_id: 30
@@ -191,8 +179,7 @@ func TestVoteModeB(t *testing.T) {
 		f,
 		true,
 		`---
-		vote/1/option_id: 2
-		option/2/poll_id: 3
+		vote/1/poll_id: 3
 		poll/3:
 			meeting_id: 30
 			state: finished
