@@ -152,13 +152,15 @@ func TestListOfSpeakers(t *testing.T) {
 						"user": "elenor",
 						"speech_state": "contribution",
 						"note": "Seq1Waiting",
-						"point_of_order": true
+						"point_of_order": true,
+						"answer": false
 					},
 					{
 						"user": "jonny123",
 						"speech_state": "contribution",
 						"note": "Seq2Waiting",
-						"point_of_order": false
+						"point_of_order": false,
+						"answer": false
 					}
 				],
 				"current": {
@@ -166,7 +168,8 @@ func TestListOfSpeakers(t *testing.T) {
 					"speech_state": "pro",
 					"note": "SeqCurrent",
 					"point_of_order": false,
-					"begin_time": 100
+					"begin_time": 100,
+					"answer": false
 				},
 				"finished": [
 					{
@@ -174,14 +177,16 @@ func TestListOfSpeakers(t *testing.T) {
 						"speech_state": "contra",
 						"note": "Seq1Finished",
 						"point_of_order": true,
-						"begin_time": 29
+						"begin_time": 29,
+						"answer": false
 					},
 					{
 						"user": "Calli",
 						"speech_state": "contra",
 						"note": "Seq2Finished",
 						"point_of_order": true,
-						"begin_time": 24
+						"begin_time": 24,
+						"answer": false
 					}
 				],
 				"closed": true,
@@ -206,7 +211,8 @@ func TestListOfSpeakers(t *testing.T) {
 					"user": "jonny123",
 					"speech_state": "contribution",
 					"note": "Seq2Waiting",
-					"point_of_order": false
+					"point_of_order": false,
+					"answer": false
 				}],
 				"current": null,
 				"finished": [{
@@ -214,7 +220,8 @@ func TestListOfSpeakers(t *testing.T) {
 					"speech_state": "contra",
 					"note": "Seq3Finished",
 					"point_of_order": true,
-					"begin_time": 20
+					"begin_time": 20,
+					"answer": false
 				}],
 				"closed": true,
 				"title_information": {
@@ -239,7 +246,8 @@ func TestListOfSpeakers(t *testing.T) {
 					"speech_state": "interposed_question",
 					"note": "Seq2Waiting",
 					"point_of_order": false,
-					"begin_time": 150
+					"begin_time": 150,
+					"answer": false
 				}],
 				"current": {
 					"user": "Jonny",
@@ -247,7 +255,8 @@ func TestListOfSpeakers(t *testing.T) {
 					"note": "SeqCurrent",
 					"point_of_order": false,
 					"begin_time": 100,
-					"pause_time": 150
+					"pause_time": 150,
+					"answer": false
 				},
 				"finished": null,
 				"closed": true,
@@ -349,7 +358,8 @@ func TestCurrentListOfSpeakers(t *testing.T) {
 					"user": "jonny123",
 					"speech_state": "pro",
 					"note": "Lonesome speaker",
-					"point_of_order": false
+					"point_of_order": false,
+					"answer": false
 				}],
 				"current": null,
 				"finished": null,

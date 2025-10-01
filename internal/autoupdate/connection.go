@@ -3,6 +3,7 @@ package autoupdate
 import (
 	"context"
 	"fmt"
+	"iter"
 
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/datastore/dsrecorder"
@@ -10,7 +11,7 @@ import (
 
 // Connection holds the connection to data and has the ability to return the next.
 type Connection interface {
-	Next() (func(context.Context) (map[dskey.Key][]byte, error), bool)
+	Messages(ctx context.Context) iter.Seq2[map[dskey.Key][]byte, error]
 	NextWithFilter(ctx context.Context, filterHashes string) (map[dskey.Key][]byte, string, error)
 }
 
@@ -26,28 +27,13 @@ type connection struct {
 	hotkeys      map[dskey.Key]struct{}
 }
 
-// Next returns a function to fetch the next data.
+// Messages returns an iterator over new messages.
 //
-// Next is a pull function as described in
-// https://github.com/golang/go/discussions/56413
+// It impelements the go 1.23 iter interface and can be called like
 //
-// With the current version of go, it has to be called like this:
-//
-//	next := conn.Next(
-//	for f, ok := next(); ok; f, ok = next() {
-//		data, err := f(ctx)
+//	for data, err := range conn.Messages(ctx) {
 //		if err != nil {
-//			break
-//		}
-//		...
-//	}
-//
-// In a future version of go, it meight be called as:
-//
-//	for f := range conn.Next {
-//		data, err := f(ctx)
-//		if err != nil {
-//			break
+//			return err
 //		}
 //		...
 //	}
@@ -57,24 +43,27 @@ type connection struct {
 //
 // On every other call, it blocks until there is new data. In this case, the map
 // is never empty.
-func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, error), bool) {
-	return func(ctx context.Context) (map[dskey.Key][]byte, error) {
+func (c *connection) Messages(ctx context.Context) iter.Seq2[map[dskey.Key][]byte, error] {
+	return func(yield func(key map[dskey.Key][]byte, value error) bool) {
 		if c.filter.empty() {
 			c.tid = c.autoupdate.topic.LastID()
 			data, err := c.updatedData(ctx)
 			if err != nil {
-				return nil, fmt.Errorf("creating first time data: %w", err)
+				yield(nil, fmt.Errorf("creating first time data: %w", err))
+				return
 			}
 
-			return data, nil
+			if !yield(data, nil) {
+				return // break was used in for-loop
+			}
 		}
 
 		for {
 			// Blocks until new data or the context is done.
 			tid, changedKeys, err := c.autoupdate.topic.Receive(ctx, c.tid)
 			if err != nil {
-				// TODO EXTERMAL ERROR
-				return nil, fmt.Errorf("get updated keys: %w", err)
+				yield(nil, fmt.Errorf("get updated keys: %w", err))
+				return
 			}
 			c.tid = tid
 
@@ -89,15 +78,18 @@ func (c *connection) Next() (func(context.Context) (map[dskey.Key][]byte, error)
 			if foundKey {
 				data, err := c.updatedData(ctx)
 				if err != nil {
-					return nil, fmt.Errorf("creating later data: %w", err)
+					yield(nil, fmt.Errorf("creating later data: %w", err))
+					return
 				}
 
 				if len(data) > 0 {
-					return data, nil
+					if !yield(data, nil) {
+						return // break was used in for-loop
+					}
 				}
 			}
 		}
-	}, true
+	}
 }
 
 func (c *connection) NextWithFilter(ctx context.Context, filterHashes string) (map[dskey.Key][]byte, string, error) {
@@ -113,8 +105,7 @@ func (c *connection) NextWithFilter(ctx context.Context, filterHashes string) (m
 	}
 
 	if len(data) == 0 {
-		fn, _ := c.Next()
-		dd, err := fn(ctx)
+		dd, err, _ := getFirst(c.Messages(ctx))
 		if err != nil {
 			return nil, "", fmt.Errorf("getting new data: %w", err)
 		}
@@ -155,4 +146,13 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 	c.filter.filter(data)
 
 	return data, nil
+}
+
+func getFirst[K, V any](seq iter.Seq2[K, V]) (K, V, bool) {
+	for k, v := range seq {
+		return k, v, true
+	}
+	var zeroK K
+	var zeroV V
+	return zeroK, zeroV, false
 }
