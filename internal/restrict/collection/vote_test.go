@@ -20,7 +20,6 @@ func TestVoteModeA(t *testing.T) {
 			poll_id: 3
 			represented_user_id: 5
 			acting_user_id: 6
-			meeting_id: 30
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -42,7 +41,6 @@ func TestVoteModeA(t *testing.T) {
 			poll_id: 3
 			represented_user_id: 5
 			acting_user_id: 6
-			meeting_id: 30
 		poll/3:
 			meeting_id: 30
 			published: true
@@ -65,7 +63,6 @@ func TestVoteModeA(t *testing.T) {
 			poll_id: 3
 			represented_user_id: 5
 			acting_user_id: 6
-			meeting_id: 30
 		poll/3:
 			meeting_id: 30
 			published: true
@@ -87,7 +84,6 @@ func TestVoteModeA(t *testing.T) {
 			poll_id: 3
 			represented_user_id: 5
 			acting_user_id: 6
-			meeting_id: 30
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -109,7 +105,6 @@ func TestVoteModeA(t *testing.T) {
 			poll_id: 3
 			represented_user_id: 5
 			acting_user_id: 6
-			meeting_id: 30
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -132,7 +127,6 @@ func TestVoteModeA(t *testing.T) {
 			poll_id: 3
 			represented_user_id: 5
 			acting_user_id: 6
-			meeting_id: 30
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -159,7 +153,6 @@ func TestVoteModeB(t *testing.T) {
 			poll_id: 3
 			represented_user_id: 5
 			acting_user_id: 6
-			meeting_id: 30
 		poll/3:
 			meeting_id: 30
 			published: true
@@ -183,6 +176,92 @@ func TestVoteModeB(t *testing.T) {
 		poll/3:
 			meeting_id: 30
 			state: finished
+			content_object_id: topic/5
+		topic/5/meeting_id: 30
+		`,
+		withPerms(30, perm.PollCanManage),
+	)
+}
+
+func TestVoteModeC(t *testing.T) {
+	f := collection.Vote{}.Modes("C")
+
+	testCase(
+		"poll is published, but secret",
+		t,
+		f,
+		false,
+		`---
+		vote/1:
+			poll_id: 3
+			represented_user_id: 5
+			acting_user_id: 6
+		poll/3:
+			meeting_id: 30
+			published: true
+			visibility: secret
+			content_object_id: topic/5
+		topic/5:
+			meeting_id: 30
+			agenda_item_id: 40
+		agenda_item/40/meeting_id: 30
+		`,
+		withRequestUser(5),
+		withPerms(30, perm.AgendaItemCanSee),
+	)
+
+	testCase(
+		"poll is published, not secret",
+		t,
+		f,
+		true,
+		`---
+		vote/1:
+			poll_id: 3
+			represented_user_id: 5
+			acting_user_id: 6
+		poll/3:
+			meeting_id: 30
+			published: true
+			visibility: open
+			content_object_id: topic/5
+		topic/5:
+			meeting_id: 30
+			agenda_item_id: 40
+		agenda_item/40/meeting_id: 30
+		`,
+		withRequestUser(5),
+		withPerms(30, perm.AgendaItemCanSee),
+	)
+
+	testCase(
+		"state finished, not secret",
+		t,
+		f,
+		true,
+		`---
+		vote/1/poll_id: 3
+		poll/3:
+			meeting_id: 30
+			state: finished
+			visibility: open
+			content_object_id: topic/5
+		topic/5/meeting_id: 30
+		`,
+		withPerms(30, perm.PollCanManage),
+	)
+
+	testCase(
+		"state finished, but secret",
+		t,
+		f,
+		false,
+		`---
+		vote/1/poll_id: 3
+		poll/3:
+			meeting_id: 30
+			state: finished
+			visibility: secret
 			content_object_id: topic/5
 		topic/5/meeting_id: 30
 		`,

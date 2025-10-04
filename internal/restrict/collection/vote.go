@@ -25,7 +25,10 @@ import (
 // Group B: Contains fields, that show the value of the vote. A user is allowed
 // to see it, if he is also allowed to see the poll result. For example for
 // managers, if the poll is published or for live voting. A user can see the
-// mode, if he can see poll restriction mode b.
+// mode, if he can see poll restriction mode B.
+//
+// Group C: Contains the user ids of the vote. For secret polls, this fields are
+// restricted for everybody. For other polls, its the same as Group B.
 type Vote struct{}
 
 // Name returns the collection name.
@@ -35,7 +38,12 @@ func (v Vote) Name() string {
 
 // MeetingID returns the meetingID for the object.
 func (v Vote) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
-	meetingID, err := ds.Vote_MeetingID(id).Value(ctx)
+	pollID, err := ds.Vote_PollID(id).Value(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("get poll id: %w", err)
+	}
+
+	meetingID, err := ds.Poll_MeetingID(pollID).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("get meeting id: %w", err)
 	}
@@ -50,6 +58,9 @@ func (v Vote) Modes(mode string) FieldRestricter {
 		return v.see
 	case "B":
 		return v.modeB
+
+	case "C":
+		return v.modeC
 	}
 	return nil
 }
@@ -66,7 +77,7 @@ func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int
 			return false, fmt.Errorf("getting poll id: %w", err)
 		}
 
-		meetingID, err := ds.Vote_MeetingID(voteID).Value(ctx)
+		meetingID, err := ds.Poll_MeetingID(pollID).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("getting meeting id: %w", err)
 		}
@@ -124,6 +135,30 @@ func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int
 
 func (v Vote) modeB(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int, error) {
 	return eachRelationField(ctx, ds.Vote_PollID, voteIDs, func(pollID int, voteIDs []int) ([]int, error) {
+		seePollModeB, err := Collection(ctx, Poll{}.Name()).Modes("B")(ctx, ds, pollID)
+		if err != nil {
+			return nil, fmt.Errorf("checking poll mode B: %w", err)
+		}
+
+		if len(seePollModeB) > 0 {
+			return voteIDs, nil
+		}
+		return nil, nil
+	})
+}
+
+// ModeC is a workarount until crypto vote is released. With crypto vote, the
+// fields can be moved into modeB and modeC be removed.
+func (v Vote) modeC(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int, error) {
+	return eachRelationField(ctx, ds.Vote_PollID, voteIDs, func(pollID int, voteIDs []int) ([]int, error) {
+		visibility, err := ds.Poll_Visibility(pollID).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("fetch visibility of poll %d: %w", pollID, err)
+		}
+		if visibility == "secret" {
+			return nil, nil
+		}
+
 		seePollModeB, err := Collection(ctx, Poll{}.Name()).Modes("B")(ctx, ds, pollID)
 		if err != nil {
 			return nil, fmt.Errorf("checking poll mode B: %w", err)
