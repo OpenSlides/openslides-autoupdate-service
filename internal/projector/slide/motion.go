@@ -62,6 +62,7 @@ type leadMotionType struct {
 	Title           string `json:"title"`
 	Number          string `json:"number"`
 	Text            string `json:"text,omitempty"`
+	DiffVersion     string `json:"diff_version,omitempty"`
 	StartLineNumber int    `json:"start_line_number,omitempty"`
 }
 type dbMotionWork struct {
@@ -100,6 +101,7 @@ type dbMotion struct {
 	Reason                           string                         `json:"reason,omitempty"`
 	ModifiedFinalVersion             string                         `json:"modified_final_version,omitempty"`
 	StartLineNumber                  int                            `json:"start_line_number,omitempty"`
+	DiffVersion                      string                         `json:"diff_version,omitempty"`
 	MotionWork                       *dbMotionWork                  `json:",omitempty"`
 }
 
@@ -167,6 +169,7 @@ func Motion(store *projector.SlideStore) {
 			"recommendation_extension_reference_ids",
 			"start_line_number",
 			"additional_submitter",
+			"diff_version",
 		}
 		if meeting.MotionsEnableTextOnProjector {
 			fetchFields = append(fetchFields, "text", "amendment_paragraphs")
@@ -286,6 +289,7 @@ func fillLeadMotion(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 		"title",
 		"number",
 		"start_line_number",
+		"diff_version",
 	}
 	if meeting.MotionsEnableTextOnProjector {
 		fields = append(fields, "text")
@@ -300,6 +304,7 @@ func fillLeadMotion(ctx context.Context, fetch *datastore.Fetcher, motion *dbMot
 		return fmt.Errorf("decoding LeadMotion data: %w", err)
 	}
 	motion.LeadMotion = &mo
+	motion.DiffVersion = mo.DiffVersion
 	return nil
 }
 
