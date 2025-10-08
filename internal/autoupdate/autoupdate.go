@@ -209,7 +209,7 @@ func (a *Autoupdate) skipWorkpool(ctx context.Context, userID int) (bool, error)
 		}
 
 		adminGroups := make([]dsfetch.Maybe[int], len(groupIDs))
-		for i := 0; i < len(groupIDs); i++ {
+		for i := range len(groupIDs) {
 			ds.Group_AdminGroupForMeetingID(groupIDs[i]).Lazy(&adminGroups[i])
 		}
 

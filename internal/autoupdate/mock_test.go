@@ -3,6 +3,7 @@ package autoupdate_test
 import (
 	"context"
 	"fmt"
+	"iter"
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
@@ -13,7 +14,7 @@ import (
 	"github.com/OpenSlides/openslides-go/environment"
 )
 
-func getConnection() (func(context.Context) (map[dskey.Key][]byte, error), *dsmock.Flow, func(context.Context, func(error))) {
+func getConnection(ctx context.Context) (func() (map[dskey.Key][]byte, error, bool), *dsmock.Flow, func(context.Context, func(error))) {
 	datastore := dsmock.NewFlow(dsmock.YAMLData(`---
 	user/1/username: Hello World
 	`))
@@ -26,7 +27,7 @@ func getConnection() (func(context.Context) (map[dskey.Key][]byte, error), *dsmo
 		panic(err)
 	}
 
-	f, _ := conn.Next()
+	f, _ := iter.Pull2(conn.Messages(ctx))
 
 	return f, datastore, bg
 }
