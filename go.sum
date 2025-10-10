@@ -8,6 +8,8 @@ github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 h1:TngWCqHvy9oXAN6lEV
 github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5/go.mod h1:lmUJ/7eu/Q8D7ML55dXQrVaamCz2vxCfdQBasLZfHKk=
 github.com/OpenSlides/openslides-go v0.0.0-20251001143106-bbdfdfd5b42e h1:gQiyvQEFbNTRnqZX0RFciGmDaiX29F+amt0I/Fi1RW4=
 github.com/OpenSlides/openslides-go v0.0.0-20251001143106-bbdfdfd5b42e/go.mod h1:Q41tXKdw7yR8tdY6oSNyFF+lyn5y7hH1J6QbdURsadg=
+github.com/OpenSlides/openslides-go v0.0.0-20251010080236-081fbe77da7e h1:vA2V+WYGT12C3a1wOI3zaBbCiMUtGA/hRnvceWTo+8Y=
+github.com/OpenSlides/openslides-go v0.0.0-20251010080236-081fbe77da7e/go.mod h1:Q41tXKdw7yR8tdY6oSNyFF+lyn5y7hH1J6QbdURsadg=
 github.com/alecthomas/assert/v2 v2.11.0 h1:2Q9r3ki8+JYXvGsDyBXwH3LcJ+WK5D0gc5E8vS6K3D0=
 github.com/alecthomas/assert/v2 v2.11.0/go.mod h1:Bze95FyfUr7x34QZrjL+XP+0qgp/zg8yS+TtBj1WA3k=
 github.com/alecthomas/kong v1.12.1 h1:iq6aMJDcFYP9uFrLdsiZQ2ZMmcshduyGv4Pek0MQPW0=
