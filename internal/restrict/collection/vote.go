@@ -14,18 +14,21 @@ import (
 //
 //	he can see the related poll and any of:
 //
-//		The associated poll/state is published.
-//		The user can manage the associated poll.
-//		The user's id is equal to vote/user_id.
-//		The user's id is equal to vote/delegated_user_id.
+//		The associated poll is published.
+//		The user has poll.can_see_progress.
+//		The user's id is equal to vote/acting_user_id or vote/represented_user_id.
 //
-// Group A: The user can see the vote.
+// Group A: The user is allowed to know, that the poll exists. This is necessary
+// to know, how many votes where already submitted. A user can see this fields,
+// if he can see the vote.
 //
-// Group B: Depends on poll/state:
+// Group B: Contains fields, that show the value of the vote. A user is allowed
+// to see it, if he is also allowed to see the poll result. For example for
+// managers, if the poll is published or for live voting. A user can see the
+// mode, if he can see poll restriction mode B.
 //
-//	published: Accessible if the user can see the vote.
-//	finished: Accessible if the user can manage the associated poll.
-//	others: Not accessible for anyone.
+// Group C: Contains the user ids of the vote. For secret polls, this fields are
+// restricted for everybody. For other polls, its the same as Group B.
 type Vote struct{}
 
 // Name returns the collection name.
@@ -35,7 +38,12 @@ func (v Vote) Name() string {
 
 // MeetingID returns the meetingID for the object.
 func (v Vote) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
-	meetingID, err := ds.Vote_MeetingID(id).Value(ctx)
+	pollID, err := ds.Vote_PollID(id).Value(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("get poll id: %w", err)
+	}
+
+	meetingID, err := ds.Poll_MeetingID(pollID).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("get meeting id: %w", err)
 	}
@@ -50,11 +58,13 @@ func (v Vote) Modes(mode string) FieldRestricter {
 		return v.see
 	case "B":
 		return v.modeB
+
+	case "C":
+		return v.modeC
 	}
 	return nil
 }
 
-// TODO: Group by poll or option
 func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int, error) {
 	requestUser, err := perm.RequestUserFromContext(ctx)
 	if err != nil {
@@ -62,15 +72,32 @@ func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int
 	}
 
 	return eachCondition(voteIDs, func(voteID int) (bool, error) {
-		optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("fetching option_id: %w", err)
-		}
-
-		pollID, err := pollID(ctx, ds, optionID)
+		pollID, err := ds.Vote_PollID(voteID).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("getting poll id: %w", err)
 		}
+
+		meetingID, err := ds.Poll_MeetingID(pollID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting meeting id: %w", err)
+		}
+
+		published, err := ds.Poll_Published(pollID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting poll publihed: %w", err)
+		}
+
+		voteUser, err := ds.Vote_ActingUserID(voteID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting vote user: %w", err)
+		}
+
+		delegatedUser, err := ds.Vote_RepresentedUserID(voteID).Value(ctx)
+		if err != nil {
+			return false, fmt.Errorf("getting delegated user: %w", err)
+		}
+
+		// TODO: get all values in one request
 
 		canSeePoll, err := Collection(ctx, Poll{}.Name()).Modes("A")(ctx, ds, pollID)
 		if err != nil {
@@ -81,36 +108,21 @@ func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int
 			return false, nil
 		}
 
-		state, err := ds.Poll_State(pollID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("getting poll id and state: %w", err)
-		}
-
-		if state == "published" {
+		if published {
 			return true, nil
 		}
 
-		manage, err := Poll{}.manage(ctx, ds, pollID)
+		perms, err := perm.FromContext(ctx, meetingID)
 		if err != nil {
-			return false, fmt.Errorf("checking manage poll %d: %w", pollID, err)
+			return false, fmt.Errorf("getting perms for meeting %d: %w", meetingID, err)
 		}
 
-		if len(manage) == 1 {
+		if canSee := perms.Has(perm.PollCanSeeProgress); canSee {
 			return true, nil
-		}
-
-		voteUser, err := ds.Vote_UserID(voteID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("getting vote user: %w", err)
 		}
 
 		if v, ok := voteUser.Value(); ok && v == requestUser {
 			return true, nil
-		}
-
-		delegatedUser, err := ds.Vote_DelegatedUserID(voteID).Value(ctx)
-		if err != nil {
-			return false, fmt.Errorf("getting delegated user: %w", err)
 		}
 
 		if v, ok := delegatedUser.Value(); ok && v == requestUser {
@@ -121,42 +133,40 @@ func (v Vote) see(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int
 	})
 }
 
-// TODO: Group by poll or option
 func (v Vote) modeB(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int, error) {
-	return eachCondition(voteIDs, func(voteID int) (bool, error) {
-		optionID, err := ds.Vote_OptionID(voteID).Value(ctx)
+	return eachRelationField(ctx, ds.Vote_PollID, voteIDs, func(pollID int, voteIDs []int) ([]int, error) {
+		seePollModeB, err := Collection(ctx, Poll{}.Name()).Modes("B")(ctx, ds, pollID)
 		if err != nil {
-			return false, fmt.Errorf("fetching option_id: %w", err)
+			return nil, fmt.Errorf("checking poll mode B: %w", err)
 		}
 
-		pollID, err := pollID(ctx, ds, optionID)
+		if len(seePollModeB) > 0 {
+			return voteIDs, nil
+		}
+		return nil, nil
+	})
+}
+
+// ModeC is a workarount until crypto vote is released. With crypto vote, the
+// fields can be moved into modeB and modeC be removed.
+func (v Vote) modeC(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int, error) {
+	return eachRelationField(ctx, ds.Vote_PollID, voteIDs, func(pollID int, voteIDs []int) ([]int, error) {
+		visibility, err := ds.Poll_Visibility(pollID).Value(ctx)
 		if err != nil {
-			return false, fmt.Errorf("getting poll id: %w", err)
+			return nil, fmt.Errorf("fetch visibility of poll %d: %w", pollID, err)
 		}
-		state, err := ds.Poll_State(pollID).Value(ctx)
+		if visibility == "secret" {
+			return nil, nil
+		}
+
+		seePollModeB, err := Collection(ctx, Poll{}.Name()).Modes("B")(ctx, ds, pollID)
 		if err != nil {
-			return false, fmt.Errorf("getting poll id and state: %w", err)
+			return nil, fmt.Errorf("checking poll mode B: %w", err)
 		}
 
-		switch state {
-		case "published":
-			see, err := v.see(ctx, ds, voteID)
-			if err != nil {
-				return false, fmt.Errorf("checking see vote: %w", err)
-			}
-
-			return len(see) == 1, nil
-
-		case "finished":
-			manage, err := Poll{}.manage(ctx, ds, pollID)
-			if err != nil {
-				return false, fmt.Errorf("checking manage poll %d: %w", pollID, err)
-			}
-
-			return len(manage) == 1, nil
-
-		default:
-			return false, nil
+		if len(seePollModeB) > 0 {
+			return voteIDs, nil
 		}
+		return nil, nil
 	})
 }
