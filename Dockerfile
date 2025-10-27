@@ -1,6 +1,6 @@
 ARG CONTEXT=prod
 
-FROM golang:1.25.1-alpine as base
+FROM golang:1.25.3-alpine AS base
 
 ## Setup
 ARG CONTEXT
@@ -23,15 +23,18 @@ EXPOSE 9012
 ## Healthcheck
 HEALTHCHECK CMD ["/app/openslides-autoupdate-service/openslides-autoupdate-service", "health"]
 
+## Command
+COPY ./dev/command.sh ./
+RUN chmod +x command.sh
+CMD ["./command.sh"]
+
 # Development Image
-FROM base as dev
+FROM base AS dev
 
 RUN ["go", "install", "github.com/githubnemo/CompileDaemon@latest"]
 
-CMD CompileDaemon -log-prefix=false -build="go build" -command="./openslides-autoupdate-service"
-
 # Test Image
-FROM base as tests
+FROM base AS tests
 
 COPY dev/container-tests.sh ./dev/container-tests.sh
 
@@ -44,14 +47,13 @@ RUN apk add --no-cache \
 
 ## Command
 STOPSIGNAL SIGKILL
-CMD ["sleep", "inf"]
 
 # Production Image
 
-FROM base as builder
+FROM base AS builder
 RUN go build
 
-FROM scratch as prod
+FROM scratch AS prod
 
 ## Setup
 ARG CONTEXT
@@ -66,5 +68,6 @@ COPY --from=builder /app/openslides-autoupdate-service/openslides-autoupdate-ser
 
 EXPOSE 9012
 ENTRYPOINT ["/openslides-autoupdate-service"]
+
 
 HEALTHCHECK CMD ["/openslides-autoupdate-service", "health"]
