@@ -232,7 +232,7 @@ func (MeetingUser) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []Use
 
 		{
 			"poll voted",
-			ds.User_PollVotedIDs,
+			ds.MeetingUser_PollVotedIDs,
 			Collection(ctx, Poll{}.Name()).Modes("A"),
 			true,
 		},

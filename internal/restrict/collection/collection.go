@@ -193,7 +193,7 @@ var collectionMap = map[string]Restricter{
 	Theme{}.Name():                        Theme{},
 	Topic{}.Name():                        Topic{},
 	User{}.Name():                         User{},
-	Vote{}.Name():                         Vote{},
+	Ballot{}.Name():                         Ballot{},
 }
 
 // Collection returns the restricter for a collection

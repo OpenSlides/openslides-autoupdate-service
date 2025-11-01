@@ -501,7 +501,7 @@ var collectionOrder = map[string]int{
 	"option":                           30,
 	"poll_candidate_list":              31,
 	"poll_candidate":                   32,
-	"vote":                             33,
+	"ballot":                           33,
 	"organization":                     34,
 	"organization_tag":                 35,
 	"personal_note":                    36,

@@ -8,7 +8,7 @@ import (
 )
 
 func TestVoteModeA(t *testing.T) {
-	f := collection.Vote{}.Modes("A")
+	f := collection.Ballot{}.Modes("A")
 
 	testCase(
 		"no perms",
@@ -141,7 +141,7 @@ func TestVoteModeA(t *testing.T) {
 }
 
 func TestVoteModeB(t *testing.T) {
-	f := collection.Vote{}.Modes("B")
+	f := collection.Ballot{}.Modes("B")
 
 	testCase(
 		"poll is published",
@@ -184,7 +184,7 @@ func TestVoteModeB(t *testing.T) {
 }
 
 func TestVoteModeC(t *testing.T) {
-	f := collection.Vote{}.Modes("C")
+	f := collection.Ballot{}.Modes("C")
 
 	testCase(
 		"poll is published, but secret",
