@@ -150,9 +150,6 @@ func (m MeetingUser) see(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs 
 
 			for _, r := range m.RequiredObjects(ctx, ds) {
 				id := meetingUserID
-				if r.OnUser {
-					id = userID
-				}
 
 				ids, err := r.ElemFunc(id).Value(ctx)
 				if err != nil {
@@ -161,11 +158,7 @@ func (m MeetingUser) see(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs 
 
 				allowedIDs, err := r.SeeFunc(ctx, ds, ids...)
 				if err != nil {
-					meetingUserOrUser := "meetingUserID"
-					if r.OnUser {
-						meetingUserOrUser = "user"
-					}
-					return false, fmt.Errorf("checking required object %s on %s %d: %w", r.Name, meetingUserOrUser, id, err)
+					return false, fmt.Errorf("checking required object %s on meeting_user/%d: %w", r.Name, id, err)
 				}
 				if len(allowedIDs) > 0 {
 					return true, nil
@@ -182,7 +175,6 @@ type UserRequiredObject struct {
 	Name     string
 	ElemFunc func(int) *dsfetch.ValueIntSlice
 	SeeFunc  FieldRestricter
-	OnUser   bool // Tells, if the relation is via meeting_user_id or user_id
 }
 
 // RequiredObjects returns all references to other objects from the user.
@@ -192,56 +184,48 @@ func (MeetingUser) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []Use
 			"motion submitter",
 			ds.MeetingUser_MotionSubmitterIDs,
 			Collection(ctx, MotionSubmitter{}.Name()).Modes("A"),
-			false,
 		},
 
 		{
 			"motion supporter",
 			ds.MeetingUser_SupportedMotionIDs,
 			Collection(ctx, Motion{}.Name()).Modes("C"),
-			false,
 		},
 
 		{
 			"motion editor",
 			ds.MeetingUser_MotionEditorIDs,
 			Collection(ctx, MotionEditor{}.Name()).Modes("A"),
-			false,
 		},
 
 		{
 			"motion working group speaker",
 			ds.MeetingUser_MotionWorkingGroupSpeakerIDs,
 			Collection(ctx, MotionWorkingGroupSpeaker{}.Name()).Modes("A"),
-			false,
 		},
 
 		{
 			"assignment candidate",
 			ds.MeetingUser_AssignmentCandidateIDs,
 			Collection(ctx, AssignmentCandidate{}.Name()).Modes("A"),
-			false,
 		},
 
 		{
 			"speaker",
 			ds.MeetingUser_SpeakerIDs,
 			Collection(ctx, Speaker{}.Name()).Modes("A"),
-			false,
 		},
 
 		{
 			"poll voted",
 			ds.MeetingUser_PollVotedIDs,
 			Collection(ctx, Poll{}.Name()).Modes("A"),
-			true,
 		},
 
 		{
 			"chat messages",
 			ds.MeetingUser_ChatMessageIDs,
 			Collection(ctx, ChatMessage{}.Name()).Modes("A"),
-			false,
 		},
 	}
 }

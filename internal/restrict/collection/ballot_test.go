@@ -105,6 +105,8 @@ func TestBallotModeA(t *testing.T) {
 			poll_id: 3
 			represented_meeting_user_id: 5
 			acting_meeting_user_id: 6
+		meeting_user/5/user_id: 50
+		meeting_user/6/user_id: 60
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -113,7 +115,7 @@ func TestBallotModeA(t *testing.T) {
 			agenda_item_id: 40
 		agenda_item/40/meeting_id: 30
 		`,
-		withRequestUser(5),
+		withRequestUser(50),
 		withPerms(30, perm.AgendaItemCanSee),
 	)
 
@@ -127,6 +129,8 @@ func TestBallotModeA(t *testing.T) {
 			poll_id: 3
 			represented_meeting_user_id: 5
 			acting_meeting_user_id: 6
+		meeting_user/5/user_id: 50
+		meeting_user/6/user_id: 60
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -135,7 +139,7 @@ func TestBallotModeA(t *testing.T) {
 			agenda_item_id: 40
 		agenda_item/40/meeting_id: 30
 		`,
-		withRequestUser(6),
+		withRequestUser(60),
 		withPerms(30, perm.AgendaItemCanSee),
 	)
 }

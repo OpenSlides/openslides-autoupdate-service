@@ -16,7 +16,7 @@ type PollConfigOption struct{}
 
 // Name returns the collection name.
 func (a PollConfigOption) Name() string {
-	return "poll_config_approval"
+	return "poll_config_option"
 }
 
 // MeetingID returns the meeting of the poll

@@ -14,7 +14,7 @@ type PollConfigRatingApproval struct{}
 
 // Name returns the collection name.
 func (a PollConfigRatingApproval) Name() string {
-	return "poll_config_approval"
+	return "poll_config_rating_approval"
 }
 
 // MeetingID returns the meeting of the poll

@@ -131,7 +131,7 @@ func (v Ballot) see(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]i
 			}
 		}
 
-		if v, ok := representedMeetingUser.Value(); ok && v == requestUser {
+		if v, ok := representedMeetingUser.Value(); ok {
 			representedUser, err := ds.MeetingUser_UserID(v).Value(ctx)
 			if err != nil {
 				return false, fmt.Errorf("getting acting user: %w", err)
