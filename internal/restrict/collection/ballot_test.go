@@ -7,7 +7,7 @@ import (
 	"github.com/OpenSlides/openslides-go/perm"
 )
 
-func TestVoteModeA(t *testing.T) {
+func TestBallotModeA(t *testing.T) {
 	f := collection.Ballot{}.Modes("A")
 
 	testCase(
@@ -16,10 +16,10 @@ func TestVoteModeA(t *testing.T) {
 		f,
 		false,
 		`---
-		vote/1:
+		ballot/1:
 			poll_id: 3
-			represented_user_id: 5
-			acting_user_id: 6
+			represented_meeting_user_id: 5
+			acting_meeting_user_id: 6
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -37,10 +37,10 @@ func TestVoteModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		vote/1:
+		ballot/1:
 			poll_id: 3
-			represented_user_id: 5
-			acting_user_id: 6
+			represented_meeting_user_id: 5
+			acting_meeting_user_id: 6
 		poll/3:
 			meeting_id: 30
 			published: true
@@ -59,10 +59,10 @@ func TestVoteModeA(t *testing.T) {
 		f,
 		false,
 		`---
-		vote/1:
+		ballot/1:
 			poll_id: 3
-			represented_user_id: 5
-			acting_user_id: 6
+			represented_meeting_user_id: 5
+			acting_meeting_user_id: 6
 		poll/3:
 			meeting_id: 30
 			published: true
@@ -80,10 +80,10 @@ func TestVoteModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		vote/1:
+		ballot/1:
 			poll_id: 3
-			represented_user_id: 5
-			acting_user_id: 6
+			represented_meeting_user_id: 5
+			acting_meeting_user_id: 6
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -101,10 +101,10 @@ func TestVoteModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		vote/1:
+		ballot/1:
 			poll_id: 3
-			represented_user_id: 5
-			acting_user_id: 6
+			represented_meeting_user_id: 5
+			acting_meeting_user_id: 6
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -123,10 +123,10 @@ func TestVoteModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		vote/1:
+		ballot/1:
 			poll_id: 3
-			represented_user_id: 5
-			acting_user_id: 6
+			represented_meeting_user_id: 5
+			acting_meeting_user_id: 6
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -140,7 +140,7 @@ func TestVoteModeA(t *testing.T) {
 	)
 }
 
-func TestVoteModeB(t *testing.T) {
+func TestBallotModeB(t *testing.T) {
 	f := collection.Ballot{}.Modes("B")
 
 	testCase(
@@ -149,10 +149,10 @@ func TestVoteModeB(t *testing.T) {
 		f,
 		true,
 		`---
-		vote/1:
+		ballot/1:
 			poll_id: 3
-			represented_user_id: 5
-			acting_user_id: 6
+			represented_meeting_user_id: 5
+			acting_meeting_user_id: 6
 		poll/3:
 			meeting_id: 30
 			published: true
@@ -172,7 +172,7 @@ func TestVoteModeB(t *testing.T) {
 		f,
 		true,
 		`---
-		vote/1/poll_id: 3
+		ballot/1/poll_id: 3
 		poll/3:
 			meeting_id: 30
 			state: finished
@@ -183,7 +183,7 @@ func TestVoteModeB(t *testing.T) {
 	)
 }
 
-func TestVoteModeC(t *testing.T) {
+func TestBallotModeC(t *testing.T) {
 	f := collection.Ballot{}.Modes("C")
 
 	testCase(
@@ -192,10 +192,10 @@ func TestVoteModeC(t *testing.T) {
 		f,
 		false,
 		`---
-		vote/1:
+		ballot/1:
 			poll_id: 3
-			represented_user_id: 5
-			acting_user_id: 6
+			represented_meeting_user_id: 5
+			acting_meeting_user_id: 6
 		poll/3:
 			meeting_id: 30
 			published: true
@@ -216,10 +216,10 @@ func TestVoteModeC(t *testing.T) {
 		f,
 		true,
 		`---
-		vote/1:
+		ballot/1:
 			poll_id: 3
-			represented_user_id: 5
-			acting_user_id: 6
+			represented_meeting_user_id: 5
+			acting_meeting_user_id: 6
 		poll/3:
 			meeting_id: 30
 			published: true
@@ -240,7 +240,7 @@ func TestVoteModeC(t *testing.T) {
 		f,
 		true,
 		`---
-		vote/1/poll_id: 3
+		ballot/1/poll_id: 3
 		poll/3:
 			meeting_id: 30
 			state: finished
@@ -257,7 +257,7 @@ func TestVoteModeC(t *testing.T) {
 		f,
 		false,
 		`---
-		vote/1/poll_id: 3
+		ballot/1/poll_id: 3
 		poll/3:
 			meeting_id: 30
 			state: finished
