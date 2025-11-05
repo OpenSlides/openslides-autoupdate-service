@@ -280,9 +280,14 @@ func isSubmitter(ctx context.Context, ds *dsfetch.Fetch, uid int, motionID int) 
 	}
 
 	for _, submitterID := range submitterIDs {
-		meetingUser, err := ds.MotionSubmitter_MeetingUserID(submitterID).Value(ctx)
+		mayMeetingUser, err := ds.MotionSubmitter_MeetingUserID(submitterID).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("getting meeting_user for submitter %d: %w", submitterID, err)
+		}
+
+		meetingUser, ok := mayMeetingUser.Value()
+		if !ok {
+			continue
 		}
 
 		submitter, err := ds.MeetingUser_UserID(meetingUser).Value(ctx)
