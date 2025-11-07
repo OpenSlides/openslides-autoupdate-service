@@ -503,8 +503,6 @@ var collectionOrder = map[string]int{
 	"poll_config_rating_score":         32,
 	"poll_config_rating_approval":      33,
 	"poll_config_option":               34,
-	"poll_candidate_list":              35,
-	"poll_candidate":                   36,
 	"ballot":                           37,
 	"organization":                     38,
 	"organization_tag":                 39,
