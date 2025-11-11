@@ -99,9 +99,14 @@ func (m MotionComment) see(ctx context.Context, ds *dsfetch.Fetch, motionComment
 			}
 
 			for _, submitterID := range submitterIDs {
-				meetingUser, err := ds.MotionSubmitter_MeetingUserID(submitterID).Value(ctx)
+				mayMeetingUser, err := ds.MotionSubmitter_MeetingUserID(submitterID).Value(ctx)
 				if err != nil {
 					return false, fmt.Errorf("getting meeting_user: %w", err)
+				}
+
+				meetingUser, ok := mayMeetingUser.Value()
+				if !ok {
+					continue
 				}
 
 				userID, err := ds.MeetingUser_UserID(meetingUser).Value(ctx)
