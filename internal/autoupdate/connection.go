@@ -61,6 +61,7 @@ func (c *connection) Messages(ctx context.Context) iter.Seq2[map[dskey.Key][]byt
 		for {
 			// Blocks until new data or the context is done.
 			tid, changedKeys, err := c.autoupdate.topic.Receive(ctx, c.tid)
+			fmt.Printf("DEBUG: %v\n", changedKeys)
 			if err != nil {
 				yield(nil, fmt.Errorf("get updated keys: %w", err))
 				return
