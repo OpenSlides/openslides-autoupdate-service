@@ -173,6 +173,7 @@ var collectionMap = map[string]Restricter{
 	MotionComment{}.Name():                MotionComment{},
 	MotionCommentSection{}.Name():         MotionCommentSection{},
 	MotionSubmitter{}.Name():              MotionSubmitter{},
+	MotionSupporter{}.Name():              MotionSupporter{},
 	MotionWorkflow{}.Name():               MotionWorkflow{},
 	MotionWorkingGroupSpeaker{}.Name():    MotionWorkingGroupSpeaker{},
 	Option{}.Name():                       Option{},
