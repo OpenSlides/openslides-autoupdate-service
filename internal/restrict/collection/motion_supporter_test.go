@@ -95,4 +95,39 @@ func TestMotionSupporterModeA(t *testing.T) {
 		`,
 		withPerms(30, perm.MotionCanSee),
 	)
+
+	testCaseMulti(
+		"see many different motions only one",
+		t,
+		f,
+		[]int{1, 2},
+		[]int{2},
+		`---
+		motion_supporter:
+			1:
+				motion_id: 5
+			2:
+				motion_id: 6
+
+		motion:
+			5:
+				meeting_id: 30
+				state_id: 3
+				supporter_ids: [4]
+
+			6:
+				meeting_id: 30
+				state_id: 2
+				supporter_ids: [5]
+
+		motion_state/2/restrictions:
+		motion_state/3/restrictions:
+			- is_submitter
+
+		motion_supporter/4/meeting_user_id: 10
+		motion_supporter/5/meeting_user_id: 10
+		meeting_user/10/user_id: 1
+		`,
+		withPerms(30, perm.MotionCanSee),
+	)
 }
