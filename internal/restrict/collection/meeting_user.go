@@ -197,8 +197,8 @@ func (MeetingUser) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []Use
 
 		{
 			"motion supporter",
-			ds.MeetingUser_SupportedMotionIDs,
-			Collection(ctx, Motion{}.Name()).Modes("C"),
+			ds.MeetingUser_MotionSupporterIDs,
+			Collection(ctx, MotionSupporter{}.Name()).Modes("A"),
 			false,
 		},
 
