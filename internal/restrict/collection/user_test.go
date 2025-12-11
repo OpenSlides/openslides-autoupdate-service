@@ -263,13 +263,18 @@ func TestUserModeA(t *testing.T) {
 		meeting_user/10:
 			meeting_id: 30
 		meeting_user/20:
-			supported_motion_ids: [7]
+			motion_supporter_ids: [27]
 			meeting_id: 30
 			user_id: 2
+		motion_supporter/27:
+			meeting_user_id: 20
+			motion_id: 7
+			meeting_id: 30
 
 		motion/7:
 			meeting_id: 30
 			state_id: 5
+			supporter_ids: [27]
 
 		motion_state/5/id: 5
 		`,
@@ -646,12 +651,17 @@ func TestUserModeB(t *testing.T) {
 		meeting_user/10:
 			meeting_id: 30
 		meeting_user/20:
-			supported_motion_ids: [7]
+			motion_supporter_ids: [27]
+			meeting_id: 30
+		motion_supporter/27:
+			meeting_user_id: 20
+			motion_id: 7
 			meeting_id: 30
 
 		motion/7:
 			meeting_id: 30
 			state_id: 5
+			supporter_ids: [27]
 
 		motion_state/5/id: 5
 		`,
