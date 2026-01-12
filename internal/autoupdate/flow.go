@@ -15,7 +15,7 @@ import (
 // Flow is the connection to the database for the autoupdate service.
 //
 // It connects to postgres and the vote-service. The values get combined and
-// cached. 
+// cached.
 //
 //	postgres     <->
 //	                  cache
@@ -23,8 +23,8 @@ import (
 type Flow struct {
 	flow.Flow
 
-	cache     *cache.Cache
-	postgres  *datastore.FlowPostgres
+	cache    *cache.Cache
+	postgres *datastore.FlowPostgres
 }
 
 // NewFlow initializes a flow for the autoupdate service.
@@ -57,9 +57,9 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater, skipVote
 	cache := cache.New(dataFlow)
 
 	flow := Flow{
-		Flow:      cache,
-		cache:     cache,
-		postgres:  postgres,
+		Flow:     cache,
+		cache:    cache,
+		postgres: postgres,
 	}
 
 	metric.Register(flow.metric)
