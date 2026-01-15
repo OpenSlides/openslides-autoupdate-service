@@ -80,7 +80,6 @@ func (c *connection) Messages(ctx context.Context) iter.Seq2[map[dskey.Key][]byt
 				continue
 			}
 
-			
 			data, err := c.updatedData(ctx)
 			if err != nil {
 				yield(nil, fmt.Errorf("creating later data: %w", err))
@@ -92,7 +91,7 @@ func (c *connection) Messages(ctx context.Context) iter.Seq2[map[dskey.Key][]byt
 					return // break was used in for-loop
 				}
 			}
-			
+
 		}
 	}
 }
