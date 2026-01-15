@@ -3,31 +3,26 @@ module github.com/OpenSlides/openslides-autoupdate-service
 go 1.25.0
 
 require (
-	github.com/OpenSlides/openslides-go v0.0.0-20250921082501-96f6832545c8
-	github.com/alecthomas/kong v1.12.1
-	github.com/klauspost/compress v1.18.0
-	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1
-	github.com/ostcar/topic v0.4.1
-	github.com/stretchr/testify v1.11.1
+	github.com/OpenSlides/openslides-go v0.0.0-20260115211233-4816088aa684
+	github.com/alecthomas/kong v1.13.0
+	github.com/klauspost/compress v1.18.1
+	github.com/ostcar/topic v0.6.0
 	github.com/zeebo/xxh3 v1.0.2
 )
 
 require (
 	github.com/benbjohnson/immutable v0.4.3 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/goccy/go-yaml v1.18.0 // indirect
+	github.com/goccy/go-yaml v1.19.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
-	github.com/gomodule/redigo v1.9.2 // indirect
+	github.com/gomodule/redigo v1.9.3 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/pgx/v5 v5.7.5 // indirect
+	github.com/jackc/pgx/v5 v5.8.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
-	golang.org/x/crypto v0.41.0 // indirect
+	github.com/shopspring/decimal v1.4.0 // indirect
 	golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2 // indirect
-	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
-	golang.org/x/text v0.28.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
+	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
 )

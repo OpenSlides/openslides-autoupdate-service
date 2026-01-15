@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector"
-	"github.com/OpenSlides/openslides-autoupdate-service/internal/projector/slide"
 	"github.com/OpenSlides/openslides-go/datastore"
 	"github.com/OpenSlides/openslides-go/datastore/cache"
 	"github.com/OpenSlides/openslides-go/datastore/flow"
@@ -17,18 +15,16 @@ import (
 // Flow is the connection to the database for the autoupdate service.
 //
 // It connects to postgres and the vote-service. The values get combined and
-// cached. Then the projection/content fields are calculated and the results are
-// cached again.
+// cached.
 //
 //	postgres     <->
-//	                  cache <-> projector
+//	                  cache
 //	vote-service <->
 type Flow struct {
 	flow.Flow
 
-	cache     *cache.Cache
-	projector *projector.Projector
-	postgres  *datastore.FlowPostgres
+	cache    *cache.Cache
+	postgres *datastore.FlowPostgres
 }
 
 // NewFlow initializes a flow for the autoupdate service.
@@ -59,13 +55,11 @@ func NewFlow(lookup environment.Environmenter, messageBus flow.Updater, skipVote
 	}
 
 	cache := cache.New(dataFlow, cache.WithFullMessagebus)
-	projector := projector.NewProjector(cache, slide.Slides())
 
 	flow := Flow{
-		Flow:      projector,
-		cache:     cache,
-		projector: projector,
-		postgres:  postgres,
+		Flow:     cache,
+		cache:    cache,
+		postgres: postgres,
 	}
 
 	metric.Register(flow.metric)
@@ -81,7 +75,6 @@ func (f *Flow) Snapshot(notFoundHandler flow.Getter) flow.Getter {
 // ResetCache clears the cache.
 func (f *Flow) ResetCache() {
 	f.cache.Reset()
-	f.projector.Reset()
 }
 
 func (f *Flow) metric(values metric.Container) {
