@@ -116,7 +116,7 @@ func health(ctx context.Context) error {
 		return fmt.Errorf("reading response body: %w", err)
 	}
 
-	expect := `{"healthy": true}`
+	expect := `{"healthy": true, "service":"autoupdate"}`
 	got := strings.TrimSpace(string(body))
 	if got != expect {
 		return fmt.Errorf("got `%s`, expected `%s`", body, expect)
