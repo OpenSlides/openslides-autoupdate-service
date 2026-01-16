@@ -129,6 +129,8 @@ func health(ctx context.Context) error {
 //
 // Returns a the service as callable.
 func initService(lookup environment.Environmenter) (func(context.Context) error, error) {
+	oslog.InitLog(lookup)
+
 	var backgroundTasks []func(context.Context, func(error))
 	listenAddr := ":" + envAutoupdatePort.Value(lookup)
 
@@ -193,7 +195,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 		}
 
 		// Start http server.
-		oslog.Info("Listen on %s\n", listenAddr)
+		oslog.Info("Listen on %s", listenAddr)
 		return http.Run(ctx, listenAddr, authService, auService, metricStorage, metricSaveInterval, heartBeatTime)
 	}
 
