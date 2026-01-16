@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	gohttp "net/http"
 	"os"
 	"strconv"
@@ -17,6 +16,7 @@ import (
 	"github.com/OpenSlides/openslides-go/auth"
 	"github.com/OpenSlides/openslides-go/environment"
 	"github.com/OpenSlides/openslides-go/oserror"
+	"github.com/OpenSlides/openslides-go/oslog"
 	"github.com/OpenSlides/openslides-go/redis"
 	"github.com/alecthomas/kong"
 )
@@ -172,7 +172,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 
 	if metricTime > 0 {
 		runMetirc := func(ctx context.Context, errorHandler func(error)) {
-			metric.Loop(ctx, metricTime, log.Default())
+			metric.Loop(ctx, metricTime)
 		}
 		backgroundTasks = append(backgroundTasks, runMetirc)
 	}
@@ -193,7 +193,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 		}
 
 		// Start http server.
-		fmt.Printf("Listen on %s\n", listenAddr)
+		oslog.Info("Listen on %s\n", listenAddr)
 		return http.Run(ctx, listenAddr, authService, auService, metricStorage, metricSaveInterval, heartBeatTime)
 	}
 
