@@ -137,7 +137,7 @@ func TestHealth(t *testing.T) {
 	}
 
 	got, _ := io.ReadAll(rec.Body)
-	expect := `{"healthy": true}` + "\n"
+	expect := `{"healthy": true, "service":"autoupdate"}` + "\n"
 	if string(got) != expect {
 		t.Errorf("Got %q, expected %q", got, expect)
 	}
