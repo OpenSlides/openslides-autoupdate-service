@@ -176,14 +176,16 @@ var collectionMap = map[string]Restricter{
 	MotionSupporter{}.Name():              MotionSupporter{},
 	MotionWorkflow{}.Name():               MotionWorkflow{},
 	MotionWorkingGroupSpeaker{}.Name():    MotionWorkingGroupSpeaker{},
-	Option{}.Name():                       Option{},
 	Organization{}.Name():                 Organization{},
 	OrganizationTag{}.Name():              OrganizationTag{},
 	PersonalNote{}.Name():                 PersonalNote{},
 	PointOfOrderCategory{}.Name():         PointOfOrderCategory{},
 	Poll{}.Name():                         Poll{},
-	PollCandidate{}.Name():                PollCandidate{},
-	PollCandidateList{}.Name():            PollCandidateList{},
+	PollConfigApproval{}.Name():           PollConfigApproval{},
+	PollConfigSelection{}.Name():          PollConfigSelection{},
+	PollConfigRatingScore{}.Name():        PollConfigRatingScore{},
+	PollConfigRatingApproval{}.Name():     PollConfigRatingApproval{},
+	PollConfigOption{}.Name():             PollConfigOption{},
 	Projection{}.Name():                   Projection{},
 	Projector{}.Name():                    Projector{},
 	ProjectorCountdown{}.Name():           ProjectorCountdown{},
@@ -195,7 +197,7 @@ var collectionMap = map[string]Restricter{
 	Theme{}.Name():                        Theme{},
 	Topic{}.Name():                        Topic{},
 	User{}.Name():                         User{},
-	Vote{}.Name():                         Vote{},
+	Ballot{}.Name():                       Ballot{},
 }
 
 // Collection returns the restricter for a collection
