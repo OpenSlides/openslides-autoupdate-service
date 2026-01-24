@@ -14,7 +14,8 @@ import (
 type Flow struct {
 	flow.Flow
 
-	cache *cache.Cache
+	cache    *cache.Cache
+	postgres *datastore.FlowPostgres
 }
 
 // NewFlow initializes a flow for the autoupdate service.
@@ -27,8 +28,9 @@ func NewFlow(lookup environment.Environmenter) (*Flow, error) {
 	cache := cache.New(postgres)
 
 	flow := Flow{
-		Flow:  cache,
-		cache: cache,
+		Flow:     cache,
+		cache:    cache,
+		postgres: postgres,
 	}
 
 	metric.Register(flow.metric)
