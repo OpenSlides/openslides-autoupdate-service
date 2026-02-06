@@ -23,6 +23,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
+	"github.com/OpenSlides/openslides-go/auth"
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/oserror"
 	"github.com/OpenSlides/openslides-go/redis"
@@ -53,6 +54,7 @@ func Run(
 
 	mux := http.NewServeMux()
 	HandleHealth(mux)
+	HandlePublicTheme(mux, autoupdate)
 	HandleAutoupdate(mux, auth, autoupdate, connectionCount, heartbeat)
 	HandleInternalAutoupdate(mux, auth, autoupdate, heartbeat)
 	HandleShowConnectionCount(mux, autoupdate, auth, connectionCount)
@@ -145,7 +147,7 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, heartbeat time.D
 		if isLongPolling {
 			if headersSent, err := handleLongpolling(ctx, w, uid, builder, connecter, compress, hashes); err != nil {
 				if headersSent {
-					handleErrorWithoutStatus(w, err)
+					handleErrorWithoutStatusCtx(ctx, w, err)
 				} else {
 					handleErrorWithStatus(w, err)
 				}
@@ -154,7 +156,7 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, heartbeat time.D
 		}
 
 		if err := sendMessages(ctx, w, uid, builder, connecter, compress, heartbeat); err != nil {
-			handleErrorWithoutStatus(w, err)
+			handleErrorWithoutStatusCtx(ctx, w, err)
 			return
 		}
 	})
@@ -465,6 +467,105 @@ func HandleHealth(mux *http.ServeMux) {
 	mux.Handle(url, handler)
 }
 
+// HandlePublicTheme serves the organization's active theme colors as a flat JSON
+// object. No authentication required (like health endpoint).
+func HandlePublicTheme(mux *http.ServeMux, connecter Connecter) {
+	url := prefixPublic + "/theme"
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "only GET requests are supported", http.StatusMethodNotAllowed)
+			return
+		}
+
+		ctx := r.Context()
+
+		// Fetch organization/1/theme_id as anonymous user (userID=0)
+		themeIDBuilder, err := keysbuilder.FromKeys("organization/1/theme_id")
+		if err != nil {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		themeIDData, err := connecter.SingleData(ctx, 0, themeIDBuilder)
+		if err != nil {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		// Find the theme_id value
+		var themeID int
+		for k, v := range themeIDData {
+			if k.Field() == "theme_id" && v != nil {
+				if err := json.Unmarshal(v, &themeID); err != nil {
+					http.Error(w, "internal error", http.StatusInternalServerError)
+					return
+				}
+			}
+		}
+
+		if themeID == 0 {
+			http.Error(w, "no theme configured", http.StatusNotFound)
+			return
+		}
+
+		// Build keys for all theme color fields
+		themeFields := []string{
+			"primary_50", "primary_100", "primary_200", "primary_300", "primary_400",
+			"primary_500", "primary_600", "primary_700", "primary_800", "primary_900",
+			"primary_a100", "primary_a200", "primary_a400", "primary_a700",
+			"accent_50", "accent_100", "accent_200", "accent_300", "accent_400",
+			"accent_500", "accent_600", "accent_700", "accent_800", "accent_900",
+			"accent_a100", "accent_a200", "accent_a400", "accent_a700",
+			"warn_50", "warn_100", "warn_200", "warn_300", "warn_400",
+			"warn_500", "warn_600", "warn_700", "warn_800", "warn_900",
+			"warn_a100", "warn_a200", "warn_a400", "warn_a700",
+			"headbar", "yes", "no", "abstain",
+		}
+
+		themePrefix := fmt.Sprintf("theme/%d/", themeID)
+		rawKeys := make([]string, len(themeFields))
+		for i, f := range themeFields {
+			rawKeys[i] = themePrefix + f
+		}
+
+		themeBuilder, err := keysbuilder.FromKeys(rawKeys...)
+		if err != nil {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		themeData, err := connecter.SingleData(ctx, 0, themeBuilder)
+		if err != nil {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		// Build flat JSON response
+		result := make(map[string]string)
+		for k, v := range themeData {
+			if v == nil {
+				continue
+			}
+			var colorVal string
+			if err := json.Unmarshal(v, &colorVal); err != nil {
+				continue
+			}
+			if colorVal != "" {
+				result[k.Field()] = colorVal
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "public, max-age=60")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			return
+		}
+	})
+
+	mux.Handle(url, handler)
+}
+
 // HandleProfile adds routes for profiling.
 func HandleProfile(mux *http.ServeMux) {
 	mux.HandleFunc("/debug/pprof/", pprof.Index)
@@ -502,17 +603,21 @@ func internalAuthMiddleware(next http.Handler, auth Authenticater) http.Handler 
 }
 
 func handleErrorWithStatus(w http.ResponseWriter, err error) {
-	handleError(w, err, true, false)
+	handleError(nil, w, err, true, false)
 }
 
 func handleErrorWithoutStatus(w http.ResponseWriter, err error) {
-	handleError(w, err, false, false)
+	handleError(nil, w, err, false, false)
+}
+
+func handleErrorWithoutStatusCtx(ctx context.Context, w http.ResponseWriter, err error) {
+	handleError(ctx, w, err, false, false)
 }
 
 // handleErrorInternal is only for internal request routes. It returns the full
 // error message to the client.
 func handleErrorInternal(w http.ResponseWriter, err error) {
-	handleError(w, err, true, true)
+	handleError(nil, w, err, true, true)
 }
 
 // handleError interprets the given error and writes a corresponding message to
@@ -523,9 +628,22 @@ func handleErrorInternal(w http.ResponseWriter, err error) {
 //
 // If the handler already started to write the body then it is not allowed to
 // set the http-status-code. In this case, writeStatusCode has to be fales.
-func handleError(w http.ResponseWriter, err error, writeStatusCode bool, internal bool) {
+func handleError(ctx context.Context, w http.ResponseWriter, err error, writeStatusCode bool, internal bool) {
 	if writeStatusCode {
 		w.Header().Set("Content-Type", "application/octet-stream")
+	}
+
+	// Check for server-initiated logout (backchannel logout)
+	if ctx != nil && oserror.ContextDone(err) {
+		if cause := context.Cause(ctx); cause != nil {
+			if _, isLogout := cause.(auth.LogoutError); isLogout {
+				// Send logout error message so client can redirect to login
+				logoutErr := logoutError{}
+				fmt.Fprintf(w, `{"error": {"type": "%s", "msg": "%s", "reason": "%s"}}`, logoutErr.Type(), quote(logoutErr.Error()), logoutErr.Reason())
+				fmt.Fprintln(w)
+				return
+			}
+		}
 	}
 
 	if oserror.ContextDone(err) || errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) {
