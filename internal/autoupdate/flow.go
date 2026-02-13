@@ -10,6 +10,7 @@ import (
 	"github.com/OpenSlides/openslides-go/datastore/cache"
 	"github.com/OpenSlides/openslides-go/datastore/flow"
 	"github.com/OpenSlides/openslides-go/environment"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Flow is the connection to the database for the autoupdate service.
@@ -70,6 +71,11 @@ func NewFlow(lookup environment.Environmenter, skipVoteService bool) (*Flow, fun
 // ResetCache clears the cache.
 func (f *Flow) ResetCache() {
 	f.cache.Reset()
+}
+
+// Pool returns the underlying postgres connection pool.
+func (f *Flow) Pool() *pgxpool.Pool {
+	return f.postgres.Pool
 }
 
 func (f *Flow) metric(values metric.Container) {
