@@ -54,7 +54,6 @@ func Run(
 
 	mux := http.NewServeMux()
 	HandleHealth(mux)
-	HandlePublicTheme(mux, autoupdate)
 	HandleAutoupdate(mux, auth, autoupdate, connectionCount, heartbeat)
 	HandleInternalAutoupdate(mux, auth, autoupdate, heartbeat)
 	HandleShowConnectionCount(mux, autoupdate, auth, connectionCount)
@@ -462,105 +461,6 @@ func HandleHealth(mux *http.ServeMux) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintln(w, `{"healthy": true, "service":"autoupdate"}`)
-	})
-
-	mux.Handle(url, handler)
-}
-
-// HandlePublicTheme serves the organization's active theme colors as a flat JSON
-// object. No authentication required (like health endpoint).
-func HandlePublicTheme(mux *http.ServeMux, connecter Connecter) {
-	url := prefixPublic + "/theme"
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "only GET requests are supported", http.StatusMethodNotAllowed)
-			return
-		}
-
-		ctx := r.Context()
-
-		// Fetch organization/1/theme_id as anonymous user (userID=0)
-		themeIDBuilder, err := keysbuilder.FromKeys("organization/1/theme_id")
-		if err != nil {
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
-
-		themeIDData, err := connecter.SingleData(ctx, 0, themeIDBuilder)
-		if err != nil {
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
-
-		// Find the theme_id value
-		var themeID int
-		for k, v := range themeIDData {
-			if k.Field() == "theme_id" && v != nil {
-				if err := json.Unmarshal(v, &themeID); err != nil {
-					http.Error(w, "internal error", http.StatusInternalServerError)
-					return
-				}
-			}
-		}
-
-		if themeID == 0 {
-			http.Error(w, "no theme configured", http.StatusNotFound)
-			return
-		}
-
-		// Build keys for all theme color fields
-		themeFields := []string{
-			"primary_50", "primary_100", "primary_200", "primary_300", "primary_400",
-			"primary_500", "primary_600", "primary_700", "primary_800", "primary_900",
-			"primary_a100", "primary_a200", "primary_a400", "primary_a700",
-			"accent_50", "accent_100", "accent_200", "accent_300", "accent_400",
-			"accent_500", "accent_600", "accent_700", "accent_800", "accent_900",
-			"accent_a100", "accent_a200", "accent_a400", "accent_a700",
-			"warn_50", "warn_100", "warn_200", "warn_300", "warn_400",
-			"warn_500", "warn_600", "warn_700", "warn_800", "warn_900",
-			"warn_a100", "warn_a200", "warn_a400", "warn_a700",
-			"headbar", "yes", "no", "abstain",
-		}
-
-		themePrefix := fmt.Sprintf("theme/%d/", themeID)
-		rawKeys := make([]string, len(themeFields))
-		for i, f := range themeFields {
-			rawKeys[i] = themePrefix + f
-		}
-
-		themeBuilder, err := keysbuilder.FromKeys(rawKeys...)
-		if err != nil {
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
-
-		themeData, err := connecter.SingleData(ctx, 0, themeBuilder)
-		if err != nil {
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
-
-		// Build flat JSON response
-		result := make(map[string]string)
-		for k, v := range themeData {
-			if v == nil {
-				continue
-			}
-			var colorVal string
-			if err := json.Unmarshal(v, &colorVal); err != nil {
-				continue
-			}
-			if colorVal != "" {
-				result[k.Field()] = colorVal
-			}
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Cache-Control", "public, max-age=60")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		if err := json.NewEncoder(w).Encode(result); err != nil {
-			return
-		}
 	})
 
 	mux.Handle(url, handler)
