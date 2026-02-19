@@ -537,11 +537,7 @@ func handleError(ctx context.Context, w http.ResponseWriter, err error, writeSta
 	if ctx != nil && oserror.ContextDone(err) {
 		if cause := context.Cause(ctx); cause != nil {
 			if _, isLogout := cause.(auth.LogoutError); isLogout {
-				// Send logout error message so client can redirect to login
-				logoutErr := logoutError{}
-				fmt.Fprintf(w, `{"error": {"type": "%s", "msg": "%s", "reason": "%s"}}`, logoutErr.Type(), quote(logoutErr.Error()), logoutErr.Reason())
-				fmt.Fprintln(w)
-				return
+				err = logoutError{}
 			}
 		}
 	}
