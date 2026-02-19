@@ -25,8 +25,3 @@ func (e logoutError) Error() string {
 func (e logoutError) Type() string {
 	return "logout"
 }
-
-// Reason returns the reason identifier for the client to handle logout redirection.
-func (e logoutError) Reason() string {
-	return "Logout"
-}
