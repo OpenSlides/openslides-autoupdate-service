@@ -140,7 +140,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	publicAccessOnly, _ := strconv.ParseBool(envPublicAccessOnly.Value(lookup))
 
 	// Autoupdate data flow.
-	flow, flowBackground, err := autoupdate.NewFlow(lookup, messageBus, publicAccessOnly)
+	flow, flowBackground, err := autoupdate.NewFlow(lookup, publicAccessOnly)
 	if err != nil {
 		return nil, fmt.Errorf("init autoupdate data flow: %w", err)
 	}

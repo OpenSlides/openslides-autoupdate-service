@@ -5,6 +5,5 @@ cert
 workspace.code-workspace
 __debug_bin
 debug.test
-
 go.work
 go.work.sum
