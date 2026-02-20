@@ -7,7 +7,7 @@ require (
 	github.com/alecthomas/kong v1.13.0
 	github.com/klauspost/compress v1.18.2
 	github.com/ostcar/topic v0.6.0
-	github.com/zeebo/xxh3 v1.0.2
+	github.com/zeebo/xxh3 v1.1.0
 )
 
 require (
