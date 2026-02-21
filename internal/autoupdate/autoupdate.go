@@ -56,9 +56,6 @@ type Autoupdate struct {
 }
 
 // New creates a new autoupdate service.
-//
-// You should call `go a.PruneOldData()` and `go a.ResetCache()` after creating
-// the service.
 func New(lookup environment.Environmenter, flow flow.Flow, restricter RestrictMiddleware) (*Autoupdate, func(context.Context, func(error)), error) {
 	workers, err := strconv.Atoi(envConcurentWorker.Value(lookup))
 	if err != nil {
