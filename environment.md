@@ -5,9 +5,9 @@
 
 The Service uses the following environment variables:
 
+* `OPENSLIDES_DEVELOPMENT`: If set, the service uses the default secrets. The default is `false`.
 * `AUTOUPDATE_PORT`: Port on which the service listen on. The default is `9012`.
 * `OPENSLIDES_PUBLIC_ACCESS_ONLY`: Start for only public access. Does not write to redis or connect to the vote-service. The default is `false`.
-* `OPENSLIDES_DEVELOPMENT`: If set, the service uses the default secrets. The default is `false`.
 * `DATABASE_PASSWORD_FILE`: Postgres Password. The default is `/run/secrets/postgres_password`.
 * `DATABASE_USER`: Postgres Database. The default is `openslides`.
 * `DATABASE_HOST`: Postgres Host. The default is `localhost`.
