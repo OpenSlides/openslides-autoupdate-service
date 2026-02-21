@@ -11,6 +11,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/datastore/dsmock"
+	"github.com/OpenSlides/openslides-go/datastore/flow"
 )
 
 func TestKeys(t *testing.T) {
@@ -648,7 +649,7 @@ func TestConcurency(t *testing.T) {
 		meeting_user/1/personal_note_ids: [1,2]
 		meeting_user/2/personal_note_ids: [1,2]
 		`),
-		dsmock.NewCounter,
+		func(g flow.Getter) flow.Getter { return dsmock.NewCounter(g) },
 	)
 	counter := ds.Middlewares()[0].(*dsmock.Counter)
 
@@ -715,7 +716,7 @@ func TestManyRequests(t *testing.T) {
 		user/1/organization_id: 1
 		user/2/organization_id: 1
 		`),
-		dsmock.NewCounter,
+		func(g flow.Getter) flow.Getter { return dsmock.NewCounter(g) },
 	)
 	counter := ds.Middlewares()[0].(*dsmock.Counter)
 
@@ -794,7 +795,7 @@ func TestError(t *testing.T) {
 	ds := dsmock.NewFlow(
 		nil,
 		dsmock.NewWait(waiter),
-		dsmock.NewCounter,
+		func(g flow.Getter) flow.Getter { return dsmock.NewCounter(g) },
 	)
 	counter := ds.Middlewares()[1].(*dsmock.Counter)
 	waiter <- fmt.Errorf("some error")
@@ -830,7 +831,7 @@ func TestRequestCount(t *testing.T) {
 	ctx := context.Background()
 	ds := dsmock.NewFlow(
 		nil,
-		dsmock.NewCounter,
+		func(g flow.Getter) flow.Getter { return dsmock.NewCounter(g) },
 	)
 	counter := ds.Middlewares()[0].(*dsmock.Counter)
 	json := `{

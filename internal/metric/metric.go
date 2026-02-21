@@ -3,10 +3,11 @@ package metric
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/OpenSlides/openslides-go/oslog"
 )
 
 var callbacks struct {
@@ -24,7 +25,7 @@ func Register(f func(Container)) {
 // Loop gathers the metric data from all registered callbacks.
 //
 // Blocks until the context is done.
-func Loop(ctx context.Context, d time.Duration, logger *log.Logger) {
+func Loop(ctx context.Context, d time.Duration) {
 	ticker := time.NewTicker(d)
 	defer ticker.Stop()
 
@@ -48,12 +49,11 @@ func Loop(ctx context.Context, d time.Duration, logger *log.Logger) {
 
 			bs, err := json.Marshal(data)
 			if err != nil {
-				logger.Printf("Metric failed: converting data to json: %v", err)
+				oslog.Error("Metric failed: converting data to json: %v", err)
 				return
 			}
 
-			logger.Printf("Metric: %s", bs)
-
+			oslog.Metric(bs)
 		}
 	}
 }

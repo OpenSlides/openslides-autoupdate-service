@@ -458,8 +458,8 @@ func insertKeepAlive(in iter.Seq2[map[dskey.Key][]byte, error], heartbeat time.D
 func HandleHealth(mux *http.ServeMux) {
 	url := prefixPublic + "/health"
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/octet-stream")
-		fmt.Fprintln(w, `{"healthy": true}`)
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintln(w, `{"healthy": true, "service":"autoupdate"}`)
 	})
 
 	mux.Handle(url, handler)

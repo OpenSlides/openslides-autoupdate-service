@@ -3,11 +3,11 @@ module github.com/OpenSlides/openslides-autoupdate-service
 go 1.25.0
 
 require (
-	github.com/OpenSlides/openslides-go v0.0.0-20260115211233-4816088aa684
-	github.com/alecthomas/kong v1.13.0
-	github.com/klauspost/compress v1.18.1
+	github.com/OpenSlides/openslides-go v0.0.0-20260221060604-52afde2b518d
+	github.com/alecthomas/kong v1.14.0
+	github.com/klauspost/compress v1.18.4
 	github.com/ostcar/topic v0.6.0
-	github.com/zeebo/xxh3 v1.0.2
+	github.com/zeebo/xxh3 v1.1.0
 )
 
 require (
@@ -20,9 +20,12 @@ require (
 	github.com/jackc/pgx/v5 v5.8.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/rs/zerolog v1.34.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
-	golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2 // indirect
+	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa // indirect
 	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.40.0 // indirect
-	golang.org/x/text v0.33.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/text v0.34.0 // indirect
 )

@@ -1,6 +1,6 @@
 ARG CONTEXT=prod
 
-FROM golang:1.25.5-alpine AS base
+FROM golang:1.26.0-alpine AS base
 
 ## Setup
 ARG CONTEXT
