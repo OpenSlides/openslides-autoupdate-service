@@ -3,6 +3,7 @@ package collection
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -176,14 +177,16 @@ var collectionMap = map[string]Restricter{
 	MotionSupporter{}.Name():              MotionSupporter{},
 	MotionWorkflow{}.Name():               MotionWorkflow{},
 	MotionWorkingGroupSpeaker{}.Name():    MotionWorkingGroupSpeaker{},
-	Option{}.Name():                       Option{},
 	Organization{}.Name():                 Organization{},
 	OrganizationTag{}.Name():              OrganizationTag{},
 	PersonalNote{}.Name():                 PersonalNote{},
 	PointOfOrderCategory{}.Name():         PointOfOrderCategory{},
 	Poll{}.Name():                         Poll{},
-	PollCandidate{}.Name():                PollCandidate{},
-	PollCandidateList{}.Name():            PollCandidateList{},
+	PollConfigApproval{}.Name():           PollConfigApproval{},
+	PollConfigSelection{}.Name():          PollConfigSelection{},
+	PollConfigRatingScore{}.Name():        PollConfigRatingScore{},
+	PollConfigRatingApproval{}.Name():     PollConfigRatingApproval{},
+	PollConfigOption{}.Name():             PollConfigOption{},
 	Projection{}.Name():                   Projection{},
 	Projector{}.Name():                    Projector{},
 	ProjectorCountdown{}.Name():           ProjectorCountdown{},
@@ -195,7 +198,7 @@ var collectionMap = map[string]Restricter{
 	Theme{}.Name():                        Theme{},
 	Topic{}.Name():                        Topic{},
 	User{}.Name():                         User{},
-	Vote{}.Name():                         Vote{},
+	Ballot{}.Name():                       Ballot{},
 }
 
 // Collection returns the restricter for a collection
@@ -375,4 +378,35 @@ func eachCondition(ids []int, f func(id int) (bool, error)) ([]int, error) {
 		}
 	}
 	return allowed, nil
+}
+
+// merge two lists together. This is more performant for small lists. For big
+// list, use a set.
+func mergeUnique(list1, list2 []int) []int {
+	for _, element := range list2 {
+		if !slices.Contains(list1, element) {
+			list1 = append(list1, element)
+		}
+	}
+	return list1
+}
+
+func mergeLists(lists [][]int) []int {
+	if len(lists) == 0 {
+		return nil
+	}
+	sumLen := 0
+	for _, list := range lists {
+		sumLen += len(list)
+	}
+
+	result := make([]int, sumLen)
+	copy(result, lists[0])
+	for i, list := range lists {
+		if i == 0 {
+			continue
+		}
+		result = mergeUnique(result, list)
+	}
+	return result
 }
