@@ -3,6 +3,7 @@ package collection
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-go/perm"
@@ -28,16 +29,17 @@ import (
 // mode, if he can see poll restriction mode B.
 //
 // Group C: Contains the user ids of the ballot. For secret polls, this fields
-// are restricted for everybody. For other polls, its the same as Group B.
+// are restricted for everybody. For other polls, its the same as Group B. A
+// user can see this fields, if he can vote for the represented_meeting_user.
 type Ballot struct{}
 
 // Name returns the collection name.
-func (v Ballot) Name() string {
+func (b Ballot) Name() string {
 	return "ballot"
 }
 
 // MeetingID returns the meetingID for the object.
-func (v Ballot) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
+func (b Ballot) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	pollID, err := ds.Ballot_PollID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("get poll id: %w", err)
@@ -52,20 +54,20 @@ func (v Ballot) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, 
 }
 
 // Modes returns the restrictions modes for the meeting collection.
-func (v Ballot) Modes(mode string) FieldRestricter {
+func (b Ballot) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
-		return v.see
+		return b.see
 	case "B":
-		return v.modeB
+		return b.modeB
 
 	case "C":
-		return v.modeC
+		return b.modeC
 	}
 	return nil
 }
 
-func (v Ballot) see(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int, error) {
+func (b Ballot) see(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int, error) {
 	requestUser, err := perm.RequestUserFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting request user: %w", err)
@@ -145,24 +147,60 @@ func (v Ballot) see(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]i
 	})
 }
 
-func (v Ballot) modeB(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int, error) {
-	return eachRelationField(ctx, ds.Ballot_PollID, voteIDs, func(pollID int, voteIDs []int) ([]int, error) {
+func (b Ballot) modeB(ctx context.Context, ds *dsfetch.Fetch, ballotIDs ...int) ([]int, error) {
+	return eachRelationField(ctx, ds.Ballot_PollID, ballotIDs, func(pollID int, ballotIDs []int) ([]int, error) {
 		seePollModeB, err := Collection(ctx, Poll{}.Name()).Modes("B")(ctx, ds, pollID)
 		if err != nil {
 			return nil, fmt.Errorf("checking poll mode B: %w", err)
 		}
 
 		if len(seePollModeB) > 0 {
-			return voteIDs, nil
+			return ballotIDs, nil
 		}
 		return nil, nil
 	})
 }
 
-// ModeC is a workarount until crypto vote is released. With crypto vote, the
-// fields can be moved into modeB and modeC be removed.
-func (v Ballot) modeC(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]int, error) {
-	return eachRelationField(ctx, ds.Ballot_PollID, voteIDs, func(pollID int, voteIDs []int) ([]int, error) {
+func (b Ballot) modeC(ctx context.Context, ds *dsfetch.Fetch, ballotIDs ...int) ([]int, error) {
+	requestUser, err := perm.RequestUserFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting request user: %w", err)
+	}
+	fmt.Println(requestUser)
+
+	requestMeetingUserIDs, err := ds.User_MeetingUserIDs(requestUser).Value(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("fetch meeting_users_ids for user %d: %w", requestUser, err)
+	}
+
+	delegatedFromLists := make([][]int, len(requestMeetingUserIDs))
+	for i, meetingUserID := range requestMeetingUserIDs {
+		ds.MeetingUser_VoteDelegationsFromIDs(meetingUserID).Lazy(&delegatedFromLists[i])
+	}
+
+	representedMeetingUserIDs := make([]dsfetch.Maybe[int], len(ballotIDs))
+	for i, ballotID := range ballotIDs {
+		ds.Ballot_RepresentedMeetingUserID(ballotID).Lazy(&representedMeetingUserIDs[i])
+	}
+
+	if err := ds.Execute(ctx); err != nil {
+		return nil, fmt.Errorf("feting represented_meeting_user_id for each ballot and all votedelegationsfrom for request user: %w", err)
+	}
+
+	delegatedFrom := mergeLists(delegatedFromLists)
+
+	var allowedByRepresented []int
+	for i, representedUserID := range representedMeetingUserIDs {
+		id, exist := representedUserID.Value()
+		if !exist {
+			continue
+		}
+		if slices.Contains(requestMeetingUserIDs, id) || slices.Contains(delegatedFrom, id) {
+			allowedByRepresented = append(allowedByRepresented, ballotIDs[i])
+		}
+	}
+
+	allowedByPublished, err := eachRelationField(ctx, ds.Ballot_PollID, ballotIDs, func(pollID int, ballotDs []int) ([]int, error) {
 		visibility, err := ds.Poll_Visibility(pollID).Value(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("fetch visibility of poll %d: %w", pollID, err)
@@ -177,8 +215,15 @@ func (v Ballot) modeC(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([
 		}
 
 		if len(seePollModeB) > 0 {
-			return voteIDs, nil
+			return ballotDs, nil
 		}
 		return nil, nil
 	})
+
+	if err != nil {
+		return nil, fmt.Errorf("check poll permission: %w", err)
+	}
+
+	return mergeUnique(allowedByRepresented, allowedByPublished), nil
+
 }

@@ -198,8 +198,6 @@ func TestBallotModeC(t *testing.T) {
 		`---
 		ballot/1:
 			poll_id: 3
-			represented_meeting_user_id: 5
-			acting_meeting_user_id: 6
 		poll/3:
 			meeting_id: 30
 			published: true
@@ -222,8 +220,6 @@ func TestBallotModeC(t *testing.T) {
 		`---
 		ballot/1:
 			poll_id: 3
-			represented_meeting_user_id: 5
-			acting_meeting_user_id: 6
 		poll/3:
 			meeting_id: 30
 			published: true
@@ -265,6 +261,48 @@ func TestBallotModeC(t *testing.T) {
 		poll/3:
 			meeting_id: 30
 			state: finished
+			visibility: secret
+			content_object_id: topic/5
+		topic/5/meeting_id: 30
+		`,
+		withPerms(30, perm.PollCanManage),
+	)
+
+	testCase(
+		"secret, own ballot",
+		t,
+		f,
+		true,
+		`---
+		ballot/1:
+			poll_id: 3
+			represented_meeting_user_id: 10
+		user/1/meeting_user_ids: [10]
+		poll/3:
+			meeting_id: 30
+			visibility: secret
+			content_object_id: topic/5
+		topic/5/meeting_id: 30
+		`,
+		withPerms(30, perm.PollCanManage),
+	)
+
+	testCase(
+		"secret, ballot of deletated",
+		t,
+		f,
+		true,
+		`---
+		ballot/1:
+			poll_id: 3
+			represented_meeting_user_id: 20
+		meeting_user/20:
+			user_id: 7
+		meeting_user/10:
+			user_id: 1
+			vote_delegations_from_ids: [20]
+		poll/3:
+			meeting_id: 30
 			visibility: secret
 			content_object_id: topic/5
 		topic/5/meeting_id: 30

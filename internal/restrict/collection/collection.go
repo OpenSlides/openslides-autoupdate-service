@@ -3,6 +3,7 @@ package collection
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -377,4 +378,35 @@ func eachCondition(ids []int, f func(id int) (bool, error)) ([]int, error) {
 		}
 	}
 	return allowed, nil
+}
+
+// merge two lists together. This is more performant for small lists. For big
+// list, use a set.
+func mergeUnique(list1, list2 []int) []int {
+	for _, element := range list2 {
+		if !slices.Contains(list1, element) {
+			list1 = append(list1, element)
+		}
+	}
+	return list1
+}
+
+func mergeLists(lists [][]int) []int {
+	if len(lists) == 0 {
+		return nil
+	}
+	sumLen := 0
+	for _, list := range lists {
+		sumLen += len(list)
+	}
+
+	result := make([]int, sumLen)
+	copy(result, lists[0])
+	for i, list := range lists {
+		if i == 0 {
+			continue
+		}
+		result = mergeUnique(result, list)
+	}
+	return result
 }
