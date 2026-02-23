@@ -23,7 +23,6 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
-	"github.com/OpenSlides/openslides-go/auth"
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/oserror"
 	"github.com/OpenSlides/openslides-go/redis"
@@ -146,7 +145,7 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, heartbeat time.D
 		if isLongPolling {
 			if headersSent, err := handleLongpolling(ctx, w, uid, builder, connecter, compress, hashes); err != nil {
 				if headersSent {
-					handleErrorWithoutStatusCtx(ctx, w, err)
+					handleErrorWithoutStatus(w, err)
 				} else {
 					handleErrorWithStatus(w, err)
 				}
@@ -155,7 +154,7 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, heartbeat time.D
 		}
 
 		if err := sendMessages(ctx, w, uid, builder, connecter, compress, heartbeat); err != nil {
-			handleErrorWithoutStatusCtx(ctx, w, err)
+			handleErrorWithoutStatus(w, err)
 			return
 		}
 	})
@@ -503,21 +502,17 @@ func internalAuthMiddleware(next http.Handler, auth Authenticater) http.Handler 
 }
 
 func handleErrorWithStatus(w http.ResponseWriter, err error) {
-	handleError(nil, w, err, true, false)
+	handleError(w, err, true, false)
 }
 
 func handleErrorWithoutStatus(w http.ResponseWriter, err error) {
-	handleError(nil, w, err, false, false)
-}
-
-func handleErrorWithoutStatusCtx(ctx context.Context, w http.ResponseWriter, err error) {
-	handleError(ctx, w, err, false, false)
+	handleError(w, err, false, false)
 }
 
 // handleErrorInternal is only for internal request routes. It returns the full
 // error message to the client.
 func handleErrorInternal(w http.ResponseWriter, err error) {
-	handleError(nil, w, err, true, true)
+	handleError(w, err, true, true)
 }
 
 // handleError interprets the given error and writes a corresponding message to
@@ -528,18 +523,9 @@ func handleErrorInternal(w http.ResponseWriter, err error) {
 //
 // If the handler already started to write the body then it is not allowed to
 // set the http-status-code. In this case, writeStatusCode has to be fales.
-func handleError(ctx context.Context, w http.ResponseWriter, err error, writeStatusCode bool, internal bool) {
+func handleError(w http.ResponseWriter, err error, writeStatusCode bool, internal bool) {
 	if writeStatusCode {
 		w.Header().Set("Content-Type", "application/octet-stream")
-	}
-
-	// Check for server-initiated logout (backchannel logout)
-	if ctx != nil && oserror.ContextDone(err) {
-		if cause := context.Cause(ctx); cause != nil {
-			if _, isLogout := cause.(auth.LogoutError); isLogout {
-				err = logoutError{}
-			}
-		}
 	}
 
 	if oserror.ContextDone(err) || errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) {
