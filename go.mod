@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/OpenSlides/openslides-go v0.0.0-20260302105549-34b142ba9b5a
 	github.com/alecthomas/kong v1.14.0
+	github.com/jackc/pgx/v5 v5.8.0
 	github.com/klauspost/compress v1.18.4
 	github.com/ostcar/topic v0.6.0
 	github.com/zeebo/xxh3 v1.1.0
@@ -16,7 +17,6 @@ require (
 	github.com/gomodule/redigo v1.9.3 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/pgx/v5 v5.8.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
@@ -27,3 +27,5 @@ require (
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 )
+
+replace github.com/OpenSlides/openslides-go => github.com/kryptance/openslides-go v0.0.0-20260302114458-fb92ee282ee8
