@@ -6,7 +6,7 @@ require (
 	github.com/OpenSlides/openslides-go v0.0.0-20260302105549-34b142ba9b5a
 	github.com/alecthomas/kong v1.14.0
 	github.com/klauspost/compress v1.18.4
-	github.com/ostcar/topic v0.6.0
+	github.com/ostcar/topic v0.7.0
 	github.com/zeebo/xxh3 v1.1.0
 )
 
