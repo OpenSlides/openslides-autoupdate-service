@@ -21,8 +21,7 @@ import (
 	"github.com/alecthomas/kong"
 )
 
-// TODO: Reenable
-// //go:generate  sh -c "go run main.go build-doc > environment.md"
+//go:generate  sh -c "go run main.go build-doc > environment.md"
 
 var (
 	envAutoupdatePort         = environment.NewVariable("AUTOUPDATE_PORT", "9012", "Port on which the service listen on.")
