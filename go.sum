@@ -92,8 +92,8 @@ github.com/opencontainers/runc v1.3.1 h1:c/yY0oh2wK7tzDuD56REnSxyU8ubh8hoAIOLGLr
 github.com/opencontainers/runc v1.3.1/go.mod h1:9wbWt42gV+KRxKRVVugNP6D5+PQciRbenB4fLVsqGPs=
 github.com/ory/dockertest/v3 v3.12.0 h1:3oV9d0sDzlSQfHtIaB5k6ghUCVMVLpAY8hwrqoCyRCw=
 github.com/ory/dockertest/v3 v3.12.0/go.mod h1:aKNDTva3cp8dwOWwb9cWuX84aH5akkxXRvO7KCwWVjE=
-github.com/ostcar/topic v0.6.0 h1:wAQ6ugkU/a4w3l/c4aH/xJriU833K8weEornVszpsHo=
-github.com/ostcar/topic v0.6.0/go.mod h1:F/Ywf86Jj8NoXr0gdHhDeUGzZf4bEvHcCEuZyOaG7ko=
+github.com/ostcar/topic v0.7.0 h1:wjx1AytG+ugjV7XOzfJTZsmVv5y8MD7tyEoJsmhbgEM=
+github.com/ostcar/topic v0.7.0/go.mod h1:F/Ywf86Jj8NoXr0gdHhDeUGzZf4bEvHcCEuZyOaG7ko=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
