@@ -43,6 +43,30 @@ jobs:
           printf "my_token_key" > secrets/auth_token_key
           printf "my_cookie_key" > secrets/auth_cookie_key
 
+      - name: create versions table
+        env:
+          PGPASSWORD: password
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+          for i in {1..30}; do
+            pg_isready -h 127.0.0.1 -p 5432 -U openslides -d openslides && break
+            sleep 1
+          done
+
+          psql -h 127.0.0.1 -p 5432 -U openslides -d openslides <<'SQL'
+          CREATE TABLE version (
+              migration_index INTEGER PRIMARY KEY,
+              migration_state TEXT,
+              replace_tables JSONB
+          );
+
+          INSERT INTO version (migration_index, migration_state)
+          VALUES (100, 'finalized')
+          ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value;
+          SQL
+
       - name: Start With golang
         run: |
           go build
