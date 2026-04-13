@@ -43,8 +43,6 @@ jobs:
           printf "my_token_key" > secrets/auth_token_key
           printf "my_cookie_key" > secrets/auth_cookie_key
 
-<<<<<<< HEAD
-=======
       - name: create versions table
         env:
           PGPASSWORD: password
@@ -67,8 +65,6 @@ jobs:
           INSERT INTO version (migration_index, migration_state)
           VALUES (100, 'finalized');
           SQL
-
->>>>>>> 54b3d03 (Fix insert in seeding for github action (#1399))
       - name: Start With golang
         run: |
           go build
