@@ -1,32 +1,7 @@
-name: CI - Build and Test Service
+name: CI - Readme validation
 
 on: [pull_request]
 jobs:
-  continuous-tests:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: "1.26"
-
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v6
-
-      - name: go fmt
-        run: test -z $(gofmt -l .)
-
-      - name: go vet
-        run: go vet ./...
-
-      - name: golint
-        run: go install golang.org/x/lint/golint@latest && golint -set_exit_status ./...
-
-      - name: test
-        run: go test -timeout 30s -race ./...
-<<<<<<< HEAD
-
   readme-validation:
     # This Job confirms the validity and functionality of all functions presented in the README.md file
     name: Readme
@@ -38,7 +13,7 @@ jobs:
           - 6379:6379
 
       postgres:
-        image: postgres:15
+        image: postgres:17
         env:
           POSTGRES_USER: openslides
           POSTGRES_PASSWORD: password
@@ -74,15 +49,13 @@ jobs:
           export DATABASE_PASSWORD_FILE=secrets/postgres_password
           export AUTH_TOKEN_KEY_FILE=secrets/auth_token_key
           export AUTH_COOKIE_KEY_FILE=secrets/auth_cookie_key
-          timeout --preserve-status --signal=SIGINT 2s ./openslides-autoupdate-service
+          timeout -k 10s --preserve-status --signal=SIGINT 2s ./openslides-autoupdate-service
 
       - name: Build Prod
         run: make build-prod
 
       - name: Start With Docker
         run: |
-          timeout --preserve-status --signal=SIGINT 5s docker run --network host -v $PWD/secrets:/run/secrets openslides-autoupdate
+          timeout -k 30s --preserve-status --signal=SIGINT 5s docker run --network host -v $PWD/secrets:/run/secrets openslides-autoupdate
         env:
           DOCKER_BUILDKIT: 1
-=======
->>>>>>> 5495745 (Add SIGKILL timeout to README test (#1396))
