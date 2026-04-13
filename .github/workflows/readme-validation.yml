@@ -63,10 +63,8 @@ jobs:
           );
 
           INSERT INTO version (migration_index, migration_state)
-          VALUES (100, 'finalized')
-          ON CONFLICT (id) DO UPDATE SET value = EXCLUDED.value;
+          VALUES (100, 'finalized');
           SQL
-
       - name: Start With golang
         run: |
           go build
