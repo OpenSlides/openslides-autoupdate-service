@@ -8,7 +8,7 @@ import (
 )
 
 func TestPollConfigOptionModeA(t *testing.T) {
-	mode := collection.PollConfigOption{}.Modes("A")
+	mode := collection.PollOption{}.Modes("A")
 
 	testCase(
 		"no perms",
@@ -22,7 +22,7 @@ func TestPollConfigOptionModeA(t *testing.T) {
 
 		poll_config_selection/2/poll_id: 3
 
-		poll_config_option/1/poll_config_id: poll_config_selection/2
+		poll_option/1/poll_config_id: poll_config_selection/2
 
 		topic/5:
 			meeting_id: 30
@@ -43,7 +43,7 @@ func TestPollConfigOptionModeA(t *testing.T) {
 			content_object_id: topic/5
 
 		poll_config_selection/2/poll_id: 3
-		poll_config_option/1/poll_config_id: poll_config_selection/2
+		poll_option/1/poll_config_id: poll_config_selection/2
 
 		topic/5:
 			meeting_id: 30

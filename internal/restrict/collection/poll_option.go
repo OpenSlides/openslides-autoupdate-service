@@ -7,18 +7,18 @@ import (
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
 )
 
-// PollConfigOption handles permission its collection.
+// PollOption handles permission its collection.
 //
 // A user can see it, if he can see the corresponding poll.
-type PollConfigOption struct{}
+type PollOption struct{}
 
 // Name returns the collection name.
-func (a PollConfigOption) Name() string {
-	return "poll_config_option"
+func (a PollOption) Name() string {
+	return "poll_option"
 }
 
 // MeetingID returns the meeting of the poll
-func (a PollConfigOption) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
+func (a PollOption) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
 	pollID, err := ds.PollOption_PollID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("getting poll id: %w", err)
@@ -32,7 +32,7 @@ func (a PollConfigOption) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id i
 }
 
 // Modes returns the restrictions modes for the action_worker collection.
-func (a PollConfigOption) Modes(mode string) FieldRestricter {
+func (a PollOption) Modes(mode string) FieldRestricter {
 	switch mode {
 	case "A":
 		return a.see
@@ -40,7 +40,7 @@ func (a PollConfigOption) Modes(mode string) FieldRestricter {
 	return nil
 }
 
-func (a PollConfigOption) see(ctx context.Context, ds *dsfetch.Fetch, pollConfigApprovalIDs ...int) ([]int, error) {
+func (a PollOption) see(ctx context.Context, ds *dsfetch.Fetch, pollConfigApprovalIDs ...int) ([]int, error) {
 	return eachCondition(pollConfigApprovalIDs, func(pollConfigApprovalID int) (bool, error) {
 		pollID, err := ds.PollOption_PollID(pollConfigApprovalID).Value(ctx)
 		if err != nil {
