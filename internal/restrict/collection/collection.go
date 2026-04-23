@@ -186,6 +186,7 @@ var collectionMap = map[string]Restricter{
 	PollConfigSelection{}.Name():          PollConfigSelection{},
 	PollConfigRatingScore{}.Name():        PollConfigRatingScore{},
 	PollConfigRatingApproval{}.Name():     PollConfigRatingApproval{},
+	PollConfigStvScottish{}.Name():        PollConfigStvScottish{},
 	PollOption{}.Name():                   PollOption{},
 	Projection{}.Name():                   Projection{},
 	Projector{}.Name():                    Projector{},

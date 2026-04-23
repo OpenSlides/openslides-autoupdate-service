@@ -7,8 +7,8 @@ import (
 	"github.com/OpenSlides/openslides-go/perm"
 )
 
-func TestPollConfigOptionModeA(t *testing.T) {
-	mode := collection.PollOption{}.Modes("A")
+func TestPollConfigStvScottishModeA(t *testing.T) {
+	mode := collection.PollConfigStvScottish{}.Modes("A")
 
 	testCase(
 		"no perms",
@@ -20,9 +20,7 @@ func TestPollConfigOptionModeA(t *testing.T) {
 			meeting_id: 30
 			content_object_id: topic/5
 
-		poll_config_selection/2/poll_id: 3
-
-		poll_option/1/poll_id: 3
+		poll_config_stv_scottish/1/poll_id: 3
 
 		topic/5:
 			meeting_id: 30
@@ -42,9 +40,7 @@ func TestPollConfigOptionModeA(t *testing.T) {
 			meeting_id: 30
 			content_object_id: topic/5
 
-		poll_config_selection/2/poll_id: 3
-
-		poll_option/1/poll_id: 3
+		poll_config_stv_scottish/1/poll_id: 3
 
 		topic/5:
 			meeting_id: 30
