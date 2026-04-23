@@ -166,7 +166,6 @@ func (b Ballot) modeC(ctx context.Context, ds *dsfetch.Fetch, ballotIDs ...int) 
 	if err != nil {
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
-	fmt.Println(requestUser)
 
 	requestMeetingUserIDs, err := ds.User_MeetingUserIDs(requestUser).Value(ctx)
 	if err != nil {
