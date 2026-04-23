@@ -20,6 +20,11 @@ type Flow struct {
 
 // NewFlow initializes a flow for the autoupdate service.
 func NewFlow(lookup environment.Environmenter) (*Flow, error) {
+	err := datastore.WaitPostgresAvailable(lookup)
+	if err != nil {
+		return nil, fmt.Errorf("waiting for postgres: %w", err)
+	}
+
 	postgres, err := datastore.NewFlowPostgres(lookup)
 	if err != nil {
 		return nil, fmt.Errorf("init postgres: %w", err)
