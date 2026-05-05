@@ -11,9 +11,18 @@ import (
 
 // Committee handels permission for committees.
 //
-// See user can see a committee, if he is in committee/user_ids, have the OML
-// can_manage_users or higher or the CML `can_manage` in the committee or an
-// parent committee.
+// A user can see a committee,
+//
+//  1. if he is in committee/user_ids,
+//
+//  2. has the OML can_manage_users or higher,
+//
+//  3. has the CML `can_manage` in
+//
+//     - the committee,
+//     - a parent committee,
+//     - a committee linked in forward_to_committee_ids or
+//     - a committee linked in receive_forwardings_from_committee_ids.
 //
 // Mode A: The user can see the committee.
 //
@@ -68,6 +77,25 @@ func (c Committee) see(ctx context.Context, ds *dsfetch.Fetch, committeeIDs ...i
 
 		if cmlCanManage {
 			return true, nil
+		}
+
+		var forwardToCommittee []int
+		var receiveForwardingsFromCommitteeIDs []int
+		ds.Committee_ForwardToCommitteeIDs(committeeID).Lazy(&forwardToCommittee)
+		ds.Committee_ReceiveForwardingsFromCommitteeIDs(committeeID).Lazy(&receiveForwardingsFromCommitteeIDs)
+		if err := ds.Execute(ctx); err != nil {
+			return false, fmt.Errorf("fetch forward_to_committee_ids and receive_forwardings_from_committee_ids: %w", err)
+		}
+
+		for _, relatedCommitteeID := range append(forwardToCommittee, receiveForwardingsFromCommitteeIDs...) {
+			cmlCanManage, err := perm.HasCommitteeManagementLevel(ctx, ds, requestUser, relatedCommitteeID)
+			if err != nil {
+				return false, fmt.Errorf("checking committee management level for related committee: %w", err)
+			}
+
+			if cmlCanManage {
+				return true, nil
+			}
 		}
 
 		userIDs, err := ds.Committee_UserIDs(committeeID).Value(ctx)
