@@ -188,10 +188,14 @@ func TestUserModeA(t *testing.T) {
 			10:
 				user_id: 1
 				meeting_id: 3
+				group_ids: [7]
 			20:
 				user_id: 2
 				meeting_id: 3
 				vote_delegated_to_id: 10
+				group_ids: [7]
+		group/7/id: 7
+
 		meeting/3/admin_group_id: 1
 		`,
 		withRequestUser(1),
@@ -211,10 +215,13 @@ func TestUserModeA(t *testing.T) {
 			10:
 				user_id: 1
 				meeting_id: 3
+				group_ids: [7]
 			20:
 				user_id: 2
 				meeting_id: 3
 				vote_delegations_from_ids: [10]
+				group_ids: [7]
+		group/7/id: 7
 		meeting/3/admin_group_id: 1
 		`,
 		withRequestUser(1),
@@ -734,9 +741,12 @@ func TestUserModeB(t *testing.T) {
 
 		meeting_user/10:
 			meeting_id: 30
+			group_ids: [7]
 		meeting_user/20:
 			vote_delegations_from_ids: [4]
 			meeting_id: 30
+			group_ids: [7]
+		group/7/id: 7
 
 		vote/4/option_id: 5
 		option/5/poll_id: 6

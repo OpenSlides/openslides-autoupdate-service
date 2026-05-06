@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	gohttp "net/http"
 	"os"
 	"strconv"
@@ -17,11 +16,13 @@ import (
 	"github.com/OpenSlides/openslides-go/auth"
 	"github.com/OpenSlides/openslides-go/environment"
 	"github.com/OpenSlides/openslides-go/oserror"
+	"github.com/OpenSlides/openslides-go/oslog"
 	"github.com/OpenSlides/openslides-go/redis"
 	"github.com/alecthomas/kong"
 )
 
-//go:generate  sh -c "go run main.go build-doc > environment.md"
+// TODO: Reenable
+// //go:generate  sh -c "go run main.go build-doc > environment.md"
 
 var (
 	envAutoupdatePort         = environment.NewVariable("AUTOUPDATE_PORT", "9012", "Port on which the service listen on.")
@@ -116,7 +117,7 @@ func health(ctx context.Context) error {
 		return fmt.Errorf("reading response body: %w", err)
 	}
 
-	expect := `{"healthy": true}`
+	expect := `{"healthy": true, "service":"autoupdate"}`
 	got := strings.TrimSpace(string(body))
 	if got != expect {
 		return fmt.Errorf("got `%s`, expected `%s`", body, expect)
@@ -129,6 +130,8 @@ func health(ctx context.Context) error {
 //
 // Returns a the service as callable.
 func initService(lookup environment.Environmenter) (func(context.Context) error, error) {
+	oslog.InitLog(lookup)
+
 	var backgroundTasks []func(context.Context, func(error))
 	listenAddr := ":" + envAutoupdatePort.Value(lookup)
 
@@ -138,7 +141,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	publicAccessOnly, _ := strconv.ParseBool(envPublicAccessOnly.Value(lookup))
 
 	// Autoupdate data flow.
-	flow, flowBackground, err := autoupdate.NewFlow(lookup, messageBus, publicAccessOnly)
+	flow, flowBackground, err := autoupdate.NewFlow(lookup, publicAccessOnly)
 	if err != nil {
 		return nil, fmt.Errorf("init autoupdate data flow: %w", err)
 	}
@@ -172,7 +175,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 
 	if metricTime > 0 {
 		runMetirc := func(ctx context.Context, errorHandler func(error)) {
-			metric.Loop(ctx, metricTime, log.Default())
+			metric.Loop(ctx, metricTime)
 		}
 		backgroundTasks = append(backgroundTasks, runMetirc)
 	}
@@ -193,7 +196,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 		}
 
 		// Start http server.
-		fmt.Printf("Listen on %s\n", listenAddr)
+		oslog.Info("Listen on %s", listenAddr)
 		return http.Run(ctx, listenAddr, authService, auService, metricStorage, metricSaveInterval, heartBeatTime)
 	}
 

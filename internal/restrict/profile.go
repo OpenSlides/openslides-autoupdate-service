@@ -3,10 +3,11 @@ package restrict
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/OpenSlides/openslides-go/oslog"
 )
 
 const slowCalls = 3 * time.Second
@@ -38,5 +39,5 @@ func profile(request string, duration time.Duration, times map[string]timeCount)
 		return timeStrings[i] < timeStrings[j]
 	})
 
-	log.Printf("Profile: Restrict: Slow request:\nProfile: Request: %s\nProfile: Duration: %d ms\nProfile: %s\n", request, duration.Milliseconds(), strings.Join(timeStrings, "\nProfile: "))
+	oslog.Warn("Profile: Restrict: Slow request:\nProfile: Request: %s\nProfile: Duration: %d ms\nProfile: %s\n", request, duration.Milliseconds(), strings.Join(timeStrings, "\nProfile: "))
 }
