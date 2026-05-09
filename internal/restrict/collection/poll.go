@@ -15,18 +15,12 @@ import (
 //	assignment: The user can see the linked assignment.
 //	topic: The user can see the topic.
 //
-// If the user can manage the poll also depends on the content_object:
-//
-//	motion: The user needs motion.can_manage_polls.
-//	assignment: The user needs assignment.can_manage_polls.
-//	topic: The user needs poll.can_manage.
-//
 // Mode A: Contains the fields to know, that the poll exists and how it is
 // configured. It is allowed, if the user can see the poll.
 //
 // Mode B: Contains the fields to see the result of a poll. If the poll is
 // published, the user has to be able to see the poll. If it is not published,
-// he needs the permission to manage the poll.
+// he needs the permission `.can_see_polls` on the content object.
 type Poll struct{}
 
 // Name returns the collection name.
@@ -89,7 +83,7 @@ func (p Poll) see(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]int
 		})
 }
 
-func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]int, error) {
+func (p Poll) canSeeUnpublished(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]int, error) {
 	return eachContentObjectCollection(ctx, ds.Poll_ContentObjectID, pollIDs, func(objectCollection string, objectID int, ids []int) ([]int, error) {
 		switch objectCollection {
 		case "motion":
@@ -103,7 +97,7 @@ func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]
 				return nil, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
 			}
 
-			if perms.Has(perm.MotionCanManagePolls) {
+			if perms.Has(perm.MotionCanSeePolls) {
 				return ids, nil
 			}
 
@@ -120,7 +114,7 @@ func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]
 				return nil, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
 			}
 
-			if perms.Has(perm.AssignmentCanManagePolls) {
+			if perms.Has(perm.AssignmentCanSeePolls) {
 				return ids, nil
 			}
 			return nil, nil
@@ -136,7 +130,7 @@ func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]
 				return nil, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
 			}
 
-			if perms.Has(perm.AgendaItemCanManagePolls) {
+			if perms.Has(perm.AgendaItemCanSeePolls) {
 				return ids, nil
 			}
 			return nil, nil
@@ -170,11 +164,11 @@ func (p Poll) modeB(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]i
 			continue
 		}
 
-		manage, err := p.manage(ctx, ds, pollID)
+		seeUnpublished, err := p.canSeeUnpublished(ctx, ds, pollID)
 		if err != nil {
 			return nil, fmt.Errorf("checking manage: %w", err)
 		}
-		if len(manage) > 0 {
+		if len(seeUnpublished) > 0 {
 			allowed = append(allowed, pollID)
 		}
 	}

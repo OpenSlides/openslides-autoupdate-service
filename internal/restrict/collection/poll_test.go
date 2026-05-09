@@ -181,7 +181,7 @@ func TestPollModeB(t *testing.T) {
 	)
 
 	testCase(
-		"finished can manage motion",
+		"finished can see unpublished motion",
 		t,
 		f,
 		true,
@@ -193,11 +193,11 @@ func TestPollModeB(t *testing.T) {
 		motion/1:
 			meeting_id: 30
 		`,
-		withPerms(30, perm.MotionCanManagePolls),
+		withPerms(30, perm.MotionCanSeePolls),
 	)
 
 	testCase(
-		"finished can not manage motion",
+		"finished can not see unpublished motion",
 		t,
 		f,
 		false,
@@ -212,7 +212,7 @@ func TestPollModeB(t *testing.T) {
 	)
 
 	testCase(
-		"finished can manage assignment polls",
+		"finished can see unpublished assignment polls",
 		t,
 		f,
 		true,
@@ -224,11 +224,27 @@ func TestPollModeB(t *testing.T) {
 		assignment/1:
 			meeting_id: 30
 		`,
-		withPerms(30, perm.AssignmentCanManagePolls),
+		withPerms(30, perm.AssignmentCanSeePolls),
 	)
 
 	testCase(
-		"finished can manage assignment",
+		"finished can see unpublished assignment",
+		t,
+		f,
+		true,
+		`---
+		poll/1:
+			content_object_id: assignment/1
+			state: finished
+
+		assignment/1:
+			meeting_id: 30
+		`,
+		withPerms(30, perm.AssignmentCanSeePolls),
+	)
+
+	testCase(
+		"finished can not see unpublished assignment",
 		t,
 		f,
 		false,
@@ -240,26 +256,10 @@ func TestPollModeB(t *testing.T) {
 		assignment/1:
 			meeting_id: 30
 		`,
-		withPerms(30, perm.AssignmentCanManage),
 	)
 
 	testCase(
-		"finished can not manage assignment",
-		t,
-		f,
-		false,
-		`---
-		poll/1:
-			content_object_id: assignment/1
-			state: finished
-
-		assignment/1:
-			meeting_id: 30
-		`,
-	)
-
-	testCase(
-		"finished can manage poll",
+		"finished can see unpublished topic polls",
 		t,
 		f,
 		true,
@@ -270,11 +270,11 @@ func TestPollModeB(t *testing.T) {
 			state: finished
 		topic/5/meeting_id: 30
 		`,
-		withPerms(30, perm.AgendaItemCanManagePolls),
+		withPerms(30, perm.AgendaItemCanSeePolls),
 	)
 
 	testCase(
-		"finished can not manage poll",
+		"finished can not see unpublished topic polls",
 		t,
 		f,
 		false,
