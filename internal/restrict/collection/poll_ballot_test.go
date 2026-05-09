@@ -7,7 +7,7 @@ import (
 	"github.com/OpenSlides/openslides-go/perm"
 )
 
-func TestBallotModeA(t *testing.T) {
+func TestPollBallotModeA(t *testing.T) {
 	f := collection.Ballot{}.Modes("A")
 
 	testCase(
@@ -16,7 +16,7 @@ func TestBallotModeA(t *testing.T) {
 		f,
 		false,
 		`---
-		ballot/1:
+		poll_ballot/1:
 			poll_id: 3
 			represented_meeting_user_id: 5
 			acting_meeting_user_id: 6
@@ -37,7 +37,7 @@ func TestBallotModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		ballot/1:
+		poll_ballot/1:
 			poll_id: 3
 			represented_meeting_user_id: 5
 			acting_meeting_user_id: 6
@@ -59,7 +59,7 @@ func TestBallotModeA(t *testing.T) {
 		f,
 		false,
 		`---
-		ballot/1:
+		poll_ballot/1:
 			poll_id: 3
 			represented_meeting_user_id: 5
 			acting_meeting_user_id: 6
@@ -80,7 +80,7 @@ func TestBallotModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		ballot/1:
+		poll_ballot/1:
 			poll_id: 3
 			represented_meeting_user_id: 5
 			acting_meeting_user_id: 6
@@ -101,7 +101,7 @@ func TestBallotModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		ballot/1:
+		poll_ballot/1:
 			poll_id: 3
 			represented_meeting_user_id: 5
 			acting_meeting_user_id: 6
@@ -125,7 +125,7 @@ func TestBallotModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		ballot/1:
+		poll_ballot/1:
 			poll_id: 3
 			represented_meeting_user_id: 5
 			acting_meeting_user_id: 6
@@ -144,7 +144,7 @@ func TestBallotModeA(t *testing.T) {
 	)
 }
 
-func TestBallotModeB(t *testing.T) {
+func TestPollBallotModeB(t *testing.T) {
 	f := collection.Ballot{}.Modes("B")
 
 	testCase(
@@ -153,7 +153,7 @@ func TestBallotModeB(t *testing.T) {
 		f,
 		true,
 		`---
-		ballot/1:
+		poll_ballot/1:
 			poll_id: 3
 			represented_meeting_user_id: 5
 			acting_meeting_user_id: 6
@@ -176,7 +176,7 @@ func TestBallotModeB(t *testing.T) {
 		f,
 		true,
 		`---
-		ballot/1/poll_id: 3
+		poll_ballot/1/poll_id: 3
 		poll/3:
 			meeting_id: 30
 			state: finished
@@ -187,7 +187,7 @@ func TestBallotModeB(t *testing.T) {
 	)
 }
 
-func TestBallotModeC(t *testing.T) {
+func TestPollBallotModeC(t *testing.T) {
 	f := collection.Ballot{}.Modes("C")
 
 	testCase(
@@ -196,7 +196,7 @@ func TestBallotModeC(t *testing.T) {
 		f,
 		false,
 		`---
-		ballot/1:
+		poll_ballot/1:
 			poll_id: 3
 		poll/3:
 			meeting_id: 30
@@ -218,7 +218,7 @@ func TestBallotModeC(t *testing.T) {
 		f,
 		true,
 		`---
-		ballot/1:
+		poll_ballot/1:
 			poll_id: 3
 		poll/3:
 			meeting_id: 30
@@ -240,7 +240,7 @@ func TestBallotModeC(t *testing.T) {
 		f,
 		true,
 		`---
-		ballot/1/poll_id: 3
+		poll_ballot/1/poll_id: 3
 		poll/3:
 			meeting_id: 30
 			state: finished
@@ -257,7 +257,7 @@ func TestBallotModeC(t *testing.T) {
 		f,
 		false,
 		`---
-		ballot/1/poll_id: 3
+		poll_ballot/1/poll_id: 3
 		poll/3:
 			meeting_id: 30
 			state: finished
@@ -274,7 +274,7 @@ func TestBallotModeC(t *testing.T) {
 		f,
 		true,
 		`---
-		ballot/1:
+		poll_ballot/1:
 			poll_id: 3
 			represented_meeting_user_id: 10
 		user/1/meeting_user_ids: [10]
@@ -293,7 +293,7 @@ func TestBallotModeC(t *testing.T) {
 		f,
 		true,
 		`---
-		ballot/1:
+		poll_ballot/1:
 			poll_id: 3
 			represented_meeting_user_id: 20
 		meeting_user/20:

@@ -472,7 +472,7 @@ var collectionOrder = map[string]int{
 	"agenda_item":                      1,
 	"assignment":                       2,
 	"assignment_candidate":             3,
-	"ballot":                           4,
+	"poll_ballot":                      4,
 	"chat_group":                       5,
 	"chat_message":                     6,
 	"committee":                        7,
