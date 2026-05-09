@@ -270,7 +270,7 @@ func TestPollModeB(t *testing.T) {
 			state: finished
 		topic/5/meeting_id: 30
 		`,
-		withPerms(30, perm.PollCanManage),
+		withPerms(30, perm.AgendaItemCanManagePolls),
 	)
 
 	testCase(

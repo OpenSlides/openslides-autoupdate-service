@@ -35,12 +35,12 @@ type Ballot struct{}
 
 // Name returns the collection name.
 func (b Ballot) Name() string {
-	return "ballot"
+	return "poll_ballot"
 }
 
 // MeetingID returns the meetingID for the object.
 func (b Ballot) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
-	pollID, err := ds.Ballot_PollID(id).Value(ctx)
+	pollID, err := ds.PollBallot_PollID(id).Value(ctx)
 	if err != nil {
 		return 0, false, fmt.Errorf("get poll id: %w", err)
 	}
@@ -74,7 +74,7 @@ func (b Ballot) see(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]i
 	}
 
 	return eachCondition(voteIDs, func(voteID int) (bool, error) {
-		pollID, err := ds.Ballot_PollID(voteID).Value(ctx)
+		pollID, err := ds.PollBallot_PollID(voteID).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("getting poll id: %w", err)
 		}
@@ -89,12 +89,12 @@ func (b Ballot) see(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]i
 			return false, fmt.Errorf("getting poll publihed: %w", err)
 		}
 
-		actingMeetingUser, err := ds.Ballot_ActingMeetingUserID(voteID).Value(ctx)
+		actingMeetingUser, err := ds.PollBallot_ActingMeetingUserID(voteID).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("getting vote user: %w", err)
 		}
 
-		representedMeetingUser, err := ds.Ballot_RepresentedMeetingUserID(voteID).Value(ctx)
+		representedMeetingUser, err := ds.PollBallot_RepresentedMeetingUserID(voteID).Value(ctx)
 		if err != nil {
 			return false, fmt.Errorf("getting delegated user: %w", err)
 		}
@@ -148,7 +148,7 @@ func (b Ballot) see(ctx context.Context, ds *dsfetch.Fetch, voteIDs ...int) ([]i
 }
 
 func (b Ballot) modeB(ctx context.Context, ds *dsfetch.Fetch, ballotIDs ...int) ([]int, error) {
-	return eachRelationField(ctx, ds.Ballot_PollID, ballotIDs, func(pollID int, ballotIDs []int) ([]int, error) {
+	return eachRelationField(ctx, ds.PollBallot_PollID, ballotIDs, func(pollID int, ballotIDs []int) ([]int, error) {
 		seePollModeB, err := Collection(ctx, Poll{}.Name()).Modes("B")(ctx, ds, pollID)
 		if err != nil {
 			return nil, fmt.Errorf("checking poll mode B: %w", err)
@@ -179,7 +179,7 @@ func (b Ballot) modeC(ctx context.Context, ds *dsfetch.Fetch, ballotIDs ...int) 
 
 	representedMeetingUserIDs := make([]dsfetch.Maybe[int], len(ballotIDs))
 	for i, ballotID := range ballotIDs {
-		ds.Ballot_RepresentedMeetingUserID(ballotID).Lazy(&representedMeetingUserIDs[i])
+		ds.PollBallot_RepresentedMeetingUserID(ballotID).Lazy(&representedMeetingUserIDs[i])
 	}
 
 	if err := ds.Execute(ctx); err != nil {
@@ -199,7 +199,7 @@ func (b Ballot) modeC(ctx context.Context, ds *dsfetch.Fetch, ballotIDs ...int) 
 		}
 	}
 
-	allowedByPublished, err := eachRelationField(ctx, ds.Ballot_PollID, ballotIDs, func(pollID int, ballotDs []int) ([]int, error) {
+	allowedByPublished, err := eachRelationField(ctx, ds.PollBallot_PollID, ballotIDs, func(pollID int, ballotDs []int) ([]int, error) {
 		visibility, err := ds.Poll_Visibility(pollID).Value(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("fetch visibility of poll %d: %w", pollID, err)

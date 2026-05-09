@@ -183,7 +183,7 @@ func TestBallotModeB(t *testing.T) {
 			content_object_id: topic/5
 		topic/5/meeting_id: 30
 		`,
-		withPerms(30, perm.PollCanManage),
+		withPerms(30, perm.AgendaItemCanManagePolls),
 	)
 }
 
@@ -248,7 +248,7 @@ func TestBallotModeC(t *testing.T) {
 			content_object_id: topic/5
 		topic/5/meeting_id: 30
 		`,
-		withPerms(30, perm.PollCanManage),
+		withPerms(30, perm.AgendaItemCanManagePolls),
 	)
 
 	testCase(
@@ -265,7 +265,7 @@ func TestBallotModeC(t *testing.T) {
 			content_object_id: topic/5
 		topic/5/meeting_id: 30
 		`,
-		withPerms(30, perm.PollCanManage),
+		withPerms(30, perm.AgendaItemCanManagePolls),
 	)
 
 	testCase(
@@ -284,7 +284,7 @@ func TestBallotModeC(t *testing.T) {
 			content_object_id: topic/5
 		topic/5/meeting_id: 30
 		`,
-		withPerms(30, perm.PollCanManage),
+		withPerms(30, perm.AgendaItemCanManagePolls),
 	)
 
 	testCase(
@@ -307,6 +307,6 @@ func TestBallotModeC(t *testing.T) {
 			content_object_id: topic/5
 		topic/5/meeting_id: 30
 		`,
-		withPerms(30, perm.PollCanManage),
+		withPerms(30, perm.AgendaItemCanManagePolls),
 	)
 }

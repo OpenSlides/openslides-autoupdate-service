@@ -136,7 +136,7 @@ func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]
 				return nil, fmt.Errorf("getting permissions for meeting %d: %w", meetingID, err)
 			}
 
-			if perms.Has(perm.PollCanManage) {
+			if perms.Has(perm.AgendaItemCanManagePolls) {
 				return ids, nil
 			}
 			return nil, nil
