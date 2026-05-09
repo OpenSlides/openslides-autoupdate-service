@@ -149,7 +149,7 @@ func TestPollModeB(t *testing.T) {
 		`---
 		poll/1:
 			content_object_id: motion/2
-			state: published
+			published: true
 
 		motion/2:
 			meeting_id: 30
@@ -168,7 +168,7 @@ func TestPollModeB(t *testing.T) {
 		`---
 		poll/1:
 			content_object_id: motion/2
-			state: published
+			published: true
 
 		motion/2:
 			meeting_id: 30
@@ -181,7 +181,7 @@ func TestPollModeB(t *testing.T) {
 	)
 
 	testCase(
-		"finished can manage motion",
+		"finished can see unpublished motion",
 		t,
 		f,
 		true,
@@ -193,11 +193,11 @@ func TestPollModeB(t *testing.T) {
 		motion/1:
 			meeting_id: 30
 		`,
-		withPerms(30, perm.MotionCanManagePolls),
+		withPerms(30, perm.MotionCanSeePolls),
 	)
 
 	testCase(
-		"finished can not manage motion",
+		"finished can not see unpublished motion",
 		t,
 		f,
 		false,
@@ -212,7 +212,7 @@ func TestPollModeB(t *testing.T) {
 	)
 
 	testCase(
-		"finished can manage assignment polls",
+		"finished can see unpublished assignment polls",
 		t,
 		f,
 		true,
@@ -224,11 +224,27 @@ func TestPollModeB(t *testing.T) {
 		assignment/1:
 			meeting_id: 30
 		`,
-		withPerms(30, perm.AssignmentCanManagePolls),
+		withPerms(30, perm.AssignmentCanSeePolls),
 	)
 
 	testCase(
-		"finished can manage assignment",
+		"finished can see unpublished assignment",
+		t,
+		f,
+		true,
+		`---
+		poll/1:
+			content_object_id: assignment/1
+			state: finished
+
+		assignment/1:
+			meeting_id: 30
+		`,
+		withPerms(30, perm.AssignmentCanSeePolls),
+	)
+
+	testCase(
+		"finished can not see unpublished assignment",
 		t,
 		f,
 		false,
@@ -240,26 +256,10 @@ func TestPollModeB(t *testing.T) {
 		assignment/1:
 			meeting_id: 30
 		`,
-		withPerms(30, perm.AssignmentCanManage),
 	)
 
 	testCase(
-		"finished can not manage assignment",
-		t,
-		f,
-		false,
-		`---
-		poll/1:
-			content_object_id: assignment/1
-			state: finished
-
-		assignment/1:
-			meeting_id: 30
-		`,
-	)
-
-	testCase(
-		"finished can manage poll",
+		"finished can see unpublished topic polls",
 		t,
 		f,
 		true,
@@ -270,11 +270,11 @@ func TestPollModeB(t *testing.T) {
 			state: finished
 		topic/5/meeting_id: 30
 		`,
-		withPerms(30, perm.PollCanManage),
+		withPerms(30, perm.AgendaItemCanSeePolls),
 	)
 
 	testCase(
-		"finished can not manage poll",
+		"finished can not see unpublished topic polls",
 		t,
 		f,
 		false,
@@ -285,250 +285,5 @@ func TestPollModeB(t *testing.T) {
 			state: finished
 		topic/5/meeting_id: 30
 		`,
-	)
-
-	testCase(
-		"other",
-		t,
-		f,
-		false,
-		`---
-		poll/1:
-			meeting_id: 30
-			content_object_id: topic/5
-			state: other
-		topic/5/meeting_id: 30
-		`,
-		withPerms(30, perm.PollCanManage),
-	)
-}
-
-func TestPollModeC(t *testing.T) {
-	f := collection.Poll{}.Modes("C")
-
-	testCase(
-		"No permission",
-		t,
-		f,
-		false,
-		`---
-		poll/1:
-			content_object_id: topic/5
-			state: started
-			meeting_id: 30
-		topic/5/meeting_id: 30
-		`,
-	)
-
-	testCase(
-		"Wrong state",
-		t,
-		f,
-		false,
-		`---
-		poll/1:
-			content_object_id: topic/5
-			state: published
-			meeting_id: 30
-		topic/5/meeting_id: 30
-		`,
-		withPerms(30, perm.PollCanManage),
-	)
-
-	testCase(
-		"Correct",
-		t,
-		f,
-		true,
-		`---
-		poll/1:
-			content_object_id: topic/5
-			state: started
-			meeting_id: 30
-		topic/5/meeting_id: 30
-		`,
-		withPerms(30, perm.PollCanManage),
-	)
-
-	testCase(
-		"User.can_see",
-		t,
-		f,
-		false,
-		`---
-		poll/1:
-			content_object_id: topic/5
-			state: started
-			meeting_id: 30
-		topic/5/meeting_id: 30
-		`,
-		withPerms(30, perm.UserCanSee),
-	)
-
-	testCase(
-		"ListOfSpeaker.can_manage",
-		t,
-		f,
-		false,
-		`---
-		poll/1:
-			content_object_id: topic/5
-			state: started
-			meeting_id: 30
-		topic/5/meeting_id: 30
-		`,
-		withPerms(30, perm.ListOfSpeakersCanManage),
-	)
-
-	testCase(
-		"User.can_see and ListOfSpeaker.can_manage",
-		t,
-		f,
-		true,
-		`---
-		poll/1:
-			content_object_id: topic/5
-			state: started
-			meeting_id: 30
-		topic/5/meeting_id: 30
-		`,
-		withPerms(30, perm.UserCanSee, perm.ListOfSpeakersCanManage),
-	)
-
-	testCase(
-		"User.can_see and ListOfSpeaker.can_manage but wrong state",
-		t,
-		f,
-		false,
-		`---
-		poll/1:
-			content_object_id: topic/5
-			state: finished
-			meeting_id: 30
-		topic/5/meeting_id: 30
-		`,
-		withPerms(30, perm.UserCanSee, perm.ListOfSpeakersCanManage),
-	)
-
-	testCase(
-		"Poll.can_see_progress but wrong state",
-		t,
-		f,
-		false,
-		`---
-		poll/1:
-			content_object_id: topic/5
-			state: finished
-			meeting_id: 30
-		topic/5/meeting_id: 30
-		`,
-		withPerms(30, perm.PollCanSeeProgress),
-	)
-
-	testCase(
-		"Poll.can_see_progress with correct state",
-		t,
-		f,
-		true,
-		`---
-		poll/1:
-			content_object_id: topic/5
-			state: started
-			meeting_id: 30
-		topic/5/meeting_id: 30
-		`,
-		withPerms(30, perm.PollCanSeeProgress),
-	)
-}
-
-func TestPollModeD(t *testing.T) {
-	f := collection.Poll{}.Modes("D")
-
-	testCase(
-		"published can see",
-		t,
-		f,
-		true,
-		`---
-		poll/1:
-			content_object_id: motion/2
-			state: published
-			meeting_id: 30
-
-		motion/2:
-			meeting_id: 30
-			state_id: 3
-
-		motion_state/3/id: 3
-		`,
-		withPerms(30, perm.MotionCanSee),
-	)
-
-	testCase(
-		"published can not see",
-		t,
-		f,
-		false,
-		`---
-		poll/1:
-			content_object_id: motion/1
-			state: published
-			meeting_id: 30
-
-		motion/1:
-			meeting_id: 30
-
-		meeting/30/locked_from_inside: false
-		`,
-	)
-
-	testCase(
-		"finished can manage motion",
-		t,
-		f,
-		true,
-		`---
-		poll/1:
-			content_object_id: motion/1
-			state: finished
-			meeting_id: 30
-
-		motion/1:
-			meeting_id: 30
-		`,
-		withPerms(30, perm.MotionCanManagePolls),
-	)
-
-	testCase(
-		"finished can not manage motion",
-		t,
-		f,
-		false,
-		`---
-		poll/1:
-			content_object_id: motion/1
-			state: finished
-			meeting_id: 30
-
-		motion/1:
-			meeting_id: 30
-		`,
-	)
-
-	testCase(
-		"finished can manage list of speakers",
-		t,
-		f,
-		true,
-		`---
-		poll/1:
-			content_object_id: motion/1
-			state: finished
-			meeting_id: 30
-
-		motion/1:
-			meeting_id: 30
-		`,
-		withPerms(30, perm.ListOfSpeakersCanManage),
 	)
 }
