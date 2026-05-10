@@ -21,8 +21,7 @@ import (
 	"github.com/alecthomas/kong"
 )
 
-// TODO: Reenable
-// //go:generate  sh -c "go run main.go build-doc > environment.md"
+//go:generate  sh -c "go run main.go build-doc > environment.md"
 
 var (
 	envAutoupdatePort         = environment.NewVariable("AUTOUPDATE_PORT", "9012", "Port on which the service listen on.")
@@ -141,7 +140,7 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	publicAccessOnly, _ := strconv.ParseBool(envPublicAccessOnly.Value(lookup))
 
 	// Autoupdate data flow.
-	flow, flowBackground, err := autoupdate.NewFlow(lookup, publicAccessOnly)
+	flow, initAutoupdate, flowBackground, err := autoupdate.NewFlow(lookup, publicAccessOnly)
 	if err != nil {
 		return nil, fmt.Errorf("init autoupdate data flow: %w", err)
 	}
@@ -191,6 +190,10 @@ func initService(lookup environment.Environmenter) (func(context.Context) error,
 	}
 
 	service := func(ctx context.Context) error {
+		if err := initAutoupdate(ctx); err != nil {
+			return fmt.Errorf("init autoupdate: %w", err)
+		}
+
 		for _, bg := range backgroundTasks {
 			go bg(ctx, oserror.Handle)
 		}
