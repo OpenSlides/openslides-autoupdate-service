@@ -65,6 +65,7 @@ LABEL org.opencontainers.image.description="The Autoupdate Service is a http end
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-autoupdate-service"
 
+COPY --from=base /app/openslides-autoupdate-service/version.json /
 COPY --from=builder /app/openslides-autoupdate-service/openslides-autoupdate-service /
 
 EXPOSE 9012
