@@ -41,7 +41,7 @@ COPY dev/container-tests.sh ./dev/container-tests.sh
 RUN apk add --no-cache \
     build-base \
     docker && \
-    go get -u github.com/ory/dockertest/v3 && \
+    go get -u github.com/ory/dockertest/v4 && \
     go install golang.org/x/lint/golint@latest && \
     chmod +x dev/container-tests.sh
 
