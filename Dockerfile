@@ -16,6 +16,7 @@ RUN go mod download
 
 COPY main.go main.go
 COPY internal internal
+COPY version.json version.json
 
 ## External Information
 EXPOSE 9012
