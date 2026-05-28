@@ -23,6 +23,7 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/autoupdate"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/keysbuilder"
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/metric"
+	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/oserror"
 	"github.com/OpenSlides/openslides-go/redis"
@@ -101,7 +102,7 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, heartbeat time.D
 
 		queryBuilder, err := keysbuilder.FromKeys(strings.Split(r.URL.Query().Get("k"), ",")...)
 		if err != nil {
-			handleErrorWithStatus(w, fmt.Errorf("building keysbuilder from query: %w", err))
+			handleErrorWithStatus(w, uid, fmt.Errorf("building keysbuilder from query: %w", err))
 			return
 		}
 
@@ -110,14 +111,14 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, heartbeat time.D
 			if !(errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF)) {
 				// EOF errors happen, when clients close the conections. No need
 				// to inform about it
-				handleErrorWithStatus(w, fmt.Errorf("parse Body: %w", err))
+				handleErrorWithStatus(w, uid, fmt.Errorf("parse Body: %w", err))
 			}
 			return
 		}
 
 		bodyBuilder, err := keysbuilder.ManyFromJSON(bytes.NewReader(body))
 		if err != nil {
-			handleErrorWithStatus(w, fmt.Errorf("building keysbuilder from body: %w", err))
+			handleErrorWithStatus(w, uid, fmt.Errorf("building keysbuilder from body: %w", err))
 			return
 		}
 
@@ -131,12 +132,12 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, heartbeat time.D
 		if r.URL.Query().Has("single") {
 			data, err := connecter.SingleData(ctx, uid, builder)
 			if err != nil {
-				handleErrorWithStatus(w, fmt.Errorf("getting single data: %w", err))
+				handleErrorWithStatus(w, uid, fmt.Errorf("getting single data: %w", err))
 				return
 			}
 
 			if err := writeData(w, data, compress); err != nil {
-				handleErrorWithoutStatus(w, err)
+				handleErrorWithoutStatus(w, uid, err)
 				return
 			}
 			return
@@ -145,16 +146,16 @@ func autoupdateHandler(auth Authenticater, connecter Connecter, heartbeat time.D
 		if isLongPolling {
 			if headersSent, err := handleLongpolling(ctx, w, uid, builder, connecter, compress, hashes); err != nil {
 				if headersSent {
-					handleErrorWithoutStatus(w, err)
+					handleErrorWithoutStatus(w, uid, err)
 				} else {
-					handleErrorWithStatus(w, err)
+					handleErrorWithStatus(w, uid, err)
 				}
 			}
 			return
 		}
 
 		if err := sendMessages(ctx, w, uid, builder, connecter, compress, heartbeat); err != nil {
-			handleErrorWithoutStatus(w, err)
+			handleErrorWithoutStatus(w, uid, err)
 			return
 		}
 	})
@@ -478,7 +479,7 @@ func authMiddleware(next http.Handler, auth Authenticater) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, err := auth.Authenticate(w, r)
 		if err != nil {
-			handleErrorWithStatus(w, fmt.Errorf("authenticate request: %w", err))
+			handleErrorWithStatus(w, 0, fmt.Errorf("authenticate request: %w", err))
 			return
 		}
 
@@ -501,18 +502,18 @@ func internalAuthMiddleware(next http.Handler, auth Authenticater) http.Handler 
 	})
 }
 
-func handleErrorWithStatus(w http.ResponseWriter, err error) {
-	handleError(w, err, true, false)
+func handleErrorWithStatus(w http.ResponseWriter, requestUser int, err error) {
+	handleError(w, requestUser, err, true, false)
 }
 
-func handleErrorWithoutStatus(w http.ResponseWriter, err error) {
-	handleError(w, err, false, false)
+func handleErrorWithoutStatus(w http.ResponseWriter, requestUser int, err error) {
+	handleError(w, requestUser, err, false, false)
 }
 
 // handleErrorInternal is only for internal request routes. It returns the full
 // error message to the client.
 func handleErrorInternal(w http.ResponseWriter, err error) {
-	handleError(w, err, true, true)
+	handleError(w, 0, err, true, true)
 }
 
 // handleError interprets the given error and writes a corresponding message to
@@ -523,7 +524,7 @@ func handleErrorInternal(w http.ResponseWriter, err error) {
 //
 // If the handler already started to write the body then it is not allowed to
 // set the http-status-code. In this case, writeStatusCode has to be fales.
-func handleError(w http.ResponseWriter, err error, writeStatusCode bool, internal bool) {
+func handleError(w http.ResponseWriter, requestUser int, err error, writeStatusCode bool, internal bool) {
 	if writeStatusCode {
 		w.Header().Set("Content-Type", "application/octet-stream")
 	}
@@ -531,6 +532,19 @@ func handleError(w http.ResponseWriter, err error, writeStatusCode bool, interna
 	if oserror.ContextDone(err) || errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) {
 		// Client closed connection.
 		return
+	}
+
+	if errDoesNotExist, found := errors.AsType[dsfetch.DoesNotExistError](err); found && requestUser != 0 {
+		key := dskey.Key(errDoesNotExist)
+		if key.Collection() == "user" && key.ID() == requestUser {
+			// The request user does not exist. This can happen, when a user was
+			// deleted but the auth session is still valid.
+			if writeStatusCode {
+				w.WriteHeader(http.StatusForbidden)
+			}
+			fmt.Fprint(w, `{"error": {"type": "deleted", "msg": "Your user account does not exist anymore."}}`)
+			return
+		}
 	}
 
 	status := http.StatusBadRequest
@@ -572,7 +586,7 @@ func validRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Only allow GET or POST requests.
 		if !(r.Method == http.MethodPost || r.Method == http.MethodGet) {
-			handleErrorWithStatus(w, invalidRequestError{fmt.Errorf("only GET or POST requests are supported")})
+			handleErrorWithStatus(w, 0, invalidRequestError{fmt.Errorf("only GET or POST requests are supported")})
 			return
 		}
 
