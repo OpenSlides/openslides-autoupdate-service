@@ -39,6 +39,19 @@ func TestCommitteeModeA(t *testing.T) {
 	)
 
 	testCase(
+		"CML can manage in committee",
+		t,
+		c.Modes("A"),
+		true,
+		`---
+		committee/5/id: 5
+		user/1:
+			committee_management_ids: [5]
+		`,
+		withElementID(5),
+	)
+
+	testCase(
 		"CML can manage in parent",
 		t,
 		c.Modes("A"),
@@ -46,6 +59,34 @@ func TestCommitteeModeA(t *testing.T) {
 		`---
 		committee/5/id: 5
 		committee/6/all_child_ids: [5]
+		user/1:
+			committee_management_ids: [6]
+		`,
+		withElementID(5),
+	)
+
+	testCase(
+		"CML can manage in forward_to_committee_ids",
+		t,
+		c.Modes("A"),
+		true,
+		`---
+		committee/5/forward_to_committee_ids: [6]
+		committee/6/id: 6
+		user/1:
+			committee_management_ids: [6]
+		`,
+		withElementID(5),
+	)
+
+	testCase(
+		"CML can manage in receive_forwardings_from_committee_ids",
+		t,
+		c.Modes("A"),
+		true,
+		`---
+		committee/5/receive_forwardings_from_committee_ids: [6]
+		committee/6/id: 6
 		user/1:
 			committee_management_ids: [6]
 		`,
