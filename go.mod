@@ -3,7 +3,7 @@ module github.com/OpenSlides/openslides-autoupdate-service
 go 1.26.0
 
 require (
-	github.com/OpenSlides/openslides-go v0.0.0-20260509063731-46ba1f42b303
+	github.com/OpenSlides/openslides-go v0.0.0-20260630172945-e068b09ecd05
 	github.com/alecthomas/kong v1.15.0
 	github.com/klauspost/compress v1.18.5
 	github.com/ostcar/topic v0.7.0
@@ -24,6 +24,6 @@ require (
 	github.com/rs/zerolog v1.35.1 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
 )
