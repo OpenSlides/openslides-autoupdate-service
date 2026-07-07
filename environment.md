@@ -6,15 +6,21 @@
 The Service uses the following environment variables:
 
 * `OPENSLIDES_DEVELOPMENT`: If set, the service uses the default secrets. The default is `false`.
+* `OPENSLIDES_LOG_LEVEL`: Set the log level for oslog trace for prod available values are (trace, debug, info, warn, error, fatal, panic) The default is ``.
 * `AUTOUPDATE_PORT`: Port on which the service listen on. The default is `9012`.
 * `MESSAGE_BUS_HOST`: Host of the redis server. The default is `localhost`.
 * `MESSAGE_BUS_PORT`: Port of the redis server. The default is `6379`.
 * `OPENSLIDES_PUBLIC_ACCESS_ONLY`: Start for only public access. Does not write to redis or connect to the vote-service. The default is `false`.
 * `DATABASE_PASSWORD_FILE`: Postgres Password. The default is `/run/secrets/postgres_password`.
-* `DATABASE_USER`: Postgres Database. The default is `openslides`.
 * `DATABASE_HOST`: Postgres Host. The default is `localhost`.
 * `DATABASE_PORT`: Postgres Post. The default is `5432`.
 * `DATABASE_NAME`: Postgres User. The default is `openslides`.
+* `DATABASE_USER`: Postgres Database. The default is `openslides`.
+* `DATABASE_NOTIFY_PASSWORD_FILE`: Postgres Password for notify. The default is `DATABASE_PASSWORD_FILE`.
+* `DATABASE_NOTIFY_HOST`: Postgres Host for notify. The default is `DATABASE_HOST`.
+* `DATABASE_NOTIFY_PORT`: Postgres Port for notify. The default is `DATABASE_PORT`.
+* `DATABASE_NOTIFY_NAME`: Postgres Database for notify. The default is `DATABASE_NAME`.
+* `DATABASE_NOTIFY_USER`: Postgres User for notify. The default is `DATABASE_USER`.
 * `VOTE_PROTOCOL`: Protocol of the vote-service. The default is `http`.
 * `VOTE_HOST`: Host of the vote-service. The default is `localhost`.
 * `VOTE_PORT`: Port of the vote-service. The default is `9013`.
