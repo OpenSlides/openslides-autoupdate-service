@@ -22,8 +22,6 @@ import (
 //	  There exists an option which Y can see and X is the linked content object.
 //	  There exists an assignment candidate which Y can see and X is the linked user.
 //	  There exists a speaker which Y can see and X is the linked user.
-//	  There exists a poll where Y can see the poll/voted_ids and X is part of that list.
-//	  There exists a vote which Y can see and X is linked in user_id or delegated_user_id.
 //	  There exists a chat_message which Y can see and X has sent it (specified by chat_message/user_id).
 //
 // Mode A: Can see.
@@ -235,20 +233,6 @@ func (MeetingUser) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []Use
 			ds.MeetingUser_SpeakerIDs,
 			Collection(ctx, Speaker{}.Name()).Modes("A"),
 			false,
-		},
-
-		{
-			"poll voted",
-			ds.User_PollVotedIDs,
-			Collection(ctx, Poll{}.Name()).Modes("A"),
-			true,
-		},
-
-		{
-			"vote user",
-			ds.User_VoteIDs,
-			Collection(ctx, Vote{}.Name()).Modes("A"),
-			true,
 		},
 
 		{
