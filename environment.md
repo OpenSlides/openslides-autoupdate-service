@@ -6,7 +6,6 @@
 The Service uses the following environment variables:
 
 * `OPENSLIDES_DEVELOPMENT`: If set, the service uses the default secrets. The default is `false`.
-* `OPENSLIDES_LOG_LEVEL`: Set the log level for oslog trace for prod available values are (trace, debug, info, warn, error, fatal, panic) The default is ``.
 * `AUTOUPDATE_PORT`: Port on which the service listen on. The default is `9012`.
 * `MESSAGE_BUS_HOST`: Host of the redis server. The default is `localhost`.
 * `MESSAGE_BUS_PORT`: Port of the redis server. The default is `6379`.

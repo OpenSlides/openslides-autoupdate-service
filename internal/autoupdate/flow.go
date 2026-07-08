@@ -28,13 +28,15 @@ type Flow struct {
 }
 
 // NewFlow initializes a flow for the autoupdate service.
-//
-// Returns an init function, to initialize the service and a background
-// function, that should be called in the background.
-func NewFlow(lookup environment.Environmenter, skipVoteService bool) (*Flow, func(context.Context) error, func(context.Context, func(error)), error) {
-	postgres, initPostgres, err := datastore.NewFlowPostgres(lookup)
+func NewFlow(lookup environment.Environmenter, skipVoteService bool) (*Flow, func(context.Context, func(error)), error) {
+	err := datastore.WaitPostgresAvailable(lookup)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("init postgres: %w", err)
+		return nil, nil, fmt.Errorf("waiting for postgres: %w", err)
+	}
+
+	postgres, err := datastore.NewFlowPostgres(lookup)
+	if err != nil {
+		return nil, nil, fmt.Errorf("init postgres: %w", err)
 	}
 
 	vote := datastore.NewFlowVoteCount(lookup)
@@ -67,7 +69,7 @@ func NewFlow(lookup environment.Environmenter, skipVoteService bool) (*Flow, fun
 
 	metric.Register(flow.metric)
 
-	return &flow, initPostgres, background, nil
+	return &flow, background, nil
 }
 
 // ResetCache clears the cache.
