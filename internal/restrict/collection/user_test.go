@@ -192,7 +192,7 @@ func TestUserModeA(t *testing.T) {
 			20:
 				user_id: 2
 				meeting_id: 3
-				vote_delegated_to_id: 10
+				vote_delegated_to_ids: [10]
 				group_ids: [7]
 		group/7/id: 7
 
@@ -588,7 +588,7 @@ func TestUserModeB(t *testing.T) {
 
 		meeting_user:
 			10:
-				vote_delegated_to_id: 20
+				vote_delegated_to_ids: [20]
 				user_id: 1
 			20:
 				user_id: 2

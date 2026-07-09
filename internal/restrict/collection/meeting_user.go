@@ -15,7 +15,7 @@ import (
 //
 //	the request user is the related user,
 //	the request user has user.can_see,
-//	X is linked in one of the relations vote_delegated_to_id or vote_delegations_from_ids of Y or
+//	X is linked in one of the relations vote_delegated_to_ids or vote_delegations_from_ids of Y or
 //	there is a related object:
 //	  There exists a motion which Y can see and X is a submitter/supporter.
 //	  X is a motion/editor or motion_working_group_speaker that Y can see.
@@ -125,12 +125,12 @@ func (m MeetingUser) see(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs 
 				return true, nil
 			}
 
-			delegatedToMeetingUserID, err := ds.MeetingUser_VoteDelegatedToID(meetingUserID).Value(ctx)
+			delegatedToMeetingUserIDs, err := ds.MeetingUser_VoteDelegatedToIDs(meetingUserID).Value(ctx)
 			if err != nil {
 				return false, fmt.Errorf("getting 'vote delegated to' for meeting_user %d: %w", meetingUserID, err)
 			}
 
-			if id, ok := delegatedToMeetingUserID.Value(); ok {
+			for _, id := range delegatedToMeetingUserIDs {
 				if meetingToMeetingUser[meetingID] == id {
 					return true, nil
 				}
