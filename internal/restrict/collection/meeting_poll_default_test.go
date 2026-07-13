@@ -18,10 +18,9 @@ func TestMeetingPollDefaultModeA(t *testing.T) {
 			id: 1
 			committee_id: 300
 
-		meeting_poll_default/5:
+		meeting_poll_default/1:
 			meeting_id: 30
 		`,
-		withElementID(30),
 	)
 
 	testCase(
@@ -40,9 +39,8 @@ func TestMeetingPollDefaultModeA(t *testing.T) {
 			meeting_id: 30
 		user/1/meeting_user_ids: [10]
 
-		meeting_poll_default/5:
+		meeting_poll_default/1:
 			meeting_id: 30
 		`,
-		withElementID(30),
 	)
 }

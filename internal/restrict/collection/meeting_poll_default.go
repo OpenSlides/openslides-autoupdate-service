@@ -21,7 +21,11 @@ func (m MeetingPollDefault) Name() string {
 
 // MeetingID returns the meetingID for the object.
 func (m MeetingPollDefault) MeetingID(ctx context.Context, ds *dsfetch.Fetch, id int) (int, bool, error) {
-	return id, true, nil
+	mid, err := ds.MeetingPollDefault_MeetingID(id).Value(ctx)
+	if err != nil {
+		return 0, false, fmt.Errorf("getting meeting_id: %w", err)
+	}
+	return mid, true, nil
 }
 
 // Modes returns the restrictions modes for the meeting collection.
