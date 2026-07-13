@@ -164,6 +164,7 @@ var collectionMap = map[string]Restricter{
 	Mediafile{}.Name():                    Mediafile{},
 	Meeting{}.Name():                      Meeting{},
 	MeetingMediafile{}.Name():             MeetingMediafile{},
+	MeetingPollDefault{}.Name():           MeetingPollDefault{},
 	MeetingUser{}.Name():                  MeetingUser{},
 	Motion{}.Name():                       Motion{},
 	MotionBlock{}.Name():                  MotionBlock{},
