@@ -523,4 +523,5 @@ var collectionOrder = map[string]int{
 	"gender":                           52,
 	"history_entry":                    53,
 	"history_position":                 54,
+	"meeting_poll_default":             55,
 }
