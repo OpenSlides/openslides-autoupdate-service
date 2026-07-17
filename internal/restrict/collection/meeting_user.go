@@ -217,12 +217,6 @@ func (MeetingUser) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []Use
 		},
 
 		{
-			"poll voted",
-			ds.MeetingUser_PollVotedIDs,
-			Collection(ctx, Poll{}.Name()).Modes("A"),
-		},
-
-		{
 			"chat messages",
 			ds.MeetingUser_ChatMessageIDs,
 			Collection(ctx, ChatMessage{}.Name()).Modes("A"),
