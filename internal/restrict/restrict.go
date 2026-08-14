@@ -473,6 +473,7 @@ var collectionOrder = map[string]int{
 	"assignment":                       2,
 	"assignment_candidate":             3,
 	"poll_ballot":                      4,
+	"poll_ballot_user":                 4,
 	"chat_group":                       5,
 	"chat_message":                     6,
 	"committee":                        7,
@@ -523,4 +524,5 @@ var collectionOrder = map[string]int{
 	"gender":                           52,
 	"history_entry":                    53,
 	"history_position":                 54,
+	"meeting_poll_default":             55,
 }
