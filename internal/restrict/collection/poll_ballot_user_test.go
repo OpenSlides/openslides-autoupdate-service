@@ -131,7 +131,7 @@ func TestPollBallotUserModeA(t *testing.T) {
 			acting_meeting_user_id: 5
 		meeting_user/5:
 			user_id: 50
-			vote_delegated_to_id: 6
+			vote_delegated_to_ids: [6]
 		meeting_user/6/user_id: 60
 		poll/3:
 			meeting_id: 30
@@ -157,7 +157,7 @@ func TestPollBallotUserModeA(t *testing.T) {
 			acting_meeting_user_id: 6
 		meeting_user/5:
 			user_id: 50
-			vote_delegated_to_id: null
+			vote_delegated_to_ids: []
 		meeting_user/6/user_id: 60
 		poll/3:
 			meeting_id: 30
@@ -183,7 +183,7 @@ func TestPollBallotUserModeA(t *testing.T) {
 			acting_meeting_user_id: 5
 		meeting_user/5:
 			user_id: 50
-			vote_delegated_to_id: 6
+			vote_delegated_to_ids: [6]
 		meeting_user/6/user_id: 60
 		poll/3:
 			meeting_id: 30

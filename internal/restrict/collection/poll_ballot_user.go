@@ -106,13 +106,13 @@ func (b PollBallotUser) see(ctx context.Context, ds *dsfetch.Fetch, ballotUserID
 				continue
 			}
 
-			delegation, err := ds.MeetingUser_VoteDelegatedToID(representedMeetingUser).Value(ctx)
+			delegations, err := ds.MeetingUser_VoteDelegatedToIDs(representedMeetingUser).Value(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("getting delegation from represented user: %w", err)
 			}
 
-			if v, set := delegation.Value(); set {
-				delegatedUser, err := ds.MeetingUser_UserID(v).Value(ctx)
+			for _, delegation := range delegations {
+				delegatedUser, err := ds.MeetingUser_UserID(delegation).Value(ctx)
 				if err != nil {
 					return nil, fmt.Errorf("getting represented user: %w", err)
 				}
