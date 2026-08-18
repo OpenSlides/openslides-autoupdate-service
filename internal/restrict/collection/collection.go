@@ -164,6 +164,7 @@ var collectionMap = map[string]Restricter{
 	Mediafile{}.Name():                    Mediafile{},
 	Meeting{}.Name():                      Meeting{},
 	MeetingMediafile{}.Name():             MeetingMediafile{},
+	MeetingPollDefault{}.Name():           MeetingPollDefault{},
 	MeetingUser{}.Name():                  MeetingUser{},
 	Motion{}.Name():                       Motion{},
 	MotionBlock{}.Name():                  MotionBlock{},
@@ -182,6 +183,8 @@ var collectionMap = map[string]Restricter{
 	PersonalNote{}.Name():                 PersonalNote{},
 	PointOfOrderCategory{}.Name():         PointOfOrderCategory{},
 	Poll{}.Name():                         Poll{},
+	PollBallot{}.Name():                   PollBallot{},
+	PollBallotUser{}.Name():               PollBallotUser{},
 	PollConfigApproval{}.Name():           PollConfigApproval{},
 	PollConfigSelection{}.Name():          PollConfigSelection{},
 	PollConfigRatingScore{}.Name():        PollConfigRatingScore{},
@@ -199,7 +202,6 @@ var collectionMap = map[string]Restricter{
 	Theme{}.Name():                        Theme{},
 	Topic{}.Name():                        Topic{},
 	User{}.Name():                         User{},
-	Ballot{}.Name():                       Ballot{},
 }
 
 // Collection returns the restricter for a collection
