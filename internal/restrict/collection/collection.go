@@ -325,6 +325,29 @@ func eachStringField(ctx context.Context, toField func(int) *dsfetch.ValueString
 	return allAllowed, nil
 }
 
+func eachEnumField[T comparable](ctx context.Context, toField func(int) *dsfetch.ValueEnum[T], ids []int, f func(value T, ids []int) ([]int, error)) ([]int, error) {
+	filteredIDs := make(map[T][]int)
+	for _, id := range ids {
+		value, err := toField(id).Value(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting value for element %d: %w", id, err)
+		}
+		filteredIDs[value] = append(filteredIDs[value], id)
+	}
+
+	allAllowed := make([]int, 0, len(ids))
+	for value, ids := range filteredIDs {
+		allowed, err := f(value, ids)
+		if err != nil {
+			return nil, fmt.Errorf("restricting for element %s: %w", value, err)
+		}
+
+		allAllowed = append(allAllowed, allowed...)
+	}
+
+	return allAllowed, nil
+}
+
 // TODO: currently, this calls the function with the same collectionObject
 // (motion/5, motion/5), but it should bundle it by collection (motion/1,
 // motion/2).

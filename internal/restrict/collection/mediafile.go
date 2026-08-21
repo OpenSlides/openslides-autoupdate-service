@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/dstypes"
 	"github.com/OpenSlides/openslides-go/perm"
 )
 
@@ -67,7 +68,7 @@ func (m Mediafile) see(ctx context.Context, ds *dsfetch.Fetch, mediafileIDs ...i
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	hasManagementLevel, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
+	hasManagementLevel, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, dstypes.User_OrganizationManagementLevelCanManageOrganization)
 	if err != nil {
 		return nil, fmt.Errorf("getting organization management level: %w", err)
 	}
@@ -135,7 +136,7 @@ func isAdminInAnyMeetingOrCommitteeAdmin(ctx context.Context, ds *dsfetch.Fetch)
 		return false, nil
 	}
 
-	isOrgaManager, err := perm.HasOrganizationManagementLevel(ctx, ds, userID, perm.OMLCanManageOrganization)
+	isOrgaManager, err := perm.HasOrganizationManagementLevel(ctx, ds, userID, dstypes.User_OrganizationManagementLevelCanManageOrganization)
 	if err != nil {
 		return false, fmt.Errorf("checking for superadmin: %w", err)
 	}

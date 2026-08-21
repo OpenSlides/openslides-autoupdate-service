@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/dstypes"
 	"github.com/OpenSlides/openslides-go/perm"
 	"github.com/OpenSlides/openslides-go/set"
 )
@@ -163,7 +164,7 @@ func (p Poll) manage(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]
 }
 
 func (p Poll) modeB(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]int, error) {
-	return eachStringField(ctx, ds.Poll_State, pollIDs, func(state string, ids []int) ([]int, error) {
+	return eachEnumField(ctx, ds.Poll_State, pollIDs, func(state dstypes.Poll_State, ids []int) ([]int, error) {
 		switch state {
 		case "published":
 			see, err := p.see(ctx, ds, ids...)
@@ -186,7 +187,7 @@ func (p Poll) modeB(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]i
 }
 
 func (p Poll) modeC(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]int, error) {
-	return eachStringField(ctx, ds.Poll_State, pollIDs, func(state string, ids []int) ([]int, error) {
+	return eachEnumField(ctx, ds.Poll_State, pollIDs, func(state dstypes.Poll_State, ids []int) ([]int, error) {
 		if state != "started" {
 			return nil, nil
 		}
@@ -207,7 +208,7 @@ func (p Poll) modeC(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]i
 }
 
 func (p Poll) modeD(ctx context.Context, ds *dsfetch.Fetch, pollIDs ...int) ([]int, error) {
-	return eachStringField(ctx, ds.Poll_State, pollIDs, func(state string, pollIDs []int) ([]int, error) {
+	return eachEnumField(ctx, ds.Poll_State, pollIDs, func(state dstypes.Poll_State, ids []int) ([]int, error) {
 		switch state {
 		case "published":
 			see, err := p.see(ctx, ds, pollIDs...)
