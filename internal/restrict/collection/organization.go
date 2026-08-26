@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/dstypes"
 	"github.com/OpenSlides/openslides-go/perm"
 )
 
@@ -57,7 +58,7 @@ func (Organization) modeC(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageUsers)
+	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, dstypes.User_OrganizationManagementLevelCanManageUsers)
 	if err != nil {
 		return nil, fmt.Errorf("check organization management level: %w", err)
 	}
@@ -88,7 +89,7 @@ func (Organization) modeD(ctx context.Context, ds *dsfetch.Fetch, ids ...int) ([
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	isSuperadmin, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLSuperadmin)
+	isSuperadmin, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, dstypes.User_OrganizationManagementLevelSuperadmin)
 	if err != nil {
 		return nil, fmt.Errorf("checking for superadmin: %w", err)
 	}

@@ -302,8 +302,8 @@ func eachRelationField(ctx context.Context, toField func(int) *dsfetch.ValueInt,
 	return allAllowed, nil
 }
 
-func eachStringField(ctx context.Context, toField func(int) *dsfetch.ValueString, ids []int, f func(value string, ids []int) ([]int, error)) ([]int, error) {
-	filteredIDs := make(map[string][]int)
+func eachEnumField[T comparable](ctx context.Context, toField func(int) *dsfetch.ValueEnum[T], ids []int, f func(value T, ids []int) ([]int, error)) ([]int, error) {
+	filteredIDs := make(map[T][]int)
 	for _, id := range ids {
 		value, err := toField(id).Value(ctx)
 		if err != nil {
@@ -316,7 +316,7 @@ func eachStringField(ctx context.Context, toField func(int) *dsfetch.ValueString
 	for value, ids := range filteredIDs {
 		allowed, err := f(value, ids)
 		if err != nil {
-			return nil, fmt.Errorf("restricting for element %s: %w", value, err)
+			return nil, fmt.Errorf("restricting for element %v: %w", value, err)
 		}
 
 		allAllowed = append(allAllowed, allowed...)
