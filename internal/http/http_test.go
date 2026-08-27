@@ -217,7 +217,7 @@ func TestErrors(t *testing.T) {
 			),
 			400,
 			`SyntaxError`,
-			"wrong type at field `ids`. Got string, expected number",
+			"wrong type at field `ids.0`. Got string, expected number",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
