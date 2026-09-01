@@ -57,7 +57,7 @@ func NewFlow(lookup environment.Environmenter, skipVoteService bool) (*Flow, fun
 		}
 	}
 
-	cache := cache.New(dataFlow)
+	cache := cache.New(dataFlow, cache.WithFullMessagebus)
 
 	flow := Flow{
 		Flow:     cache,
@@ -68,6 +68,11 @@ func NewFlow(lookup environment.Environmenter, skipVoteService bool) (*Flow, fun
 	metric.Register(flow.metric)
 
 	return &flow, initPostgres, background, nil
+}
+
+// Snapshot retuns an immutable getter that will not change.
+func (f *Flow) Snapshot(notFoundHandler flow.Getter) flow.Getter {
+	return f.cache.Snapshot(notFoundHandler)
 }
 
 // ResetCache clears the cache.
