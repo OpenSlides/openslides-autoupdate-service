@@ -16,7 +16,7 @@ import (
 //
 //	the request user is the related user,
 //	the request user has user.can_see,
-//	X is linked in one of the relations vote_delegated_to_id or vote_delegations_from_ids of Y or
+//	X is linked in one of the relations vote_delegated_to_ids or vote_delegations_from_ids of Y or
 //	there is a related object:
 //	  There exists a motion which Y can see and X is a submitter/supporter.
 //	  X is a motion/editor or motion_working_group_speaker that Y can see.
@@ -126,12 +126,12 @@ func (m MeetingUser) see(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs 
 				return true, nil
 			}
 
-			delegatedToMeetingUserID, err := ds.MeetingUser_VoteDelegatedToID(meetingUserID).Value(ctx)
+			delegatedToMeetingUserIDs, err := ds.MeetingUser_VoteDelegatedToIDs(meetingUserID).Value(ctx)
 			if err != nil {
 				return false, fmt.Errorf("getting 'vote delegated to' for meeting_user %d: %w", meetingUserID, err)
 			}
 
-			if id, ok := delegatedToMeetingUserID.Value(); ok {
+			for _, id := range delegatedToMeetingUserIDs {
 				if meetingToMeetingUser[meetingID] == id {
 					return true, nil
 				}
@@ -151,9 +151,6 @@ func (m MeetingUser) see(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs 
 
 			for _, r := range m.RequiredObjects(ctx, ds) {
 				id := meetingUserID
-				if r.OnUser {
-					id = userID
-				}
 
 				ids, err := r.ElemFunc(id).Value(ctx)
 				if err != nil {
@@ -162,11 +159,7 @@ func (m MeetingUser) see(ctx context.Context, ds *dsfetch.Fetch, meetingUserIDs 
 
 				allowedIDs, err := r.SeeFunc(ctx, ds, ids...)
 				if err != nil {
-					meetingUserOrUser := "meetingUserID"
-					if r.OnUser {
-						meetingUserOrUser = "user"
-					}
-					return false, fmt.Errorf("checking required object %s on %s %d: %w", r.Name, meetingUserOrUser, id, err)
+					return false, fmt.Errorf("checking required object %s on meeting_user/%d: %w", r.Name, id, err)
 				}
 				if len(allowedIDs) > 0 {
 					return true, nil
@@ -183,7 +176,6 @@ type UserRequiredObject struct {
 	Name     string
 	ElemFunc func(int) *dsfetch.ValueIntSlice
 	SeeFunc  FieldRestricter
-	OnUser   bool // Tells, if the relation is via meeting_user_id or user_id
 }
 
 // RequiredObjects returns all references to other objects from the user.
@@ -193,70 +185,42 @@ func (MeetingUser) RequiredObjects(ctx context.Context, ds *dsfetch.Fetch) []Use
 			"motion submitter",
 			ds.MeetingUser_MotionSubmitterIDs,
 			Collection(ctx, MotionSubmitter{}.Name()).Modes("A"),
-			false,
 		},
 
 		{
 			"motion supporter",
 			ds.MeetingUser_MotionSupporterIDs,
 			Collection(ctx, MotionSupporter{}.Name()).Modes("A"),
-			false,
 		},
 
 		{
 			"motion editor",
 			ds.MeetingUser_MotionEditorIDs,
 			Collection(ctx, MotionEditor{}.Name()).Modes("A"),
-			false,
 		},
 
 		{
 			"motion working group speaker",
 			ds.MeetingUser_MotionWorkingGroupSpeakerIDs,
 			Collection(ctx, MotionWorkingGroupSpeaker{}.Name()).Modes("A"),
-			false,
-		},
-
-		{
-			"option",
-			ds.User_OptionIDs,
-			Collection(ctx, Option{}.Name()).Modes("A"),
-			true,
 		},
 
 		{
 			"assignment candidate",
 			ds.MeetingUser_AssignmentCandidateIDs,
 			Collection(ctx, AssignmentCandidate{}.Name()).Modes("A"),
-			false,
 		},
 
 		{
 			"speaker",
 			ds.MeetingUser_SpeakerIDs,
 			Collection(ctx, Speaker{}.Name()).Modes("A"),
-			false,
-		},
-
-		{
-			"poll voted",
-			ds.User_PollVotedIDs,
-			Collection(ctx, Poll{}.Name()).Modes("A"),
-			true,
-		},
-
-		{
-			"vote user",
-			ds.User_VoteIDs,
-			Collection(ctx, Vote{}.Name()).Modes("A"),
-			true,
 		},
 
 		{
 			"chat messages",
 			ds.MeetingUser_ChatMessageIDs,
 			Collection(ctx, ChatMessage{}.Name()).Modes("A"),
-			false,
 		},
 	}
 }

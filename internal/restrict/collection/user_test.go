@@ -192,7 +192,7 @@ func TestUserModeA(t *testing.T) {
 			20:
 				user_id: 2
 				meeting_id: 3
-				vote_delegated_to_id: 10
+				vote_delegated_to_ids: [10]
 				group_ids: [7]
 		group/7/id: 7
 
@@ -588,7 +588,7 @@ func TestUserModeB(t *testing.T) {
 
 		meeting_user:
 			10:
-				vote_delegated_to_id: 20
+				vote_delegated_to_ids: [20]
 				user_id: 1
 			20:
 				user_id: 2
@@ -728,36 +728,6 @@ func TestUserModeB(t *testing.T) {
 		withRequestUser(1),
 		withElementID(2),
 		withPerms(30, perm.ListOfSpeakersCanSee, perm.AgendaItemCanSee),
-	)
-
-	testCase(
-		"vote delegated ids",
-		t,
-		f,
-		false,
-		`---
-		user/1/meeting_user_ids: [10]
-		user/2/meeting_user_ids: [20]
-
-		meeting_user/10:
-			meeting_id: 30
-			group_ids: [7]
-		meeting_user/20:
-			vote_delegations_from_ids: [4]
-			meeting_id: 30
-			group_ids: [7]
-		group/7/id: 7
-
-		vote/4/option_id: 5
-		option/5/poll_id: 6
-		poll/6:
-			state: published
-			meeting_id: 30
-
-		meeting/30/id: 30
-		`,
-		withRequestUser(1),
-		withElementID(2),
 	)
 
 	testCase(

@@ -7,8 +7,8 @@ import (
 	"github.com/OpenSlides/openslides-go/perm"
 )
 
-func TestVoteModeA(t *testing.T) {
-	f := collection.Vote{}.Modes("A")
+func TestPollBallotUserModeA(t *testing.T) {
+	f := collection.PollBallotUser{}.Modes("A")
 
 	testCase(
 		"no perms",
@@ -16,11 +16,10 @@ func TestVoteModeA(t *testing.T) {
 		f,
 		false,
 		`---
-		vote/1:
-			option_id: 2
-			user_id: 5
-			delegated_user_id: 6
-		option/2/poll_id: 3
+		poll_ballot_user/1:
+			poll_id: 3
+			represented_meeting_user_id: 5
+			acting_meeting_user_id: 6
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -38,14 +37,13 @@ func TestVoteModeA(t *testing.T) {
 		f,
 		true,
 		`---
-		vote/1:
-			option_id: 2
-			user_id: 5
-			delegated_user_id: 6
-		option/2/poll_id: 3
+		poll_ballot_user/1:
+			poll_id: 3
+			represented_meeting_user_id: 5
+			acting_meeting_user_id: 6
 		poll/3:
 			meeting_id: 30
-			state: published
+			published: true
 			content_object_id: topic/5
 		topic/5:
 			meeting_id: 30
@@ -61,14 +59,13 @@ func TestVoteModeA(t *testing.T) {
 		f,
 		false,
 		`---
-		vote/1:
-			option_id: 2
-			user_id: 5
-			delegated_user_id: 6
-		option/2/poll_id: 3
+		poll_ballot_user/1:
+			poll_id: 3
+			represented_meeting_user_id: 5
+			acting_meeting_user_id: 6
 		poll/3:
 			meeting_id: 30
-			state: published
+			published: true
 			content_object_id: topic/5
 		topic/5:
 			meeting_id: 30
@@ -78,16 +75,15 @@ func TestVoteModeA(t *testing.T) {
 	)
 
 	testCase(
-		"can manage poll",
+		"can see progress",
 		t,
 		f,
 		true,
 		`---
-		vote/1:
-			option_id: 2
-			user_id: 5
-			delegated_user_id: 6
-		option/2/poll_id: 3
+		poll_ballot_user/1:
+			poll_id: 3
+			represented_meeting_user_id: 5
+			acting_meeting_user_id: 6
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -96,20 +92,21 @@ func TestVoteModeA(t *testing.T) {
 			agenda_item_id: 40
 		agenda_item/40/meeting_id: 30
 		`,
-		withPerms(30, perm.PollCanManage, perm.AgendaItemCanSee),
+		withPerms(30, perm.PollCanSeeProgress, perm.AgendaItemCanSee),
 	)
 
 	testCase(
-		"vote user",
+		"own ballot",
 		t,
 		f,
 		true,
 		`---
-		vote/1:
-			option_id: 2
-			user_id: 5
-			delegated_user_id: 6
-		option/2/poll_id: 3
+		poll_ballot_user/1:
+			poll_id: 3
+			represented_meeting_user_id: 5
+			acting_meeting_user_id: 6
+		meeting_user/5/user_id: 50
+		meeting_user/6/user_id: 60
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -118,21 +115,24 @@ func TestVoteModeA(t *testing.T) {
 			agenda_item_id: 40
 		agenda_item/40/meeting_id: 30
 		`,
-		withRequestUser(5),
+		withRequestUser(50),
 		withPerms(30, perm.AgendaItemCanSee),
 	)
 
 	testCase(
-		"vote user from delegated",
+		"request user is delegated, but did not send ballot",
 		t,
 		f,
 		true,
 		`---
-		vote/1:
-			option_id: 2
-			user_id: 5
-			delegated_user_id: 6
-		option/2/poll_id: 3
+		poll_ballot_user/1:
+			poll_id: 3
+			represented_meeting_user_id: 5
+			acting_meeting_user_id: 5
+		meeting_user/5:
+			user_id: 50
+			vote_delegated_to_ids: [6]
+		meeting_user/6/user_id: 60
 		poll/3:
 			meeting_id: 30
 			content_object_id: topic/5
@@ -141,64 +141,59 @@ func TestVoteModeA(t *testing.T) {
 			agenda_item_id: 40
 		agenda_item/40/meeting_id: 30
 		`,
-		withRequestUser(6),
+		withRequestUser(60),
 		withPerms(30, perm.AgendaItemCanSee),
 	)
-}
-
-func TestVoteModeB(t *testing.T) {
-	f := collection.Vote{}.Modes("B")
 
 	testCase(
-		"other state",
+		"request user did sent ballot as delegated, but is not delegated anymore",
 		t,
 		f,
 		false,
 		`---
-		vote/1/option_id: 2
-		option/2/poll_id: 3
-		poll/3/meeting_id: 30
-		`,
-	)
-
-	testCase(
-		"state published",
-		t,
-		f,
-		true,
-		`---
-		vote/1:
-			option_id: 2
-			user_id: 5
-			delegated_user_id: 6
-		option/2/poll_id: 3
+		poll_ballot_user/1:
+			poll_id: 3
+			represented_meeting_user_id: 5
+			acting_meeting_user_id: 6
+		meeting_user/5:
+			user_id: 50
+			vote_delegated_to_ids: []
+		meeting_user/6/user_id: 60
 		poll/3:
 			meeting_id: 30
-			state: published
 			content_object_id: topic/5
 		topic/5:
 			meeting_id: 30
 			agenda_item_id: 40
 		agenda_item/40/meeting_id: 30
 		`,
-		withRequestUser(5),
+		withRequestUser(60),
 		withPerms(30, perm.AgendaItemCanSee),
 	)
 
 	testCase(
-		"state finished",
+		"request user is delegated, but delegation is deactivated",
 		t,
 		f,
 		true,
 		`---
-		vote/1/option_id: 2
-		option/2/poll_id: 3
+		poll_ballot_user/1:
+			poll_id: 3
+			represented_meeting_user_id: 5
+			acting_meeting_user_id: 5
+		meeting_user/5:
+			user_id: 50
+			vote_delegated_to_ids: [6]
+		meeting_user/6/user_id: 60
 		poll/3:
 			meeting_id: 30
-			state: finished
 			content_object_id: topic/5
-		topic/5/meeting_id: 30
+		topic/5:
+			meeting_id: 30
+			agenda_item_id: 40
+		agenda_item/40/meeting_id: 30
 		`,
-		withPerms(30, perm.PollCanManage),
+		withRequestUser(60),
+		withPerms(30, perm.AgendaItemCanSee),
 	)
 }
