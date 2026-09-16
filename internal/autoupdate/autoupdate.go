@@ -16,6 +16,7 @@ import (
 
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
+	"github.com/OpenSlides/openslides-go/datastore/dstypes"
 	"github.com/OpenSlides/openslides-go/datastore/flow"
 	"github.com/OpenSlides/openslides-go/environment"
 	"github.com/OpenSlides/openslides-go/oserror"
@@ -238,7 +239,7 @@ func (a *Autoupdate) CanSeeConnectionCount(ctx context.Context, userID int) (boo
 
 	ds := dsfetch.New(a.flow)
 
-	hasOML, err := perm.HasOrganizationManagementLevel(ctx, ds, userID, perm.OMLCanManageOrganization)
+	hasOML, err := perm.HasOrganizationManagementLevel(ctx, ds, userID, dstypes.User_OrganizationManagementLevelCanManageOrganization)
 	if err != nil {
 		return false, nil, fmt.Errorf("getting organization management level: %w", err)
 	}

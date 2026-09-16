@@ -35,8 +35,7 @@ func FromKeys(rawKeys ...string) (*Builder, error) {
 	for i, k := range rawKeys {
 		key, err := dskey.FromString(k)
 		if err != nil {
-			// TODO LAST ERROR
-			return nil, fmt.Errorf("invalid key: %s", k)
+			return nil, fmt.Errorf("invalid key %s: %w", k, err)
 		}
 		keys[i] = key
 	}
