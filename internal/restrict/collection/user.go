@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/dstypes"
 	"github.com/OpenSlides/openslides-go/perm"
 	"github.com/OpenSlides/openslides-go/set"
 )
@@ -89,7 +90,7 @@ func (u User) see(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUserID, perm.OMLCanManageUsers)
+	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUserID, dstypes.User_OrganizationManagementLevelCanManageUsers)
 	if err != nil {
 		return nil, fmt.Errorf("check organization management level: %w", err)
 	}
@@ -141,7 +142,7 @@ func (u User) modeB(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]i
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUserID, perm.OMLCanManageUsers)
+	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUserID, dstypes.User_OrganizationManagementLevelCanManageUsers)
 	if err != nil {
 		return nil, fmt.Errorf("check organization management level: %w", err)
 	}
@@ -209,7 +210,7 @@ func (User) modeD(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageUsers)
+	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, dstypes.User_OrganizationManagementLevelCanManageUsers)
 	if err != nil {
 		return nil, fmt.Errorf("cheching oml: %w", err)
 	}
@@ -254,7 +255,7 @@ func (User) modeE(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 		return nil, nil
 	}
 
-	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUserID, perm.OMLCanManageUsers)
+	canManage, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUserID, dstypes.User_OrganizationManagementLevelCanManageUsers)
 	if err != nil {
 		return nil, fmt.Errorf("cheching oml: %w", err)
 	}
@@ -317,7 +318,7 @@ func (User) modeF(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageUsers)
+	isUserManager, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, dstypes.User_OrganizationManagementLevelCanManageUsers)
 	if err != nil {
 		return nil, fmt.Errorf("check organization management level: %w", err)
 	}
@@ -334,16 +335,16 @@ func (User) modeF(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]int
 //
 // An empty string is a valid organization management level for this function
 // that has the lowest value.
-func higherThenOrgaManagement(request, requested perm.OrganizationManagementLevel) bool {
-	toNum := func(level perm.OrganizationManagementLevel) int {
+func higherThenOrgaManagement(request, requested dstypes.User_OrganizationManagementLevel) bool {
+	toNum := func(level dstypes.User_OrganizationManagementLevel) int {
 		switch level {
-		case perm.OMLNone:
+		case "":
 			return 0
-		case perm.OMLCanManageUsers:
+		case dstypes.User_OrganizationManagementLevelCanManageUsers:
 			return 1
-		case perm.OMLCanManageOrganization:
+		case dstypes.User_OrganizationManagementLevelCanManageOrganization:
 			return 2
-		case perm.OMLSuperadmin:
+		case dstypes.User_OrganizationManagementLevelSuperadmin:
 			return 3
 		default:
 			return 4
@@ -368,20 +369,15 @@ func (u User) modeH(ctx context.Context, ds *dsfetch.Fetch, userIDs ...int) ([]i
 		return nil, fmt.Errorf("getting own managament: %w", err)
 	}
 
-	ownLevel := perm.OrganizationManagementLevel(ownOrgaManagementLevel)
+	ownLevel := dstypes.User_OrganizationManagementLevel(ownOrgaManagementLevel)
 
-	otherLevelStr := make([]string, len(userIDs))
+	otherLevel := make([]dstypes.User_OrganizationManagementLevel, len(userIDs))
 	for i, userID := range userIDs {
-		ds.User_OrganizationManagementLevel(userID).Lazy(&otherLevelStr[i])
+		ds.User_OrganizationManagementLevel(userID).Lazy(&otherLevel[i])
 	}
 
 	if err := ds.Execute(ctx); err != nil {
 		return nil, fmt.Errorf("getting organization management level of other users: %w", err)
-	}
-
-	otherLevel := make([]perm.OrganizationManagementLevel, len(userIDs))
-	for i, str := range otherLevelStr {
-		otherLevel[i] = perm.OrganizationManagementLevel(str)
 	}
 
 	fromD, err := u.modeD(ctx, ds, userIDs...)

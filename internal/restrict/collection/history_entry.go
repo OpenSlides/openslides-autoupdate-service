@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/dstypes"
 	"github.com/OpenSlides/openslides-go/perm"
 )
 
@@ -48,7 +49,7 @@ func (h HistoryEntry) see(ctx context.Context, ds *dsfetch.Fetch, ids ...int) ([
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	isOrgaAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
+	isOrgaAdmin, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, dstypes.User_OrganizationManagementLevelCanManageOrganization)
 	if err != nil {
 		return nil, fmt.Errorf("checking for superadmin: %w", err)
 	}

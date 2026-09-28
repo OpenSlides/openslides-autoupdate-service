@@ -85,6 +85,35 @@ func TestKeysHandler(t *testing.T) {
 	}
 }
 
+func TestKeysHandlerInvalidKey(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	mux := http.NewServeMux()
+
+	connecter := &connecterMock{
+		f: func(ctx context.Context) (map[dskey.Key][]byte, error) {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			cancel()
+			return map[dskey.Key][]byte{myKey1: []byte(`"bar"`)}, nil
+		},
+	}
+
+	ahttp.HandleAutoupdate(mux, fakeAuth(1), connecter, [2]*ahttp.ConnectionCount{}, time.Hour)
+
+	req := httptest.NewRequest("GET", "/system/autoupdate?k=unknown/key", nil).WithContext(ctx)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	res := rec.Result()
+
+	if res.StatusCode != 400 {
+		t.Errorf("Got status %q, expected %q", res.Status, http.StatusText(400))
+	}
+}
+
 func TestComplexHandler(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
@@ -217,7 +246,7 @@ func TestErrors(t *testing.T) {
 			),
 			400,
 			`SyntaxError`,
-			"wrong type at field `ids`. Got string, expected number",
+			"wrong type at field `ids.0`. Got string, expected number",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

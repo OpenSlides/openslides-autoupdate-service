@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/OpenSlides/openslides-go/datastore/dsfetch"
+	"github.com/OpenSlides/openslides-go/datastore/dstypes"
 	"github.com/OpenSlides/openslides-go/perm"
 )
 
@@ -60,7 +61,7 @@ func (c Committee) see(ctx context.Context, ds *dsfetch.Fetch, committeeIDs ...i
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageUsers)
+	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, dstypes.User_OrganizationManagementLevelCanManageUsers)
 	if err != nil {
 		return nil, fmt.Errorf("checking oml perm: %w", err)
 	}
@@ -121,7 +122,7 @@ func (c Committee) modeB(ctx context.Context, ds *dsfetch.Fetch, committeeIDs ..
 		return nil, fmt.Errorf("getting request user: %w", err)
 	}
 
-	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, perm.OMLCanManageOrganization)
+	hasOMLPerm, err := perm.HasOrganizationManagementLevel(ctx, ds, requestUser, dstypes.User_OrganizationManagementLevelCanManageOrganization)
 	if err != nil {
 		return nil, fmt.Errorf("checking oml: %w", err)
 	}
