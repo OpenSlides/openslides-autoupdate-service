@@ -6,8 +6,8 @@ import (
 	"github.com/OpenSlides/openslides-autoupdate-service/internal/restrict/collection"
 )
 
-func TestMeetingPollDefaultModeA(t *testing.T) {
-	m := collection.MeetingPollDefault{}.Modes("A")
+func TestMeetingPollSettingModeA(t *testing.T) {
+	m := collection.MeetingPollSetting{}.Modes("A")
 	testCase(
 		"No perms",
 		t,
@@ -18,7 +18,7 @@ func TestMeetingPollDefaultModeA(t *testing.T) {
 			id: 1
 			committee_id: 300
 
-		meeting_poll_default/1:
+		meeting_poll_setting/1:
 			meeting_id: 30
 		`,
 	)
@@ -39,7 +39,7 @@ func TestMeetingPollDefaultModeA(t *testing.T) {
 			meeting_id: 30
 		user/1/meeting_user_ids: [10]
 
-		meeting_poll_default/1:
+		meeting_poll_setting/1:
 			meeting_id: 30
 		`,
 	)
