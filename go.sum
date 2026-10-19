@@ -1,7 +1,7 @@
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
-github.com/OpenSlides/openslides-go v0.0.0-20260914113122-b8fc5dcb5833 h1:e/jwi8XU9tUyX3hul2YHzydAb2bFqbzxsAGtWrTRd38=
-github.com/OpenSlides/openslides-go v0.0.0-20260914113122-b8fc5dcb5833/go.mod h1:ngfwMkOksw2fydfKOfJyFM0wiyilScNIOM092pHwc0c=
+github.com/OpenSlides/openslides-go v0.0.0-20261019143238-985a3acd9af1 h1:fKCAsEw5knz82tw6lPcgCDHG7kkwQyZJVJQh06yWzIw=
+github.com/OpenSlides/openslides-go v0.0.0-20261019143238-985a3acd9af1/go.mod h1:ngfwMkOksw2fydfKOfJyFM0wiyilScNIOM092pHwc0c=
 github.com/alecthomas/assert/v2 v2.11.0 h1:2Q9r3ki8+JYXvGsDyBXwH3LcJ+WK5D0gc5E8vS6K3D0=
 github.com/alecthomas/assert/v2 v2.11.0/go.mod h1:Bze95FyfUr7x34QZrjL+XP+0qgp/zg8yS+TtBj1WA3k=
 github.com/alecthomas/kong v1.16.1 h1:ixhCt93XkJ98kGposQ54+bl0IK6XwqB40AsMynU7Z8E=
