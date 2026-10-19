@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/OpenSlides/openslides-go v0.0.0-20261019143238-985a3acd9af1
 	github.com/alecthomas/kong v1.16.1
-	github.com/klauspost/compress v1.20.1
+	github.com/klauspost/compress v1.20.3
 	github.com/ostcar/topic v0.7.0
 	github.com/zeebo/xxh3 v1.1.0
 )
