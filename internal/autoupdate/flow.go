@@ -22,9 +22,7 @@ import (
 //	vote-service <->
 type Flow struct {
 	flow.Flow
-
-	cache    *cache.Cache
-	postgres *datastore.FlowPostgres
+	cache *cache.Cache
 }
 
 // NewFlow initializes a flow for the autoupdate service.
@@ -57,17 +55,21 @@ func NewFlow(lookup environment.Environmenter, skipVoteService bool) (*Flow, fun
 		}
 	}
 
-	cache := cache.New(dataFlow)
+	cache := cache.New(dataFlow, cache.WithFullMessagebus)
 
 	flow := Flow{
-		Flow:     cache,
-		cache:    cache,
-		postgres: postgres,
+		Flow:  cache,
+		cache: cache,
 	}
 
 	metric.Register(flow.metric)
 
 	return &flow, initPostgres, background, nil
+}
+
+// Snapshot retuns an immutable getter that will not change.
+func (f *Flow) Snapshot(notFoundHandler flow.Getter) flow.Getter {
+	return f.cache.Snapshot(notFoundHandler)
 }
 
 // ResetCache clears the cache.
