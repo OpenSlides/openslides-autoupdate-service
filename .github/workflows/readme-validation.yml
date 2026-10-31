@@ -69,6 +69,7 @@ jobs:
       - name: Start With golang
         run: |
           go build
+          export OPENSLIDES_PUBLIC_ACCESS_ONLY=1
           export DATABASE_PASSWORD_FILE=secrets/postgres_password
           export AUTH_TOKEN_KEY_FILE=secrets/auth_token_key
           export AUTH_COOKIE_KEY_FILE=secrets/auth_cookie_key
