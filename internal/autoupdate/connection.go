@@ -30,15 +30,6 @@ type connection struct {
 
 // Messages returns an iterator over new messages.
 //
-// It impelements the go 1.23 iter interface and can be called like
-//
-//	for data, err := range conn.Messages(ctx) {
-//		if err != nil {
-//			return err
-//		}
-//		...
-//	}
-//
 // When the returned function is called for the first time, it does not block.
 // In this case, it is possible, that it returns an empty map.
 //
