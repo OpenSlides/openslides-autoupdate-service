@@ -7,7 +7,6 @@ import (
 
 	"github.com/OpenSlides/openslides-go/datastore/dskey"
 	"github.com/OpenSlides/openslides-go/datastore/dsrecorder"
-	"github.com/OpenSlides/openslides-go/datastore/flow"
 )
 
 // Connection holds the connection to data and has the ability to return the next.
@@ -29,6 +28,15 @@ type connection struct {
 }
 
 // Messages returns an iterator over new messages.
+//
+// It impelements the go 1.23 iter interface and can be called like
+//
+//	for data, err := range conn.Messages(ctx) {
+//		if err != nil {
+//			return err
+//		}
+//		...
+//	}
 //
 // When the returned function is called for the first time, it does not block.
 // In this case, it is possible, that it returns an empty map.
@@ -67,22 +75,19 @@ func (c *connection) Messages(ctx context.Context) iter.Seq2[map[dskey.Key][]byt
 				}
 			}
 
-			if !foundKey {
-				continue
-			}
+			if foundKey {
+				data, err := c.updatedData(ctx)
+				if err != nil {
+					yield(nil, fmt.Errorf("creating later data: %w", err))
+					return
+				}
 
-			data, err := c.updatedData(ctx)
-			if err != nil {
-				yield(nil, fmt.Errorf("creating later data: %w", err))
-				return
-			}
-
-			if len(data) > 0 {
-				if !yield(data, nil) {
-					return // break was used in for-loop
+				if len(data) > 0 {
+					if !yield(data, nil) {
+						return // break was used in for-loop
+					}
 				}
 			}
-
 		}
 	}
 }
@@ -124,30 +129,7 @@ func (c *connection) updatedData(ctx context.Context) (map[dskey.Key][]byte, err
 		defer done()
 	}
 
-	type snapshotter interface {
-		Snapshot(notFoundHandler flow.Getter) flow.Getter
-	}
-
-	if snapy, ok := c.autoupdate.flow.(snapshotter); ok {
-		data, err := c.updatedDataWithGetter(ctx, snapy.Snapshot(c.autoupdate.flow))
-		if err != nil {
-			return nil, fmt.Errorf("update data with snapshot: %w", err)
-		}
-
-		return data, nil
-	}
-
-	data, err := c.updatedDataWithGetter(ctx, c.autoupdate.flow)
-	if err != nil {
-		return nil, fmt.Errorf("update with no snapshotter: %w", err)
-	}
-
-	return data, nil
-
-}
-
-func (c *connection) updatedDataWithGetter(ctx context.Context, getter flow.Getter) (map[dskey.Key][]byte, error) {
-	recorder := dsrecorder.New(getter)
+	recorder := dsrecorder.New(c.autoupdate.flow)
 	ctx, restricter := c.autoupdate.restricter(ctx, recorder, c.uid)
 
 	keys, err := c.kb.Update(ctx, restricter)
