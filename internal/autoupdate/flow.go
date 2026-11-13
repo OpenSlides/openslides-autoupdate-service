@@ -55,7 +55,9 @@ func NewFlow(lookup environment.Environmenter, skipVoteService bool) (*Flow, fun
 		}
 	}
 
-	cache := cache.New(dataFlow, cache.WithFullMessagebus)
+	// TODO: Add the option "cache.WithFullMessagebus" as soon as this is fixed:
+	// https://github.com/OpenSlides/openslides-meta/pull/629
+	cache := cache.New(dataFlow)
 
 	flow := Flow{
 		Flow:  cache,
