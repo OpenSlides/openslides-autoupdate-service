@@ -364,20 +364,32 @@ type fieldsMap struct {
 func (f *fieldsMap) UnmarshalJSON(data []byte) error {
 	var fm map[string]json.RawMessage
 	if err := json.Unmarshal(data, &fm); err != nil {
-		var list []string
+		var list []json.RawMessage
 		if err := json.Unmarshal(data, &list); err != nil {
 			return fmt.Errorf("decode fields: %w", err)
 		}
 
-		f.fields = make(map[string]fieldDescription, len(fm))
-		for _, e := range list {
-			f.fields[e] = nil
+		fm = make(map[string]json.RawMessage, len(list))
+		for i, element := range list {
+			fieldName, isObject, err := decodeListElement(element)
+			if err != nil {
+				return fmt.Errorf("decode list element %d", i+1)
+			}
+
+			fm[fieldName] = nil
+			if isObject {
+				fm[fieldName] = element
+			}
 		}
-		return nil
 	}
 
 	f.fields = make(map[string]fieldDescription, len(fm))
 	for name, field := range fm {
+		if field == nil {
+			f.fields[name] = nil
+			continue
+		}
+
 		fd, err := unmarshalField(field)
 		if err != nil {
 			if sub, ok := err.(InvalidError); ok {
@@ -403,4 +415,23 @@ func (f *fieldsMap) appendKeys(collection string, id int, data []keyDescription)
 		data = append(data, keyDescription{key: key, description: description})
 	}
 	return data, nil
+}
+
+// decodeListElement decodes one value of a field-list.
+//
+// It returns the name of the field, and if it is an object.
+func decodeListElement(element json.RawMessage) (string, bool, error) {
+	var stringElement string
+	err := json.Unmarshal(element, &stringElement)
+	if err == nil {
+		return stringElement, false, nil
+	}
+
+	var withName struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal(element, &withName); err != nil {
+		return "", false, fmt.Errorf("decode list field as string or named object")
+	}
+	return withName.Name, true, nil
 }

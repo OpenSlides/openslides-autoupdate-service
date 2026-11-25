@@ -251,6 +251,24 @@ func TestKeys(t *testing.T) {
 			"user/1/meeting_user_ids: [1,2]",
 			mustKeys("user/1/meeting_user_ids", "meeting_user/1/comment", "meeting_user/1/group_ids", "meeting_user/2/comment", "meeting_user/2/group_ids"),
 		},
+		{
+			"object in fields as list",
+			`{
+				"ids": [1],
+				"collection": "user",
+				"fields": [
+					"username",
+					{
+						"name": "meeting_user_ids",
+						"type": "relation-list",
+						"collection": "meeting_user",
+						"fields": ["comment", "group_ids"]
+					}
+				]
+			}`,
+			"user/1/meeting_user_ids: [1,2]",
+			mustKeys("user/1/meeting_user_ids", "user/1/username", "meeting_user/1/comment", "meeting_user/1/group_ids", "meeting_user/2/comment", "meeting_user/2/group_ids"),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			data, err := dsmock.YAMLDataErr(tt.data)
