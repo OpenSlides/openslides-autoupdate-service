@@ -4,8 +4,8 @@ go 1.26.0
 
 require (
 	github.com/OpenSlides/openslides-go v0.0.0-20261125153846-e386e7ae0d13
-	github.com/alecthomas/kong v1.16.1
-	github.com/klauspost/compress v1.19.2
+	github.com/alecthomas/kong v1.17.0
+	github.com/klauspost/compress v1.20.5
 	github.com/ostcar/topic v0.7.0
 	github.com/zeebo/xxh3 v1.1.0
 )
@@ -19,7 +19,7 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.13.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.4 // indirect
-	github.com/klauspost/cpuid/v2 v2.4.0 // indirect
+	github.com/klauspost/cpuid/v2 v2.4.2 // indirect
 	github.com/mattn/go-colorable v0.1.16 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/rs/zerolog v1.35.1 // indirect
