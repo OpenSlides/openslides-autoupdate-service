@@ -364,7 +364,16 @@ type fieldsMap struct {
 func (f *fieldsMap) UnmarshalJSON(data []byte) error {
 	var fm map[string]json.RawMessage
 	if err := json.Unmarshal(data, &fm); err != nil {
-		return fmt.Errorf("decode fields: %w", err)
+		var list []string
+		if err := json.Unmarshal(data, &list); err != nil {
+			return fmt.Errorf("decode fields: %w", err)
+		}
+
+		f.fields = make(map[string]fieldDescription, len(fm))
+		for _, e := range list {
+			f.fields[e] = nil
+		}
+		return nil
 	}
 
 	f.fields = make(map[string]fieldDescription, len(fm))

@@ -225,6 +225,16 @@ func TestKeys(t *testing.T) {
 			`,
 			mustKeys("tag/1/tagged_ids", "tag/2/tagged_ids", "assignment/20/title", "assignment/20/description", "motion/30/title"),
 		},
+		{
+			"fields as list",
+			`{
+				"ids": [1],
+				"collection": "user",
+				"fields": ["username", "first_name", "last_name"]
+			}`,
+			``,
+			mustKeys("user/1/username", "user/1/first_name", "user/1/last_name"),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			ds := dsmock.Stub(dsmock.YAMLData(tt.data))
