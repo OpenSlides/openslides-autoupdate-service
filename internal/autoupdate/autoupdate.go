@@ -20,6 +20,7 @@ import (
 	"github.com/OpenSlides/openslides-go/datastore/flow"
 	"github.com/OpenSlides/openslides-go/environment"
 	"github.com/OpenSlides/openslides-go/oserror"
+	"github.com/OpenSlides/openslides-go/oslog"
 	"github.com/OpenSlides/openslides-go/perm"
 	"github.com/OpenSlides/openslides-go/set"
 	"github.com/ostcar/topic"
@@ -171,6 +172,11 @@ func (a *Autoupdate) resetCache(ctx context.Context) {
 		return
 	}
 
+	type warmupper interface {
+		WarmupCache(ctx context.Context) error
+	}
+	warmupCache, hasCacheWarmup := a.flow.(warmupper)
+
 	tick := time.NewTicker(a.cacheReset)
 	defer tick.Stop()
 
@@ -180,6 +186,15 @@ func (a *Autoupdate) resetCache(ctx context.Context) {
 			return
 		case <-tick.C:
 			reset.ResetCache()
+			if !hasCacheWarmup {
+				continue
+			}
+
+			if err := warmupCache.WarmupCache(ctx); err != nil {
+				oslog.Warn("Can not warm up cache after cache reset: %v", err)
+				// Do not return on error. The cache warmup is not critical. The
+				// next request will take a bit longer.
+			}
 		}
 	}
 }
