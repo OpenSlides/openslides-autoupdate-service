@@ -9,7 +9,6 @@ package autoupdate
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"runtime"
 	"strconv"
 	"time"
@@ -328,5 +327,3 @@ func (a *Autoupdate) FilterConnectionCount(ctx context.Context, meetingIDs []int
 
 	return nil
 }
-
-var reValidKeys = regexp.MustCompile(`^([a-z]+|[a-z][a-z_]*[a-z])/[1-9][0-9]*`)

@@ -585,7 +585,7 @@ func quote(s string) string {
 func validRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Only allow GET or POST requests.
-		if !(r.Method == http.MethodPost || r.Method == http.MethodGet) {
+		if r.Method != http.MethodPost && r.Method != http.MethodGet {
 			handleErrorWithStatus(w, 0, invalidRequestError{fmt.Errorf("only GET or POST requests are supported")})
 			return
 		}
