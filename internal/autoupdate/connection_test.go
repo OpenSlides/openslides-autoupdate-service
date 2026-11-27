@@ -215,7 +215,7 @@ func TestConnectionEmptyData(t *testing.T) {
 		ds.Send(map[dskey.Key][]byte{doesExistKey: nil})
 
 		blocking(func() {
-			next()
+			_, _, _ = next()
 		})
 
 		// Second time not exist
