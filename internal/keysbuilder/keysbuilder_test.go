@@ -225,9 +225,57 @@ func TestKeys(t *testing.T) {
 			`,
 			mustKeys("tag/1/tagged_ids", "tag/2/tagged_ids", "assignment/20/title", "assignment/20/description", "motion/30/title"),
 		},
+		{
+			"fields as list",
+			`{
+				"ids": [1],
+				"collection": "user",
+				"fields": ["username", "first_name", "last_name"]
+			}`,
+			``,
+			mustKeys("user/1/username", "user/1/first_name", "user/1/last_name"),
+		},
+		{
+			"fields as list in sub field",
+			`{
+				"ids": [1],
+				"collection": "user",
+				"fields": {
+					"meeting_user_ids": {
+						"type": "relation-list",
+						"collection": "meeting_user",
+						"fields": ["comment", "group_ids"]
+					}
+				}
+			}`,
+			"user/1/meeting_user_ids: [1,2]",
+			mustKeys("user/1/meeting_user_ids", "meeting_user/1/comment", "meeting_user/1/group_ids", "meeting_user/2/comment", "meeting_user/2/group_ids"),
+		},
+		{
+			"object in fields as list",
+			`{
+				"ids": [1],
+				"collection": "user",
+				"fields": [
+					"username",
+					{
+						"name": "meeting_user_ids",
+						"type": "relation-list",
+						"collection": "meeting_user",
+						"fields": ["comment", "group_ids"]
+					}
+				]
+			}`,
+			"user/1/meeting_user_ids: [1,2]",
+			mustKeys("user/1/meeting_user_ids", "user/1/username", "meeting_user/1/comment", "meeting_user/1/group_ids", "meeting_user/2/comment", "meeting_user/2/group_ids"),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ds := dsmock.Stub(dsmock.YAMLData(tt.data))
+			data, err := dsmock.YAMLDataErr(tt.data)
+			if err != nil {
+				t.Fatalf("Generate data from yaml: %v", err)
+			}
+			ds := dsmock.Stub(data)
 			b, err := keysbuilder.FromJSON(strings.NewReader(tt.request))
 			if err != nil {
 				t.Fatalf("FromJSON returned the unexpected error: %v", err)
@@ -408,7 +456,11 @@ func TestUpdate(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ds := dsmock.Stub(dsmock.YAMLData(tt.data))
+			data, err := dsmock.YAMLDataErr(tt.data)
+			if err != nil {
+				t.Fatalf("Generating data from yaml: %v", err)
+			}
+			ds := dsmock.Stub(data)
 			b, err := keysbuilder.FromJSON(strings.NewReader(tt.request))
 			if err != nil {
 				t.Fatalf("FromJSON() returned an unexpected error: %v", err)
@@ -417,7 +469,11 @@ func TestUpdate(t *testing.T) {
 				t.Errorf("Update() returned an unexpect error: %v", err)
 			}
 
-			ds = dsmock.Stub(dsmock.YAMLData(tt.newData))
+			data, err = dsmock.YAMLDataErr(tt.newData)
+			if err != nil {
+				t.Fatalf("Generating data from yaml: %v", err)
+			}
+			ds = dsmock.Stub(data)
 
 			keys, err := b.Update(context.Background(), ds)
 			if err != nil {
@@ -606,8 +662,13 @@ func TestInvalidOnUpdateIgnoresKeys(t *testing.T) {
 				t.Fatalf("FromJSON: %v", err)
 			}
 
-			data := dsmock.NewFlow(dsmock.YAMLData(tt.data))
-			got, err := kb.Update(ctx, data)
+			data, err := dsmock.YAMLDataErr(tt.data)
+			if err != nil {
+				t.Fatalf("Generating data from yaml: %v", err)
+			}
+			ds := dsmock.Stub(data)
+
+			got, err := kb.Update(ctx, ds)
 			if err != nil {
 				t.Fatalf("Update(): %v", err)
 			}
@@ -641,14 +702,19 @@ func TestConcurency(t *testing.T) {
 
 	}`
 
+	data, err := dsmock.YAMLDataErr(`---
+	user/1/meeting_user_ids: [1,2]
+	user/2/meeting_user_ids: [1,2]
+	user/3/meeting_user_ids: [1,2]
+	meeting_user/1/personal_note_ids: [1,2]
+	meeting_user/2/personal_note_ids: [1,2]
+	`)
+	if err != nil {
+		t.Fatalf("Generating data from yaml: %v", err)
+	}
+
 	ds := dsmock.NewFlow(
-		dsmock.YAMLData(`---
-		user/1/meeting_user_ids: [1,2]
-		user/2/meeting_user_ids: [1,2]
-		user/3/meeting_user_ids: [1,2]
-		meeting_user/1/personal_note_ids: [1,2]
-		meeting_user/2/personal_note_ids: [1,2]
-		`),
+		data,
 		func(g flow.Getter) flow.Getter { return dsmock.NewCounter(g) },
 	)
 	counter := ds.Middlewares()[0].(*dsmock.Counter)
@@ -711,11 +777,16 @@ func TestManyRequests(t *testing.T) {
 		}
 	]`
 
-	ds := dsmock.NewFlow(
-		dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 		user/1/organization_id: 1
 		user/2/organization_id: 1
-		`),
+	`)
+	if err != nil {
+		t.Fatalf("Generating data from yaml: %v", err)
+	}
+
+	ds := dsmock.NewFlow(
+		data,
 		func(g flow.Getter) flow.Getter { return dsmock.NewCounter(g) },
 	)
 	counter := ds.Middlewares()[0].(*dsmock.Counter)
@@ -766,9 +837,13 @@ func TestManyRequestsSameKeys(t *testing.T) {
 		}
 	]`
 
-	ds := dsmock.Stub(dsmock.YAMLData(`---
+	data, err := dsmock.YAMLDataErr(`---
 	user/1/organization_id: 1
-	`))
+	`)
+	if err != nil {
+		t.Fatalf("Generating data from yaml: %v", err)
+	}
+	ds := dsmock.Stub(data)
 
 	b, err := keysbuilder.ManyFromJSON(strings.NewReader(jsonData))
 	if err != nil {
